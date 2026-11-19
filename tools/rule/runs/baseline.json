@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T18:17:21.381Z",
+ "when": "2026-11-19T18:32:31.732Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -37,8 +37,8 @@
    "totalScreens": 409,
    "valuePrefix": 3695,
    "rulePrefix": 3695,
-   "screens": 9,
-   "honestScreens": 9,
+   "screens": 10,
+   "honestScreens": 10,
    "firstScreenMiss": 9,
    "first": {
     "index": 3695,
@@ -66,9 +66,9 @@
    "totalScreens": 123,
    "valuePrefix": 2523,
    "rulePrefix": 2523,
-   "screens": 36,
-   "honestScreens": 36,
-   "firstScreenMiss": 36,
+   "screens": 37,
+   "honestScreens": 37,
+   "firstScreenMiss": 37,
    "first": {
     "index": 2523,
     "step": 41,
@@ -91,13 +91,13 @@
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
-   "jsTotal": 3845,
+   "jsTotal": 3517,
    "totalScreens": 302,
    "valuePrefix": 2833,
    "rulePrefix": 2831,
-   "screens": 15,
-   "honestScreens": 15,
-   "firstScreenMiss": 15,
+   "screens": 18,
+   "honestScreens": 18,
+   "firstScreenMiss": 16,
    "first": {
     "index": 2831,
     "step": 48,
@@ -294,7 +294,7 @@
   {
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
-   "jsTotal": 2656,
+   "jsTotal": 3024,
    "totalScreens": 36,
    "valuePrefix": 2493,
    "rulePrefix": 2493,
@@ -323,7 +323,7 @@
   {
    "session": "seed0017-samurai-altar-pray.session.json",
    "total": 3465,
-   "jsTotal": 2861,
+   "jsTotal": 3173,
    "totalScreens": 67,
    "valuePrefix": 2679,
    "rulePrefix": 2679,
@@ -352,7 +352,7 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 35836,
+   "jsTotal": 36028,
    "totalScreens": 1953,
    "valuePrefix": 6276,
    "rulePrefix": 6276,
@@ -410,13 +410,13 @@
   {
    "session": "seed0077-rogue-chargen.session.json",
    "total": 3242,
-   "jsTotal": 3229,
+   "jsTotal": 3234,
    "totalScreens": 33,
    "valuePrefix": 3195,
    "rulePrefix": 3195,
-   "screens": 11,
-   "honestScreens": 11,
-   "firstScreenMiss": 11,
+   "screens": 12,
+   "honestScreens": 12,
+   "firstScreenMiss": 12,
    "first": {
     "index": 3195,
     "step": 17,
@@ -671,7 +671,7 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3599,
+   "jsTotal": 3834,
    "totalScreens": 127,
    "valuePrefix": 2978,
    "rulePrefix": 2978,
@@ -791,9 +791,9 @@
    "totalScreens": 324,
    "valuePrefix": 1848,
    "rulePrefix": 1848,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "screens": 1,
+   "honestScreens": 1,
+   "firstScreenMiss": 1,
    "first": {
     "index": 1848,
     "step": 19,
@@ -874,13 +874,13 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 2848,
+   "jsTotal": 2873,
    "totalScreens": 87,
    "valuePrefix": 2764,
    "rulePrefix": 2764,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "screens": 26,
+   "honestScreens": 26,
+   "firstScreenMiss": 26,
    "first": {
     "index": 2764,
     "step": 26,
@@ -932,12 +932,12 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 2285,
+   "jsTotal": 2302,
    "totalScreens": 28,
    "valuePrefix": 2205,
    "rulePrefix": 2205,
-   "screens": 1,
-   "honestScreens": 1,
+   "screens": 2,
+   "honestScreens": 2,
    "firstScreenMiss": 1,
    "first": {
     "index": 2205,
@@ -961,7 +961,7 @@
   {
    "session": "seed0700-samurai-explore-descend.session.json",
    "total": 3230,
-   "jsTotal": 2929,
+   "jsTotal": 3406,
    "totalScreens": 51,
    "valuePrefix": 2751,
    "rulePrefix": 2751,
@@ -990,7 +990,7 @@
   {
    "session": "seed0900-tourist-explore-actions.session.json",
    "total": 2983,
-   "jsTotal": 2480,
+   "jsTotal": 2519,
    "totalScreens": 84,
    "valuePrefix": 2473,
    "rulePrefix": 2473,
@@ -1106,7 +1106,7 @@
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
-   "jsTotal": 3719,
+   "jsTotal": 4082,
    "totalScreens": 230,
    "valuePrefix": 2724,
    "rulePrefix": 2724,
@@ -1166,26 +1166,26 @@
    "total": 108275,
    "jsTotal": 2882,
    "totalScreens": 1814,
-   "valuePrefix": 2802,
-   "rulePrefix": 2802,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 2869,
+   "rulePrefix": 2869,
+   "screens": 3,
+   "honestScreens": 3,
+   "firstScreenMiss": 3,
    "first": {
-    "index": 2802,
-    "step": 24,
-    "c": "rn2(20)=7 @ m_move(monmove.c:1963)",
-    "js": "rn2(28)=19 @ m_move",
+    "index": 2869,
+    "step": 41,
+    "c": "rn2(28)=27 @ m_move(monmove.c:1963)",
+    "js": "rn2(20)=7 @ m_move",
     "kind": "value",
     "cCaller": "m_move",
     "jsCaller": "m_move",
     "context": [
-     "rn2(20)=1 @ gethungry(eat.c:3191)",
-     "rn2(67)=22 @ moveloop_core(allmain.c:360)",
-     "rn2(5)=0 @ distfleeck(monmove.c:538)",
-     "rn2(20)=7 @ m_move(monmove.c:1963)",
-     "rn2(5)=0 @ distfleeck(monmove.c:538)",
-     "rn2(12)=2 @ mcalcmove(mon.c:1164)"
+     "rn2(20)=9 @ gethungry(eat.c:3191)",
+     "rn2(67)=56 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(28)=27 @ m_move(monmove.c:1963)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -1193,11 +1193,11 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 6145,
+   "jsTotal": 5824,
    "totalScreens": 410,
    "valuePrefix": 2719,
    "rulePrefix": 2719,
-   "screens": 0,
+   "screens": 3,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
@@ -1222,7 +1222,7 @@
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 7336,
+   "jsTotal": 7291,
    "totalScreens": 249,
    "valuePrefix": 4182,
    "rulePrefix": 4182,
@@ -1280,11 +1280,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 118862,
-  "value": 118864,
+  "rule": 118929,
+  "value": 118931,
   "rolls": 792838,
-  "honestScreens": 158,
-  "screens": 158,
+  "honestScreens": 195,
+  "screens": 198,
   "totalScreens": 11405
  },
  "todo": [
@@ -1381,9 +1381,9 @@
   {
    "fn": "m_move",
    "sessions": 1,
-   "blockedRolls": 105473,
+   "blockedRolls": 105406,
    "examples": [
-    "seed4500-knight-coverage @2802: C \"rn2(20)=7 @ m_move(monmove.c:1963)\" / JS \"rn2(28)=19 @ m_move\""
+    "seed4500-knight-coverage @2869: C \"rn2(28)=27 @ m_move(monmove.c:1963)\" / JS \"rn2(20)=7 @ m_move\""
    ]
   },
   {
