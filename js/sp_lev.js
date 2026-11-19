@@ -33,7 +33,8 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, mkgold, somex, somey } from './mklev.js';
+import { create_room, topologize, add_door, add_room, somex, somey } from './mklev.js';
+import { mkgold } from './mkobj.js';
 
 // C's impossible() and panic() (pline.c) are not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
