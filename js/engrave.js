@@ -6,12 +6,16 @@
 // Engraving text is kept as JS strings; C's in-place char edits are done
 // on a character array.
 //
-// Not ported yet: random_engraving (it reads the engrave file), the
-// player-side engrave commands, reading and sensing engravings.
+// Also random_engraving, make_grave, del_engr_at (text files: js/rumors.js).
+// Not ported yet: the player-side engrave commands, reading and sensing
+// engravings.
 
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
-import { DUST, BURN, ENGR_BLOOD, HEADSTONE, N_ENGRAVE, ICE } from './const.js';
+import { DUST, BURN, ENGR_BLOOD, HEADSTONE, N_ENGRAVE, ICE, ROOM, GRAVE } from './const.js';
+import { getrumor, get_rnd_text, ENGRAVEFILE, EPITAPHFILE, MD_PAD_RUMORS } from './rumors.js';
+import { t_at } from './trap.js';
+import { set_levltyp } from './mkmaze.js';
 
 const BUFSZ = 256;
 
@@ -178,4 +182,46 @@ export function del_engr(ep) {
         }
     }
     /* dealloc_engr(ep) */
+}
+
+// C ref: engrave.c del_engr_at()
+export function del_engr_at(x, y) {
+    const ep = engr_at(x, y);
+
+    if (ep)
+        del_engr(ep);
+}
+
+// C ref: engrave.c random_engraving()
+/* pick a random engraving; pristine_copy.s receives the undegraded text */
+export function random_engraving(pristine_copy) {
+    let rumor;
+
+    /* a random engraving may come from the "rumors" file,
+       or from the "engrave" file (formerly in an array here) */
+    if (!rn2(4) || !(rumor = getrumor(0, pristine_copy, true)) || !rumor)
+        get_rnd_text(ENGRAVEFILE, pristine_copy, rn2, MD_PAD_RUMORS);
+
+    let outbuf = pristine_copy.s;
+    outbuf = wipeout_text(outbuf, Math.trunc(outbuf.length / 4), 0);
+    return outbuf;
+}
+
+// C ref: engrave.c make_grave()
+export function make_grave(x, y, str) {
+    const buf = { s: '' };
+    const lev = game.level.at(x, y);
+
+    /* Can we put a grave here? */
+    if ((lev.typ !== ROOM && lev.typ !== GRAVE) || t_at(x, y))
+        return;
+    /* Make the grave */
+    if (!set_levltyp(x, y, GRAVE))
+        return;
+    /* Engrave the headstone */
+    del_engr_at(x, y);
+    if (!str)
+        str = get_rnd_text(EPITAPHFILE, buf, rn2, MD_PAD_RUMORS);
+    make_engr_at(x, y, str, null, 0, HEADSTONE);
+    return;
 }

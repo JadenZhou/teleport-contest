@@ -17,9 +17,11 @@ import { rn2, rnd, rn1, rne, rnz } from './rng.js';
 import { depth, level_difficulty, In_hell } from './dungeon.js';
 import * as O from './objects.js';
 import { objects } from './objects.js';
-import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE } from './const.js';
+import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD } from './const.js';
 import { rndmonst_adj } from './makemon.js';
-import { monsndx } from './mondata.js';
+import { monsndx, little_to_big, big_to_little } from './mondata.js';
+import * as M from './monsters.js';
+import { assign_candy_wrapper } from './read.js';
 import {
     mons, LOW_PM, SPECIAL_PM, G_UNIQ, G_NOGEN, G_HELL, G_NOHELL, G_NOCORPSE,
     M2_MALE, M2_FEMALE, M2_NEUTER, MZ_SMALL, S_TROLL,
@@ -253,9 +255,9 @@ const {
     VENOM_CLASS,
 } = O;
 
-// C ref: mkobj.c SPBOOK_no_NOVEL — mkobj() class code for "spellbook, but
-// not a novel"
-export const SPBOOK_no_NOVEL = 0;
+// C ref: objclass.h SPBOOK_no_NOVEL — mkobj() class code for "spellbook,
+// but not a novel"
+export const SPBOOK_no_NOVEL = O.SPBOOK_no_NOVEL;
 
 // C ref: mkobj.c mkobjprobs[]
 const mkobjprobs = [
@@ -566,6 +568,176 @@ function not_ported(what) {
     impossible(`mksobj_init: ${what} is not ported yet`);
 }
 
+// C ref: mkobj.c boxiprobs[]
+const boxiprobs = [ { iprob: 18, iclass: O.GEM_CLASS },
+                    { iprob: 15, iclass: O.FOOD_CLASS },
+                    { iprob: 18, iclass: O.POTION_CLASS },
+                    { iprob: 18, iclass: O.SCROLL_CLASS },
+                    { iprob: 12, iclass: O.SPBOOK_CLASS },
+                    { iprob: 7, iclass: O.COIN_CLASS },
+                    { iprob: 6, iclass: O.WAND_CLASS },
+                    { iprob: 5, iclass: O.RING_CLASS },
+                    { iprob: 1, iclass: O.AMULET_CLASS } ];
+
+// C ref: obj.h Is_mbag()
+function Is_mbag(otmp) {
+    return otmp.otyp === O.BAG_OF_HOLDING || otmp.otyp === O.BAG_OF_TRICKS;
+}
+
+// C ref: mkobj.c add_to_container() -- container chains are kept as a
+// plain array on the box (no merging yet)
+function add_to_container(container, obj) {
+    obj.where = 'OBJ_CONTAINED';
+    obj.ocontainer = container;
+    if (!container.cobj) container.cobj = [];
+    container.cobj.unshift(obj);
+    return obj;
+}
+
+// C ref: mkobj.c mkbox_cnts()
+function mkbox_cnts(box) {
+    let n;
+    let otmp;
+
+    box.cobj = null;
+
+    switch (box.otyp) {
+    case O.ICE_BOX:
+        n = 20;
+        break;
+    case O.CHEST:
+        n = box.olocked ? 7 : 5;
+        break;
+    case O.LARGE_BOX:
+        n = box.olocked ? 5 : 3;
+        break;
+    case O.SACK:
+    case O.OILSKIN_SACK:
+        /* initial inventory: sack starts out empty */
+        if ((game.moves ?? 1) <= 1 && !game.in_mklev) {
+            n = 0;
+            break;
+        }
+        /* FALLTHRU */
+    case O.BAG_OF_HOLDING:
+        n = 1;
+        break;
+    default:
+        n = 0;
+        break;
+    }
+
+    for (n = rn2(n + 1); n > 0; n--) {
+        if (box.otyp === O.ICE_BOX) {
+            otmp = mksobj(O.CORPSE, true, false);
+            /* Note: setting age to 0 is correct.  Age has a different
+             * from usual meaning for objects stored in ice boxes. -KAA
+             */
+            otmp.age = 0;
+            /* stop_timer(ROT_CORPSE/REVIVE_MON/SHRINK_GLOB): timers are
+               not ported yet */
+        } else {
+            let tprob;
+            let ip = 0;
+
+            for (tprob = rnd(100); (tprob -= boxiprobs[ip].iprob) > 0; ip++)
+                ;
+            if (!(otmp = mkobj(boxiprobs[ip].iclass, false)))
+                continue;
+
+            /* handle a couple of special cases */
+            if (otmp.oclass === O.COIN_CLASS) {
+                /* 2.5 x level's usual amount; weight adjusted below */
+                otmp.quan = rnd(level_difficulty() + 2) * rnd(75);
+            } else
+                while (otmp.otyp === O.ROCK) {
+                    otmp.otyp = rnd_class(O.DILITHIUM_CRYSTAL, O.LOADSTONE);
+                    if (otmp.quan > 2)
+                        otmp.quan = 1;
+                }
+            if (box.otyp === O.BAG_OF_HOLDING) {
+                if (Is_mbag(otmp)) {
+                    otmp.otyp = O.SACK;
+                    otmp.spe = 0;
+                } else
+                    while (otmp.otyp === O.WAN_CANCELLATION)
+                        otmp.otyp = rnd_class(O.WAN_LIGHT, O.WAN_LIGHTNING);
+            }
+        }
+        add_to_container(box, otmp);
+    }
+    /* caller will update box->owt */
+}
+
+// C ref: hack.h tin varieties
+const ROTTEN_TIN = 0;
+const HOMEMADE_TIN = 1;
+const SPINACH_TIN = -1;
+const RANDOM_TIN = -2;
+const HEALTHY_TIN = -3;
+// C ref: eat.c TTSZ == SIZE(tintxts); tintxts[] has 16 entries
+const TTSZ = 16;
+
+// C ref: eat.c nonrotting_corpse()
+function nonrotting_corpse(mnum) {
+    return mnum === M.PM_LIZARD || mnum === M.PM_LICHEN
+           || mnum === M.PM_DEATH || mnum === M.PM_FAMINE
+           || mnum === M.PM_PESTILENCE /* is_rider() */
+           || mnum === M.PM_ACID_BLOB;
+}
+
+// C ref: eat.c set_tin_variety()
+/* set a tin's variety; HEALTHY_TIN (tin_variety()) is not reached by
+   object creation and is not ported yet */
+function set_tin_variety(obj, forcetype) {
+    let r;
+    const mnum = obj.corpsenm;
+
+    if (forcetype === SPINACH_TIN) {
+        obj.corpsenm = NON_PM; /* not based on any monster */
+        obj.spe = 1;           /* spinach */
+        return;
+    } else if (forcetype >= 0 && forcetype < TTSZ - 1) {
+        r = forcetype;
+    } else {               /* RANDOM_TIN */
+        r = rn2(TTSZ - 1); /* take your pick */
+        if (r === ROTTEN_TIN && (mnum >= 0 && nonrotting_corpse(mnum)))
+            r = HOMEMADE_TIN; /* lizards don't rot */
+    }
+    obj.spe = -(r + 1); /* offset by 1 to allow index 0 */
+}
+
+// C ref: mon.c can_be_hatched()
+function can_be_hatched(mnum) {
+    /* ranger quest nemesis has the oviparous bit set, making it
+       be possible to wish for eggs of that unique monster; turn
+       such into ordinary eggs rather than forbidding them outright */
+    if (mnum === M.PM_SCORPIUS)
+        mnum = M.PM_SCORPION;
+
+    mnum = little_to_big(mnum);
+    /*
+     * Queen bees lay killer bee eggs (usually), but killer bees don't
+     * grow into queen bees.  Ditto for [winged-]gargoyles.
+     */
+    if (mnum === M.PM_KILLER_BEE || mnum === M.PM_GARGOYLE
+        || ((mons[mnum].mflags1 & M.M1_OVIPAROUS) !== 0 /* lays_eggs() */
+            && (!rn2(77) /* BREEDER_EGG */
+                || (mnum !== M.PM_QUEEN_BEE && mnum !== M.PM_WINGED_GARGOYLE))))
+        return mnum;
+    return NON_PM;
+}
+
+// C ref: mon.c dead_species()
+function dead_species(m_idx, egg) {
+    /* generic eggs are unhatchable and have corpsenm of NON_PM */
+    if (m_idx < 0)
+        return true;
+    const alt_idx = egg ? big_to_little(m_idx) : m_idx;
+    return ((game.mvitals[m_idx].mvflags & G_GENOD) !== 0
+            || (game.mvitals[alt_idx].mvflags & G_GENOD) !== 0);
+}
+
 // C ref: mkobj.c mksobj_init()
 function mksobj_init(otmp, artif) {
     const let_ = objects[otmp.otyp].oc_class;
@@ -609,16 +781,31 @@ function mksobj_init(otmp, artif) {
             break;
         }
         case O.EGG:
-            otmp.corpsenm = -1; /* NON_PM: generic egg */
+            otmp.corpsenm = NON_PM; /* generic egg */
             if (!rn2(3))
-                not_ported('egg monster type (rndmonnum)');
+                for (let tryct = 200; tryct > 0; --tryct) {
+                    const mndx = can_be_hatched(rndmonnum());
+                    if (mndx !== NON_PM && !dead_species(mndx, true)) {
+                        otmp.corpsenm = mndx; /* typed egg */
+                        break;
+                    }
+                }
+            /* timer set below */
             break;
         case O.TIN:
-            otmp.corpsenm = -1; /* empty (so far) */
+            otmp.corpsenm = NON_PM; /* empty (so far) */
             if (!rn2(6))
-                otmp.spe = 1; /* set_tin_variety(otmp, SPINACH_TIN) */
+                set_tin_variety(otmp, SPINACH_TIN);
             else
-                not_ported('tin monster type (rndmonnum)');
+                for (let tryct = 200; tryct > 0; --tryct) {
+                    const mndx = undead_to_corpse(rndmonnum());
+                    if (mons[mndx].cnutrit
+                        && !(game.mvitals[mndx].mvflags & G_NOCORPSE)) {
+                        otmp.corpsenm = mndx;
+                        set_tin_variety(otmp, RANDOM_TIN);
+                        break;
+                    }
+                }
             blessorcurse(otmp, 10);
             break;
         case O.SLIME_MOLD:
@@ -628,7 +815,7 @@ function mksobj_init(otmp, artif) {
             otmp.quan = rnd(2);
             break;
         case O.CANDY_BAR:
-            not_ported('assign_candy_wrapper()');
+            assign_candy_wrapper(otmp);
             break;
         default:
             break;
@@ -684,13 +871,12 @@ function mksobj_init(otmp, artif) {
             otmp.olocked = !!(rn2(5));
             otmp.otrapped = !(rn2(10));
             otmp.tknown = otmp.otrapped && !rn2(100); /* obvious trap */
-            not_ported('mkbox_cnts()');
-            break;
+            /* FALLTHRU */
         case O.ICE_BOX:
         case O.SACK:
         case O.OILSKIN_SACK:
         case O.BAG_OF_HOLDING:
-            not_ported('mkbox_cnts()');
+            mkbox_cnts(otmp);
             break;
         case O.EXPENSIVE_CAMERA:
         case O.TINNING_KIT:
