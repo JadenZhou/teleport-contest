@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T22:06:14.238Z",
+ "when": "2026-11-19T22:15:49.105Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -91,7 +91,7 @@
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
-   "jsTotal": 4038,
+   "jsTotal": 5421,
    "totalScreens": 302,
    "valuePrefix": 2833,
    "rulePrefix": 2831,
@@ -115,7 +115,7 @@
      "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:644:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:966:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "seed0009-swimmer-mforce.session.json",
@@ -178,7 +178,7 @@
   {
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
    "total": 4804,
-   "jsTotal": 6879,
+   "jsTotal": 6784,
    "totalScreens": 99,
    "valuePrefix": 3837,
    "rulePrefix": 3837,
@@ -294,7 +294,7 @@
   {
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
-   "jsTotal": 3024,
+   "jsTotal": 2587,
    "totalScreens": 36,
    "valuePrefix": 2493,
    "rulePrefix": 2493,
@@ -318,7 +318,7 @@
      "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": null
+   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:462:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:956:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "seed0017-samurai-altar-pray.session.json",
@@ -347,12 +347,12 @@
      "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": null
+   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2208:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2245:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2229:12)"
   },
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 36917,
+   "jsTotal": 36895,
    "totalScreens": 1953,
    "valuePrefix": 6276,
    "rulePrefix": 6276,
@@ -414,8 +414,8 @@
    "totalScreens": 33,
    "valuePrefix": 3195,
    "rulePrefix": 3195,
-   "screens": 14,
-   "honestScreens": 14,
+   "screens": 15,
+   "honestScreens": 15,
    "firstScreenMiss": 12,
    "first": {
     "index": 3195,
@@ -468,7 +468,7 @@
   {
    "session": "seed0102-ranger-name-cancel.session.json",
    "total": 4485,
-   "jsTotal": 4490,
+   "jsTotal": 4483,
    "totalScreens": 25,
    "valuePrefix": 4458,
    "rulePrefix": 4458,
@@ -584,7 +584,7 @@
   {
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
-   "jsTotal": 2812,
+   "jsTotal": 2716,
    "totalScreens": 267,
    "valuePrefix": 2607,
    "rulePrefix": 2607,
@@ -666,7 +666,7 @@
      "rn2(2)=0 @ blessorcurse(mkobj.c:1846)"
     ]
    },
-   "error": "Error: find_misc() not ported yet |     at find_misc (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:475:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:598:16) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
+   "error": "Error: find_defensive() not ported yet |     at find_defensive (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:462:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:596:9) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
   },
   {
    "session": "seed0116-wizard-wear-shop.session.json",
@@ -700,7 +700,7 @@
   {
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
-   "jsTotal": 3363,
+   "jsTotal": 3299,
    "totalScreens": 40,
    "valuePrefix": 3256,
    "rulePrefix": 3256,
@@ -724,7 +724,7 @@
      "rn2(100)=48 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: find_defensive() not ported yet |     at find_defensive (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:462:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:596:9) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
+   "error": "Error: find_misc() not ported yet |     at find_misc (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:475:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:598:16) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
   },
   {
    "session": "seed0360-wizard-world-tour.session.json",
@@ -874,7 +874,7 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 2885,
+   "jsTotal": 2876,
    "totalScreens": 87,
    "valuePrefix": 2803,
    "rulePrefix": 2803,
@@ -932,7 +932,7 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 2302,
+   "jsTotal": 2312,
    "totalScreens": 28,
    "valuePrefix": 2205,
    "rulePrefix": 2205,
@@ -985,7 +985,7 @@
      "rn2(100)=37 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": null
+   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2208:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2245:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2229:12)"
   },
   {
    "session": "seed0900-tourist-explore-actions.session.json",
@@ -994,7 +994,7 @@
    "totalScreens": 84,
    "valuePrefix": 2473,
    "rulePrefix": 2473,
-   "screens": 3,
+   "screens": 4,
    "honestScreens": 3,
    "firstScreenMiss": 3,
    "first": {
@@ -1019,7 +1019,7 @@
   {
    "session": "seed1150-caveman-explore-move.session.json",
    "total": 3137,
-   "jsTotal": 2951,
+   "jsTotal": 3249,
    "totalScreens": 51,
    "valuePrefix": 2426,
    "rulePrefix": 2426,
@@ -1043,7 +1043,7 @@
      "rn2(100)=68 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:462:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:956:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": null
   },
   {
    "session": "seed1500-rogue-explore-move.session.json",
@@ -1106,7 +1106,7 @@
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
-   "jsTotal": 4551,
+   "jsTotal": 4486,
    "totalScreens": 230,
    "valuePrefix": 2724,
    "rulePrefix": 2724,
@@ -1135,7 +1135,7 @@
   {
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
-   "jsTotal": 3156,
+   "jsTotal": 3137,
    "totalScreens": 38,
    "valuePrefix": 2830,
    "rulePrefix": 2830,
@@ -1255,9 +1255,9 @@
    "totalScreens": 23,
    "valuePrefix": 3102,
    "rulePrefix": 3102,
-   "screens": 15,
-   "honestScreens": 15,
-   "firstScreenMiss": 11,
+   "screens": 16,
+   "honestScreens": 16,
+   "firstScreenMiss": 13,
    "first": {
     "index": 3102,
     "step": 20,
@@ -1283,8 +1283,8 @@
   "rule": 135217,
   "value": 135219,
   "rolls": 792838,
-  "honestScreens": 245,
-  "screens": 250,
+  "honestScreens": 247,
+  "screens": 253,
   "totalScreens": 11405
  },
  "todo": [

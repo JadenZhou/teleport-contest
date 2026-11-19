@@ -1,14 +1,14 @@
 {
- "when": "2026-11-19T22:06:43.780Z",
+ "when": "2026-11-19T22:16:01.989Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
    "total": 5449,
-   "jsTotal": 3976,
+   "jsTotal": 3795,
    "totalScreens": 595,
    "valuePrefix": 3130,
    "rulePrefix": 3130,
-   "screens": 15,
+   "screens": 16,
    "honestScreens": 10,
    "firstScreenMiss": 9,
    "first": {
@@ -33,7 +33,7 @@
   {
    "session": "dev81041-feeding-pony.session.json",
    "total": 6055,
-   "jsTotal": 2715,
+   "jsTotal": 2712,
    "totalScreens": 409,
    "valuePrefix": 2696,
    "rulePrefix": 2696,
@@ -91,7 +91,7 @@
   {
    "session": "dev81123-rogue-snake-swamp.session.json",
    "total": 8070,
-   "jsTotal": 3664,
+   "jsTotal": 3515,
    "totalScreens": 302,
    "valuePrefix": 3294,
    "rulePrefix": 3294,
@@ -115,7 +115,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
+   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:462:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:956:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81164-swimmer-mforce.session.json",
@@ -149,7 +149,7 @@
   {
    "session": "dev81205-monk-vault-escort.session.json",
    "total": 5202,
-   "jsTotal": 4199,
+   "jsTotal": 4710,
    "totalScreens": 308,
    "valuePrefix": 2786,
    "rulePrefix": 2786,
@@ -173,7 +173,7 @@
      "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:644:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:966:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81246-friday13-save-then-fullmoon-restore.session.json",
@@ -294,11 +294,11 @@
   {
    "session": "dev81410-healer-newmoon-eat-zap.session.json",
    "total": 3335,
-   "jsTotal": 3398,
+   "jsTotal": 3300,
    "totalScreens": 36,
    "valuePrefix": 2919,
    "rulePrefix": 2919,
-   "screens": 9,
+   "screens": 6,
    "honestScreens": 3,
    "firstScreenMiss": 3,
    "first": {
@@ -568,7 +568,7 @@
   {
    "session": "dev81820-priest-extcmd-sweep.session.json",
    "total": 3005,
-   "jsTotal": 4496,
+   "jsTotal": 4355,
    "totalScreens": 267,
    "valuePrefix": 1881,
    "rulePrefix": 1881,
@@ -626,7 +626,7 @@
   {
    "session": "dev81902-wizard-extcmd-wishlist.session.json",
    "total": 11797,
-   "jsTotal": 3553,
+   "jsTotal": 3855,
    "totalScreens": 303,
    "valuePrefix": 3005,
    "rulePrefix": 3005,
@@ -655,7 +655,7 @@
   {
    "session": "dev81943-wizard-wear-shop.session.json",
    "total": 15567,
-   "jsTotal": 4821,
+   "jsTotal": 3420,
    "totalScreens": 127,
    "valuePrefix": 2498,
    "rulePrefix": 2498,
@@ -679,7 +679,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: goto_level(): losedogs() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:227:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:54:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: mkveggy_at(): shkveg()/veggy_item() not ported yet |     at mkveggy_at (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:500:11) |     at mkshobj_at (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:527:13) |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:457:17)"
   },
   {
    "session": "dev81984-monk-north-search.session.json",
@@ -742,7 +742,7 @@
   {
    "session": "dev82066-archeologist-tour.session.json",
    "total": 46184,
-   "jsTotal": 2423,
+   "jsTotal": 2419,
    "totalScreens": 366,
    "valuePrefix": 2301,
    "rulePrefix": 2301,
@@ -766,12 +766,12 @@
      "rn2(10)=7 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:48:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1441:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1513:22)"
+   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:52:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1794:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1866:22)"
   },
   {
    "session": "dev82107-priest-quest-tour.session.json",
    "total": 63213,
-   "jsTotal": 3232,
+   "jsTotal": 3229,
    "totalScreens": 324,
    "valuePrefix": 3166,
    "rulePrefix": 3166,
@@ -916,7 +916,7 @@
   {
    "session": "dev82312-priest-cast-read-turn.session.json",
    "total": 2806,
-   "jsTotal": 2879,
+   "jsTotal": 2871,
    "totalScreens": 28,
    "valuePrefix": 2761,
    "rulePrefix": 2761,
@@ -978,9 +978,9 @@
    "totalScreens": 84,
    "valuePrefix": 2956,
    "rulePrefix": 2956,
-   "screens": 8,
-   "honestScreens": 8,
-   "firstScreenMiss": 4,
+   "screens": 9,
+   "honestScreens": 9,
+   "firstScreenMiss": 6,
    "first": {
     "index": 2956,
     "step": 13,
@@ -1003,7 +1003,7 @@
   {
    "session": "dev82435-caveman-explore-move.session.json",
    "total": 3116,
-   "jsTotal": 2727,
+   "jsTotal": 2706,
    "totalScreens": 51,
    "valuePrefix": 2684,
    "rulePrefix": 2684,
@@ -1267,8 +1267,8 @@
   "rule": 126405,
   "value": 126405,
   "rolls": 504996,
-  "honestScreens": 238,
-  "screens": 255,
+  "honestScreens": 239,
+  "screens": 254,
   "totalScreens": 8438
  },
  "todo": [
