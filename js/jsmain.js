@@ -236,16 +236,7 @@ export async function runSegment(input) {
 
     for (const ch of moves) display.pushKey(ch.charCodeAt(0));
 
-    try {
-        await nhGame.start();
-    } catch (e) {
-        /* C code that isn't ported yet stops the game during start-up
-           just as it does in the game loop below */
-        if (!String(e?.message || '').includes('not ported yet'))
-            throw e;
-        nhGame.notPortedError = e;
-        return nhGame;
-    }
+    await nhGame.start();
 
     // Drive the game loop until input is exhausted. The judge looks
     // at game.getScreens() afterwards; whatever the contestant
