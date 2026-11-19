@@ -89,6 +89,9 @@ async function runOne(sessionPath) {
             }
             jsScreens.push(...(g.getScreens?.() || []));
             jsCursors.push(...(g.getCursors?.() || []));
+            // runSegment stops cleanly on errors; still report them here
+            if (g.stopError && !error)
+                error = String(g.stopError?.stack || g.stopError).split('\n').slice(0, 4).join(' | ');
         }
     } catch (e) {
         error = String(e?.stack || e).split('\n').slice(0, 4).join(' | ');

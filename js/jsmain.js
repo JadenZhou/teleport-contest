@@ -233,7 +233,24 @@ export async function runSegment(input) {
 
     for (const ch of moves) display.pushKey(ch.charCodeAt(0));
 
-    await nhGame.start();
+    // Any error stops the game where it is, keeping the screens and rolls
+    // produced so far: unported C ("not ported yet"), or a panic reached
+    // because state already diverged from C. Stopping can only truncate
+    // output; it never invents or skips rolls, so it cannot create matches.
+    // Without this, one late crash would discard a whole session's screens.
+    const stop = (e) => {
+        const msg = String(e?.message || e);
+        if (msg.includes('Input queue empty')) return;
+        if (msg.includes('not ported yet')) nhGame.notPortedError = e;
+        nhGame.stopError = e;
+    };
+
+    try {
+        await nhGame.start();
+    } catch (e) {
+        stop(e);
+        return nhGame;
+    }
 
     // Drive the game loop until input is exhausted. The judge looks
     // at game.getScreens() afterwards; whatever the contestant
@@ -243,15 +260,8 @@ export async function runSegment(input) {
         try {
             await moveloop_core();
         } catch (e) {
-            if (String(e?.message || '').includes('Input queue empty')) break;
-            /* C code that isn't ported yet: the game stops here, keeping
-               everything it did up to this point (no rolls are invented
-               or skipped past the stop) */
-            if (String(e?.message || '').includes('not ported yet')) {
-                nhGame.notPortedError = e;
-                break;
-            }
-            throw e;
+            stop(e);
+            break;
         }
     }
 

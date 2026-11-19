@@ -108,6 +108,36 @@ the character-selection screens (82 before the first roll). The rule prefix is t
 progress signal. Display work (tty windows, map, status line, `--More--`, menus) is its own
 task stream once rolls get past level creation. Use the scorer's first screen mismatch.
 
+## Owner decisions (2026-11-19)
+
+**A. Approved regressions: the tutorial question.** C asks "Do you want a tutorial?" at
+startup. Without it, the keys typed there run as game moves, and some later rolls match only by
+coincidence. Porting the question faithfully loses that coincidental credit, so the owner
+allows a merge that regresses **only when**:
+- the change ports C faithfully (`ask_do_tutorial`/`maybe_do_tutorial`, plus the `#`/`s` key
+  bindings);
+- for every regressed session, the coordinator shows the lost credit came after the step where
+  JS's prompt/key flow first differed from C's (e.g. the screen at that step already
+  mismatched before the change); and
+- the merge also ports the commands sessions reach next, so as little as possible stays lost:
+  `#loot`, `#name`, `#chat`, `#pray`, `#jump`, `#ride`, rush `H`/`L`, and pet AI/domove-into-monster.
+
+Label such gate runs `approved-regression: tutorial …` so the ledger shows them. Ported code
+from the 11-19 midday run is in branch history (`worktree-agent-af985312d5014c71f`
+dd5e936, and stream B's reverted commits).
+
+**B. Match C's bugs: the pet starting square.** C's `enexto_core` (NEW_ENEXTO) reads an
+uninitialized `cc`, so the pet's start square depends on leftover stack contents. Recordings
+reproduce exactly, so the value is deterministic for the recorder binary. Find what it is
+with `lldb` on `nethack-c/recorder/src/nethack` (break in `enexto_core`, print `cc`, across
+several seeds), then reproduce that behavior in JS with a comment citing the C line and the
+evidence. **Mac-only task**, since it needs the local recorder build.
+
+**Crashes.** `runSegment` stops cleanly on any error and keeps the output so far (it can only
+truncate). `progress.mjs` still reports the error, so a panic shows up as an `ERROR`/`[JS
+threw]` stop in the to-do list. Treat a crash in any set as a top-priority divergence: in a
+secret session it would cut off every screen after that point.
+
 ## Measurement (for the writeup)
 
 - `tools/rule/runs/ledger.jsonl` records every gate run: label, to-do item, pass/fail and
