@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T21:07:54.374Z",
+ "when": "2026-11-19T21:28:32.271Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -28,7 +28,7 @@
      "rn2(100)=89 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
   },
   {
    "session": "dev81041-feeding-pony.session.json",
@@ -115,7 +115,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
   },
   {
    "session": "dev81164-swimmer-mforce.session.json",
@@ -144,7 +144,7 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:63:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:69:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:72:15)"
   },
   {
    "session": "dev81205-monk-vault-escort.session.json",
@@ -202,7 +202,7 @@
      "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
+   "error": "Error: relobj(): mdrop_obj() not ported yet |     at relobj (file:///Users/JadenZ/code/teleport-contest/js/mon.js:196:15) |     at m_detach (file:///Users/JadenZ/code/teleport-contest/js/mon.js:222:9) |     at mondead (file:///Users/JadenZ/code/teleport-contest/js/mon.js:314:5)"
   },
   {
    "session": "dev81287-rogue-friday13-combat.session.json",
@@ -376,7 +376,7 @@
      "rnd(20)=20 @ hitum(uhitm.c:780)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
   },
   {
    "session": "dev81533-orc-rogue-kick-search.session.json",
@@ -463,7 +463,7 @@
      "rn2(12)=8 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: mm_2way_aggression(): zombie_form() not ported yet |     at mm_2way_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:457:15) |     at mm_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:46) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:624:49)"
+   "error": "Error: mm_2way_aggression(): zombie_form() not ported yet |     at mm_2way_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:709:15) |     at mm_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:725:46) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:876:49)"
   },
   {
    "session": "dev81656-ranger-name-cancel.session.json",
@@ -492,7 +492,7 @@
      "rn2(3)=1 @ set_apparxy(monmove.c:2251)"
     ]
    },
-   "error": "Error: defended(): which_armor() not ported yet |     at defended (file:///Users/JadenZ/code/teleport-contest/js/mondata.js:146:19) |     at m_harmless_trap (file:///Users/JadenZ/code/teleport-contest/js/trap.js:234:35) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:680:35)"
+   "error": "Error: defended(): which_armor() not ported yet |     at defended (file:///Users/JadenZ/code/teleport-contest/js/mondata.js:146:19) |     at m_harmless_trap (file:///Users/JadenZ/code/teleport-contest/js/trap.js:234:35) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:932:35)"
   },
   {
    "session": "dev81697-knight-ride-pony.session.json",
@@ -534,7 +534,7 @@
      "rn2(6)=4 @ mhitm_knockback(uhitm.c:5269)"
     ]
    },
-   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:63:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:69:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:72:15)"
   },
   {
    "session": "dev81779-valk-chat-lamp-ration.session.json",
@@ -742,7 +742,7 @@
   {
    "session": "dev82066-archeologist-tour.session.json",
    "total": 46184,
-   "jsTotal": 2316,
+   "jsTotal": 2423,
    "totalScreens": 366,
    "valuePrefix": 2301,
    "rulePrefix": 2301,
@@ -766,7 +766,7 @@
      "rn2(10)=7 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
+   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:48:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1441:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1513:22)"
   },
   {
    "session": "dev82107-priest-quest-tour.session.json",
@@ -795,7 +795,7 @@
      "rn2(11)=8 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
   },
   {
    "session": "dev82148-barbarian-quest-tour.session.json",
@@ -969,12 +969,12 @@
      "rn2(5)=0 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:63:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:69:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:72:15)"
   },
   {
    "session": "dev82394-tourist-explore-actions.session.json",
    "total": 3081,
-   "jsTotal": 3139,
+   "jsTotal": 3259,
    "totalScreens": 84,
    "valuePrefix": 2956,
    "rulePrefix": 2956,
@@ -998,7 +998,7 @@
      "rn2(100)=4 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
+   "error": null
   },
   {
    "session": "dev82435-caveman-explore-move.session.json",
@@ -1027,7 +1027,7 @@
      "rn2(12)=1 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:63:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:69:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:72:15)"
   },
   {
    "session": "dev82476-rogue-explore-move.session.json",
@@ -1085,7 +1085,7 @@
      "rn2(100)=41 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
   },
   {
    "session": "dev82558-wizard-quaff-zap-read.session.json",
@@ -1114,7 +1114,7 @@
      "rn2(8)=3 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:473:11)"
   },
   {
    "session": "dev82599-wizard-custom-binds.session.json",
