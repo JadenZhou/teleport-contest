@@ -17,7 +17,7 @@ import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
          NHLpa_panic, NHLpa_impossible } from './nhlua.js';
 import { litstate_rnd } from './mkmap.js';
 import { make_engr_at, wipe_engr_at } from './engrave.js';
-import { create_des_coder, reset_xystart_size, fill_special_room } from './sp_lev.js';
+import { create_des_coder, reset_xystart_size, fill_special_room, inside_room } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
@@ -1178,21 +1178,55 @@ function makecorridors() {
 export function somex(croom) { return rn1(croom.hx - croom.lx + 1, croom.lx); }
 export function somey(croom) { return rn1(croom.hy - croom.ly + 1, croom.ly); }
 
-function somexy(croom, c) {
+// C ref: mkroom.c somexy()
+/* return a coord c inside mkroom croom, but not in a subroom.
+   returns TRUE if any such space found.
+   can return a non-accessible location, eg. inside a wall
+   if a themed room is not irregular, but has some non-room terrain */
+export function somexy(croom, c) {
+    let try_cnt = 0;
+    let i;
+    const levl = (x, y) => game.level.at(x, y);
+
+    if (croom.irregular) {
+        i = croom.roomnoidx + ROOMOFFSET;
+
+        while (try_cnt++ < 100) {
+            c.x = somex(croom);
+            c.y = somey(croom);
+            if (!levl(c.x, c.y).edge && levl(c.x, c.y).roomno === i)
+                return true;
+        }
+        /* try harder; exhaustively search until one is found */
+        for (c.x = croom.lx; c.x <= croom.hx; c.x++)
+            for (c.y = croom.ly; c.y <= croom.hy; c.y++)
+                if (!levl(c.x, c.y).edge
+                    && levl(c.x, c.y).roomno === i)
+                    return true;
+        return false;
+    }
+
     if (!croom.nsubrooms) {
         c.x = somex(croom);
         c.y = somey(croom);
         return true;
     }
-    let try_cnt = 0;
-    while (try_cnt++ < 100) {
+
+    /* Check that coords doesn't fall into a subroom or into a wall */
+
+    outer: while (try_cnt++ < 100) {
         c.x = somex(croom);
         c.y = somey(croom);
-        const loc = game.level.at(c.x, c.y);
-        if (loc && IS_WALL(loc.typ)) continue;
-        return true;
+        if (IS_WALL(levl(c.x, c.y).typ))
+            continue;
+        for (i = 0; i < croom.nsubrooms; i++)
+            if (inside_room(croom.sbrooms[i], c.x, c.y))
+                continue outer; /* goto you_lose */
+        break;
     }
-    return false;
+    if (try_cnt >= 100)
+        return false;
+    return true;
 }
 
 function occupied(x, y) {

@@ -7,7 +7,7 @@
 // check_room() and create_room() (also sp_lev.c) live in mklev.js for now,
 // next to the room code they share with makerooms().
 //
-// Ported so far: des.room, des.map and des.region as themed rooms use
+// Ported so far: des.room, des.map, des.region and des.altar as themed rooms use
 // them (with their helpers mapfrag_*, sel_set_ter, get_location). The
 // other des.* functions are registered by name but raise a Lua error until
 // they are ported (their C counterparts are listed in sp_lev_des_names).
@@ -22,10 +22,12 @@ import {
     WANDSHOP, TOOLSHOP, BOOKSHOP, FODDERSHOP, CANDLESHOP, ROOMOFFSET,
     IS_DOOR, SDOOR, isok, TRUE, FALSE, FILL_NONE, FILL_NORMAL,
     STONE, MAX_TYPE, INVALID_TYPE, NO_ROOM, HWALL, IRONBARS, CLOUD, D_CLOSED,
-    IS_WALL, MAXNROFROOMS,
+    IS_WALL, MAXNROFROOMS, ROOM, ALTAR, SPACE_POS, IS_OBSTRUCTED,
+    IS_POOL, IS_LAVA, AM_NONE, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC, AM_MASK,
+    Align2amask, A_ORIGINAL,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring } from './nhlua.js';
-import { set_levltyp_lit } from './mkmaze.js';
+import { set_levltyp, set_levltyp_lit } from './mkmaze.js';
 import { flood_fill_rm, litstate_rnd } from './mkmap.js';
 import { selection_new, selection_setpoint } from './selvar.js';
 import {
@@ -33,7 +35,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, somex, somey } from './mklev.js';
+import { create_room, topologize, add_door, add_room, somex, somey, somexy } from './mklev.js';
 import { mkgold } from './mkobj.js';
 
 // C's impossible() and panic() (pline.c) are not ported yet.
@@ -42,7 +44,20 @@ function panic(msg) { throw new Error(`panic: ${msg}`); }
 
 const MAX_NESTED_ROOMS = 5;
 const MAP_Y_LIM = 21; /* sp_lev.h */
-const ANY_LOC = 0x10; /* sp_lev.h getloc_flags_t; only random locations use it */
+/* sp_lev.h getloc_flags_t */
+const DRY = 0x01;
+const WET = 0x02;
+const HOT = 0x04;
+const SOLID = 0x08;
+const ANY_LOC = 0x10; /* even outside the level */
+const NO_LOC_WARN = 0x20; /* no complaints and set x & y to -1, if no loc */
+const SPACELOC = 0x40; /* like DRY, but accepts furniture too */
+/* sp_lev.h SP_COORD_IS_RANDOM */
+const SP_COORD_IS_RANDOM = 0x01000000;
+/* align.h special-level altar masks */
+const AM_SPLEV_CO = 0x20;
+const AM_SPLEV_NONCO = 0x40;
+const AM_SPLEV_RANDOM = 0x80;
 
 // sp_lev.h alignment codes
 const SPLEV_LEFT = 1;
@@ -260,7 +275,7 @@ function shared_with_room(x, y, droom) {
 }
 
 // C ref: mkroom.c inside_room()
-function inside_room(croom, x, y) {
+export function inside_room(croom, x, y) {
     if (croom.irregular) {
         const i = croom.roomnoidx + ROOMOFFSET;
         return (!game.level.at(x, y).edge && game.level.at(x, y).roomno === i);
@@ -781,26 +796,6 @@ function get_table_coords_or_region(tbl) {
     return { dx1, dy1, dx2, dy2 };
 }
 
-// C ref: sp_lev.c get_location() — the fixed-location case only.
-function get_location(c, humidity, croom) {
-    let mx, my;
-
-    if (croom) {
-        mx = croom.lx;
-        my = croom.ly;
-    } else {
-        mx = game.xstart;
-        my = game.ystart;
-    }
-
-    if (c.x >= 0) { /* normal locations */
-        c.x += mx;
-        c.y += my;
-    } else { /* random location: is_ok_location() is not ported yet */
-        nhl_error(null, 'get_location: random locations are not ported yet');
-    }
-}
-
 // C ref: sp_lev.c lspo_region()
 /* region(selection, lit); */
 /* region({ x1=NN, y1=NN, x2=NN, y2=NN, lit=BOOL, type=ROOMTYPE, joined=BOOL,
@@ -922,6 +917,268 @@ export function lspo_region(...args) {
     return 0;
 }
 
+// C ref: sp_lev.c get_unpacked_coord()
+function get_unpacked_coord(loc, defhumidity) {
+    const c = {};
+
+    if (loc & SP_COORD_IS_RANDOM) {
+        c.x = c.y = -1;
+        c.is_random = 1;
+        c.getloc_flags = (loc & ~SP_COORD_IS_RANDOM);
+        if (!c.getloc_flags)
+            c.getloc_flags = defhumidity;
+    } else {
+        c.is_random = 0;
+        c.getloc_flags = defhumidity;
+        c.x = loc & 0xff;          /* SP_COORD_X() */
+        c.y = (loc >> 16) & 0xff;  /* SP_COORD_Y() */
+    }
+    return c;
+}
+
+// C ref: sp_lev.c is_ok_location()
+function is_ok_location(x, y, humidity) {
+    const typ = game.level.at(x, y).typ;
+
+    /* Is_waterlevel(&u.uz) and is_ok_location_func: not used by the
+       themed rooms ported so far */
+
+    /* TODO: Should perhaps check if wall is diggable/passwall? */
+    if (humidity & ANY_LOC)
+        return TRUE;
+
+    if ((humidity & SOLID) && IS_OBSTRUCTED(typ))
+        return TRUE;
+
+    if ((humidity & (DRY | SPACELOC)) && SPACE_POS(typ)) {
+        /* sobj_at(BOULDER, x, y): floor objects are not tracked yet */
+        const bould = false;
+
+        if (!bould || (bould && (humidity & SOLID)))
+            return TRUE;
+    }
+    if ((humidity & WET) && IS_POOL(typ))
+        return TRUE;
+    if ((humidity & HOT) && IS_LAVA(typ))
+        return TRUE;
+    return FALSE;
+}
+
+// C ref: sp_lev.c get_location()
+/*
+ * Choose a location (x,y) relative to croom (or to xstart/ystart when
+ * croom is null); negative x means a random location.
+ */
+function get_location(c, humidity, croom) {
+    let cpt = 0;
+    let mx, my, sx, sy;
+
+    if (croom) {
+        mx = croom.lx;
+        my = croom.ly;
+        sx = croom.hx - mx + 1;
+        sy = croom.hy - my + 1;
+    } else {
+        mx = game.xstart;
+        my = game.ystart;
+        sx = game.xsize;
+        sy = game.ysize;
+    }
+
+    found_it: {
+        if (c.x >= 0) { /* normal locations */
+            c.x += mx;
+            c.y += my;
+        } else { /* random location */
+            do {
+                if (croom) { /* handle irregular areas */
+                    const tmpc = { x: 0, y: 0 };
+                    somexy(croom, tmpc);
+                    c.x = tmpc.x;
+                    c.y = tmpc.y;
+                } else {
+                    c.x = mx + rn2(sx);
+                    c.y = my + rn2(sy);
+                }
+                if (is_ok_location(c.x, c.y, humidity))
+                    break;
+            } while (++cpt < 100);
+            if (cpt >= 100) {
+                /* last try */
+                for (let xx = 0; xx < sx; xx++)
+                    for (let yy = 0; yy < sy; yy++) {
+                        c.x = mx + xx;
+                        c.y = my + yy;
+                        if (is_ok_location(c.x, c.y, humidity))
+                            break found_it;
+                    }
+                if (!(humidity & NO_LOC_WARN)) {
+                    impossible('get_location:  can\'t find a place!');
+                } else {
+                    c.x = c.y = -1;
+                }
+            }
+        }
+    }
+
+    if (!(humidity & ANY_LOC) && !isok(c.x, c.y)) {
+        if (!(humidity & NO_LOC_WARN)) {
+            /*warning("get_location:  (%d,%d) out of bounds", *x, *y);*/
+            c.x = game.x_maze_max;
+            c.y = game.y_maze_max;
+        } else {
+            c.x = c.y = -1;
+        }
+    }
+}
+
+// C ref: sp_lev.c get_location_coord()
+function get_location_coord(c, humidity, croom, crd) {
+    const uc = get_unpacked_coord(crd, humidity);
+    c.x = uc.x;
+    c.y = uc.y;
+    get_location(c, uc.getloc_flags | (uc.is_random ? NO_LOC_WARN : 0),
+                 croom);
+
+    if (c.x === -1 && c.y === -1 && uc.is_random)
+        get_location(c, humidity, croom);
+}
+
+// C ref: sp_lev.c get_room_loc()
+/*
+ * Get a relative position inside a room.
+ * negative values for x or y means RANDOM!
+ */
+function get_room_loc(c, croom) {
+    if (c.x < 0 && c.y < 0) {
+        const tmpc = { x: 0, y: 0 };
+        if (somexy(croom, tmpc)) {
+            c.x = tmpc.x;
+            c.y = tmpc.y;
+        } else
+            panic('get_room_loc : can\'t find a place!');
+    } else {
+        if (c.x < 0)
+            c.x = rn2(croom.hx - croom.lx + 1);
+        if (c.y < 0)
+            c.y = rn2(croom.hy - croom.ly + 1);
+        c.x += croom.lx;
+        c.y += croom.ly;
+    }
+}
+
+// C ref: sp_lev.c get_free_room_loc()
+/*
+ * Get a relative position inside a room.
+ * negative values for x or y means RANDOM!
+ */
+function get_free_room_loc(c, croom, pos) {
+    const tryc = { x: 0, y: 0 };
+    let trycnt = 0;
+
+    get_location_coord(tryc, DRY, croom, pos);
+    if (game.level.at(tryc.x, tryc.y).typ !== ROOM) {
+        do {
+            tryc.x = c.x; tryc.y = c.y;
+            get_room_loc(tryc, croom);
+        } while (game.level.at(tryc.x, tryc.y).typ !== ROOM && ++trycnt <= 100);
+
+        if (trycnt > 100)
+            panic('get_free_room_loc:  can\'t find a place!');
+    }
+    c.x = tryc.x; c.y = tryc.y;
+}
+
+// C ref: sp_lev.c sp_amask_to_amask()
+function sp_amask_to_amask(sp_amask) {
+    let amask;
+
+    if (sp_amask === AM_SPLEV_CO)
+        amask = Align2amask(game.u.ualignbase[A_ORIGINAL]);
+    else if (sp_amask === AM_SPLEV_NONCO || sp_amask === AM_SPLEV_RANDOM)
+        /* noncoalignment() and induced_align() are not ported yet */
+        nhl_error(null, 'sp_amask_to_amask: random/non-co-aligned altars are not ported yet');
+    else
+        amask = sp_amask & AM_MASK;
+
+    return amask;
+}
+
+// C ref: sp_lev.c get_table_align()
+function get_table_align(tbl) {
+    const gtaligns = [
+        'noalign', 'law', 'neutral', 'chaos',
+        'coaligned', 'noncoaligned', 'random',
+    ];
+    const aligns2i = [
+        AM_NONE, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC,
+        AM_SPLEV_CO, AM_SPLEV_NONCO, AM_SPLEV_RANDOM, 0,
+    ];
+
+    return aligns2i[get_table_option(tbl, 'align', 'random', gtaligns)];
+}
+
+// C ref: sp_lev.c create_altar()
+function create_altar(a, croom) {
+    const c = { x: -1, y: -1 };
+    let croom_is_temple = TRUE;
+
+    if (croom) {
+        get_free_room_loc(c, croom, a.coord);
+        if (croom.rtype !== TEMPLE)
+            croom_is_temple = FALSE;
+    } else {
+        /* get_location_coord() + in_rooms(x, y, TEMPLE): not ported yet */
+        nhl_error(null, 'create_altar: altars outside rooms are not ported yet');
+    }
+
+    /* check for existing features */
+    if (!set_levltyp(c.x, c.y, ALTAR))
+        return;
+
+    const amask = sp_amask_to_amask(a.sp_amask);
+
+    game.level.at(c.x, c.y).altarmask = amask;
+
+    if (a.shrine < 0)
+        a.shrine = rn2(2); /* handle random case */
+
+    if (!croom_is_temple || !a.shrine)
+        return;
+
+    /* priestini() for shrines in temples is not ported yet */
+    nhl_error(null, 'create_altar: temple shrines are not ported yet');
+}
+
+// C ref: sp_lev.c lspo_altar()
+/* altar({ x=NN, y=NN, align=ALIGNMENT, type="altar" }); */
+export function lspo_altar(tbl) {
+    const shrines = ['altar', 'shrine', 'sanctum'];
+    const shrines2i = [0, 1, 2, 0];
+
+    create_des_coder();
+
+    if (lua_type(tbl) !== 5 /* LUA_TTABLE */)
+        nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+    const { x, y } = get_table_xy_or_coord(tbl);
+
+    const al = get_table_align(tbl);
+    const shrine = shrines2i[get_table_option(tbl, 'type', 'altar', shrines)];
+    let acoord;
+
+    if (x === -1 && y === -1)
+        acoord = SP_COORD_IS_RANDOM | 0; /* SP_COORD_PACK_RANDOM(0) */
+    else
+        acoord = (x & 0xff) + ((y & 0xff) << 16); /* SP_COORD_PACK(x, y) */
+
+    const tmpaltar = { coord: acoord, sp_amask: al, shrine };
+
+    create_altar(tmpaltar, game.coder.croom);
+
+    return 0;
+}
+
 // C ref: sp_lev.c l_register_des() — the des_functions[] names. Only
 // des.room is ported; the others raise a Lua error when called.
 const sp_lev_des_names = [
@@ -948,5 +1205,6 @@ export function l_register_des(L) {
     des.room = lspo_room;
     des.map = lspo_map;
     des.region = lspo_region;
+    des.altar = lspo_altar;
     L.globals.des = des;
 }
