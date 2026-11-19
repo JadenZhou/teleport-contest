@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T21:28:32.271Z",
+ "when": "2026-11-19T21:29:56.961Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -679,7 +679,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev81984-monk-north-search.session.json",
@@ -800,7 +800,7 @@
   {
    "session": "dev82148-barbarian-quest-tour.session.json",
    "total": 33192,
-   "jsTotal": 4384,
+   "jsTotal": 4402,
    "totalScreens": 124,
    "valuePrefix": 3062,
    "rulePrefix": 3062,
@@ -824,7 +824,7 @@
      "rn2(5)=1 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: shkinit(): good_shopdoor() and makemon(PM_SHOPKEEPER, MM_ESHK) not ported yet |     at shkinit (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:364:11) |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:357:9) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:386:13)"
+   "error": "Error: stock_room(): \"Closed for inventory\" engraving not ported yet |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:434:15) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:374:13) |     at makelevel (file:///Users/JadenZ/code/teleport-contest/js/mklev.js:422:9)"
   },
   {
    "session": "dev82189-wizard-hallucinate.session.json",
@@ -1172,7 +1172,7 @@
      "rnd(7)=2 @ drain_en(trap.c:5222)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
@@ -1201,36 +1201,36 @@
      "rn2(10)=3 @ mon_arrive(dog.c:475)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev82722-tourist-stress-disaster.session.json",
    "total": 7545,
-   "jsTotal": 5993,
+   "jsTotal": 7279,
    "totalScreens": 194,
-   "valuePrefix": 5993,
-   "rulePrefix": 5993,
+   "valuePrefix": 7279,
+   "rulePrefix": 7279,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 5993,
+    "index": 7279,
     "step": 4,
-    "c": "rnd(2)=2 @ next_ident(mkobj.c:521)",
+    "c": "rn2(79)=75 @ place_lregion(mkmaze.c:396)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "next_ident",
+    "cCaller": "place_lregion",
     "jsCaller": null,
     "context": [
-     "rnd(882)=882 @ rnd_class(objnam.c:5413)",
-     "rn2(33)=31 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:1158)",
-     "rnd(2)=2 @ next_ident(mkobj.c:521)",
-     "d(11,8)=52 @ newmonhp(makemon.c:1042)",
-     "rn2(2)=0 @ makemon(makemon.c:1279)"
+     "rn2(1000)=762 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=748 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=584 @ mineralize(mklev.c:1526)",
+     "rn2(79)=75 @ place_lregion(mkmaze.c:396)",
+     "rn2(21)=12 @ place_lregion(mkmaze.c:397)",
+     "rn2(79)=8 @ place_lregion(mkmaze.c:396)"
     ]
    },
-   "error": "Error: shkinit(): good_shopdoor() and makemon(PM_SHOPKEEPER, MM_ESHK) not ported yet |     at shkinit (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:364:11) |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:357:9) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:386:13)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev82763-tourist-starter.session.json",
@@ -1264,8 +1264,8 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 125111,
-  "value": 125111,
+  "rule": 126397,
+  "value": 126397,
   "rolls": 504996,
   "honestScreens": 238,
   "screens": 255,
@@ -1336,12 +1336,12 @@
    ]
   },
   {
-   "fn": "next_ident",
+   "fn": "place_lregion",
    "sessions": 2,
-   "blockedRolls": 1562,
+   "blockedRolls": 502,
    "examples": [
-    "dev81615-ranger-quiver-throw-travel-engrave @2748: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=11 @ mcalcmove\"",
-    "dev82722-tourist-stress-disaster @5993: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"(none: JS log ended)\""
+    "dev82681-wizard-coverage-pair @4507: C \"rn2(79)=10 @ place_lregion(mkmaze.c:396)\" / JS \"(none: JS log ended)\"",
+    "dev82722-tourist-stress-disaster @7279: C \"rn2(79)=75 @ place_lregion(mkmaze.c:396)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
@@ -1390,14 +1390,6 @@
    "blockedRolls": 366,
    "examples": [
     "dev81861-samurai-twoweapon-enhance @2509: C \"rnd(20)=17 @ dotwoweapon(wield.c:861)\" / JS \"rn2(5)=1 @ distfleeck\""
-   ]
-  },
-  {
-   "fn": "place_lregion",
-   "sessions": 1,
-   "blockedRolls": 236,
-   "examples": [
-    "dev82681-wizard-coverage-pair @4507: C \"rn2(79)=10 @ place_lregion(mkmaze.c:396)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
@@ -1462,6 +1454,14 @@
    "blockedRolls": 13,
    "examples": [
     "dev82763-tourist-starter @2906: C \"rn2(16)=3 @ m_move(monmove.c:1963)\" / JS \"rn2(8)=3 @ m_move\""
+   ]
+  },
+  {
+   "fn": "next_ident",
+   "sessions": 1,
+   "blockedRolls": 10,
+   "examples": [
+    "dev81615-ranger-quiver-throw-travel-engrave @2748: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=11 @ mcalcmove\""
    ]
   }
  ],
