@@ -21,7 +21,7 @@ import { ROLL_FROM } from './rng.js';
 import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
          NHLpa_panic, NHLpa_impossible } from './nhlua.js';
 import { litstate_rnd } from './mkmap.js';
-import { make_engr_at, wipe_engr_at } from './engrave.js';
+import { make_engr_at, wipe_engr_at, make_grave, random_engraving } from './engrave.js';
 import { create_des_coder, reset_xystart_size, fill_special_room, inside_room } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
@@ -187,22 +187,6 @@ function add_to_buried(otmp) {
 function sobj_at(otyp, x, y) { return false; }
 // C ref: mkmaze.c mazexy() -- only reached with MKTRAP_MAZEFLAG (mazes)
 function mazexy(cc) { throw new Error('mazexy: not ported yet'); }
-
-// C ref: engrave.c make_grave() -- not ported yet (its epitaph comes from
-// random_epitaph_text(), which reads the epitaph file)
-function make_grave(x, y, text) {
-    const loc = game.level?.at(x, y);
-    if (loc) loc.typ = GRAVE;
-}
-
-// random_engraving stub -- consumes rn2 for text selection
-function random_engraving(pristine_copy) {
-    // C: reads from engrave data file, consumes rn2 for selection
-    const idx = rn2(48); // approximate: rn2(num_engravings)
-    pristine_copy.s = 'placeholder';
-    return idx >= 0 ? 'placeholder' : null;
-}
-
 
 // TEMP: makemon.c makemon() is being ported into js/makemon.js
 function makemon(ptr, x, y, mmflags) { return null; }
