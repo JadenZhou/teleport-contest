@@ -10,7 +10,14 @@ import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
-import { Is_branchlev } from './dungeon.js';
+import { Is_branchlev, In_hell, level_difficulty, on_level, dungeon_branch,
+         at_dgn_entrance, insert_branch, is_wizard_mode } from './dungeon.js';
+import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE, S_HUMAN } from './monsters.js';
+import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
+         NHLpa_panic, NHLpa_impossible } from './nhlua.js';
+import { litstate_rnd } from './mkmap.js';
+import { make_engr_at, wipe_engr_at } from './engrave.js';
+import { create_des_coder, reset_xystart_size, fill_special_room, inside_room } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
@@ -24,47 +31,25 @@ import {
     SPACE_POS, isok, W_NONDIGGABLE, FILL_NORMAL,
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
-    LR_UPTELE,
+    LR_UPTELE, NHL_SB_SAFE, G_GONE, SHOPBASE, COURT, LEPREHALL, ZOO, TEMPLE,
+    BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST, DUST, MARK,
 } from './const.js';
 
-// Object/class constants (normally from objects.js, not in contest template)
-const RANDOM_CLASS = 0;
-const WEAPON_CLASS = 1;
-const ARMOR_CLASS = 2;
-const RING_CLASS = 3;
-const FOOD_CLASS = 7;
-const SCROLL_CLASS = 8;
-const POTION_CLASS = 9;
-const TOOL_CLASS = 12;
-const GEM_CLASS = 14;
-const BOULDER = 465;
-const GOLD_PIECE = 466;
-const ROCK = 467;
-const KELP_FROND = 172;
-const SCR_TELEPORTATION = 287;
-const BELL = 358;
-const CORPSE = 471;
-const STATUE = 472;
-const SPBOOK_no_NOVEL = 11;
-
-// Supply chest items
-const POT_HEALING = 235;
-const POT_EXTRA_HEALING = 236;
-const POT_SPEED = 245;
-const POT_GAIN_ENERGY = 250;
-const SCR_ENCHANT_WEAPON = 275;
-const SCR_ENCHANT_ARMOR = 276;
-const SCR_CONFUSE_MONSTER = 278;
-const SCR_SCARE_MONSTER = 279;
-const WAN_DIGGING = 305;
-const SPE_HEALING = 327;
-const LARGE_BOX = 214;
-const CHEST = 215;
-const FOOD_RATION = 143;
-const CRAM_RATION = 145;
-const LEMBAS_WAFER = 146;
-const DUST = 3;
-const MARK = 6;
+// Object classes and object numbers: objects.js
+import {
+    RANDOM_CLASS, WEAPON_CLASS, ARMOR_CLASS, RING_CLASS, FOOD_CLASS,
+    SCROLL_CLASS, POTION_CLASS, TOOL_CLASS, GEM_CLASS, BOULDER, GOLD_PIECE,
+    ROCK, KELP_FROND, SCR_TELEPORTATION, BELL, CORPSE, STATUE,
+    POT_HEALING, POT_EXTRA_HEALING, POT_SPEED, POT_GAIN_ENERGY,
+    SCR_ENCHANT_WEAPON, SCR_ENCHANT_ARMOR, SCR_CONFUSE_MONSTER,
+    SCR_SCARE_MONSTER, WAN_DIGGING, SPE_HEALING, LARGE_BOX, CHEST,
+    FOOD_RATION, CRAM_RATION, LEMBAS_WAFER,
+} from './objects.js';
+import {
+    SPBOOK_no_NOVEL, next_ident, blessorcurse, curse, mksobj, mksobj_at,
+    mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
+} from './mkobj.js';
+import { mkclass } from './makemon.js';
 
 const XLIM = 4;
 const YLIM = 3;
@@ -184,117 +169,18 @@ export function u_on_upstairs() {
 // oinit stub (level-dependent object probability reset)
 function oinit() { /* no-op for contest */ }
 
-// level_difficulty stub
-function level_difficulty() {
-    const uz = game.u?.uz;
-    const d = depth_of_level(uz);
-    return d;
-}
 
 // ============================================================
 // Stub functions for object/monster/trap creation
 // These consume the exact RNG calls that C makes.
 // ============================================================
 
-let _nextObjId = 1;
-
-// C ref: mkobj.c next_ident — rnd(2) for item identification
-function next_ident() { rnd(2); }
-
-// C ref: mkobj.c blessorcurse — rn2(4) BUC selection
-function blessorcurse(otmp) {
-    const r = rn2(4);
-    if (otmp) {
-        otmp.cursed = (r === 0);
-        otmp.blessed = false;
-    }
-}
-
-// C ref: mkobj.c mksobj — create a specific object
-// Minimal stub: consumes RNG for next_ident + type-specific init
-function mksobj(otyp, init, artif) {
-    const otmp = { otyp, ox: 0, oy: 0, quan: 1, owt: 1, cursed: false, blessed: false, olocked: false, spe: 0 };
-    next_ident();
-    if (init) {
-        mksobj_init(otmp, otyp);
-    }
-    return otmp;
-}
-
-// C ref: mkobj.c mksobj initialization RNG consumption
-// This varies by object class. For the contest, we need enough to match
-// the session's RNG pattern for objects created during mklev.
-function mksobj_init(otmp, otyp) {
-    // For BOULDER, GOLD_PIECE: no extra init RNG
-    // For scrolls: blessorcurse
-    // For potions: blessorcurse
-    // For general objects: varies
-    // We just do blessorcurse for scrolls/potions
-    if (otyp >= 270 && otyp < 300) { // scrolls
-        blessorcurse(otmp);
-    } else if (otyp >= 230 && otyp < 270) { // potions
-        blessorcurse(otmp);
-    }
-}
-
-function mksobj_at(otyp, x, y, init, artif) {
-    return mksobj(otyp, init, artif);
-}
-
-function mkobj(oclass, artif) {
-    // Class-based random object creation
-    // For contest, just consume the right RNG
-    return mksobj(0, false, artif);
-}
-
-function mkobj_at(oclass, x, y, artif) {
-    return mkobj(oclass, artif);
-}
-
-function mkgold(amount, x, y) {
-    // C ref: mkobj.c mkgold()
-    if (amount <= 0) {
-        // C ref: mkobj.c:2008-2010
-        const depthVal = depth_of_level(game.u?.uz);
-        const mul = rnd(Math.trunc(30 / Math.max(12 - depthVal, 2)));
-        amount = 1 + rnd(level_difficulty() + 2) * mul;
-    }
-    // mksobj_at(GOLD_PIECE) calls next_ident
-    next_ident();
-}
 
 function place_object(otmp, x, y) { /* stub */ }
 function dealloc_obj(otmp) { /* stub */ }
-function curse(otmp) { if (otmp) otmp.cursed = true; }
 function weight(otmp) { return otmp?.owt || 1; }
 function add_to_container(container, otmp) { /* stub */ }
 function sobj_at(otyp, x, y) { return false; }
-
-// set_corpsenm stub
-function set_corpsenm(otmp, pm) { /* stub */ }
-
-// mkcorpstat stub
-function mkcorpstat(objtyp, mtmp, pm, x, y, flags) {
-    // C ref: mkcorpstat calls mksobj(objtyp) then set_corpsenm.
-    // For STATUE: mksobj(STATUE, false, false) then set corpse identity.
-    // RNG: next_ident from mksobj
-    const otmp = mksobj(objtyp, false, false);
-    if (pm === null) {
-        // rndmonnum — pick random monster
-        rndmonnum();
-    }
-    return otmp;
-}
-
-// rndmonnum stub — consumes rn2 for random monster selection
-function rndmonnum() {
-    // C: picks a random monster class then random within class
-    // For contest, this is called from mkcorpstat when pm=null.
-    // The actual RNG depends on monster database, but for statues
-    // created by fill_ordinary_room, it consumes at least rn2 calls.
-    rn2(398); // approximate: rn2(NUMMONS)
-    return 0;
-}
 
 // makemon stub
 async function makemon(mdat, x, y, mmflags) {
@@ -322,9 +208,6 @@ async function maketrap(x, y, typ) {
     return trap;
 }
 
-// engrave stubs
-function make_engr_at(x, y, text, pristine, epoch, engr_type) { /* stub */ }
-function wipe_engr_at(x, y, cnt, perm) { /* stub */ }
 function make_grave(x, y, text) {
     const loc = game.level?.at(x, y);
     if (loc) loc.typ = GRAVE;
@@ -337,15 +220,6 @@ function random_engraving() {
     return { text: 'placeholder', pristine: 'placeholder' };
 }
 
-// wipeout_text stub — consumes rn2 for character corruption
-function wipeout_text(text) {
-    for (let i = 0; i < text.length; i++) {
-        if (text[i] !== ' ') {
-            rn2(1 + 27 / (text.length - i));
-        }
-    }
-    return text;
-}
 
 // in_rooms stub
 function in_rooms(x, y, rtype) { return []; }
@@ -430,14 +304,6 @@ function clear_level_structures() {
     init_rect();
 }
 
-// C ref: mkmap.c litstate_rnd()
-function litstate_rnd(litstate) {
-    if (litstate < 0) {
-        const d = depth_of_level(game.u?.uz);
-        return (rnd(1 + Math.abs(d)) < 11 && rn2(77)) ? true : false;
-    }
-    return !!litstate;
-}
 
 // C ref: mklev.c makelevel()
 async function makelevel() {
@@ -453,158 +319,253 @@ async function makelevel() {
         // Would generate maze — not applicable for contest level 1
     }
 
-    // Regular level generation
-    // C ref: mklev.c:382-388 — load themerms.lua for themed rooms
-    // nhlib.lua shuffle when loading themerms.lua (first level of branch)
-    const dnum = g.u?.uz?.dnum ?? 0;
-    if (!g._luathemes_loaded) g._luathemes_loaded = {};
-    if (!g._luathemes_loaded[dnum]) {
-        const themedAlign = ['law', 'neutral', 'chaos'];
-        for (let i = themedAlign.length; i > 1; i--) {
-            const j = rn2(i);
-            [themedAlign[i - 1], themedAlign[j]] = [themedAlign[j], themedAlign[i - 1]];
-        }
-        g._luathemes_loaded[dnum] = true;
-    }
+    /* otherwise, fall through - it's a "regular" level. */
+    const u_depth = depth_of_level(g.u.uz);
 
     await makerooms();
-
-    if (g.level.nroom <= 0) return;
     sort_rooms();
-    await generate_stairs();
 
-    // Branch check
-    const branchp = is_branchlev();
+    await generate_stairs(); /* up and down stairs */
+
+    const branchp = Is_branchlev(g.u.uz); /* possible dungeon branch */
+    let room_threshold = branchp ? 4 : 3; /* minimum number of rooms needed
+                                            to allow a random special room */
 
     makecorridors();
     await make_niches();
 
-    // Vault creation (simplified for contest)
-    if (g.vault_x !== -1) {
-        const vw = { v: 1 }, vh = { v: 1 };
+    /* make a secret treasure vault, not connected to the rest */
+    if (do_vault()) {
+        const w = { v: 1 }, h = { v: 1 };
         const vx = { v: g.vault_x }, vy = { v: g.vault_y };
-        if (check_room(vx, vw, vy, vh, true)) {
-            add_room(vx.v, vy.v, vx.v + vw.v, vy.v + vh.v, true, VAULT, false);
+        let fill_vault = false;
+
+        /* debugpline0("trying to make a vault..."); */
+        /* check_room() adjusts gv.vault_x and gv.vault_y through pointers */
+        fill_vault = check_room(vx, w, vy, h, true);
+        g.vault_x = vx.v; g.vault_y = vy.v;
+        if (!fill_vault && rnd_rect() && create_vault()) {
+            g.vault_x = vx.v = g.level.rooms[g.level.nroom].lx;
+            g.vault_y = vy.v = g.level.rooms[g.level.nroom].ly;
+            fill_vault = check_room(vx, w, vy, h, true);
+            g.vault_x = vx.v; g.vault_y = vy.v;
+            if (!fill_vault)
+                g.level.rooms[g.level.nroom].hx = -1;
+        }
+        if (fill_vault) { /* fill_vault: */
+            add_room(g.vault_x, g.vault_y,
+                     g.vault_x + w.v, g.vault_y + h.v,
+                     true, VAULT, false);
             g.level.flags.has_vault = true;
-            const vaultRoom = g.level.rooms[g.level.nroom - 1];
-            if (vaultRoom) vaultRoom.needfill = FILL_NORMAL;
-            if (!is_branchlev()) rn2(3);
-            if (!rn2(3)) await makeniche(TELEP_TRAP);
-        } else if (rnd_rect()) {
-            // Fallback vault attempt — simplified
+            ++room_threshold;
+            g.level.rooms[g.level.nroom - 1].needfill = FILL_NORMAL;
+            fill_special_room(g.level.rooms[g.level.nroom - 1]);
+            mk_knox_portal(g.vault_x + w.v, g.vault_y + h.v);
+            if (!g.level.flags.noteleport && !rn2(3))
+                await makevtele();
         }
     }
 
-    // Place dungeon branch
+    /* make up to 1 special room, with type dependent on depth;
+       note that mkroom doesn't guarantee a room gets created, and that
+       this step only sets the room's rtype - it doesn't fill it yet. */
+    /* (wizard && nh_getenv("SHOPTYPE")): the JS port has no environment */
+    if (u_depth > 1 && u_depth < depth_of_level(g.dungeon_topology.d_medusa_level)
+        && g.level.nroom >= room_threshold && rn2(u_depth) < 3)
+        do_mkroom(SHOPBASE);
+    else if (u_depth > 4 && !rn2(6))
+        do_mkroom(COURT);
+    else if (u_depth > 5 && !rn2(8)
+             && !(g.mvitals[PM_LEPRECHAUN].mvflags & G_GONE))
+        do_mkroom(LEPREHALL);
+    else if (u_depth > 6 && !rn2(7))
+        do_mkroom(ZOO);
+    else if (u_depth > 8 && !rn2(5))
+        do_mkroom(TEMPLE);
+    else if (u_depth > 9 && !rn2(5)
+             && !(g.mvitals[PM_KILLER_BEE].mvflags & G_GONE))
+        do_mkroom(BEEHIVE);
+    else if (u_depth > 11 && !rn2(6))
+        do_mkroom(MORGUE);
+    else if (u_depth > 12 && !rn2(8) && antholemon())
+        do_mkroom(ANTHOLE);
+    else if (u_depth > 14 && !rn2(4)
+             && !(g.mvitals[PM_SOLDIER].mvflags & G_GONE))
+        do_mkroom(BARRACKS);
+    else if (u_depth > 15 && !rn2(6))
+        do_mkroom(SWAMP);
+    else if (u_depth > 16 && !rn2(8)
+             && !(g.mvitals[PM_COCKATRICE].mvflags & G_GONE))
+        do_mkroom(COCKNEST);
+
+    /* skip0: */
+    /* prevstairs = gs.stairs: used to test for place_branch() success */
+    /* Place multi-dungeon branch. */
     if (branchp) {
         place_branch(branchp);
     }
 
-    // Fill rooms + mineralize: consumed by fastforward_fill_mineralize
-    // Called externally from allmain.js after mklev structural phase
+    /* some levels have specially generated items in ordinary
+       rooms (intended to be indistinguishable from the normally
+       generated items); work out which room these will be placed in */
+    let fillable_room_count = 0;
+    for (let i = 0; i < g.level.nroom; i++) {
+        if (ROOM_IS_FILLABLE(g.level.rooms[i]))
+            fillable_room_count++;
+    }
+    /* choose a random fillable room to be the one that gets the
+       bonus items, if there are any; if there aren't any we don't
+       generate the bonus items (but levels with no fillable rooms
+       typically don't have any bonus items to generate anyway) */
+    g.bonus_item_room_countdown = fillable_room_count
+                                  ? rn2(fillable_room_count) : -1;
+
+    /* for each room: put things inside -- fill_ordinary_room(), then
+       fill_special_room() for every room, then
+       themerooms_post_level_generate(): not ported yet. allmain.js replays
+       their rolls (fastforward_fill_mineralize) right after mklev(), which
+       makes no rolls in between. */
+}
+
+// C ref: mklev.c ROOM_IS_FILLABLE()
+function ROOM_IS_FILLABLE(croom) {
+    return ((croom.rtype === OROOM || croom.rtype === THEMEROOM)
+            && croom.needfill === FILL_NORMAL);
+}
+
+// C ref: mklev.c do_vault()
+function do_vault() {
+    return game.vault_x !== -1;
+}
+
+// C ref: mklev.c makevtele()
+async function makevtele() {
+    await makeniche(TELEP_TRAP);
+}
+
+// C ref: mklev.c mk_knox_portal()
+/* Place a magic portal to Fort Ludios on a level with a vault */
+function mk_knox_portal(x, y) {
+    let source;
+    let u_depth;
+
+    const br = dungeon_branch('Fort Ludios');
+    /* dungeon_branch() panics (so never returns) if result would be Null */
+
+    if (on_level(game.dungeon_topology.d_knox_level, br.end1)) {
+        source = br.end2;
+    } else {
+        /* disallow Knox branch on a level with one branch already */
+        if (Is_branchlev(game.u.uz))
+            return;
+        source = br.end1;
+    }
+
+    /* Already set or 2/3 chance of deferring until a later level. */
+    if (source.dnum < game.n_dgns || (rn2(3) && !is_wizard_mode()))
+        return;
+
+    if (!(game.u.uz.dnum === game.dungeon_topology.d_oracle_level.dnum /* in main dungeon */
+          && !at_dgn_entrance('The Quest')    /* but not Quest's entry */
+          && (u_depth = depth_of_level(game.u.uz)) > 10    /* beneath 10 */
+          && u_depth < depth_of_level(game.dungeon_topology.d_medusa_level))) /* and above Medusa */
+        return;
+
+    /* Adjust source to be current level and re-insert branch. */
+    source.dnum = game.u.uz.dnum;
+    source.dlevel = game.u.uz.dlevel;
+    insert_branch(br, true);
+
+    /* debugpline0("Made knox portal."); */
+    place_branch(br, x, y);
+}
+
+// C ref: mkroom.c do_mkroom() — not ported yet (only reached below
+// dungeon level 1).
+function do_mkroom(roomtype) {
+    console.error(`impossible: do_mkroom(${roomtype}) is not ported yet`);
+}
+
+// C ref: mkroom.c antholemon() — not ported yet (only reached below
+// dungeon level 12).
+function antholemon() {
+    console.error('impossible: antholemon() is not ported yet');
+    return null;
 }
 
 // C ref: mklev.c makerooms()
 async function makerooms() {
     const g = game;
     let tried_vault = false;
-    const difficulty = depth_of_level(g.u?.uz);
     let themeroom_tries = 0;
+    let fname;
+    const sbi = { flags: NHL_SB_SAFE, memlimit: 1 * 1024 * 1024, steps: 0,
+                  perpcall: 1 * 1024 * 1024 };
+    if (!g.luathemes) g.luathemes = [];
+    let themes = g.luathemes[g.u.uz.dnum] || null;
 
+    if (!themes && (fname = g.dungeons[g.u.uz.dnum].themerms)) {
+        if ((themes = nhl_init(sbi)) !== null) {
+            if (!nhl_loadlua(themes, fname)) {
+                /* loading lua failed, don't use themed rooms */
+                nhl_done(themes);
+                themes = null;
+            } else {
+                /* success; save state for this dungeon branch */
+                g.luathemes[g.u.uz.dnum] = themes;
+                /* keep themes context, so not 'nhl_done(themes);' */
+                g.iflags.in_lua = false; /* can affect error messages */
+            }
+        }
+        if (!themes) /* don't try again when making next level */
+            g.dungeons[g.u.uz.dnum].themerms = '';
+    }
+
+    if (themes) {
+        create_des_coder();
+        g.iflags.in_lua = g.in_mk_themerooms = true;
+        g.themeroom_failed = false;
+        nhl_pcall_handle(themes, themes.globals.pre_themerooms_generate, [],
+                         'makerooms-1', NHLpa_impossible);
+        g.iflags.in_lua = g.in_mk_themerooms = false;
+    }
+
+    /* make rooms until satisfied */
+    /* rnd_rect() will returns 0 if no more rects are available... */
     while (g.level.nroom < (MAXNROFROOMS - 1) && rnd_rect()) {
         if (g.level.nroom >= Math.trunc(MAXNROFROOMS / 6) && rn2(2) && !tried_vault) {
             tried_vault = true;
             if (create_vault()) {
-                g.vault_x = g.level.rooms[g.level.nroom]?.lx ?? -1;
-                g.vault_y = g.level.rooms[g.level.nroom]?.ly ?? -1;
-                if (g.level.rooms[g.level.nroom]) g.level.rooms[g.level.nroom].hx = -1;
+                g.vault_x = g.level.rooms[g.level.nroom].lx;
+                g.vault_y = g.level.rooms[g.level.nroom].ly;
+                g.level.rooms[g.level.nroom].hx = -1;
             }
         } else {
-            // Themed room selection (reservoir sampling)
-            if (!(await themerooms_generate(difficulty))) {
-                if (themeroom_tries++ > 10
-                    || g.level.nroom >= Math.trunc(MAXNROFROOMS / 6))
+            if (themes) {
+                g.iflags.in_lua = g.in_mk_themerooms = true;
+                g.themeroom_failed = false;
+                if (nhl_pcall_handle(themes, themes.globals.themerooms_generate, [],
+                                     'makerooms-2', NHLpa_panic))
+                    g.themeroom_failed = true; /* panic() is not ported */
+                g.iflags.in_lua = g.in_mk_themerooms = false;
+                if (g.themeroom_failed
+                    && ((themeroom_tries++ > 10)
+                        || (g.level.nroom >= Math.trunc(MAXNROFROOMS / 6))))
+                    break;
+            } else {
+                if (!create_room(-1, -1, -1, -1, -1, -1, OROOM, -1))
                     break;
             }
         }
     }
-}
-
-// Themed room metadata — must match C's themerms.lua frequency table exactly.
-// Generated from themeroom_meta.js (31 rooms).
-const THEMEROOM_META = [
-    { name: 'default', frequency: 1000 },
-    { name: 'Fake Delphi', frequency: 1 },
-    { name: 'Room in a room', frequency: 1 },
-    { name: 'Huge room with another room inside', frequency: 1 },
-    { name: 'Nesting rooms', frequency: 1 },
-    { name: 'Default room with themed fill', frequency: 6 },
-    { name: 'Unlit room with themed fill', frequency: 2 },
-    { name: 'Room with both normal contents and themed fill', frequency: 2 },
-    { name: 'Pillars', frequency: 1 },
-    { name: 'Mausoleum', frequency: 1 },
-    { name: 'Random dungeon feature', frequency: 1 },
-    { name: 'L-shaped', frequency: 1 },
-    { name: 'L-shaped, rot 1', frequency: 1 },
-    { name: 'L-shaped, rot 2', frequency: 1 },
-    { name: 'L-shaped, rot 3', frequency: 1 },
-    { name: 'Blocked center', frequency: 1 },
-    { name: 'Circular, small', frequency: 1 },
-    { name: 'Circular, medium', frequency: 1 },
-    { name: 'Circular, big', frequency: 1 },
-    { name: 'T-shaped', frequency: 1 },
-    { name: 'T-shaped, rot 1', frequency: 1 },
-    { name: 'T-shaped, rot 2', frequency: 1 },
-    { name: 'T-shaped, rot 3', frequency: 1 },
-    { name: 'S-shaped', frequency: 1 },
-    { name: 'S-shaped, rot 1', frequency: 1 },
-    { name: 'Z-shaped', frequency: 1 },
-    { name: 'Z-shaped, rot 1', frequency: 1 },
-    { name: 'Cross', frequency: 1 },
-    { name: 'Four-leaf clover', frequency: 1 },
-    { name: 'Water-surrounded vault', frequency: 1 },
-    { name: 'Twin businesses', frequency: 1, mindiff: 4 },
-];
-
-function is_themeroom_eligible(room, difficulty) {
-    if (room.mindiff != null && difficulty < room.mindiff) return false;
-    if (room.maxdiff != null && difficulty > room.maxdiff) return false;
-    return true;
-}
-
-// C ref: themerms.lua themerooms_generate()
-// Reservoir sampling picks one themed room. For seed8000 level 1,
-// 'ordinary' always wins (frequency 1000 vs others ~1-10).
-async function themerooms_generate(difficulty) {
-    let pick = null;
-    let total_frequency = 0;
-    for (const meta of THEMEROOM_META) {
-        if (!is_themeroom_eligible(meta, difficulty)) continue;
-        const this_frequency = meta.frequency || 1;
-        total_frequency += this_frequency;
-        if (this_frequency > 0 && rn2(total_frequency) < this_frequency) {
-            pick = meta;
-        }
+    if (themes) {
+        reset_xystart_size();
+        g.iflags.in_lua = g.in_mk_themerooms = true;
+        g.themeroom_failed = false;
+        nhl_pcall_handle(themes, themes.globals.post_themerooms_generate, [],
+                         'makerooms-3', NHLpa_panic);
+        g.iflags.in_lua = g.in_mk_themerooms = false;
     }
-    if (!pick) return false;
-    // For 'ordinary' rooms, create a standard room
-    // For themed rooms with dynamic dimensions, consume those rn2 calls first
-    const chance = 100;
-    if (pick.name !== 'ordinary') {
-        // Themed room — not expected for seed8000, but handle RNG correctly
-        rn2(100); // chance check (build_room)
-    }
-    // All themed rooms go through create_room for placement
-    const ok = create_room(-1, -1, -1, -1, -1, -1, OROOM, -1);
-    if (ok) {
-        // C ref: sp_lev.c:2824 — build_room calls topologize after create_room
-        const aroom = game.level.rooms[game.level.nroom - 1];
-        if (aroom) {
-            topologize(aroom);
-            aroom.needfill = FILL_NORMAL;
-        }
-    }
-    return ok;
 }
 
 // C ref: sp_lev.c check_room()
@@ -658,7 +619,7 @@ function check_room(lowx, ddx, lowy, ddy, vault) {
 }
 
 // C ref: sp_lev.c create_room()
-function create_room(x, y, w, h, xal, yal, rtype, rlit) {
+export function create_room(x, y, w, h, xal, yal, rtype, rlit) {
     const g = game;
     let xabs = 0, yabs = 0;
     let r1 = null, r2 = null;
@@ -739,7 +700,7 @@ function create_vault() {
 }
 
 // C ref: mklev.c add_room()
-function add_room(lowx, lowy, hix, hiy, lit, rtype, special) {
+export function add_room(lowx, lowy, hix, hiy, lit, rtype, special) {
     const g = game;
     const croom = {
         lx: lowx, ly: lowy, hx: hix, hy: hiy,
@@ -839,7 +800,7 @@ function sort_rooms() {
 }
 
 // C ref: mklev.c topologize()
-function topologize(croom) {
+export function topologize(croom) {
     if (!croom || croom.irregular) return;
     const roomno = (croom.roomnoidx ?? -1) + ROOMOFFSET;
     const lowx = croom.lx, lowy = croom.ly;
@@ -867,6 +828,8 @@ function topologize(croom) {
 // Corridors
 // ============================================================
 
+// C ref: mklev.c good_rm_wall_doorpos()
+/* is x,y a good location for a door into room? */
 function good_rm_wall_doorpos(x, y, dir, room) {
     const map = game.level;
     const rmno = game.level.rooms.indexOf(room) + ROOMOFFSET;
@@ -884,9 +847,41 @@ function good_rm_wall_doorpos(x, y, dir, room) {
     return true;
 }
 
+// C ref: mklev.c finddpos_shift()
+/* starting from x,y going towards dir, find a good location for a door */
 function finddpos_shift(xp, yp, dir, aroom) {
-    const rdir = DIR_180(dir);
-    if (good_rm_wall_doorpos(xp.v, yp.v, rdir, aroom)) return true;
+    const levl = (x, y) => game.level.at(x, y);
+
+    dir = DIR_180(dir);
+
+    const dx = xdir[dir];
+    const dy = ydir[dir];
+
+    if (good_rm_wall_doorpos(xp.v, yp.v, dir, aroom))
+        return true;
+
+    /* irregular rooms may have the room wall away from the room rectangular
+       area; go into the area until we encounter something */
+    if (aroom.irregular) {
+        let rx = xp.v, ry = yp.v;
+        let fail = false;
+
+        while (!fail && isok(rx, ry)
+               && (levl(rx, ry).typ === STONE || levl(rx, ry).typ === CORR)) {
+            rx += dx;
+            ry += dy;
+            if (good_rm_wall_doorpos(rx, ry, dir, aroom)) {
+                xp.v = rx;
+                yp.v = ry;
+                return true;
+            }
+            if (!(levl(rx, ry).typ === STONE || levl(rx, ry).typ === CORR))
+                fail = true;
+            if (rx < aroom.lx || rx > aroom.hx
+                || ry < aroom.ly || ry > aroom.hy)
+                fail = true;
+        }
+    }
     return false;
 }
 
@@ -1034,7 +1029,7 @@ function dodoor(x, y, aroom) {
     dosdoor(x, y, aroom, maybe_sdoor(8) ? SDOOR : DOOR);
 }
 
-function add_door(x, y, aroom) {
+export function add_door(x, y, aroom) {
     const g = game;
     if (!g.level.doors) g.level.doors = [];
     for (let i = 0; i < aroom.doorct; i++) {
@@ -1155,24 +1150,58 @@ function makecorridors() {
 // Room helper functions
 // ============================================================
 
-function somex(croom) { return rn1(croom.hx - croom.lx + 1, croom.lx); }
-function somey(croom) { return rn1(croom.hy - croom.ly + 1, croom.ly); }
+export function somex(croom) { return rn1(croom.hx - croom.lx + 1, croom.lx); }
+export function somey(croom) { return rn1(croom.hy - croom.ly + 1, croom.ly); }
 
-function somexy(croom, c) {
+// C ref: mkroom.c somexy()
+/* return a coord c inside mkroom croom, but not in a subroom.
+   returns TRUE if any such space found.
+   can return a non-accessible location, eg. inside a wall
+   if a themed room is not irregular, but has some non-room terrain */
+export function somexy(croom, c) {
+    let try_cnt = 0;
+    let i;
+    const levl = (x, y) => game.level.at(x, y);
+
+    if (croom.irregular) {
+        i = croom.roomnoidx + ROOMOFFSET;
+
+        while (try_cnt++ < 100) {
+            c.x = somex(croom);
+            c.y = somey(croom);
+            if (!levl(c.x, c.y).edge && levl(c.x, c.y).roomno === i)
+                return true;
+        }
+        /* try harder; exhaustively search until one is found */
+        for (c.x = croom.lx; c.x <= croom.hx; c.x++)
+            for (c.y = croom.ly; c.y <= croom.hy; c.y++)
+                if (!levl(c.x, c.y).edge
+                    && levl(c.x, c.y).roomno === i)
+                    return true;
+        return false;
+    }
+
     if (!croom.nsubrooms) {
         c.x = somex(croom);
         c.y = somey(croom);
         return true;
     }
-    let try_cnt = 0;
-    while (try_cnt++ < 100) {
+
+    /* Check that coords doesn't fall into a subroom or into a wall */
+
+    outer: while (try_cnt++ < 100) {
         c.x = somex(croom);
         c.y = somey(croom);
-        const loc = game.level.at(c.x, c.y);
-        if (loc && IS_WALL(loc.typ)) continue;
-        return true;
+        if (IS_WALL(levl(c.x, c.y).typ))
+            continue;
+        for (i = 0; i < croom.nsubrooms; i++)
+            if (inside_room(croom.sbrooms[i], c.x, c.y))
+                continue outer; /* goto you_lose */
+        break;
     }
-    return false;
+    if (try_cnt >= 100)
+        return false;
+    return true;
 }
 
 function occupied(x, y) {
@@ -1306,6 +1335,48 @@ function place_niche(aroom) {
     return { dy, xx, yy };
 }
 
+// C ref: mklev.c trap_engravings[]
+/* there should be one of these per trap, in the same order as trap.h */
+const trap_engravings = [
+    null, null, null, null, null,
+    null, null, null, null, null,
+    null, null, null, null,
+    /* 14..16: trap door, teleport, level-teleport */
+    'Vlad was here', 'ad aerarium', 'ad aerarium', null, null,
+    null, null, null, null, null,
+    /* 24..25 */
+    null, null,
+];
+
+// C ref: dungeon.c Can_fall_thru()
+function Can_fall_thru(lev) {
+    return (Can_dig_down(lev) || Is_stronghold(lev));
+}
+
+// C ref: dungeon.c Can_dig_down()
+function Can_dig_down(lev) {
+    return (!game.level.flags.hardfloor
+            && !Is_botlevel(lev)
+            && !Invocation_lev(lev));
+}
+
+// C ref: dungeon.c Is_botlevel()
+function Is_botlevel(lev) {
+    return (lev.dlevel === game.dungeons[lev.dnum].num_dunlevs);
+}
+
+// C ref: dungeon.h Is_stronghold() macro — Lcheck(x, &stronghold_level)
+function Is_stronghold(lev) {
+    const z = game.dungeon_topology.d_stronghold_level;
+    return ((z.dlevel || z.dnum) && on_level(lev, z)) ? true : false;
+}
+
+// C ref: dungeon.c Invocation_lev()
+function Invocation_lev(lev) {
+    return (In_hell(lev)
+            && lev.dlevel === game.dungeons[lev.dnum].num_dunlevs - 1);
+}
+
 async function makeniche(trap_type) {
     const g = game;
     let vct = 8;
@@ -1321,9 +1392,20 @@ async function makeniche(trap_type) {
         if (trap_type || !rn2(4)) {
             rm.typ = SCORR;
             if (trap_type) {
-                let actualTrap = trap_type;
-                if (is_hole(actualTrap)) actualTrap = ROCKTRAP;
-                await maketrap(xx, yy + dy, actualTrap);
+                if (is_hole(trap_type) && !Can_fall_thru(g.u.uz))
+                    trap_type = ROCKTRAP;
+                const ttmp = await maketrap(xx, yy + dy, trap_type);
+                if (ttmp) {
+                    if (trap_type !== ROCKTRAP)
+                        ttmp.once = 1;
+                    if (trap_engravings[trap_type]) {
+                        make_engr_at(xx, yy - dy,
+                                     trap_engravings[trap_type], null, 0,
+                                     DUST);
+                        wipe_engr_at(xx, yy - dy, 5,
+                                     false); /* age it a little */
+                    }
+                }
             }
             dosdoor(xx, yy, aroom, SDOOR);
         } else {
@@ -1334,11 +1416,10 @@ async function makeniche(trap_type) {
                 const loc = g.level.at(xx, yy);
                 if (!rn2(5) && loc && IS_WALL(loc.typ)) {
                     loc.typ = IRONBARS;
-                    if (rn2(3)) {
-                        // human corpse — consume rn2 for mkclass + mkcorpstat
-                        rn2(398); // mkclass(S_HUMAN)
-                        mkcorpstat(CORPSE, null, 0, xx, yy + dy, 1);
-                    }
+                    if (rn2(3))
+                        mkcorpstat(CORPSE, null,
+                                   mkclass(S_HUMAN, 0), xx,
+                                   yy + dy, true);
                 }
                 if (!g.level.flags.noteleport) {
                     mksobj_at(SCR_TELEPORTATION, xx, yy + dy, true, false);

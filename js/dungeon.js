@@ -1070,3 +1070,101 @@ export function assign_level(dest, src) {
     dest.dnum = src.dnum;
     dest.dlevel = src.dlevel;
 }
+
+// C ref: dungeon.c deepest_lev_reached()
+export function deepest_lev_reached(noquest) {
+    /* this function is used for three purposes: to provide a factor
+     * of difficulty in monster generation; to provide a factor of
+     * difficulty in experience calculations (botl.c and end.c); and
+     * to insert the deepest level reached in the game in the topten
+     * display.  the 'noquest' arg switch is required for the latter.
+     */
+    let i;
+    const tmp = new_d_level();
+    let ret = 0;
+
+    for (i = 0; i < game.n_dgns; i++) {
+        if (noquest && i === game.dungeon_topology.d_quest_dnum)
+            continue;
+        tmp.dlevel = game.dungeons[i].dunlev_ureached;
+        if (tmp.dlevel === 0)
+            continue;
+        tmp.dnum = i;
+        if (depth(tmp) > ret)
+            ret = depth(tmp);
+    }
+    return ret;
+}
+
+// C ref: dungeon.c builds_up()
+export function builds_up(lev) {
+    const dptr = game.dungeons[lev.dnum];
+    let br;
+    if (dptr.num_dunlevs > 1)
+        return (dptr.entry_lev === dptr.num_dunlevs);
+    /* else, single-level branch; find branch connection that connects this
+     * dungeon from a parent dungeon and determine whether it builds up from
+     * that */
+    for (br = game.branches; br; br = br.next) {
+        if (on_level(lev, br.end2)) {
+            return br.end1_up;
+        }
+    }
+    impossible(`builds_up: can't find branch for dungeon ${lev.dnum}`);
+    return false;
+}
+
+// C ref: dungeon.c level_difficulty()
+/* use instead of depth() wherever a degree of difficulty is made
+ * dependent on the location in the dungeon (eg. monster creation).
+ */
+export function level_difficulty() {
+    const u = game.u;
+    let res;
+
+    if (u.uz.dnum === game.dungeon_topology.d_astral_level.dnum) { /* In_endgame */
+        res = depth(game.dungeon_topology.d_sanctum_level) + Math.trunc(u.ulevel / 2);
+    } else if (u.uhave.amulet) {
+        res = deepest_lev_reached(false);
+    } else {
+        res = depth(u.uz);
+        /* depth() is the number of elevation units (levels) below
+           the theoretical surface; in a builds-up branch, that value
+           ends up making the harder to reach levels be treated as if
+           they were easier; adjust for the extra effort involved in
+           going down to the entrance and then up to the location */
+        if (builds_up(u.uz))
+            res += 2 * (game.dungeons[u.uz.dnum].entry_lev - u.uz.dlevel + 1);
+    }
+    return (res << 16) >> 16; /* (xint16) res */
+}
+
+// C ref: dungeon.c dungeon_branch()
+/* return the branch that leads into the named dungeon */
+export function dungeon_branch(s) {
+    let br;
+    const dnum = dname_to_dnum(s);
+
+    /* Find the branch that connects to dungeon i's branch. */
+    for (br = game.branches; br; br = br.next)
+        if (br.end2.dnum === dnum)
+            break;
+
+    if (!br)
+        panic(`dgn_entrance: can't find entrance to ${s}`);
+
+    return br;
+}
+
+// C ref: dungeon.c at_dgn_entrance()
+/*
+ * This returns true if the hero is on the same level as the entrance to
+ * the named dungeon.
+ */
+export function at_dgn_entrance(s) {
+    const br = dungeon_branch(s);
+    return on_level(game.u.uz, br.end1) ? true : false;
+}
+
+// C ref: flag.h wizard macro
+export function is_wizard_mode() { return wizard(); }
