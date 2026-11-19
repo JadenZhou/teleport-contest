@@ -15,13 +15,13 @@ import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { fastforward_step, FF_MOVEMON, FF_NEWTURN } from './fastforward.js';
 import { mcalcmove } from './mon.js';
-import { m_at } from './makemon.js';
+import { m_at, makemon } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
-import { init_dungeons } from './dungeon.js';
+import { init_dungeons, depth } from './dungeon.js';
 import { mons, monst_globals_init, LOW_PM, NUMMONS, G_NOCORPSE } from './monsters.js';
 import { decl_globals_init } from './decl.js';
 import { sys_early_init } from './sys.js';
@@ -29,7 +29,7 @@ import { role_init, genders, Hello } from './role.js';
 import { u_init_misc, u_init_inventory_attrs, u_init_skills_discoveries,
          money_cnt } from './u_init.js';
 import { align_str } from './insight.js';
-import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED } from './const.js';
+import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED, NO_MM_FLAGS } from './const.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -144,6 +144,18 @@ export async function welcome(new_game) /* false => restoring an old game */ {
     /* livelog_printf() and the restore-only messages: not ported yet */
 }
 
+// C ref: allmain.c maybe_generate_rnd_mon()
+/* small chance of generating a new random monster */
+function maybe_generate_rnd_mon() {
+    const g = game;
+    const u = g.u;
+
+    if (!rn2(u.uevent.udemigod ? 25
+             : (depth(u.uz) > depth(g.dungeon_topology.d_stronghold_level)) ? 50
+             : 70))
+        makemon(null, 0, 0, NO_MM_FLAGS);
+}
+
 // C ref: allmain.c u_calc_moveamt()
 function u_calc_moveamt(wtcap) {
     const g = game;
@@ -214,11 +226,10 @@ export async function moveloop_core() {
                 for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon)
                     mtmp.movement += mcalcmove(mtmp, true);
 
-                /* maybe_generate_rnd_mon() and the once-per-turn things
-                   (nh_timeout, regen_hp, regen_pw, exerchk, dosounds, ...)
-                   are not ported yet; seed8000's recorded rolls for them
-                   are replayed instead */
-                fastforward_step(g.moves, FF_NEWTURN);
+                /* occasionally add another monster; since this takes
+                   place after movement has been allotted, the new
+                   monster effectively loses its first turn */
+                maybe_generate_rnd_mon();
 
                 u_calc_moveamt(mvl_wtcap);
                 /* settrack(): not ported yet */
@@ -227,6 +238,12 @@ export async function moveloop_core() {
                 /* 'moves' is misnamed; it represents turns; hero_seq is
                    a value that is distinct every time the hero moves */
                 g.hero_seq = g.moves << 3;
+
+                /* once-per-turn things (l_nhcore_call, nh_timeout,
+                   regen_hp, regen_pw, exerchk, dosounds, ...) are not
+                   ported yet; seed8000's recorded rolls for them are
+                   replayed instead (indexed by the turn just ended) */
+                fastforward_step(g.moves - 1, FF_NEWTURN);
             }
         } while (u.umovement < NORMAL_SPEED); /* hero can't move */
 
