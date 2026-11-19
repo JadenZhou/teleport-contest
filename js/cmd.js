@@ -15,6 +15,7 @@ import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
 import { strcmpi, strncmpi } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
+import { wiz_level_change } from './wizcmds.js';
 import { cmd_safety_prevention } from './hack.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -54,6 +55,7 @@ export function extcmds_match(findstr, ecmflags) {
 const ext_funcs = {
     dosearch: () => dosearch(),
     donull: () => donull(),
+    wiz_level_change: () => wiz_level_change(),
 };
 
 // C ref: cmd.c doextcmd() -- here is the main command dispatcher for
