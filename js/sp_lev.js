@@ -351,6 +351,19 @@ function add_doors_to_room(croom) {
         add_doors_to_room(croom.sbrooms[i]);
 }
 
+// C ref: shknam.c stock_room()
+function stock_room(shp_indx, sroom) {
+    /* first, try to place a shopkeeper in the room */
+    if (shkinit(shp_indx, sroom) < 0)
+        return;
+    throw new Error('stock_room(): door fixup and mkshobj_at() stocking not ported yet');
+}
+
+// C ref: shknam.c shkinit()
+function shkinit(shp_indx, sroom) {
+    throw new Error('shkinit(): good_shopdoor() and makemon(PM_SHOPKEEPER, MM_ESHK) not ported yet');
+}
+
 // C ref: sp_lev.c fill_special_room()
 export function fill_special_room(croom) {
     if (!croom)
@@ -370,8 +383,7 @@ export function fill_special_room(croom) {
     if (croom.needfill === FILL_NORMAL) {
         /* Shop ? */
         if (croom.rtype >= SHOPBASE) {
-            /* stock_room(croom->rtype - SHOPBASE, croom) is not ported yet */
-            impossible('fill_special_room: stock_room() is not ported yet');
+            stock_room(croom.rtype - SHOPBASE, croom);
             game.level.flags.has_shop = TRUE;
             return;
         }
