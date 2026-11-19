@@ -22,6 +22,9 @@ import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
 import { init_dungeons, depth, find_level } from './dungeon.js';
 import { ask_do_tutorial } from './options.js';
+import { phase_of_the_moon, friday_13th } from './calendar.js';
+import { change_luck } from './attrib.js';
+import { FULL_MOON, NEW_MOON } from './const.js';
 import { mons, monst_globals_init, LOW_PM, NUMMONS, G_NOCORPSE } from './monsters.js';
 import { decl_globals_init } from './decl.js';
 import { sys_early_init } from './sys.js';
@@ -585,16 +588,26 @@ export async function moveloop_core() {
 }
 
 // C ref: allmain.c moveloop_preamble()
-export function moveloop_preamble(resuming) {
+export async function moveloop_preamble(resuming) {
     const g = game;
     const u = g.u;
 
     /* if (resuming && iflags.deferred_X) enter_explore_mode(): restore
        isn't ported yet */
 
-    /* side-effects from the real world: phase_of_the_moon() and
-       friday_13th() (calendar.c) with their luck changes and messages
-       are not ported yet */
+    /* side-effects from the real world */
+    g.flags.moonphase = phase_of_the_moon();
+    if (g.flags.moonphase === FULL_MOON) {
+        await pline("You are lucky!  Full moon tonight."); /* You() */
+        change_luck(1);
+    } else if (g.flags.moonphase === NEW_MOON) {
+        await pline("Be careful!  New moon tonight.");
+    }
+    g.flags.friday13 = friday_13th();
+    if (g.flags.friday13) {
+        await pline("Watch out!  Bad things can happen on Friday the 13th.");
+        change_luck(-1);
+    }
 
     if (!resuming) { /* new game */
         g.program_state.beyond_savefile_load = 1; /* for TTY_PERM_INVENT */
@@ -640,7 +653,7 @@ export async function maybe_do_tutorial() {
 
 // C ref: allmain.c moveloop()
 export async function moveloop(resuming) {
-    moveloop_preamble(resuming);
+    await moveloop_preamble(resuming);
 
     if (!resuming)
         await maybe_do_tutorial();

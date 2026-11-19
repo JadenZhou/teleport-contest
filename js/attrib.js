@@ -18,6 +18,7 @@ import {
     SATIATED, NOT_HUNGRY, HUNGRY, WEAK, FAINTING, FAINTED, MOD_ENCUMBER,
     HVY_ENCUMBER, EXT_ENCUMBER, CLAIRVOYANT, REGENERATION, SICK, VOMITING,
     CONFUSION, HALLUC, HALLUC_RES, WOUNDED_LEGS, FUMBLING, STUNNED, TIMEOUT,
+    LUCKMIN, LUCKMAX,
 } from './const.js';
 import {
     PM_ARCHEOLOGIST, PM_BARBARIAN, PM_CAVE_DWELLER, PM_HEALER, PM_KNIGHT,
@@ -704,4 +705,14 @@ export async function exerchk() {
         g.context.next_attrib_check += rn1(200, 800);
         /* debugpline1("exerchk: next check at %ld.", ...); */
     }
+}
+
+// C ref: attrib.c change_luck()
+export function change_luck(n) {
+    const u = game.u;
+    u.uluck += n;
+    if (u.uluck < 0 && u.uluck < LUCKMIN)
+        u.uluck = LUCKMIN;
+    if (u.uluck > 0 && u.uluck > LUCKMAX)
+        u.uluck = LUCKMAX;
 }
