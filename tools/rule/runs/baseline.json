@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T21:03:53.645Z",
+ "when": "2026-11-19T21:05:18.705Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -1193,31 +1193,31 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 10061,
+   "jsTotal": 8854,
    "totalScreens": 410,
-   "valuePrefix": 3857,
-   "rulePrefix": 3857,
+   "valuePrefix": 4117,
+   "rulePrefix": 4117,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 3857,
+    "index": 4117,
     "step": 4,
-    "c": "rnd(100)=91 @ mkshop(mkroom.c:193)",
-    "js": "rn2(7)=5 @ makelevel",
+    "c": "rnd(2)=2 @ next_ident(mkobj.c:521)",
+    "js": "rn2(2)=1 @ randomize_gem_colors",
     "kind": "value",
-    "cCaller": "mkshop",
-    "jsCaller": "makelevel",
+    "cCaller": "next_ident",
+    "jsCaller": "randomize_gem_colors",
     "context": [
-     "rn2(5)=2 @ dosdoor(mklev.c:666)",
-     "rn2(20)=14 @ dosdoor(mklev.c:671)",
-     "rn2(5)=1 @ makelevel(mklev.c:1350)",
-     "rnd(100)=91 @ mkshop(mkroom.c:193)",
-     "rn2(6)=1 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)"
+     "rn2(17)=4 @ fill_ordinary_room(mklev.c:1137)",
+     "rn2(42)=21 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(3)=1 @ fill_ordinary_room(mklev.c:1158)",
+     "rnd(2)=2 @ next_ident(mkobj.c:521)",
+     "d(11,8)=57 @ newmonhp(makemon.c:1042)",
+     "rn2(2)=0 @ makemon(makemon.c:1279)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
+   "error": "Error: shkinit(): good_shopdoor() and makemon(PM_SHOPKEEPER, MM_ESHK) not ported yet |     at shkinit (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:364:11) |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:357:9) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:386:13)"
   },
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
@@ -1280,8 +1280,8 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 133252,
-  "value": 133254,
+  "rule": 133512,
+  "value": 133514,
   "rolls": 792838,
   "honestScreens": 244,
   "screens": 249,
@@ -1313,6 +1313,15 @@
    "examples": [
     "seed0014-dequa-fountain-explore @2956: C \"rn2(7)=1 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=10 @ mcalcmove\"",
     "seed0015-valk-level2-pit-dog-wait @2553: C \"rn2(7)=6 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=3 @ mcalcmove\""
+   ]
+  },
+  {
+   "fn": "next_ident",
+   "sessions": 3,
+   "blockedRolls": 9291,
+   "examples": [
+    "seed0016-healer-newmoon-eat-zap @2493: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=1 @ mcalcmove\"",
+    "seed0101-ranger-quiver-throw-travel-engrave @2293: C \"rnd(2)=1 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=8 @ mcalcmove\""
    ]
   },
   {
@@ -1352,15 +1361,6 @@
    ]
   },
   {
-   "fn": "next_ident",
-   "sessions": 2,
-   "blockedRolls": 1241,
-   "examples": [
-    "seed0016-healer-newmoon-eat-zap @2493: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=1 @ mcalcmove\"",
-    "seed0101-ranger-quiver-throw-travel-engrave @2293: C \"rnd(2)=1 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=8 @ mcalcmove\""
-   ]
-  },
-  {
    "fn": "mount_steed",
    "sessions": 2,
    "blockedRolls": 793,
@@ -1383,14 +1383,6 @@
    "blockedRolls": 13542,
    "examples": [
     "seed0007-rogue-snake-swamp @2831: C \"rn2(4)=0 @ dog_goal(dogmove.c:575)\" / JS \"rn2(4)=0 @ dochug\""
-   ]
-  },
-  {
-   "fn": "mkshop",
-   "sessions": 1,
-   "blockedRolls": 8310,
-   "examples": [
-    "seed5002-wizard-coverage-pair @3857: C \"rnd(100)=91 @ mkshop(mkroom.c:193)\" / JS \"rn2(7)=5 @ makelevel\""
    ]
   },
   {
