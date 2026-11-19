@@ -33,6 +33,10 @@ either, and no static check count grows (`tools/rule/checks.mjs`).
 2. **Roll dice only in the function C rolls them in**, with no anonymous wrappers.
    `rn1`, `ROLL_FROM`, `AC_VALUE`, `rnl`, `rne`, `rnz`, `d` and `shuffle_int_array` come from
    `js/rng.js` and are attributed to their caller, exactly like C.
+   **Where C passes `rn2` as a function pointer** (writing `rn2` without calling it, e.g.
+   `get_rnd_line(..., rn2, ...)`, `random_object(rn2)`, `random_monster(rn2)`,
+   `obj_to_glyph(corpse, rn2)`), pass `rn2_fnptr` from `js/rng.js`. In C those rolls skip
+   the recorder's caller macro and inherit the last caller tag; `rn2_fnptr` reproduces that.
 3. **Lua:** hand-port the scripts (`themerms.lua`, `nhlib.lua`, `nhcore.lua`, `dungeon.lua`
    data; special-level scripts only when a session reaches them). Every Lua-side roll goes
    through `withRngCaller('<exact C log tag>', () => ...)`, e.g. `nh.rn2(themerms.lua:123)` or

@@ -11,7 +11,7 @@
 // engravings.
 
 import { game } from './gstate.js';
-import { rn2, rnd } from './rng.js';
+import { rn2, rnd, rn2_fnptr } from './rng.js';
 import { DUST, BURN, ENGR_BLOOD, HEADSTONE, N_ENGRAVE, ICE, ROOM, GRAVE } from './const.js';
 import { getrumor, get_rnd_text, ENGRAVEFILE, EPITAPHFILE, MD_PAD_RUMORS } from './rumors.js';
 import { t_at } from './trap.js';
@@ -200,7 +200,7 @@ export function random_engraving(pristine_copy) {
     /* a random engraving may come from the "rumors" file,
        or from the "engrave" file (formerly in an array here) */
     if (!rn2(4) || !(rumor = getrumor(0, pristine_copy, true)) || !rumor)
-        get_rnd_text(ENGRAVEFILE, pristine_copy, rn2, MD_PAD_RUMORS);
+        get_rnd_text(ENGRAVEFILE, pristine_copy, rn2_fnptr, MD_PAD_RUMORS);
 
     let outbuf = pristine_copy.s;
     outbuf = wipeout_text(outbuf, Math.trunc(outbuf.length / 4), 0);
@@ -221,7 +221,7 @@ export function make_grave(x, y, str) {
     /* Engrave the headstone */
     del_engr_at(x, y);
     if (!str)
-        str = get_rnd_text(EPITAPHFILE, buf, rn2, MD_PAD_RUMORS);
+        str = get_rnd_text(EPITAPHFILE, buf, rn2_fnptr, MD_PAD_RUMORS);
     make_engr_at(x, y, str, null, 0, HEADSTONE);
     return;
 }

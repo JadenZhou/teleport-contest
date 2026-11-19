@@ -42,7 +42,7 @@ export function initRng(seed) {
 const RNG_HELPERS = new Set([
     'RND', 'rn2', 'rnd', 'rn1', 'rnl', 'rne', 'rnz', 'd', 'c_d', 'lua_d',
     'shuffle_int_array', 'ROLL_FROM', 'AC_VALUE',
-    'rngCallerTag', 'logRoll', 'withRngCaller',
+    'rngCallerTag', 'computeCallerTag', 'logRoll', 'withRngCaller', 'rn2_fnptr',
     'rn2_on_display_rng', 'rnd_on_display_rng',
 ]);
 const BUILTIN_FRAMES = new Set([
@@ -59,8 +59,17 @@ export function withRngCaller(tag, fn) {
     try { return fn(); } finally { _explicitCaller = saved; }
 }
 
+// The C recorder's caller context is sticky: hack.h's rng macros set it at each
+// wrapped call site and it stays until the next one. _lastTag mirrors that.
+let _lastTag = '';
+
 export function rngCallerTag() {
     if (!globalThis.__TELEPORT_CALLER_TRACE) return '';
+    _lastTag = computeCallerTag();
+    return _lastTag;
+}
+
+function computeCallerTag() {
     if (_explicitCaller) return ` @ ${_explicitCaller}`;
     const saved = Error.stackTraceLimit;
     Error.stackTraceLimit = 40;
@@ -97,6 +106,22 @@ export function rn2(x) {
     if (x <= 0) return 0;
     const result = RND(x);
     logRoll('rn2', x, result);
+    return result;
+}
+
+// C ref: rn2 passed as a function pointer (rumors.c get_rnd_line via getrumor /
+// get_rnd_text, detect.c and zap.c random_object/random_monster(rn2), apply.c
+// obj_to_glyph(corpse, rn2)). Writing bare `rn2` skips hack.h's caller-setting
+// macro, so in C these rolls carry the LAST caller tag set by an earlier
+// wrapped roll, not the function that actually rolls. Pass rn2_fnptr wherever
+// C passes `rn2` without calling it; values are identical to rn2.
+export function rn2_fnptr(x) {
+    if (x <= 0) return 0;
+    const result = RND(x);
+    if (_rngLogEnabled) {
+        const tag = globalThis.__TELEPORT_CALLER_TRACE ? _lastTag : '';
+        _rngLog.push(`rn2(${x})=${result}` + tag);
+    }
     return result;
 }
 

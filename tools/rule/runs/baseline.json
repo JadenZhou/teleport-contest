@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T08:20:55.802Z",
+ "when": "2026-11-19T17:08:41.493Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -36,25 +36,25 @@
    "jsTotal": 5501,
    "totalScreens": 409,
    "valuePrefix": 3691,
-   "rulePrefix": 2588,
+   "rulePrefix": 3691,
    "screens": 8,
    "honestScreens": 8,
    "firstScreenMiss": 8,
    "first": {
-    "index": 2588,
-    "step": 8,
-    "c": "rn2(2894)=2474 @ random_engraving(engrave.c:57)",
-    "js": "rn2(2894)=2474 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "random_engraving",
-    "jsCaller": "get_rnd_line",
+    "index": 3691,
+    "step": 12,
+    "c": "rn2(20)=8 @ gethungry(eat.c:3191)",
+    "js": "rn2(300)=208 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "gethungry",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(25)=9 @ fill_ordinary_room(mklev.c:1137)",
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=0 @ random_engraving(engrave.c:57)",
-     "rn2(2894)=2474 @ random_engraving(engrave.c:57)",
-     "rn2(2894)=1907 @ random_engraving(engrave.c:57)",
-     "rn2(15)=6 @ wipeout_text(engrave.c:134)"
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=28 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(20)=8 @ gethungry(eat.c:3191)",
+     "rn2(67)=63 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -94,25 +94,25 @@
    "jsTotal": 3611,
    "totalScreens": 302,
    "valuePrefix": 2828,
-   "rulePrefix": 1628,
+   "rulePrefix": 2828,
    "screens": 14,
    "honestScreens": 14,
    "firstScreenMiss": 14,
    "first": {
-    "index": 1628,
-    "step": 14,
-    "c": "rn2(25762)=25553 @ getrumor(rumors.c:151)",
-    "js": "rn2(25762)=25553 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "index": 2828,
+    "step": 48,
+    "c": "rn2(20)=2 @ gethungry(eat.c:3191)",
+    "js": "rn2(300)=102 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "gethungry",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=3 @ random_engraving(engrave.c:57)",
-     "rn2(2)=0 @ getrumor(rumors.c:151)",
-     "rn2(25762)=25553 @ getrumor(rumors.c:151)",
-     "rn2(2)=1 @ getrumor(rumors.c:151)",
-     "rn2(24924)=9972 @ getrumor(rumors.c:151)"
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=48 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(20)=2 @ gethungry(eat.c:3191)",
+     "rn2(91)=65 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -355,25 +355,25 @@
    "jsTotal": 38859,
    "totalScreens": 1953,
    "valuePrefix": 6273,
-   "rulePrefix": 5165,
+   "rulePrefix": 6273,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 5165,
-    "step": 0,
-    "c": "rn2(25762)=7767 @ getrumor(rumors.c:151)",
-    "js": "rn2(25762)=7767 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "index": 6273,
+    "step": 3,
+    "c": "rn2(20)=3 @ gethungry(eat.c:3191)",
+    "js": "rn2(300)=3 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "gethungry",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=2 @ random_engraving(engrave.c:57)",
-     "rn2(2)=0 @ getrumor(rumors.c:151)",
-     "rn2(25762)=7767 @ getrumor(rumors.c:151)",
-     "rn2(70)=46 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=19 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(20)=3 @ gethungry(eat.c:3191)",
+     "rn2(76)=9 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -529,25 +529,25 @@
    "jsTotal": 2743,
    "totalScreens": 43,
    "valuePrefix": 2626,
-   "rulePrefix": 1415,
+   "rulePrefix": 2626,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1415,
-    "step": 0,
-    "c": "rn2(24075)=11551 @ somey(mkroom.c:674)",
-    "js": "rn2(24075)=11551 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "somey",
-    "jsCaller": "get_rnd_line",
+    "index": 2626,
+    "step": 4,
+    "c": "rn2(400)=41 @ dosounds(sounds.c:213)",
+    "js": "rn2(300)=241 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "dosounds",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(10)=3 @ mkgrave(mklev.c:2358)",
-     "rn2(5)=3 @ somex(mkroom.c:668)",
-     "rn2(5)=4 @ somey(mkroom.c:674)",
-     "rn2(24075)=11551 @ somey(mkroom.c:674)",
-     "rn2(3)=1 @ mkgrave(mklev.c:2370)",
-     "rn2(5)=2 @ mkgrave(mklev.c:2383)"
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=11 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=57 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(400)=41 @ dosounds(sounds.c:213)",
+     "rn2(300)=145 @ dosounds(sounds.c:220)",
+     "rn2(20)=13 @ gethungry(eat.c:3191)"
     ]
    },
    "error": null
@@ -645,25 +645,25 @@
    "jsTotal": 3098,
    "totalScreens": 303,
    "valuePrefix": 2770,
-   "rulePrefix": 1482,
+   "rulePrefix": 2770,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1482,
-    "step": 0,
-    "c": "rn2(24075)=4690 @ somey(mkroom.c:674)",
-    "js": "rn2(24075)=4690 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "somey",
-    "jsCaller": "get_rnd_line",
+    "index": 2770,
+    "step": 4,
+    "c": "rn2(20)=12 @ gethungry(eat.c:3191)",
+    "js": "rn2(300)=92 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "gethungry",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(10)=4 @ mkgrave(mklev.c:2358)",
-     "rn2(6)=3 @ somex(mkroom.c:668)",
-     "rn2(3)=2 @ somey(mkroom.c:674)",
-     "rn2(24075)=4690 @ somey(mkroom.c:674)",
-     "rn2(3)=1 @ mkgrave(mklev.c:2370)",
-     "rn2(5)=4 @ mkgrave(mklev.c:2383)"
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=31 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(20)=12 @ gethungry(eat.c:3191)",
+     "rn2(94)=87 @ moveloop_core(allmain.c:360)",
+     "rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)"
     ]
    },
    "error": null
@@ -674,25 +674,25 @@
    "jsTotal": 3167,
    "totalScreens": 127,
    "valuePrefix": 2975,
-   "rulePrefix": 1698,
+   "rulePrefix": 2975,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1698,
-    "step": 0,
-    "c": "rn2(24924)=2045 @ getrumor(rumors.c:151)",
-    "js": "rn2(24924)=2045 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "index": 2975,
+    "step": 7,
+    "c": "rn2(400)=99 @ dosounds(sounds.c:213)",
+    "js": "rn2(300)=199 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "dosounds",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=1 @ random_engraving(engrave.c:57)",
-     "rn2(2)=1 @ getrumor(rumors.c:151)",
-     "rn2(24924)=2045 @ getrumor(rumors.c:151)",
-     "rn2(29)=10 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=9 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=57 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(400)=99 @ dosounds(sounds.c:213)",
+     "rn2(20)=1 @ gethungry(eat.c:3191)",
+     "rn2(70)=45 @ moveloop_core(allmain.c:360)"
     ]
    },
    "error": null
@@ -703,25 +703,25 @@
    "jsTotal": 3416,
    "totalScreens": 40,
    "valuePrefix": 3253,
-   "rulePrefix": 1768,
+   "rulePrefix": 3253,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1768,
-    "step": 0,
-    "c": "rn2(2894)=1743 @ random_engraving(engrave.c:57)",
-    "js": "rn2(2894)=1743 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "random_engraving",
-    "jsCaller": "get_rnd_line",
+    "index": 3253,
+    "step": 5,
+    "c": "rn2(400)=134 @ dosounds(sounds.c:213)",
+    "js": "rn2(300)=234 @ fastforward_step",
+    "kind": "value",
+    "cCaller": "dosounds",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(17)=1 @ fill_ordinary_room(mklev.c:1137)",
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=0 @ random_engraving(engrave.c:57)",
-     "rn2(2894)=1743 @ random_engraving(engrave.c:57)",
-     "rn2(16)=0 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=3 @ wipeout_text(engrave.c:135)"
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=14 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(3)=1 @ u_calc_moveamt(allmain.c:131)",
+     "rn2(400)=134 @ dosounds(sounds.c:213)",
+     "rn2(20)=9 @ gethungry(eat.c:3191)",
+     "rn2(88)=87 @ moveloop_core(allmain.c:360)"
     ]
    },
    "error": null
@@ -732,25 +732,25 @@
    "jsTotal": 4809,
    "totalScreens": 833,
    "valuePrefix": 2898,
-   "rulePrefix": 1355,
+   "rulePrefix": 2898,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1355,
-    "step": 0,
-    "c": "rn2(2894)=151 @ random_engraving(engrave.c:57)",
-    "js": "rn2(2894)=151 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "random_engraving",
-    "jsCaller": "get_rnd_line",
+    "index": 2898,
+    "step": 20,
+    "c": "rnd(8)=7 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=6 @ mcalcmove",
+    "kind": "value",
+    "cCaller": "newhp",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(20)=6 @ fill_ordinary_room(mklev.c:1137)",
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=0 @ random_engraving(engrave.c:57)",
-     "rn2(2894)=151 @ random_engraving(engrave.c:57)",
-     "rn2(11)=6 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=2 @ wipeout_text(engrave.c:135)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=7203 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=20 @ moveloop_preamble(allmain.c:79)",
+     "rnd(8)=7 @ newhp(attrib.c:1101)",
+     "rnd(2)=1 @ newhp(attrib.c:1103)",
+     "rn2(7)=3 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -819,25 +819,25 @@
    "jsTotal": 2612,
    "totalScreens": 124,
    "valuePrefix": 2512,
-   "rulePrefix": 1417,
+   "rulePrefix": 2512,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1417,
-    "step": 0,
-    "c": "rn2(25762)=5789 @ getrumor(rumors.c:151)",
-    "js": "rn2(25762)=5789 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "index": 2512,
+    "step": 19,
+    "c": "rnd(10)=8 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=1 @ mcalcmove",
+    "kind": "value",
+    "cCaller": "newhp",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=3 @ random_engraving(engrave.c:57)",
-     "rn2(2)=0 @ getrumor(rumors.c:151)",
-     "rn2(25762)=5789 @ getrumor(rumors.c:151)",
-     "rn2(59)=9 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=3 @ wipeout_text(engrave.c:135)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=1205 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=12 @ moveloop_preamble(allmain.c:79)",
+     "rnd(10)=8 @ newhp(attrib.c:1101)",
+     "rnd(2)=1 @ newhp(attrib.c:1103)",
+     "rn2(4)=0 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -848,25 +848,25 @@
    "jsTotal": 2856,
    "totalScreens": 219,
    "valuePrefix": 2450,
-   "rulePrefix": 1102,
+   "rulePrefix": 2450,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1102,
-    "step": 0,
-    "c": "rn2(25762)=15312 @ getrumor(rumors.c:151)",
-    "js": "rn2(25762)=15312 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "index": 2450,
+    "step": 19,
+    "c": "rnd(8)=6 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=1 @ mcalcmove",
+    "kind": "value",
+    "cCaller": "newhp",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=1 @ random_engraving(engrave.c:57)",
-     "rn2(2)=0 @ getrumor(rumors.c:151)",
-     "rn2(25762)=15312 @ getrumor(rumors.c:151)",
-     "rn2(50)=19 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=7372 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=23 @ moveloop_preamble(allmain.c:79)",
+     "rnd(8)=6 @ newhp(attrib.c:1101)",
+     "rnd(2)=1 @ newhp(attrib.c:1103)",
+     "rn2(8)=6 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -935,25 +935,25 @@
    "jsTotal": 2245,
    "totalScreens": 28,
    "valuePrefix": 2205,
-   "rulePrefix": 1223,
+   "rulePrefix": 2205,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1223,
-    "step": 0,
-    "c": "rn2(24924)=3453 @ getrumor(rumors.c:151)",
-    "js": "rn2(24924)=3453 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "index": 2205,
+    "step": 5,
+    "c": "rnd(100)=30 @ spelleffects_check(spell.c:1372)",
+    "js": "rn2(12)=5 @ mcalcmove",
+    "kind": "value",
+    "cCaller": "spelleffects_check",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=1 @ random_engraving(engrave.c:57)",
-     "rn2(2)=1 @ getrumor(rumors.c:151)",
-     "rn2(24924)=3453 @ getrumor(rumors.c:151)",
-     "rn2(25)=21 @ wipeout_text(engrave.c:134)",
-     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=344 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=12 @ moveloop_preamble(allmain.c:79)",
+     "rnd(100)=30 @ spelleffects_check(spell.c:1372)",
+     "rn2(19)=2 @ exercise(attrib.c:509)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)"
     ]
    },
    "error": null
@@ -1196,25 +1196,25 @@
    "jsTotal": 6013,
    "totalScreens": 410,
    "valuePrefix": 2719,
-   "rulePrefix": 1714,
+   "rulePrefix": 2719,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1714,
-    "step": 0,
-    "c": "rn2(24075)=10502 @ somey(mkroom.c:674)",
-    "js": "rn2(24075)=10502 @ get_rnd_line",
-    "kind": "caller",
-    "cCaller": "somey",
-    "jsCaller": "get_rnd_line",
+    "index": 2719,
+    "step": 4,
+    "c": "rn2(3)=2 @ getbones(bones.c:645)",
+    "js": "rn2(12)=11 @ mcalcmove",
+    "kind": "value",
+    "cCaller": "getbones",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(10)=8 @ mkgrave(mklev.c:2358)",
-     "rn2(4)=3 @ somex(mkroom.c:668)",
-     "rn2(6)=0 @ somey(mkroom.c:674)",
-     "rn2(24075)=10502 @ somey(mkroom.c:674)",
-     "rn2(3)=0 @ mkgrave(mklev.c:2370)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)"
+     "rn2(20)=4 @ vary_init_attr(attrib.c:769)",
+     "rnd(9000)=2931 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=18 @ moveloop_preamble(allmain.c:79)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1254,25 +1254,25 @@
    "jsTotal": 3102,
    "totalScreens": 23,
    "valuePrefix": 3102,
-   "rulePrefix": 1633,
+   "rulePrefix": 2980,
    "screens": 15,
-   "honestScreens": 0,
+   "honestScreens": 1,
    "firstScreenMiss": 11,
    "first": {
-    "index": 1633,
-    "step": 0,
-    "c": "rn2(25762)=21575 @ getrumor(rumors.c:151)",
-    "js": "rn2(25762)=21575 @ get_rnd_line",
+    "index": 2980,
+    "step": 1,
+    "c": "rn2(300)=120 @ dosounds(sounds.c:220)",
+    "js": "rn2(300)=120 @ fastforward_step",
     "kind": "caller",
-    "cCaller": "getrumor",
-    "jsCaller": "get_rnd_line",
+    "cCaller": "dosounds",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
-     "rn2(4)=1 @ random_engraving(engrave.c:57)",
-     "rn2(2)=0 @ getrumor(rumors.c:151)",
-     "rn2(25762)=21575 @ getrumor(rumors.c:151)",
-     "rn2(25762)=12552 @ getrumor(rumors.c:151)",
-     "rn2(75)=65 @ wipeout_text(engrave.c:134)"
+     "rn2(12)=11 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=38 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(300)=120 @ dosounds(sounds.c:220)",
+     "rn2(20)=4 @ gethungry(eat.c:3191)",
+     "rn2(82)=66 @ moveloop_core(allmain.c:360)"
     ]
    },
    "error": null
@@ -1282,48 +1282,39 @@
   "discarded-roll": 10
  },
  "totals": {
-  "rule": 102514,
+  "rule": 118506,
   "value": 118635,
   "rolls": 792838,
-  "honestScreens": 120,
+  "honestScreens": 121,
   "screens": 135,
   "totalScreens": 11405
  },
  "todo": [
   {
    "fn": "dosounds",
-   "sessions": 11,
-   "blockedRolls": 136011,
+   "sessions": 15,
+   "blockedRolls": 146914,
    "examples": [
     "seed0002-healer-reflection-drummer @2310: C \"rn2(300)=203 @ dosounds(sounds.c:220)\" / JS \"rn2(300)=203 @ fastforward_step\"",
     "seed0017-samurai-altar-pray @2673: C \"rn2(400)=370 @ dosounds(sounds.c:213)\" / JS \"rn2(300)=170 @ fastforward_step\""
    ]
   },
   {
-   "fn": "getrumor",
-   "sessions": 8,
-   "blockedRolls": 178363,
+   "fn": "gethungry",
+   "sessions": 7,
+   "blockedRolls": 150617,
    "examples": [
-    "seed0007-rogue-snake-swamp @1628: C \"rn2(25762)=25553 @ getrumor(rumors.c:151)\" / JS \"rn2(25762)=25553 @ get_rnd_line\"",
-    "seed0030-ten-diverse-deaths @5165: C \"rn2(25762)=7767 @ getrumor(rumors.c:151)\" / JS \"rn2(25762)=7767 @ get_rnd_line\""
-   ]
-  },
-  {
-   "fn": "random_engraving",
-   "sessions": 3,
-   "blockedRolls": 130834,
-   "examples": [
-    "seed0004-feeding-pony @2588: C \"rn2(2894)=2474 @ random_engraving(engrave.c:57)\" / JS \"rn2(2894)=2474 @ get_rnd_line\"",
-    "seed0200-monk-north-search @1768: C \"rn2(2894)=1743 @ random_engraving(engrave.c:57)\" / JS \"rn2(2894)=1743 @ get_rnd_line\""
+    "seed0004-feeding-pony @3691: C \"rn2(20)=8 @ gethungry(eat.c:3191)\" / JS \"rn2(300)=208 @ fastforward_step\"",
+    "seed0006-wizard-water-demon @2507: C \"rn2(20)=4 @ gethungry(eat.c:3191)\" / JS \"rn2(300)=224 @ fastforward_step\""
    ]
   },
   {
    "fn": "newhp",
-   "sessions": 3,
-   "blockedRolls": 107842,
+   "sessions": 6,
+   "blockedRolls": 272922,
    "examples": [
-    "seed0361-archeologist-tour @2924: C \"rnd(8)=4 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=3 @ mcalcmove\"",
-    "seed0367-priest-quest-tour @1848: C \"rnd(8)=1 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=8 @ mcalcmove\""
+    "seed0360-wizard-world-tour @2898: C \"rnd(8)=7 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=6 @ mcalcmove\"",
+    "seed0361-archeologist-tour @2924: C \"rnd(8)=4 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=3 @ mcalcmove\""
    ]
   },
   {
@@ -1336,30 +1327,12 @@
    ]
   },
   {
-   "fn": "somey",
-   "sessions": 3,
-   "blockedRolls": 27737,
-   "examples": [
-    "seed0104-knight-ride-combat @1415: C \"rn2(24075)=11551 @ somey(mkroom.c:674)\" / JS \"rn2(24075)=11551 @ get_rnd_line\"",
-    "seed0108-wizard-extcmd-wishlist @1482: C \"rn2(24075)=4690 @ somey(mkroom.c:674)\" / JS \"rn2(24075)=4690 @ get_rnd_line\""
-   ]
-  },
-  {
-   "fn": "gethungry",
-   "sessions": 3,
-   "blockedRolls": 15235,
-   "examples": [
-    "seed0006-wizard-water-demon @2507: C \"rn2(20)=4 @ gethungry(eat.c:3191)\" / JS \"rn2(300)=224 @ fastforward_step\"",
-    "seed0012-monk-vault-escort @3074: C \"rn2(20)=9 @ gethungry(eat.c:3191)\" / JS \"rn2(300)=49 @ fastforward_step\""
-   ]
-  },
-  {
    "fn": "getbones",
-   "sessions": 2,
-   "blockedRolls": 10117,
+   "sessions": 3,
+   "blockedRolls": 19565,
    "examples": [
     "seed0009-swimmer-mforce @3337: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=5 @ mcalcmove\"",
-    "seed5006-tourist-stress-disaster @4182: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=11 @ mcalcmove\""
+    "seed5002-wizard-coverage-pair @2719: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=11 @ mcalcmove\""
    ]
   },
   {
@@ -1405,11 +1378,27 @@
    ]
   },
   {
+   "fn": "getrumor",
+   "sessions": 1,
+   "blockedRolls": 96,
+   "examples": [
+    "seed1800-tourist-eat-throw @2362: C \"rn2(2)=1 @ getrumor(rumors.c:151)\" / JS \"rn2(12)=7 @ mcalcmove\""
+   ]
+  },
+  {
    "fn": "doopen_indir",
    "sessions": 1,
    "blockedRolls": 47,
    "examples": [
     "seed0077-rogue-chargen @3195: C \"rnl(20)=2 @ doopen_indir(lock.c:904)\" / JS \"rn2(12)=6 @ mcalcmove\""
+   ]
+  },
+  {
+   "fn": "spelleffects_check",
+   "sessions": 1,
+   "blockedRolls": 33,
+   "examples": [
+    "seed0501-priest-cast-read-turn @2205: C \"rnd(100)=30 @ spelleffects_check(spell.c:1372)\" / JS \"rn2(12)=5 @ mcalcmove\""
    ]
   }
  ],

@@ -10,7 +10,7 @@
 // get_rnd_line() decrypts again, so offsets and results are unchanged.
 
 import { game } from './gstate.js';
-import { rn2 } from './rng.js';
+import { rn2, rn2_fnptr } from './rng.js';
 import { RUMORS_TRU, RUMORS_FAL, ENGRAVE_TXT, EPITAPH_TXT } from './rumors_data.js';
 
 const BUFSZ = 256;
@@ -262,7 +262,7 @@ export function getrumor(truth, rumor_buf, exclude_cookie) {
                 rumor_buf.s = 'Oops...';
                 return rumor_buf.s;
             }
-            rumor_buf.s = get_rnd_line(rumors, BUFSZ, rn2,
+            rumor_buf.s = get_rnd_line(rumors, BUFSZ, rn2_fnptr,
                                        beginning, ending, MD_PAD_RUMORS);
         } while (count++ < 50 && exclude_cookie
                  && rumor_buf.s.startsWith(cookie_marker));
