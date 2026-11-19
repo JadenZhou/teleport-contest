@@ -95,7 +95,7 @@ export async function newgame() {
        isn't ported yet */
 
     if (g.flags.legacy) {
-        com_pager(g.u.uroleplay.pauper ? "pauper_legacy" : "legacy");
+        await com_pager(g.u.uroleplay.pauper ? "pauper_legacy" : "legacy");
     }
 
     /* Success! */
