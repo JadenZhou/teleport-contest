@@ -186,6 +186,18 @@ function mon_visible(mon) {
     return (!mon.minvis || See_invisible) && !mon.mundetected;
 }
 
+// C ref: display.h canseemon(), canspotmon() -- seen at a spot in sight;
+// infravision, telepathy, detection and warning (sensemon()) are not
+// ported yet
+function canseemon(mon) {
+    return cansee(mon.mx, mon.my) && mon_visible(mon);
+}
+export function canspotmon(mon) {
+    if (canseemon(mon))
+        return true;
+    throw new Error('canspotmon(): see_with_infrared()/sensemon() not ported yet');
+}
+
 // C ref: display.c display_monster() -- the plain case: the monster's own
 // glyph (mon_to_glyph()), in its mons[] color; mimic appearances,
 // hilite_pet/ridden-steed flags and warnings are not ported yet

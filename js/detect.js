@@ -11,6 +11,13 @@ import { pline, newsym } from './display.js';
 import { vision_reset } from './vision.js';
 import { exercise } from './attrib.js';
 import { m_at } from './makemon.js';
+import { canspotmon } from './display.js';
+import { cmd_safety_prevention } from './hack.js';
+import { S_EEL, M1_HIDE, M1_CONCEAL } from './monsters.js';
+
+// C ref: mondata.h is_hider(), hides_under()
+function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
+function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 import { t_at, STATUE_TRAP } from './trap.js';
 import {
     A_WIS, SDOOR, SCORR, DOOR, CORR, WM_MASK, D_NODOOR, D_CLOSED, D_LOCKED,
@@ -53,6 +60,39 @@ function nomul0() {
        ported yet */
 }
 
+// C ref: detect.c mfind0()
+/* used by dosearch0() and warnreveal() */
+function mfind0(mtmp, via_warning) {
+    const x = mtmp.mx, y = mtmp.my;
+    let found_something = false;
+
+    if (via_warning)
+        throw new Error('mfind0(): warning not ported yet');
+
+    if (mtmp.m_ap_type) {
+        /* seemimic(mtmp) */
+        throw new Error('mfind0(): seemimic() not ported yet');
+    } else {
+        /* this used to only be executed if a !canspotmon() test passed
+           but that failed to bring sensed monsters out of hiding */
+        found_something = !canspotmon(mtmp);
+        if (mtmp.mundetected && (is_hider(mtmp.data)
+                                 || hides_under(mtmp.data)
+                                 || mtmp.data.mlet === S_EEL)) {
+            mtmp.mundetected = 0;
+            found_something = true;
+        }
+        newsym(x, y);
+    }
+
+    if (found_something) {
+        /* exercise(A_WIS, TRUE); map_invisible(); "You feel an unseen
+           monster!" / "You find %s." -- not ported yet */
+        throw new Error('mfind0(): finding a hidden monster not ported yet');
+    }
+    return 0;
+}
+
 // C ref: detect.c dosearch0()
 export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searching */ {
     const g = game;
@@ -79,8 +119,8 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
                 if (x === u.ux && y === u.uy)
                     continue;
 
-                if (!aflag)
-                    throw new Error('dosearch0(): explicit search not ported yet');
+                if (!aflag && (Blind /* || visible_region_at(x, y) */))
+                    throw new Error('dosearch0(): feel_location() not ported yet');
                 const lev = g.level.at(x, y);
                 if (lev.typ === SDOOR) {
                     if (rnl(7 - fund))
@@ -102,10 +142,19 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
                     await pline("You find a hidden passage.");
                 } else {
                     /* Be careful not to find anything in an SCORR or SDOOR */
-                    mtmp = m_at(x, y);
-                    /* (mtmp && !aflag): mfind0() -- explicit search only */
-                    /* (!aflag && !mtmp && !Blind): unmap_invisible() --
-                       explicit search only */
+                    if ((mtmp = m_at(x, y)) && !aflag) {
+                        const mfres = mfind0(mtmp, false);
+
+                        if (mfres === -1)
+                            continue;
+                        else if (mfres > 0)
+                            return mfres;
+                    }
+
+                    /* see if an invisible monster has moved--if Blind,
+                     * feel_location() already did it
+                     * (!aflag && !mtmp && !Blind): unmap_invisible() --
+                     * the JS map has no remembered 'I' glyphs yet */
 
                     if ((trap = t_at(x, y)) && !trap.tseen && !rnl(8)) {
                         nomul0();
@@ -124,4 +173,13 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
             }
     }
     return 1;
+}
+
+// C ref: detect.c dosearch() -- the 's' command
+export async function dosearch() {
+    if (await cmd_safety_prevention("Searching", "another search",
+                                    "You already found a monster.",
+                                    "already_found_flag"))
+        return 0; /* ECMD_OK */
+    return (await dosearch0(0)) ? 1 /* ECMD_TIME */ : 0 /* ECMD_OK */;
 }
