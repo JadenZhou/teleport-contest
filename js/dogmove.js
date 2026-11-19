@@ -30,6 +30,10 @@ import {
     D_CLOSED, D_LOCKED, CONFLICT, NON_PM, isok, MAGIC_PORTAL, W_ARMG,
 } from './const.js';
 
+/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
+   order; C prepends, so walk it newest first */
+function minv(mon) { return (mon.minvent || []).slice().reverse(); }
+
 const DOG_HUNGRY = 300;
 const DOG_WEAK = 500;
 const DOG_STARVE = 750;
@@ -268,10 +272,10 @@ function obj_weight(obj) {
 function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
 
 // ── C ref: mon.c curr_mon_load() ──
-function curr_mon_load(mtmp) {
+export function curr_mon_load(mtmp) {
     let curload = 0;
 
-    for (let obj = mtmp.minvent; obj; obj = obj.nobj) {
+    for (const obj of minv(mtmp)) {
         if (obj.otyp !== O.BOULDER || !throws_rocks(mtmp.data))
             curload += obj_weight(obj);
     }
@@ -280,7 +284,7 @@ function curr_mon_load(mtmp) {
 }
 
 // ── C ref: mon.c max_mon_load() ──
-function max_mon_load(mtmp) {
+export function max_mon_load(mtmp) {
     const MAX_CARR_CAP = 1000, WT_HUMAN = 1450;
     let maxload;
 
@@ -302,7 +306,7 @@ function max_mon_load(mtmp) {
 }
 
 // ── C ref: mon.c can_touch_safely() ──
-function can_touch_safely(mtmp, otmp) {
+export function can_touch_safely(mtmp, otmp) {
     const otyp = otmp.otyp;
 
     if (otyp === O.CORPSE && (otmp.corpsenm === M.PM_COCKATRICE
@@ -394,7 +398,7 @@ export function can_carry(mtmp, otmp) {
 
 // ── C ref: dogmove.c droppables() ──
 function droppables(mon) {
-    for (let obj = mon.minvent; obj; obj = obj.nobj) {
+    for (const obj of minv(mon)) {
         if (!obj.owornmask)
             throw new Error('droppables(): pet inventory not ported yet');
     }

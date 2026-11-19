@@ -22,7 +22,9 @@ import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls, haseyes,
          dmgtype } from './mondata.js';
 import { mfndpos, monnear, mon_allowflags } from './mon.js';
 import { gettrack } from './track.js';
-import { dog_move } from './dogmove.js';
+import { dog_move, can_carry, can_touch_safely, curr_mon_load,
+         max_mon_load } from './dogmove.js';
+import * as OBJ from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { objects, BOULDER, ROCK, SCR_SCARE_MONSTER, GOLD_PIECE, CORPSE,
@@ -37,11 +39,15 @@ import {
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
-    COLNO, ROWNO, IS_OBSTRUCTED,
+    COLNO, ROWNO, IS_OBSTRUCTED, MFAST,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR } from './artilist.js';
 import { In_hell } from './dungeon.js';
+
+/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
+   order; C prepends, so walk it newest first */
+function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
@@ -181,7 +187,7 @@ function in_shop(x, y) {
 }
 /* C ref: mthrowu.c m_carrying() */
 function m_carrying(mtmp, type) {
-    for (let otmp = mtmp.minvent; otmp; otmp = otmp.nobj)
+    for (const otmp of minv(mtmp))
         if (otmp.otyp === type) return otmp;
     return null;
 }
@@ -434,7 +440,7 @@ function money_cnt(otmp) {
 }
 // C ref: monmove.c can_ooze()
 function can_ooze(mtmp) {
-    if (!amorphous(mtmp.data) || mtmp.minvent /* stuff_prevents_passage */)
+    if (!amorphous(mtmp.data) || minv(mtmp).length /* stuff_prevents_passage */)
         throw new Error('can_ooze(): stuff_prevents_passage() not ported yet');
     return true;
 }
@@ -856,7 +862,7 @@ function m_balks_at_approaching(oldappr, mtmp, pr) {
         return oldappr;
 
     /* has ammo+launcher */
-    if (mtmp.minvent)
+    if (minv(mtmp).length)
         throw new Error('m_balks_at_approaching(): m_has_launcher_and_ammo() not ported yet');
 
     /* can attack from distance, and hp loss or attack not used */
@@ -884,9 +890,8 @@ const magical = [AMULET_CLASS, POTION_CLASS, SCROLL_CLASS, WAND_CLASS,
 // ── C ref: monmove.c mon_would_take_item() ──
 function mon_would_take_item(mtmp, otmp) {
     /* pctload = (curr_mon_load(mtmp) * 100) / max_mon_load(mtmp) */
-    const pctload = () => {
-        throw new Error('mon_would_take_item(): curr_mon_load() not ported yet');
-    };
+    const pctload = () => Math.trunc((curr_mon_load(mtmp) * 100)
+                                     / max_mon_load(mtmp));
 
     if (otmp === game.uball || otmp === game.uchain)
         return false;
@@ -917,8 +922,90 @@ function mon_would_take_item(mtmp, otmp) {
 
     return false;
 }
-function searches_for_item(mtmp, otmp) {
-    throw new Error('searches_for_item() not ported yet');
+// ── C ref: muse.c searches_for_item() ──
+function searches_for_item(mon, obj) {
+    const typ = obj.otyp;
+    const O = OBJ;
+
+    /* don't let monsters interact with protected items on the floor */
+    if (obj.where === 'OBJ_FLOOR'
+        && (obj.ox === mon.mx && obj.oy === mon.my)
+        && onscary(obj.ox, obj.oy, mon)) {
+        return false;
+    }
+
+    if (is_animal(mon.data) || mindless(mon.data)
+        || mon.data === mons[M.PM_GHOST]) /* don't loot bones piles */
+        return false;
+
+    if (typ === O.WAN_MAKE_INVISIBLE || typ === O.POT_INVISIBILITY)
+        return (!mon.minvis && !mon.invis_blkd
+                && !attacktype(mon.data, M.AT_GAZE));
+    if (typ === O.WAN_SPEED_MONSTER || typ === O.POT_SPEED)
+        return (mon.mspeed !== MFAST);
+
+    switch (obj.oclass) {
+    case O.WAND_CLASS:
+        if (obj.spe <= 0)
+            return false;
+        if (typ === O.WAN_DIGGING)
+            return !is_floater(mon.data);
+        if (typ === O.WAN_POLYMORPH)
+            return (mons[monsndx(mon.data)].difficulty < 6);
+        if (objects[typ].oc_dir === O.RAY || typ === O.WAN_STRIKING
+            || typ === O.WAN_UNDEAD_TURNING
+            || typ === O.WAN_TELEPORTATION || typ === O.WAN_CREATE_MONSTER)
+            return true;
+        break;
+    case O.POTION_CLASS:
+        if (typ === O.POT_HEALING || typ === O.POT_EXTRA_HEALING
+            || typ === O.POT_FULL_HEALING || typ === O.POT_POLYMORPH
+            || typ === O.POT_GAIN_LEVEL || typ === O.POT_PARALYSIS
+            || typ === O.POT_SLEEPING || typ === O.POT_ACID
+            || typ === O.POT_CONFUSION)
+            return true;
+        if (typ === O.POT_BLINDNESS && !attacktype(mon.data, M.AT_GAZE))
+            return true;
+        break;
+    case O.SCROLL_CLASS:
+        if (typ === O.SCR_TELEPORTATION || typ === O.SCR_CREATE_MONSTER
+            || typ === O.SCR_EARTH || typ === O.SCR_FIRE)
+            return true;
+        break;
+    case O.AMULET_CLASS:
+        if (typ === O.AMULET_OF_LIFE_SAVING)
+            throw new Error('searches_for_item(): nonliving() not ported yet');
+        if (typ === O.AMULET_OF_REFLECTION || typ === O.AMULET_OF_GUARDING)
+            return true;
+        break;
+    case O.TOOL_CLASS:
+        if (typ === O.PICK_AXE)
+            return needspick(mon.data);
+        if (typ === O.UNICORN_HORN)
+            return (!obj.cursed && !is_unicorn(mon.data)
+                    && mon.data !== mons[M.PM_KI_RIN]);
+        if (typ === O.FROST_HORN || typ === O.FIRE_HORN)
+            throw new Error('searches_for_item(): can_blow() not ported yet');
+        if (typ >= O.LARGE_BOX && typ <= O.BAG_OF_TRICKS /* Is_container */
+            && !((typ === O.BAG_OF_HOLDING || typ === O.BAG_OF_TRICKS) /* Is_mbag */
+                 && obj.cursed)
+            && !obj.olocked)
+            return true;
+        if (typ === O.EXPENSIVE_CAMERA)
+            return (obj.spe > 0);
+        break;
+    case O.FOOD_CLASS:
+        if (typ === O.CORPSE || typ === O.TIN)
+            throw new Error('searches_for_item(): cures_stoning() not ported yet');
+        if (typ === O.EGG && obj.corpsenm >= 0)
+            return (obj.corpsenm === M.PM_COCKATRICE
+                    || obj.corpsenm === M.PM_CHICKATRICE); /* touch_petrifies */
+        break;
+    default:
+        break;
+    }
+
+    return false;
 }
 
 // ── C ref: monmove.c mon_would_consume_item() ──
@@ -1004,9 +1091,21 @@ function m_search_items(mtmp, st) {
                         continue;
                     /* is_mines_prize/is_soko_prize: those levels aren't
                        ported yet */
-                    if ((mon_would_take_item(mtmp, otmp)
-                         || mon_would_consume_item(mtmp, otmp)))
-                        throw new Error('m_search_items(): can_carry() not ported yet');
+                    if (((mon_would_take_item(mtmp, otmp)
+                          && (can_carry(mtmp, otmp) > 0))
+                         || mon_would_consume_item(mtmp, otmp))
+                        && can_touch_safely(mtmp, otmp)) {
+                        minr = distmin(omx, omy, xx, yy);
+                        st.ggx = otmp.ox;
+                        st.ggy = otmp.oy;
+                        if (st.ggx === omx && st.ggy === omy) {
+                            st.mmoved = MMOVE_DONE; /* actually unnecessary */
+                            return true;
+                        }
+                        /* found an item of interest; skip the rest of
+                           the pile */
+                        break;
+                    }
                 }
             }
         }

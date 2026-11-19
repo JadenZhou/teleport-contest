@@ -36,6 +36,10 @@ import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
          LOCK_PICK } from './objects.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect } from './monmove.js';
 
+/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
+   order; C prepends, so walk it newest first */
+function minv(mon) { return (mon.minvent || []).slice().reverse(); }
+
 // C ref: mon.c mcalcmove()
 export function mcalcmove(mon,
                           m_moving) /* True: adjust for moving;
@@ -261,7 +265,7 @@ function m_can_break_boulder(mtmp) {
 }
 /* C ref: mthrowu.c m_carrying() */
 function m_carrying(mtmp, type) {
-    for (let otmp = mtmp.minvent; otmp; otmp = otmp.nobj)
+    for (const otmp of minv(mtmp))
         if (otmp.otyp === type) return otmp;
     return null;
 }
@@ -392,7 +396,7 @@ function cant_squeeze_thru(mon) {
         return 1;
 
     /* lugging too much junk? curr_mon_load() */
-    if (mon.minvent)
+    if (minv(mon).length)
         throw new Error('cant_squeeze_thru(): curr_mon_load() not ported yet');
 
     /* can squeeze through */
