@@ -2,8 +2,7 @@
 // C ref: trap.c maketrap(), t_at() (in trap.c as of 3.7), choose_trapnote(),
 // dng_bottom(), hole_destination().
 //
-// Not ported yet: mk_trap_statue() (STATUE_TRAP, difficulty >= 8),
-// mkroll_launch() (ROLLING_BOULDER_TRAP, difficulty >= 2), shop damage,
+// Not ported yet: mkroll_launch() (ROLLING_BOULDER_TRAP, difficulty >= 2), shop damage,
 // set_levltyp()'s object/timer side effects, unearth_objs(),
 // recalc_block_point(), Sokoban bookkeeping.
 
@@ -13,7 +12,46 @@ import { dunlev, dunlevs_in_dungeon, In_hell } from './dungeon.js';
 import {
     ROOM, CORR, DOOR, STONE, SCORR, SDOOR, DRAWBRIDGE_UP, STAIRS, LADDER,
     IS_FURNITURE, IS_WALL, IS_POOL, IS_ROOM, LAVAPOOL, In_quest,
+    CORPSTAT_NONE, MM_NOCOUNTBIRTH, MM_NOMSG,
 } from './const.js';
+import { mons, S_UNICORN, M2_JEWELS } from './monsters.js';
+import { STATUE } from './objects.js';
+import { rndmonnum_adj, mkcorpstat, add_to_container, weight } from './mkobj.js';
+import { makemon } from './makemon.js';
+import { mongone } from './mon.js';
+
+// C ref: mondata.h likes_gems(), is_unicorn()
+function likes_gems(ptr) { return (ptr.mflags2 & M2_JEWELS) !== 0; }
+function is_unicorn(ptr) { return ptr.mlet === S_UNICORN && likes_gems(ptr); }
+// C ref: hacklib.c sgn()
+function sgn(n) { return (n < 0) ? -1 : (n !== 0); }
+
+// C ref: trap.c mk_trap_statue()
+/* create a "living" statue at x,y */
+function mk_trap_statue(x, y) {
+    let mtmp, otmp, statue, mptr;
+    let trycount = 10;
+
+    do { /* avoid ultimately hostile co-aligned unicorn */
+        mptr = mons[rndmonnum_adj(3, 6)];
+    } while (--trycount > 0 && is_unicorn(mptr)
+             && sgn(game.u.ualign.type) === sgn(mptr.maligntyp));
+    statue = mkcorpstat(STATUE, null, mptr, x, y, CORPSTAT_NONE);
+    mtmp = makemon(mons[statue.corpsenm], 0, 0, MM_NOCOUNTBIRTH | MM_NOMSG);
+    if (!mtmp)
+        return; /* should never happen */
+    /* C's minvent chain head is the most recently added item; JS keeps
+       minvent as an array with the newest last */
+    while (mtmp.minvent && mtmp.minvent.length) {
+        otmp = mtmp.minvent.pop();
+        otmp.owornmask = 0;
+        /* obj_extract_self(otmp) */
+        otmp.where = 'OBJ_FREE';
+        add_to_container(statue, otmp);
+    }
+    statue.owt = weight(statue);
+    mongone(mtmp);
+}
 
 export const NO_TRAP = 0;
 export const ARROW_TRAP = 1;
@@ -155,7 +193,7 @@ export function maketrap(x, y, typ) {
         ttmp.tnote = choose_trapnote(ttmp);
         break;
     case STATUE_TRAP: /* create a "living" statue */
-        /* mk_trap_statue(x, y): not ported yet */
+        mk_trap_statue(x, y);
         break;
     case ROLLING_BOULDER_TRAP: /* boulder will roll towards trigger */
         /* mkroll_launch(ttmp, x, y, BOULDER, 1L): not ported yet */
