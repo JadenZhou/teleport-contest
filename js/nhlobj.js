@@ -17,7 +17,10 @@ import {
 import { objects, OBJ_NAME, OBJ_DESCR, MAXOCLASSES, RANDOM_CLASS } from './objects.js';
 import { def_oc_syms, def_char_to_objclass } from './drawing.js';
 import { readobjnam } from './objnam.js';
-import { mksobj, mkobj, add_to_container, weight } from './mkobj.js';
+import { mksobj, mkobj, add_to_container, weight, Is_container, is_poisonable } from './mkobj.js';
+import { Has_contents, CORPSTAT_HISTORIC, CORPSTAT_MALE, CORPSTAT_FEMALE, NON_PM, NEUTRAL } from './const.js';
+import { STATUE, CORPSE, TIN, EGG, FIGURINE, POTION_CLASS } from './objects.js';
+import { mons } from './monsters.js';
 import { get_table_objtype, get_table_objclass } from './sp_lev.js';
 
 const FIRST_OBJECT = 1; /* objects.h */
@@ -223,6 +226,95 @@ function l_obj_not_ported(name) {
     };
 }
 
+/* obj.h OBJ_* (obj->where); JS keeps the names as strings */
+const obj_where_names = [
+    'OBJ_FREE', 'OBJ_FLOOR', 'OBJ_CONTAINED', 'OBJ_INVENT', 'OBJ_MINVENT',
+    'OBJ_MIGRATING', 'OBJ_BURIED', 'OBJ_ONBILL', 'OBJ_LUAFREE',
+];
+
+// C ref: nhlobj.c l_obj_to_table()
+/* local tbl = o:totable(); */
+function l_obj_to_table(v) {
+    const lo = l_obj_check(v);
+    const obj = lo.obj;
+    const t = {};
+    const b = (x) => (x ? 1 : 0);
+
+    if (!obj || obj.where === 'OBJ_LUAFREE') {
+        t.NO_OBJ = 1;
+        return t;
+    }
+
+    t.has_contents = b(Has_contents(obj));
+    t.is_container = b(Is_container(obj));
+    t.o_id = obj.o_id;
+    t.ox = obj.ox;
+    t.oy = obj.oy;
+    t.otyp = obj.otyp;
+    if (OBJ_NAME(objects[obj.otyp]))
+        t.otyp_name = OBJ_NAME(objects[obj.otyp]);
+    if (OBJ_DESCR(objects[obj.otyp]))
+        t.otyp_descr = OBJ_DESCR(objects[obj.otyp]);
+    t.owt = obj.owt;
+    t.quan = obj.quan;
+    t.spe = obj.spe;
+
+    if (obj.otyp === STATUE)
+        t.historic = b((obj.spe & CORPSTAT_HISTORIC) !== 0);
+    if (obj.otyp === CORPSE || obj.otyp === STATUE) {
+        t.male = b((obj.spe & CORPSTAT_MALE) !== 0);
+        t.female = b((obj.spe & CORPSTAT_FEMALE) !== 0);
+    }
+
+    t.oclass = def_oc_syms[obj.oclass];
+    t.invlet = obj.invlet || '\0';
+    t.where = obj_where_names.indexOf(obj.where);
+    t.cursed = b(obj.cursed);
+    t.blessed = b(obj.blessed);
+    t.unpaid = b(obj.unpaid);
+    t.no_charge = b(obj.no_charge);
+    t.known = b(obj.known);
+    t.dknown = b(obj.dknown);
+    t.bknown = b(obj.bknown);
+    t.rknown = b(obj.rknown);
+    t.tknown = b(obj.tknown);
+    if (obj.oclass === POTION_CLASS)
+        t.odiluted = b(obj.odiluted);
+    else
+        t.oeroded = obj.oeroded || 0;
+    t.oeroded2 = obj.oeroded2 || 0;
+    t.oerodeproof = b(obj.oerodeproof);
+    t.olocked = b(obj.olocked);
+    t.obroken = b(obj.obroken);
+    if (is_poisonable(obj))
+        t.opoisoned = b(obj.opoisoned);
+    else
+        t.otrapped = b(obj.otrapped);
+    t.recharged = obj.recharged || 0;
+    t.lamplit = b(obj.lamplit);
+    t.globby = b(obj.globby);
+    t.greased = b(obj.greased);
+    t.nomerge = b(obj.nomerge);
+    t.how_lost = obj.how_lost || 0;
+    t.in_use = b(obj.in_use);
+    t.bypass = b(obj.bypass);
+    t.cknown = b(obj.cknown);
+    t.lknown = b(obj.lknown);
+    t.corpsenm = obj.corpsenm;
+    if (obj.corpsenm !== NON_PM
+        && (obj.otyp === TIN || obj.otyp === CORPSE || obj.otyp === EGG
+            || obj.otyp === FIGURINE || obj.otyp === STATUE))
+        t.corpsenm_name = mons[obj.corpsenm].pmnames[NEUTRAL];
+    t.usecount = obj.usecount || 0;
+    t.oeaten = obj.oeaten || 0;
+    t.age = obj.age;
+    t.owornmask = obj.owornmask || 0;
+    t.has_oname = b(obj.oname);
+    if (obj.oname)
+        t.oname = obj.oname;
+    return t;
+}
+
 // C ref: nhlua.c nhl_get_timertype()
 /* these are in the same order as enum timeout_types in timeout.h; the JS
    timer stand-in (obj.timer.action) uses the enum names */
@@ -330,7 +422,7 @@ export function l_obj_register(L) {
         isnull: l_obj_not_ported('isnull'),
         at: l_obj_not_ported('at'),
         next: l_obj_not_ported('next'),
-        totable: l_obj_not_ported('totable'),
+        totable: l_obj_to_table,
         class: l_obj_objects_to_table,
         placeobj: l_obj_not_ported('placeobj'),
         container: l_obj_not_ported('container'),

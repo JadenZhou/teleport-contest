@@ -303,7 +303,7 @@ export function themerms_lua(L) {
             name: 'Buried treasure',
             contents: function(rm) {
                 des.object({ id: 'chest', buried: true, contents: function(otmp) {
-                    const xobj = otmp.totable();
+                    const xobj = lua_callmeth(otmp, 'totable');
                     // keep track of the last buried treasure
                     if (xobj.NO_OBJ === undefined) {
                         postprocess.push({ handler: G.make_dig_engraving,

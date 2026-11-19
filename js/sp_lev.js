@@ -14,7 +14,7 @@
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
 import { game } from './gstate.js';
-import { rn2, rn1 } from './rng.js';
+import { rn2, rn1, rnd } from './rng.js';
 import { depth } from './dungeon.js';
 import {
     COLNO, ROWNO, OROOM, THEMEROOM, COURT, SWAMP, VAULT, BEEHIVE, MORGUE,
@@ -41,7 +41,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, somex, somey, somexy, mktrap } from './mklev.js';
+import { create_room, topologize, add_door, add_room, add_subroom, somex, somey, somexy, mktrap } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container,
@@ -421,6 +421,41 @@ export function fill_special_room(croom) {
     }
 }
 
+// C ref: sp_lev.c create_subroom()
+function create_subroom(proom, x, y, w, h, rtype, rlit) {
+    const width = proom.hx - proom.lx + 1;
+    const height = proom.hy - proom.ly + 1;
+
+    /* There is a minimum size for the parent room */
+    if (width < 4 || height < 4)
+        return FALSE;
+
+    /* Check for random position, size, etc... */
+
+    if (w === -1)
+        w = rnd(width - 3);
+    if (h === -1)
+        h = rnd(height - 3);
+    if (x === -1)
+        x = rnd(width - w);
+    if (y === -1)
+        y = rnd(height - h);
+    if (x === 1)
+        x = 0;
+    if (y === 1)
+        y = 0;
+    if ((x + w + 1) === width)
+        x++;
+    if ((y + h + 1) === height)
+        y++;
+    if (rtype === -1)
+        rtype = OROOM;
+    rlit = litstate_rnd(rlit);
+    add_subroom(proom, proom.lx + x, proom.ly + y, proom.lx + x + w - 1,
+                proom.ly + y + h - 1, rlit, rtype, FALSE);
+    return TRUE;
+}
+
 // C ref: sp_lev.c build_room()
 function build_room(r, mkr) {
     let okroom;
@@ -428,8 +463,8 @@ function build_room(r, mkr) {
     const rtype = (!r.chance || rn2(100) < r.chance) ? r.rtype : OROOM;
 
     if (mkr) {
-        /* create_subroom() is not ported yet */
-        nhl_error(null, 'des.room: subrooms are not ported yet');
+        okroom = create_subroom(mkr, r.x, r.y, r.w, r.h, rtype, r.rlit);
+        aroom = okroom ? game.level.subrooms[game.level.nsubroom - 1] : null;
     } else {
         okroom = create_room(r.x, r.y, r.w, r.h, r.xalign, r.yalign,
                              rtype, r.rlit);
@@ -1527,8 +1562,10 @@ export function lspo_monster(...args) {
         my = luaL_checkinteger(args[2]);
         from_paramstr(paramstr);
     } else {
-        const tbl = args[0];
         let keep_default_invent = -1; /* -1 = unspecified */
+        if (args.length < 1)
+            args[0] = {}; /* lcheck_param_table(): lua_createtable() */
+        const tbl = args[0];
         if (lua_type(tbl) !== LUA_TTABLE)
             nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
 
@@ -2143,6 +2180,8 @@ export function lspo_object(...args) {
         oy = luaL_checkinteger(args[2]);
         from_paramstr(paramstr);
     } else {
+        if (args.length < 1)
+            args[0] = {}; /* lcheck_param_table(): lua_createtable() */
         const tbl = args[0];
         if (lua_type(tbl) !== LUA_TTABLE)
             nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
