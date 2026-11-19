@@ -17,6 +17,7 @@ import { initrack, settrack } from './track.js';
 import { m_at, makemon } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
+import { deferred_goto } from './do.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
@@ -604,6 +605,9 @@ export async function moveloop_core() {
         /* ckmailstatus(): MAIL isn't ported */
         await rhack(0);
     }
+    // C ref: allmain.c moveloop_core()
+    if (g.u.utotype)       /* change dungeon level */
+        await deferred_goto(); /* after rhack() */
 
     // Clear message after command is processed
     g._pending_message = '';

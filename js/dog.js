@@ -6,9 +6,10 @@
 
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
-import { A_CHA, MM_EDOG, NO_MINVENT, NON_PM } from './const.js';
+import { A_CHA, MM_EDOG, NO_MINVENT, NON_PM, STRAT_WAITFORU } from './const.js';
 import { mons, PM_LITTLE_DOG, PM_KITTEN, PM_PONY, PM_CAVE_DWELLER,
-         PM_SAMURAI, PM_BARBARIAN, PM_RANGER } from './monsters.js';
+         PM_SAMURAI, PM_BARBARIAN, PM_RANGER, M2_STALK } from './monsters.js';
+import { AMULET_OF_YENDOR } from './objects.js';
 import { makemon, is_domestic, set_malign, put_saddle_on_mon } from './makemon.js';
 
 import { ACURR } from './attrib.js';
@@ -155,4 +156,99 @@ export function makedog() {
 
     initedog(mtmp, true);
     return mtmp;
+}
+
+// C ref: monst.h helpless()
+function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
+
+// C ref: mondata.c levl_follower()
+function levl_follower(mtmp) {
+    const u = game.u;
+    if (mtmp === u.usteed)
+        return true;
+
+    /* Wizard with Amulet won't bother trying to follow across levels */
+    if (mtmp.iswiz && mon_has_amulet(mtmp))
+        return false;
+    /* some monsters will follow even while intending to flee from you */
+    if (mtmp.mtame || mtmp.iswiz
+        || (mtmp.isshk && mtmp.mextra?.eshk?.following)) /* is_fshk() */
+        return true;
+    /* stalking types follow, but won't when fleeing unless you hold
+       the Amulet */
+    return !!((mtmp.data.mflags2 & M2_STALK)
+              && (!mtmp.mflee || u.uhave?.amulet));
+}
+
+// C ref: steal.c mon_has_amulet()
+function mon_has_amulet(mtmp) {
+    for (let otmp = mtmp.minvent; otmp; otmp = otmp.nobj)
+        if (otmp.otyp === AMULET_OF_YENDOR)
+            return true;
+    return false;
+}
+
+// C ref: dog.c keepdogs()
+// The parts reached so far: followers that come along are moved from fmon
+// to game.mydogs.  Pets left behind (eating, trapped, carrying the
+// Amulet), keep_mon_accessible() monsters and leashes are not ported yet.
+export function keepdogs(pets_only) /* true for ascension or final escape */ {
+    const g = game;
+    const u = g.u;
+    let mtmp, mtmp2;
+
+    for (mtmp = g.fmon; mtmp; mtmp = mtmp2) {
+        mtmp2 = mtmp.nmon;
+        if (mtmp.mhp <= 0) /* DEADMONSTER() */
+            continue;
+        if (pets_only)
+            throw new Error('keepdogs(): pets_only not ported yet');
+        if (((Math.abs(mtmp.mx - u.ux) <= 1 && Math.abs(mtmp.my - u.uy) <= 1 /* monnear() */
+              && levl_follower(mtmp))
+             /* the wiz will level t-port from anywhere to chase
+                the amulet; if you don't have it, will chase you
+                only if in range. -3. */
+             || (u.uhave?.amulet && mtmp.iswiz))
+            && (!helpless(mtmp)
+                /* eg if level teleport or new trap, steed has no control
+                   to avoid following */
+                || (mtmp === u.usteed))
+            /* monster won't follow if it hasn't noticed you yet */
+            && !(mtmp.mstrategy & STRAT_WAITFORU)) {
+            if (mtmp.mtrapped || mtmp === u.usteed || mtmp.meating
+                || mon_has_amulet(mtmp))
+                throw new Error('keepdogs(): trapped/steed/eating/amulet follower not ported yet');
+
+            /* prepare to take mtmp off the map */
+            /* num_segs = mon_leave(mtmp) */
+            if (mtmp.wormno || mtmp.mleashed)
+                throw new Error('keepdogs(): mon_leave() for worms/leashed pets not ported yet');
+            const num_segs = 0;
+            /* take off map and move mtmp from fmon list to mydogs */
+            /* relmon(mtmp, &gm.mydogs): remove_monster() + unlink from fmon */
+            const lst = g.level.monsters || [];
+            const i = lst.indexOf(mtmp);
+            if (i >= 0)
+                lst.splice(i, 1);
+            if (g.fmon === mtmp) {
+                g.fmon = mtmp.nmon;
+            } else {
+                let p;
+                for (p = g.fmon; p && p.nmon !== mtmp; p = p.nmon)
+                    ;
+                if (p) p.nmon = mtmp.nmon;
+            }
+            mtmp.nmon = g.mydogs || null;
+            g.mydogs = mtmp;
+            /* mtmp->mx,my retain current value */
+            mtmp.mx = mtmp.my = 0; /* mx==0 implies migrating */
+            mtmp.wormno = num_segs;
+            mtmp.mlstmv = g.moves;
+        } else if (mtmp.isshk || mtmp.ispriest || mtmp.isgd || mtmp.iswiz) {
+            /* keep_mon_accessible(): migrate_to_level() not ported yet */
+            throw new Error('keepdogs(): keep_mon_accessible() not ported yet');
+        } else if (mtmp.mleashed) {
+            throw new Error('keepdogs(): leash goes slack not ported yet');
+        }
+    }
 }
