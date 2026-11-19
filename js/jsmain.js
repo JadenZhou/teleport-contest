@@ -12,7 +12,7 @@
 import { game, resetGame } from './gstate.js';
 import { initRng, enableRngLog, getRngLog } from './rng.js';
 import { pushKey, nhgetch } from './input.js';
-import { newgame, moveloop_core } from './allmain.js';
+import { early_init, newgame, moveloop_core } from './allmain.js';
 import { parseNethackrc } from './options.js';
 import { flush_screen } from './display.js';
 import { GameDisplay } from './game_display.js';
@@ -84,6 +84,9 @@ export class NethackGame {
 
     async start() {
         const g = resetGame();
+
+        // C ref: unixmain.c main() calls early_init() first
+        early_init();
 
         // Parse nethackrc
         const opts = parseNethackrc(this._nethackrc);
