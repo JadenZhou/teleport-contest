@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T20:55:13.433Z",
+ "when": "2026-11-19T21:00:42.864Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -655,7 +655,7 @@
   {
    "session": "dev81943-wizard-wear-shop.session.json",
    "total": 15567,
-   "jsTotal": 2641,
+   "jsTotal": 4801,
    "totalScreens": 127,
    "valuePrefix": 2498,
    "rulePrefix": 2498,
@@ -679,7 +679,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1425:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "dev81984-monk-north-search.session.json",
@@ -800,7 +800,7 @@
   {
    "session": "dev82148-barbarian-quest-tour.session.json",
    "total": 33192,
-   "jsTotal": 3217,
+   "jsTotal": 5387,
    "totalScreens": 124,
    "valuePrefix": 3062,
    "rulePrefix": 3062,
@@ -824,7 +824,7 @@
      "rn2(5)=1 @ newpw(exper.c:64)"
     ]
    },
-   "error": null
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "dev82189-wizard-hallucinate.session.json",
@@ -1148,7 +1148,7 @@
   {
    "session": "dev82640-knight-coverage.session.json",
    "total": 71392,
-   "jsTotal": 4474,
+   "jsTotal": 6475,
    "totalScreens": 1112,
    "valuePrefix": 2967,
    "rulePrefix": 2967,
@@ -1172,65 +1172,65 @@
      "rnd(7)=2 @ drain_en(trap.c:5222)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
    "total": 4743,
-   "jsTotal": 2769,
+   "jsTotal": 4507,
    "totalScreens": 124,
-   "valuePrefix": 2243,
-   "rulePrefix": 2243,
+   "valuePrefix": 4507,
+   "rulePrefix": 4507,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 2243,
+    "index": 4507,
     "step": 4,
-    "c": "rn2(3)=0 @ getbones(bones.c:645)",
-    "js": "rn2(41)=4 @ rnd_otyp_by_namedesc",
+    "c": "rn2(79)=10 @ place_lregion(mkmaze.c:396)",
+    "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "getbones",
-    "jsCaller": "rnd_otyp_by_namedesc",
+    "cCaller": "place_lregion",
+    "jsCaller": null,
     "context": [
-     "rn2(20)=2 @ vary_init_attr(attrib.c:769)",
-     "rnd(9000)=7782 @ moveloop_preamble(allmain.c:72)",
-     "rnd(30)=26 @ moveloop_preamble(allmain.c:79)",
-     "rn2(3)=0 @ getbones(bones.c:645)",
-     "rn2(5)=3 @ makelevel(mklev.c:1287)",
-     "rn2(1)=0 @ rnd_rect(rect.c:106)"
+     "rn2(1000)=619 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=788 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=363 @ mineralize(mklev.c:1526)",
+     "rn2(79)=10 @ place_lregion(mkmaze.c:396)",
+     "rn2(21)=6 @ place_lregion(mkmaze.c:397)",
+     "rn2(10)=3 @ mon_arrive(dog.c:475)"
     ]
    },
-   "error": null
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "dev82722-tourist-stress-disaster.session.json",
    "total": 7545,
-   "jsTotal": 4719,
+   "jsTotal": 7159,
    "totalScreens": 194,
-   "valuePrefix": 4673,
-   "rulePrefix": 4673,
+   "valuePrefix": 5800,
+   "rulePrefix": 5800,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 4673,
+    "index": 5800,
     "step": 4,
-    "c": "rn2(3)=1 @ getbones(bones.c:645)",
-    "js": "rn2(16)=15 @ rnd_otyp_by_namedesc",
+    "c": "rnd(100)=83 @ mkshop(mkroom.c:193)",
+    "js": "rn2(7)=2 @ makelevel",
     "kind": "value",
-    "cCaller": "getbones",
-    "jsCaller": "rnd_otyp_by_namedesc",
+    "cCaller": "mkshop",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(20)=7 @ vary_init_attr(attrib.c:769)",
-     "rnd(9000)=3752 @ moveloop_preamble(allmain.c:72)",
-     "rnd(30)=5 @ moveloop_preamble(allmain.c:79)",
-     "rn2(3)=1 @ getbones(bones.c:645)",
-     "rn2(5)=4 @ makelevel(mklev.c:1287)",
-     "rn2(1)=0 @ rnd_rect(rect.c:106)"
+     "rn2(80)=12 @ mkobj_erosions(mkobj.c:211)",
+     "rn2(1000)=966 @ mkobj_erosions(mkobj.c:219)",
+     "rn2(2)=1 @ makelevel(mklev.c:1350)",
+     "rnd(100)=83 @ mkshop(mkroom.c:193)",
+     "rn2(6)=0 @ makelevel(mklev.c:1402)",
+     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "dev82763-tourist-starter.session.json",
@@ -1264,8 +1264,8 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 121490,
-  "value": 121490,
+  "rule": 124881,
+  "value": 124881,
   "rolls": 504996,
   "honestScreens": 236,
   "screens": 253,
@@ -1300,21 +1300,21 @@
    ]
   },
   {
-   "fn": "getbones",
-   "sessions": 4,
-   "blockedRolls": 18836,
-   "examples": [
-    "dev81164-swimmer-mforce @2885: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=11 @ mcalcmove\"",
-    "dev81943-wizard-wear-shop @2498: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(5)=1 @ distfleeck\""
-   ]
-  },
-  {
    "fn": "mattackm",
    "sessions": 3,
    "blockedRolls": 464,
    "examples": [
     "dev81246-friday13-save-then-fullmoon-restore @2748: C \"rnd(20)=3 @ mattackm(mhitm.c:441)\" / JS \"(none: JS log ended)\"",
     "dev81738-knight-ride-combat @3106: C \"rnd(20)=1 @ mattackm(mhitm.c:441)\" / JS \"(none: JS log ended)\""
+   ]
+  },
+  {
+   "fn": "getbones",
+   "sessions": 2,
+   "blockedRolls": 13464,
+   "examples": [
+    "dev81164-swimmer-mforce @2885: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=11 @ mcalcmove\"",
+    "dev81943-wizard-wear-shop @2498: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(5)=1 @ distfleeck\""
    ]
   },
   {
@@ -1369,6 +1369,14 @@
    ]
   },
   {
+   "fn": "mkshop",
+   "sessions": 1,
+   "blockedRolls": 1745,
+   "examples": [
+    "dev82722-tourist-stress-disaster @5800: C \"rnd(100)=83 @ mkshop(mkroom.c:193)\" / JS \"rn2(7)=2 @ makelevel\""
+   ]
+  },
+  {
    "fn": "doopen_indir",
    "sessions": 1,
    "blockedRolls": 834,
@@ -1390,6 +1398,14 @@
    "blockedRolls": 366,
    "examples": [
     "dev81861-samurai-twoweapon-enhance @2509: C \"rnd(20)=17 @ dotwoweapon(wield.c:861)\" / JS \"rn2(5)=1 @ distfleeck\""
+   ]
+  },
+  {
+   "fn": "place_lregion",
+   "sessions": 1,
+   "blockedRolls": 236,
+   "examples": [
+    "dev82681-wizard-coverage-pair @4507: C \"rn2(79)=10 @ place_lregion(mkmaze.c:396)\" / JS \"(none: JS log ended)\""
    ]
   },
   {

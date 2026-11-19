@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T20:55:00.139Z",
+ "when": "2026-11-19T21:00:30.071Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -671,7 +671,7 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3387,
+   "jsTotal": 6408,
    "totalScreens": 127,
    "valuePrefix": 2978,
    "rulePrefix": 2978,
@@ -695,7 +695,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "seed0200-monk-north-search.session.json",
@@ -1193,60 +1193,60 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 7315,
+   "jsTotal": 10061,
    "totalScreens": 410,
-   "valuePrefix": 2719,
-   "rulePrefix": 2719,
-   "screens": 7,
+   "valuePrefix": 3857,
+   "rulePrefix": 3857,
+   "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 2719,
+    "index": 3857,
     "step": 4,
-    "c": "rn2(3)=2 @ getbones(bones.c:645)",
-    "js": "rn2(41)=31 @ rnd_otyp_by_namedesc",
+    "c": "rnd(100)=91 @ mkshop(mkroom.c:193)",
+    "js": "rn2(7)=5 @ makelevel",
     "kind": "value",
-    "cCaller": "getbones",
-    "jsCaller": "rnd_otyp_by_namedesc",
+    "cCaller": "mkshop",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(20)=4 @ vary_init_attr(attrib.c:769)",
-     "rnd(9000)=2931 @ moveloop_preamble(allmain.c:72)",
-     "rnd(30)=18 @ moveloop_preamble(allmain.c:79)",
-     "rn2(3)=2 @ getbones(bones.c:645)",
-     "rn2(5)=4 @ makelevel(mklev.c:1287)",
-     "rn2(1)=0 @ rnd_rect(rect.c:106)"
+     "rn2(5)=2 @ dosdoor(mklev.c:666)",
+     "rn2(20)=14 @ dosdoor(mklev.c:671)",
+     "rn2(5)=1 @ makelevel(mklev.c:1350)",
+     "rnd(100)=91 @ mkshop(mkroom.c:193)",
+     "rn2(6)=1 @ makelevel(mklev.c:1402)",
+     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)"
     ]
    },
-   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:48:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1719:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:122:16)"
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 7307,
+   "jsTotal": 12885,
    "totalScreens": 249,
-   "valuePrefix": 4182,
-   "rulePrefix": 4182,
-   "screens": 8,
+   "valuePrefix": 8251,
+   "rulePrefix": 8251,
+   "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 4182,
+    "index": 8251,
     "step": 4,
-    "c": "rn2(3)=2 @ getbones(bones.c:645)",
-    "js": "rn2(16)=3 @ rnd_otyp_by_namedesc",
+    "c": "rn2(79)=18 @ place_lregion(mkmaze.c:396)",
+    "js": "rn2(2)=1 @ randomize_gem_colors",
     "kind": "value",
-    "cCaller": "getbones",
-    "jsCaller": "rnd_otyp_by_namedesc",
+    "cCaller": "place_lregion",
+    "jsCaller": "randomize_gem_colors",
     "context": [
-     "rn2(20)=8 @ vary_init_attr(attrib.c:769)",
-     "rnd(9000)=4480 @ moveloop_preamble(allmain.c:72)",
-     "rnd(30)=12 @ moveloop_preamble(allmain.c:79)",
-     "rn2(3)=2 @ getbones(bones.c:645)",
-     "rn2(5)=0 @ makelevel(mklev.c:1287)",
-     "rn2(1)=0 @ rnd_rect(rect.c:106)"
+     "rn2(1000)=709 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=53 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=539 @ mineralize(mklev.c:1526)",
+     "rn2(79)=18 @ place_lregion(mkmaze.c:396)",
+     "rn2(21)=5 @ place_lregion(mkmaze.c:397)",
+     "rn2(79)=49 @ place_lregion(mkmaze.c:396)"
     ]
    },
-   "error": null
+   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "seed8000-tourist-starter.session.json",
@@ -1280,11 +1280,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 128012,
-  "value": 128014,
+  "rule": 133219,
+  "value": 133221,
   "rolls": 792838,
   "honestScreens": 243,
-  "screens": 255,
+  "screens": 248,
   "totalScreens": 11405
  },
  "todo": [
@@ -1316,15 +1316,6 @@
    ]
   },
   {
-   "fn": "getbones",
-   "sessions": 4,
-   "blockedRolls": 29149,
-   "examples": [
-    "seed0009-swimmer-mforce @3337: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=5 @ mcalcmove\"",
-    "seed0116-wizard-wear-shop @2978: C \"rn2(3)=1 @ getbones(bones.c:645)\" / JS \"rn2(5)=2 @ distfleeck\""
-   ]
-  },
-  {
    "fn": "dog_move",
    "sessions": 3,
    "blockedRolls": 2201,
@@ -1349,6 +1340,15 @@
    "examples": [
     "seed0030-ten-diverse-deaths @6276: C \"rn2(100)=92 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=0 @ dochug\"",
     "seed1500-rogue-explore-move @2313: C \"rn2(100)=84 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=0 @ dochug\""
+   ]
+  },
+  {
+   "fn": "getbones",
+   "sessions": 2,
+   "blockedRolls": 9960,
+   "examples": [
+    "seed0009-swimmer-mforce @3337: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=5 @ mcalcmove\"",
+    "seed0116-wizard-wear-shop @2978: C \"rn2(3)=1 @ getbones(bones.c:645)\" / JS \"rn2(5)=2 @ distfleeck\""
    ]
   },
   {
@@ -1383,6 +1383,22 @@
    "blockedRolls": 13542,
    "examples": [
     "seed0007-rogue-snake-swamp @2831: C \"rn2(4)=0 @ dog_goal(dogmove.c:575)\" / JS \"rn2(4)=0 @ dochug\""
+   ]
+  },
+  {
+   "fn": "mkshop",
+   "sessions": 1,
+   "blockedRolls": 8310,
+   "examples": [
+    "seed5002-wizard-coverage-pair @3857: C \"rnd(100)=91 @ mkshop(mkroom.c:193)\" / JS \"rn2(7)=5 @ makelevel\""
+   ]
+  },
+  {
+   "fn": "place_lregion",
+   "sessions": 1,
+   "blockedRolls": 5672,
+   "examples": [
+    "seed5006-tourist-stress-disaster @8251: C \"rn2(79)=18 @ place_lregion(mkmaze.c:396)\" / JS \"rn2(2)=1 @ randomize_gem_colors\""
    ]
   },
   {
