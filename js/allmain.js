@@ -68,6 +68,7 @@ export async function newgame() {
     let i;
 
     g.context.next_attrib_check = 600; /* arbitrary first setting */
+    g.context.tribute = { enabled: true, bookstock: false }; /* turn on 3.6 tributes */
 
     g.mvitals = [];
     for (i = LOW_PM; i < NUMMONS; i++)

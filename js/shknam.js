@@ -5,7 +5,7 @@ import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import {
     ROOMOFFSET, isok, ALL_TRAPS, D_SHOP, D_NODOOR, D_ISOPEN, D_TRAPPED, D_LOCKED,
-    SDOOR, In_mines, MM_ESHK,
+    SDOOR, In_mines, MM_ESHK, NO_MM_FLAGS, IS_ROOM, TRUE, FALSE,
 } from './const.js';
 import {
     RANDOM_CLASS, WEAPON_CLASS, ARMOR_CLASS, RING_CLASS, AMULET_CLASS, TOOL_CLASS,
@@ -14,11 +14,14 @@ import {
     ELVEN_CLOAK, POT_HEALING, POT_FULL_HEALING, SCR_FOOD_DETECTION,
     LUMP_OF_ROYAL_JELLY, WAX_CANDLE, TALLOW_CANDLE, BRASS_LANTERN, OIL_LAMP,
     MAGIC_LAMP, POT_OIL, WAN_LIGHT, SCR_LIGHT, SPE_LIGHT, SCR_CHARGING, TOUCHSTONE,
+    SPE_NOVEL,
 } from './objects.js';
-import { mons, PM_SHOPKEEPER } from './monsters.js';
-import { makemon, mkmonmoney, mongets, set_malign, m_at } from './makemon.js';
+import { mons, PM_SHOPKEEPER, S_MIMIC } from './monsters.js';
+import { makemon, mkmonmoney, mongets, set_malign, m_at, mkclass } from './makemon.js';
+import { mkobj_at, mksobj_at } from './mkobj.js';
+import { distmin } from './hacklib.js';
 import { mon_learns_traps } from './mondata.js';
-import { ledger_no, Is_special, assign_level } from './dungeon.js';
+import { ledger_no, Is_special, assign_level, on_level, depth } from './dungeon.js';
 import { newsym } from './display.js';
 import { cvt_sdoor_to_door } from './detect.js';
 
@@ -430,5 +433,115 @@ export function stock_room(shp_indx, sroom) {
     if (levl(sx, sy).doormask === D_LOCKED)
         throw new Error('stock_room(): "Closed for inventory" engraving not ported yet');
 
-    throw new Error('stock_room(): tribute specialspot and mkshobj_at() stocking not ported yet');
+    const rmno = sroom.roomnoidx + ROOMOFFSET;
+    let stockcount = 0, specialspot = 0;
+    const tribute = game.context.tribute;
+
+    if (tribute && tribute.enabled && !tribute.bookstock) {
+        /*
+         * Out of the number of spots where we're actually
+         * going to put stuff, randomly single out one in particular.
+         */
+        for (let x = sroom.lx; x <= sroom.hx; x++)
+            for (let y = sroom.ly; y <= sroom.hy; y++)
+                if (stock_room_goodpos(sroom, rmno, sh, x, y))
+                    stockcount++;
+        specialspot = rnd(stockcount);
+        stockcount = 0;
+    }
+
+    for (let x = sroom.lx; x <= sroom.hx; x++)
+        for (let y = sroom.ly; y <= sroom.hy; y++)
+            if (stock_room_goodpos(sroom, rmno, sh, x, y)) {
+                stockcount++;
+                mkshobj_at(shp, x, y,
+                           ((stockcount) && (stockcount === specialspot)));
+            }
+
+    /*
+     * Special monster placements (if any) should go here: that way,
+     * monsters will sit on top of objects and not the other way around.
+     */
+
+    /* Hack for Orcus's level: it's a ghost town, get rid of shopkeepers */
+    if (on_level(game.u.uz, game.dungeon_topology.d_orcus_level))
+        throw new Error('stock_room(): mongone() of the Orcus town shopkeeper not ported yet');
+
+    game.level.flags.has_shop = TRUE;
+}
+
+// C ref: shknam.c stock_room_goodpos()
+function stock_room_goodpos(sroom, rmno, sh, sx, sy) {
+    const levl = (x, y) => game.level.at(x, y);
+    const door = game.level.doors[sh];
+
+    if (sroom.irregular) {
+        if (levl(sx, sy).edge
+            || levl(sx, sy).roomno !== rmno
+            || distmin(sx, sy, door.x, door.y) <= 1)
+            return FALSE;
+    } else if ((sx === sroom.lx && door.x === sx - 1)
+               || (sx === sroom.hx && door.x === sx + 1)
+               || (sy === sroom.ly && door.y === sy - 1)
+               || (sy === sroom.hy && door.y === sy + 1))
+        return FALSE;
+
+    /* only generate items on solid floor squares */
+    if (!IS_ROOM(levl(sx, sy).typ)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+// C ref: shknam.c mkveggy_at()
+/* make a random item for health food store */
+function mkveggy_at(sx, sy) {
+    throw new Error('mkveggy_at(): shkveg()/veggy_item() not ported yet');
+}
+
+// C ref: shknam.c mkshobj_at()
+/* make an object of the appropriate type for a shop square */
+function mkshobj_at(shp, sx, sy, mkspecl) {
+    let mtmp;
+    let ptr;
+    let atype;
+
+    /* 3.6 tribute */
+    if (mkspecl && (shp.name === 'rare books'
+                    || shp.name === 'second-hand bookstore')) {
+        const novel = mksobj_at(SPE_NOVEL, sx, sy, FALSE, FALSE);
+
+        if (novel)
+            game.context.tribute.bookstock = TRUE;
+        return;
+    }
+
+    if (rn2(100) < depth(game.u.uz) && !m_at(sx, sy)
+        && (ptr = mkclass(S_MIMIC, 0)) != null
+        && (mtmp = makemon(ptr, sx, sy, NO_MM_FLAGS)) != null) {
+        /* nothing */
+    } else {
+        atype = get_shop_item(shtypes.indexOf(shp));
+        if (atype === VEGETARIAN_CLASS)
+            mkveggy_at(sx, sy);
+        else if (atype < 0)
+            mksobj_at(-atype, sx, sy, TRUE, TRUE);
+        else
+            mkobj_at(atype, sx, sy, TRUE);
+    }
+}
+
+// C ref: shknam.c get_shop_item()
+/* given a shop type, return the type of object to be generated there;
+   can also return non-existing object class (eg. VEGETARIAN_CLASS) */
+export function get_shop_item(type) {
+    const shp = shtypes[type];
+    let i, j;
+
+    /* select an appropriate object type at random */
+    for (j = rnd(100), i = 0; (j -= shp.iprobs[i].iprob) > 0; i++)
+        continue;
+
+    return shp.iprobs[i].itype;
 }
