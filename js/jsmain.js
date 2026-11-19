@@ -118,6 +118,8 @@ export class NethackGame {
         g.program_state = {};
         /* C ref: options.c initoptions_init() -- default fruit name;
            initoptions_finish() -- fruitadd(pl_fruit) */
+        /* since this is done before init_objects(), do partial init here */
+        objects[SLIME_MOLD].oc_name_idx = SLIME_MOLD;
         g.pl_fruit = OBJ_NAME(objects[SLIME_MOLD]);
         g.ffruit = null;
         fruitadd(g.pl_fruit, null);

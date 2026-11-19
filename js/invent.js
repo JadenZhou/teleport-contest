@@ -10,7 +10,13 @@ import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
 import {
     NHW_MENU, WIN_ERR, PICK_NONE, PICK_ONE, MENU_BEHAVE_STANDARD,
     MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SKIPMENUCOLORS,
+    LOST_NONE, LOST_THROWN, LOST_EXPLODING, BLINDED, HALLUC,
+    ONAME, has_oname,
 } from './const.js';
+import { objects } from './objects.js';
+import * as M from './monsters.js';
+import { mons } from './monsters.js';
+import { weight, erosion_matters, Is_candle } from './mkobj.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
     tty_select_menu,
@@ -342,4 +348,205 @@ async function dispinv_with_action(lets, use_inuse_ordering, alt_label) {
 // C ref: invent.c ddoinv() -- the #inventory command
 export async function ddoinv() {
     return await dispinv_with_action(null, false, null);
+}
+
+/* C ref: you.h Blind, Hallucination */
+function inv_Blind() {
+    const p = game.u?.uprops?.[BLINDED];
+    return !!(p?.intrinsic || p?.extrinsic);
+}
+function inv_Hallucination() {
+    const p = game.u?.uprops?.[HALLUC];
+    return !!(p?.intrinsic || p?.extrinsic);
+}
+/* C ref: role.h Role_if() */
+function inv_Role_if(pm) { return game.urole?.mnum === pm; }
+/* C ref: obj.h Is_pudding() */
+function inv_Is_pudding(o) {
+    return (o.otyp === O.GLOB_OF_GRAY_OOZE || o.otyp === O.GLOB_OF_BROWN_PUDDING
+            || o.otyp === O.GLOB_OF_GREEN_SLIME || o.otyp === O.GLOB_OF_BLACK_PUDDING);
+}
+/* C ref: mondata.h is_rider(), is_reviver() */
+function inv_is_reviver(ptr) {
+    const n = mons.indexOf(ptr);
+    return n === M.PM_DEATH || n === M.PM_FAMINE || n === M.PM_PESTILENCE
+        || ptr.mlet === M.S_TROLL;
+}
+
+// C ref: invent.c mergable()
+export function mergable(otmp, /* potential 'into' stack */
+                         obj) { /* 'combine' stack */
+    /* fail if already the same object, if different types, if either is
+       explicitly marked to prevent merge, or if not mergable in general */
+    if (obj === otmp || obj.otyp !== otmp.otyp
+        || obj.nomerge || otmp.nomerge || !objects[obj.otyp].oc_merge)
+        return false;
+
+    /* coins of the same kind will always merge */
+    if (obj.oclass === O.COIN_CLASS)
+        return true;
+
+    if (!!obj.cursed !== !!otmp.cursed || !!obj.blessed !== !!otmp.blessed)
+        return false;
+
+    if ((obj.how_lost || 0) === LOST_EXPLODING
+        || (otmp.how_lost || 0) === LOST_EXPLODING)
+        return false;
+    if ((otmp.how_lost || 0) !== LOST_NONE
+        && (obj.how_lost || 0) !== (otmp.how_lost || 0))
+        return false;
+
+    if (obj.globby)
+        return true;
+    /* Checks beyond this point either aren't applicable to globs
+     * or don't inhibit their merger.
+     */
+
+    if (!!obj.unpaid !== !!otmp.unpaid || (obj.spe | 0) !== (otmp.spe | 0)
+        || !!obj.no_charge !== !!otmp.no_charge
+        || !!obj.obroken !== !!otmp.obroken
+        || !!obj.otrapped !== !!otmp.otrapped
+        || !!obj.lamplit !== !!otmp.lamplit)
+        return false;
+
+    if (obj.oclass === O.FOOD_CLASS
+        && ((obj.oeaten | 0) !== (otmp.oeaten | 0)
+            || !!obj.orotten !== !!otmp.orotten))
+        return false;
+
+    if (!!obj.dknown !== !!otmp.dknown
+        || (!!obj.bknown !== !!otmp.bknown && !inv_Role_if(M.PM_CLERIC)
+            && (inv_Blind() || inv_Hallucination()))
+        || (obj.oeroded | 0) !== (otmp.oeroded | 0)
+        || (obj.oeroded2 | 0) !== (otmp.oeroded2 | 0)
+        || !!obj.greased !== !!otmp.greased)
+        return false;
+
+    if ((erosion_matters(obj))
+        && (!!obj.oerodeproof !== !!otmp.oerodeproof
+            || (!!obj.rknown !== !!otmp.rknown
+                && (inv_Blind() || inv_Hallucination()))))
+        return false;
+
+    if (obj.otyp === O.CORPSE || obj.otyp === O.EGG || obj.otyp === O.TIN) {
+        if (obj.corpsenm !== otmp.corpsenm)
+            return false;
+    }
+
+    /* hatching eggs don't merge; ditto for revivable corpses */
+    if ((obj.otyp === O.EGG && (obj.timed || otmp.timed))
+        || (obj.otyp === O.CORPSE && otmp.corpsenm >= M.LOW_PM
+            && inv_is_reviver(mons[otmp.corpsenm])))
+        return false;
+
+    /* allow candle merging only if their ages are close */
+    /* see begin_burn() for a reference for the magic "25" */
+    if (Is_candle(obj) && Math.trunc(obj.age / 25) !== Math.trunc(otmp.age / 25))
+        return false;
+
+    /* burning potions of oil never merge */
+    if (obj.otyp === O.POT_OIL && obj.lamplit)
+        return false;
+
+    /* don't merge surcharged item with base-cost item */
+    if (obj.unpaid)
+        throw new Error('mergable(): same_price() is not ported yet');
+
+    /* some additional information is always incompatible */
+    if (obj.oextra?.omonst || obj.oextra?.omid
+        || otmp.oextra?.omonst || otmp.oextra?.omid)
+        return false;
+
+    /* if they have names, make sure they're the same */
+    const objnamelth = ONAME(obj).length;
+    const otmpnamelth = ONAME(otmp).length;
+    if ((objnamelth !== otmpnamelth
+         && ((objnamelth && otmpnamelth) || obj.otyp === O.CORPSE))
+        || (objnamelth && otmpnamelth
+            && has_oname(obj) && has_oname(otmp)
+            && ONAME(obj).slice(0, objnamelth) !== ONAME(otmp).slice(0, objnamelth)))
+        return false;
+
+    /* if one has an attached mail command, other must have same command */
+    if (!obj.oextra?.omailcmd ? !!otmp.oextra?.omailcmd
+        : (!otmp.oextra?.omailcmd || obj.oextra.omailcmd !== otmp.oextra.omailcmd))
+        return false;
+
+    /* MAIL_STRUCTURES */
+    if (obj.otyp === O.SCR_MAIL
+        && obj.spe > 0 && (obj.o_id % 2) !== (otmp.o_id % 2))
+        return false;
+
+    /* should be moot since matching artifacts wouldn't be unique */
+    if ((obj.oartifact | 0) !== (otmp.oartifact | 0))
+        return false;
+
+    if (!!obj.known !== !!otmp.known && (inv_Blind() || inv_Hallucination()))
+        return false;
+
+    return true;
+}
+
+// C ref: invent.c merged() -- 'r' is { otmp, obj } (C: potmp, pobj);
+// returns 1 when obj was merged into otmp
+export function merged(r) {
+    const otmp = r.otmp, obj = r.obj;
+    let discovered = false;
+
+    if (mergable(otmp, obj)) {
+        /* Approximate age */
+        if (!obj.lamplit && !obj.globby)
+            otmp.age = Math.trunc(((otmp.age * otmp.quan) + (obj.age * obj.quan))
+                                  / (otmp.quan + obj.quan));
+
+        if (!otmp.globby)
+            otmp.quan += obj.quan;
+        /* temporary special case for gold objects!!!! */
+        if (otmp.oclass === O.COIN_CLASS) {
+            otmp.owt = weight(otmp);
+            otmp.bknown = 0;
+        /* and puddings!!!1!!one! */
+        } else if (!inv_Is_pudding(otmp))
+            otmp.owt = weight(otmp);
+        if (!has_oname(otmp) && has_oname(obj))
+            throw new Error('merged(): oname() is not ported yet');
+        if (obj.where !== 'OBJ_FREE')
+            throw new Error('merged(): obj_extract_self() is not ported yet');
+        if (obj.pickup_prev && otmp.where === 'OBJ_INVENT')
+            otmp.pickup_prev = 1;
+        /* really should merge the timeouts */
+        if (obj.lamplit || obj.timed)
+            throw new Error('merged(): light sources/timers are not ported yet');
+
+        /* objects can be identified by comparing them */
+        if (!!obj.known !== !!otmp.known) {
+            otmp.known = 1;
+            discovered = true;
+        }
+        if (!!obj.rknown !== !!otmp.rknown) {
+            otmp.rknown = 1;
+            if (otmp.oerodeproof)
+                discovered = true;
+        }
+        if (!!obj.bknown !== !!otmp.bknown) {
+            otmp.bknown = 1;
+            if (!inv_Role_if(M.PM_CLERIC))
+                discovered = true;
+        }
+        /* fixup for `#adjust' merging wielded darts, daggers, &c */
+        if (obj.owornmask && otmp.where === 'OBJ_INVENT')
+            throw new Error('merged(): merging worn items is not ported yet');
+        if (obj.bypass)
+            otmp.bypass = 1;
+        /* handle puddings a bit differently */
+        if (obj.globby)
+            throw new Error('merged(): obj_absorb() is not ported yet');
+        if (discovered && otmp.where === 'OBJ_INVENT'
+            && (obj.how_lost || 0) !== LOST_THROWN
+            && (otmp.how_lost || 0) !== LOST_THROWN)
+            throw new Error('merged(): "You learn more about your items" is not ported yet');
+        /* obfree(obj, otmp): nothing to free */
+        return 1;
+    }
+    return 0;
 }

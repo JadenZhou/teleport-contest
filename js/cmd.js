@@ -16,6 +16,7 @@ import { strcmpi, strncmpi } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
+import { ddoinv } from './invent.js';
 import { cmd_safety_prevention, nomul } from './hack.js';
 import { IS_DOOR, IS_FURNITURE } from './const.js';
 
@@ -161,6 +162,10 @@ export async function rhack(key) {
     } else if (ch === '.') {
         /* C ref: cmd.c Cmd '.' -> donull(); ECMD_TIME takes a move */
         game.context.move = (await donull()) ? 1 : 0;
+    } else if (ch === 'i') {
+        /* C ref: cmd.c Cmd 'i' -> invent.c ddoinv(); ECMD_OK, no time */
+        await ddoinv();
+        game.context.move = 0;
     } else {
         /* every other command is not ported yet ('#' doextcmd() and 's'
            dosearch() wait for the tutorial query, without which keys

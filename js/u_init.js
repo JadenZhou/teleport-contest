@@ -15,7 +15,7 @@ import {
     A_STR, A_CON,
 } from './const.js';
 import * as K from './const.js';
-import { MAXSPELL, objects } from './objects.js';
+import { MAXSPELL, objects, OBJ_DESCR } from './objects.js';
 import * as O from './objects.js';
 import * as M from './monsters.js';
 import { mksobj, mkobj } from './mkobj.js';
@@ -30,7 +30,7 @@ function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
 import { init_uhunger } from './eat.js';
 import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
-import { assigninvlet, reorder_invent } from './invent.js';
+import { assigninvlet, reorder_invent, merged } from './invent.js';
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
 // Every numeric field reads as 0, nested structs are zero-filled objects.
@@ -736,13 +736,26 @@ function discover_object(oindx, mark_as_known, mark_as_encountered,
 }
 
 // C ref: invent.c addinv(), addinv_core0() -- inventory letter and chain
-// insertion; merging with an existing stack (merged()), addinv_core1/2()
+// insertion and merging with an existing stack (merged()); addinv_core1/2()
 // side effects and update_inventory() are not ported yet
 export function addinv(obj) {
-    /* merge with quiver / other inventory (merged()) -- not ported yet */
+    /* merge with quiver in preference to any other inventory slot
+       in case quiver and wielded weapon are both eligible; adding
+       extra to quivered stack is more useful than to wielded one */
+    if (game.uquiver) {
+        const r = { otmp: game.uquiver, obj };
+        if (merged(r)) {
+            game.uquiver = r.otmp;
+            return r.otmp; /* goto added */
+        }
+    }
+    /* merge if possible; find end of chain in the process */
     let prev = null;
-    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
-        prev = otmp;
+    for (let otmp = game.invent; otmp; prev = otmp, otmp = otmp.nobj) {
+        const r = { otmp, obj };
+        if (merged(r))
+            return r.otmp; /* goto added */
+    }
     /* didn't merge, so insert into chain */
     assigninvlet(obj);
     if ((game.flags?.invlet_constant ?? true) || !prev) {
@@ -1367,7 +1380,7 @@ function bimanual(otmp) {
 function is_armcat(otmp, cat) {
     return (otmp.oclass === O.ARMOR_CLASS && objects[otmp.otyp].oc_armcat === cat);
 }
-function OBJ_DESCR(obj) { return obj.oc_descr; }
+/* objclass.h OBJ_DESCR(): imported from objects.js */
 function greatest_erosion(otmp) {
     return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
 }
