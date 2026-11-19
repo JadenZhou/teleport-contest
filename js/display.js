@@ -2,7 +2,8 @@
 // C ref: display.c — newsym, show_glyph, docrt, cls, flush_screen.
 
 import { game } from './gstate.js';
-import { cansee } from './vision.js';
+import { cansee, vision_recalc } from './vision.js';
+import { tty_putstr, tty_display_nhwindow } from './wintty.js';
 import { rank } from './botl.js';
 import { ACURR } from './attrib.js';
 import {
@@ -403,15 +404,16 @@ export function serialize_terminal_grid(display) {
 }
 
 // ── Build screen output ──
-function _buildScreenOutput() {
+// The map window (rows 1-21) and the status window (rows 22-23) are
+// redrawn from the glyph buffer; row 0 and whatever rows a multi-line
+// message is using belong to the tty message window (wintty.js topl).
+function _buildScreenOutput(cursor_on_u) {
     const display = game?.nhDisplay;
     if (!display) return;
 
     let output = '';
-    // Row 0: message
-    output += (game._pending_message || '') + '\n';
-
     // Rows 1-21: map (rendered with DEC + ANSI, per-row SO/SI)
+    output += '\n';
     for (let y = 0; y < ROWNO; y++) {
         output += render_map_row(y) + '\n';
     }
@@ -423,18 +425,18 @@ function _buildScreenOutput() {
 
     game._screen_output = output;
 
-    // Also write to grid for serialize_terminal_grid
     if (display.grid) {
-        display.clearScreen();
-        // Message line
-        const msg = game._pending_message || '';
-        for (let c = 0; c < Math.min(msg.length, display.cols); c++)
-            display.setCell(c, 0, msg[c], NO_COLOR, 0);
+        const msgw = game.tty_wins?.[game.WIN_MESSAGE];
+        const msgrows = (game.ttyDisplay?.toplin && msgw) ? msgw.cury + 1 : 1;
         // Map — write characters to grid (DEC → Unicode for browser display)
         for (let y = 0; y < ROWNO; y++) {
+            if (y + 1 < msgrows) continue;
             for (let x = 1; x < COLNO; x++) {
                 const loc = game.level?.at(x, y);
-                if (!loc?.disp_ch || loc.disp_ch === ' ') continue;
+                if (!loc?.disp_ch || loc.disp_ch === ' ') {
+                    display.setCell(x - 1, y + 1, ' ', NO_COLOR, 0);
+                    continue;
+                }
                 const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
                 display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), loc.disp_attr ?? 0);
             }
@@ -442,29 +444,38 @@ function _buildScreenOutput() {
         // Status lines
         const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
             m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');
-        for (let c = 0; c < Math.min(s1.length, display.cols); c++)
-            display.setCell(c, 22, s1[c], NO_COLOR, 0);
+        for (let c = 0; c < display.cols; c++)
+            display.setCell(c, 22, c < s1.length ? s1[c] : ' ', NO_COLOR, 0);
         const s2 = st2;
-        for (let c = 0; c < Math.min(s2.length, display.cols); c++)
-            display.setCell(c, 23, s2[c], NO_COLOR, 0);
-        // Cursor at hero
-        if (game.u?.ux > 0)
+        for (let c = 0; c < display.cols; c++)
+            display.setCell(c, 23, c < s2.length ? s2[c] : ' ', NO_COLOR, 0);
+        // C ref: display.c flush_screen(): if (cursor_on_u) curs(WIN_MAP, u.ux, u.uy)
+        if (cursor_on_u && game.u?.ux > 0) {
             display.setCursor(game.u.ux - 1, game.u.uy + 1);
+            if (game.ttyDisplay) {
+                game.ttyDisplay.curx = game.u.ux - 1;
+                game.ttyDisplay.cury = game.u.uy + 1;
+            }
+        }
     }
 }
 
 // ── flush_screen ──
-export async function flush_screen(mode) {
+// C ref: display.c flush_screen()
+export async function flush_screen(cursor_on_u) {
     if (game.disp_botl || game.disp_botlx)
         bot();
-    _buildScreenOutput();
+    _buildScreenOutput(cursor_on_u);
 }
 
 // ── cls ──
+// C ref: display.c cls()
 export async function cls() {
     const display = game?.nhDisplay;
-    if (display?.clearScreen) display.clearScreen();
-    game._pending_message = '';
+    if (game.WIN_MESSAGE !== undefined && game.tty_wins?.[game.WIN_MESSAGE])
+        await tty_display_nhwindow(game.WIN_MESSAGE, false); /* flush messages */
+    game.disp_botlx = true;                   /* force update of botl window */
+    if (display?.clearScreen) display.clearScreen();  /* clear_nhwindow(WIN_MAP) */
 }
 
 // ── bot ──
@@ -491,6 +502,13 @@ export function bot() {
 }
 
 // ── pline ──
+// C ref: pline.c vpline() -- the plain message path: bring the map up to
+// date (vision, flush_screen(1)) and put the line in the message window
+// (tty update_topl(), which handles concatenation and --More--)
 export async function pline(msg) {
-    game._pending_message = msg;
+    if (game.vision_full_recalc)
+        vision_recalc(0);
+    if (game.u?.ux)
+        await flush_screen(1); /* %% */
+    await tty_putstr(game.WIN_MESSAGE, 0, msg);
 }

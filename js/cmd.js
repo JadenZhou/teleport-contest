@@ -9,6 +9,7 @@ import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline } from './display.js';
 import { vision_recalc } from './vision.js';
+import { tty_clear_nhwindow } from './wintty.js';
 import { COLNO, ROWNO, STONE, DOOR, D_CLOSED, D_LOCKED,
          IS_WALL, IS_OBSTRUCTED } from './const.js';
 
@@ -38,6 +39,9 @@ export async function rhack(key) {
         // Read key from input
         await flush_screen(1);
         key = await nhgetch();
+        /* C ref: cmd.c parse() -- the message window is cleared once the
+           command key has been read */
+        tty_clear_nhwindow(game.WIN_MESSAGE);
     }
 
     const ch = String.fromCharCode(key);

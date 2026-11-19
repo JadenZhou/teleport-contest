@@ -20,7 +20,8 @@ import { makedog } from './dog.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
-import { init_dungeons, depth } from './dungeon.js';
+import { init_dungeons, depth, find_level } from './dungeon.js';
+import { ask_do_tutorial } from './options.js';
 import { mons, monst_globals_init, LOW_PM, NUMMONS, G_NOCORPSE } from './monsters.js';
 import { decl_globals_init } from './decl.js';
 import { sys_early_init } from './sys.js';
@@ -621,9 +622,28 @@ export function moveloop_preamble(resuming) {
     g.program_state.in_moveloop = 1;
 }
 
+// C ref: allmain.c maybe_do_tutorial()
+export async function maybe_do_tutorial() {
+    const sp = find_level("tut-1");
+
+    if (!sp)
+        return;
+
+    if (await ask_do_tutorial()) {
+        /* assign_level(&u.ucamefrom, &u.uz); iflags.nofollowers = TRUE;
+           schedule_goto(&sp->dlevel, UTOTYPE_NONE, "Entering the
+           tutorial.", NULL); deferred_goto(); vision_recalc(0); docrt();
+           -- goto_level() and the tutorial levels are not ported yet,
+           so play continues on the current level */
+    }
+}
+
 // C ref: allmain.c moveloop()
 export async function moveloop(resuming) {
     moveloop_preamble(resuming);
+
+    if (!resuming)
+        await maybe_do_tutorial();
     vision_recalc(0);
     await docrt();
     await flush_screen(1);

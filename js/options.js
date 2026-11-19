@@ -9,7 +9,12 @@
 // this parser is still the skeleton's simplified version.
 
 import { game } from './gstate.js';
-import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSIZ } from './const.js';
+import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSIZ,
+         NHW_MENU, MENU_BEHAVE_STANDARD, PICK_ONE, MENU_ITEMFLAGS_NONE } from './const.js';
+import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { tty_create_nhwindow, tty_start_menu, tty_add_menu, add_menu_str,
+         tty_end_menu, tty_select_menu, tty_destroy_nhwindow } from './wintty.js';
+
 import { strncmpi, strcmpi } from './hacklib.js';
 import { authorize_wizard_mode, authorize_explore_mode } from './sys.js';
 import {
@@ -295,4 +300,54 @@ export function parseNethackrc(rc) {
         }
     }
     return result;
+}
+
+// C ref: cfgfiles.c default_configfile / get_configfile() -- the UNIX
+// default name (the JS port reads its options from the session's rc text)
+const default_configfile = ".nethackrc";
+function get_configfile() {
+    return game.configfile || default_configfile;
+}
+
+// C ref: files.c nh_basename() (keep_suffix TRUE)
+function nh_basename(fname) {
+    const p = fname.lastIndexOf('/');
+    return (p >= 0) ? fname.slice(p + 1) : fname;
+}
+
+// C ref: options.c ask_do_tutorial()
+export async function ask_do_tutorial() {
+    let dotut = !!game.flags.tutorial;
+
+    if (!game.tutorial_set_in_config) { /* !opt_set_in_config[opt_tutorial] */
+        let win, n, pass = 0, sel;
+        const rc = nh_basename(get_configfile());
+        const norc = (get_configfile() === "/dev/null");
+        const buf = `Put "OPTIONS=!tutorial" in ${(rc && !norc) ? rc
+                                                 : "your configuration file"} to skip this query.`;
+        do {
+            win = tty_create_nhwindow(NHW_MENU);
+            tty_start_menu(win, MENU_BEHAVE_STANDARD);
+            tty_add_menu(win, null, 'y', 'y', 0, ATR_NONE, NO_COLOR,
+                         "Yes, do a tutorial", MENU_ITEMFLAGS_NONE);
+            tty_add_menu(win, null, 'n', 'n', 0, ATR_NONE, NO_COLOR,
+                         "No, just start play", MENU_ITEMFLAGS_NONE);
+
+            add_menu_str(win, "");
+            add_menu_str(win, buf);
+            if (pass++) /* we'll get here after <space> or <return> */
+                add_menu_str(win, "(Please choose 'y' or 'n'.)");
+
+            tty_end_menu(win, "Do you want a tutorial?");
+
+            ({ n, selected: sel } = await tty_select_menu(win, PICK_ONE));
+            tty_destroy_nhwindow(win);
+        } while (!n);
+        if (n > 0) {
+            dotut = (sel[0].item === 'y');
+        } else { /* ESC */
+            dotut = false;
+        }
+    }
+    return dotut;
 }
