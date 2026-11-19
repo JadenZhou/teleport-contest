@@ -30,7 +30,7 @@ import {
     TBR_STAIR, TBR_NO_UP, TBR_NO_DOWN, TBR_PORTAL,
     BR_STAIR, BR_NO_END1, BR_NO_END2, BR_PORTAL,
     TOWN, HELLISH, MAZELIKE, ROGUELIKE, UNCONNECTED, D_ALIGN_MASK,
-    D_ALIGN_NONE, D_ALIGN_CHAOTIC, D_ALIGN_NEUTRAL, D_ALIGN_LAWFUL,
+    D_ALIGN_NONE, D_ALIGN_CHAOTIC, D_ALIGN_NEUTRAL, D_ALIGN_LAWFUL, Align2amask,
 } from './const.js';
 import {
     nhl_init, nhl_loadlua, nhl_done, lua_type, lua_istable, lua_len,
@@ -1057,6 +1057,23 @@ export function Is_special(lev) {
             return levtmp;
 
     return null;
+}
+
+// C ref: dungeon.c induced_align()
+/* return an alignment mask */
+export function induced_align(pct) {
+    const lev = Is_special(game.u.uz);
+
+    if (lev && lev.flags.align)
+        if (rn2(100) < pct)
+            return lev.flags.align;
+
+    if (game.dungeons[game.u.uz.dnum].flags.align)
+        if (rn2(100) < pct)
+            return game.dungeons[game.u.uz.dnum].flags.align;
+
+    const al = rn2(3) - 1;
+    return Align2amask(al);
 }
 
 // C ref: dungeon.c In_hell()
