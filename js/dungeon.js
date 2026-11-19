@@ -1113,6 +1113,52 @@ export function deepest_lev_reached(noquest) {
     return ret;
 }
 
+// C ref: dungeon.c get_level()
+export function get_level(newlevel, levnum) {
+    let br;
+    let dgn = game.u.uz.dnum;
+    const dungeons = game.dungeons;
+
+    if (levnum <= 0) {
+        /* can only currently happen in endgame */
+        levnum = game.u.uz.dlevel;
+    } else if (levnum > (dungeons[dgn].depth_start
+                         + dungeons[dgn].num_dunlevs - 1)) {
+        /* beyond end of dungeon, jump to last level */
+        levnum = dungeons[dgn].num_dunlevs;
+    } else {
+        /* The desired level is in this dungeon or a "higher" one. */
+
+        /*
+         * Branch up the tree until we reach a dungeon that contains the
+         * levnum.
+         */
+        if (levnum < dungeons[dgn].depth_start) {
+            do {
+                /*
+                 * Find the parent dungeon of this dungeon.
+                 *
+                 * This assumes that end2 is always the "child" and it is
+                 * unique.
+                 */
+                for (br = game.branches; br; br = br.next)
+                    if (br.end2.dnum === dgn)
+                        break;
+                if (!br)
+                    throw new Error('get_level: can\'t find parent dungeon');
+
+                dgn = br.end1.dnum;
+            } while (levnum < dungeons[dgn].depth_start);
+        }
+
+        /* We're within the same dungeon; calculate the level. */
+        levnum = levnum - dungeons[dgn].depth_start + 1;
+    }
+
+    newlevel.dnum = dgn;
+    newlevel.dlevel = levnum;
+}
+
 // C ref: dungeon.c builds_up()
 export function builds_up(lev) {
     const dptr = game.dungeons[lev.dnum];
