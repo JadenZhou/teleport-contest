@@ -2,7 +2,8 @@
 // scripts, the "nh" dice functions, and the table accessors C code uses to
 // read Lua data.
 // C ref: nhlua.c — nhl_init, nhlL_newstate, nhl_loadlua, nhl_done, nhl_error,
-// nhl_rn2, nhl_random, get_table_int, get_table_int_opt, get_table_str,
+// nhl_rn2, nhl_random, l_nhcore_init, l_nhcore_done, l_nhcore_call,
+// get_table_int, get_table_int_opt, get_table_str,
 // get_table_str_opt, get_table_option.
 //
 // The JS port has no Lua interpreter. The scripts in dat/ are hand-ported to
@@ -31,9 +32,10 @@
 
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
-import { TRUE, FALSE } from './const.js';
+import { TRUE, FALSE, NHL_SB_SAFE } from './const.js';
 import { nhlib_lua } from './nhlib_lua.js';
 import { dungeon_lua } from './dungeon_lua.js';
+import { nhcore_lua } from './nhcore_lua.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -203,6 +205,7 @@ const nhl_functions = {
 const nhl_lua_files = {
     'nhlib.lua': nhlib_lua,
     'dungeon.lua': dungeon_lua,
+    'nhcore.lua': nhcore_lua,
 };
 
 // C ref: nhlua.c nhlL_newstate()
@@ -271,5 +274,74 @@ export function nhl_done(L) {
     if (L) {
         /* lua_close(L) */
         L.globals = null;
+    }
+}
+
+// C ref: nhlua.c nhcore_call_names[NUM_NHCORE_CALLS]
+const nhcore_call_names = [
+    "start_new_game",
+    "restore_old_game",
+    "moveloop_turn",
+    "game_exit",
+    "getpos_tip",
+    "enter_tutorial",
+    "leave_tutorial",
+];
+const NUM_NHCORE_CALLS = nhcore_call_names.length;
+
+// C ref: nhlua.c l_nhcore_init()
+/* create a Lua state that lasts until end of game */
+export function l_nhcore_init() {
+    const sbi = { flags: NHL_SB_SAFE, memlimit: 1 * 1024 * 1024, steps: 0,
+                  perpcall: 1 * 1024 * 1024 };
+
+    /* nhcore_call_available[] is a static array in C */
+    game.nhcore_call_available = new Array(NUM_NHCORE_CALLS).fill(FALSE);
+    if ((game.luacore = nhl_init(sbi)) !== null) {
+        if (!nhl_loadlua(game.luacore, "nhcore.lua")) {
+            game.luacore = null;
+        } else {
+            let i;
+
+            for (i = 0; i < NUM_NHCORE_CALLS; i++)
+                game.nhcore_call_available[i] = TRUE;
+        }
+    } else
+        impossible("l_nhcore_init failed");
+}
+
+// C ref: nhlua.c l_nhcore_done()
+export function l_nhcore_done() {
+    if (game.luacore) {
+        nhl_done(game.luacore);
+        game.luacore = null;
+    }
+    /* end_luapat(); -- the file-pattern Lua state is not ported yet */
+}
+
+// C ref: nhlua.c l_nhcore_call()
+export function l_nhcore_call(callidx) {
+    const L = game.luacore;
+
+    if (callidx < 0 || callidx >= NUM_NHCORE_CALLS || !L
+        || !game.nhcore_call_available[callidx])
+        return;
+
+    const nhcore = L.globals.nhcore; /* lua_getglobal(gl.luacore, "nhcore") */
+    if (!lua_istable(nhcore)) {
+        /*impossible("nhcore is not a lua table");*/
+        nhl_done(L);
+        game.luacore = null;
+        return;
+    }
+
+    const fn = nhcore[nhcore_call_names[callidx]];
+    if (lua_type(fn) === LUA_TFUNCTION) {
+        /* nhl_pcall_handle(gl.luacore, 0, 1, "l_nhcore_call", NHLpa_panic) */
+        fn();
+    } else {
+        /*impossible("nhcore.%s is not a lua function",
+          nhcore_call_names[callidx]);*/
+        game.nhcore_call_available[callidx] = FALSE;
     }
 }

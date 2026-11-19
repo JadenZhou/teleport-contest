@@ -61,3 +61,31 @@ export function depth(uz) {
 }
 
 // C ref: rn2(x) already in rng.js — re-export not needed
+
+// C ref: hacklib.c highc()
+/* force 'c' into uppercase */
+export function highc(c) {
+    return ('a' <= c && c <= 'z') ? String.fromCharCode(c.charCodeAt(0) & ~0o40) : c;
+}
+
+// C ref: hacklib.c trimspaces()
+/* remove leading and trailing whitespace */
+export function trimspaces(txt) {
+    return txt.replace(/^[ \t]+/, '').replace(/[ \t]+$/, '');
+}
+
+// C ref: hacklib.c s_suffix()
+/* return a name converted to possessive */
+export function s_suffix(s) {
+    let buf = s;
+
+    if (!strcmpi(buf, "it")) /* it -> its */
+        buf += "s";
+    else if (!strcmpi(buf, "you")) /* you -> your */
+        buf += "r";
+    else if (buf[buf.length - 1] === 's') /* Xs -> Xs' */
+        buf += "'";
+    else /* X -> X's */
+        buf += "'s";
+    return buf;
+}

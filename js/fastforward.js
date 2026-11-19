@@ -1,18 +1,11 @@
 // fastforward.js — Auto-generated RNG replay for seed8000 starter session.
-// Split into pre-mklev and post-mklev phases.
+// The pre-mklev startup rolls (role_init, init_dungeons, u_init_misc,
+// l_nhcore_init, getbones) are real now; what is left is post-mklev.
 // The mklev RNG calls are now consumed by the real mklev.js implementation.
 //
 // Generated from: seed8000-tourist-starter.session.json
 
 import { rn2, rnd, d, rne, rnz } from "./rng.js";
-
-// Pre-mklev startup after init_objects() and init_dungeons() (now real, in
-// o_init.js and dungeon.js): u_init_misc.
-// 1 leaf RNG call.
-export function fastforward_pre_mklev() {
-    // u_init_misc
-    rn2(10);
-}
 
 // Post-mklev startup: u_init_role, ini_inv, attributes, moveloop_preamble
 // 124 leaf RNG calls (regenerated from session data)
