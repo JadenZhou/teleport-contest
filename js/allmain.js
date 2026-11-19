@@ -13,6 +13,7 @@ import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { fastforward_pre_mklev, fastforward_post_mklev, fastforward_step, fastforward_fill_mineralize } from './fastforward.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
+import { init_dungeons } from './dungeon.js';
 
 // C ref: allmain.c early_init()
 // Not ported yet: program_state_init(), decl_globals_init(),
@@ -27,9 +28,16 @@ export async function newgame() {
 
     init_objects(); /* must be before u_init() */
 
+    // flags.pantheon = -1; role_init(); -- not ported yet (role.c). It must
+    // come before init_dungeons(), u_init() and init_artifacts().
+
+    init_dungeons();  /* must be before u_init() to avoid rndmonst()
+                       * creating odd monsters for any tins and eggs
+                       * in hero's initial inventory */
+    // init_artifacts(); -- not ported yet (artifact.c)
+
     // Fast-forward through the rest of the pre-mklev startup RNG calls.
-    // Covers: role_init/init_dungeons (nhlib.lua shuffle, dungeon init),
-    // init_castle_tune, u_init_misc.
+    // Covers: u_init_misc.
     fastforward_pre_mklev();
 
     // C ref: allmain.c l_nhcore_init() — shuffle align[] for Lua
@@ -37,14 +45,9 @@ export async function newgame() {
     l_nhcore_init();
 
     // Set up game state needed by mklev
-    g.dungeons = [{ dname: 'The Dungeons of Doom', depth_start: 1, num_dunlevs: 30 }];
     g.u = g.u || {};
     g.u.uz = { dnum: 0, dlevel: 1 };
     g.flags = g.flags || {};
-    // Branch: Mines entrance on level 1 (for seed 8000)
-    g.branches = [
-        { end1: { dnum: 0, dlevel: 1 }, end2: { dnum: 2, dlevel: 1 }, end1_up: true },
-    ];
 
     // Real mklev generates the level with correct room positions
     // Structural phase consumes RNG for rooms/corridors/doors/stairs
