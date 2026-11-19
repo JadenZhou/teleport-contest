@@ -11,9 +11,7 @@ import { mons, PM_LITTLE_DOG, PM_KITTEN, PM_PONY, PM_CAVE_DWELLER,
          PM_SAMURAI, PM_BARBARIAN, PM_RANGER } from './monsters.js';
 import { makemon, is_domestic, set_malign, put_saddle_on_mon } from './makemon.js';
 
-// C ref: attrib.h ACURR() -- acurr() is not ported yet; u.acurr holds the
-// current value (still zero this early in newgame()).
-function ACURR(x) { return game.u.acurr?.a?.[x] || 0; }
+import { ACURR } from './attrib.js';
 
 // C ref: role.c Role_if()
 function Role_if(pm) { return game.urole.mnum === pm; }

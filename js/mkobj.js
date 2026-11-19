@@ -467,12 +467,16 @@ export function mksobj_at(otyp, x, y, init, artif) {
     return otmp;
 }
 
-// C ref: mkobj.c place_object() — the floor object lists are not ported
-// yet; the location is recorded on the object.
+// C ref: mkobj.c place_object() -- the level's floor object chain (fobj)
+// is game.level.objects, newest first; per-square piles are read from it
+// in the same order (boulder-first pile ordering isn't ported yet).
 function place_object(otmp, x, y) {
     otmp.ox = x;
     otmp.oy = y;
     otmp.where = 'OBJ_FLOOR';
+    /* otmp->nobj = fobj; fobj = otmp; */
+    if (!game.level.objects) game.level.objects = [];
+    game.level.objects.unshift(otmp);
 }
 
 // C ref: o_init.c rnd_class()

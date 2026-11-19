@@ -163,12 +163,16 @@ function oinit() { /* no-op for contest */ }
 // ============================================================
 
 
-// C ref: mkobj.c place_object() -- floor object chains are not ported
-// yet; the location is recorded on the object.
+// C ref: mkobj.c place_object() -- the level's floor object chain (fobj)
+// is game.level.objects, newest first; per-square piles are read from it
+// in the same order (boulder-first pile ordering isn't ported yet).
 function place_object(otmp, x, y) {
     otmp.ox = x;
     otmp.oy = y;
     otmp.where = 'OBJ_FLOOR';
+    /* otmp->nobj = fobj; fobj = otmp; */
+    if (!game.level.objects) game.level.objects = [];
+    game.level.objects.unshift(otmp);
 }
 // C ref: mkobj.c dealloc_obj() -- nothing to free in JS
 function dealloc_obj(otmp) { /* garbage collected */ }

@@ -22,6 +22,7 @@ import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls, haseyes,
          dmgtype } from './mondata.js';
 import { mfndpos, monnear, mon_allowflags } from './mon.js';
 import { gettrack } from './track.js';
+import { dog_move } from './dogmove.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { objects, BOULDER, ROCK, SCR_SCARE_MONSTER, GOLD_PIECE, CORPSE,
@@ -142,7 +143,7 @@ function is_lminion(mon) {
 }
 /* C ref: display.h canseemon() -- infravision and worm tails aren't
    ported yet; this is the plain line-of-sight case */
-function canseemon(mon) {
+export function canseemon(mon) {
     const See_invisible = uhave(SEE_INVIS);
     return cansee(mon.mx, mon.my) && (!mon.minvis || See_invisible)
            && !mon.mundetected;
@@ -723,7 +724,7 @@ function resist_conflict_nyi() {
 }
 
 // ── C ref: monmove.c mon_track_add() ──
-function mon_track_add(mtmp, x, y) {
+export function mon_track_add(mtmp, x, y) {
     if (!mtmp.mtrack) mon_track_clear(mtmp);
     for (let j = MTSZ - 1; j > 0; j--)
         mtmp.mtrack[j] = mtmp.mtrack[j - 1];
@@ -735,7 +736,7 @@ export function mon_track_clear(mtmp) {
 }
 
 // ── C ref: monmove.c m_avoid_kicked_loc() ──
-function m_avoid_kicked_loc(mtmp, nx, ny) {
+export function m_avoid_kicked_loc(mtmp, nx, ny) {
     const kl = game.kickedloc;
     if ((mtmp.mpeaceful || mtmp.mtame)
         && mtmp.mcansee
@@ -749,7 +750,7 @@ function m_avoid_kicked_loc(mtmp, nx, ny) {
 }
 
 // ── C ref: monmove.c should_displace() ──
-function should_displace(mtmp, mfp, ggx, ggy) {
+export function should_displace(mtmp, mfp, ggx, ggy) {
     let shortest_with_displacing = -1;
     let shortest_without_displacing = -1;
     let count_without_displacing = 0;
@@ -1069,8 +1070,10 @@ export async function m_move(mtmp, after) {
     if (mtmp.wormno)
         throw new Error('m_move(): long worms not ported yet');
     /* my dog gets special treatment */
-    if (mtmp.mtame)
-        throw new Error('m_move(): dog_move() not ported yet');
+    if (mtmp.mtame) {
+        return postmov(mtmp, ptr, omx, omy, dog_move(mtmp, after),
+                       seenflgs, can_tunnel, can_unlock, can_open);
+    }
 
     /* and the acquisitive monsters get special treatment */
     if (is_covetous(ptr))
