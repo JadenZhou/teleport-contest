@@ -15,6 +15,15 @@ import {
     CROSSWALL, TUWALL, TDWALL, TLWALL, TRWALL,
     D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS,
 } from './const.js';
+import { HALLUC } from './const.js';
+import {
+    objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
+    LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL,
+} from './objects.js';
+import { mons } from './monsters.js';
+import { def_oc_syms } from './drawing.js';
+import { observe_object } from './o_init.js';
+import { is_pool } from './makemon.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, DEC_TO_UNICODE } from './terminal.js';
 
@@ -207,33 +216,146 @@ function display_monster(x, y, mon) {
     show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false);
 }
 
+// C ref: you.h Hallucination
+function Hallucination() {
+    const p = game.u?.uprops?.[HALLUC];
+    return !!(p?.intrinsic || p?.extrinsic);
+}
+
+// C ref: display.h newsym_rn2 (rn2_on_display_rng) -- the display RNG is
+// separate from the core one; only hallucination draws from it here
+function newsym_rn2(x) {
+    throw new Error('newsym_rn2(): rn2_on_display_rng not ported yet');
+}
+
+// C ref: display.h covers_objects()
+function covers_objects(x, y) {
+    const typ = game.level.at(x, y).typ;
+    return (is_pool(x, y) && !game.u?.uinwater) || typ === LAVAPOOL
+           || typ === LAVAWALL;
+}
+
+// C ref: display.h vobj_at() -> level.objects[x][y], the top of the pile.
+// game.level.objects is fobj (newest first); place_object() puts a
+// non-boulder under any boulders, so a boulder is on top when there is one.
+function vobj_at(x, y) {
+    let top = null;
+    for (const o of game.level?.objects || []) {
+        if (o.ox !== x || o.oy !== y || o.where !== 'OBJ_FLOOR') continue;
+        if (o.otyp === BOULDER) return o;
+        if (!top) top = o;
+    }
+    return top;
+}
+
+// C ref: display.h obj_is_generic()
+function obj_is_generic(obj) {
+    return !obj.dknown
+        && (obj.oclass === POTION_CLASS
+            || (obj.otyp >= FIRST_REAL_GEM && obj.otyp <= LAST_GLASS_GEM)
+            || (obj.otyp >= FIRST_SPELL && obj.otyp <= LAST_SPELL));
+}
+
+// C ref: display.h obj_to_glyph() + display.c reset_glyphmap() -- the
+// glyph is kept as the { ch, color, decgfx } it maps to: statues show the
+// monster's class symbol in the statue's color, corpses '%' in the
+// monster's color, generic objects the class's generic object (objects[]
+// index oclass), the rest their own objects[] entry; the boulder uses
+// SYM_BOULDER, which defaults to the rock class symbol. Pile-top glyphs
+// differ only in MG_OBJPILE, which tty shows only with hilite_pile.
+function obj_to_glyph(obj, rng) {
+    if (obj.otyp === STATUE) {
+        if (Hallucination()) rng(2);
+        return { ch: def_monsyms[mons[obj.corpsenm].mlet] ?? '?',
+                 color: objects[STATUE].oc_color, decgfx: false };
+    }
+    if (Hallucination()) rng(2);
+    if (obj.otyp === CORPSE)
+        return { ch: def_oc_syms[objects[CORPSE].oc_class],
+                 color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false };
+    const offset = obj_is_generic(obj) ? obj.oclass : obj.otyp;
+    return { ch: def_oc_syms[objects[offset].oc_class],
+             color: objects[offset].oc_color, decgfx: false };
+}
+
+// C ref: display.c map_object()
+function map_object(obj, show) {
+    const x = obj.ox, y = obj.oy;
+    const loc = game.level.at(x, y);
+    let glyph = obj_to_glyph(obj, newsym_rn2);
+
+    /* if this object is already displayed as a generic object, it might
+       become a specific one now */
+    if (obj_is_generic(obj) && cansee(x, y) && !Hallucination()) {
+        const u = game.u;
+        const r = (u.xray_range > 2) ? u.xray_range : 2,
+            /* neardist produces a small square with rounded corners */
+            neardist = (r * r) * 2 - r; /* same as r*r + r*(r-1) */
+        const dx = x - u.ux, dy = y - u.uy;
+
+        if (dx * dx + dy * dy <= neardist) {
+            observe_object(obj, Hallucination());
+            glyph = obj_to_glyph(obj, newsym_rn2);
+        }
+    }
+
+    if (game.level.flags?.hero_memory) {
+        /* MRKR: While hallucinating, statues are seen as random monsters */
+        /*       but remembered as random objects.                        */
+        loc.remembered_glyph = glyph;
+    }
+    if (show)
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+}
+
+// C ref: display.c map_background()
+function map_background(x, y, show) {
+    const loc = game.level.at(x, y);
+    const tg = terrain_glyph(loc, x, y);
+    if (game.level.flags?.hero_memory)
+        loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
+    if (show)
+        show_glyph_cell(x, y, tg.ch, tg.color, tg.dec);
+}
+
+// C ref: display.c _map_location() -- traps and engravings are not
+// ported yet
+function _map_location(x, y, show) {
+    let obj;
+    if ((obj = vobj_at(x, y)) && !covers_objects(x, y))
+        map_object(obj, show);
+    else
+        map_background(x, y, show);
+}
+
 // ── newsym ──
 export function newsym(x, y) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
 
     if (game.u?.ux === x && game.u?.uy === y) {
-        // Hero
+        // Hero: update the remembered spot under the hero, then show self
+        if (cansee(x, y)) {
+            _map_location(x, y, false);
+        } else {
+            const tg = terrain_glyph(loc, x, y);
+            loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
+        }
         show_glyph_cell(x, y, '@', CLR_WHITE, false);
-        const tg = terrain_glyph(loc, x, y);
-        loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
         return;
     }
 
-    // Not ported yet: object and trap display.
-
-    const tg = terrain_glyph(loc, x, y);
     // Only update display/memory if cell is IN_SIGHT (lit and visible)
     if (cansee(x, y)) {
-        show_glyph_cell(x, y, tg.ch, tg.color, tg.dec);
-        if (game.level?.flags?.hero_memory) {
-            loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
-        }
         /* C ref: display.c newsym(): a monster seen at the spot is shown
-           over the remembered background (display_monster()) */
+           over the mapped location (display_monster()) */
         const mon = mon_at_loc(x, y);
-        if (mon && mon_visible(mon) && !mon.m_ap_type)
+        if (mon && mon_visible(mon) && !mon.m_ap_type) {
+            _map_location(x, y, false); /* map under the monster */
             display_monster(x, y, mon);
+        } else {
+            _map_location(x, y, true);
+        }
     } else if (loc.remembered_glyph) {
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
