@@ -6,7 +6,10 @@
 // teleport.c.
 
 import { game } from './gstate.js';
-import { rn2 } from './rng.js';
+import { rn2, rnl } from './rng.js';
+import { pline } from './display.js';
+import { tty_getlin } from './wintty.js';
+import { In_endgame, TELEPORT_CONTROL, STUNNED, CONFUSION } from './const.js';
 import {
     COLNO, ROWNO, ZAP_POS, isok, GP_ALLOW_XY, GP_CHECKSCARY, NO_MM_FLAGS,
     CC_NO_FLAGS, CC_INCL_CENTER, CC_UNSHUFFLED, CC_RING_PAIRS, CC_SKIP_MONS,
@@ -214,4 +217,56 @@ function rloc_to_flag(mtmp, x, y, rlocflags) {
     mtmp.mx = x;
     mtmp.my = y;
     place_monster(mtmp, x, y); /* put monster down */
+}
+
+// C ref: teleport.c level_tele() -- the prompt for the destination; the
+// teleport itself (schedule_goto()/goto_level()), random_levtport, the
+// wizard-mode level menu and lev_by_name() are not ported yet
+export async function level_tele() {
+    const g = game;
+    const u = g.u;
+    const wizard = !!g.flags?.debug;
+    let newlev = 0;
+    let buf = '';
+
+    if ((u.uhave?.amulet || In_endgame(u.uz) /* || In_sokoban(&u.uz) */)
+        && !wizard) {
+        await pline("You feel very disoriented for a moment."); /* You_feel() */
+        return;
+    }
+    const Teleport_control = !!(u.uprops[TELEPORT_CONTROL]?.intrinsic
+                                || u.uprops[TELEPORT_CONTROL]?.extrinsic);
+    const Stunned = !!(u.uprops[STUNNED]?.intrinsic || u.uprops[STUNNED]?.extrinsic);
+    const Confusion = !!(u.uprops[CONFUSION]?.intrinsic || u.uprops[CONFUSION]?.extrinsic);
+    if ((Teleport_control && !Stunned) || wizard) {
+        let qbuf = "To what level do you want to teleport?";
+        let trycnt = 0;
+        const digit = (c) => c >= '0' && c <= '9';
+
+        do {
+            /* iflags.menu_requested ('m ^V') is not ported yet */
+            if (++trycnt === 2) {
+                if (wizard)
+                    qbuf += " [type a number, name, or ? for a menu]";
+                else
+                    qbuf += " [type a number or name]";
+            }
+            buf = await tty_getlin(qbuf);
+            if (buf === "*") {
+                return; /* goto random_levtport -- not ported yet */
+            } else if (Confusion && rnl(5)) {
+                await pline("Oops...");
+                return; /* goto random_levtport -- not ported yet */
+            } else if (buf === "\x1b") { /* cancelled */
+                return;
+            }
+            if (!/^-?\d+$/.test(buf))
+                return; /* '?' menu and lev_by_name() -- not ported yet */
+            newlev = parseInt(buf, 10); /* atoi() */
+        } while (!newlev && !digit(buf[0])
+                 && (buf[0] !== '-' || !digit(buf[1])) && trycnt < 10);
+        /* "Go to Nowhere", schedule_goto() &c -- not ported yet */
+        return;
+    }
+    /* random_levtport -- not ported yet */
 }

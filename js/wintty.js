@@ -24,7 +24,9 @@ import {
     TELEPORT_BANNER_C, PL_NSIZ, ROWNO, COLNO,
 } from './const.js';
 import { genl_player_setup } from './role.js';
-import { row_refresh, bot } from './display.js';
+import { row_refresh, bot, flush_screen, pline } from './display.js';
+import { extcmds_match } from './cmd.js';
+import { extcmdlist, ECM_NOFLAGS, ECM_IGNOREAC, ECM_EXACTMATCH } from './func_tab.js';
 
 // C ref: wintty.h TOPLINE_* states
 const TOPLINE_EMPTY = 0;          /* empty */
@@ -129,7 +131,7 @@ function new_window(type) {
 export function tty_init_nhwindows() {
     const g = game;
     g.ttyDisplay = { rows: 24, cols: 80, curx: 0, cury: 0, toplin: TOPLINE_EMPTY,
-                     inread: 0, dismiss_more: 0, attrs: ATR_NONE, lastwin: WIN_ERR };
+                     inread: 0, inmore: 0, dismiss_more: 0, attrs: ATR_NONE, lastwin: WIN_ERR };
     g.tty_wins = [];
 
     /* set up the default windows */
@@ -207,6 +209,8 @@ export function tty_clear_nhwindow(window) {
         if (t.toplin !== TOPLINE_EMPTY) {
             home();
             cl_end();
+            if (cw.cury)
+                docorner(1, cw.cury + 1, 0);
             cw.curx = cw.cury = 0;
             t.toplin = TOPLINE_EMPTY;
         }
@@ -327,8 +331,8 @@ export function tty_putstr(window, attr, str) {
 
     switch (cw.type) {
     case NHW_MESSAGE:
-        update_topl(str);
-        break;
+        /* update_topl() may wait at --More--, so callers await this */
+        return update_topl(str);
     case NHW_BASE:
         tty_curs(window, cw.curx + 1, cw.cury);
         term_start_attr(attr);
@@ -383,26 +387,190 @@ export function tty_putstr(window, attr, str) {
     }
 }
 
-// C ref: topl.c update_topl() -- the simple case: the message fits on the
-// empty top line (startup prompts)
-function update_topl(bp) {
+// ---------------------------------------------------------------------------
+// topl.c: the message window (top line)
+
+// C ref: wintty.h WIN_STOP, WIN_NOSTOP, WIN_LOCKHISTORY
+const WIN_STOP = 1;
+const WIN_NOSTOP = 0x10;
+const WIN_LOCKHISTORY = 4;
+
+// C ref: topl.c redotoplin()
+async function redotoplin(str) {
     const t = tty();
+    const otoplin = t.toplin;
+
+    home();
+    /* end_glyphout(): in case message printed during graphics output */
+    putsyms(str);
+    cl_end();
+    t.toplin = TOPLINE_NEED_MORE;
+    if (t.cury && otoplin !== TOPLINE_SPECIAL_PROMPT)
+        await more();
+}
+
+// C ref: topl.c remember_topl() -- used by update_topl(); the message
+// history (cw->data[]) is kept for ^P, which is not ported yet
+function remember_topl() {
     const cw = wins()[game.WIN_MESSAGE];
 
-    if (t.toplin !== TOPLINE_EMPTY && t.toplin !== TOPLINE_SPECIAL_PROMPT)
-        throw new Error('update_topl: concatenation/--More-- not ported yet');
-    cw.curx = cw.cury = 0;
-    home();
+    if ((cw.flags & WIN_LOCKHISTORY) || !game.toplines)
+        return;
+    if (!cw.data)
+        cw.data = [];
+    cw.data.push(game.toplines);
+    game.toplines = '';
+}
+
+// C ref: topl.c addtopl()
+function addtopl(s) {
+    const cw = wins()[game.WIN_MESSAGE];
+
+    tty_curs(game.BASE_WINDOW, cw.curx + 1, cw.cury);
+    putsyms(s);
     cl_end();
-    for (const ch of bp) {
-        if (t.curx >= t.cols - 1) break;
-        xputc(ch);
+    tty().toplin = TOPLINE_NEED_MORE;
+}
+
+// C ref: topl.c more()
+export async function more() {
+    const cw = wins()[game.WIN_MESSAGE];
+    const t = tty();
+
+    /* avoid recursion -- only happens from interrupts */
+    if (t.inmore)
+        return;
+
+    t.inmore++;
+
+    if (t.toplin) {
+        tty_curs(game.BASE_WINDOW, cw.curx + 1, cw.cury);
+        if (cw.curx >= t.cols - 8)
+            topl_putsym('\n');
+    }
+
+    /* flags.standout is off by default */
+    putsyms(defmorestr);
+
+    await xwaitforspace("\x1b ");
+
+    if (game.morc === '\x1b') {
+        if (!(cw.flags & WIN_NOSTOP))
+            cw.flags |= WIN_STOP;
+    }
+
+    if (t.toplin && cw.cury) {
+        docorner(1, cw.cury + 1, 0);
+        cw.curx = cw.cury = 0;
+        home();
+    } else if (game.morc === '\x1b') {
+        cw.curx = cw.cury = 0;
+        home();
+        cl_end();
+    }
+    t.toplin = TOPLINE_EMPTY;
+    t.inmore = 0;
+}
+
+// C ref: topl.c update_topl()
+async function update_topl(bp) {
+    const t = tty();
+    const cw = wins()[game.WIN_MESSAGE];
+    const CO = t.cols;
+    let skip = (cw.flags & (WIN_STOP | WIN_NOSTOP)) === WIN_STOP;
+    let notdied = true;
+    let n0;
+
+    if (game.toplines === undefined)
+        game.toplines = '';
+
+    /* If there is room on the line, print message on same line */
+    /* But messages like "You die..." deserve their own line */
+    n0 = bp.length;
+    if ((t.toplin === TOPLINE_NEED_MORE || skip)
+        && cw.cury === 0
+        && n0 + game.toplines.length + 3 < CO - 8 /* room for --More-- */
+        && (notdied = !bp.startsWith("You die"))) {
+        game.toplines += "  " + bp;
+        cw.curx += 2;
+        if (!skip)
+            addtopl(bp);
+        return;
+    } else if (!skip) {
+        if (t.toplin === TOPLINE_NEED_MORE) {
+            await more();
+        } else if (cw.cury) { /* for toplin==TOPLINE_NON_EMPTY && cury > 1 */
+            docorner(1, cw.cury + 1, 0); /* reset cury = 0 if redraw screen */
+            cw.curx = cw.cury = 0;   /* from home--cls() & docorner(1,n,0) */
+        }
+    }
+    remember_topl();
+    let tl = bp.slice(0, 256 - 1); /* TBUFSZ */
+
+    /* break the message into lines of fewer than CO characters */
+    let pos = 0;
+    for (; n0 >= CO; ) {
+        const otl = pos;
+        let i;
+        for (i = pos + CO - 1; i !== otl; --i)
+            if (tl[i] === ' ')
+                break;
+        if (i === otl) {
+            /* Eek!  A huge token.  Try splitting after it. */
+            i = tl.indexOf(' ', otl);
+            if (i < 0)
+                break; /* No choice but to spit it out whole. */
+        }
+        tl = tl.slice(0, i) + '\n' + tl.slice(i + 1);
+        pos = i + 1;
+        n0 = tl.length - pos;
+    }
+    game.toplines = tl;
+    if (!notdied) { /* double negative => "You die"; avoid suppressing mesg */
+        cw.flags &= ~WIN_STOP;
+        skip = false;
+    }
+    if (!skip)
+        await redotoplin(game.toplines);
+}
+
+// C ref: topl.c topl_putsym()
+function topl_putsym(c) {
+    const cw = wins()[game.WIN_MESSAGE];
+    const t = tty();
+
+    switch (c) {
+    case '\b':
+        if (t.curx === 0 && t.cury > 0)
+            tty_curs(game.BASE_WINDOW, t.cols, t.cury - 1);
+        /* backsp() */
+        t.curx--;
+        cw.curx = t.curx;
+        cmov(t.curx, t.cury);
+        return;
+    case '\n':
+        cl_end();
+        t.curx = 0;
+        t.cury++;
+        cw.cury = t.cury;
+        cmov(t.curx, t.cury);
+        break;
+    default:
+        if (t.curx === t.cols - 1)
+            topl_putsym('\n'); /* 1 <= curx < CO; avoid CO */
+        xputc(c);
         t.curx++;
     }
     cw.curx = t.curx;
+    if (cw.curx === 0)
+        cl_end();
     cmov(t.curx, t.cury);
-    if (t.toplin !== TOPLINE_SPECIAL_PROMPT)
-        t.toplin = TOPLINE_NEED_MORE;
+}
+
+// C ref: topl.c putsyms()
+function putsyms(str) {
+    for (const c of str)
+        topl_putsym(c);
 }
 
 // ---------------------------------------------------------------------------
@@ -508,8 +676,10 @@ export async function tty_yn_function(query, resp, def) {
     let q;
     let prompt;
 
-    if (t.toplin === TOPLINE_NEED_MORE)
-        throw new Error('tty_yn_function: more() not ported yet');
+    const cw = wins()[game.WIN_MESSAGE];
+    if (t.toplin === TOPLINE_NEED_MORE && !(cw.flags & WIN_STOP))
+        await more();
+    cw.flags &= ~WIN_STOP;
     t.toplin = TOPLINE_SPECIAL_PROMPT;
     t.inread++;
     if (resp) {
@@ -517,13 +687,179 @@ export async function tty_yn_function(query, resp, def) {
     } else {
         /* no restriction on allowed response, so always preserve case */
         prompt = `${query} `;
-        update_topl(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
+        await update_topl(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
         q = await readchar();
     }
     /* clean_up: */
     t.inread--;
     t.toplin = TOPLINE_NON_EMPTY;
     return q;
+}
+
+// ---------------------------------------------------------------------------
+// getline.c: line input on the message line
+
+// erase and kill characters of the terminal (xxxtty.c erase_char,
+// kill_char): the usual stty settings
+const erase_char = '\x7f', kill_char = '\x15';
+const BUFSZ = 256;
+
+// C ref: getline.c tty_getlin()
+export async function tty_getlin(query) {
+    game.suppress_history = false;
+    return hooked_tty_getlin(query, null);
+}
+
+// C ref: getline.c hooked_tty_getlin() (NEWAUTOCOMP, !EDIT_GETLIN);
+// the line read is returned instead of filled into bufp
+async function hooked_tty_getlin(query, hook) {
+    const cw = wins()[game.WIN_MESSAGE];
+    const t = tty();
+    let obufp = '';  /* the text */
+    let bufp = 0;    /* the cursor position in it */
+    let c;
+
+    if (t.toplin === TOPLINE_NEED_MORE && !(cw.flags & WIN_STOP))
+        await more();
+    cw.flags &= ~WIN_STOP;
+    t.toplin = TOPLINE_SPECIAL_PROMPT;
+    t.inread++;
+
+    /*
+     * Issue the prompt.
+     * custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY, "%s ", query)
+     */
+    await custompline(`${query} `);
+
+    for (;;) {
+        game.toplines = `${query} ${obufp}`;
+        c = String.fromCharCode(await nhgetch());
+        if (c === '\x1b') {
+            if (obufp !== '') {
+                obufp = '';
+                bufp = 0;
+                tty_clear_nhwindow(game.WIN_MESSAGE);
+                cw.maxcol = cw.maxrow;
+                addtopl(query);
+                addtopl(" ");
+                addtopl(obufp);
+            } else {
+                obufp = '\x1b';
+                break;
+            }
+        }
+        if (c === '\x10') /* ctrl-P */
+            throw new Error('hooked_tty_getlin(): ^P message history not ported yet');
+        if (c === erase_char || c === '\b') {
+            if (bufp !== 0) {
+                bufp--;
+                putsyms("\b");
+                let i;
+                for (i = bufp; i < obufp.length; ++i)
+                    putsyms(" ");
+                for (; i > bufp; --i)
+                    putsyms("\b");
+                obufp = obufp.slice(0, bufp);
+            } else {
+                /* tty_nhbell(); */
+            }
+        } else if (c === '\n' || c === '\r') {
+            break;
+        } else if (' ' <= c && c !== '\x7f'
+                   && (bufp < BUFSZ - 1 && bufp < COLNO)) {
+            let i = obufp.length; /* eos(bufp) */
+
+            obufp = obufp.slice(0, bufp) + c;
+            putsyms(c);
+            bufp++;
+            let completed;
+            if (hook && (completed = hook(obufp)) !== null) {
+                obufp = completed;
+                putsyms(obufp.slice(bufp));
+                /* pointer and cursor left where they were */
+                for (i = bufp; i < obufp.length; ++i)
+                    putsyms("\b");
+            } else if (i > bufp) {
+                let s = i;
+
+                /* erase rest of prior guess */
+                for (; i > bufp; --i)
+                    putsyms(" ");
+                for (; s > bufp; --s)
+                    putsyms("\b");
+            }
+        } else if (c === kill_char || c === '\x7f') { /* Robert Viduya */
+            /* this test last - @ might be the kill_char */
+            for (; bufp < obufp.length; ++bufp)
+                putsyms(" ");
+            for (; bufp !== 0; --bufp)
+                putsyms("\b \b");
+            obufp = '';
+        } else {
+            /* tty_nhbell(); */
+        }
+    }
+    t.toplin = TOPLINE_NON_EMPTY;
+    t.inread--;
+    tty_clear_nhwindow(game.WIN_MESSAGE); /* clean up after ourselves */
+
+    if (game.suppress_history) {
+        /* prevent next message from pushing current query+answer into
+           tty message history */
+        game.toplines = '';
+    }
+    return obufp;
+}
+
+// C ref: pline.c custompline() -- vpline() of a prompt: bring the map up
+// to date, then put the text in the message window
+async function custompline(line) {
+    if (game.u?.ux)
+        await flush_screen(1);
+    await tty_putstr(game.WIN_MESSAGE, 0, line);
+}
+
+// C ref: getline.c ext_cmd_getlin_hook()
+/*
+ * Implement extended command completion by using this hook into
+ * tty_getlin.  Check the characters already typed, if they uniquely
+ * identify an extended command, expand the string to the whole
+ * command.
+ *
+ * Returns the extended string, or null if base was not extended.
+ */
+function ext_cmd_getlin_hook(base) {
+    const ecmatches = extcmds_match(base, ECM_NOFLAGS);
+
+    if (ecmatches.length === 1)
+        return extcmdlist[ecmatches[0]].ef_txt;
+
+    return null; /* didn't match anything */
+}
+
+// C ref: getline.c tty_get_ext_cmd()
+/*
+ * Read in an extended command, doing command line completion.  We
+ * stop when we have found enough characters to make a unique command.
+ */
+export async function tty_get_ext_cmd() {
+    /* iflags.extmenu is off by default */
+    game.suppress_history = true;
+    const extcmd_char = '#'; /* extcmd_initiator() */
+    let buf = await hooked_tty_getlin(extcmd_char,
+                                      !game.in_doagain ? ext_cmd_getlin_hook : null);
+    buf = buf.replace(/[ \t]+/g, ' ').trim(); /* mungspaces() */
+
+    const ecmatches = (buf === '' || buf[0] === '\x1b') ? null
+                    : extcmds_match(buf, ECM_IGNOREAC | ECM_EXACTMATCH);
+    const nmatches = ecmatches ? ecmatches.length : -1;
+    if (nmatches !== 1) {
+        if (nmatches !== -1)
+            await pline(`${extcmd_char}${buf.slice(0, 60)}: unknown extended command.`);
+        return -1;
+    }
+
+    return ecmatches[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -671,6 +1007,15 @@ export async function tty_display_nhwindow(window, blocking) {
     t.lastwin = window;
 
     switch (cw.type) {
+    case NHW_MESSAGE:
+        if (t.toplin === TOPLINE_NEED_MORE) {
+            await more();
+            t.toplin = TOPLINE_NEED_MORE; /* more resets this */
+            tty_clear_nhwindow(window);
+        } else
+            t.toplin = TOPLINE_EMPTY;
+        cw.curx = cw.cury = 0;
+        return;
     case NHW_TEXT:
         cw.maxcol = t.cols; /* force full-screen mode */
         /*FALLTHRU*/
@@ -687,7 +1032,7 @@ export async function tty_display_nhwindow(window, blocking) {
         if (cw.type === NHW_MENU)
             cw.offy = 0;
         if (t.toplin === TOPLINE_NEED_MORE)
-            throw new Error('tty_display_nhwindow: more() not ported yet');
+            await tty_display_nhwindow(game.WIN_MESSAGE, true);
         /* H2344_BROKEN; iflags.menu_overlay is on by default */
         if (cw.maxrow >= t.rows || game.iflags?.menu_overlay === false) {
             cw.offx = 0;

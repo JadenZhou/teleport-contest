@@ -100,6 +100,8 @@ export class NethackGame {
         g.flags = { verbose: true, legacy: true, acoustics: true, ...opts.flags };
         g.iflags = { ...opts.iflags };
         g.pl_character = opts.pl_character || '';
+        /* the fixed clock calendar.c getlt() reads */
+        g.datetime = this._datetime;
         /* symset option (options.c optfn_symset); the default is the
            plain ASCII symbol set */
         g.symset_name = opts.symset || null;
@@ -144,7 +146,8 @@ export class NethackGame {
         await newgame();
         /* C ref: unixmain.c main() -> moveloop(0) -> moveloop_preamble();
            the caller drives moveloop_core() itself */
-        moveloop_preamble(false);
+        await moveloop_preamble(false);
+        /* maybe_do_tutorial(): not ported yet */
     }
 
     _installCaptureHook() {
@@ -217,10 +220,10 @@ export class NethackGame {
 // this segment. The harness concatenates them itself. Cross-segment
 // C-side state (bones, record file, save) lives in `input.storage`.
 export async function runSegment(input) {
-    const { seed, nethackrc, storage } = input;
+    const { seed, nethackrc, storage, datetime } = input;
     const moves = input.moves || '';
 
-    const nhGame = new NethackGame({ seed, nethackrc, storage });
+    const nhGame = new NethackGame({ seed, datetime, nethackrc, storage });
 
     const display = new GameDisplay(null);
     display.onEmptyQueue = () => { throw new Error('Input queue empty - test may be missing keystrokes'); };
