@@ -24,6 +24,7 @@ import { set_uasmon } from './polyself.js';
 import { newhp, adjabil, adjattrib, init_attr, vary_init_attr } from './attrib.js';
 import { newpw } from './exper.js';
 import { init_uhunger } from './eat.js';
+import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
@@ -1284,9 +1285,6 @@ function hidden_gold(even_if_unknown) {
     return 0;
 }
 
-// C ref: invent.c inv_weight(), weight_cap() -- not ported yet; the
-// carrying-capacity boost below needs them
-function inv_weight() { return 0; }
 
 // C ref: u_init.c u_init_carry_attr_boost()
 /* boost STR and CON until hero can carry inventory */
