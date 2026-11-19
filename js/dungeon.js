@@ -1138,3 +1138,33 @@ export function level_difficulty() {
     }
     return (res << 16) >> 16; /* (xint16) res */
 }
+
+// C ref: dungeon.c dungeon_branch()
+/* return the branch that leads into the named dungeon */
+export function dungeon_branch(s) {
+    let br;
+    const dnum = dname_to_dnum(s);
+
+    /* Find the branch that connects to dungeon i's branch. */
+    for (br = game.branches; br; br = br.next)
+        if (br.end2.dnum === dnum)
+            break;
+
+    if (!br)
+        panic(`dgn_entrance: can't find entrance to ${s}`);
+
+    return br;
+}
+
+// C ref: dungeon.c at_dgn_entrance()
+/*
+ * This returns true if the hero is on the same level as the entrance to
+ * the named dungeon.
+ */
+export function at_dgn_entrance(s) {
+    const br = dungeon_branch(s);
+    return on_level(game.u.uz, br.end1) ? true : false;
+}
+
+// C ref: flag.h wizard macro
+export function is_wizard_mode() { return wizard(); }

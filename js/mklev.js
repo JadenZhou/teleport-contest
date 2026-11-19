@@ -10,10 +10,12 @@ import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
-import { Is_branchlev, level_difficulty } from './dungeon.js';
+import { Is_branchlev, level_difficulty, on_level, dungeon_branch,
+         at_dgn_entrance, insert_branch, is_wizard_mode } from './dungeon.js';
+import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE } from './monsters.js';
 import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
          NHLpa_panic, NHLpa_impossible } from './nhlua.js';
-import { create_des_coder, reset_xystart_size } from './sp_lev.js';
+import { create_des_coder, reset_xystart_size, fill_special_room } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
@@ -27,7 +29,8 @@ import {
     SPACE_POS, isok, W_NONDIGGABLE, FILL_NORMAL,
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
-    LR_UPTELE, NHL_SB_SAFE,
+    LR_UPTELE, NHL_SB_SAFE, G_GONE, SHOPBASE, COURT, LEPREHALL, ZOO, TEMPLE,
+    BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST,
 } from './const.js';
 
 // Object/class constants (normally from objects.js, not in contest template)
@@ -248,7 +251,7 @@ function mkobj_at(oclass, x, y, artif) {
     return mkobj(oclass, artif);
 }
 
-function mkgold(amount, x, y) {
+export function mkgold(amount, x, y) {
     // C ref: mkobj.c mkgold()
     if (amount <= 0) {
         // C ref: mkobj.c:2008-2010
@@ -450,42 +453,178 @@ async function makelevel() {
         // Would generate maze — not applicable for contest level 1
     }
 
-    // Regular level generation
+    /* otherwise, fall through - it's a "regular" level. */
+    const u_depth = depth_of_level(g.u.uz);
+
     await makerooms();
-
-    if (g.level.nroom <= 0) return;
     sort_rooms();
-    await generate_stairs();
 
-    // Branch check
-    const branchp = is_branchlev();
+    await generate_stairs(); /* up and down stairs */
+
+    const branchp = Is_branchlev(g.u.uz); /* possible dungeon branch */
+    let room_threshold = branchp ? 4 : 3; /* minimum number of rooms needed
+                                            to allow a random special room */
 
     makecorridors();
     await make_niches();
 
-    // Vault creation (simplified for contest)
-    if (g.vault_x !== -1) {
-        const vw = { v: 1 }, vh = { v: 1 };
+    /* make a secret treasure vault, not connected to the rest */
+    if (do_vault()) {
+        const w = { v: 1 }, h = { v: 1 };
         const vx = { v: g.vault_x }, vy = { v: g.vault_y };
-        if (check_room(vx, vw, vy, vh, true)) {
-            add_room(vx.v, vy.v, vx.v + vw.v, vy.v + vh.v, true, VAULT, false);
+        let fill_vault = false;
+
+        /* debugpline0("trying to make a vault..."); */
+        /* check_room() adjusts gv.vault_x and gv.vault_y through pointers */
+        fill_vault = check_room(vx, w, vy, h, true);
+        g.vault_x = vx.v; g.vault_y = vy.v;
+        if (!fill_vault && rnd_rect() && create_vault()) {
+            g.vault_x = vx.v = g.level.rooms[g.level.nroom].lx;
+            g.vault_y = vy.v = g.level.rooms[g.level.nroom].ly;
+            fill_vault = check_room(vx, w, vy, h, true);
+            g.vault_x = vx.v; g.vault_y = vy.v;
+            if (!fill_vault)
+                g.level.rooms[g.level.nroom].hx = -1;
+        }
+        if (fill_vault) { /* fill_vault: */
+            add_room(g.vault_x, g.vault_y,
+                     g.vault_x + w.v, g.vault_y + h.v,
+                     true, VAULT, false);
             g.level.flags.has_vault = true;
-            const vaultRoom = g.level.rooms[g.level.nroom - 1];
-            if (vaultRoom) vaultRoom.needfill = FILL_NORMAL;
-            if (!is_branchlev()) rn2(3);
-            if (!rn2(3)) await makeniche(TELEP_TRAP);
-        } else if (rnd_rect()) {
-            // Fallback vault attempt — simplified
+            ++room_threshold;
+            g.level.rooms[g.level.nroom - 1].needfill = FILL_NORMAL;
+            fill_special_room(g.level.rooms[g.level.nroom - 1]);
+            mk_knox_portal(g.vault_x + w.v, g.vault_y + h.v);
+            if (!g.level.flags.noteleport && !rn2(3))
+                await makevtele();
         }
     }
 
-    // Place dungeon branch
+    /* make up to 1 special room, with type dependent on depth;
+       note that mkroom doesn't guarantee a room gets created, and that
+       this step only sets the room's rtype - it doesn't fill it yet. */
+    /* (wizard && nh_getenv("SHOPTYPE")): the JS port has no environment */
+    if (u_depth > 1 && u_depth < depth_of_level(g.dungeon_topology.d_medusa_level)
+        && g.level.nroom >= room_threshold && rn2(u_depth) < 3)
+        do_mkroom(SHOPBASE);
+    else if (u_depth > 4 && !rn2(6))
+        do_mkroom(COURT);
+    else if (u_depth > 5 && !rn2(8)
+             && !(g.mvitals[PM_LEPRECHAUN].mvflags & G_GONE))
+        do_mkroom(LEPREHALL);
+    else if (u_depth > 6 && !rn2(7))
+        do_mkroom(ZOO);
+    else if (u_depth > 8 && !rn2(5))
+        do_mkroom(TEMPLE);
+    else if (u_depth > 9 && !rn2(5)
+             && !(g.mvitals[PM_KILLER_BEE].mvflags & G_GONE))
+        do_mkroom(BEEHIVE);
+    else if (u_depth > 11 && !rn2(6))
+        do_mkroom(MORGUE);
+    else if (u_depth > 12 && !rn2(8) && antholemon())
+        do_mkroom(ANTHOLE);
+    else if (u_depth > 14 && !rn2(4)
+             && !(g.mvitals[PM_SOLDIER].mvflags & G_GONE))
+        do_mkroom(BARRACKS);
+    else if (u_depth > 15 && !rn2(6))
+        do_mkroom(SWAMP);
+    else if (u_depth > 16 && !rn2(8)
+             && !(g.mvitals[PM_COCKATRICE].mvflags & G_GONE))
+        do_mkroom(COCKNEST);
+
+    /* skip0: */
+    /* prevstairs = gs.stairs: used to test for place_branch() success */
+    /* Place multi-dungeon branch. */
     if (branchp) {
         place_branch(branchp);
     }
 
-    // Fill rooms + mineralize: consumed by fastforward_fill_mineralize
-    // Called externally from allmain.js after mklev structural phase
+    /* some levels have specially generated items in ordinary
+       rooms (intended to be indistinguishable from the normally
+       generated items); work out which room these will be placed in */
+    let fillable_room_count = 0;
+    for (let i = 0; i < g.level.nroom; i++) {
+        if (ROOM_IS_FILLABLE(g.level.rooms[i]))
+            fillable_room_count++;
+    }
+    /* choose a random fillable room to be the one that gets the
+       bonus items, if there are any; if there aren't any we don't
+       generate the bonus items (but levels with no fillable rooms
+       typically don't have any bonus items to generate anyway) */
+    g.bonus_item_room_countdown = fillable_room_count
+                                  ? rn2(fillable_room_count) : -1;
+
+    /* for each room: put things inside -- fill_ordinary_room(), then
+       fill_special_room() for every room, then
+       themerooms_post_level_generate(): not ported yet. allmain.js replays
+       their rolls (fastforward_fill_mineralize) right after mklev(), which
+       makes no rolls in between. */
+}
+
+// C ref: mklev.c ROOM_IS_FILLABLE()
+function ROOM_IS_FILLABLE(croom) {
+    return ((croom.rtype === OROOM || croom.rtype === THEMEROOM)
+            && croom.needfill === FILL_NORMAL);
+}
+
+// C ref: mklev.c do_vault()
+function do_vault() {
+    return game.vault_x !== -1;
+}
+
+// C ref: mklev.c makevtele()
+async function makevtele() {
+    await makeniche(TELEP_TRAP);
+}
+
+// C ref: mklev.c mk_knox_portal()
+/* Place a magic portal to Fort Ludios on a level with a vault */
+function mk_knox_portal(x, y) {
+    let source;
+    let u_depth;
+
+    const br = dungeon_branch('Fort Ludios');
+    /* dungeon_branch() panics (so never returns) if result would be Null */
+
+    if (on_level(game.dungeon_topology.d_knox_level, br.end1)) {
+        source = br.end2;
+    } else {
+        /* disallow Knox branch on a level with one branch already */
+        if (Is_branchlev(game.u.uz))
+            return;
+        source = br.end1;
+    }
+
+    /* Already set or 2/3 chance of deferring until a later level. */
+    if (source.dnum < game.n_dgns || (rn2(3) && !is_wizard_mode()))
+        return;
+
+    if (!(game.u.uz.dnum === game.dungeon_topology.d_oracle_level.dnum /* in main dungeon */
+          && !at_dgn_entrance('The Quest')    /* but not Quest's entry */
+          && (u_depth = depth_of_level(game.u.uz)) > 10    /* beneath 10 */
+          && u_depth < depth_of_level(game.dungeon_topology.d_medusa_level))) /* and above Medusa */
+        return;
+
+    /* Adjust source to be current level and re-insert branch. */
+    source.dnum = game.u.uz.dnum;
+    source.dlevel = game.u.uz.dlevel;
+    insert_branch(br, true);
+
+    /* debugpline0("Made knox portal."); */
+    place_branch(br, x, y);
+}
+
+// C ref: mkroom.c do_mkroom() — not ported yet (only reached below
+// dungeon level 1).
+function do_mkroom(roomtype) {
+    console.error(`impossible: do_mkroom(${roomtype}) is not ported yet`);
+}
+
+// C ref: mkroom.c antholemon() — not ported yet (only reached below
+// dungeon level 12).
+function antholemon() {
+    console.error('impossible: antholemon() is not ported yet');
+    return null;
 }
 
 // C ref: mklev.c makerooms()

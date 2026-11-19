@@ -12,20 +12,21 @@
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
 import { game } from './gstate.js';
-import { rn2 } from './rng.js';
+import { rn2, rn1 } from './rng.js';
+import { depth } from './dungeon.js';
 import {
     COLNO, ROWNO, OROOM, THEMEROOM, COURT, SWAMP, VAULT, BEEHIVE, MORGUE,
     BARRACKS, ZOO, DELPHI, TEMPLE, ANTHOLE, COCKNEST, LEPREHALL, SHOPBASE,
     ARMORSHOP, SCROLLSHOP, POTIONSHOP, WEAPONSHOP, FOODSHOP, RINGSHOP,
     WANDSHOP, TOOLSHOP, BOOKSHOP, FODDERSHOP, CANDLESHOP, ROOMOFFSET,
-    IS_DOOR, SDOOR, isok, TRUE, FALSE,
+    IS_DOOR, SDOOR, isok, TRUE, FALSE, FILL_NONE, FILL_NORMAL,
 } from './const.js';
 import {
     get_table_int_opt, get_table_str_opt, get_table_option, nhl_error,
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door } from './mklev.js';
+import { create_room, topologize, add_door, mkgold } from './mklev.js';
 
 // C's impossible() and panic() (pline.c) are not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -280,6 +281,78 @@ function add_doors_to_room(croom) {
         }
     for (let i = 0; i < croom.nsubrooms; i++)
         add_doors_to_room(croom.sbrooms[i]);
+}
+
+// C ref: sp_lev.c fill_special_room()
+export function fill_special_room(croom) {
+    if (!croom)
+        return;
+
+    /* First recurse into subrooms. We don't want to block an ordinary room
+     * with a special subroom from having the subroom filled, or an unfilled
+     * outer room preventing a special subroom from being filled. */
+    for (let i = 0; i < croom.nsubrooms; ++i) {
+        fill_special_room(croom.sbrooms[i]);
+    }
+
+    if (croom.rtype === OROOM || croom.rtype === THEMEROOM
+        || croom.needfill === FILL_NONE)
+        return;
+
+    if (croom.needfill === FILL_NORMAL) {
+        /* Shop ? */
+        if (croom.rtype >= SHOPBASE) {
+            /* stock_room(croom->rtype - SHOPBASE, croom) is not ported yet */
+            impossible('fill_special_room: stock_room() is not ported yet');
+            game.level.flags.has_shop = TRUE;
+            return;
+        }
+
+        switch (croom.rtype) {
+        case VAULT:
+            for (let x = croom.lx; x <= croom.hx; x++)
+                for (let y = croom.ly; y <= croom.hy; y++)
+                    mkgold(rn1(Math.abs(depth(game.u.uz)) * 100, 51), x, y);
+            break;
+        case COURT:
+        case ZOO:
+        case BEEHIVE:
+        case ANTHOLE:
+        case COCKNEST:
+        case LEPREHALL:
+        case MORGUE:
+        case BARRACKS:
+            /* fill_zoo(croom) is not ported yet */
+            impossible('fill_special_room: fill_zoo() is not ported yet');
+            break;
+        }
+    }
+    switch (croom.rtype) {
+    case VAULT:
+        game.level.flags.has_vault = TRUE;
+        break;
+    case ZOO:
+        game.level.flags.has_zoo = TRUE;
+        break;
+    case COURT:
+        game.level.flags.has_court = TRUE;
+        break;
+    case MORGUE:
+        game.level.flags.has_morgue = TRUE;
+        break;
+    case BEEHIVE:
+        game.level.flags.has_beehive = TRUE;
+        break;
+    case BARRACKS:
+        game.level.flags.has_barracks = TRUE;
+        break;
+    case TEMPLE:
+        game.level.flags.has_temple = TRUE;
+        break;
+    case SWAMP:
+        game.level.flags.has_swamp = TRUE;
+        break;
+    }
 }
 
 // C ref: sp_lev.c build_room()
