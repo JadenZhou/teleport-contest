@@ -1,0 +1,1054 @@
+{
+ "when": "2026-11-19T04:53:46.207Z",
+ "results": [
+  {
+   "session": "seed0002-healer-reflection-drummer.session.json",
+   "total": 27158,
+   "jsTotal": 3181,
+   "totalSteps": 595,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 7,
+    "c": "rn2(13)=3 @ pick_role(role.c:1032)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_role",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(13)=3 @ pick_role(role.c:1032)",
+     "rn2(2)=0 @ pick_race(role.c:1092)",
+     "rn2(2)=0 @ pick_gend(role.c:1157)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0004-feeding-pony.session.json",
+   "total": 12084,
+   "jsTotal": 3022,
+   "totalSteps": 409,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 7,
+    "c": "rn2(13)=4 @ pick_role(role.c:1032)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_role",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(13)=4 @ pick_role(role.c:1032)",
+     "rn2(1)=0 @ pick_race(role.c:1092)",
+     "rn2(2)=1 @ pick_gend(role.c:1157)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0006-wizard-water-demon.session.json",
+   "total": 6736,
+   "jsTotal": 3568,
+   "totalSteps": 123,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 11,
+    "c": "rn2(1)=0 @ pick_align(role.c:1222)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_align",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(1)=0 @ pick_align(role.c:1222)",
+     "rn2(1)=0 @ pick_align(role.c:1222)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0007-rogue-snake-swamp.session.json",
+   "total": 16373,
+   "jsTotal": 3755,
+   "totalSteps": 302,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 8,
+    "c": "rn2(13)=2 @ pick_role(role.c:1032)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_role",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(13)=2 @ pick_role(role.c:1032)",
+     "rn2(3)=2 @ pick_race(role.c:1092)",
+     "rn2(2)=1 @ pick_gend(role.c:1157)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0009-swimmer-mforce.session.json",
+   "total": 3713,
+   "jsTotal": 3215,
+   "totalSteps": 73,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 9,
+    "c": "rn2(13)=8 @ pick_role(role.c:1032)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_role",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(13)=8 @ pick_role(role.c:1032)",
+     "rn2(4)=1 @ pick_race(role.c:1092)",
+     "rn2(2)=1 @ pick_gend(role.c:1157)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0012-monk-vault-escort.session.json",
+   "total": 13878,
+   "jsTotal": 3358,
+   "totalSteps": 308,
+   "valuePrefix": 210,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 16,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
+   "total": 4804,
+   "jsTotal": 6428,
+   "totalSteps": 99,
+   "valuePrefix": 210,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0013-rogue-friday13-combat.session.json",
+   "total": 4838,
+   "jsTotal": 3237,
+   "totalSteps": 59,
+   "valuePrefix": 210,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0014-dequa-fountain-explore.session.json",
+   "total": 59178,
+   "jsTotal": 3085,
+   "totalSteps": 714,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 8,
+    "c": "rn2(1)=0 @ pick_gend(role.c:1157)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_gend",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(1)=0 @ pick_gend(role.c:1157)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0015-valk-level2-pit-dog-wait.session.json",
+   "total": 8563,
+   "jsTotal": 2900,
+   "totalSteps": 44,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0016-healer-newmoon-eat-zap.session.json",
+   "total": 3656,
+   "jsTotal": 2975,
+   "totalSteps": 36,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0017-samurai-altar-pray.session.json",
+   "total": 3465,
+   "jsTotal": 3452,
+   "totalSteps": 67,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 8,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0030-ten-diverse-deaths.session.json",
+   "total": 105529,
+   "jsTotal": 33754,
+   "totalSteps": 1953,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0060-orc-rogue-kick-search.session.json",
+   "total": 3626,
+   "jsTotal": 3025,
+   "totalSteps": 41,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0077-rogue-chargen.session.json",
+   "total": 3242,
+   "jsTotal": 2745,
+   "totalSteps": 33,
+   "valuePrefix": 0,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 8,
+    "c": "rn2(1)=0 @ pick_align(role.c:1222)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "value",
+    "cCaller": "pick_align",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(1)=0 @ pick_align(role.c:1222)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0101-ranger-quiver-throw-travel-engrave.session.json",
+   "total": 2371,
+   "jsTotal": 2881,
+   "totalSteps": 27,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0102-ranger-name-cancel.session.json",
+   "total": 4485,
+   "jsTotal": 3054,
+   "totalSteps": 25,
+   "valuePrefix": 230,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0103-knight-ride-pony.session.json",
+   "total": 2640,
+   "jsTotal": 3706,
+   "totalSteps": 60,
+   "valuePrefix": 230,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0104-knight-ride-combat.session.json",
+   "total": 3223,
+   "jsTotal": 2835,
+   "totalSteps": 43,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=0 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0105-valk-chat-lamp-ration.session.json",
+   "total": 2499,
+   "jsTotal": 2888,
+   "totalSteps": 30,
+   "valuePrefix": 230,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=0 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0106-priest-extcmd-sweep.session.json",
+   "total": 4194,
+   "jsTotal": 3085,
+   "totalSteps": 267,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0107-samurai-twoweapon-enhance.session.json",
+   "total": 2902,
+   "jsTotal": 2887,
+   "totalSteps": 98,
+   "valuePrefix": 234,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0108-wizard-extcmd-wishlist.session.json",
+   "total": 16958,
+   "jsTotal": 3808,
+   "totalSteps": 303,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0116-wizard-wear-shop.session.json",
+   "total": 12562,
+   "jsTotal": 3636,
+   "totalSteps": 127,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0200-monk-north-search.session.json",
+   "total": 3822,
+   "jsTotal": 2523,
+   "totalSteps": 40,
+   "valuePrefix": 234,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0360-wizard-world-tour.session.json",
+   "total": 120639,
+   "jsTotal": 7213,
+   "totalSteps": 833,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0361-archeologist-tour.session.json",
+   "total": 53865,
+   "jsTotal": 3757,
+   "totalSteps": 366,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0367-priest-quest-tour.session.json",
+   "total": 50125,
+   "jsTotal": 4069,
+   "totalSteps": 324,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0373-barbarian-quest-tour.session.json",
+   "total": 35386,
+   "jsTotal": 4507,
+   "totalSteps": 124,
+   "valuePrefix": 201,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0383-wizard-hallucinate.session.json",
+   "total": 16915,
+   "jsTotal": 3873,
+   "totalSteps": 219,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0398-wizard-wandpoly-pile.session.json",
+   "total": 3026,
+   "jsTotal": 3541,
+   "totalSteps": 87,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0399-wizard-hallu-actions.session.json",
+   "total": 11409,
+   "jsTotal": 3898,
+   "totalSteps": 532,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0501-priest-cast-read-turn.session.json",
+   "total": 2238,
+   "jsTotal": 3446,
+   "totalSteps": 28,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0700-samurai-explore-descend.session.json",
+   "total": 3230,
+   "jsTotal": 3125,
+   "totalSteps": 51,
+   "valuePrefix": 210,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed0900-tourist-explore-actions.session.json",
+   "total": 2983,
+   "jsTotal": 3619,
+   "totalSteps": 84,
+   "valuePrefix": 235,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed1150-caveman-explore-move.session.json",
+   "total": 3137,
+   "jsTotal": 3133,
+   "totalSteps": 51,
+   "valuePrefix": 230,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed1500-rogue-explore-move.session.json",
+   "total": 2768,
+   "jsTotal": 2685,
+   "totalSteps": 40,
+   "valuePrefix": 229,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=0 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed1800-tourist-eat-throw.session.json",
+   "total": 2458,
+   "jsTotal": 3067,
+   "totalSteps": 26,
+   "valuePrefix": 210,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed2200-wizard-quaff-zap-read.session.json",
+   "total": 3018,
+   "jsTotal": 3209,
+   "totalSteps": 230,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=0 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed2600-wizard-custom-binds.session.json",
+   "total": 11647,
+   "jsTotal": 3568,
+   "totalSteps": 38,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed4500-knight-coverage.session.json",
+   "total": 108275,
+   "jsTotal": 3001,
+   "totalSteps": 1814,
+   "valuePrefix": 201,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=1 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed5002-wizard-coverage-pair.session.json",
+   "total": 12167,
+   "jsTotal": 7353,
+   "totalSteps": 410,
+   "valuePrefix": 199,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=1 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=2 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed5006-tourist-stress-disaster.session.json",
+   "total": 13923,
+   "jsTotal": 6873,
+   "totalSteps": 249,
+   "valuePrefix": 201,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  },
+  {
+   "session": "seed8000-tourist-starter.session.json",
+   "total": 3130,
+   "jsTotal": 3270,
+   "totalSteps": 23,
+   "valuePrefix": 3103,
+   "rulePrefix": 0,
+   "first": {
+    "index": 0,
+    "step": 0,
+    "c": "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+    "js": "rn2(2)=0 @ fastforward_pre_mklev",
+    "kind": "caller",
+    "cCaller": "randomize_gem_colors",
+    "jsCaller": "fastforward_pre_mklev",
+    "context": [
+     "rn2(2)=0 @ randomize_gem_colors(o_init.c:89)",
+     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)",
+     "rn2(4)=0 @ randomize_gem_colors(o_init.c:95)"
+    ]
+   },
+   "error": null
+  }
+ ],
+ "todo": [
+  {
+   "fn": "randomize_gem_colors",
+   "sessions": 37,
+   "blockedRolls": 664354,
+   "examples": [
+    "seed0012-monk-vault-escort @0: C \"rn2(2)=1 @ randomize_gem_colors(o_init.c:89)\" / JS \"rn2(2)=1 @ fastforward_pre_mklev\"",
+    "seed0013-friday13-save-then-fullmoon-restore @0: C \"rn2(2)=0 @ randomize_gem_colors(o_init.c:89)\" / JS \"rn2(2)=0 @ fastforward_pre_mklev\""
+   ]
+  },
+  {
+   "fn": "pick_role",
+   "sessions": 4,
+   "blockedRolls": 59328,
+   "examples": [
+    "seed0002-healer-reflection-drummer @0: C \"rn2(13)=3 @ pick_role(role.c:1032)\" / JS \"rn2(2)=1 @ fastforward_pre_mklev\"",
+    "seed0004-feeding-pony @0: C \"rn2(13)=4 @ pick_role(role.c:1032)\" / JS \"rn2(2)=0 @ fastforward_pre_mklev\""
+   ]
+  },
+  {
+   "fn": "pick_align",
+   "sessions": 2,
+   "blockedRolls": 9978,
+   "examples": [
+    "seed0006-wizard-water-demon @0: C \"rn2(1)=0 @ pick_align(role.c:1222)\" / JS \"rn2(2)=1 @ fastforward_pre_mklev\"",
+    "seed0077-rogue-chargen @0: C \"rn2(1)=0 @ pick_align(role.c:1222)\" / JS \"rn2(2)=0 @ fastforward_pre_mklev\""
+   ]
+  },
+  {
+   "fn": "pick_gend",
+   "sessions": 1,
+   "blockedRolls": 59178,
+   "examples": [
+    "seed0014-dequa-fountain-explore @0: C \"rn2(1)=0 @ pick_gend(role.c:1157)\" / JS \"rn2(2)=0 @ fastforward_pre_mklev\""
+   ]
+  }
+ ]
+}
