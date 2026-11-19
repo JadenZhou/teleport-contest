@@ -12,7 +12,7 @@ import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
 import { Is_branchlev, In_hell, level_difficulty, on_level, dungeon_branch,
          at_dgn_entrance, insert_branch, is_wizard_mode } from './dungeon.js';
-import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE } from './monsters.js';
+import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE, S_HUMAN } from './monsters.js';
 import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
          NHLpa_panic, NHLpa_impossible } from './nhlua.js';
 import { litstate_rnd } from './mkmap.js';
@@ -47,8 +47,9 @@ import {
 } from './objects.js';
 import {
     SPBOOK_no_NOVEL, next_ident, blessorcurse, curse, mksobj, mksobj_at,
-    mkobj, mkobj_at, mkgold,
+    mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
 } from './mkobj.js';
+import { mkclass } from './makemon.js';
 
 const XLIM = 4;
 const YLIM = 3;
@@ -180,32 +181,6 @@ function dealloc_obj(otmp) { /* stub */ }
 function weight(otmp) { return otmp?.owt || 1; }
 function add_to_container(container, otmp) { /* stub */ }
 function sobj_at(otyp, x, y) { return false; }
-
-// set_corpsenm stub
-function set_corpsenm(otmp, pm) { /* stub */ }
-
-// mkcorpstat stub
-function mkcorpstat(objtyp, mtmp, pm, x, y, flags) {
-    // C ref: mkcorpstat calls mksobj(objtyp) then set_corpsenm.
-    // For STATUE: mksobj(STATUE, false, false) then set corpse identity.
-    // RNG: next_ident from mksobj
-    const otmp = mksobj(objtyp, false, false);
-    if (pm === null) {
-        // rndmonnum — pick random monster
-        rndmonnum();
-    }
-    return otmp;
-}
-
-// rndmonnum stub — consumes rn2 for random monster selection
-function rndmonnum() {
-    // C: picks a random monster class then random within class
-    // For contest, this is called from mkcorpstat when pm=null.
-    // The actual RNG depends on monster database, but for statues
-    // created by fill_ordinary_room, it consumes at least rn2 calls.
-    rn2(398); // approximate: rn2(NUMMONS)
-    return 0;
-}
 
 // makemon stub
 async function makemon(mdat, x, y, mmflags) {
@@ -1441,11 +1416,10 @@ async function makeniche(trap_type) {
                 const loc = g.level.at(xx, yy);
                 if (!rn2(5) && loc && IS_WALL(loc.typ)) {
                     loc.typ = IRONBARS;
-                    if (rn2(3)) {
-                        // human corpse — consume rn2 for mkclass + mkcorpstat
-                        rn2(398); // mkclass(S_HUMAN)
-                        mkcorpstat(CORPSE, null, 0, xx, yy + dy, 1);
-                    }
+                    if (rn2(3))
+                        mkcorpstat(CORPSE, null,
+                                   mkclass(S_HUMAN, 0), xx,
+                                   yy + dy, true);
                 }
                 if (!g.level.flags.noteleport) {
                     mksobj_at(SCR_TELEPORTATION, xx, yy + dy, true, false);

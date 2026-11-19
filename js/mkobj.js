@@ -12,13 +12,238 @@
 // candy wrappers, glob timers, novels, weight().
 
 import { game } from './gstate.js';
-import { rn2, rnd, rn1, rne } from './rng.js';
+import { rn2, rnd, rn1, rne, rnz } from './rng.js';
 import { depth, level_difficulty, In_hell } from './dungeon.js';
 import * as O from './objects.js';
 import { objects } from './objects.js';
-import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES } from './const.js';
+import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE } from './const.js';
+import { rndmonst_adj } from './makemon.js';
+import { monsndx } from './mondata.js';
+import {
+    mons, LOW_PM, SPECIAL_PM, G_UNIQ, G_NOGEN, G_HELL, G_NOHELL, G_NOCORPSE,
+    M2_MALE, M2_FEMALE, M2_NEUTER, MZ_SMALL, S_TROLL,
+    PM_KOBOLD_ZOMBIE, PM_KOBOLD_MUMMY, PM_KOBOLD, PM_DWARF_ZOMBIE,
+    PM_DWARF_MUMMY, PM_DWARF, PM_GNOME_ZOMBIE, PM_GNOME_MUMMY, PM_GNOME,
+    PM_ORC_ZOMBIE, PM_ORC_MUMMY, PM_ORC, PM_ELF_ZOMBIE, PM_ELF_MUMMY, PM_ELF,
+    PM_VAMPIRE, PM_VAMPIRE_LEADER, PM_HUMAN_ZOMBIE, PM_HUMAN_MUMMY, PM_HUMAN,
+    PM_GIANT_ZOMBIE, PM_GIANT_MUMMY, PM_GIANT, PM_ETTIN_ZOMBIE,
+    PM_ETTIN_MUMMY, PM_ETTIN, PM_LIZARD, PM_LICHEN, PM_DEATH, PM_FAMINE,
+    PM_PESTILENCE,
+} from './monsters.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
+
+const NON_PM = -1;
+
+// hack.h corpse/statue flags
+export const CORPSTAT_SPE_VAL = 0x07; /* 0x03 | 0x04 */
+export const CORPSTAT_INIT = 0x08; /* pass init flag to mkcorpstat */
+const CORPSTAT_FEMALE = 1;
+const CORPSTAT_MALE = 2;
+const CORPSTAT_NEUTER = 3;
+const TAINT_AGE = 50;           /* age when corpses go bad */
+const TROLL_REVIVE_CHANCE = 37; /* 1/37 chance for 50 turns ~ 75% chance */
+const ROT_AGE = 250;            /* age when corpses rot away */
+
+// C ref: mondata.h is_male(), is_female(), is_neuter(), verysmall(),
+// is_rider()
+function is_male(ptr) { return (ptr.mflags2 & M2_MALE) !== 0; }
+function is_female(ptr) { return (ptr.mflags2 & M2_FEMALE) !== 0; }
+function is_neuter(ptr) { return (ptr.mflags2 & M2_NEUTER) !== 0; }
+function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
+function is_rider(ptr) {
+    return (ptr === mons[PM_DEATH] || ptr === mons[PM_FAMINE]
+            || ptr === mons[PM_PESTILENCE]);
+}
+
+// C ref: mkobj.c rndmonnum()
+/* select a random, common monster type */
+export function rndmonnum() {
+    return rndmonnum_adj(0, 0);
+}
+
+// C ref: mkobj.c rndmonnum_adj()
+/* select a random, common monster type, with adjusted difficulty */
+export function rndmonnum_adj(minadj, maxadj) {
+    let ptr;
+    let i;
+
+    /* Plan A: get a level-appropriate common monster */
+    ptr = rndmonst_adj(minadj, maxadj);
+    if (ptr)
+        return monsndx(ptr);
+
+    /* Plan B: get any common monster */
+    const excludeflags = G_UNIQ | G_NOGEN | (In_hell(game.u.uz) ? G_NOHELL : G_HELL);
+    do {
+        i = rn1(SPECIAL_PM - LOW_PM, LOW_PM);
+        ptr = mons[i];
+    } while ((ptr.geno & excludeflags) !== 0);
+
+    return i;
+}
+
+// C ref: mon.c undead_to_corpse()
+/* return the corpse type an undead monster leaves */
+export function undead_to_corpse(mndx) {
+    switch (mndx) {
+    case PM_KOBOLD_ZOMBIE:
+    case PM_KOBOLD_MUMMY:
+        mndx = PM_KOBOLD;
+        break;
+    case PM_DWARF_ZOMBIE:
+    case PM_DWARF_MUMMY:
+        mndx = PM_DWARF;
+        break;
+    case PM_GNOME_ZOMBIE:
+    case PM_GNOME_MUMMY:
+        mndx = PM_GNOME;
+        break;
+    case PM_ORC_ZOMBIE:
+    case PM_ORC_MUMMY:
+        mndx = PM_ORC;
+        break;
+    case PM_ELF_ZOMBIE:
+    case PM_ELF_MUMMY:
+        mndx = PM_ELF;
+        break;
+    case PM_VAMPIRE:
+    case PM_VAMPIRE_LEADER:
+    case PM_HUMAN_ZOMBIE:
+    case PM_HUMAN_MUMMY:
+        mndx = PM_HUMAN;
+        break;
+    case PM_GIANT_ZOMBIE:
+    case PM_GIANT_MUMMY:
+        mndx = PM_GIANT;
+        break;
+    case PM_ETTIN_ZOMBIE:
+    case PM_ETTIN_MUMMY:
+        mndx = PM_ETTIN;
+        break;
+    default:
+        break;
+    }
+    return mndx;
+}
+
+// C ref: mkobj.c start_corpse_timeout()
+/*
+ * Start a corpse decay or revive timer.
+ * This takes the age of the corpse into consideration as of 3.4.0.
+ * Timers themselves are not ported yet; the rolls are.
+ */
+export function start_corpse_timeout(body) {
+    let when;       /* rot away when this old */
+    let age;        /* age of corpse          */
+
+    /* lizards and lichen don't rot or revive */
+    if (body.corpsenm === PM_LIZARD || body.corpsenm === PM_LICHEN)
+        return;
+
+    let action = 'ROT_CORPSE';             /* default action: rot away */
+    const rot_adjust = game.in_mklev ? 25 : 10; /* give some variation */
+    age = Math.max(game.moves || 0, 1) - body.age;
+    if (age > ROT_AGE)
+        when = rot_adjust;
+    else
+        when = ROT_AGE - age;
+    when += (rnz(rot_adjust) - rot_adjust);
+
+    if (is_rider(mons[body.corpsenm])) {
+        action = 'REVIVE_MON';
+        /* rider_revival_time() */
+        const minturn = (body.corpsenm === PM_DEATH) ? 6 : 12;
+        for (when = minturn; when < 67; when++)
+            if (!rn2(3))
+                break;
+    } else if (mons[body.corpsenm].mlet === S_TROLL) {
+        for (age = 2; age <= TAINT_AGE; age++)
+            if (!rn2(TROLL_REVIVE_CHANCE)) { /* troll revives */
+                action = 'REVIVE_MON';
+                when = age;
+                break;
+            }
+    } else if (game.zombify) {
+        /* zombie_form() and ZOMBIFY_MON are not ported yet */
+        impossible('start_corpse_timeout: zombify is not ported yet');
+    }
+
+    /* (void) start_timer(when, TIMER_OBJECT, action, obj_to_any(body)):
+       timers are not ported yet */
+    body.timer = { when, action };
+}
+
+// C ref: mkobj.c set_corpsenm()
+export function set_corpsenm(obj, id) {
+    /* obj->timed: timers are not ported yet */
+    obj.corpsenm = id;
+    switch (obj.otyp) {
+    case O.CORPSE:
+        start_corpse_timeout(obj);
+        obj.owt = objects[obj.otyp].oc_weight; /* weight(obj) */
+        break;
+    case O.FIGURINE:
+        /* attach_fig_transform_timeout() only for carried figurines */
+        break;
+    case O.EGG:
+        if (obj.corpsenm !== NON_PM)
+            impossible('set_corpsenm: egg hatch timers are not ported yet');
+        break;
+    default: /* tin, etc. */
+        break;
+    }
+}
+
+// C ref: mkobj.c mkcorpstat()
+/*
+ * make a corpse or statue; the corpse type is ptr if given, else random
+ */
+export function mkcorpstat(objtype, mtmp, ptr, x, y, corpstatflags) {
+    let otmp;
+    const init = ((corpstatflags & CORPSTAT_INIT) !== 0);
+
+    if (objtype !== O.CORPSE && objtype !== O.STATUE)
+        impossible(`making corpstat type ${objtype}`);
+    if (x === 0 && y === 0) { /* special case - random placement */
+        impossible('mkcorpstat: rloco() is not ported yet');
+        otmp = mksobj(objtype, init, false);
+    } else {
+        otmp = mksobj_at(objtype, x, y, init, false);
+    }
+    /* record gender and 'historic statue' in overloaded enchantment field */
+    otmp.spe = (corpstatflags & CORPSTAT_SPE_VAL);
+    otmp.norevive = game.mkcorpstat_norevive ? 1 : 0;
+
+    if (mtmp) {
+        /* save_mtraits() is not ported yet */
+        impossible('mkcorpstat: save_mtraits() is not ported yet');
+        if (!ptr)
+            ptr = mtmp.data;
+    }
+
+    /* when 'ptr' is non-null it comes from our caller or from 'mtmp';
+       override mkobjs()'s initialization of a random monster type */
+    if (ptr) {
+        const old_corpsenm = otmp.corpsenm;
+
+        otmp.corpsenm = monsndx(ptr);
+        otmp.owt = objects[otmp.otyp].oc_weight; /* weight(otmp) */
+        if (otmp.otyp === O.CORPSE
+            && (game.zombify || special_corpse(old_corpsenm)
+                || special_corpse(otmp.corpsenm))) {
+            /* obj_stop_timers(otmp) */
+            start_corpse_timeout(otmp);
+        }
+    }
+    return otmp;
+}
+
+// C ref: mondata.h special_corpse()
+function special_corpse(num) {
+    return (num === PM_LIZARD || num === PM_LICHEN
+            || (num >= 0 && (is_rider(mons[num]) || mons[num].mlet === S_TROLL)));
+}
 
 const {
     RANDOM_CLASS, WEAPON_CLASS, ARMOR_CLASS, RING_CLASS, AMULET_CLASS,
@@ -366,9 +591,22 @@ function mksobj_init(otmp, artif) {
     case FOOD_CLASS:
         otmp.oeaten = 0;
         switch (otmp.otyp) {
-        case O.CORPSE:
-            not_ported('corpse monster type (rndmonnum)');
+        case O.CORPSE: {
+            /* possibly overridden by mkcorpstat() */
+            let tryct = 50;
+            do
+                otmp.corpsenm = undead_to_corpse(rndmonnum());
+            while ((game.mvitals[otmp.corpsenm].mvflags & G_NOCORPSE)
+                   && (--tryct > 0));
+            if (tryct === 0) {
+                /* perhaps rndmonnum() only wants to make G_NOCORPSE
+                   monsters on this level; create an adventurer's
+                   corpse instead, then */
+                otmp.corpsenm = PM_HUMAN;
+            }
+            /* timer set below */
             break;
+        }
         case O.EGG:
             otmp.corpsenm = -1; /* NON_PM: generic egg */
             if (!rn2(3))
@@ -567,7 +805,14 @@ function mksobj_init(otmp, artif) {
         break;
     case ROCK_CLASS:
         if (otmp.otyp === O.STATUE) {
-            not_ported('statue monster type (rndmonnum)');
+            /* possibly overridden by mkcorpstat() */
+            otmp.corpsenm = rndmonnum();
+            if (!verysmall(mons[otmp.corpsenm])
+                && rn2(Math.trunc(level_difficulty() / 2) + 10) > 10) {
+                /* add_to_container(): containers are not ported yet */
+                const book = mkobj(SPBOOK_no_NOVEL, false);
+                (otmp.contents || (otmp.contents = [])).push(book);
+            }
         }
         /* boulder init'd below in the 'regardless of !init' code */
         break;
@@ -605,10 +850,27 @@ export function mksobj(otyp, init, artif) {
     switch ((otmp.oclass === POTION_CLASS && otmp.otyp !== O.POT_OIL)
             ? O.POT_WATER : otmp.otyp) {
     case O.CORPSE:
+        if (otmp.corpsenm === NON_PM) {
+            otmp.corpsenm = undead_to_corpse(rndmonnum());
+            if (game.mvitals[otmp.corpsenm].mvflags & (G_NOCORPSE | G_GONE))
+                otmp.corpsenm = game.urole.mnum;
+        }
+        /*FALLTHRU*/
     case O.STATUE:
     case O.FIGURINE:
-        if (otmp.corpsenm === -1)
-            not_ported('rndmonnum() for corpses, statues and figurines');
+        if (otmp.corpsenm === NON_PM)
+            otmp.corpsenm = rndmonnum();
+        if (otmp.corpsenm !== NON_PM) {
+            const ptr = mons[otmp.corpsenm];
+
+            otmp.spe = (is_neuter(ptr) ? CORPSTAT_NEUTER
+                        : is_female(ptr) ? CORPSTAT_FEMALE
+                          : is_male(ptr) ? CORPSTAT_MALE
+                            : rn2(2) ? CORPSTAT_FEMALE : CORPSTAT_MALE);
+        }
+        /*FALLTHRU*/
+    case O.EGG:
+        set_corpsenm(otmp, otmp.corpsenm);
         break;
     case O.BOULDER:
         otmp.next_boulder = 0;
