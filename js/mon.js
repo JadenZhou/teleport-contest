@@ -14,10 +14,22 @@ import {
     ALLOW_U, ALLOW_M, ALLOW_TM, ALLOW_ALL, ALLOW_MDISP, ALLOW_TRAPS,
     ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
     NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
+    M_AP_MONSTER, MON_DETACH, W_AMUL, NON_PM, NATTK, Is_rogue_level,
 } from './const.js';
 import { dist2 } from './hacklib.js';
-import { vision_recalc } from './vision.js';
-import { m_at, sobj_at, is_pool, is_lava, may_passwall } from './makemon.js';
+import { vision_recalc, cansee } from './vision.js';
+import { newsym, pline } from './display.js';
+import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
+         nonliving, is_golem, is_mplayer } from './makemon.js';
+import { set_mon_data } from './mondata.js';
+import { Monnam } from './mhitm.js';
+import {
+    MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
+    PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
+    PM_WEREWOLF, PM_HUMAN_WEREWOLF, PM_WERERAT, PM_HUMAN_WERERAT,
+    PM_PAPER_GOLEM, PM_STRAW_GOLEM, PM_IRON_GOLEM, PM_WOOD_GOLEM,
+    PM_LEATHER_GOLEM, PM_STEAM_VORTEX, S_KOP,
+} from './monsters.js';
 import { t_at, TRAPNUM, fixed_tele_trap, m_harmless_trap } from './trap.js';
 import { hastrack } from './track.js';
 import { mon_knows_traps } from './mondata.js';
@@ -145,16 +157,255 @@ export function mongone(mdef) {
     m_detach(mdef, mdef.data, false);
 }
 
-// C ref: mon.c m_detach() -- the parts reached so far: remove_monster()
-// and leaving the corpse on fmon for dmonsfree() to purge.
-function m_detach(mtmp, mptr, due_to_death) {
-    /* remove_monster(mx, my) */
+// C ref: mon.c mon_leaving_level() -- the parts reached so far
+function mon_leaving_level(mon) {
+    const mx = mon.mx, my = mon.my;
     const lst = game.level.monsters || [];
-    const i = lst.indexOf(mtmp);
-    if (i >= 0)
+    const i = lst.indexOf(mon);
+    const onmap = (isok(mx, my) && i >= 0);
+
+    /* to prevent an infinite relobj-flooreffects-hmon-killed loop */
+    mon.mtrapped = 0;
+    /* unstuck(mon) */
+    if (game.u.ustuck === mon)
+        throw new Error('mon_leaving_level(): unstuck() not ported yet');
+
+    if (onmap) {
+        if (mon.wormno)
+            throw new Error('mon_leaving_level(): remove_worm() not ported yet');
+        /* remove_monster(mx, my) */
         lst.splice(i, 1);
+    }
+    if (onmap) {
+        mon.mundetected = 0; /* for migration; doesn't matter for death */
+        if (mon.m_ap_type && mon.m_ap_type !== M_AP_MONSTER)
+            throw new Error('mon_leaving_level(): seemimic() not ported yet');
+        /* fill_pit(mx, my): boulders dropping into pits not ported */
+        newsym(mx, my);
+    }
+}
+
+// C ref: steal.c relobj() -- only an empty inventory is ported
+function relobj(mtmp, show, is_pet) {
+    const omx = mtmp.mx, omy = mtmp.my;
+
+    void is_pet;
+    if (mtmp.isgd)
+        throw new Error('relobj(): vault guard gold not ported yet');
+    if (mtmp.minvent && mtmp.minvent.length)
+        throw new Error('relobj(): mdrop_obj() not ported yet');
+
+    if (show && cansee(omx, omy))
+        newsym(omx, omy);
+}
+
+// C ref: mon.c m_detach()
+function m_detach(mtmp, mptr, due_to_death) {
+    if (mtmp.mleashed)
+        throw new Error('m_detach(): m_unleash() not ported yet');
+
+    /* if (mx > 0 && emits_light(mptr)) del_light_source(): monster light
+       sources are never created (makemon.js), so there is none to delete */
+    void mptr;
+
+    mon_leaving_level(mtmp);
+
     mtmp.mhp = 0; /* simplify some tests: force mhp to 0 */
+    if (mtmp.iswiz)
+        throw new Error('m_detach(): wizdeadorgone() not ported yet');
+    if (due_to_death) {
+        if (mtmp.data.msound === MS_NEMESIS)
+            throw new Error('m_detach(): nemdead() not ported yet');
+        if (mtmp.data.msound === MS_LEADER)
+            throw new Error('m_detach(): leaddead() not ported yet');
+        /* release (drop onto map) all objects carried by mtmp */
+        relobj(mtmp, 1, false); /* drop mtmp->minvent, issue newsym(mx,my) */
+    }
+
+    if (game.stealmid && mtmp.m_id === game.stealmid)
+        throw new Error('m_detach(): thiefdead() not ported yet');
+    if (mtmp.isshk)
+        throw new Error('m_detach(): shkgone() not ported yet');
+    if (mtmp.wormno)
+        throw new Error('m_detach(): wormgone() not ported yet');
+    /* In_endgame(&u.uz): MON_ENDGAME_FREE -- the endgame isn't reached */
+
+    mtmp.mstate = (mtmp.mstate || 0) | MON_DETACH;
     game.purge_monsters = (game.purge_monsters || 0) + 1;
+
+    if (mtmp === game.u.usteed)
+        throw new Error('m_detach(): dismount_steed() not ported yet');
+}
+
+// C ref: mon.c mlifesaver()
+/* find the worn amulet of life saving which will save a monster */
+function mlifesaver(mon) {
+    if (!nonliving(mon.data) || is_vampshifter(mon)) {
+        if (mon.misc_worn_check & W_AMUL)
+            throw new Error('mlifesaver(): which_armor() not ported yet');
+    }
+    return null;
+}
+
+// C ref: mon.c lifesaved_monster()
+function lifesaved_monster(mtmp) {
+    const lifesave = mlifesaver(mtmp);
+
+    if (lifesave)
+        throw new Error('lifesaved_monster(): life saving not ported yet');
+}
+
+// C ref: mon.c mondead()
+export async function mondead(mtmp) {
+    /* potential pet message; always clear global flag */
+    const be_sad = !!game.sad_feeling;
+    game.sad_feeling = false;
+
+    mtmp.mhp = 0; /* in case caller hasn't done this */
+    lifesaved_monster(mtmp);
+    if (!DEADMONSTER(mtmp))
+        return;
+
+    /* vampire in bat/fog/wolf form reverts to vampire instead of dying */
+    if (is_vampshifter(mtmp))
+        throw new Error('mondead(): vamprises() not ported yet');
+
+    if (be_sad)
+        await pline('You have a sad feeling for a moment, then it passes.');
+
+    if (mtmp.data === mons[PM_STEAM_VORTEX])
+        throw new Error('mondead(): create_gas_cloud() not ported yet');
+
+    if (mtmp.isgd)
+        throw new Error('mondead(): grddead() not ported yet');
+
+    const mptr = mtmp.data; /* save this for m_detach() */
+    /* restore chameleon, lycanthropes to true form at death */
+    if (mtmp.cham >= LOW_PM) { /* ismnum(mtmp->cham) */
+        set_mon_data(mtmp, mons[mtmp.cham]);
+        mtmp.cham = NON_PM;
+    } else if (mtmp.data === mons[PM_WEREJACKAL])
+        set_mon_data(mtmp, mons[PM_HUMAN_WEREJACKAL]);
+    else if (mtmp.data === mons[PM_WEREWOLF])
+        set_mon_data(mtmp, mons[PM_HUMAN_WEREWOLF]);
+    else if (mtmp.data === mons[PM_WERERAT])
+        set_mon_data(mtmp, mons[PM_HUMAN_WERERAT]);
+
+    const mndx = monsndx(mtmp.data);
+    if (game.mvitals[mndx].died < 255)
+        game.mvitals[mndx].died++;
+
+    /* if it's a (possibly polymorphed) quest leader, mark him as dead */
+    if (game.quest_status?.leader_m_id
+        && mtmp.m_id === game.quest_status.leader_m_id)
+        game.quest_status.leader_is_dead = true;
+    /* MAIL_STRUCTURES: no mail daemon in this build */
+
+    if (mtmp.data.mlet === S_KOP)
+        throw new Error('mondead(): dead Kops returning not ported yet');
+
+    /* logdeadmon(mtmp, mndx): achievements/livelog have no game effect here */
+
+    /* if (glyph_is_invisible(levl[mx][my].glyph)) unmap_object(): the
+       remembered-invisible glyph is not ported */
+
+    /* remove 'mtmp' from play; it will stay on the fmon list until end of
+       current move, then dmonsfree() will get rid of it */
+    m_detach(mtmp, mptr, true);
+}
+
+// C ref: mon.c corpse_chance()
+/* TRUE if corpse might be dropped, magr may die if mon was swallowed */
+export function corpse_chance(mon, magr, was_swallowed) {
+    const mdat = mon.data;
+
+    if (!magr && game.mswallower)
+        throw new Error('corpse_chance(): engulfer explosions not ported yet');
+
+    if (mdat === mons[PM_VLAD_THE_IMPALER] || mdat.mlet === S_LICH)
+        throw new Error('corpse_chance(): body crumbles into dust not ported yet');
+
+    /* Gas spores always explode upon death */
+    for (let i = 0; i < NATTK; i++) {
+        if (mdat.mattk[i].aatyp === AT_BOOM)
+            throw new Error('corpse_chance(): mon_explodes() not ported yet');
+    }
+    void was_swallowed;
+
+    /* must duplicate this below check in xkilled() since it results in
+     * creating no objects as well as no corpse
+     */
+    /* LEVEL_SPECIFIC_NOCORPSE(mdat) */
+    if (Is_rogue_level(game.u.uz)
+        || !game.level.flags.deathdrops
+        || (game.level.flags.graveyard && is_undead(mdat) && rn2(3)))
+        return false;
+
+    if (((bigmonst(mdat) || mdat === mons[PM_LIZARD]) && !mon.mcloned)
+        || is_golem(mdat) || is_mplayer(mdat) || is_rider(mdat) || mon.isshk)
+        return true;
+    const tmp = 2 + ((mdat.geno & G_FREQ) < 2 ? 1 : 0) + (verysmall(mdat) ? 1 : 0);
+    return !rn2(tmp);
+}
+
+// C ref: mon.c mondied()
+/* drop (perhaps) a cadaver and remove monster */
+export async function mondied(mdef) {
+    await mondead(mdef);
+    if (!DEADMONSTER(mdef))
+        return; /* lifesaved */
+
+    /* this assumes that the dead monster's map coordinates remain accurate */
+    if (corpse_chance(mdef, null, false)
+        && (accessible(mdef.mx, mdef.my) || is_pool(mdef.mx, mdef.my)))
+        throw new Error('mondied(): make_corpse() not ported yet');
+}
+
+// C ref: mon.c monkilled()
+/* monster mdef was killed by something other than the hero */
+export async function monkilled(mdef, fltxt, how) {
+    const mptr = mdef.data;
+
+    if (fltxt && (mdef.wormno ? worm_known(mdef)
+                              : cansee(mdef.mx, mdef.my)))
+        await pline(`${Monnam(mdef)} is ${nonliving(mptr) ? 'destroyed' : 'killed'}`
+                    + `${fltxt ? ' by the ' : ''}${fltxt}!`);
+    else
+        /* sad feeling is deferred until after potential life-saving */
+        game.sad_feeling = mdef.mtame ? true : false;
+
+    /* no corpse if digested or disintegrated or flammable golem burnt up */
+    game.disintegested = (how === AD_DGST || how === -AD_RBRE
+                          || (how === AD_FIRE && completelyburns(mptr)));
+    if (game.disintegested)
+        await mondead(mdef); /* never leaves a corpse */
+    else
+        await mondied(mdef); /* calls mondead() and maybe leaves a corpse */
+
+    if (!DEADMONSTER(mdef))
+        return; /* life-saved */
+    /* extra message if pet golem is completely destroyed */
+    if (mdef.mtame) {
+        const rxt = (how === AD_FIRE && completelyburns(mptr)) ? 'roast'
+                    : (how === AD_RUST && completelyrusts(mptr)) ? 'rust'
+                      : (how === AD_DCAY && completelyrots(mptr)) ? 'rot'
+                        : null;
+        if (rxt)
+            throw new Error('monkilled(): noit_mon_nam() not ported yet');
+    }
+}
+/* C ref: mondata.h completelyburns(), completelyrusts(), completelyrots() */
+function completelyburns(ptr) {
+    return ptr === mons[PM_PAPER_GOLEM] || ptr === mons[PM_STRAW_GOLEM];
+}
+function completelyrusts(ptr) { return ptr === mons[PM_IRON_GOLEM]; }
+function completelyrots(ptr) {
+    return ptr === mons[PM_WOOD_GOLEM] || ptr === mons[PM_LEATHER_GOLEM];
+}
+// C ref: worm.c worm_known()
+function worm_known(worm) {
+    void worm;
+    throw new Error('worm_known() not ported yet');
 }
 
 // C ref: mon.c minliquid() -- monsters in pools or lava aren't ported yet
@@ -434,7 +685,7 @@ function cant_squeeze_thru(mon) {
 }
 
 /* C ref: mon.c zombie_maker() */
-function zombie_maker(mon) {
+export function zombie_maker(mon) {
     const pm = mon.data;
     if (mon.mcan) return false;
     switch (pm.mlet) {

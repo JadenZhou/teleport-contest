@@ -36,7 +36,7 @@ import { mksobj, mkobj_at, curse, bless, next_ident, set_corpsenm } from './mkob
 import {
     monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
     is_neuter, is_undead, is_swimmer, is_floater, passes_walls, haseyes,
-    is_bat,
+    is_bat, little_to_big,
 } from './mondata.js';
 import { engr_at } from './engrave.js';
 import { enexto_core } from './teleport.js';
@@ -423,7 +423,7 @@ function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
 function is_whirly(ptr) {
     return ptr.mlet === M.S_VORTEX || ptr === mons[M.PM_AIR_ELEMENTAL];
 }
-function is_golem(ptr) { return ptr.mlet === M.S_GOLEM; }
+export function is_golem(ptr) { return ptr.mlet === M.S_GOLEM; }
 function is_rider(ptr) {
     return ptr === mons[M.PM_DEATH] || ptr === mons[M.PM_FAMINE]
            || ptr === mons[M.PM_PESTILENCE];
@@ -435,11 +435,11 @@ function is_ndemon(ptr) {
 }
 function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
 function weirdnonliving(ptr) { return is_golem(ptr) || ptr.mlet === M.S_VORTEX; }
-function nonliving(ptr) {
+export function nonliving(ptr) {
     return is_undead(ptr) || ptr === mons[M.PM_MANES] || weirdnonliving(ptr);
 }
 function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
-function is_mplayer(ptr) {
+export function is_mplayer(ptr) {
     return ptr.pmidx >= M.PM_ARCHEOLOGIST && ptr.pmidx <= M.PM_WIZARD;
 }
 // C ref: mondata.h is_home_elemental()
@@ -1907,6 +1907,79 @@ export function put_saddle_on_mon(saddle, mtmp) {
     mtmp.misc_worn_check = (mtmp.misc_worn_check || 0) | W_SADDLE;
     saddle.owornmask = W_SADDLE;
     saddle.leashmon = mtmp.m_id;
+}
+
+// C ref: makemon.c grow_up()
+/* monster earned experience and will gain some hit points; it might also
+   grow into a bigger monster (baby to adult, soldier to officer, etc) */
+export function grow_up(mtmp, victim) {
+    let max_increase, cur_increase, lev_limit, hp_threshold;
+    const ptr = mtmp.data;
+
+    /* monster died after killing enemy but before calling this function */
+    /* currently possible if killing a gas spore */
+    if (mtmp.mhp < 1) /* DEADMONSTER() */
+        return null;
+
+    const oldtype = monsndx(ptr);
+    const newtype = (oldtype === M.PM_KILLER_BEE && !victim) ? M.PM_QUEEN_BEE
+                                                             : little_to_big(oldtype);
+
+    /* growth limits differ depending on method of advancement */
+    if (victim) { /* killed a monster */
+        hp_threshold = mtmp.m_lev * 8; /* normal limit */
+        if (!mtmp.m_lev)
+            hp_threshold = 4;
+        else if (is_golem(ptr)) /* strange creatures */
+            hp_threshold = (Math.trunc(mtmp.mhpmax / 10) + 1) * 10 - 1;
+        else if (is_home_elemental(ptr))
+            hp_threshold *= 3;
+        lev_limit = Math.trunc(3 * ptr.mlevel / 2); /* same as adj_lev() */
+        /* If they can grow up, be sure the level is high enough for that */
+        if (oldtype !== newtype && mons[newtype].mlevel > lev_limit)
+            lev_limit = mons[newtype].mlevel;
+        /* number of hit points to gain; unlike for the player, we put
+           the limit at the bottom of the next level rather than the top */
+        max_increase = rnd(victim.m_lev + 1);
+        if (mtmp.mhpmax + max_increase > hp_threshold + 1)
+            max_increase = Math.max((hp_threshold + 1) - mtmp.mhpmax, 0);
+        cur_increase = (max_increase > 1) ? rn2(max_increase) : 0;
+    } else {
+        /* a gain level potion or wraith corpse; always go up a level
+           unless already at maximum */
+        max_increase = cur_increase = rnd(8);
+        hp_threshold = 0; /* smaller than `mhpmax + max_increase' */
+        lev_limit = 50;   /* recalc below */
+    }
+
+    mtmp.mhpmax += max_increase;
+    mtmp.mhp += cur_increase;
+    if (mtmp.mhpmax <= hp_threshold)
+        return ptr; /* doesn't gain a level */
+
+    if (is_mplayer(ptr))
+        lev_limit = 30; /* same as player */
+    else if (lev_limit < 5)
+        lev_limit = 5; /* arbitrary */
+    else if (lev_limit > 49)
+        lev_limit = (ptr.mlevel > 49 ? 50 : 49);
+
+    if (++mtmp.m_lev >= mons[newtype].mlevel && newtype !== oldtype)
+        throw new Error('grow_up(): growing into a new form not ported yet');
+
+    /* sanity checks */
+    if (mtmp.m_lev > lev_limit) {
+        mtmp.m_lev--; /* undo increment */
+        /* HP might have been allowed to grow when it shouldn't */
+        if (mtmp.mhpmax === hp_threshold + 1)
+            mtmp.mhpmax--;
+    }
+    if (mtmp.mhpmax > 50 * 8)
+        mtmp.mhpmax = 50 * 8; /* absolute limit */
+    if (mtmp.mhp > mtmp.mhpmax)
+        mtmp.mhp = mtmp.mhpmax;
+
+    return ptr;
 }
 
 // C ref: makemon.c mongets()
