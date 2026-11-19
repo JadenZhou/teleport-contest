@@ -566,6 +566,107 @@ function not_ported(what) {
     impossible(`mksobj_init: ${what} is not ported yet`);
 }
 
+// C ref: mkobj.c boxiprobs[]
+const boxiprobs = [ { iprob: 18, iclass: O.GEM_CLASS },
+                    { iprob: 15, iclass: O.FOOD_CLASS },
+                    { iprob: 18, iclass: O.POTION_CLASS },
+                    { iprob: 18, iclass: O.SCROLL_CLASS },
+                    { iprob: 12, iclass: O.SPBOOK_CLASS },
+                    { iprob: 7, iclass: O.COIN_CLASS },
+                    { iprob: 6, iclass: O.WAND_CLASS },
+                    { iprob: 5, iclass: O.RING_CLASS },
+                    { iprob: 1, iclass: O.AMULET_CLASS } ];
+
+// C ref: obj.h Is_mbag()
+function Is_mbag(otmp) {
+    return otmp.otyp === O.BAG_OF_HOLDING || otmp.otyp === O.BAG_OF_TRICKS;
+}
+
+// C ref: mkobj.c add_to_container() -- container chains are kept as a
+// plain array on the box (no merging yet)
+function add_to_container(container, obj) {
+    obj.where = 'OBJ_CONTAINED';
+    obj.ocontainer = container;
+    if (!container.cobj) container.cobj = [];
+    container.cobj.unshift(obj);
+    return obj;
+}
+
+// C ref: mkobj.c mkbox_cnts()
+function mkbox_cnts(box) {
+    let n;
+    let otmp;
+
+    box.cobj = null;
+
+    switch (box.otyp) {
+    case O.ICE_BOX:
+        n = 20;
+        break;
+    case O.CHEST:
+        n = box.olocked ? 7 : 5;
+        break;
+    case O.LARGE_BOX:
+        n = box.olocked ? 5 : 3;
+        break;
+    case O.SACK:
+    case O.OILSKIN_SACK:
+        /* initial inventory: sack starts out empty */
+        if ((game.moves ?? 1) <= 1 && !game.in_mklev) {
+            n = 0;
+            break;
+        }
+        /* FALLTHRU */
+    case O.BAG_OF_HOLDING:
+        n = 1;
+        break;
+    default:
+        n = 0;
+        break;
+    }
+
+    for (n = rn2(n + 1); n > 0; n--) {
+        if (box.otyp === O.ICE_BOX) {
+            otmp = mksobj(O.CORPSE, true, false);
+            /* Note: setting age to 0 is correct.  Age has a different
+             * from usual meaning for objects stored in ice boxes. -KAA
+             */
+            otmp.age = 0;
+            /* stop_timer(ROT_CORPSE/REVIVE_MON/SHRINK_GLOB): timers are
+               not ported yet */
+        } else {
+            let tprob;
+            let ip = 0;
+
+            for (tprob = rnd(100); (tprob -= boxiprobs[ip].iprob) > 0; ip++)
+                ;
+            if (!(otmp = mkobj(boxiprobs[ip].iclass, false)))
+                continue;
+
+            /* handle a couple of special cases */
+            if (otmp.oclass === O.COIN_CLASS) {
+                /* 2.5 x level's usual amount; weight adjusted below */
+                otmp.quan = rnd(level_difficulty() + 2) * rnd(75);
+            } else
+                while (otmp.otyp === O.ROCK) {
+                    otmp.otyp = rnd_class(O.DILITHIUM_CRYSTAL, O.LOADSTONE);
+                    if (otmp.quan > 2)
+                        otmp.quan = 1;
+                }
+            if (box.otyp === O.BAG_OF_HOLDING) {
+                if (Is_mbag(otmp)) {
+                    otmp.otyp = O.SACK;
+                    otmp.spe = 0;
+                } else
+                    while (otmp.otyp === O.WAN_CANCELLATION)
+                        otmp.otyp = rnd_class(O.WAN_LIGHT, O.WAN_LIGHTNING);
+            }
+        }
+        add_to_container(box, otmp);
+    }
+    /* caller will update box->owt */
+}
+
 // C ref: mkobj.c mksobj_init()
 function mksobj_init(otmp, artif) {
     const let_ = objects[otmp.otyp].oc_class;
@@ -684,13 +785,12 @@ function mksobj_init(otmp, artif) {
             otmp.olocked = !!(rn2(5));
             otmp.otrapped = !(rn2(10));
             otmp.tknown = otmp.otrapped && !rn2(100); /* obvious trap */
-            not_ported('mkbox_cnts()');
-            break;
+            /* FALLTHRU */
         case O.ICE_BOX:
         case O.SACK:
         case O.OILSKIN_SACK:
         case O.BAG_OF_HOLDING:
-            not_ported('mkbox_cnts()');
+            mkbox_cnts(otmp);
             break;
         case O.EXPENSIVE_CAMERA:
         case O.TINNING_KIT:
