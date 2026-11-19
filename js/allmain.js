@@ -9,7 +9,7 @@ import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init } from './nhlua.js';
-import { rhack } from './cmd.js';
+import { rhack, domove } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { mcalcmove, mcalcdistress, movemon } from './mon.js';
@@ -23,7 +23,7 @@ import { init_objects } from './o_init.js';
 import { init_dungeons, depth } from './dungeon.js';
 import { phase_of_the_moon, friday_13th } from './calendar.js';
 import { change_luck } from './attrib.js';
-import { FULL_MOON, NEW_MOON } from './const.js';
+import { FULL_MOON, NEW_MOON, COLNO } from './const.js';
 import { mons, monst_globals_init, LOW_PM, NUMMONS, G_NOCORPSE } from './monsters.js';
 import { decl_globals_init } from './decl.js';
 import { sys_early_init } from './sys.js';
@@ -41,7 +41,7 @@ import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMS
 import { rn1 } from './rng.js';
 import { S_EEL, PM_WIZARD } from './monsters.js';
 import { ACURR, exerchk } from './attrib.js';
-import { near_capacity } from './hack.js';
+import { near_capacity, lookaround, end_running } from './hack.js';
 import { nh_timeout } from './timeout.js';
 import { dosounds } from './sounds.js';
 import { gethungry } from './eat.js';
@@ -579,8 +579,31 @@ export async function moveloop_core() {
 
     g.context.move = 1;
 
-    // Read and execute one command
-    await rhack(0);
+    /* if (gm.multi >= 0 && go.occupation): occupations aren't ported yet */
+
+    u.umoved = 0;
+
+    if (g.multi > 0) {
+        await lookaround();
+        /* runmode_delay_output(): display timing only */
+        if (!g.multi) {
+            /* lookaround may clear multi */
+            g.context.move = 0;
+            return;
+        }
+        if (g.context.mv) {
+            if (g.multi < COLNO && !--g.multi)
+                end_running(true);
+            await domove();
+        } else {
+            /* --gm.multi; rhack(gc.cmd_key): command counts aren't
+               ported yet */
+            throw new Error('moveloop_core(): repeat count rhack() not ported yet');
+        }
+    } else if (g.multi === 0) {
+        /* ckmailstatus(): MAIL isn't ported */
+        await rhack(0);
+    }
 
     // Clear message after command is processed
     g._pending_message = '';

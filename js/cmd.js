@@ -16,7 +16,8 @@ import { strcmpi, strncmpi } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
-import { cmd_safety_prevention } from './hack.js';
+import { cmd_safety_prevention, nomul } from './hack.js';
+import { IS_DOOR, IS_FURNITURE } from './const.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -115,6 +116,7 @@ function blocksMove(x, y) {
 
 // C ref: cmd.c rhack — main command dispatcher
 export async function rhack(key) {
+    const firsttime = (key === 0);
     if (key === 0) {
         // Read key from input
         await flush_screen(1);
@@ -133,8 +135,22 @@ export async function rhack(key) {
     }
 
     if (isMovementKey(ch)) {
-        await domove(DIR_DX[ch], DIR_DY[ch]);
+        set_move_cmd(ch, 0); /* do_move_<dir>() */
+        await domove();
         game.context.move = 1;
+    } else if (isMovementKey(ch.toLowerCase())) {
+        /* C ref: cmd.c do_run_<dir>() -- shift+dir is MV_RUN */
+        set_move_cmd(ch.toLowerCase(), 1);
+        /* rhack(): (gd.domove_attempting & DOMOVE_RUSH) != 0 */
+        if (firsttime) {
+            if (!game.multi)
+                game.multi = Math.max(COLNO, ROWNO);
+            game.u.last_str_turn = 0;
+        }
+        game.context.mv = 1;
+        await domove();
+        game.iflags.menu_requested = false;
+        return;
     } else if (ch === '\x17' && game.flags?.debug) {
         /* C ref: cmd.c Cmd ^W (wizard mode) -> wizcmds.c wiz_wish() */
         game.context.move = (await wiz_wish()) ? 1 : 0;
@@ -157,15 +173,32 @@ export async function rhack(key) {
     }
 }
 
-// C ref: hack.c domove — execute a movement
-async function domove(dx, dy) {
+// C ref: cmd.c set_move_cmd() -- dir is the direction key, run the
+// context.run mode (0 walk, 1 shift-run, 3 rush)
+function set_move_cmd(dir, run) {
     const u = game.u;
-    const newx = u.ux + dx;
-    const newy = u.uy + dy;
+    u.dz = 0;
+    u.dx = DIR_DX[dir];
+    u.dy = DIR_DY[dir];
+    /* #reqmenu -prefix disables autopickup during movement */
+    if (game.iflags.menu_requested)
+        game.context.nopick = 1;
+    game.context.travel = game.context.travel1 = 0;
+    /* if (!gd.domove_attempting && !u.dz): prefixes aren't ported yet */
+    game.context.run = run;
+}
+
+// C ref: hack.c domove() / domove_core() -- execute a movement in
+// direction u.dx, u.dy
+export async function domove() {
+    const u = game.u;
+    const newx = u.ux + u.dx;
+    const newy = u.uy + u.dy;
 
     if (blocksMove(newx, newy)) {
-        // Can't move there
+        // Can't move there: test_move() failed
         game.context.move = 0;
+        nomul(0);
         return;
     }
 
@@ -176,8 +209,20 @@ async function domove(dx, dy) {
     u.ux = newx;
     u.uy = newy;
 
-    // Update display
-    newsym(oldx, oldy);
-    vision_recalc(1);
-    newsym(newx, newy);
+    const tmpr = game.level.at(u.ux, u.uy);
+    if (game.context.run) {
+        if (game.context.run < 8)
+            if (IS_DOOR(tmpr.typ) || IS_OBSTRUCTED(tmpr.typ)
+                || IS_FURNITURE(tmpr.typ))
+                nomul(0);
+    }
+
+    if (u.ux0 !== u.ux || u.uy0 !== u.uy) {
+        u.umoved = 1;
+        // Update display
+        newsym(oldx, oldy);
+        vision_recalc(1);
+        newsym(newx, newy);
+    }
+    /* runmode_delay_output(): display timing only */
 }

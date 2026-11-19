@@ -189,7 +189,7 @@ function mon_at_loc(x, y) {
 
 // C ref: display.h mon_visible(): not invisible (or hero sees invisible)
 // and not hiding
-function mon_visible(mon) {
+export function mon_visible(mon) {
     const See_invisible = !!(game.u?.uprops?.[SEE_INVIS]?.intrinsic
                              || game.u?.uprops?.[SEE_INVIS]?.extrinsic);
     return (!mon.minvis || See_invisible) && !mon.mundetected;
