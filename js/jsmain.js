@@ -12,7 +12,7 @@
 import { game, resetGame } from './gstate.js';
 import { initRng, enableRngLog, getRngLog } from './rng.js';
 import { pushKey, nhgetch } from './input.js';
-import { early_init, newgame, moveloop_core } from './allmain.js';
+import { early_init, newgame, moveloop_preamble, moveloop_core } from './allmain.js';
 import { parseNethackrc, set_playmode } from './options.js';
 import { plnamesuffix } from './role.js';
 import { tty_init_nhwindows, tty_player_selection } from './wintty.js';
@@ -138,6 +138,9 @@ export class NethackGame {
 
         // Run game startup
         await newgame();
+        /* C ref: unixmain.c main() -> moveloop(0) -> moveloop_preamble();
+           the caller drives moveloop_core() itself */
+        moveloop_preamble(false);
     }
 
     _installCaptureHook() {

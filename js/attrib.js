@@ -2,21 +2,22 @@
 // C ref: attrib.c, include/attrib.h
 //
 // Ported so far: the innate-ability tables, role_abil(), postadjabil(),
-// adjabil(), newhp(), acurr().
+// adjabil(), newhp(), acurr(), adjattrib(), rnd_attr(),
+// init_attr_role_redist(), init_attr(), vary_init_attr().
 
 import { game } from './gstate.js';
-import { rnd } from './rng.js';
+import { rn2, rnd } from './rng.js';
 import {
     A_STR, A_INT, A_WIS, A_DEX, A_CON, A_CHA, MAXULEV, STR19, FROMEXPER,
     FROMRACE, FROMOUTSIDE, INTRINSIC, SEARCHING, STEALTH, FAST,
     POISON_RES, WARNING, SLEEP_RES, SEE_INVIS, FIRE_RES, COLD_RES, SHOCK_RES,
-    TELEPORT_CONTROL, INFRAVISION,
+    TELEPORT_CONTROL, INFRAVISION, A_MAX, STR18, FIXED_ABIL,
 } from './const.js';
 import {
     PM_ARCHEOLOGIST, PM_BARBARIAN, PM_CAVE_DWELLER, PM_HEALER, PM_KNIGHT,
     PM_MONK, PM_CLERIC, PM_RANGER, PM_ROGUE, PM_SAMURAI, PM_TOURIST,
     PM_VALKYRIE, PM_WIZARD, PM_ELF, PM_ORC, PM_HUMAN, PM_DWARF, PM_GNOME,
-    PM_AMOROUS_DEMON, S_NYMPH,
+    PM_AMOROUS_DEMON, S_NYMPH, M2_STRONG,
 } from './monsters.js';
 import { GAUNTLETS_OF_POWER, DUNCE_CAP } from './objects.js';
 import { ART_OGRESMASHER } from './artilist.js';
@@ -327,4 +328,150 @@ export function acurr(chridx) {
         result = (tmp >= 25) ? 25 : (tmp <= 3) ? 3 : tmp;
 
     return result;
+}
+
+// C ref: attrib.h ATTRMAX(), ATTRMIN()
+export function ATTRMAX(x) {
+    return ((x === A_STR && game.u.mtimedone && strongmonst(game.youmonst.data))
+            ? STR18(100) : game.urace.attrmax[x]);
+}
+export function ATTRMIN(x) { return game.urace.attrmin[x]; }
+// C ref: mondata.h strongmonst()
+function strongmonst(ptr) { return (ptr.mflags2 & M2_STRONG) !== 0; }
+// C ref: youprop.h Fixed_abil
+function Fixed_abil() {
+    const p = game.u.uprops[FIXED_ABIL];
+    return !!(p && (p.intrinsic || p.extrinsic));
+}
+
+// C ref: attrib.c adjattrib()
+/* adjust an attribute; return True if change is made, False otherwise */
+export function adjattrib(ndx,    /* which characteristic */
+                          incr,   /* amount of change */
+                          msgflg) /* positive => no message, zero => message,
+                                   * and negative => conditional (msg if
+                                   * change made) */ {
+    const u = game.u;
+    let old_acurr, decr;
+
+    if (Fixed_abil() || !incr)
+        return false;
+
+    if ((ndx === A_INT || ndx === A_WIS) && game.uarmh
+        && game.uarmh.otyp === DUNCE_CAP) {
+        /* "Your cap constricts briefly, then relaxes again." (msgflg 0):
+           messages are not ported yet */
+        return false;
+    }
+
+    old_acurr = ACURR(ndx);
+    u.acurr.a[ndx] += incr; /* when incr is negative, this reduces ABASE() */
+    if (incr > 0) {
+        if (ABASE(ndx) > AMAX(ndx)) {
+            u.amax.a[ndx] = ABASE(ndx);
+            if (AMAX(ndx) > ATTRMAX(ndx))
+                u.acurr.a[ndx] = u.amax.a[ndx] = ATTRMAX(ndx);
+        }
+    } else { /* incr is negative */
+        if (ABASE(ndx) < ATTRMIN(ndx)) {
+            /*
+             * If base value has dropped so low that it is trying to be
+             * taken below the minimum, reduce max value (peak reached)
+             * instead.
+             */
+            decr = rn2(ATTRMIN(ndx) - ABASE(ndx) + 1);
+            u.acurr.a[ndx] = ATTRMIN(ndx);
+            u.amax.a[ndx] -= decr;
+            if (AMAX(ndx) < ATTRMIN(ndx))
+                u.amax.a[ndx] = ATTRMIN(ndx);
+        }
+    }
+    if (ACURR(ndx) === old_acurr) {
+        /* "You're already as <attr> as you can get." / "Your innate <attr>
+           has improved." (msgflg 0): messages are not ported yet */
+        return false;
+    }
+
+    /* Any successful change also resets abuse / exercise level */
+    u.aexe.a[ndx] = 0;
+
+    game.disp_botl = true;
+    /* You_feel("%s%s!", ...) for msgflg <= 0 and encumber_msg() once
+       in_moveloop: messages are not ported yet */
+    return true;
+}
+
+// C ref: attrib.c rnd_attr()
+/* return random hero attribute (by role's attr distribution).
+   returns A_MAX if failed. */
+function rnd_attr() {
+    let i, x = rn2(100);
+
+    /* 5.0: the x -= ... calculation used to have an off by 1 error that
+       resulted in the values being biased toward Str and away from Cha */
+    for (i = 0; i < A_MAX; ++i)
+        if ((x -= game.urole.attrdist[i]) < 0)
+            break;
+    return i;
+}
+
+// C ref: attrib.c init_attr_role_redist()
+/* add or subtract np points from random attributes,
+   adjusting the base and maximum values of the attributes.
+   if subtracting, np must be negative.
+   returns the left over points. */
+function init_attr_role_redist(np, addition) {
+    const u = game.u;
+    let tryct = 0;
+    const adj = addition ? 1 : -1;
+
+    while ((addition ? (np > 0) : (np < 0)) && tryct < 100) {
+        const i = rnd_attr();
+
+        if (i >= A_MAX
+            || (addition ? (ABASE(i) >= ATTRMAX(i))
+                         : (ABASE(i) <= ATTRMIN(i)))) {
+            tryct++;
+            continue;
+        }
+        tryct = 0;
+        u.acurr.a[i] += adj;
+        u.amax.a[i] += adj;
+        np -= adj;
+    }
+    return np;
+}
+
+// C ref: attrib.c init_attr()
+/* allocate hero's initial characteristics */
+export function init_attr(np) {
+    const u = game.u;
+    let i;
+
+    for (i = 0; i < A_MAX; i++) {
+        u.acurr.a[i] = u.amax.a[i] = game.urole.attrbase[i];
+        u.atemp.a[i] = u.atime.a[i] = 0;
+        np -= game.urole.attrbase[i];
+    }
+
+    /* distribute leftover points */
+    np = init_attr_role_redist(np, true);
+    /* if we went over, remove points */
+    np = init_attr_role_redist(np, false);
+}
+
+// C ref: attrib.c vary_init_attr()
+/* apply minor variation to attributes */
+export function vary_init_attr() {
+    const u = game.u;
+    let i;
+
+    for (i = 0; i < A_MAX; i++)
+        if (!rn2(20)) {
+            const xd = rn2(7) - 2; /* biased variation */
+
+            adjattrib(i, xd, true);
+            if (ABASE(i) < AMAX(i))
+                u.amax.a[i] = ABASE(i);
+        }
 }
