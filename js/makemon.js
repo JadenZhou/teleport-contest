@@ -1639,7 +1639,7 @@ export function makemon(ptr, x, y, mmflags) {
         seen_resistance: 0, cham: NON_PM, iswiz: 0, isminion: 0,
         ispriest: 0, isshk: 0, isgd: 0, mstrategy: 0, malign: 0,
         wormno: 0, mtrapseen: 0, mwandexp: 0, minvent: null, nmon: null,
-        mundetected: 0, mavenge: 0,
+        mundetected: 0, mavenge: 0, movement: 0, mspeed: 0,
     };
 
     if (mmflags & MM_EGD) mtmp.egd = {};    /* newegd() */

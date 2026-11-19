@@ -2,7 +2,8 @@
 // C ref: allmain.c — newgame, welcome, moveloop_preamble, moveloop,
 // moveloop_core.
 //
-// Uses fastforward.js for per-turn RNG parity on seed8000 (fastforward_step).
+// Uses fastforward.js (fastforward_step) for the seed8000 rolls of the
+// turn-cycle parts not ported yet (movemon, rest of the new-turn block).
 // Real mklev.js handles level generation for screen parity.
 
 import { game } from './gstate.js';
@@ -12,7 +13,8 @@ import { l_nhcore_init } from './nhlua.js';
 import { rhack } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
-import { fastforward_step } from './fastforward.js';
+import { fastforward_step, FF_MOVEMON, FF_NEWTURN } from './fastforward.js';
+import { mcalcmove } from './mon.js';
 import { m_at } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
@@ -142,13 +144,96 @@ export async function welcome(new_game) /* false => restoring an old game */ {
     /* livelog_printf() and the restore-only messages: not ported yet */
 }
 
+// C ref: allmain.c u_calc_moveamt()
+function u_calc_moveamt(wtcap) {
+    const g = game;
+    const u = g.u;
+    let moveamt = 0;
+
+    /* calculate how much time passed. */
+    if (u.usteed && u.umoved) {
+        /* your speed doesn't augment steed's speed */
+        moveamt = mcalcmove(u.usteed, true);
+    } else {
+        moveamt = g.youmonst.data.mmove;
+
+        /* Very_fast / Fast free actions (rn2(3)): not ported yet --
+           the hero's speed properties aren't available yet */
+    }
+
+    /* switch (wtcap): encumbrance reduction -- near_capacity() isn't
+       ported yet, so wtcap is always UNENCUMBERED */
+
+    u.umovement += moveamt;
+    if (u.umovement < 0)
+        u.umovement = 0;
+}
+
 // C ref: allmain.c moveloop_core()
 export async function moveloop_core() {
     const g = game;
+    const u = g.u;
+    let monscanmove = false;
+    const mvl_wtcap = 0; /* UNENCUMBERED; near_capacity() not ported yet */
 
-    // Fast-forward per-step RNG (monster movement, regen, sounds, hunger)
-    const stepNum = (g.moves || 1) - 1;
-    fastforward_step(stepNum);
+    /* get_nh_event(), maybe_shuffle_customizations(), dobjsfree(),
+       clear_bypasses(), sanity_check(), makewish(): not ported yet */
+
+    if (g.context.move) {
+        /* actual time passed */
+        u.umovement -= NORMAL_SPEED;
+
+        do { /* hero can't move this turn loop */
+            /* encumber_msg(): not ported yet */
+
+            g.context.mon_moving = 1;
+            do {
+                /* movemon(): not ported yet; seed8000's recorded
+                   monster-movement rolls are replayed instead */
+                fastforward_step(g.moves, FF_MOVEMON);
+                monscanmove = false;
+                if (u.umovement >= NORMAL_SPEED)
+                    break; /* it's now your turn */
+            } while (monscanmove);
+            g.context.mon_moving = 0;
+
+            /* mvl_wtcap = near_capacity(): not ported yet */
+
+            if (!monscanmove && u.umovement < NORMAL_SPEED) {
+                /* both hero and monsters are out of steam this round */
+                let mtmp;
+
+                /* set up for a new turn */
+                g.were_changes = 0;
+                /* mcalcdistress(): adjust monsters' trap, blind, etc --
+                   not ported yet */
+
+                /* reallocate movement rations to monsters; don't need
+                   to skip dead monsters here because they will have
+                   been purged at end of their previous round of moving */
+                for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon)
+                    mtmp.movement += mcalcmove(mtmp, true);
+
+                /* maybe_generate_rnd_mon() and the once-per-turn things
+                   (nh_timeout, regen_hp, regen_pw, exerchk, dosounds, ...)
+                   are not ported yet; seed8000's recorded rolls for them
+                   are replayed instead */
+                fastforward_step(g.moves, FF_NEWTURN);
+
+                u_calc_moveamt(mvl_wtcap);
+                /* settrack(): not ported yet */
+
+                g.moves++;
+                /* 'moves' is misnamed; it represents turns; hero_seq is
+                   a value that is distinct every time the hero moves */
+                g.hero_seq = g.moves << 3;
+            }
+        } while (u.umovement < NORMAL_SPEED); /* hero can't move */
+
+        /* once-per-hero-took-time things: not ported yet */
+    } /* actual time passed */
+
+    /* once-per-player-input things go here */
 
     // Vision + display
     if (g.vision_full_recalc) {
@@ -158,16 +243,13 @@ export async function moveloop_core() {
     await bot();
     await flush_screen(1);
 
+    g.context.move = 1;
+
     // Read and execute one command
     await rhack(0);
 
     // Clear message after command is processed
     g._pending_message = '';
-
-    // Advance turn
-    if (g.context?.move) {
-        g.moves = (g.moves || 1) + 1;
-    }
 }
 
 // C ref: allmain.c moveloop_preamble()
