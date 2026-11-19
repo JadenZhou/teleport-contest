@@ -1,31 +1,31 @@
 {
- "when": "2026-11-19T17:56:27.356Z",
+ "when": "2026-11-19T18:17:21.381Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
    "total": 27158,
-   "jsTotal": 6522,
+   "jsTotal": 2556,
    "totalScreens": 595,
-   "valuePrefix": 2314,
-   "rulePrefix": 2313,
+   "valuePrefix": 2375,
+   "rulePrefix": 2375,
    "screens": 9,
    "honestScreens": 9,
    "firstScreenMiss": 9,
    "first": {
-    "index": 2313,
-    "step": 13,
-    "c": "rn2(5)=4 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=4 @ fastforward_step",
-    "kind": "caller",
+    "index": 2375,
+    "step": 15,
+    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
+    "js": "rn2(100)=20 @ obj_resists",
+    "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "obj_resists",
     "context": [
-     "rn2(300)=203 @ dosounds(sounds.c:220)",
-     "rn2(20)=1 @ gethungry(eat.c:3191)",
-     "rn2(61)=52 @ moveloop_core(allmain.c:360)",
+     "rn2(8)=0 @ dog_goal(dogmove.c:554)",
+     "rn2(100)=41 @ obj_resists(zap.c:1469)",
+     "rn2(100)=18 @ obj_resists(zap.c:1469)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
      "rn2(5)=4 @ distfleeck(monmove.c:538)",
-     "rn2(100)=97 @ obj_resists(zap.c:1469)",
-     "rn2(100)=92 @ obj_resists(zap.c:1469)"
+     "rn2(8)=5 @ m_move(monmove.c:1963)"
     ]
    },
    "error": null
@@ -33,28 +33,28 @@
   {
    "session": "seed0004-feeding-pony.session.json",
    "total": 12084,
-   "jsTotal": 6290,
+   "jsTotal": 3695,
    "totalScreens": 409,
-   "valuePrefix": 3694,
-   "rulePrefix": 3693,
+   "valuePrefix": 3695,
+   "rulePrefix": 3695,
    "screens": 9,
    "honestScreens": 9,
    "firstScreenMiss": 9,
    "first": {
-    "index": 3693,
+    "index": 3695,
     "step": 13,
-    "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=3 @ fastforward_step",
-    "kind": "caller",
+    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
+    "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "jsCaller": null,
     "context": [
-     "rn2(70)=28 @ maybe_generate_rnd_mon(allmain.c:166)",
-     "rn2(20)=8 @ gethungry(eat.c:3191)",
      "rn2(67)=63 @ moveloop_core(allmain.c:360)",
      "rn2(5)=3 @ distfleeck(monmove.c:538)",
      "rn2(4)=3 @ dog_goal(dogmove.c:575)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)"
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -62,28 +62,28 @@
   {
    "session": "seed0006-wizard-water-demon.session.json",
    "total": 6736,
-   "jsTotal": 2776,
+   "jsTotal": 2526,
    "totalScreens": 123,
-   "valuePrefix": 2510,
-   "rulePrefix": 2509,
+   "valuePrefix": 2523,
+   "rulePrefix": 2523,
    "screens": 36,
    "honestScreens": 36,
    "firstScreenMiss": 36,
    "first": {
-    "index": 2509,
-    "step": 40,
-    "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=3 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "index": 2523,
+    "step": 41,
+    "c": "rn2(20)=10 @ gethungry(eat.c:3191)",
+    "js": "rn2(5)=0 @ distfleeck",
+    "kind": "value",
+    "cCaller": "gethungry",
+    "jsCaller": "distfleeck",
     "context": [
-     "rn2(70)=3 @ maybe_generate_rnd_mon(allmain.c:166)",
-     "rn2(20)=4 @ gethungry(eat.c:3191)",
-     "rn2(85)=29 @ moveloop_core(allmain.c:360)",
-     "rn2(5)=3 @ distfleeck(monmove.c:538)",
-     "rn2(4)=1 @ dog_goal(dogmove.c:575)",
-     "rn2(5)=2 @ distfleeck(monmove.c:538)"
+     "rn2(70)=6 @ maybe_generate_rnd_mon(allmain.c:166)",
+     "rn2(20)=17 @ gethungry(eat.c:3191)",
+     "rn2(85)=19 @ moveloop_core(allmain.c:360)",
+     "rn2(20)=10 @ gethungry(eat.c:3191)",
+     "rn2(19)=0 @ exercise(attrib.c:509)",
+     "rnd(20)=10 @ hitum(uhitm.c:780)"
     ]
    },
    "error": null
@@ -91,28 +91,28 @@
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
-   "jsTotal": 3882,
+   "jsTotal": 3845,
    "totalScreens": 302,
-   "valuePrefix": 2831,
-   "rulePrefix": 2830,
+   "valuePrefix": 2833,
+   "rulePrefix": 2831,
    "screens": 15,
    "honestScreens": 15,
    "firstScreenMiss": 15,
    "first": {
-    "index": 2830,
+    "index": 2831,
     "step": 48,
-    "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=3 @ fastforward_step",
+    "c": "rn2(4)=0 @ dog_goal(dogmove.c:575)",
+    "js": "rn2(4)=0 @ dochug",
     "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "cCaller": "dog_goal",
+    "jsCaller": "dochug",
     "context": [
-     "rn2(70)=48 @ maybe_generate_rnd_mon(allmain.c:166)",
      "rn2(20)=2 @ gethungry(eat.c:3191)",
      "rn2(91)=65 @ moveloop_core(allmain.c:360)",
      "rn2(5)=3 @ distfleeck(monmove.c:538)",
      "rn2(4)=0 @ dog_goal(dogmove.c:575)",
-     "rn2(1)=0 @ dog_move(dogmove.c:1255)"
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -120,7 +120,7 @@
   {
    "session": "seed0009-swimmer-mforce.session.json",
    "total": 3713,
-   "jsTotal": 3692,
+   "jsTotal": 3353,
    "totalScreens": 73,
    "valuePrefix": 3337,
    "rulePrefix": 3337,
@@ -149,28 +149,28 @@
   {
    "session": "seed0012-monk-vault-escort.session.json",
    "total": 13878,
-   "jsTotal": 4225,
+   "jsTotal": 3104,
    "totalScreens": 308,
-   "valuePrefix": 3077,
-   "rulePrefix": 3076,
+   "valuePrefix": 3083,
+   "rulePrefix": 3083,
    "screens": 16,
    "honestScreens": 16,
    "firstScreenMiss": 16,
    "first": {
-    "index": 3076,
+    "index": 3083,
     "step": 21,
-    "c": "rn2(5)=4 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=4 @ fastforward_step",
-    "kind": "caller",
+    "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
+    "js": "rn2(100)=73 @ obj_resists",
+    "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "obj_resists",
     "context": [
-     "rn2(3)=1 @ u_calc_moveamt(allmain.c:131)",
-     "rn2(20)=9 @ gethungry(eat.c:3191)",
-     "rn2(94)=9 @ moveloop_core(allmain.c:360)",
-     "rn2(5)=4 @ distfleeck(monmove.c:538)",
-     "rn2(100)=59 @ obj_resists(zap.c:1469)",
-     "rn2(100)=28 @ obj_resists(zap.c:1469)"
+     "rn2(100)=28 @ obj_resists(zap.c:1469)",
+     "rn2(100)=97 @ obj_resists(zap.c:1469)",
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -178,7 +178,7 @@
   {
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
    "total": 4804,
-   "jsTotal": 5628,
+   "jsTotal": 5475,
    "totalScreens": 99,
    "valuePrefix": 528,
    "rulePrefix": 528,
@@ -207,7 +207,7 @@
   {
    "session": "seed0013-rogue-friday13-combat.session.json",
    "total": 4838,
-   "jsTotal": 2761,
+   "jsTotal": 2639,
    "totalScreens": 59,
    "valuePrefix": 528,
    "rulePrefix": 528,
@@ -236,7 +236,7 @@
   {
    "session": "seed0014-dequa-fountain-explore.session.json",
    "total": 59178,
-   "jsTotal": 6228,
+   "jsTotal": 2967,
    "totalScreens": 714,
    "valuePrefix": 2956,
    "rulePrefix": 2956,
@@ -265,7 +265,7 @@
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
-   "jsTotal": 1050,
+   "jsTotal": 942,
    "totalScreens": 44,
    "valuePrefix": 363,
    "rulePrefix": 363,
@@ -294,7 +294,7 @@
   {
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
-   "jsTotal": 2542,
+   "jsTotal": 2656,
    "totalScreens": 36,
    "valuePrefix": 2493,
    "rulePrefix": 2493,
@@ -323,28 +323,28 @@
   {
    "session": "seed0017-samurai-altar-pray.session.json",
    "total": 3465,
-   "jsTotal": 2856,
+   "jsTotal": 2861,
    "totalScreens": 67,
-   "valuePrefix": 2678,
-   "rulePrefix": 2677,
+   "valuePrefix": 2679,
+   "rulePrefix": 2679,
    "screens": 10,
    "honestScreens": 10,
    "firstScreenMiss": 10,
    "first": {
-    "index": 2677,
+    "index": 2679,
     "step": 10,
-    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=0 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "c": "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+    "js": "rn2(5)=1 @ distfleeck",
+    "kind": "value",
+    "cCaller": "dog_move",
+    "jsCaller": "distfleeck",
     "context": [
-     "rn2(200)=112 @ dosounds(sounds.c:238)",
-     "rn2(20)=5 @ gethungry(eat.c:3191)",
      "rn2(94)=70 @ moveloop_core(allmain.c:360)",
      "rn2(5)=0 @ distfleeck(monmove.c:538)",
      "rn2(4)=0 @ dog_goal(dogmove.c:575)",
-     "rn2(1)=0 @ dog_move(dogmove.c:1255)"
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -352,28 +352,28 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 41429,
+   "jsTotal": 35836,
    "totalScreens": 1953,
    "valuePrefix": 6276,
-   "rulePrefix": 6275,
-   "screens": 2,
+   "rulePrefix": 6276,
+   "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 6275,
+    "index": 6276,
     "step": 4,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=1 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "c": "rn2(100)=92 @ obj_resists(zap.c:1469)",
+    "js": "rn2(4)=0 @ dochug",
+    "kind": "value",
+    "cCaller": "obj_resists",
+    "jsCaller": "dochug",
     "context": [
-     "rn2(70)=19 @ maybe_generate_rnd_mon(allmain.c:166)",
      "rn2(20)=3 @ gethungry(eat.c:3191)",
      "rn2(76)=9 @ moveloop_core(allmain.c:360)",
      "rn2(5)=1 @ distfleeck(monmove.c:538)",
      "rn2(100)=92 @ obj_resists(zap.c:1469)",
-     "rn2(8)=7 @ dog_goal(dogmove.c:554)"
+     "rn2(8)=7 @ dog_goal(dogmove.c:554)",
+     "rn2(100)=1 @ obj_resists(zap.c:1469)"
     ]
    },
    "error": null
@@ -381,28 +381,28 @@
   {
    "session": "seed0060-orc-rogue-kick-search.session.json",
    "total": 3626,
-   "jsTotal": 2452,
+   "jsTotal": 2409,
    "totalScreens": 41,
    "valuePrefix": 2406,
-   "rulePrefix": 2405,
+   "rulePrefix": 2406,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2405,
+    "index": 2406,
     "step": 3,
-    "c": "rn2(5)=2 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=2 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "c": "rn2(100)=12 @ obj_resists(zap.c:1469)",
+    "js": "rn2(4)=0 @ dochug",
+    "kind": "value",
+    "cCaller": "obj_resists",
+    "jsCaller": "dochug",
     "context": [
-     "rn2(300)=3 @ dosounds(sounds.c:220)",
      "rn2(20)=14 @ gethungry(eat.c:3191)",
      "rn2(94)=52 @ moveloop_core(allmain.c:360)",
      "rn2(5)=2 @ distfleeck(monmove.c:538)",
      "rn2(100)=12 @ obj_resists(zap.c:1469)",
-     "rn2(8)=4 @ dog_goal(dogmove.c:554)"
+     "rn2(8)=4 @ dog_goal(dogmove.c:554)",
+     "rn2(4)=3 @ dog_goal(dogmove.c:575)"
     ]
    },
    "error": null
@@ -410,7 +410,7 @@
   {
    "session": "seed0077-rogue-chargen.session.json",
    "total": 3242,
-   "jsTotal": 3223,
+   "jsTotal": 3229,
    "totalScreens": 33,
    "valuePrefix": 3195,
    "rulePrefix": 3195,
@@ -439,7 +439,7 @@
   {
    "session": "seed0101-ranger-quiver-throw-travel-engrave.session.json",
    "total": 2371,
-   "jsTotal": 2337,
+   "jsTotal": 2358,
    "totalScreens": 27,
    "valuePrefix": 2293,
    "rulePrefix": 2293,
@@ -468,28 +468,28 @@
   {
    "session": "seed0102-ranger-name-cancel.session.json",
    "total": 4485,
-   "jsTotal": 4470,
+   "jsTotal": 4454,
    "totalScreens": 25,
-   "valuePrefix": 4449,
-   "rulePrefix": 4448,
+   "valuePrefix": 4454,
+   "rulePrefix": 4454,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 4448,
+    "index": 4454,
     "step": 22,
     "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=3 @ fastforward_step",
-    "kind": "caller",
+    "js": "(none: JS log ended)",
+    "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "jsCaller": null,
     "context": [
-     "rn2(300)=265 @ dosounds(sounds.c:220)",
-     "rn2(20)=15 @ gethungry(eat.c:3191)",
-     "rn2(73)=22 @ moveloop_core(allmain.c:360)",
+     "rn2(4)=2 @ dog_goal(dogmove.c:575)",
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rnd(5)=2 @ score_targ(dogmove.c:830)",
      "rn2(5)=3 @ distfleeck(monmove.c:538)",
-     "rn2(100)=71 @ obj_resists(zap.c:1469)",
-     "rn2(8)=0 @ dog_goal(dogmove.c:554)"
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(100)=3 @ obj_resists(zap.c:1469)"
     ]
    },
    "error": null
@@ -497,7 +497,7 @@
   {
    "session": "seed0103-knight-ride-pony.session.json",
    "total": 2640,
-   "jsTotal": 2516,
+   "jsTotal": 2472,
    "totalScreens": 60,
    "valuePrefix": 2440,
    "rulePrefix": 2440,
@@ -508,10 +508,10 @@
     "index": 2440,
     "step": 12,
     "c": "rnd(20)=12 @ mount_steed(steed.c:341)",
-    "js": "rn2(5)=1 @ fastforward_step",
+    "js": "rn2(5)=1 @ distfleeck",
     "kind": "value",
     "cCaller": "mount_steed",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "distfleeck",
     "context": [
      "rn2(70)=30 @ maybe_generate_rnd_mon(allmain.c:166)",
      "rn2(20)=13 @ gethungry(eat.c:3191)",
@@ -526,7 +526,7 @@
   {
    "session": "seed0104-knight-ride-combat.session.json",
    "total": 3223,
-   "jsTotal": 2756,
+   "jsTotal": 2654,
    "totalScreens": 43,
    "valuePrefix": 2630,
    "rulePrefix": 2630,
@@ -537,10 +537,10 @@
     "index": 2630,
     "step": 11,
     "c": "rnd(20)=2 @ mount_steed(steed.c:341)",
-    "js": "rn2(5)=1 @ fastforward_step",
+    "js": "rn2(5)=1 @ distfleeck",
     "kind": "value",
     "cCaller": "mount_steed",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "distfleeck",
     "context": [
      "rn2(300)=145 @ dosounds(sounds.c:220)",
      "rn2(20)=13 @ gethungry(eat.c:3191)",
@@ -555,28 +555,28 @@
   {
    "session": "seed0105-valk-chat-lamp-ration.session.json",
    "total": 2499,
-   "jsTotal": 2505,
+   "jsTotal": 2527,
    "totalScreens": 30,
-   "valuePrefix": 2478,
-   "rulePrefix": 2477,
+   "valuePrefix": 2479,
+   "rulePrefix": 2479,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2477,
+    "index": 2479,
     "step": 28,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=1 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "c": "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+    "js": "rn2(4)=1 @ dog_goal",
+    "kind": "value",
+    "cCaller": "dog_move",
+    "jsCaller": "dog_goal",
     "context": [
-     "rn2(200)=168 @ dosounds(sounds.c:238)",
-     "rn2(20)=8 @ gethungry(eat.c:3191)",
      "rn2(79)=52 @ moveloop_core(allmain.c:360)",
      "rn2(5)=1 @ distfleeck(monmove.c:538)",
      "rn2(100)=15 @ obj_resists(zap.c:1469)",
-     "rn2(1)=0 @ dog_move(dogmove.c:1255)"
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(2)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -584,28 +584,28 @@
   {
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
-   "jsTotal": 3293,
+   "jsTotal": 2566,
    "totalScreens": 267,
-   "valuePrefix": 2565,
-   "rulePrefix": 2564,
+   "valuePrefix": 2566,
+   "rulePrefix": 2566,
    "screens": 1,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
-    "index": 2564,
+    "index": 2566,
     "step": 11,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=1 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "c": "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+    "js": "(none: JS log ended)",
+    "kind": "value",
+    "cCaller": "dog_move",
+    "jsCaller": null,
     "context": [
-     "rn2(200)=107 @ dosounds(sounds.c:238)",
-     "rn2(20)=7 @ gethungry(eat.c:3191)",
      "rn2(70)=22 @ moveloop_core(allmain.c:360)",
      "rn2(5)=1 @ distfleeck(monmove.c:538)",
      "rn2(100)=89 @ obj_resists(zap.c:1469)",
-     "rn2(1)=0 @ dog_move(dogmove.c:1255)"
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
@@ -613,7 +613,7 @@
   {
    "session": "seed0107-samurai-twoweapon-enhance.session.json",
    "total": 2902,
-   "jsTotal": 2873,
+   "jsTotal": 3083,
    "totalScreens": 98,
    "valuePrefix": 2656,
    "rulePrefix": 2656,
@@ -624,10 +624,10 @@
     "index": 2656,
     "step": 15,
     "c": "rnd(20)=1 @ dotwoweapon(wield.c:861)",
-    "js": "rn2(5)=0 @ fastforward_step",
+    "js": "rn2(5)=0 @ distfleeck",
     "kind": "value",
     "cCaller": "dotwoweapon",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "distfleeck",
     "context": [
      "rn2(400)=185 @ dosounds(sounds.c:213)",
      "rn2(20)=1 @ gethungry(eat.c:3191)",
@@ -642,7 +642,7 @@
   {
    "session": "seed0108-wizard-extcmd-wishlist.session.json",
    "total": 16958,
-   "jsTotal": 3173,
+   "jsTotal": 2777,
    "totalScreens": 303,
    "valuePrefix": 2772,
    "rulePrefix": 2772,
@@ -653,10 +653,10 @@
     "index": 2772,
     "step": 24,
     "c": "rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)",
-    "js": "rn2(5)=0 @ fastforward_step",
+    "js": "rn2(5)=0 @ distfleeck",
     "kind": "value",
     "cCaller": "rnd_otyp_by_namedesc",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "distfleeck",
     "context": [
      "rn2(70)=31 @ maybe_generate_rnd_mon(allmain.c:166)",
      "rn2(20)=12 @ gethungry(eat.c:3191)",
@@ -671,7 +671,7 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3210,
+   "jsTotal": 3599,
    "totalScreens": 127,
    "valuePrefix": 2978,
    "rulePrefix": 2978,
@@ -682,10 +682,10 @@
     "index": 2978,
     "step": 10,
     "c": "rn2(3)=1 @ getbones(bones.c:645)",
-    "js": "rn2(5)=2 @ fastforward_step",
+    "js": "rn2(5)=2 @ distfleeck",
     "kind": "value",
     "cCaller": "getbones",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "distfleeck",
     "context": [
      "rn2(400)=99 @ dosounds(sounds.c:213)",
      "rn2(20)=1 @ gethungry(eat.c:3191)",
@@ -700,7 +700,7 @@
   {
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
-   "jsTotal": 3419,
+   "jsTotal": 3297,
    "totalScreens": 40,
    "valuePrefix": 3256,
    "rulePrefix": 3256,
@@ -711,10 +711,10 @@
     "index": 3256,
     "step": 8,
     "c": "rn2(7)=5 @ do_attack(uhitm.c:474)",
-    "js": "rn2(5)=3 @ fastforward_step",
+    "js": "rn2(5)=3 @ distfleeck",
     "kind": "value",
     "cCaller": "do_attack",
-    "jsCaller": "fastforward_step",
+    "jsCaller": "distfleeck",
     "context": [
      "rn2(400)=134 @ dosounds(sounds.c:213)",
      "rn2(20)=9 @ gethungry(eat.c:3191)",
@@ -729,7 +729,7 @@
   {
    "session": "seed0360-wizard-world-tour.session.json",
    "total": 120639,
-   "jsTotal": 5937,
+   "jsTotal": 2927,
    "totalScreens": 833,
    "valuePrefix": 2898,
    "rulePrefix": 2898,
@@ -758,7 +758,7 @@
   {
    "session": "seed0361-archeologist-tour.session.json",
    "total": 53865,
-   "jsTotal": 3924,
+   "jsTotal": 2952,
    "totalScreens": 366,
    "valuePrefix": 2924,
    "rulePrefix": 2924,
@@ -787,7 +787,7 @@
   {
    "session": "seed0367-priest-quest-tour.session.json",
    "total": 50125,
-   "jsTotal": 2567,
+   "jsTotal": 1870,
    "totalScreens": 324,
    "valuePrefix": 1848,
    "rulePrefix": 1848,
@@ -816,7 +816,7 @@
   {
    "session": "seed0373-barbarian-quest-tour.session.json",
    "total": 35386,
-   "jsTotal": 2611,
+   "jsTotal": 2580,
    "totalScreens": 124,
    "valuePrefix": 2512,
    "rulePrefix": 2512,
@@ -845,7 +845,7 @@
   {
    "session": "seed0383-wizard-hallucinate.session.json",
    "total": 16915,
-   "jsTotal": 2940,
+   "jsTotal": 2465,
    "totalScreens": 219,
    "valuePrefix": 2450,
    "rulePrefix": 2450,
@@ -874,7 +874,7 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 2913,
+   "jsTotal": 2848,
    "totalScreens": 87,
    "valuePrefix": 2764,
    "rulePrefix": 2764,
@@ -903,7 +903,7 @@
   {
    "session": "seed0399-wizard-hallu-actions.session.json",
    "total": 11409,
-   "jsTotal": 3831,
+   "jsTotal": 2802,
    "totalScreens": 532,
    "valuePrefix": 2785,
    "rulePrefix": 2785,
@@ -932,7 +932,7 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 2245,
+   "jsTotal": 2285,
    "totalScreens": 28,
    "valuePrefix": 2205,
    "rulePrefix": 2205,
@@ -961,28 +961,28 @@
   {
    "session": "seed0700-samurai-explore-descend.session.json",
    "total": 3230,
-   "jsTotal": 3012,
+   "jsTotal": 2929,
    "totalScreens": 51,
-   "valuePrefix": 2738,
-   "rulePrefix": 2737,
+   "valuePrefix": 2751,
+   "rulePrefix": 2751,
    "screens": 1,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
-    "index": 2737,
-    "step": 7,
-    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=0 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "index": 2751,
+    "step": 10,
+    "c": "rn2(7)=5 @ do_attack(uhitm.c:474)",
+    "js": "rn2(5)=1 @ distfleeck",
+    "kind": "value",
+    "cCaller": "do_attack",
+    "jsCaller": "distfleeck",
     "context": [
-     "rn2(200)=91 @ dosounds(sounds.c:238)",
-     "rn2(20)=19 @ gethungry(eat.c:3191)",
-     "rn2(82)=77 @ moveloop_core(allmain.c:360)",
-     "rn2(5)=0 @ distfleeck(monmove.c:538)",
-     "rn2(100)=47 @ obj_resists(zap.c:1469)",
-     "rn2(4)=3 @ dog_goal(dogmove.c:575)"
+     "rn2(200)=78 @ dosounds(sounds.c:238)",
+     "rn2(20)=8 @ gethungry(eat.c:3191)",
+     "rn2(82)=26 @ moveloop_core(allmain.c:360)",
+     "rn2(7)=5 @ do_attack(uhitm.c:474)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(100)=37 @ obj_resists(zap.c:1469)"
     ]
    },
    "error": null
@@ -1019,28 +1019,28 @@
   {
    "session": "seed1150-caveman-explore-move.session.json",
    "total": 3137,
-   "jsTotal": 2692,
+   "jsTotal": 2951,
    "totalScreens": 51,
-   "valuePrefix": 2408,
-   "rulePrefix": 2407,
+   "valuePrefix": 2426,
+   "rulePrefix": 2426,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2407,
-    "step": 7,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=1 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "index": 2426,
+    "step": 8,
+    "c": "rn2(20)=3 @ dog_invent(dogmove.c:446)",
+    "js": "rn2(100)=43 @ obj_resists",
+    "kind": "value",
+    "cCaller": "dog_invent",
+    "jsCaller": "obj_resists",
     "context": [
-     "rn2(200)=191 @ dosounds(sounds.c:238)",
-     "rn2(20)=15 @ gethungry(eat.c:3191)",
-     "rn2(82)=6 @ moveloop_core(allmain.c:360)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)",
-     "rn2(100)=86 @ obj_resists(zap.c:1469)",
-     "rn2(100)=37 @ obj_resists(zap.c:1469)"
+     "rn2(82)=22 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(100)=42 @ obj_resists(zap.c:1469)",
+     "rn2(20)=3 @ dog_invent(dogmove.c:446)",
+     "rn2(4)=2 @ dog_invent(dogmove.c:447)",
+     "rn2(100)=68 @ obj_resists(zap.c:1469)"
     ]
    },
    "error": null
@@ -1048,28 +1048,28 @@
   {
    "session": "seed1500-rogue-explore-move.session.json",
    "total": 2768,
-   "jsTotal": 2559,
+   "jsTotal": 2381,
    "totalScreens": 40,
-   "valuePrefix": 2296,
-   "rulePrefix": 2295,
+   "valuePrefix": 2313,
+   "rulePrefix": 2313,
    "screens": 1,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
-    "index": 2295,
+    "index": 2313,
     "step": 5,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=1 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "c": "rn2(100)=84 @ obj_resists(zap.c:1469)",
+    "js": "rn2(4)=0 @ dochug",
+    "kind": "value",
+    "cCaller": "obj_resists",
+    "jsCaller": "dochug",
     "context": [
-     "rn2(200)=135 @ dosounds(sounds.c:238)",
-     "rn2(20)=7 @ gethungry(eat.c:3191)",
-     "rn2(94)=32 @ moveloop_core(allmain.c:360)",
      "rn2(5)=1 @ distfleeck(monmove.c:538)",
-     "rn2(4)=2 @ dochug(monmove.c:886)",
-     "rn2(100)=13 @ obj_resists(zap.c:1469)"
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(100)=84 @ obj_resists(zap.c:1469)",
+     "rn2(100)=79 @ obj_resists(zap.c:1469)",
+     "rn2(8)=0 @ dog_goal(dogmove.c:554)"
     ]
    },
    "error": null
@@ -1077,7 +1077,7 @@
   {
    "session": "seed1800-tourist-eat-throw.session.json",
    "total": 2458,
-   "jsTotal": 2406,
+   "jsTotal": 2435,
    "totalScreens": 26,
    "valuePrefix": 2362,
    "rulePrefix": 2362,
@@ -1106,7 +1106,7 @@
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
-   "jsTotal": 3020,
+   "jsTotal": 3719,
    "totalScreens": 230,
    "valuePrefix": 2724,
    "rulePrefix": 2724,
@@ -1135,7 +1135,7 @@
   {
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
-   "jsTotal": 2916,
+   "jsTotal": 2865,
    "totalScreens": 38,
    "valuePrefix": 2830,
    "rulePrefix": 2830,
@@ -1164,28 +1164,28 @@
   {
    "session": "seed4500-knight-coverage.session.json",
    "total": 108275,
-   "jsTotal": 8567,
+   "jsTotal": 2882,
    "totalScreens": 1814,
-   "valuePrefix": 2787,
-   "rulePrefix": 2785,
+   "valuePrefix": 2802,
+   "rulePrefix": 2802,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2785,
-    "step": 22,
-    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=0 @ fastforward_step",
-    "kind": "caller",
-    "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "index": 2802,
+    "step": 24,
+    "c": "rn2(20)=7 @ m_move(monmove.c:1963)",
+    "js": "rn2(28)=19 @ m_move",
+    "kind": "value",
+    "cCaller": "m_move",
+    "jsCaller": "m_move",
     "context": [
-     "rn2(200)=176 @ dosounds(sounds.c:238)",
-     "rn2(20)=13 @ gethungry(eat.c:3191)",
-     "rn2(67)=26 @ moveloop_core(allmain.c:360)",
+     "rn2(20)=1 @ gethungry(eat.c:3191)",
+     "rn2(67)=22 @ moveloop_core(allmain.c:360)",
      "rn2(5)=0 @ distfleeck(monmove.c:538)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)",
-     "rn2(12)=8 @ mcalcmove(mon.c:1164)"
+     "rn2(20)=7 @ m_move(monmove.c:1963)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1193,7 +1193,7 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 6249,
+   "jsTotal": 6145,
    "totalScreens": 410,
    "valuePrefix": 2719,
    "rulePrefix": 2719,
@@ -1222,7 +1222,7 @@
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 7327,
+   "jsTotal": 7336,
    "totalScreens": 249,
    "valuePrefix": 4182,
    "rulePrefix": 4182,
@@ -1254,51 +1254,40 @@
    "jsTotal": 3102,
    "totalScreens": 23,
    "valuePrefix": 3102,
-   "rulePrefix": 2983,
+   "rulePrefix": 3102,
    "screens": 15,
-   "honestScreens": 2,
+   "honestScreens": 15,
    "firstScreenMiss": 11,
    "first": {
-    "index": 2983,
-    "step": 2,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(5)=1 @ fastforward_step",
-    "kind": "caller",
+    "index": 3102,
+    "step": 20,
+    "c": "rn2(5)=4 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
+    "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": "fastforward_step",
+    "jsCaller": null,
     "context": [
-     "rn2(300)=120 @ dosounds(sounds.c:220)",
+     "rn2(300)=88 @ dosounds(sounds.c:220)",
      "rn2(20)=4 @ gethungry(eat.c:3191)",
-     "rn2(82)=66 @ moveloop_core(allmain.c:360)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)",
-     "rn2(5)=0 @ distfleeck(monmove.c:538)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)"
+     "rn2(82)=76 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(20)=16 @ m_move(monmove.c:1963)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": null
   }
  ],
- "staticCounts": {
-  "discarded-roll": 9
- },
+ "staticCounts": {},
  "totals": {
-  "rule": 118575,
-  "value": 118710,
+  "rule": 118862,
+  "value": 118864,
   "rolls": 792838,
-  "honestScreens": 145,
-  "screens": 160,
+  "honestScreens": 158,
+  "screens": 158,
   "totalScreens": 11405
  },
  "todo": [
-  {
-   "fn": "distfleeck",
-   "sessions": 16,
-   "blockedRolls": 272093,
-   "examples": [
-    "seed0002-healer-reflection-drummer @2313: C \"rn2(5)=4 @ distfleeck(monmove.c:538)\" / JS \"rn2(5)=4 @ fastforward_step\"",
-    "seed0004-feeding-pony @3693: C \"rn2(5)=3 @ distfleeck(monmove.c:538)\" / JS \"rn2(5)=3 @ fastforward_step\""
-   ]
-  },
   {
    "fn": "newhp",
    "sessions": 6,
@@ -1310,11 +1299,20 @@
   },
   {
    "fn": "do_attack",
-   "sessions": 4,
-   "blockedRolls": 66115,
+   "sessions": 5,
+   "blockedRolls": 66594,
    "examples": [
     "seed0014-dequa-fountain-explore @2956: C \"rn2(7)=1 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=10 @ mcalcmove\"",
-    "seed0200-monk-north-search @3256: C \"rn2(7)=5 @ do_attack(uhitm.c:474)\" / JS \"rn2(5)=3 @ fastforward_step\""
+    "seed0200-monk-north-search @3256: C \"rn2(7)=5 @ do_attack(uhitm.c:474)\" / JS \"rn2(5)=3 @ distfleeck\""
+   ]
+  },
+  {
+   "fn": "distfleeck",
+   "sessions": 5,
+   "blockedRolls": 44026,
+   "examples": [
+    "seed0002-healer-reflection-drummer @2375: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"rn2(100)=20 @ obj_resists\"",
+    "seed0004-feeding-pony @3695: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
@@ -1323,7 +1321,25 @@
    "blockedRolls": 29149,
    "examples": [
     "seed0009-swimmer-mforce @3337: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=5 @ mcalcmove\"",
-    "seed0116-wizard-wear-shop @2978: C \"rn2(3)=1 @ getbones(bones.c:645)\" / JS \"rn2(5)=2 @ fastforward_step\""
+    "seed0116-wizard-wear-shop @2978: C \"rn2(3)=1 @ getbones(bones.c:645)\" / JS \"rn2(5)=2 @ distfleeck\""
+   ]
+  },
+  {
+   "fn": "obj_resists",
+   "sessions": 3,
+   "blockedRolls": 100928,
+   "examples": [
+    "seed0030-ten-diverse-deaths @6276: C \"rn2(100)=92 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=0 @ dochug\"",
+    "seed0060-orc-rogue-kick-search @2406: C \"rn2(100)=12 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=0 @ dochug\""
+   ]
+  },
+  {
+   "fn": "dog_move",
+   "sessions": 3,
+   "blockedRolls": 2434,
+   "examples": [
+    "seed0017-samurai-altar-pray @2679: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(5)=1 @ distfleeck\"",
+    "seed0105-valk-chat-lamp-ration @2479: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(4)=1 @ dog_goal\""
    ]
   },
   {
@@ -1331,7 +1347,7 @@
    "sessions": 2,
    "blockedRolls": 14448,
    "examples": [
-    "seed0108-wizard-extcmd-wishlist @2772: C \"rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(5)=0 @ fastforward_step\"",
+    "seed0108-wizard-extcmd-wishlist @2772: C \"rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(5)=0 @ distfleeck\"",
     "seed0398-wizard-wandpoly-pile @2764: C \"rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(12)=1 @ mcalcmove\""
    ]
   },
@@ -1358,8 +1374,24 @@
    "sessions": 2,
    "blockedRolls": 793,
    "examples": [
-    "seed0103-knight-ride-pony @2440: C \"rnd(20)=12 @ mount_steed(steed.c:341)\" / JS \"rn2(5)=1 @ fastforward_step\"",
-    "seed0104-knight-ride-combat @2630: C \"rnd(20)=2 @ mount_steed(steed.c:341)\" / JS \"rn2(5)=1 @ fastforward_step\""
+    "seed0103-knight-ride-pony @2440: C \"rnd(20)=12 @ mount_steed(steed.c:341)\" / JS \"rn2(5)=1 @ distfleeck\"",
+    "seed0104-knight-ride-combat @2630: C \"rnd(20)=2 @ mount_steed(steed.c:341)\" / JS \"rn2(5)=1 @ distfleeck\""
+   ]
+  },
+  {
+   "fn": "m_move",
+   "sessions": 1,
+   "blockedRolls": 105473,
+   "examples": [
+    "seed4500-knight-coverage @2802: C \"rn2(20)=7 @ m_move(monmove.c:1963)\" / JS \"rn2(28)=19 @ m_move\""
+   ]
+  },
+  {
+   "fn": "dog_goal",
+   "sessions": 1,
+   "blockedRolls": 13542,
+   "examples": [
+    "seed0007-rogue-snake-swamp @2831: C \"rn2(4)=0 @ dog_goal(dogmove.c:575)\" / JS \"rn2(4)=0 @ dochug\""
    ]
   },
   {
@@ -1368,6 +1400,22 @@
    "blockedRolls": 8200,
    "examples": [
     "seed0015-valk-level2-pit-dog-wait @363: C \"rn2(7)=3 @ rndghostname(do_name.c:774)\" / JS \"rn2(50)=16 @ m_initinv\""
+   ]
+  },
+  {
+   "fn": "gethungry",
+   "sessions": 1,
+   "blockedRolls": 4213,
+   "examples": [
+    "seed0006-wizard-water-demon @2523: C \"rn2(20)=10 @ gethungry(eat.c:3191)\" / JS \"rn2(5)=0 @ distfleeck\""
+   ]
+  },
+  {
+   "fn": "dog_invent",
+   "sessions": 1,
+   "blockedRolls": 711,
+   "examples": [
+    "seed1150-caveman-explore-move @2426: C \"rn2(20)=3 @ dog_invent(dogmove.c:446)\" / JS \"rn2(100)=43 @ obj_resists\""
    ]
   },
   {
@@ -1383,7 +1431,7 @@
    "sessions": 1,
    "blockedRolls": 246,
    "examples": [
-    "seed0107-samurai-twoweapon-enhance @2656: C \"rnd(20)=1 @ dotwoweapon(wield.c:861)\" / JS \"rn2(5)=0 @ fastforward_step\""
+    "seed0107-samurai-twoweapon-enhance @2656: C \"rnd(20)=1 @ dotwoweapon(wield.c:861)\" / JS \"rn2(5)=0 @ distfleeck\""
    ]
   },
   {
@@ -1411,60 +1459,5 @@
    ]
   }
  ],
- "violations": [
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 20,
-   "text": "[() => { rn2(5); rn2(5); rn2(5); rn2(5); }], // step 2"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 21,
-   "text": "[() => { rn2(5); rn2(32); rn2(5); rn2(5); rn2(32); rn2(5); }], // step 3"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 22,
-   "text": "[() => { rn2(5); rn2(24); rn2(5); rn2(5); rn2(24); rn2(5); }], // step 4"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 23,
-   "text": "[() => { rn2(5); rn2(16); rn2(5); }], // step 5"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 24,
-   "text": "[() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(5); }], // step 6"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 25,
-   "text": "[() => { rn2(5); rn2(16); rn2(5); rn2(5); rn2(16); rn2(5); }], // step 7"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 26,
-   "text": "[() => { rn2(5); rn2(12); rn2(5); }], // step 8"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 27,
-   "text": "[() => { rn2(5); rn2(20); rn2(5); rn2(5); rn2(8); rn2(5); }], // step 9"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 28,
-   "text": "[() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(20); rn2(5); }], // step 10"
-  }
- ]
+ "violations": []
 }
