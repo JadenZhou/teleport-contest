@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T18:51:27.742Z",
+ "when": "2026-11-19T18:52:44.892Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -671,7 +671,7 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3834,
+   "jsTotal": 3750,
    "totalScreens": 127,
    "valuePrefix": 2978,
    "rulePrefix": 2978,
@@ -874,28 +874,28 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 2873,
+   "jsTotal": 2885,
    "totalScreens": 87,
-   "valuePrefix": 2764,
-   "rulePrefix": 2764,
+   "valuePrefix": 2803,
+   "rulePrefix": 2803,
    "screens": 26,
    "honestScreens": 26,
    "firstScreenMiss": 26,
    "first": {
-    "index": 2764,
-    "step": 26,
-    "c": "rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)",
-    "js": "rn2(12)=1 @ mcalcmove",
+    "index": 2803,
+    "step": 34,
+    "c": "rn2(12)=1 @ m_move(monmove.c:1963)",
+    "js": "rn2(8)=1 @ m_move",
     "kind": "value",
-    "cCaller": "rnd_otyp_by_namedesc",
-    "jsCaller": "mcalcmove",
+    "cCaller": "m_move",
+    "jsCaller": "m_move",
     "context": [
-     "rn2(20)=14 @ vary_init_attr(attrib.c:769)",
-     "rnd(9000)=6343 @ moveloop_preamble(allmain.c:72)",
-     "rnd(30)=19 @ moveloop_preamble(allmain.c:79)",
-     "rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "rn2(5)=2 @ mksobj_init(mkobj.c:1124)"
+     "rn2(20)=15 @ gethungry(eat.c:3191)",
+     "rn2(82)=69 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(12)=1 @ m_move(monmove.c:1963)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)",
+     "rn2(12)=1 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1193,7 +1193,7 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 5824,
+   "jsTotal": 5885,
    "totalScreens": 410,
    "valuePrefix": 2719,
    "rulePrefix": 2719,
@@ -1204,10 +1204,10 @@
     "index": 2719,
     "step": 4,
     "c": "rn2(3)=2 @ getbones(bones.c:645)",
-    "js": "rn2(12)=11 @ mcalcmove",
+    "js": "rn2(41)=31 @ rnd_otyp_by_namedesc",
     "kind": "value",
     "cCaller": "getbones",
-    "jsCaller": "mcalcmove",
+    "jsCaller": "rnd_otyp_by_namedesc",
     "context": [
      "rn2(20)=4 @ vary_init_attr(attrib.c:769)",
      "rnd(9000)=2931 @ moveloop_preamble(allmain.c:72)",
@@ -1222,7 +1222,7 @@
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 7291,
+   "jsTotal": 7307,
    "totalScreens": 249,
    "valuePrefix": 4182,
    "rulePrefix": 4182,
@@ -1233,10 +1233,10 @@
     "index": 4182,
     "step": 4,
     "c": "rn2(3)=2 @ getbones(bones.c:645)",
-    "js": "rn2(12)=11 @ mcalcmove",
+    "js": "rn2(16)=3 @ rnd_otyp_by_namedesc",
     "kind": "value",
     "cCaller": "getbones",
-    "jsCaller": "mcalcmove",
+    "jsCaller": "rnd_otyp_by_namedesc",
     "context": [
      "rn2(20)=8 @ vary_init_attr(attrib.c:769)",
      "rnd(9000)=4480 @ moveloop_preamble(allmain.c:72)",
@@ -1280,8 +1280,8 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 127737,
-  "value": 127739,
+  "rule": 127776,
+  "value": 127778,
   "rolls": 792838,
   "honestScreens": 238,
   "screens": 245,
@@ -1343,12 +1343,12 @@
    ]
   },
   {
-   "fn": "rnd_otyp_by_namedesc",
+   "fn": "m_move",
    "sessions": 2,
-   "blockedRolls": 14448,
+   "blockedRolls": 105629,
    "examples": [
-    "seed0108-wizard-extcmd-wishlist @2772: C \"rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(5)=0 @ distfleeck\"",
-    "seed0398-wizard-wandpoly-pile @2764: C \"rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(12)=1 @ mcalcmove\""
+    "seed0398-wizard-wandpoly-pile @2803: C \"rn2(12)=1 @ m_move(monmove.c:1963)\" / JS \"rn2(8)=1 @ m_move\"",
+    "seed4500-knight-coverage @2869: C \"rn2(28)=27 @ m_move(monmove.c:1963)\" / JS \"rn2(20)=7 @ m_move\""
    ]
   },
   {
@@ -1370,11 +1370,11 @@
    ]
   },
   {
-   "fn": "m_move",
+   "fn": "rnd_otyp_by_namedesc",
    "sessions": 1,
-   "blockedRolls": 105406,
+   "blockedRolls": 14186,
    "examples": [
-    "seed4500-knight-coverage @2869: C \"rn2(28)=27 @ m_move(monmove.c:1963)\" / JS \"rn2(20)=7 @ m_move\""
+    "seed0108-wizard-extcmd-wishlist @2772: C \"rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(5)=0 @ distfleeck\""
    ]
   },
   {

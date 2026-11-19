@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T18:51:41.405Z",
+ "when": "2026-11-19T18:52:58.867Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -858,28 +858,28 @@
   {
    "session": "dev82230-wizard-wandpoly-pile.session.json",
    "total": 2842,
-   "jsTotal": 2592,
+   "jsTotal": 2607,
    "totalScreens": 87,
-   "valuePrefix": 2583,
-   "rulePrefix": 2583,
+   "valuePrefix": 2607,
+   "rulePrefix": 2607,
    "screens": 27,
-   "honestScreens": 26,
+   "honestScreens": 27,
    "firstScreenMiss": 26,
    "first": {
-    "index": 2583,
-    "step": 26,
-    "c": "rn2(46)=41 @ rnd_otyp_by_namedesc(objnam.c:3522)",
-    "js": "rn2(12)=3 @ mcalcmove",
+    "index": 2607,
+    "step": 34,
+    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "rnd_otyp_by_namedesc",
-    "jsCaller": "mcalcmove",
+    "cCaller": "distfleeck",
+    "jsCaller": null,
     "context": [
-     "rn2(20)=6 @ vary_init_attr(attrib.c:769)",
-     "rnd(9000)=613 @ moveloop_preamble(allmain.c:72)",
-     "rnd(30)=26 @ moveloop_preamble(allmain.c:79)",
-     "rn2(46)=41 @ rnd_otyp_by_namedesc(objnam.c:3522)",
-     "rnd(2)=2 @ next_ident(mkobj.c:521)",
-     "rn2(5)=4 @ mksobj_init(mkobj.c:1124)"
+     "rn2(20)=6 @ gethungry(eat.c:3191)",
+     "rn2(76)=23 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)",
+     "rnd(20)=19 @ mattacku(mhitu.c:806)"
     ]
    },
    "error": null
@@ -1177,7 +1177,7 @@
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
    "total": 4743,
-   "jsTotal": 2690,
+   "jsTotal": 2769,
    "totalScreens": 124,
    "valuePrefix": 2243,
    "rulePrefix": 2243,
@@ -1188,10 +1188,10 @@
     "index": 2243,
     "step": 4,
     "c": "rn2(3)=0 @ getbones(bones.c:645)",
-    "js": "rn2(12)=3 @ mcalcmove",
+    "js": "rn2(41)=4 @ rnd_otyp_by_namedesc",
     "kind": "value",
     "cCaller": "getbones",
-    "jsCaller": "mcalcmove",
+    "jsCaller": "rnd_otyp_by_namedesc",
     "context": [
      "rn2(20)=2 @ vary_init_attr(attrib.c:769)",
      "rnd(9000)=7782 @ moveloop_preamble(allmain.c:72)",
@@ -1206,7 +1206,7 @@
   {
    "session": "dev82722-tourist-stress-disaster.session.json",
    "total": 7545,
-   "jsTotal": 4685,
+   "jsTotal": 4719,
    "totalScreens": 194,
    "valuePrefix": 4673,
    "rulePrefix": 4673,
@@ -1217,10 +1217,10 @@
     "index": 4673,
     "step": 4,
     "c": "rn2(3)=1 @ getbones(bones.c:645)",
-    "js": "rn2(12)=7 @ mcalcmove",
+    "js": "rn2(16)=15 @ rnd_otyp_by_namedesc",
     "kind": "value",
     "cCaller": "getbones",
-    "jsCaller": "mcalcmove",
+    "jsCaller": "rnd_otyp_by_namedesc",
     "context": [
      "rn2(20)=7 @ vary_init_attr(attrib.c:769)",
      "rnd(9000)=3752 @ moveloop_preamble(allmain.c:72)",
@@ -1264,10 +1264,10 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 121119,
-  "value": 121119,
+  "rule": 121143,
+  "value": 121143,
   "rolls": 504996,
-  "honestScreens": 233,
+  "honestScreens": 234,
   "screens": 246,
   "totalScreens": 8438
  },
@@ -1300,21 +1300,21 @@
    ]
   },
   {
+   "fn": "distfleeck",
+   "sessions": 4,
+   "blockedRolls": 4632,
+   "examples": [
+    "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
+    "dev82230-wizard-wandpoly-pile @2607: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
+   ]
+  },
+  {
    "fn": "dog_goal",
    "sessions": 3,
    "blockedRolls": 15251,
    "examples": [
     "dev81123-rogue-snake-swamp @3294: C \"rn2(8)=5 @ dog_goal(dogmove.c:554)\" / JS \"rn2(100)=5 @ obj_resists\"",
     "dev81205-monk-vault-escort @2753: C \"rn2(4)=2 @ dog_goal(dogmove.c:575)\" / JS \"rn2(1)=0 @ dog_move\""
-   ]
-  },
-  {
-   "fn": "distfleeck",
-   "sessions": 3,
-   "blockedRolls": 4397,
-   "examples": [
-    "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
-    "dev82394-tourist-explore-actions @2615: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\""
    ]
   },
   {
@@ -1336,15 +1336,6 @@
    ]
   },
   {
-   "fn": "rnd_otyp_by_namedesc",
-   "sessions": 2,
-   "blockedRolls": 9051,
-   "examples": [
-    "dev81902-wizard-extcmd-wishlist @3005: C \"rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(5)=1 @ distfleeck\"",
-    "dev82230-wizard-wandpoly-pile @2583: C \"rn2(46)=41 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(12)=3 @ mcalcmove\""
-   ]
-  },
-  {
    "fn": "trapeffect_anti_magic",
    "sessions": 1,
    "blockedRolls": 68425,
@@ -1358,6 +1349,14 @@
    "blockedRolls": 23170,
    "examples": [
     "dev82189-wizard-hallucinate @918: C \"rn2(3)=1 @ select_newcham_form(mon.c:5189)\" / JS \"rn2(50)=49 @ m_initinv\""
+   ]
+  },
+  {
+   "fn": "rnd_otyp_by_namedesc",
+   "sessions": 1,
+   "blockedRolls": 8792,
+   "examples": [
+    "dev81902-wizard-extcmd-wishlist @3005: C \"rn2(16)=2 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(5)=1 @ distfleeck\""
    ]
   },
   {
