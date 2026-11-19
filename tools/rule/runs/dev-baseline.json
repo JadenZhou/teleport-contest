@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T18:32:45.685Z",
+ "when": "2026-11-19T18:48:04.543Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -539,28 +539,28 @@
   {
    "session": "dev81779-valk-chat-lamp-ration.session.json",
    "total": 2428,
-   "jsTotal": 1080,
+   "jsTotal": 2457,
    "totalScreens": 30,
-   "valuePrefix": 406,
-   "rulePrefix": 406,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 2414,
+   "rulePrefix": 2414,
+   "screens": 1,
+   "honestScreens": 1,
+   "firstScreenMiss": 1,
    "first": {
-    "index": 406,
-    "step": 0,
-    "c": "rn2(7)=6 @ rndghostname(do_name.c:774)",
-    "js": "rn2(50)=12 @ m_initinv",
+    "index": 2414,
+    "step": 28,
+    "c": "rn2(4)=0 @ dochug(monmove.c:886)",
+    "js": "rn2(100)=0 @ obj_resists",
     "kind": "value",
-    "cCaller": "rndghostname",
-    "jsCaller": "m_initinv",
+    "cCaller": "dochug",
+    "jsCaller": "obj_resists",
     "context": [
-     "rnd(2)=2 @ next_ident(mkobj.c:521)",
-     "d(9,8)=45 @ newmonhp(makemon.c:1042)",
-     "rn2(2)=1 @ makemon(makemon.c:1279)",
-     "rn2(7)=6 @ rndghostname(do_name.c:774)",
-     "rn2(34)=9 @ rndghostname(do_name.c:774)",
-     "rn2(50)=42 @ m_initinv(makemon.c:826)"
+     "rn2(79)=0 @ moveloop_core(allmain.c:360)",
+     "rnd(3)=3 @ moveloop_core(allmain.c:361)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(4)=0 @ dochug(monmove.c:886)",
+     "rn2(100)=53 @ obj_resists(zap.c:1469)",
+     "rn2(8)=5 @ dog_goal(dogmove.c:554)"
     ]
    },
    "error": null
@@ -829,28 +829,28 @@
   {
    "session": "dev82189-wizard-hallucinate.session.json",
    "total": 24088,
-   "jsTotal": 2831,
+   "jsTotal": 6492,
    "totalScreens": 219,
-   "valuePrefix": 641,
-   "rulePrefix": 641,
+   "valuePrefix": 918,
+   "rulePrefix": 918,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 641,
+    "index": 918,
     "step": 0,
-    "c": "rn2(3)=1 @ rndmonst_adj(makemon.c:1716)",
-    "js": "rnd(4)=1 @ mktrap",
+    "c": "rn2(3)=1 @ select_newcham_form(mon.c:5189)",
+    "js": "rn2(50)=49 @ m_initinv",
     "kind": "value",
-    "cCaller": "rndmonst_adj",
-    "jsCaller": "mktrap",
+    "cCaller": "select_newcham_form",
+    "jsCaller": "m_initinv",
     "context": [
-     "rn2(3)=2 @ nh.random src=nhlib.lua:10 parent=contents(themerms.lua:197)",
-     "rn2(4)=3 @ somex(mkroom.c:668)",
-     "rn2(5)=2 @ somey(mkroom.c:674)",
-     "rn2(3)=1 @ rndmonst_adj(makemon.c:1716)",
-     "rn2(5)=0 @ rndmonst_adj(makemon.c:1716)",
-     "rn2(7)=3 @ rndmonst_adj(makemon.c:1716)"
+     "rnd(2)=2 @ next_ident(mkobj.c:521)",
+     "d(5,8)=22 @ newmonhp(makemon.c:1042)",
+     "rn2(2)=0 @ makemon(makemon.c:1279)",
+     "rn2(3)=1 @ select_newcham_form(mon.c:5189)",
+     "rn2(330)=110 @ select_newcham_form(mon.c:5217)",
+     "d(6,8)=21 @ newmonhp(makemon.c:1042)"
     ]
    },
    "error": null
@@ -1148,28 +1148,28 @@
   {
    "session": "dev82640-knight-coverage.session.json",
    "total": 71392,
-   "jsTotal": 3221,
+   "jsTotal": 4474,
    "totalScreens": 1112,
-   "valuePrefix": 515,
-   "rulePrefix": 515,
+   "valuePrefix": 2967,
+   "rulePrefix": 2967,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 515,
-    "step": 0,
-    "c": "rn2(100)=26 @ obj_resists(zap.c:1469)",
-    "js": "rn2(3)=1 @ rnd_rect",
+    "index": 2967,
+    "step": 41,
+    "c": "d(2,6)=7 @ trapeffect_anti_magic(trap.c:2386)",
+    "js": "rn2(70)=68 @ maybe_generate_rnd_mon",
     "kind": "value",
-    "cCaller": "obj_resists",
-    "jsCaller": "rnd_rect",
+    "cCaller": "trapeffect_anti_magic",
+    "jsCaller": "maybe_generate_rnd_mon",
     "context": [
-     "rnd(1000)=237 @ mkobj(mkobj.c:289)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "rn2(17)=1 @ blessorcurse(mkobj.c:1846)",
-     "rn2(100)=26 @ obj_resists(zap.c:1469)",
-     "rn2(100)=20 @ obj_resists(zap.c:1469)",
-     "rnd(250)=86 @ bury_an_obj(dig.c:2034)"
+     "rn2(20)=19 @ vary_init_attr(attrib.c:769)",
+     "rnd(9000)=2750 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=14 @ moveloop_preamble(allmain.c:79)",
+     "d(2,6)=7 @ trapeffect_anti_magic(trap.c:2386)",
+     "rnd(3)=3 @ trapeffect_anti_magic(trap.c:2387)",
+     "rnd(7)=2 @ drain_en(trap.c:5222)"
     ]
    },
    "error": null
@@ -1264,11 +1264,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 116382,
-  "value": 116382,
+  "rule": 121119,
+  "value": 121119,
   "rolls": 504996,
-  "honestScreens": 192,
-  "screens": 199,
+  "honestScreens": 193,
+  "screens": 200,
   "totalScreens": 8438
  },
  "todo": [
@@ -1288,15 +1288,6 @@
    "examples": [
     "dev82025-wizard-world-tour @2317: C \"rnd(8)=2 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=9 @ mcalcmove\"",
     "dev82066-archeologist-tour @2301: C \"rnd(8)=5 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=8 @ mcalcmove\""
-   ]
-  },
-  {
-   "fn": "obj_resists",
-   "sessions": 4,
-   "blockedRolls": 74868,
-   "examples": [
-    "dev81000-healer-reflection-drummer @3130: C \"rn2(100)=73 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=1 @ dog_goal\"",
-    "dev81451-samurai-altar-pray @2827: C \"rn2(100)=52 @ obj_resists(zap.c:1469)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
@@ -1327,6 +1318,15 @@
    ]
   },
   {
+   "fn": "obj_resists",
+   "sessions": 3,
+   "blockedRolls": 3991,
+   "examples": [
+    "dev81000-healer-reflection-drummer @3130: C \"rn2(100)=73 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=1 @ dog_goal\"",
+    "dev81451-samurai-altar-pray @2827: C \"rn2(100)=52 @ obj_resists(zap.c:1469)\" / JS \"(none: JS log ended)\""
+   ]
+  },
+  {
    "fn": "mattackm",
    "sessions": 3,
    "blockedRolls": 464,
@@ -1345,19 +1345,19 @@
    ]
   },
   {
-   "fn": "rndmonst_adj",
+   "fn": "trapeffect_anti_magic",
    "sessions": 1,
-   "blockedRolls": 23447,
+   "blockedRolls": 68425,
    "examples": [
-    "dev82189-wizard-hallucinate @641: C \"rn2(3)=1 @ rndmonst_adj(makemon.c:1716)\" / JS \"rnd(4)=1 @ mktrap\""
+    "dev82640-knight-coverage @2967: C \"d(2,6)=7 @ trapeffect_anti_magic(trap.c:2386)\" / JS \"rn2(70)=68 @ maybe_generate_rnd_mon\""
    ]
   },
   {
-   "fn": "rndghostname",
+   "fn": "select_newcham_form",
    "sessions": 1,
-   "blockedRolls": 2022,
+   "blockedRolls": 23170,
    "examples": [
-    "dev81779-valk-chat-lamp-ration @406: C \"rn2(7)=6 @ rndghostname(do_name.c:774)\" / JS \"rn2(50)=12 @ m_initinv\""
+    "dev82189-wizard-hallucinate @918: C \"rn2(3)=1 @ select_newcham_form(mon.c:5189)\" / JS \"rn2(50)=49 @ m_initinv\""
    ]
   },
   {
@@ -1414,6 +1414,14 @@
    "blockedRolls": 45,
    "examples": [
     "dev82312-priest-cast-read-turn @2761: C \"rnd(100)=91 @ spelleffects_check(spell.c:1372)\" / JS \"rn2(12)=10 @ mcalcmove\""
+   ]
+  },
+  {
+   "fn": "dochug",
+   "sessions": 1,
+   "blockedRolls": 14,
+   "examples": [
+    "dev81779-valk-chat-lamp-ration @2414: C \"rn2(4)=0 @ dochug(monmove.c:886)\" / JS \"rn2(100)=0 @ obj_resists\""
    ]
   },
   {

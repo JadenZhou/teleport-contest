@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T18:32:31.732Z",
+ "when": "2026-11-19T18:47:49.981Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -178,28 +178,28 @@
   {
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
    "total": 4804,
-   "jsTotal": 5475,
+   "jsTotal": 6673,
    "totalScreens": 99,
-   "valuePrefix": 528,
-   "rulePrefix": 528,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 3837,
+   "rulePrefix": 3837,
+   "screens": 4,
+   "honestScreens": 4,
+   "firstScreenMiss": 4,
    "first": {
-    "index": 528,
-    "step": 0,
-    "c": "rn2(9)=0 @ somex(mkroom.c:668)",
-    "js": "rn2(4)=2 @ rnd_rect",
+    "index": 3837,
+    "step": 4,
+    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
+    "js": "rn2(2)=1 @ randomize_gem_colors",
     "kind": "value",
-    "cCaller": "somex",
-    "jsCaller": "rnd_rect",
+    "cCaller": "distfleeck",
+    "jsCaller": "randomize_gem_colors",
     "context": [
-     "rn2(4)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(9)=0 @ somex(mkroom.c:668)",
-     "rn2(9)=8 @ somey(mkroom.c:674)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)"
+     "rn2(4)=0 @ dog_goal(dogmove.c:575)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -207,28 +207,28 @@
   {
    "session": "seed0013-rogue-friday13-combat.session.json",
    "total": 4838,
-   "jsTotal": 2639,
+   "jsTotal": 3837,
    "totalScreens": 59,
-   "valuePrefix": 528,
-   "rulePrefix": 528,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 3837,
+   "rulePrefix": 3837,
+   "screens": 4,
+   "honestScreens": 4,
+   "firstScreenMiss": 4,
    "first": {
-    "index": 528,
-    "step": 0,
-    "c": "rn2(9)=0 @ somex(mkroom.c:668)",
-    "js": "rn2(4)=2 @ rnd_rect",
+    "index": 3837,
+    "step": 4,
+    "c": "rn2(5)=0 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "somex",
-    "jsCaller": "rnd_rect",
+    "cCaller": "distfleeck",
+    "jsCaller": null,
     "context": [
-     "rn2(4)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(9)=0 @ somex(mkroom.c:668)",
-     "rn2(9)=8 @ somey(mkroom.c:674)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)"
+     "rn2(4)=0 @ dog_goal(dogmove.c:575)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -265,28 +265,28 @@
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
-   "jsTotal": 942,
+   "jsTotal": 2670,
    "totalScreens": 44,
-   "valuePrefix": 363,
-   "rulePrefix": 363,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 2553,
+   "rulePrefix": 2553,
+   "screens": 1,
+   "honestScreens": 1,
+   "firstScreenMiss": 1,
    "first": {
-    "index": 363,
-    "step": 0,
-    "c": "rn2(7)=3 @ rndghostname(do_name.c:774)",
-    "js": "rn2(50)=16 @ m_initinv",
+    "index": 2553,
+    "step": 4,
+    "c": "rn2(7)=6 @ do_attack(uhitm.c:474)",
+    "js": "rn2(12)=3 @ mcalcmove",
     "kind": "value",
-    "cCaller": "rndghostname",
-    "jsCaller": "m_initinv",
+    "cCaller": "do_attack",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "d(9,8)=31 @ newmonhp(makemon.c:1042)",
-     "rn2(2)=1 @ makemon(makemon.c:1279)",
-     "rn2(7)=3 @ rndghostname(do_name.c:774)",
-     "rn2(34)=21 @ rndghostname(do_name.c:774)",
-     "rn2(50)=4 @ m_initinv(makemon.c:826)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=5534 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=29 @ moveloop_preamble(allmain.c:79)",
+     "rn2(7)=6 @ do_attack(uhitm.c:474)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1280,14 +1280,23 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 118929,
-  "value": 118931,
+  "rule": 127737,
+  "value": 127739,
   "rolls": 792838,
-  "honestScreens": 195,
-  "screens": 198,
+  "honestScreens": 204,
+  "screens": 207,
   "totalScreens": 11405
  },
  "todo": [
+  {
+   "fn": "distfleeck",
+   "sessions": 7,
+   "blockedRolls": 45994,
+   "examples": [
+    "seed0002-healer-reflection-drummer @2375: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"rn2(100)=20 @ obj_resists\"",
+    "seed0004-feeding-pony @3695: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
+   ]
+  },
   {
    "fn": "newhp",
    "sessions": 6,
@@ -1299,20 +1308,11 @@
   },
   {
    "fn": "do_attack",
-   "sessions": 5,
-   "blockedRolls": 66594,
+   "sessions": 6,
+   "blockedRolls": 72604,
    "examples": [
     "seed0014-dequa-fountain-explore @2956: C \"rn2(7)=1 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=10 @ mcalcmove\"",
-    "seed0200-monk-north-search @3256: C \"rn2(7)=5 @ do_attack(uhitm.c:474)\" / JS \"rn2(5)=3 @ distfleeck\""
-   ]
-  },
-  {
-   "fn": "distfleeck",
-   "sessions": 5,
-   "blockedRolls": 44026,
-   "examples": [
-    "seed0002-healer-reflection-drummer @2375: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"rn2(100)=20 @ obj_resists\"",
-    "seed0004-feeding-pony @3695: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
+    "seed0015-valk-level2-pit-dog-wait @2553: C \"rn2(7)=6 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=3 @ mcalcmove\""
    ]
   },
   {
@@ -1352,15 +1352,6 @@
    ]
   },
   {
-   "fn": "somex",
-   "sessions": 2,
-   "blockedRolls": 8586,
-   "examples": [
-    "seed0013-friday13-save-then-fullmoon-restore @528: C \"rn2(9)=0 @ somex(mkroom.c:668)\" / JS \"rn2(4)=2 @ rnd_rect\"",
-    "seed0013-rogue-friday13-combat @528: C \"rn2(9)=0 @ somex(mkroom.c:668)\" / JS \"rn2(4)=2 @ rnd_rect\""
-   ]
-  },
-  {
    "fn": "next_ident",
    "sessions": 2,
    "blockedRolls": 1241,
@@ -1392,14 +1383,6 @@
    "blockedRolls": 13542,
    "examples": [
     "seed0007-rogue-snake-swamp @2831: C \"rn2(4)=0 @ dog_goal(dogmove.c:575)\" / JS \"rn2(4)=0 @ dochug\""
-   ]
-  },
-  {
-   "fn": "rndghostname",
-   "sessions": 1,
-   "blockedRolls": 8200,
-   "examples": [
-    "seed0015-valk-level2-pit-dog-wait @363: C \"rn2(7)=3 @ rndghostname(do_name.c:774)\" / JS \"rn2(50)=16 @ m_initinv\""
    ]
   },
   {
