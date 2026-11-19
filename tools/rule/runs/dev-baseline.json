@@ -1,10 +1,10 @@
 {
- "when": "2026-11-19T20:53:39.088Z",
+ "when": "2026-11-19T20:55:13.433Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
    "total": 5449,
-   "jsTotal": 4020,
+   "jsTotal": 3858,
    "totalScreens": 595,
    "valuePrefix": 3130,
    "rulePrefix": 3130,
@@ -28,7 +28,7 @@
      "rn2(100)=89 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
+   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
   },
   {
    "session": "dev81041-feeding-pony.session.json",
@@ -91,7 +91,7 @@
   {
    "session": "dev81123-rogue-snake-swamp.session.json",
    "total": 8070,
-   "jsTotal": 3536,
+   "jsTotal": 3550,
    "totalScreens": 302,
    "valuePrefix": 3294,
    "rulePrefix": 3294,
@@ -149,28 +149,28 @@
   {
    "session": "dev81205-monk-vault-escort.session.json",
    "total": 5202,
-   "jsTotal": 3076,
+   "jsTotal": 4199,
    "totalScreens": 308,
-   "valuePrefix": 2753,
-   "rulePrefix": 2753,
+   "valuePrefix": 2786,
+   "rulePrefix": 2786,
    "screens": 18,
    "honestScreens": 18,
    "firstScreenMiss": 18,
    "first": {
-    "index": 2753,
-    "step": 34,
-    "c": "rn2(4)=2 @ dog_goal(dogmove.c:575)",
-    "js": "rn2(1)=0 @ dog_move",
+    "index": 2786,
+    "step": 35,
+    "c": "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+    "js": "rn2(5)=3 @ distfleeck",
     "kind": "value",
-    "cCaller": "dog_goal",
-    "jsCaller": "dog_move",
+    "cCaller": "dog_move",
+    "jsCaller": "distfleeck",
     "context": [
-     "rn2(100)=99 @ obj_resists(zap.c:1469)",
-     "rn2(8)=5 @ dog_goal(dogmove.c:554)",
-     "rn2(100)=8 @ obj_resists(zap.c:1469)",
-     "rn2(4)=2 @ dog_goal(dogmove.c:575)",
-     "rn2(5)=3 @ distfleeck(monmove.c:538)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)"
+     "rn2(8)=7 @ dog_goal(dogmove.c:554)",
+     "rn2(100)=44 @ obj_resists(zap.c:1469)",
+     "rn2(4)=3 @ dog_goal(dogmove.c:575)",
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:642:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:933:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
@@ -207,11 +207,11 @@
   {
    "session": "dev81287-rogue-friday13-combat.session.json",
    "total": 3681,
-   "jsTotal": 3368,
+   "jsTotal": 3726,
    "totalScreens": 59,
    "valuePrefix": 3012,
    "rulePrefix": 3012,
-   "screens": 4,
+   "screens": 9,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
@@ -236,7 +236,7 @@
   {
    "session": "dev81328-dequa-fountain-explore.session.json",
    "total": 5852,
-   "jsTotal": 5589,
+   "jsTotal": 4018,
    "totalScreens": 714,
    "valuePrefix": 2537,
    "rulePrefix": 2537,
@@ -260,7 +260,7 @@
      "rn2(12)=7 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:460:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:923:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
   },
   {
    "session": "dev81369-valk-level2-pit-dog-wait.session.json",
@@ -323,28 +323,28 @@
   {
    "session": "dev81451-samurai-altar-pray.session.json",
    "total": 4034,
-   "jsTotal": 2833,
+   "jsTotal": 2832,
    "totalScreens": 67,
-   "valuePrefix": 2829,
-   "rulePrefix": 2829,
+   "valuePrefix": 2832,
+   "rulePrefix": 2832,
    "screens": 10,
    "honestScreens": 10,
    "firstScreenMiss": 10,
    "first": {
-    "index": 2829,
+    "index": 2832,
     "step": 10,
-    "c": "rn2(52)=0 @ dog_move(dogmove.c:1238)",
-    "js": "rn2(39)=26 @ dog_move",
+    "c": "rn2(5)=2 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "dog_move",
-    "jsCaller": "dog_move",
+    "cCaller": "distfleeck",
+    "jsCaller": null,
     "context": [
-     "rn2(4)=2 @ dog_goal(dogmove.c:575)",
-     "rn2(100)=52 @ obj_resists(zap.c:1469)",
-     "rn2(100)=81 @ obj_resists(zap.c:1469)",
      "rn2(52)=0 @ dog_move(dogmove.c:1238)",
      "rn2(5)=4 @ distfleeck(monmove.c:538)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)"
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=11 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": "Error: mpickstuff(): splitobj()/mpickobj() not ported yet |     at mpickstuff (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1513:19) |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1463:17) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1252:20)"
@@ -381,7 +381,7 @@
   {
    "session": "dev81533-orc-rogue-kick-search.session.json",
    "total": 2721,
-   "jsTotal": 2609,
+   "jsTotal": 2920,
    "totalScreens": 41,
    "valuePrefix": 2285,
    "rulePrefix": 2285,
@@ -597,7 +597,7 @@
   {
    "session": "dev81861-samurai-twoweapon-enhance.session.json",
    "total": 2875,
-   "jsTotal": 2793,
+   "jsTotal": 2766,
    "totalScreens": 98,
    "valuePrefix": 2509,
    "rulePrefix": 2509,
@@ -800,7 +800,7 @@
   {
    "session": "dev82148-barbarian-quest-tour.session.json",
    "total": 33192,
-   "jsTotal": 3171,
+   "jsTotal": 3217,
    "totalScreens": 124,
    "valuePrefix": 3062,
    "rulePrefix": 3062,
@@ -974,31 +974,31 @@
   {
    "session": "dev82394-tourist-explore-actions.session.json",
    "total": 3081,
-   "jsTotal": 2769,
+   "jsTotal": 2924,
    "totalScreens": 84,
-   "valuePrefix": 2615,
-   "rulePrefix": 2615,
-   "screens": 5,
-   "honestScreens": 5,
+   "valuePrefix": 2924,
+   "rulePrefix": 2924,
+   "screens": 6,
+   "honestScreens": 6,
    "firstScreenMiss": 4,
    "first": {
-    "index": 2615,
-    "step": 9,
-    "c": "rn2(5)=1 @ distfleeck(monmove.c:538)",
-    "js": "rn2(1)=0 @ dog_move",
+    "index": 2924,
+    "step": 10,
+    "c": "rn2(5)=4 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
     "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": "dog_move",
+    "jsCaller": null,
     "context": [
-     "rn2(79)=43 @ moveloop_core(allmain.c:360)",
+     "rn2(12)=11 @ dog_move(dogmove.c:1257)",
+     "rn2(12)=10 @ dog_move(dogmove.c:1257)",
+     "rnd(5)=4 @ score_targ(dogmove.c:830)",
      "rn2(5)=4 @ distfleeck(monmove.c:538)",
-     "rn2(4)=0 @ dog_goal(dogmove.c:575)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)",
-     "rn2(5)=2 @ distfleeck(monmove.c:538)",
-     "rn2(5)=4 @ distfleeck(monmove.c:538)"
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(12)=6 @ m_move(monmove.c:1963)"
     ]
    },
-   "error": null
+   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
   },
   {
    "session": "dev82435-caveman-explore-move.session.json",
@@ -1264,11 +1264,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 121145,
-  "value": 121145,
+  "rule": 121490,
+  "value": 121490,
   "rolls": 504996,
-  "honestScreens": 235,
-  "screens": 247,
+  "honestScreens": 236,
+  "screens": 253,
   "totalScreens": 8438
  },
  "todo": [
@@ -1291,30 +1291,21 @@
    ]
   },
   {
+   "fn": "distfleeck",
+   "sessions": 5,
+   "blockedRolls": 5525,
+   "examples": [
+    "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
+    "dev81451-samurai-altar-pray @2832: C \"rn2(5)=2 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
+   ]
+  },
+  {
    "fn": "getbones",
    "sessions": 4,
    "blockedRolls": 18836,
    "examples": [
     "dev81164-swimmer-mforce @2885: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=11 @ mcalcmove\"",
     "dev81943-wizard-wear-shop @2498: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(5)=1 @ distfleeck\""
-   ]
-  },
-  {
-   "fn": "distfleeck",
-   "sessions": 4,
-   "blockedRolls": 4632,
-   "examples": [
-    "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
-    "dev82230-wizard-wandpoly-pile @2607: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
-   ]
-  },
-  {
-   "fn": "dog_goal",
-   "sessions": 3,
-   "blockedRolls": 15251,
-   "examples": [
-    "dev81123-rogue-snake-swamp @3294: C \"rn2(8)=5 @ dog_goal(dogmove.c:554)\" / JS \"rn2(100)=5 @ obj_resists\"",
-    "dev81205-monk-vault-escort @2753: C \"rn2(4)=2 @ dog_goal(dogmove.c:575)\" / JS \"rn2(1)=0 @ dog_move\""
    ]
   },
   {
@@ -1327,21 +1318,30 @@
    ]
   },
   {
+   "fn": "dog_goal",
+   "sessions": 2,
+   "blockedRolls": 12802,
+   "examples": [
+    "dev81123-rogue-snake-swamp @3294: C \"rn2(8)=5 @ dog_goal(dogmove.c:554)\" / JS \"rn2(100)=5 @ obj_resists\"",
+    "dev82599-wizard-custom-binds @2868: C \"rn2(4)=0 @ dog_goal(dogmove.c:575)\" / JS \"rn2(1)=0 @ dog_move\""
+   ]
+  },
+  {
+   "fn": "dog_move",
+   "sessions": 2,
+   "blockedRolls": 3540,
+   "examples": [
+    "dev81205-monk-vault-escort @2786: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(5)=3 @ distfleeck\"",
+    "dev81820-priest-extcmd-sweep @1881: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(100)=71 @ obj_resists\""
+   ]
+  },
+  {
    "fn": "obj_resists",
    "sessions": 2,
    "blockedRolls": 2784,
    "examples": [
     "dev81000-healer-reflection-drummer @3130: C \"rn2(100)=73 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=1 @ dog_goal\"",
     "dev81984-monk-north-search @2512: C \"rn2(100)=62 @ obj_resists(zap.c:1469)\" / JS \"rn2(4)=2 @ dochug\""
-   ]
-  },
-  {
-   "fn": "dog_move",
-   "sessions": 2,
-   "blockedRolls": 2329,
-   "examples": [
-    "dev81451-samurai-altar-pray @2829: C \"rn2(52)=0 @ dog_move(dogmove.c:1238)\" / JS \"rn2(39)=26 @ dog_move\"",
-    "dev81820-priest-extcmd-sweep @1881: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(100)=71 @ obj_resists\""
    ]
   },
   {
