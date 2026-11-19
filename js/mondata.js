@@ -7,7 +7,13 @@
 import * as M from './monsters.js';
 import { game } from './gstate.js';
 import { strncmpi, strcmpi, strstri } from './hacklib.js';
-import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS } from './const.js';
+import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
+         FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
+         ACID_RES, STONE_RES, DRAIN_RES, ANTIMAGIC, BLND_RES, ALL_TRAPS,
+         NO_TRAP, W_ARMOR, W_ACCESSORY, W_WEP, W_SWAPWEP, W_ARMC,
+       } from './const.js';
+import { objects, ALCHEMY_SMOCK, WEAPON_CLASS } from './objects.js';
+import { is_weptool } from './mkobj.js';
 import { title_to_mon } from './botl.js';
 import {
     mons, NATTK, AT_ANY, AD_DRLI, M1_FLY, M1_SWIM, M1_WALLWALK, M1_NOEYES,
@@ -17,7 +23,7 @@ import {
     PM_FLOATING_EYE, PM_MIND_FLAYER, PM_MASTER_MIND_FLAYER, PM_BAT,
     PM_GIANT_BAT, PM_VAMPIRE_BAT, PM_STALKER, PM_BLACK_LIGHT, PM_DEATH,
     PM_VAMPIRE, PM_VAMPIRE_LEADER, PM_VLAD_THE_IMPALER, PM_GRAY_DRAGON,
-    PM_YELLOW_DRAGON, LOW_PM,
+    PM_YELLOW_DRAGON, LOW_PM, AD_MAGM, AD_RBRE,
 } from './monsters.js';
 
 // C ref: mondata.h monsndx(ptr) -- ((ptr)->pmidx)
@@ -145,6 +151,142 @@ export function defended(mon, adtyp) {
         throw new Error('defended(): Is_dragon_armor()/defends() not ported yet');
 
     return false;
+}
+
+// C ref: monst.h mon_resistancebits()
+function mon_resistancebits(mon) {
+    return (mon.data.mresists | (mon.mextrinsics ?? 0)
+            | (mon.mintrinsics ?? 0));
+}
+
+// C ref: mondata.c Resists_Elem()
+/* returns True if monster resists the given element (property index) */
+export function Resists_Elem(mon, propindx) {
+    const g = game, u = g.u;
+    const is_you = (mon === g.youmonst);
+    let u_resist = 0, damgtype = 0, rsstmask = 0;
+
+    switch (propindx) {
+    case FIRE_RES:   /* 1 */
+    case COLD_RES:   /* 2 */
+    case SLEEP_RES:  /* 3 */
+    case DISINT_RES: /* 4 */
+    case SHOCK_RES:  /* 5 */
+    case POISON_RES: /* 6 */
+    case ACID_RES:   /* 7 */
+    case STONE_RES:  /* 8 */
+        damgtype = propindx + 1; /* valid for propindx 1..8, damgtype 2..9 */
+        rsstmask = 1 << (propindx - 1); /* valid for propindx 1..8 */
+        u_resist = u.uprops[propindx].intrinsic
+                   || u.uprops[propindx].extrinsic;
+        break;
+
+    /* accept these, but we expect callers to use their routines directly */
+    case ANTIMAGIC:
+        return resists_magm(mon);
+    case DRAIN_RES:
+        return resists_drli(mon);
+    case BLND_RES:
+        throw new Error('Resists_Elem(): resists_blnd() not ported yet');
+
+    default:
+        /* impossible("Resists_Elem(%d), unexpected property type") */
+        return false;
+    }
+
+    if (is_you ? u_resist : ((mon_resistancebits(mon) & rsstmask) !== 0))
+        return true;
+    /* check for resistance granted by wielded weapon */
+    let o = is_you ? g.uwep : mon.mw;
+    if (o && o.oartifact)
+        throw new Error('Resists_Elem(): artifact defends() not ported yet');
+    /* check for resistance granted by worn or carried items */
+    let slotmask = W_ARMOR | W_ACCESSORY;
+    if (!is_you /* assumes monsters don't wield non-weapons */
+        || (g.uwep && (g.uwep.oclass === WEAPON_CLASS || is_weptool(g.uwep))))
+        slotmask |= W_WEP;
+    if (is_you && u.twoweap)
+        slotmask |= W_SWAPWEP;
+    for (o of invent_chain(mon, is_you))
+        if (((o.owornmask & slotmask) !== 0
+             && objects[o.otyp].oc_oprop === propindx)
+            || ((o.owornmask & W_ARMC) === W_ARMC
+                /* worn apron confers a pair of resistances but
+                   objects[ALCHEMY_SMOCK].oc_oprop can only represent one;
+                   we check both so won't need to know which one that is */
+                && o.otyp === ALCHEMY_SMOCK
+                && (propindx === POISON_RES || propindx === ACID_RES)))
+            return true;
+        else if (o.oartifact)
+            throw new Error('Resists_Elem(): defends_when_carried() not ported yet');
+    return false;
+}
+/* C ref: monst.h resists_fire()/resists_sleep() */
+export function resists_fire(mon) { return Resists_Elem(mon, FIRE_RES); }
+export function resists_sleep(mon) { return Resists_Elem(mon, SLEEP_RES); }
+
+/* hero inventory is a nobj chain; monster minvent is an array in pickup
+   order (C prepends, so walk it newest first) */
+function invent_chain(mon, is_you) {
+    if (is_you) {
+        const out = [];
+        for (let o = game.invent; o; o = o.nobj) out.push(o);
+        return out;
+    }
+    return (mon.minvent || []).slice().reverse();
+}
+
+// C ref: mondata.c resists_magm()
+/* TRUE if monster is magic-missile (actually, general magic) resistant */
+export function resists_magm(mon) {
+    const ptr = mon.data;
+    const g = game, u = g.u;
+    const is_you = (mon === g.youmonst);
+
+    /* as of 3.2.0:  gray dragons, Angels, Oracle, Yeenoghu */
+    if (dmgtype(ptr, AD_MAGM) || ptr === mons[M.PM_BABY_GRAY_DRAGON]
+        || dmgtype(ptr, AD_RBRE)) /* Chromatic Dragon */
+        return true;
+    /* check for magic resistance granted by wielded weapon */
+    let o = is_you ? g.uwep : mon.mw;
+    if (o && o.oartifact)
+        throw new Error('resists_magm(): artifact defends() not ported yet');
+    /* check for magic resistance granted by worn or carried items */
+    let slotmask = W_ARMOR | W_ACCESSORY;
+    if (!is_you /* assumes monsters don't wield non-weapons */
+        || (g.uwep && (g.uwep.oclass === WEAPON_CLASS || is_weptool(g.uwep))))
+        slotmask |= W_WEP;
+    if (is_you && u.twoweap)
+        slotmask |= W_SWAPWEP;
+    for (o of invent_chain(mon, is_you))
+        if ((o.owornmask & slotmask) !== 0
+            && objects[o.otyp].oc_oprop === ANTIMAGIC)
+            return true;
+        else if (o.oartifact)
+            throw new Error('resists_magm(): defends_when_carried() not ported yet');
+    return false;
+}
+
+// C ref: mondata.c mon_knows_traps()
+/* does monster mtmp know traps of type ttyp */
+export function mon_knows_traps(mtmp, ttyp) {
+    if (ttyp === ALL_TRAPS)
+        return !!mtmp.mtrapseen;
+    else if (ttyp === NO_TRAP)
+        return !mtmp.mtrapseen;
+    else
+        return ((mtmp.mtrapseen & (1 << (ttyp - 1))) !== 0);
+}
+
+// C ref: mondata.c mon_learns_traps()
+/* monster mtmp learns all traps of type ttyp */
+export function mon_learns_traps(mtmp, ttyp) {
+    if (ttyp === ALL_TRAPS)
+        mtmp.mtrapseen = ~0;
+    else if (ttyp === NO_TRAP)
+        mtmp.mtrapseen = 0;
+    else
+        mtmp.mtrapseen |= (1 << (ttyp - 1));
 }
 
 // C ref: mondata.c resists_drli()
