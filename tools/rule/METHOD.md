@@ -51,8 +51,12 @@ either, and no static check count grows (`tools/rule/checks.mjs`).
 6. **A task means "advance the rule prefix past roll i."** The first mismatch may be a symptom.
    Check whether the cause is a missing function, a wrong argument (state set wrong earlier) or
    an extra/missing roll earlier in the same step. Port whatever C is needed, faithfully.
-7. **Agents may read public `sessions/`** for debugging, but must not see or touch
-   `~/code/teleport-research/private-sessions`.
+7. **Agents may read public `sessions/` and the dev set**
+   (`~/code/teleport-research/dev-sessions/recorded`: the 44 public recipes with new seeds)
+   for debugging, but must not see or touch `~/code/teleport-research/private-sessions`.
+8. **Agents self-gate into the agent ledger**, so near-misses are measured:
+   `node tools/rule/progress.mjs --gate tools/rule/runs/baseline.json --label "..." --ledger ~/code/teleport-research/agent-ledger.jsonl`
+   Use an absolute path so the entries survive worktree removal.
 
 ## Loop protocol (coordinator)
 
@@ -64,12 +68,35 @@ Each iteration:
    `role.c` → `nhlib.lua` shuffle + `dungeon.c` → `u_init.c` → `mklev.c` + `themerms.lua` +
    `sp_lev.c` → `makemon.c`/`mkobj.c` → vision/display/status line. Run 2–3 agents in parallel
    only once the to-do list fans out to different C functions.
-3. Run the gate on the agent's branch. **Pass:** merge to main, save a new baseline, commit.
-   **Fail:** the ledger records why. Send the reasons back to the agent at most twice, then park
-   the task with a note.
+3. Run the gate on the agent's branch, **on both public and dev**:
+   - `node tools/rule/progress.mjs --gate tools/rule/runs/baseline.json --label "..."`
+   - `node tools/rule/progress.mjs --sessions ~/code/teleport-research/dev-sessions/recorded --gate ~/code/teleport-research/dev-sessions/baseline.json --label "dev: ..."`
+
+   A merge needs **no regression on either**, and improvement on at least one. (A dev-only
+   improvement is fine: it means a generalization fix.)
+   - **Pass:** merge to main, save new baselines for both (`--json`), and commit.
+   - **Fail:** the ledger records why. Send the reasons back to the agent at most twice, then
+     park the task with a note.
 4. Every ~3 merges, run the private sessions and record their totals in the ledger (`--label private`).
 5. Every merge must also keep `bash frozen/score.sh` working with no crashes. The official score
    may dip only when fake scaffolding is removed.
+
+### Two streams (from 2026-11-19 evening)
+
+Run two agents in parallel, each in its own worktree. Merge one at a time; re-run the gate
+after rebasing the second one.
+
+- **Stream A, dice frontier:** the top to-do item from `progress.mjs` that isn't owned by
+  stream B. As of 11-19 that's `dosounds` (11 sessions), then `gethungry`, `newhp`,
+  `do_attack`, the remaining per-turn replay in `moveloop_core()`, and `movemon()`.
+- **Stream B, display:** make the screens after character selection match C, starting with
+  the first one. Work in order: the legacy intro text window (com_pager text + tty window +
+  key flow), then tty map rendering (`display.c`/`wintty.c`, glyphs, DECgraphics symset),
+  the status lines (`botl.c`), the message line and `--More--`, the cursor position, and
+  menus/inventory. Use `progress.mjs` honest screens (and `firstScreenMiss` in `--json`) as
+  the progress signal, and the session viewer in `tools/session-viewer` to diff screens.
+  Port the C display code faithfully; no hard-coded screen text.
+- If the dice-frontier item and the display work collide in the same files, finish one first.
 
 Screens: until the first level renders correctly, the screen score stays near zero apart from
 the character-selection screens (82 before the first roll). The rule prefix is the daily
