@@ -24,7 +24,9 @@ import {
     TELEPORT_BANNER_C, PL_NSIZ, ROWNO, COLNO,
 } from './const.js';
 import { genl_player_setup } from './role.js';
-import { row_refresh, bot } from './display.js';
+import { row_refresh, bot, flush_screen, pline } from './display.js';
+import { extcmds_match } from './cmd.js';
+import { extcmdlist, ECM_NOFLAGS, ECM_IGNOREAC, ECM_EXACTMATCH } from './func_tab.js';
 
 // C ref: wintty.h TOPLINE_* states
 const TOPLINE_EMPTY = 0;          /* empty */
@@ -538,6 +540,14 @@ function topl_putsym(c) {
     const t = tty();
 
     switch (c) {
+    case '\b':
+        if (t.curx === 0 && t.cury > 0)
+            tty_curs(game.BASE_WINDOW, t.cols, t.cury - 1);
+        /* backsp() */
+        t.curx--;
+        cw.curx = t.curx;
+        cmov(t.curx, t.cury);
+        return;
     case '\n':
         cl_end();
         t.curx = 0;
@@ -684,6 +694,172 @@ export async function tty_yn_function(query, resp, def) {
     t.inread--;
     t.toplin = TOPLINE_NON_EMPTY;
     return q;
+}
+
+// ---------------------------------------------------------------------------
+// getline.c: line input on the message line
+
+// erase and kill characters of the terminal (xxxtty.c erase_char,
+// kill_char): the usual stty settings
+const erase_char = '\x7f', kill_char = '\x15';
+const BUFSZ = 256;
+
+// C ref: getline.c tty_getlin()
+export async function tty_getlin(query) {
+    game.suppress_history = false;
+    return hooked_tty_getlin(query, null);
+}
+
+// C ref: getline.c hooked_tty_getlin() (NEWAUTOCOMP, !EDIT_GETLIN);
+// the line read is returned instead of filled into bufp
+async function hooked_tty_getlin(query, hook) {
+    const cw = wins()[game.WIN_MESSAGE];
+    const t = tty();
+    let obufp = '';  /* the text */
+    let bufp = 0;    /* the cursor position in it */
+    let c;
+
+    if (t.toplin === TOPLINE_NEED_MORE && !(cw.flags & WIN_STOP))
+        await more();
+    cw.flags &= ~WIN_STOP;
+    t.toplin = TOPLINE_SPECIAL_PROMPT;
+    t.inread++;
+
+    /*
+     * Issue the prompt.
+     * custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY, "%s ", query)
+     */
+    await custompline(`${query} `);
+
+    for (;;) {
+        game.toplines = `${query} ${obufp}`;
+        c = String.fromCharCode(await nhgetch());
+        if (c === '\x1b') {
+            if (obufp !== '') {
+                obufp = '';
+                bufp = 0;
+                tty_clear_nhwindow(game.WIN_MESSAGE);
+                cw.maxcol = cw.maxrow;
+                addtopl(query);
+                addtopl(" ");
+                addtopl(obufp);
+            } else {
+                obufp = '\x1b';
+                break;
+            }
+        }
+        if (c === '\x10') /* ctrl-P */
+            throw new Error('hooked_tty_getlin(): ^P message history not ported yet');
+        if (c === erase_char || c === '\b') {
+            if (bufp !== 0) {
+                bufp--;
+                putsyms("\b");
+                let i;
+                for (i = bufp; i < obufp.length; ++i)
+                    putsyms(" ");
+                for (; i > bufp; --i)
+                    putsyms("\b");
+                obufp = obufp.slice(0, bufp);
+            } else {
+                /* tty_nhbell(); */
+            }
+        } else if (c === '\n' || c === '\r') {
+            break;
+        } else if (' ' <= c && c !== '\x7f'
+                   && (bufp < BUFSZ - 1 && bufp < COLNO)) {
+            let i = obufp.length; /* eos(bufp) */
+
+            obufp = obufp.slice(0, bufp) + c;
+            putsyms(c);
+            bufp++;
+            let completed;
+            if (hook && (completed = hook(obufp)) !== null) {
+                obufp = completed;
+                putsyms(obufp.slice(bufp));
+                /* pointer and cursor left where they were */
+                for (i = bufp; i < obufp.length; ++i)
+                    putsyms("\b");
+            } else if (i > bufp) {
+                let s = i;
+
+                /* erase rest of prior guess */
+                for (; i > bufp; --i)
+                    putsyms(" ");
+                for (; s > bufp; --s)
+                    putsyms("\b");
+            }
+        } else if (c === kill_char || c === '\x7f') { /* Robert Viduya */
+            /* this test last - @ might be the kill_char */
+            for (; bufp < obufp.length; ++bufp)
+                putsyms(" ");
+            for (; bufp !== 0; --bufp)
+                putsyms("\b \b");
+            obufp = '';
+        } else {
+            /* tty_nhbell(); */
+        }
+    }
+    t.toplin = TOPLINE_NON_EMPTY;
+    t.inread--;
+    tty_clear_nhwindow(game.WIN_MESSAGE); /* clean up after ourselves */
+
+    if (game.suppress_history) {
+        /* prevent next message from pushing current query+answer into
+           tty message history */
+        game.toplines = '';
+    }
+    return obufp;
+}
+
+// C ref: pline.c custompline() -- vpline() of a prompt: bring the map up
+// to date, then put the text in the message window
+async function custompline(line) {
+    if (game.u?.ux)
+        await flush_screen(1);
+    await tty_putstr(game.WIN_MESSAGE, 0, line);
+}
+
+// C ref: getline.c ext_cmd_getlin_hook()
+/*
+ * Implement extended command completion by using this hook into
+ * tty_getlin.  Check the characters already typed, if they uniquely
+ * identify an extended command, expand the string to the whole
+ * command.
+ *
+ * Returns the extended string, or null if base was not extended.
+ */
+function ext_cmd_getlin_hook(base) {
+    const ecmatches = extcmds_match(base, ECM_NOFLAGS);
+
+    if (ecmatches.length === 1)
+        return extcmdlist[ecmatches[0]].ef_txt;
+
+    return null; /* didn't match anything */
+}
+
+// C ref: getline.c tty_get_ext_cmd()
+/*
+ * Read in an extended command, doing command line completion.  We
+ * stop when we have found enough characters to make a unique command.
+ */
+export async function tty_get_ext_cmd() {
+    /* iflags.extmenu is off by default */
+    game.suppress_history = true;
+    const extcmd_char = '#'; /* extcmd_initiator() */
+    let buf = await hooked_tty_getlin(extcmd_char,
+                                      !game.in_doagain ? ext_cmd_getlin_hook : null);
+    buf = buf.replace(/[ \t]+/g, ' ').trim(); /* mungspaces() */
+
+    const ecmatches = (buf === '' || buf[0] === '\x1b') ? null
+                    : extcmds_match(buf, ECM_IGNOREAC | ECM_EXACTMATCH);
+    const nmatches = ecmatches ? ecmatches.length : -1;
+    if (nmatches !== 1) {
+        if (nmatches !== -1)
+            await pline(`${extcmd_char}${buf.slice(0, 60)}: unknown extended command.`);
+        return -1;
+    }
+
+    return ecmatches[0];
 }
 
 // ---------------------------------------------------------------------------
