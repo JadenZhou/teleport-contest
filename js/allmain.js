@@ -2,8 +2,7 @@
 // C ref: allmain.c — newgame, welcome, moveloop_preamble, moveloop,
 // moveloop_core.
 //
-// Uses fastforward.js (fastforward_step) for the seed8000 rolls of
-// movemon(), which isn't ported yet.  The once-per-turn and
+// movemon() (mon.c/monmove.c), the once-per-turn and the
 // once-per-hero-took-time blocks are real.
 
 import { game } from './gstate.js';
@@ -13,8 +12,8 @@ import { l_nhcore_init } from './nhlua.js';
 import { rhack } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
-import { fastforward_step, FF_MOVEMON } from "./fastforward.js";
-import { mcalcmove } from './mon.js';
+import { mcalcmove, mcalcdistress, movemon } from './mon.js';
+import { initrack, settrack } from './track.js';
 import { m_at, makemon } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
@@ -371,10 +370,7 @@ export async function moveloop_core() {
 
             g.context.mon_moving = 1;
             do {
-                /* movemon(): not ported yet; seed8000's recorded
-                   monster-movement rolls are replayed instead */
-                fastforward_step(g.moves, FF_MOVEMON);
-                monscanmove = false;
+                monscanmove = await movemon();
                 if (u.umovement >= NORMAL_SPEED)
                     break; /* it's now your turn */
             } while (monscanmove);
@@ -388,8 +384,7 @@ export async function moveloop_core() {
 
                 /* set up for a new turn */
                 g.were_changes = 0;
-                /* mcalcdistress(): adjust monsters' trap, blind, etc --
-                   not ported yet */
+                mcalcdistress(); /* adjust monsters' trap, blind, etc */
 
                 /* reallocate movement rations to monsters; don't need
                    to skip dead monsters here because they will have
@@ -403,7 +398,7 @@ export async function moveloop_core() {
                 maybe_generate_rnd_mon();
 
                 u_calc_moveamt(mvl_wtcap);
-                /* settrack(): not ported yet */
+                settrack();
 
                 g.moves++;
                 /* 'moves' is misnamed; it represents turns; hero_seq is
@@ -613,6 +608,7 @@ export function moveloop_preamble(resuming) {
         /* give hero initial movement points; new game only--for restore,
            pending movement points were included in the save file */
         u.umovement = NORMAL_SPEED;
+        initrack();
         /* initrack(): not ported yet */
     }
     g.disp_botlx = true; /* for STATUS_HILITES */

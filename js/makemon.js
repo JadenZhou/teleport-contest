@@ -503,7 +503,7 @@ function Is_earthlevel() { return on_lev(game.dungeon_topology.d_earth_level); }
 
 // ---- map / monster-position helpers ----
 // C ref: hack.h u_at()
-function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
+export function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
 // C ref: display.h m_at(); MON_AT() -- level monsters are kept in
 // game.level.monsters (C keeps a grid; a list with mx/my is equivalent)
 export function m_at(x, y) {
@@ -512,7 +512,7 @@ export function m_at(x, y) {
         if (m.mx === x && m.my === y && !m.dead) return m;
     return null;
 }
-function MON_AT(x, y) { return !!m_at(x, y); }
+export function MON_AT(x, y) { return !!m_at(x, y); }
 // C ref: mon.c place_monster()
 export function place_monster(mon, x, y) {
     mon.mx = x;
@@ -522,20 +522,20 @@ export function place_monster(mon, x, y) {
 }
 // C ref: invent.c sobj_at() -- floor object chains aren't ported; uses
 // game.level.objects when something has put objects there
-function sobj_at(otyp, x, y) {
+export function sobj_at(otyp, x, y) {
     for (const o of game.level.objects || [])
         if (o.otyp === otyp && o.ox === x && o.oy === y) return o;
     return null;
 }
 // C ref: dbridge.c is_pool(), is_lava()
-function is_pool(x, y) {
+export function is_pool(x, y) {
     if (!isok(x, y)) return false;
     const typ = game.level.at(x, y).typ;
     return typ === POOL || typ === MOAT || typ === WATER
            || (typ === DRAWBRIDGE_UP
                && ((game.level.at(x, y).drawbridgemask ?? 0) & 0x07) === 0x01);
 }
-function is_lava(x, y) {
+export function is_lava(x, y) {
     if (!isok(x, y)) return false;
     const typ = game.level.at(x, y).typ;
     return typ === LAVAPOOL || typ === LAVAWALL
@@ -543,24 +543,25 @@ function is_lava(x, y) {
                && ((game.level.at(x, y).drawbridgemask ?? 0) & 0x07) === 0x02);
 }
 // C ref: hack.c accessible(); lock.c closed_door(); hack.c may_passwall()
-function accessible(x, y) { return ACCESSIBLE(game.level.at(x, y).typ); }
-function closed_door(x, y) {
+export function accessible(x, y) { return ACCESSIBLE(game.level.at(x, y).typ); }
+export function closed_door(x, y) {
     const loc = game.level.at(x, y);
     return IS_DOOR(loc.typ) && ((loc.doormask ?? 0) & (D_LOCKED | D_CLOSED)) !== 0;
 }
-function may_passwall(x, y) {
+export function may_passwall(x, y) {
     const loc = game.level.at(x, y);
     return !(IS_STWALL(loc.typ) && ((loc.wall_info ?? 0) & W_NONPASSWALL));
 }
 // C ref: engrave.c sengr_at()
-function sengr_at(s, x, y, strict) {
+export function sengr_at(s, x, y, strict) {
     const ep = engr_at(x, y);
     if (ep && ep.engr_type !== HEADSTONE && ep.engr_time <= game.moves) {
-        const txt = String(ep.engr_txt?.[0] ?? ep.engr_txt ?? '');
-        return strict ? txt.toLowerCase() === s.toLowerCase()
-                      : txt.toLowerCase().includes(s.toLowerCase());
+        const txt = String(ep.engr_txt?.actual_text ?? '');
+        if (strict ? txt.toLowerCase() === s.toLowerCase()
+                   : txt.toLowerCase().includes(s.toLowerCase()))
+            return ep;
     }
-    return false;
+    return null;
 }
 const HEADSTONE = 6; /* C ref: engrave.h */
 // C ref: region.c is_exclusion_zone() -- no exclusion zones are set up on
