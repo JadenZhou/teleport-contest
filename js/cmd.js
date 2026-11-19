@@ -14,6 +14,7 @@ import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD } from './func_tab.js';
 import { strcmpi, strncmpi } from './hacklib.js';
 import { dosearch } from './detect.js';
+import { level_tele } from './teleport.js';
 import { cmd_safety_prevention } from './hack.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -125,6 +126,10 @@ export async function rhack(key) {
     if (isMovementKey(ch)) {
         await domove(DIR_DX[ch], DIR_DY[ch]);
         game.context.move = 1;
+    } else if (ch === '\x16' && game.flags?.debug) {
+        /* C ref: cmd.c Cmd ^V (wizard mode) -> wizcmds.c wiz_level_tele() */
+        await level_tele();
+        game.context.move = 0; /* ECMD_OK */
     } else if (ch === '#') {
         /* C ref: cmd.c Cmd '#' -> doextcmd() */
         game.context.move = (await doextcmd()) ? 1 : 0;
