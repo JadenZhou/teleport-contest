@@ -15,7 +15,7 @@ import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
 import { strcmpi, strncmpi } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
-import { wiz_level_change } from './wizcmds.js';
+import { wiz_level_change, wiz_wish } from './wizcmds.js';
 import { cmd_safety_prevention } from './hack.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -56,6 +56,7 @@ const ext_funcs = {
     dosearch: () => dosearch(),
     donull: () => donull(),
     wiz_level_change: () => wiz_level_change(),
+    wiz_wish: () => wiz_wish(),
 };
 
 // C ref: cmd.c doextcmd() -- here is the main command dispatcher for
@@ -128,6 +129,9 @@ export async function rhack(key) {
     if (isMovementKey(ch)) {
         await domove(DIR_DX[ch], DIR_DY[ch]);
         game.context.move = 1;
+    } else if (ch === '\x17' && game.flags?.debug) {
+        /* C ref: cmd.c Cmd ^W (wizard mode) -> wizcmds.c wiz_wish() */
+        game.context.move = (await wiz_wish()) ? 1 : 0;
     } else if (ch === '\x16' && game.flags?.debug) {
         /* C ref: cmd.c Cmd ^V (wizard mode) -> wizcmds.c wiz_level_tele() */
         await level_tele();
