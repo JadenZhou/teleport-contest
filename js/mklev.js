@@ -853,6 +853,8 @@ export function topologize(croom) {
 // Corridors
 // ============================================================
 
+// C ref: mklev.c good_rm_wall_doorpos()
+/* is x,y a good location for a door into room? */
 function good_rm_wall_doorpos(x, y, dir, room) {
     const map = game.level;
     const rmno = game.level.rooms.indexOf(room) + ROOMOFFSET;
@@ -870,9 +872,41 @@ function good_rm_wall_doorpos(x, y, dir, room) {
     return true;
 }
 
+// C ref: mklev.c finddpos_shift()
+/* starting from x,y going towards dir, find a good location for a door */
 function finddpos_shift(xp, yp, dir, aroom) {
-    const rdir = DIR_180(dir);
-    if (good_rm_wall_doorpos(xp.v, yp.v, rdir, aroom)) return true;
+    const levl = (x, y) => game.level.at(x, y);
+
+    dir = DIR_180(dir);
+
+    const dx = xdir[dir];
+    const dy = ydir[dir];
+
+    if (good_rm_wall_doorpos(xp.v, yp.v, dir, aroom))
+        return true;
+
+    /* irregular rooms may have the room wall away from the room rectangular
+       area; go into the area until we encounter something */
+    if (aroom.irregular) {
+        let rx = xp.v, ry = yp.v;
+        let fail = false;
+
+        while (!fail && isok(rx, ry)
+               && (levl(rx, ry).typ === STONE || levl(rx, ry).typ === CORR)) {
+            rx += dx;
+            ry += dy;
+            if (good_rm_wall_doorpos(rx, ry, dir, aroom)) {
+                xp.v = rx;
+                yp.v = ry;
+                return true;
+            }
+            if (!(levl(rx, ry).typ === STONE || levl(rx, ry).typ === CORR))
+                fail = true;
+            if (rx < aroom.lx || rx > aroom.hx
+                || ry < aroom.ly || ry > aroom.hy)
+                fail = true;
+        }
+    }
     return false;
 }
 
