@@ -1,31 +1,31 @@
 {
- "when": "2026-11-19T07:46:51.532Z",
+ "when": "2026-11-19T08:10:46.051Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
    "total": 27158,
-   "jsTotal": 2451,
+   "jsTotal": 2475,
    "totalScreens": 595,
-   "valuePrefix": 2157,
-   "rulePrefix": 2157,
+   "valuePrefix": 2312,
+   "rulePrefix": 2305,
    "screens": 8,
    "honestScreens": 8,
    "firstScreenMiss": 8,
    "first": {
-    "index": 2157,
-    "step": 8,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=75 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2305,
+    "step": 12,
+    "c": "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=4 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=151 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=232 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=936 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=6 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=816 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=16 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=8 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -33,9 +33,9 @@
   {
    "session": "seed0004-feeding-pony.session.json",
    "total": 12084,
-   "jsTotal": 3806,
+   "jsTotal": 3826,
    "totalScreens": 409,
-   "valuePrefix": 3544,
+   "valuePrefix": 3690,
    "rulePrefix": 2588,
    "screens": 8,
    "honestScreens": 8,
@@ -62,28 +62,28 @@
   {
    "session": "seed0006-wizard-water-demon.session.json",
    "total": 6736,
-   "jsTotal": 3001,
+   "jsTotal": 3028,
    "totalScreens": 123,
-   "valuePrefix": 2351,
-   "rulePrefix": 2351,
+   "valuePrefix": 2507,
+   "rulePrefix": 2502,
    "screens": 35,
    "honestScreens": 35,
    "firstScreenMiss": 35,
    "first": {
-    "index": 2351,
-    "step": 35,
-    "c": "rn2(8)=6 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=47 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2502,
+    "step": 40,
+    "c": "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=7 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=534 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=815 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=56 @ mineralize(mklev.c:1526)",
-     "rn2(8)=6 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)",
-     "rn2(6)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=1310 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=9 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=0 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=7 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -91,9 +91,9 @@
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
-   "jsTotal": 3293,
+   "jsTotal": 3290,
    "totalScreens": 302,
-   "valuePrefix": 2703,
+   "valuePrefix": 2827,
    "rulePrefix": 1628,
    "screens": 14,
    "honestScreens": 14,
@@ -120,28 +120,28 @@
   {
    "session": "seed0009-swimmer-mforce.session.json",
    "total": 3713,
-   "jsTotal": 3563,
+   "jsTotal": 3548,
    "totalScreens": 73,
-   "valuePrefix": 3228,
-   "rulePrefix": 3228,
+   "valuePrefix": 3337,
+   "rulePrefix": 3337,
    "screens": 10,
    "honestScreens": 10,
    "firstScreenMiss": 10,
    "first": {
-    "index": 3228,
-    "step": 10,
-    "c": "rn2(8)=2 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=11 @ fastforward_post_mklev",
+    "index": 3337,
+    "step": 13,
+    "c": "rn2(3)=2 @ getbones(bones.c:645)",
+    "js": "rn2(12)=5 @ fastforward_step",
     "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "getbones",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=194 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=519 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=203 @ mineralize(mklev.c:1526)",
-     "rn2(8)=2 @ collect_coords(teleport.c:700)",
-     "rn2(7)=6 @ collect_coords(teleport.c:700)",
-     "rn2(6)=1 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=3586 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=22 @ moveloop_preamble(allmain.c:79)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
    "error": null
@@ -149,28 +149,28 @@
   {
    "session": "seed0012-monk-vault-escort.session.json",
    "total": 13878,
-   "jsTotal": 3333,
+   "jsTotal": 3366,
    "totalScreens": 308,
-   "valuePrefix": 2911,
-   "rulePrefix": 2911,
+   "valuePrefix": 3073,
+   "rulePrefix": 3068,
    "screens": 16,
    "honestScreens": 16,
    "firstScreenMiss": 16,
    "first": {
-    "index": 2911,
-    "step": 16,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=31 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 3068,
+    "step": 21,
+    "c": "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=7 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=586 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=510 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=155 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=4 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=1499 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=14 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -178,7 +178,7 @@
   {
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
    "total": 4804,
-   "jsTotal": 6093,
+   "jsTotal": 6100,
    "totalScreens": 99,
    "valuePrefix": 528,
    "rulePrefix": 528,
@@ -207,7 +207,7 @@
   {
    "session": "seed0013-rogue-friday13-combat.session.json",
    "total": 4838,
-   "jsTotal": 3031,
+   "jsTotal": 3034,
    "totalScreens": 59,
    "valuePrefix": 528,
    "rulePrefix": 528,
@@ -236,28 +236,28 @@
   {
    "session": "seed0014-dequa-fountain-explore.session.json",
    "total": 59178,
-   "jsTotal": 3459,
+   "jsTotal": 3452,
    "totalScreens": 714,
-   "valuePrefix": 2839,
-   "rulePrefix": 2839,
+   "valuePrefix": 2956,
+   "rulePrefix": 2956,
    "screens": 10,
    "honestScreens": 10,
    "firstScreenMiss": 10,
    "first": {
-    "index": 2839,
-    "step": 10,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=557 @ fastforward_post_mklev",
+    "index": 2956,
+    "step": 15,
+    "c": "rn2(7)=1 @ do_attack(uhitm.c:474)",
+    "js": "rn2(12)=10 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "do_attack",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=609 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=931 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=459 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=2 @ collect_coords(teleport.c:700)",
-     "rn2(7)=4 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=8973 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=25 @ moveloop_preamble(allmain.c:79)",
+     "rn2(7)=1 @ do_attack(uhitm.c:474)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -265,7 +265,7 @@
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
-   "jsTotal": 2773,
+   "jsTotal": 2767,
    "totalScreens": 44,
    "valuePrefix": 357,
    "rulePrefix": 357,
@@ -294,28 +294,28 @@
   {
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
-   "jsTotal": 2806,
+   "jsTotal": 2813,
    "totalScreens": 36,
-   "valuePrefix": 2362,
-   "rulePrefix": 2362,
+   "valuePrefix": 2493,
+   "rulePrefix": 2493,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2362,
-    "step": 0,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=264 @ fastforward_post_mklev",
+    "index": 2493,
+    "step": 7,
+    "c": "rnd(2)=2 @ next_ident(mkobj.c:521)",
+    "js": "rn2(12)=1 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "next_ident",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=287 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=235 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=682 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=3 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=2516 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=26 @ moveloop_preamble(allmain.c:79)",
+     "rnd(2)=2 @ next_ident(mkobj.c:521)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -323,28 +323,28 @@
   {
    "session": "seed0017-samurai-altar-pray.session.json",
    "total": 3465,
-   "jsTotal": 2999,
+   "jsTotal": 2994,
    "totalScreens": 67,
-   "valuePrefix": 2547,
-   "rulePrefix": 2547,
+   "valuePrefix": 2670,
+   "rulePrefix": 2666,
    "screens": 8,
    "honestScreens": 8,
    "firstScreenMiss": 8,
    "first": {
-    "index": 2547,
-    "step": 8,
-    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=256 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2666,
+    "step": 10,
+    "c": "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=6 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=798 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=411 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=247 @ mineralize(mklev.c:1526)",
-     "rn2(8)=7 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)",
-     "rn2(6)=5 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=6905 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=5 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -352,9 +352,9 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 32223,
+   "jsTotal": 32520,
    "totalScreens": 1953,
-   "valuePrefix": 6105,
+   "valuePrefix": 6272,
    "rulePrefix": 5165,
    "screens": 0,
    "honestScreens": 0,
@@ -381,28 +381,28 @@
   {
    "session": "seed0060-orc-rogue-kick-search.session.json",
    "total": 3626,
-   "jsTotal": 2848,
+   "jsTotal": 2859,
    "totalScreens": 41,
-   "valuePrefix": 2263,
-   "rulePrefix": 2263,
+   "valuePrefix": 2401,
+   "rulePrefix": 2398,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2263,
-    "step": 0,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=660 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2398,
+    "step": 2,
+    "c": "rn2(12)=0 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=0 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=753 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=74 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=664 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=5 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=6565 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=21 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=0 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=9 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -410,28 +410,28 @@
   {
    "session": "seed0077-rogue-chargen.session.json",
    "total": 3242,
-   "jsTotal": 3434,
+   "jsTotal": 3437,
    "totalScreens": 33,
-   "valuePrefix": 3068,
-   "rulePrefix": 3068,
+   "valuePrefix": 3195,
+   "rulePrefix": 3195,
    "screens": 11,
    "honestScreens": 11,
    "firstScreenMiss": 11,
    "first": {
-    "index": 3068,
-    "step": 11,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=222 @ fastforward_post_mklev",
+    "index": 3195,
+    "step": 17,
+    "c": "rnl(20)=2 @ doopen_indir(lock.c:904)",
+    "js": "rn2(12)=6 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "doopen_indir",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=198 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=555 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=902 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=7 @ collect_coords(teleport.c:700)",
-     "rn2(7)=2 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=4581 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=27 @ moveloop_preamble(allmain.c:79)",
+     "rnl(20)=2 @ doopen_indir(lock.c:904)",
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -439,28 +439,28 @@
   {
    "session": "seed0101-ranger-quiver-throw-travel-engrave.session.json",
    "total": 2371,
-   "jsTotal": 2630,
+   "jsTotal": 2615,
    "totalScreens": 27,
-   "valuePrefix": 2184,
-   "rulePrefix": 2184,
+   "valuePrefix": 2293,
+   "rulePrefix": 2293,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2184,
-    "step": 0,
-    "c": "rn2(8)=0 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=161 @ fastforward_post_mklev",
+    "index": 2293,
+    "step": 9,
+    "c": "rnd(2)=1 @ next_ident(mkobj.c:521)",
+    "js": "rn2(12)=8 @ fastforward_step",
     "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "next_ident",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=147 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=124 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=918 @ mineralize(mklev.c:1526)",
-     "rn2(8)=0 @ collect_coords(teleport.c:700)",
-     "rn2(7)=2 @ collect_coords(teleport.c:700)",
-     "rn2(6)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=273 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=6 @ moveloop_preamble(allmain.c:79)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)",
+     "rn2(100)=4 @ obj_resists(zap.c:1469)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -468,28 +468,28 @@
   {
    "session": "seed0102-ranger-name-cancel.session.json",
    "total": 4485,
-   "jsTotal": 4740,
+   "jsTotal": 4724,
    "totalScreens": 25,
-   "valuePrefix": 4334,
-   "rulePrefix": 4334,
+   "valuePrefix": 4444,
+   "rulePrefix": 4442,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 4334,
-    "step": 0,
-    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=56 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 4442,
+    "step": 14,
+    "c": "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=4 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=185 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=236 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=786 @ mineralize(mklev.c:1526)",
-     "rn2(8)=7 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)",
-     "rn2(6)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=917 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=26 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=46 @ maybe_generate_rnd_mon(allmain.c:166)"
     ]
    },
    "error": null
@@ -497,28 +497,28 @@
   {
    "session": "seed0103-knight-ride-pony.session.json",
    "total": 2640,
-   "jsTotal": 3096,
+   "jsTotal": 3117,
    "totalScreens": 60,
-   "valuePrefix": 2289,
-   "rulePrefix": 2289,
+   "valuePrefix": 2437,
+   "rulePrefix": 2434,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2289,
-    "step": 0,
-    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=181 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2434,
+    "step": 5,
+    "c": "rn2(12)=8 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=8 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=408 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=434 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=564 @ mineralize(mklev.c:1526)",
-     "rn2(8)=4 @ collect_coords(teleport.c:700)",
-     "rn2(7)=4 @ collect_coords(teleport.c:700)",
-     "rn2(6)=1 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=3259 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=5 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=8 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -526,9 +526,9 @@
   {
    "session": "seed0104-knight-ride-combat.session.json",
    "total": 3223,
-   "jsTotal": 2808,
+   "jsTotal": 2829,
    "totalScreens": 43,
-   "valuePrefix": 2477,
+   "valuePrefix": 2625,
    "rulePrefix": 1415,
    "screens": 0,
    "honestScreens": 0,
@@ -555,28 +555,28 @@
   {
    "session": "seed0105-valk-chat-lamp-ration.session.json",
    "total": 2499,
-   "jsTotal": 2830,
+   "jsTotal": 2820,
    "totalScreens": 30,
-   "valuePrefix": 2354,
-   "rulePrefix": 2354,
+   "valuePrefix": 2474,
+   "rulePrefix": 2468,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2354,
-    "step": 0,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=37 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2468,
+    "step": 27,
+    "c": "rn2(12)=5 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=5 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=460 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=151 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=887 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=5 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=7478 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=24 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=5 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -584,28 +584,28 @@
   {
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
-   "jsTotal": 2923,
+   "jsTotal": 2946,
    "totalScreens": 267,
-   "valuePrefix": 2409,
-   "rulePrefix": 2409,
+   "valuePrefix": 2559,
+   "rulePrefix": 2556,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2409,
-    "step": 0,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=671 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2556,
+    "step": 4,
+    "c": "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=4 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=919 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=773 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=644 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=4 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=7228 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=24 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=11 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=1 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -613,28 +613,28 @@
   {
    "session": "seed0107-samurai-twoweapon-enhance.session.json",
    "total": 2902,
-   "jsTotal": 2872,
+   "jsTotal": 2868,
    "totalScreens": 98,
-   "valuePrefix": 2529,
-   "rulePrefix": 2529,
+   "valuePrefix": 2651,
+   "rulePrefix": 2649,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2529,
-    "step": 0,
-    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=688 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2649,
+    "step": 4,
+    "c": "rn2(12)=9 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=9 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=915 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=576 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=131 @ mineralize(mklev.c:1526)",
-     "rn2(8)=7 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)",
-     "rn2(6)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=3660 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=8 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=9 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=5 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=17 @ maybe_generate_rnd_mon(allmain.c:166)"
     ]
    },
    "error": null
@@ -642,9 +642,9 @@
   {
    "session": "seed0108-wizard-extcmd-wishlist.session.json",
    "total": 16958,
-   "jsTotal": 3639,
+   "jsTotal": 3683,
    "totalScreens": 303,
-   "valuePrefix": 2597,
+   "valuePrefix": 2770,
    "rulePrefix": 1482,
    "screens": 0,
    "honestScreens": 0,
@@ -671,9 +671,9 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3494,
+   "jsTotal": 3535,
    "totalScreens": 127,
-   "valuePrefix": 2805,
+   "valuePrefix": 2975,
    "rulePrefix": 1698,
    "screens": 0,
    "honestScreens": 0,
@@ -700,9 +700,9 @@
   {
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
-   "jsTotal": 3346,
+   "jsTotal": 3382,
    "totalScreens": 40,
-   "valuePrefix": 3087,
+   "valuePrefix": 3252,
    "rulePrefix": 1768,
    "screens": 0,
    "honestScreens": 0,
@@ -729,9 +729,9 @@
   {
    "session": "seed0360-wizard-world-tour.session.json",
    "total": 120639,
-   "jsTotal": 3706,
+   "jsTotal": 3747,
    "totalScreens": 833,
-   "valuePrefix": 2733,
+   "valuePrefix": 2898,
    "rulePrefix": 1355,
    "screens": 0,
    "honestScreens": 0,
@@ -758,28 +758,28 @@
   {
    "session": "seed0361-archeologist-tour.session.json",
    "total": 53865,
-   "jsTotal": 3744,
+   "jsTotal": 3751,
    "totalScreens": 366,
-   "valuePrefix": 2793,
-   "rulePrefix": 2793,
+   "valuePrefix": 2924,
+   "rulePrefix": 2924,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2793,
-    "step": 0,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=825 @ fastforward_post_mklev",
+    "index": 2924,
+    "step": 19,
+    "c": "rnd(8)=4 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=3 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "newhp",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=388 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=88 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=766 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=2 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=8060 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=7 @ moveloop_preamble(allmain.c:79)",
+     "rnd(8)=4 @ newhp(attrib.c:1101)",
+     "rnd(2)=1 @ newhp(attrib.c:1103)",
+     "rn2(10)=2 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -787,28 +787,28 @@
   {
    "session": "seed0367-priest-quest-tour.session.json",
    "total": 50125,
-   "jsTotal": 2786,
+   "jsTotal": 2805,
    "totalScreens": 324,
-   "valuePrefix": 1705,
-   "rulePrefix": 1705,
+   "valuePrefix": 1848,
+   "rulePrefix": 1848,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1705,
-    "step": 0,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=664 @ fastforward_post_mklev",
+    "index": 1848,
+    "step": 19,
+    "c": "rnd(8)=1 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=8 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "newhp",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=159 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=559 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=235 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=1 @ collect_coords(teleport.c:700)",
-     "rn2(7)=6 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=4577 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=6 @ moveloop_preamble(allmain.c:79)",
+     "rnd(8)=1 @ newhp(attrib.c:1101)",
+     "rnd(2)=1 @ newhp(attrib.c:1103)",
+     "rn2(10)=0 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -816,9 +816,9 @@
   {
    "session": "seed0373-barbarian-quest-tour.session.json",
    "total": 35386,
-   "jsTotal": 4126,
+   "jsTotal": 4096,
    "totalScreens": 124,
-   "valuePrefix": 2418,
+   "valuePrefix": 2512,
    "rulePrefix": 1417,
    "screens": 0,
    "honestScreens": 0,
@@ -845,9 +845,9 @@
   {
    "session": "seed0383-wizard-hallucinate.session.json",
    "total": 16915,
-   "jsTotal": 3263,
+   "jsTotal": 3293,
    "totalScreens": 219,
-   "valuePrefix": 2296,
+   "valuePrefix": 2450,
    "rulePrefix": 1102,
    "screens": 0,
    "honestScreens": 0,
@@ -874,28 +874,28 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 3491,
+   "jsTotal": 3474,
    "totalScreens": 87,
-   "valuePrefix": 2657,
-   "rulePrefix": 2657,
+   "valuePrefix": 2764,
+   "rulePrefix": 2764,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2657,
-    "step": 0,
-    "c": "rn2(1)=0 @ trquan(u_init.c:1110)",
-    "js": "rnd(1000)=979 @ fastforward_post_mklev",
+    "index": 2764,
+    "step": 26,
+    "c": "rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)",
+    "js": "rn2(12)=1 @ fastforward_step",
     "kind": "value",
-    "cCaller": "trquan",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "rnd_otyp_by_namedesc",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=654 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=260 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=947 @ mineralize(mklev.c:1526)",
-     "rn2(1)=0 @ trquan(u_init.c:1110)",
+     "rn2(20)=14 @ vary_init_attr(attrib.c:769)",
+     "rnd(9000)=6343 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=19 @ moveloop_preamble(allmain.c:79)",
+     "rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)",
      "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "rn2(11)=10 @ mksobj_init(mkobj.c:878)"
+     "rn2(5)=2 @ mksobj_init(mkobj.c:1124)"
     ]
    },
    "error": null
@@ -903,28 +903,28 @@
   {
    "session": "seed0399-wizard-hallu-actions.session.json",
    "total": 11409,
-   "jsTotal": 3595,
+   "jsTotal": 3628,
    "totalScreens": 532,
-   "valuePrefix": 2628,
-   "rulePrefix": 2628,
+   "valuePrefix": 2785,
+   "rulePrefix": 2785,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2628,
-    "step": 0,
-    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=221 @ fastforward_post_mklev",
+    "index": 2785,
+    "step": 19,
+    "c": "rnd(8)=5 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=4 @ fastforward_step",
     "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "newhp",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=503 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=574 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=438 @ mineralize(mklev.c:1526)",
-     "rn2(8)=4 @ collect_coords(teleport.c:700)",
-     "rn2(7)=4 @ collect_coords(teleport.c:700)",
-     "rn2(6)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=3981 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=29 @ moveloop_preamble(allmain.c:79)",
+     "rnd(8)=5 @ newhp(attrib.c:1101)",
+     "rnd(2)=2 @ newhp(attrib.c:1103)",
+     "rn2(9)=2 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -932,9 +932,9 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 2483,
+   "jsTotal": 2513,
    "totalScreens": 28,
-   "valuePrefix": 2051,
+   "valuePrefix": 2205,
    "rulePrefix": 1223,
    "screens": 0,
    "honestScreens": 0,
@@ -961,28 +961,28 @@
   {
    "session": "seed0700-samurai-explore-descend.session.json",
    "total": 3230,
-   "jsTotal": 2870,
+   "jsTotal": 2857,
    "totalScreens": 51,
-   "valuePrefix": 2619,
-   "rulePrefix": 2619,
+   "valuePrefix": 2732,
+   "rulePrefix": 2730,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2619,
-    "step": 0,
-    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=613 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2730,
+    "step": 4,
+    "c": "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=10 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "rn2(6)=3 @ mksobj_init(mkobj.c:982)",
-     "rn2(3)=1 @ mineralize(mklev.c:1533)",
-     "rn2(8)=4 @ collect_coords(teleport.c:700)",
-     "rn2(7)=5 @ collect_coords(teleport.c:700)",
-     "rn2(6)=4 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=6933 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=30 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=2 @ mcalcmove(mon.c:1164)",
+     "rn2(70)=39 @ maybe_generate_rnd_mon(allmain.c:166)"
     ]
    },
    "error": null
@@ -990,28 +990,28 @@
   {
    "session": "seed0900-tourist-explore-actions.session.json",
    "total": 2983,
-   "jsTotal": 3063,
+   "jsTotal": 3121,
    "totalScreens": 84,
-   "valuePrefix": 2291,
-   "rulePrefix": 2291,
+   "valuePrefix": 2473,
+   "rulePrefix": 2473,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2291,
-    "step": 0,
-    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=629 @ fastforward_post_mklev",
+    "index": 2473,
+    "step": 3,
+    "c": "rn2(7)=3 @ do_attack(uhitm.c:474)",
+    "js": "rn2(12)=2 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "do_attack",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=690 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=394 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=440 @ mineralize(mklev.c:1526)",
-     "rn2(2)=0 @ pet_type(dog.c:100)",
-     "rn2(8)=7 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=3652 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=27 @ moveloop_preamble(allmain.c:79)",
+     "rn2(7)=3 @ do_attack(uhitm.c:474)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1019,28 +1019,28 @@
   {
    "session": "seed1150-caveman-explore-move.session.json",
    "total": 3137,
-   "jsTotal": 2504,
+   "jsTotal": 2527,
    "totalScreens": 51,
-   "valuePrefix": 2253,
-   "rulePrefix": 2253,
+   "valuePrefix": 2403,
+   "rulePrefix": 2400,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2253,
-    "step": 0,
-    "c": "rn2(8)=6 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=975 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2400,
+    "step": 6,
+    "c": "rn2(12)=11 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=11 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=868 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=802 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=880 @ mineralize(mklev.c:1526)",
-     "rn2(8)=6 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)",
-     "rn2(6)=2 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=7324 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=21 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=11 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1048,28 +1048,28 @@
   {
    "session": "seed1500-rogue-explore-move.session.json",
    "total": 2768,
-   "jsTotal": 2414,
+   "jsTotal": 2413,
    "totalScreens": 40,
-   "valuePrefix": 2163,
-   "rulePrefix": 2163,
+   "valuePrefix": 2290,
+   "rulePrefix": 2286,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2163,
-    "step": 0,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=872 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2286,
+    "step": 4,
+    "c": "rn2(12)=0 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=0 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=969 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=668 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=676 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=5 @ collect_coords(teleport.c:700)",
-     "rn2(7)=2 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=6633 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=26 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=0 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1077,28 +1077,28 @@
   {
    "session": "seed1800-tourist-eat-throw.session.json",
    "total": 2458,
-   "jsTotal": 2628,
+   "jsTotal": 2660,
    "totalScreens": 26,
-   "valuePrefix": 2206,
-   "rulePrefix": 2206,
+   "valuePrefix": 2362,
+   "rulePrefix": 2362,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2206,
-    "step": 0,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=812 @ fastforward_post_mklev",
+    "index": 2362,
+    "step": 5,
+    "c": "rn2(2)=1 @ getrumor(rumors.c:151)",
+    "js": "rn2(12)=7 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "getrumor",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=533 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=175 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=950 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=5 @ collect_coords(teleport.c:700)",
-     "rn2(7)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=8858 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=10 @ moveloop_preamble(allmain.c:79)",
+     "rn2(2)=1 @ getrumor(rumors.c:151)",
+     "rn2(24924)=22517 @ getrumor(rumors.c:151)",
+     "rn2(19)=12 @ exercise(attrib.c:509)"
     ]
    },
    "error": null
@@ -1106,28 +1106,28 @@
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
-   "jsTotal": 3036,
+   "jsTotal": 3079,
    "totalScreens": 230,
-   "valuePrefix": 2557,
-   "rulePrefix": 2557,
+   "valuePrefix": 2724,
+   "rulePrefix": 2724,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2557,
-    "step": 0,
-    "c": "rn2(8)=0 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=345 @ fastforward_post_mklev",
+    "index": 2724,
+    "step": 5,
+    "c": "rn2(2)=1 @ exercise(attrib.c:509)",
+    "js": "rn2(12)=11 @ fastforward_step",
     "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "exercise",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=560 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=969 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=175 @ mineralize(mklev.c:1526)",
-     "rn2(8)=0 @ collect_coords(teleport.c:700)",
-     "rn2(7)=1 @ collect_coords(teleport.c:700)",
-     "rn2(6)=5 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=4523 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=1 @ moveloop_preamble(allmain.c:79)",
+     "rn2(2)=1 @ exercise(attrib.c:509)",
+     "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=4 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1135,28 +1135,28 @@
   {
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
-   "jsTotal": 3256,
+   "jsTotal": 3289,
    "totalScreens": 38,
-   "valuePrefix": 2673,
-   "rulePrefix": 2673,
+   "valuePrefix": 2830,
+   "rulePrefix": 2830,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2673,
-    "step": 0,
-    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
-    "js": "rnd(1000)=613 @ fastforward_post_mklev",
+    "index": 2830,
+    "step": 11,
+    "c": "rn2(7)=2 @ do_attack(uhitm.c:474)",
+    "js": "rn2(12)=3 @ fastforward_step",
     "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "do_attack",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=888 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=538 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=267 @ mineralize(mklev.c:1526)",
-     "rn2(8)=4 @ collect_coords(teleport.c:700)",
-     "rn2(7)=3 @ collect_coords(teleport.c:700)",
-     "rn2(6)=0 @ collect_coords(teleport.c:700)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=2896 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=23 @ moveloop_preamble(allmain.c:79)",
+     "rn2(7)=2 @ do_attack(uhitm.c:474)",
+     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=8 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1164,28 +1164,28 @@
   {
    "session": "seed4500-knight-coverage.session.json",
    "total": 108275,
-   "jsTotal": 3063,
+   "jsTotal": 3033,
    "totalScreens": 1814,
-   "valuePrefix": 2684,
-   "rulePrefix": 2684,
+   "valuePrefix": 2781,
+   "rulePrefix": 2778,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2684,
-    "step": 0,
-    "c": "rn2(1)=0 @ trquan(u_init.c:1110)",
-    "js": "rnd(1000)=596 @ fastforward_post_mklev",
-    "kind": "value",
-    "cCaller": "trquan",
-    "jsCaller": "fastforward_post_mklev",
+    "index": 2778,
+    "step": 21,
+    "c": "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+    "js": "rn2(12)=7 @ fastforward_step",
+    "kind": "caller",
+    "cCaller": "mcalcmove",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=439 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=379 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=75 @ mineralize(mklev.c:1526)",
-     "rn2(1)=0 @ trquan(u_init.c:1110)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "rn2(11)=10 @ mksobj_init(mkobj.c:878)"
+     "rn2(20)=8 @ vary_init_attr(attrib.c:769)",
+     "rnd(9000)=4300 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=5 @ moveloop_preamble(allmain.c:79)",
+     "rn2(12)=7 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=1 @ mcalcmove(mon.c:1164)",
+     "rn2(12)=11 @ mcalcmove(mon.c:1164)"
     ]
    },
    "error": null
@@ -1193,9 +1193,9 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 7103,
+   "jsTotal": 7173,
    "totalScreens": 410,
-   "valuePrefix": 2557,
+   "valuePrefix": 2719,
    "rulePrefix": 1714,
    "screens": 0,
    "honestScreens": 0,
@@ -1222,28 +1222,28 @@
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 6144,
+   "jsTotal": 8023,
    "totalScreens": 249,
-   "valuePrefix": 2196,
-   "rulePrefix": 2196,
+   "valuePrefix": 4182,
+   "rulePrefix": 4182,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 2196,
-    "step": 0,
-    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
-    "js": "rnd(1000)=250 @ fastforward_post_mklev",
+    "index": 4182,
+    "step": 4,
+    "c": "rn2(3)=2 @ getbones(bones.c:645)",
+    "js": "rn2(12)=11 @ fastforward_step",
     "kind": "value",
-    "cCaller": "pet_type",
-    "jsCaller": "fastforward_post_mklev",
+    "cCaller": "getbones",
+    "jsCaller": "fastforward_step",
     "context": [
-     "rn2(1000)=913 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=41 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=788 @ mineralize(mklev.c:1526)",
-     "rn2(2)=1 @ pet_type(dog.c:100)",
-     "rn2(8)=0 @ collect_coords(teleport.c:700)",
-     "rn2(7)=5 @ collect_coords(teleport.c:700)"
+     "rn2(20)=8 @ vary_init_attr(attrib.c:769)",
+     "rnd(9000)=4480 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=12 @ moveloop_preamble(allmain.c:79)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1279,11 +1279,11 @@
   }
  ],
  "staticCounts": {
-  "discarded-roll": 23
+  "discarded-roll": 10
  },
  "totals": {
-  "rule": 96851,
-  "value": 111139,
+  "rule": 102449,
+  "value": 118611,
   "rolls": 792838,
   "honestScreens": 120,
   "screens": 135,
@@ -1291,27 +1291,18 @@
  },
  "todo": [
   {
-   "fn": "pet_type",
+   "fn": "mcalcmove",
    "sessions": 14,
-   "blockedRolls": 209836,
+   "blockedRolls": 151311,
    "examples": [
-    "seed0002-healer-reflection-drummer @2157: C \"rn2(2)=0 @ pet_type(dog.c:100)\" / JS \"rnd(1000)=75 @ fastforward_post_mklev\"",
-    "seed0012-monk-vault-escort @2911: C \"rn2(2)=0 @ pet_type(dog.c:100)\" / JS \"rnd(1000)=31 @ fastforward_post_mklev\""
-   ]
-  },
-  {
-   "fn": "collect_coords",
-   "sessions": 12,
-   "blockedRolls": 26561,
-   "examples": [
-    "seed0006-wizard-water-demon @2351: C \"rn2(8)=6 @ collect_coords(teleport.c:700)\" / JS \"rnd(1000)=47 @ fastforward_post_mklev\"",
-    "seed0009-swimmer-mforce @3228: C \"rn2(8)=2 @ collect_coords(teleport.c:700)\" / JS \"rnd(1000)=11 @ fastforward_post_mklev\""
+    "seed0002-healer-reflection-drummer @2305: C \"rn2(12)=4 @ mcalcmove(mon.c:1164)\" / JS \"rn2(12)=4 @ fastforward_step\"",
+    "seed0006-wizard-water-demon @2502: C \"rn2(12)=7 @ mcalcmove(mon.c:1164)\" / JS \"rn2(12)=7 @ fastforward_step\""
    ]
   },
   {
    "fn": "getrumor",
-   "sessions": 7,
-   "blockedRolls": 178267,
+   "sessions": 8,
+   "blockedRolls": 178363,
    "examples": [
     "seed0007-rogue-snake-swamp @1628: C \"rn2(25762)=25553 @ getrumor(rumors.c:151)\" / JS \"rn2(25762)=25553 @ get_rnd_line\"",
     "seed0030-ten-diverse-deaths @5165: C \"rn2(25762)=7767 @ getrumor(rumors.c:151)\" / JS \"rn2(25762)=7767 @ get_rnd_line\""
@@ -1327,6 +1318,24 @@
    ]
   },
   {
+   "fn": "newhp",
+   "sessions": 3,
+   "blockedRolls": 107842,
+   "examples": [
+    "seed0361-archeologist-tour @2924: C \"rnd(8)=4 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=3 @ fastforward_step\"",
+    "seed0367-priest-quest-tour @1848: C \"rnd(8)=1 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=8 @ fastforward_step\""
+   ]
+  },
+  {
+   "fn": "do_attack",
+   "sessions": 3,
+   "blockedRolls": 65549,
+   "examples": [
+    "seed0014-dequa-fountain-explore @2956: C \"rn2(7)=1 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=10 @ fastforward_step\"",
+    "seed0900-tourist-explore-actions @2473: C \"rn2(7)=3 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=2 @ fastforward_step\""
+   ]
+  },
+  {
    "fn": "somey",
    "sessions": 3,
    "blockedRolls": 27737,
@@ -1336,12 +1345,12 @@
    ]
   },
   {
-   "fn": "trquan",
+   "fn": "getbones",
    "sessions": 2,
-   "blockedRolls": 105960,
+   "blockedRolls": 10117,
    "examples": [
-    "seed0398-wizard-wandpoly-pile @2657: C \"rn2(1)=0 @ trquan(u_init.c:1110)\" / JS \"rnd(1000)=979 @ fastforward_post_mklev\"",
-    "seed4500-knight-coverage @2684: C \"rn2(1)=0 @ trquan(u_init.c:1110)\" / JS \"rnd(1000)=596 @ fastforward_post_mklev\""
+    "seed0009-swimmer-mforce @3337: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=5 @ fastforward_step\"",
+    "seed5006-tourist-stress-disaster @4182: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"rn2(12)=11 @ fastforward_step\""
    ]
   },
   {
@@ -1354,11 +1363,44 @@
    ]
   },
   {
+   "fn": "next_ident",
+   "sessions": 2,
+   "blockedRolls": 1241,
+   "examples": [
+    "seed0016-healer-newmoon-eat-zap @2493: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=1 @ fastforward_step\"",
+    "seed0101-ranger-quiver-throw-travel-engrave @2293: C \"rnd(2)=1 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=8 @ fastforward_step\""
+   ]
+  },
+  {
    "fn": "selection_rndcoord",
    "sessions": 1,
    "blockedRolls": 8206,
    "examples": [
     "seed0015-valk-level2-pit-dog-wait @357: C \"rn2(36)=5 @ selection_rndcoord(selvar.c:302)\" / JS \"rn2(1)=0 @ rnd_rect\""
+   ]
+  },
+  {
+   "fn": "exercise",
+   "sessions": 1,
+   "blockedRolls": 294,
+   "examples": [
+    "seed2200-wizard-quaff-zap-read @2724: C \"rn2(2)=1 @ exercise(attrib.c:509)\" / JS \"rn2(12)=11 @ fastforward_step\""
+   ]
+  },
+  {
+   "fn": "rnd_otyp_by_namedesc",
+   "sessions": 1,
+   "blockedRolls": 262,
+   "examples": [
+    "seed0398-wizard-wandpoly-pile @2764: C \"rn2(46)=27 @ rnd_otyp_by_namedesc(objnam.c:3522)\" / JS \"rn2(12)=1 @ fastforward_step\""
+   ]
+  },
+  {
+   "fn": "doopen_indir",
+   "sessions": 1,
+   "blockedRolls": 47,
+   "examples": [
+    "seed0077-rogue-chargen @3195: C \"rnl(20)=2 @ doopen_indir(lock.c:904)\" / JS \"rn2(12)=6 @ fastforward_step\""
    ]
   }
  ],
@@ -1366,139 +1408,61 @@
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 13,
-   "text": "rnd(1000); rn2(20); rnd(2); rn2(6); rn2(11); rn2(10); rn2(10); rn2(100); rn2(20); rn2(1);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 14,
-   "text": "rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 15,
-   "text": "rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 16,
-   "text": "rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 17,
-   "text": "rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(15); rn2(10);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 18,
-   "text": "rn2(6); rn2(1); rnd(2); rn2(4); rn2(2); rnd(2); rn2(4); rn2(2); rn2(1); rnd(2); rn2(4);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 19,
-   "text": "rnd(2); rn2(4); rnd(2); rn2(4); rnd(2); rn2(4); rn2(1); rnd(2); rn2(10); rn2(11); rn2(10);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 20,
-   "text": "rn2(10); rn2(1); rnd(2); rn2(70); rn2(1); rn2(1); rnd(2); rn2(1); rn2(25); rn2(25); rn2(25);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 21,
-   "text": "rn2(20); rn2(1); rnd(2); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 22,
-   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 23,
-   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 24,
-   "text": "rn2(100); rn2(100); rn2(100); rn2(20); rn2(20); rn2(20); rn2(7); rn2(20); rn2(20); rn2(20);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 25,
-   "text": "rnd(9000); rnd(30);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 31,
+   "line": 12,
    "text": "() => { rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 1"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 32,
+   "line": 13,
    "text": "() => { rn2(5); rn2(5); rn2(5); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // s"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 33,
+   "line": 14,
    "text": "() => { rn2(5); rn2(32); rn2(5); rn2(5); rn2(32); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 34,
+   "line": 15,
    "text": "() => { rn2(5); rn2(24); rn2(5); rn2(5); rn2(24); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 35,
+   "line": 16,
    "text": "() => { rn2(5); rn2(16); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 5"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 36,
+   "line": 17,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 37,
+   "line": 18,
    "text": "() => { rn2(5); rn2(16); rn2(5); rn2(5); rn2(16); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 38,
+   "line": 19,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 8"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 39,
+   "line": 20,
    "text": "() => { rn2(5); rn2(20); rn2(5); rn2(5); rn2(8); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 40,
+   "line": 21,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(20); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   }
  ]
