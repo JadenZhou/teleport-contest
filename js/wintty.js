@@ -239,8 +239,13 @@ function erase_menu_or_text(window, cw, clear) {
             cl_eos();
         } else if (clear) {
             term_clear_screen();
+        } else if (!game.level || game.program_state?.in_role_selection) {
+            throw new Error('erase_menu_or_text: docrt() before the map exists is not ported yet');
         } else {
-            throw new Error('erase_menu_or_text: docrt() refresh not ported yet');
+            /* docrt(); flush_screen(1); -- cls() then the map is redrawn
+               from the glyph buffer and the status lines with botlx set */
+            term_clear_screen();
+            docorner(0, tty().rows, 0);
         }
     } else {
         docorner(cw.offx, cw.maxrow + 1, 0);
