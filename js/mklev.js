@@ -58,7 +58,7 @@ import {
     mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
     CORPSTAT_INIT,
 } from './mkobj.js';
-import { mkclass } from './makemon.js';
+import { mkclass, makemon } from './makemon.js';
 import {
     NO_TRAP, TRAPNUM, ARROW_TRAP, DART_TRAP, ROCKTRAP, SQKY_BOARD, LANDMINE,
     ROLLING_BOULDER_TRAP, SLP_GAS_TRAP, RUST_TRAP, FIRE_TRAP, PIT, SPIKED_PIT,
@@ -188,8 +188,6 @@ function sobj_at(otyp, x, y) { return false; }
 // C ref: mkmaze.c mazexy() -- only reached with MKTRAP_MAZEFLAG (mazes)
 function mazexy(cc) { throw new Error('mazexy: not ported yet'); }
 
-// TEMP: makemon.c makemon() is being ported into js/makemon.js
-function makemon(ptr, x, y, mmflags) { return null; }
 
 // in_rooms stub
 function in_rooms(x, y, rtype) { return []; }
