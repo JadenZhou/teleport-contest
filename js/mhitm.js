@@ -8,7 +8,8 @@ import { game } from './gstate.js';
 import { rn2, rnd, d } from './rng.js';
 import { distmin, isok } from './hacklib.js';
 import { cansee } from './vision.js';
-import { m_at } from './makemon.js';
+import { m_at, grow_up } from './makemon.js';
+import { monkilled, zombie_maker } from './mon.js';
 import { canspotmon, newsym, pline } from './display.js';
 import { is_elf, is_orc } from './mondata.js';
 import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
@@ -67,7 +68,7 @@ function x_monnam_the(mtmp) {
 // C ref: do_name.c mon_nam()
 function mon_nam(mtmp) { return x_monnam_the(mtmp); }
 // C ref: do_name.c Monnam()
-function Monnam(mtmp) {
+export function Monnam(mtmp) {
     const s = mon_nam(mtmp);
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -366,7 +367,7 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
     } else
         await noises(magr, mattk);
 
-    return mdamagem(magr, mdef, mattk, mwep, dieroll);
+    return await mdamagem(magr, mdef, mattk, mwep, dieroll);
 }
 
 // C ref: uhitm.c mhitm_ad_phys(), monster-vs-monster part
@@ -446,7 +447,7 @@ function mhitm_knockback(magr, mdef, mattk, hitflags, weapon_used) {
 }
 
 // C ref: mhitm.c mdamagem()
-function mdamagem(magr, mdef, mattk, mwep, dieroll) {
+async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
     const pd = mdef.data;
     const mhm = {
         damage: d(mattk.damn, mattk.damd),
@@ -475,8 +476,36 @@ function mdamagem(magr, mdef, mattk, mwep, dieroll) {
         return mhm.hitflags;
 
     mdef.mhp -= mhm.damage;
-    if (mdef.mhp < 1)
-        throw new Error('mdamagem(): monkilled() not ported yet');
+    if (mdef.mhp < 1) {
+        if (m_at(mdef.mx, mdef.my) === magr) /* see gulpmm() */
+            throw new Error('mdamagem(): engulfed defender dying not ported yet');
+        if (mattk.aatyp === AT_WEAP || mattk.aatyp === AT_CLAW) {
+            /* troll_baned(mdef, mwep) */
+            if (mdef.data.mlet === M.S_TROLL && mwep)
+                throw new Error('mdamagem(): troll_baned() not ported yet');
+            game.mkcorpstat_norevive = false;
+        }
+        if (!mwep && zombie_maker(magr)
+            && (mattk.aatyp === AT_TUCH
+                || mattk.aatyp === AT_CLAW
+                || mattk.aatyp === AT_BITE))
+            throw new Error('mdamagem(): zombie_form() not ported yet');
+        game.zombify = false;
+        await monkilled(mdef, '', mattk.adtyp);
+        game.zombify = false; /* reset */
+        game.mkcorpstat_norevive = false;
+        if (!DEADMONSTER(mdef))
+            return mhm.hitflags; /* mdef lifesaved */
+        else if (mhm.hitflags === M_ATTK_AGR_DIED)
+            return (M_ATTK_DEF_DIED | M_ATTK_AGR_DIED);
+
+        if (mattk.adtyp === AD_DGST)
+            throw new Error('mdamagem(): digestion after kill not ported yet');
+        /* caveat: above digestion handling doesn't keep `pa' up to date */
+
+        return (M_ATTK_DEF_DIED
+                | (grow_up(magr, mdef) ? 0 : M_ATTK_AGR_DIED));
+    }
     return (mhm.hitflags === M_ATTK_AGR_DIED) ? M_ATTK_AGR_DIED : M_ATTK_HIT;
 }
 
@@ -528,7 +557,9 @@ async function passivemm(magr, mdef, mhitb, mdead, mwep) {
         tmp = 0;
 
     /* assess_dmg: */
-    if ((magr.mhp -= tmp) <= 0)
-        throw new Error('passivemm(): monkilled() not ported yet');
+    if ((magr.mhp -= tmp) <= 0) {
+        await monkilled(magr, '', mddat.mattk[i].adtyp);
+        return (mdead | mhit | M_ATTK_AGR_DIED);
+    }
     return (mdead | mhit);
 }
