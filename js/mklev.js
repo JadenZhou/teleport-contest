@@ -10,7 +10,10 @@ import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
-import { Is_branchlev } from './dungeon.js';
+import { Is_branchlev, level_difficulty } from './dungeon.js';
+import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
+         NHLpa_panic, NHLpa_impossible } from './nhlua.js';
+import { create_des_coder, reset_xystart_size } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
@@ -24,7 +27,7 @@ import {
     SPACE_POS, isok, W_NONDIGGABLE, FILL_NORMAL,
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
-    LR_UPTELE,
+    LR_UPTELE, NHL_SB_SAFE,
 } from './const.js';
 
 // Object/class constants (normally from objects.js, not in contest template)
@@ -184,12 +187,6 @@ export function u_on_upstairs() {
 // oinit stub (level-dependent object probability reset)
 function oinit() { /* no-op for contest */ }
 
-// level_difficulty stub
-function level_difficulty() {
-    const uz = game.u?.uz;
-    const d = depth_of_level(uz);
-    return d;
-}
 
 // ============================================================
 // Stub functions for object/monster/trap creation
@@ -454,19 +451,6 @@ async function makelevel() {
     }
 
     // Regular level generation
-    // C ref: mklev.c:382-388 — load themerms.lua for themed rooms
-    // nhlib.lua shuffle when loading themerms.lua (first level of branch)
-    const dnum = g.u?.uz?.dnum ?? 0;
-    if (!g._luathemes_loaded) g._luathemes_loaded = {};
-    if (!g._luathemes_loaded[dnum]) {
-        const themedAlign = ['law', 'neutral', 'chaos'];
-        for (let i = themedAlign.length; i > 1; i--) {
-            const j = rn2(i);
-            [themedAlign[i - 1], themedAlign[j]] = [themedAlign[j], themedAlign[i - 1]];
-        }
-        g._luathemes_loaded[dnum] = true;
-    }
-
     await makerooms();
 
     if (g.level.nroom <= 0) return;
@@ -508,103 +492,75 @@ async function makelevel() {
 async function makerooms() {
     const g = game;
     let tried_vault = false;
-    const difficulty = depth_of_level(g.u?.uz);
     let themeroom_tries = 0;
+    let fname;
+    const sbi = { flags: NHL_SB_SAFE, memlimit: 1 * 1024 * 1024, steps: 0,
+                  perpcall: 1 * 1024 * 1024 };
+    if (!g.luathemes) g.luathemes = [];
+    let themes = g.luathemes[g.u.uz.dnum] || null;
 
+    if (!themes && (fname = g.dungeons[g.u.uz.dnum].themerms)) {
+        if ((themes = nhl_init(sbi)) !== null) {
+            if (!nhl_loadlua(themes, fname)) {
+                /* loading lua failed, don't use themed rooms */
+                nhl_done(themes);
+                themes = null;
+            } else {
+                /* success; save state for this dungeon branch */
+                g.luathemes[g.u.uz.dnum] = themes;
+                /* keep themes context, so not 'nhl_done(themes);' */
+                g.iflags.in_lua = false; /* can affect error messages */
+            }
+        }
+        if (!themes) /* don't try again when making next level */
+            g.dungeons[g.u.uz.dnum].themerms = '';
+    }
+
+    if (themes) {
+        create_des_coder();
+        g.iflags.in_lua = g.in_mk_themerooms = true;
+        g.themeroom_failed = false;
+        nhl_pcall_handle(themes, themes.globals.pre_themerooms_generate, [],
+                         'makerooms-1', NHLpa_impossible);
+        g.iflags.in_lua = g.in_mk_themerooms = false;
+    }
+
+    /* make rooms until satisfied */
+    /* rnd_rect() will returns 0 if no more rects are available... */
     while (g.level.nroom < (MAXNROFROOMS - 1) && rnd_rect()) {
         if (g.level.nroom >= Math.trunc(MAXNROFROOMS / 6) && rn2(2) && !tried_vault) {
             tried_vault = true;
             if (create_vault()) {
-                g.vault_x = g.level.rooms[g.level.nroom]?.lx ?? -1;
-                g.vault_y = g.level.rooms[g.level.nroom]?.ly ?? -1;
-                if (g.level.rooms[g.level.nroom]) g.level.rooms[g.level.nroom].hx = -1;
+                g.vault_x = g.level.rooms[g.level.nroom].lx;
+                g.vault_y = g.level.rooms[g.level.nroom].ly;
+                g.level.rooms[g.level.nroom].hx = -1;
             }
         } else {
-            // Themed room selection (reservoir sampling)
-            if (!(await themerooms_generate(difficulty))) {
-                if (themeroom_tries++ > 10
-                    || g.level.nroom >= Math.trunc(MAXNROFROOMS / 6))
+            if (themes) {
+                g.iflags.in_lua = g.in_mk_themerooms = true;
+                g.themeroom_failed = false;
+                if (nhl_pcall_handle(themes, themes.globals.themerooms_generate, [],
+                                     'makerooms-2', NHLpa_panic))
+                    g.themeroom_failed = true; /* panic() is not ported */
+                g.iflags.in_lua = g.in_mk_themerooms = false;
+                if (g.themeroom_failed
+                    && ((themeroom_tries++ > 10)
+                        || (g.level.nroom >= Math.trunc(MAXNROFROOMS / 6))))
+                    break;
+            } else {
+                if (!create_room(-1, -1, -1, -1, -1, -1, OROOM, -1))
                     break;
             }
         }
     }
-}
-
-// Themed room metadata — must match C's themerms.lua frequency table exactly.
-// Generated from themeroom_meta.js (31 rooms).
-const THEMEROOM_META = [
-    { name: 'default', frequency: 1000 },
-    { name: 'Fake Delphi', frequency: 1 },
-    { name: 'Room in a room', frequency: 1 },
-    { name: 'Huge room with another room inside', frequency: 1 },
-    { name: 'Nesting rooms', frequency: 1 },
-    { name: 'Default room with themed fill', frequency: 6 },
-    { name: 'Unlit room with themed fill', frequency: 2 },
-    { name: 'Room with both normal contents and themed fill', frequency: 2 },
-    { name: 'Pillars', frequency: 1 },
-    { name: 'Mausoleum', frequency: 1 },
-    { name: 'Random dungeon feature', frequency: 1 },
-    { name: 'L-shaped', frequency: 1 },
-    { name: 'L-shaped, rot 1', frequency: 1 },
-    { name: 'L-shaped, rot 2', frequency: 1 },
-    { name: 'L-shaped, rot 3', frequency: 1 },
-    { name: 'Blocked center', frequency: 1 },
-    { name: 'Circular, small', frequency: 1 },
-    { name: 'Circular, medium', frequency: 1 },
-    { name: 'Circular, big', frequency: 1 },
-    { name: 'T-shaped', frequency: 1 },
-    { name: 'T-shaped, rot 1', frequency: 1 },
-    { name: 'T-shaped, rot 2', frequency: 1 },
-    { name: 'T-shaped, rot 3', frequency: 1 },
-    { name: 'S-shaped', frequency: 1 },
-    { name: 'S-shaped, rot 1', frequency: 1 },
-    { name: 'Z-shaped', frequency: 1 },
-    { name: 'Z-shaped, rot 1', frequency: 1 },
-    { name: 'Cross', frequency: 1 },
-    { name: 'Four-leaf clover', frequency: 1 },
-    { name: 'Water-surrounded vault', frequency: 1 },
-    { name: 'Twin businesses', frequency: 1, mindiff: 4 },
-];
-
-function is_themeroom_eligible(room, difficulty) {
-    if (room.mindiff != null && difficulty < room.mindiff) return false;
-    if (room.maxdiff != null && difficulty > room.maxdiff) return false;
-    return true;
-}
-
-// C ref: themerms.lua themerooms_generate()
-// Reservoir sampling picks one themed room. For seed8000 level 1,
-// 'ordinary' always wins (frequency 1000 vs others ~1-10).
-async function themerooms_generate(difficulty) {
-    let pick = null;
-    let total_frequency = 0;
-    for (const meta of THEMEROOM_META) {
-        if (!is_themeroom_eligible(meta, difficulty)) continue;
-        const this_frequency = meta.frequency || 1;
-        total_frequency += this_frequency;
-        if (this_frequency > 0 && rn2(total_frequency) < this_frequency) {
-            pick = meta;
-        }
+    if (themes) {
+        reset_xystart_size();
+        g.iflags.in_lua = g.in_mk_themerooms = true;
+        g.themeroom_failed = false;
+        nhl_pcall_handle(themes, themes.globals.post_themerooms_generate, [],
+                         'makerooms-3', NHLpa_panic);
+        g.iflags.in_lua = g.in_mk_themerooms = false;
     }
-    if (!pick) return false;
-    // For 'ordinary' rooms, create a standard room
-    // For themed rooms with dynamic dimensions, consume those rn2 calls first
-    const chance = 100;
-    if (pick.name !== 'ordinary') {
-        // Themed room — not expected for seed8000, but handle RNG correctly
-        rn2(100); // chance check (build_room)
-    }
-    // All themed rooms go through create_room for placement
-    const ok = create_room(-1, -1, -1, -1, -1, -1, OROOM, -1);
-    if (ok) {
-        // C ref: sp_lev.c:2824 — build_room calls topologize after create_room
-        const aroom = game.level.rooms[game.level.nroom - 1];
-        if (aroom) {
-            topologize(aroom);
-            aroom.needfill = FILL_NORMAL;
-        }
-    }
-    return ok;
 }
 
 // C ref: sp_lev.c check_room()
@@ -658,7 +614,7 @@ function check_room(lowx, ddx, lowy, ddy, vault) {
 }
 
 // C ref: sp_lev.c create_room()
-function create_room(x, y, w, h, xal, yal, rtype, rlit) {
+export function create_room(x, y, w, h, xal, yal, rtype, rlit) {
     const g = game;
     let xabs = 0, yabs = 0;
     let r1 = null, r2 = null;
@@ -839,7 +795,7 @@ function sort_rooms() {
 }
 
 // C ref: mklev.c topologize()
-function topologize(croom) {
+export function topologize(croom) {
     if (!croom || croom.irregular) return;
     const roomno = (croom.roomnoidx ?? -1) + ROOMOFFSET;
     const lowx = croom.lx, lowy = croom.ly;
@@ -1034,7 +990,7 @@ function dodoor(x, y, aroom) {
     dosdoor(x, y, aroom, maybe_sdoor(8) ? SDOOR : DOOR);
 }
 
-function add_door(x, y, aroom) {
+export function add_door(x, y, aroom) {
     const g = game;
     if (!g.level.doors) g.level.doors = [];
     for (let i = 0; i < aroom.doorct; i++) {

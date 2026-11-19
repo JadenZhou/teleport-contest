@@ -36,6 +36,10 @@ import { TRUE, FALSE, NHL_SB_SAFE } from './const.js';
 import { nhlib_lua } from './nhlib_lua.js';
 import { dungeon_lua } from './dungeon_lua.js';
 import { nhcore_lua } from './nhcore_lua.js';
+import { themerms_lua } from './themerms_lua.js';
+import { l_register_des } from './sp_lev.js';
+import { l_selection_register } from './selvar.js';
+import { level_difficulty } from './dungeon.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -193,11 +197,46 @@ function nhl_random(...args) {
     nhl_error(null, 'Wrong args');
 }
 
-// C ref: nhlua.c nhl_functions[] — the "nh" table. Only the dice functions
+// C ref: nhlua.c nhl_impossible()
+/* impossible("Error!") */
+function nhl_impossible(...args) {
+    if (args.length === 1)
+        impossible(luaL_checkstring(args[0]));
+    else
+        nhl_error(null, 'Wrong args');
+    return 0;
+}
+
+// C ref: nhlua.c nhl_level_difficulty()
+/* local difficulty = nh.level_difficulty() */
+function nhl_level_difficulty(...args) {
+    if (args.length === 0) {
+        return level_difficulty();
+    } else {
+        nhl_error(null, 'level_difficulty should not have any args');
+    }
+}
+
+// C ref: nhlua.c nhl_get_debug_themerm_name()
+/* local debug_themerm = nh.debug_themerm(is_fill) */
+function nhl_get_debug_themerm_name(...args) {
+    if (args.length === 1) {
+        /* THEMERM / THEMERMFILL are read from the environment only in
+           wizard mode; the JS port has no environment to read, so this is
+           always nil */
+        return undefined;
+    }
+    nhl_error(null, 'Wrong args');
+}
+
+// C ref: nhlua.c nhl_functions[] — the "nh" table. Only some functions
 // are ported so far.
 const nhl_functions = {
+    impossible: nhl_impossible,
     rn2: nhl_rn2,
     random: nhl_random,
+    level_difficulty: nhl_level_difficulty,
+    debug_themerm: nhl_get_debug_themerm_name,
 };
 
 // The hand-ported Lua scripts by file name: the files nhl_loadlua() can
@@ -206,6 +245,7 @@ const nhl_lua_files = {
     'nhlib.lua': nhlib_lua,
     'dungeon.lua': dungeon_lua,
     'nhcore.lua': nhcore_lua,
+    'themerms.lua': themerms_lua,
 };
 
 // C ref: nhlua.c nhlL_newstate()
@@ -256,6 +296,11 @@ export function nhl_init(sbi) {
     /* register nh -table, and functions for it */
     L.globals.nh = { ...nhl_functions };
 
+    /* init_nhc_data(L), init_u_data(L): not ported yet */
+    l_selection_register(L);
+    l_register_des(L);
+    /* l_obj_register(L): not ported yet */
+
     /* nhlib.lua assumes the math table exists. */
     if (lua_type(L.globals.math) !== LUA_TTABLE) {
         L.globals.math = {};
@@ -267,6 +312,28 @@ export function nhl_init(sbi) {
     }
 
     return L;
+}
+
+// nhlua.h NHL_pcall_action
+export const NHLpa_panic = 0;
+export const NHLpa_impossible = 1;
+
+// C ref: nhlua.c nhl_pcall_handle()
+// Calls fn(...args) as lua_pcall() would. A Lua error is reported as C
+// reports it; panic() is not ported, so NHLpa_panic reports it like
+// NHLpa_impossible does. Returns nonzero on error.
+export function nhl_pcall_handle(L, fn, args, name, npa) {
+    try {
+        fn(...args);
+    } catch (e) {
+        if (!(e instanceof LuaError)) throw e;
+        if (npa === NHLpa_panic)
+            impossible(`(panic) Lua error ${L.sid}:${L.name || '(unknown)'} ${e.message}`);
+        else
+            impossible(`Lua error: ${L.sid}:${L.name || '(unknown)'} ${e.message}`);
+        return 1;
+    }
+    return 0;
 }
 
 // C ref: nhlua.c nhl_done()
