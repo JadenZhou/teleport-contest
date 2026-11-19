@@ -62,8 +62,11 @@ function sessionIndex(sessionsDir) {
         }
     }
     // C and Lua sources: rows that legitimately appear there are not fixtures.
-    const srcDirs = ['nethack-c/recorder/src', 'nethack-c/recorder/dat', 'nethack-c/recorder/include']
-        .map(d => join(ROOT, d)).filter(existsSync);
+    // Prefer the patched recorder tree (local build); fall back to the upstream
+    // submodule (same sources minus logging patches), e.g. in cloud sessions.
+    const base = existsSync(join(ROOT, 'nethack-c/recorder/src')) ? 'nethack-c/recorder' : 'nethack-c/upstream';
+    const srcDirs = ['src', 'dat', 'include'].map(d => join(ROOT, base, d)).filter(existsSync);
+    if (!srcDirs.length) throw new Error('checks.mjs: no C sources found; run `git submodule update --init nethack-c/upstream`');
     _srcText = srcDirs.flatMap(d => readdirSync(d).map(f => join(d, f)))
         .filter(p => statSync(p).isFile()).map(p => readFileSync(p, 'latin1')).join('\n');
 }

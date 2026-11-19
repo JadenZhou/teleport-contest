@@ -51,12 +51,17 @@ either, and no static check count grows (`tools/rule/checks.mjs`).
 6. **A task means "advance the rule prefix past roll i."** The first mismatch may be a symptom.
    Check whether the cause is a missing function, a wrong argument (state set wrong earlier) or
    an extra/missing roll earlier in the same step. Port whatever C is needed, faithfully.
-7. **Agents may read public `sessions/` and the dev set**
-   (`~/code/teleport-research/dev-sessions/recorded`: the 44 public recipes with new seeds)
-   for debugging, but must not see or touch `~/code/teleport-research/private-sessions`.
+7. **Agents may read public `sessions/` and the dev set `sessions-dev/`** (the 44 public
+   recipes re-recorded with new seeds) for debugging, but must not see or touch
+   `~/code/teleport-research/private-sessions`. That folder exists only on the owner's Mac.
 8. **Agents self-gate into the agent ledger**, so near-misses are measured:
-   `node tools/rule/progress.mjs --gate tools/rule/runs/baseline.json --label "..." --ledger ~/code/teleport-research/agent-ledger.jsonl`
-   Use an absolute path so the entries survive worktree removal.
+   `node tools/rule/progress.mjs --gate tools/rule/runs/baseline.json --label "..." --ledger /tmp/teleport-agent-ledger.jsonl`
+   At the end of each loop the coordinator appends `/tmp/teleport-agent-ledger.jsonl` to
+   `tools/rule/runs/agent-ledger.jsonl` and commits it.
+9. **Environment:** Node ≥ 22 (`node --version`). C sources are in `nethack-c/recorder/` on
+   the owner's Mac (patched build), or in `nethack-c/upstream/` otherwise
+   (`git submodule update --init nethack-c/upstream`). It's the same code minus the logging
+   patches.
 
 ## Loop protocol (coordinator)
 
@@ -70,14 +75,14 @@ Each iteration:
    only once the to-do list fans out to different C functions.
 3. Run the gate on the agent's branch, **on both public and dev**:
    - `node tools/rule/progress.mjs --gate tools/rule/runs/baseline.json --label "..."`
-   - `node tools/rule/progress.mjs --sessions ~/code/teleport-research/dev-sessions/recorded --gate ~/code/teleport-research/dev-sessions/baseline.json --label "dev: ..."`
+   - `node tools/rule/progress.mjs --sessions sessions-dev --gate tools/rule/runs/dev-baseline.json --label "dev: ..."`
 
    A merge needs **no regression on either**, and improvement on at least one. (A dev-only
    improvement is fine: it means a generalization fix.)
    - **Pass:** merge to main, save new baselines for both (`--json`), and commit.
    - **Fail:** the ledger records why. Send the reasons back to the agent at most twice, then
      park the task with a note.
-4. Every ~3 merges, run the private sessions and record their totals in the ledger (`--label private`).
+4. Every ~3 merges, run the private sessions and record their totals in the ledger (`--label private`). **Only on the owner's Mac**, where `~/code/teleport-research/private-sessions/recorded` exists. In cloud sessions, skip this step; the owner runs it afterwards.
 5. Every merge must also keep `bash frozen/score.sh` working with no crashes. The official score
    may dip only when fake scaffolding is removed.
 
