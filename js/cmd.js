@@ -113,6 +113,23 @@ function blocksMove(x, y) {
     return false;
 }
 
+// C ref: hacklib.c visctrl() -- make a control or meta character visible
+function visctrl(c) {
+    let s = '';
+    if (c & 0o200) {
+        s += 'M-';
+        c &= 0o177;
+    }
+    if (c < 0o40) {
+        s += '^' + String.fromCharCode(c | 0o100); /* letter */
+    } else if (c === 0o177) {
+        s += '^?';
+    } else {
+        s += String.fromCharCode(c);
+    }
+    return s;
+}
+
 // C ref: cmd.c rhack — main command dispatcher
 export async function rhack(key) {
     if (key === 0) {
@@ -125,6 +142,12 @@ export async function rhack(key) {
     }
 
     const ch = String.fromCharCode(key);
+
+    /* if there's no command, there's nothing to do except reset */
+    if (!key || key === 0o377 || ch === '\x1b') {
+        game.context.move = 0; /* reset_cmd_vars(TRUE) */
+        return;
+    }
 
     if (isMovementKey(ch)) {
         await domove(DIR_DX[ch], DIR_DY[ch]);
@@ -148,7 +171,8 @@ export async function rhack(key) {
     } else {
         // Unknown command
         game.context.move = 0;
-        await pline(`Unknown command '${ch}'.`);
+        /* custompline(SUPPRESS_HISTORY, ...) */
+        await pline(`Unknown command '${visctrl(key)}'.`);
     }
 }
 
