@@ -96,7 +96,8 @@ export class NethackGame {
         /* whoami(): the JS port has no login name to fall back on, so a
            game without OPTIONS=name asks "Who are you?" */
         g.plname = opts.name || '';
-        g.flags = { verbose: true, ...opts.flags };
+        /* boolean options that default to on (optlist.h) */
+        g.flags = { verbose: true, legacy: true, ...opts.flags };
         g.iflags = { ...opts.iflags };
         g.pl_character = opts.pl_character || '';
         g.pl_race = opts.pl_race || '';

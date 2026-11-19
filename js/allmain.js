@@ -16,6 +16,7 @@ import { fastforward_step } from './fastforward.js';
 import { m_at } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
+import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
 import { init_dungeons } from './dungeon.js';
@@ -87,8 +88,12 @@ export async function newgame() {
     /* while (u.uroleplay.reroll && reroll_menu()): reroll is not ported */
     u_init_skills_discoveries();
 
-    /* wizard: read_wizkit(), obj_delivery(); flags.legacy: com_pager()
-       -- not ported yet */
+    /* if (wizard) { read_wizkit(); obj_delivery(FALSE); }: wizard mode
+       isn't ported yet */
+
+    if (g.flags.legacy) {
+        com_pager(g.u.uroleplay.pauper ? "pauper_legacy" : "legacy");
+    }
 
     /* Success! */
     await welcome(true);
