@@ -1,28 +1,31 @@
 {
- "when": "2026-11-19T05:58:51.033Z",
+ "when": "2026-11-19T06:46:25.496Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
    "total": 27158,
-   "jsTotal": 3181,
+   "jsTotal": 2750,
    "totalScreens": 595,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 999,
+   "rulePrefix": 310,
+   "screens": 8,
+   "honestScreens": 8,
+   "firstScreenMiss": 8,
    "first": {
-    "index": 0,
-    "step": 7,
-    "c": "rn2(13)=3 @ pick_role(role.c:1032)",
-    "js": "rn2(2)=1 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_role",
-    "jsCaller": "randomize_gem_colors",
+    "index": 310,
+    "step": 8,
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(13)=3 @ pick_role(role.c:1032)",
-     "rn2(2)=0 @ pick_race(role.c:1092)",
-     "rn2(2)=0 @ pick_gend(role.c:1157)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -30,25 +33,28 @@
   {
    "session": "seed0004-feeding-pony.session.json",
    "total": 12084,
-   "jsTotal": 3022,
+   "jsTotal": 3077,
    "totalScreens": 409,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 463,
+   "rulePrefix": 309,
+   "screens": 8,
+   "honestScreens": 8,
+   "firstScreenMiss": 8,
    "first": {
-    "index": 0,
-    "step": 7,
-    "c": "rn2(13)=4 @ pick_role(role.c:1032)",
-    "js": "rn2(2)=0 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_role",
-    "jsCaller": "randomize_gem_colors",
+    "index": 309,
+    "step": 8,
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(13)=4 @ pick_role(role.c:1032)",
-     "rn2(1)=0 @ pick_race(role.c:1092)",
-     "rn2(2)=1 @ pick_gend(role.c:1157)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -56,25 +62,28 @@
   {
    "session": "seed0006-wizard-water-demon.session.json",
    "total": 6736,
-   "jsTotal": 3568,
+   "jsTotal": 3298,
    "totalScreens": 123,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 1192,
+   "rulePrefix": 308,
+   "screens": 35,
+   "honestScreens": 35,
+   "firstScreenMiss": 35,
    "first": {
-    "index": 0,
-    "step": 11,
-    "c": "rn2(1)=0 @ pick_align(role.c:1222)",
-    "js": "rn2(2)=1 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_align",
-    "jsCaller": "randomize_gem_colors",
+    "index": 308,
+    "step": 35,
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(1)=0 @ pick_align(role.c:1222)",
-     "rn2(1)=0 @ pick_align(role.c:1222)",
-     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -82,25 +91,28 @@
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
-   "jsTotal": 4021,
+   "jsTotal": 3439,
    "totalScreens": 302,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 1390,
+   "rulePrefix": 324,
+   "screens": 14,
+   "honestScreens": 14,
+   "firstScreenMiss": 14,
    "first": {
-    "index": 0,
-    "step": 8,
-    "c": "rn2(13)=2 @ pick_role(role.c:1032)",
-    "js": "rn2(2)=1 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_role",
-    "jsCaller": "randomize_gem_colors",
+    "index": 324,
+    "step": 14,
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(13)=2 @ pick_role(role.c:1032)",
-     "rn2(3)=2 @ pick_race(role.c:1092)",
-     "rn2(2)=1 @ pick_gend(role.c:1157)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -108,25 +120,28 @@
   {
    "session": "seed0009-swimmer-mforce.session.json",
    "total": 3713,
-   "jsTotal": 3215,
+   "jsTotal": 2943,
    "totalScreens": 73,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 462,
+   "rulePrefix": 309,
+   "screens": 10,
+   "honestScreens": 10,
+   "firstScreenMiss": 10,
    "first": {
-    "index": 0,
-    "step": 9,
-    "c": "rn2(13)=8 @ pick_role(role.c:1032)",
-    "js": "rn2(2)=1 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_role",
-    "jsCaller": "randomize_gem_colors",
+    "index": 309,
+    "step": 10,
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(13)=8 @ pick_role(role.c:1032)",
-     "rn2(4)=1 @ pick_race(role.c:1092)",
-     "rn2(2)=1 @ pick_gend(role.c:1157)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=2 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -134,28 +149,28 @@
   {
    "session": "seed0012-monk-vault-escort.session.json",
    "total": 13878,
-   "jsTotal": 3177,
+   "jsTotal": 2994,
    "totalScreens": 308,
-   "valuePrefix": 300,
-   "rulePrefix": 300,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 1110,
+   "rulePrefix": 306,
+   "screens": 16,
+   "honestScreens": 16,
+   "firstScreenMiss": 16,
    "first": {
-    "index": 300,
+    "index": 306,
     "step": 16,
-    "c": "rnd(2)=1 @ newpw(exper.c:52)",
-    "js": "rn2(10)=6 @ fastforward_pre_mklev",
-    "kind": "value",
-    "cCaller": "newpw",
-    "jsCaller": "fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=2 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rnd(2)=1 @ newpw(exper.c:52)",
-     "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -166,25 +181,25 @@
    "jsTotal": 6501,
    "totalScreens": 99,
    "valuePrefix": 505,
-   "rulePrefix": 300,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 300,
+    "index": 305,
     "step": 0,
-    "c": "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=2 @ fastforward_pre_mklev",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -195,25 +210,25 @@
    "jsTotal": 3310,
    "totalScreens": 59,
    "valuePrefix": 505,
-   "rulePrefix": 300,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 300,
+    "index": 305,
     "step": 0,
-    "c": "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=2 @ fastforward_pre_mklev",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -221,25 +236,28 @@
   {
    "session": "seed0014-dequa-fountain-explore.session.json",
    "total": 59178,
-   "jsTotal": 3085,
+   "jsTotal": 3527,
    "totalScreens": 714,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 1447,
+   "rulePrefix": 305,
+   "screens": 10,
+   "honestScreens": 10,
+   "firstScreenMiss": 10,
    "first": {
-    "index": 0,
-    "step": 8,
-    "c": "rn2(1)=0 @ pick_gend(role.c:1157)",
-    "js": "rn2(2)=0 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_gend",
-    "jsCaller": "randomize_gem_colors",
+    "index": 305,
+    "step": 10,
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(1)=0 @ pick_gend(role.c:1157)",
-     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
-     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -250,25 +268,25 @@
    "jsTotal": 2900,
    "totalScreens": 44,
    "valuePrefix": 337,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=8 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=8 @ fastforward_pre_mklev",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=8 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=2 @ makelevel(mklev.c:1287)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -276,28 +294,28 @@
   {
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
-   "jsTotal": 2975,
+   "jsTotal": 3194,
    "totalScreens": 36,
-   "valuePrefix": 299,
-   "rulePrefix": 299,
+   "valuePrefix": 1281,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 305,
     "step": 0,
-    "c": "rnd(4)=3 @ newpw(exper.c:52)",
-    "js": "rn2(10)=2 @ fastforward_pre_mklev",
-    "kind": "value",
-    "cCaller": "newpw",
-    "jsCaller": "fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=2 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=2 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rnd(4)=3 @ newpw(exper.c:52)",
-     "rn2(10)=8 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -305,28 +323,28 @@
   {
    "session": "seed0017-samurai-altar-pray.session.json",
    "total": 3465,
-   "jsTotal": 3391,
+   "jsTotal": 3268,
    "totalScreens": 67,
    "valuePrefix": 1355,
-   "rulePrefix": 313,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "rulePrefix": 318,
+   "screens": 8,
+   "honestScreens": 8,
+   "firstScreenMiss": 8,
    "first": {
-    "index": 313,
+    "index": 318,
     "step": 8,
-    "c": "rn2(10)=7 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=7 @ fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=7 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=2 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -334,28 +352,28 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 36485,
+   "jsTotal": 33971,
    "totalScreens": 1953,
    "valuePrefix": 4980,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=0 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=0 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=2 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=0 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
      "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -366,25 +384,25 @@
    "jsTotal": 3025,
    "totalScreens": 41,
    "valuePrefix": 984,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=3 @ fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -392,25 +410,28 @@
   {
    "session": "seed0077-rogue-chargen.session.json",
    "total": 3242,
-   "jsTotal": 2745,
+   "jsTotal": 3292,
    "totalScreens": 33,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 1465,
+   "rulePrefix": 306,
+   "screens": 11,
+   "honestScreens": 11,
+   "firstScreenMiss": 11,
    "first": {
-    "index": 0,
-    "step": 8,
-    "c": "rn2(1)=0 @ pick_align(role.c:1222)",
-    "js": "rn2(2)=0 @ randomize_gem_colors",
-    "kind": "value",
-    "cCaller": "pick_align",
-    "jsCaller": "randomize_gem_colors",
+    "index": 306,
+    "step": 11,
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(1)=0 @ pick_align(role.c:1222)",
-     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
-     "rn2(2)=1 @ randomize_gem_colors(o_init.c:92)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -421,25 +442,25 @@
    "jsTotal": 2881,
    "totalScreens": 27,
    "valuePrefix": 983,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=0 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=0 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=0 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -450,25 +471,25 @@
    "jsTotal": 3054,
    "totalScreens": 25,
    "valuePrefix": 1191,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=1 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=1 @ fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=1 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -476,28 +497,28 @@
   {
    "session": "seed0103-knight-ride-pony.session.json",
    "total": 2640,
-   "jsTotal": 3706,
+   "jsTotal": 3471,
    "totalScreens": 60,
-   "valuePrefix": 299,
-   "rulePrefix": 299,
+   "valuePrefix": 1185,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 305,
     "step": 0,
-    "c": "rnd(4)=2 @ newpw(exper.c:52)",
-    "js": "rn2(10)=1 @ fastforward_pre_mklev",
-    "kind": "value",
-    "cCaller": "newpw",
-    "jsCaller": "fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rnd(4)=2 @ newpw(exper.c:52)",
-     "rn2(10)=7 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=2 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -505,28 +526,28 @@
   {
    "session": "seed0104-knight-ride-combat.session.json",
    "total": 3223,
-   "jsTotal": 2835,
+   "jsTotal": 3045,
    "totalScreens": 43,
-   "valuePrefix": 299,
-   "rulePrefix": 299,
+   "valuePrefix": 1258,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 305,
     "step": 0,
-    "c": "rnd(4)=3 @ newpw(exper.c:52)",
-    "js": "rn2(10)=6 @ fastforward_pre_mklev",
-    "kind": "value",
-    "cCaller": "newpw",
-    "jsCaller": "fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rnd(4)=3 @ newpw(exper.c:52)",
-     "rn2(10)=9 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -537,25 +558,25 @@
    "jsTotal": 2888,
    "totalScreens": 30,
    "valuePrefix": 948,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=6 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=6 @ fastforward_pre_mklev",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=6 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -563,28 +584,28 @@
   {
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
-   "jsTotal": 3085,
+   "jsTotal": 3128,
    "totalScreens": 267,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1153,
+   "rulePrefix": 306,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 306,
     "step": 0,
-    "c": "rn2(13)=9 @ randrole(role.c:726)",
-    "js": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "randrole",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=1 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=1 @ init_objects(o_init.c:234)",
-     "rn2(13)=9 @ randrole(role.c:726)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -595,25 +616,25 @@
    "jsTotal": 2887,
    "totalScreens": 98,
    "valuePrefix": 1088,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=1 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=1 @ fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=3 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=1 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -621,28 +642,28 @@
   {
    "session": "seed0108-wizard-extcmd-wishlist.session.json",
    "total": 16958,
-   "jsTotal": 3680,
+   "jsTotal": 3845,
    "totalScreens": 303,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1346,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=37 @ role_init(role.c:2060)",
-    "js": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=37 @ role_init(role.c:2060)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
      "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -650,28 +671,28 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3460,
+   "jsTotal": 3719,
    "totalScreens": 127,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1574,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=25 @ role_init(role.c:2060)",
-    "js": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=25 @ role_init(role.c:2060)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -679,28 +700,28 @@
   {
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
-   "jsTotal": 2523,
+   "jsTotal": 3170,
    "totalScreens": 40,
-   "valuePrefix": 299,
-   "rulePrefix": 299,
+   "valuePrefix": 377,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 305,
     "step": 0,
-    "c": "rnd(2)=2 @ newpw(exper.c:52)",
-    "js": "rn2(10)=5 @ fastforward_pre_mklev",
-    "kind": "value",
-    "cCaller": "newpw",
-    "jsCaller": "fastforward_pre_mklev",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rnd(2)=2 @ newpw(exper.c:52)",
-     "rn2(10)=9 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -708,28 +729,28 @@
   {
    "session": "seed0360-wizard-world-tour.session.json",
    "total": 120639,
-   "jsTotal": 3877,
+   "jsTotal": 3650,
    "totalScreens": 833,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1218,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=86 @ role_init(role.c:2060)",
-    "js": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=1 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=1 @ init_objects(o_init.c:234)",
-     "rn2(100)=86 @ role_init(role.c:2060)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=2 @ makelevel(mklev.c:1287)",
      "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -737,28 +758,28 @@
   {
    "session": "seed0361-archeologist-tour.session.json",
    "total": 53865,
-   "jsTotal": 3654,
+   "jsTotal": 3673,
    "totalScreens": 366,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1268,
+   "rulePrefix": 260,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 260,
     "step": 0,
-    "c": "rn2(100)=58 @ role_init(role.c:2060)",
-    "js": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=1 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=1 @ init_objects(o_init.c:234)",
-     "rn2(100)=58 @ role_init(role.c:2060)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -766,28 +787,28 @@
   {
    "session": "seed0367-priest-quest-tour.session.json",
    "total": 50125,
-   "jsTotal": 3703,
+   "jsTotal": 3408,
    "totalScreens": 324,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 867,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(13)=11 @ randrole(role.c:726)",
-    "js": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "randrole",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=1 @ init_objects(o_init.c:234)",
-     "rn2(13)=11 @ randrole(role.c:726)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -798,25 +819,25 @@
    "jsTotal": 4346,
    "totalScreens": 124,
    "valuePrefix": 1171,
-   "rulePrefix": 254,
+   "rulePrefix": 259,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 254,
+    "index": 259,
     "step": 0,
-    "c": "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=2 @ fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
      "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -824,28 +845,28 @@
   {
    "session": "seed0383-wizard-hallucinate.session.json",
    "total": 16915,
-   "jsTotal": 3350,
+   "jsTotal": 3404,
    "totalScreens": 219,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 969,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=7 @ role_init(role.c:2060)",
-    "js": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=1 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=7 @ role_init(role.c:2060)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -853,28 +874,28 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 3797,
+   "jsTotal": 3790,
    "totalScreens": 87,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1489,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=56 @ role_init(role.c:2060)",
-    "js": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=56 @ role_init(role.c:2060)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -882,28 +903,28 @@
   {
    "session": "seed0399-wizard-hallu-actions.session.json",
    "total": 11409,
-   "jsTotal": 3831,
+   "jsTotal": 3726,
    "totalScreens": 532,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 599,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=88 @ role_init(role.c:2060)",
-    "js": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=88 @ role_init(role.c:2060)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -911,28 +932,28 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 3446,
+   "jsTotal": 3033,
    "totalScreens": 28,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1139,
+   "rulePrefix": 307,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 307,
     "step": 0,
-    "c": "rn2(13)=6 @ randrole(role.c:726)",
-    "js": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "randrole",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=1 @ init_objects(o_init.c:234)",
-     "rn2(13)=6 @ randrole(role.c:726)",
-     "rn2(13)=10 @ randrole(role.c:726)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -943,25 +964,25 @@
    "jsTotal": 3434,
    "totalScreens": 51,
    "valuePrefix": 1718,
-   "rulePrefix": 300,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 300,
+    "index": 305,
     "step": 0,
-    "c": "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=3 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=2 @ makelevel(mklev.c:1287)",
      "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -969,28 +990,28 @@
   {
    "session": "seed0900-tourist-explore-actions.session.json",
    "total": 2983,
-   "jsTotal": 3619,
+   "jsTotal": 3498,
    "totalScreens": 84,
-   "valuePrefix": 302,
-   "rulePrefix": 299,
+   "valuePrefix": 1268,
+   "rulePrefix": 303,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 303,
     "step": 0,
-    "c": "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=3 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=2 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=3 @ u_init_misc(u_init.c:1028)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -998,28 +1019,28 @@
   {
    "session": "seed1150-caveman-explore-move.session.json",
    "total": 3137,
-   "jsTotal": 3133,
+   "jsTotal": 2607,
    "totalScreens": 51,
-   "valuePrefix": 302,
-   "rulePrefix": 299,
+   "valuePrefix": 894,
+   "rulePrefix": 303,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 303,
     "step": 0,
-    "c": "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=2 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=2 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
      "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1030,25 +1051,25 @@
    "jsTotal": 2685,
    "totalScreens": 40,
    "valuePrefix": 944,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=9 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=9 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=5 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=9 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1059,25 +1080,25 @@
    "jsTotal": 2705,
    "totalScreens": 26,
    "valuePrefix": 815,
-   "rulePrefix": 300,
+   "rulePrefix": 305,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 300,
+    "index": 305,
     "step": 0,
-    "c": "rn2(10)=8 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=8 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=8 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1085,28 +1106,28 @@
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
-   "jsTotal": 3209,
+   "jsTotal": 3162,
    "totalScreens": 230,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 1227,
+   "rulePrefix": 307,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 307,
     "step": 0,
-    "c": "rn2(100)=85 @ role_init(role.c:2060)",
-    "js": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=1 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=85 @ role_init(role.c:2060)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=0 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1114,28 +1135,28 @@
   {
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
-   "jsTotal": 2800,
+   "jsTotal": 3256,
    "totalScreens": 38,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 382,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=68 @ role_init(role.c:2060)",
-    "js": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=68 @ role_init(role.c:2060)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
      "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1143,28 +1164,28 @@
   {
    "session": "seed4500-knight-coverage.session.json",
    "total": 108275,
-   "jsTotal": 3060,
+   "jsTotal": 3061,
    "totalScreens": 1814,
-   "valuePrefix": 254,
-   "rulePrefix": 254,
+   "valuePrefix": 1203,
+   "rulePrefix": 260,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 254,
+    "index": 260,
     "step": 0,
-    "c": "rnd(4)=1 @ newpw(exper.c:52)",
-    "js": "rn2(10)=4 @ fastforward_pre_mklev",
-    "kind": "value",
-    "cCaller": "newpw",
-    "jsCaller": "fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rnd(4)=1 @ newpw(exper.c:52)",
-     "rn2(10)=5 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=0 @ getbones(bones.c:645)",
+     "rn2(5)=3 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1172,28 +1193,28 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 7296,
+   "jsTotal": 7472,
    "totalScreens": 410,
-   "valuePrefix": 199,
-   "rulePrefix": 199,
+   "valuePrefix": 415,
+   "rulePrefix": 261,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 199,
+    "index": 261,
     "step": 0,
-    "c": "rn2(100)=12 @ role_init(role.c:2060)",
-    "js": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-    "kind": "value",
-    "cCaller": "role_init",
-    "jsCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "c": "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=1 @ makelevel",
+    "kind": "caller",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(2)=0 @ shuffle(o_init.c:129)",
-     "rn2(1)=0 @ shuffle(o_init.c:129)",
-     "rn2(2)=0 @ init_objects(o_init.c:234)",
-     "rn2(100)=12 @ role_init(role.c:2060)",
-     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1201,28 +1222,28 @@
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 7032,
+   "jsTotal": 6508,
    "totalScreens": 249,
    "valuePrefix": 1138,
-   "rulePrefix": 254,
+   "rulePrefix": 259,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 254,
+    "index": 259,
     "step": 0,
-    "c": "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=2 @ fastforward_pre_mklev",
+    "c": "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=0 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=6 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=2 @ u_init_misc(u_init.c:1028)",
-     "rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=2 @ getbones(bones.c:645)",
+     "rn2(5)=4 @ makelevel(mklev.c:1287)",
+     "rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
@@ -1233,102 +1254,49 @@
    "jsTotal": 3270,
    "totalScreens": 23,
    "valuePrefix": 3103,
-   "rulePrefix": 299,
+   "rulePrefix": 304,
    "screens": 15,
    "honestScreens": 0,
    "firstScreenMiss": 11,
    "first": {
-    "index": 299,
+    "index": 304,
     "step": 0,
-    "c": "rn2(10)=0 @ u_init_misc(u_init.c:1028)",
-    "js": "rn2(10)=0 @ fastforward_pre_mklev",
+    "c": "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "js": "rn2(3)=2 @ makelevel",
     "kind": "caller",
-    "cCaller": "u_init_misc",
-    "jsCaller": "fastforward_pre_mklev",
+    "cCaller": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+    "jsCaller": "makelevel",
     "context": [
-     "rn2(7)=0 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=4 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(7)=1 @ init_castle_tune(dungeon.c:1116)",
-     "rn2(10)=0 @ u_init_misc(u_init.c:1028)",
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(3)=1 @ getbones(bones.c:645)",
+     "rn2(5)=1 @ makelevel(mklev.c:1287)",
      "rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
-     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
    "error": null
   }
  ],
  "staticCounts": {
-  "discarded-roll": 198
+  "discarded-roll": 197
  },
  "totals": {
-  "rule": 9647,
-  "value": 26706,
+  "rule": 12884,
+  "value": 51405,
   "rolls": 792838,
-  "honestScreens": 0,
-  "screens": 15,
+  "honestScreens": 120,
+  "screens": 135,
   "totalScreens": 11405
  },
  "todo": [
   {
-   "fn": "u_init_misc",
-   "sessions": 18,
-   "blockedRolls": 204787,
+   "fn": "lua:random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+   "sessions": 44,
+   "blockedRolls": 779954,
    "examples": [
-    "seed0013-friday13-save-then-fullmoon-restore @300: C \"rn2(10)=2 @ u_init_misc(u_init.c:1028)\" / JS \"rn2(10)=2 @ fastforward_pre_mklev\"",
-    "seed0013-rogue-friday13-combat @300: C \"rn2(10)=2 @ u_init_misc(u_init.c:1028)\" / JS \"rn2(10)=2 @ fastforward_pre_mklev\""
-   ]
-  },
-  {
-   "fn": "role_init",
-   "sessions": 10,
-   "blockedRolls": 260216,
-   "examples": [
-    "seed0108-wizard-extcmd-wishlist @199: C \"rn2(100)=37 @ role_init(role.c:2060)\" / JS \"rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\"",
-    "seed0116-wizard-wear-shop @199: C \"rn2(100)=25 @ role_init(role.c:2060)\" / JS \"rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\""
-   ]
-  },
-  {
-   "fn": "newpw",
-   "sessions": 6,
-   "blockedRolls": 133744,
-   "examples": [
-    "seed0012-monk-vault-escort @300: C \"rnd(2)=1 @ newpw(exper.c:52)\" / JS \"rn2(10)=6 @ fastforward_pre_mklev\"",
-    "seed0016-healer-newmoon-eat-zap @299: C \"rnd(4)=3 @ newpw(exper.c:52)\" / JS \"rn2(10)=2 @ fastforward_pre_mklev\""
-   ]
-  },
-  {
-   "fn": "pick_role",
-   "sessions": 4,
-   "blockedRolls": 59328,
-   "examples": [
-    "seed0002-healer-reflection-drummer @0: C \"rn2(13)=3 @ pick_role(role.c:1032)\" / JS \"rn2(2)=1 @ randomize_gem_colors\"",
-    "seed0004-feeding-pony @0: C \"rn2(13)=4 @ pick_role(role.c:1032)\" / JS \"rn2(2)=0 @ randomize_gem_colors\""
-   ]
-  },
-  {
-   "fn": "randrole",
-   "sessions": 3,
-   "blockedRolls": 55960,
-   "examples": [
-    "seed0106-priest-extcmd-sweep @199: C \"rn2(13)=9 @ randrole(role.c:726)\" / JS \"rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\"",
-    "seed0367-priest-quest-tour @199: C \"rn2(13)=11 @ randrole(role.c:726)\" / JS \"rn2(3)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\""
-   ]
-  },
-  {
-   "fn": "pick_align",
-   "sessions": 2,
-   "blockedRolls": 9978,
-   "examples": [
-    "seed0006-wizard-water-demon @0: C \"rn2(1)=0 @ pick_align(role.c:1222)\" / JS \"rn2(2)=1 @ randomize_gem_colors\"",
-    "seed0077-rogue-chargen @0: C \"rn2(1)=0 @ pick_align(role.c:1222)\" / JS \"rn2(2)=0 @ randomize_gem_colors\""
-   ]
-  },
-  {
-   "fn": "pick_gend",
-   "sessions": 1,
-   "blockedRolls": 59178,
-   "examples": [
-    "seed0014-dequa-fountain-explore @0: C \"rn2(1)=0 @ pick_gend(role.c:1157)\" / JS \"rn2(2)=0 @ randomize_gem_colors\""
+    "seed0002-healer-reflection-drummer @310: C \"rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\" / JS \"rn2(3)=2 @ makelevel\"",
+    "seed0004-feeding-pony @309: C \"rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\" / JS \"rn2(3)=0 @ makelevel\""
    ]
   }
  ],
@@ -1336,338 +1304,374 @@
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 14,
-   "text": "rn2(10);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 20,
+   "line": 13,
    "text": "rnd(1000); rn2(20); rnd(2); rn2(6); rn2(11); rn2(10); rn2(10); rn2(100); rn2(20); rn2(1);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 21,
+   "line": 14,
    "text": "rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 22,
+   "line": 15,
    "text": "rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 23,
+   "line": 16,
    "text": "rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 24,
+   "line": 17,
    "text": "rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(15); rn2(10);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 25,
+   "line": 18,
    "text": "rn2(6); rn2(1); rnd(2); rn2(4); rn2(2); rnd(2); rn2(4); rn2(2); rn2(1); rnd(2); rn2(4);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 26,
+   "line": 19,
    "text": "rnd(2); rn2(4); rnd(2); rn2(4); rnd(2); rn2(4); rn2(1); rnd(2); rn2(10); rn2(11); rn2(10);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 27,
+   "line": 20,
    "text": "rn2(10); rn2(1); rnd(2); rn2(70); rn2(1); rn2(1); rnd(2); rn2(1); rn2(25); rn2(25); rn2(25);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 28,
+   "line": 21,
    "text": "rn2(20); rn2(1); rnd(2); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 29,
+   "line": 22,
    "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 30,
+   "line": 23,
    "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 31,
+   "line": 24,
    "text": "rn2(100); rn2(100); rn2(100); rn2(20); rn2(20); rn2(20); rn2(7); rn2(20); rn2(20); rn2(20);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 32,
+   "line": 25,
    "text": "rnd(9000); rnd(30);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 38,
+   "line": 31,
    "text": "() => { rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 1"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 39,
+   "line": 32,
    "text": "() => { rn2(5); rn2(5); rn2(5); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // s"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 40,
+   "line": 33,
    "text": "() => { rn2(5); rn2(32); rn2(5); rn2(5); rn2(32); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 41,
+   "line": 34,
    "text": "() => { rn2(5); rn2(24); rn2(5); rn2(5); rn2(24); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 42,
+   "line": 35,
    "text": "() => { rn2(5); rn2(16); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 5"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 43,
+   "line": 36,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 44,
+   "line": 37,
    "text": "() => { rn2(5); rn2(16); rn2(5); rn2(5); rn2(16); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 45,
+   "line": 38,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 8"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 46,
+   "line": 39,
    "text": "() => { rn2(5); rn2(20); rn2(5); rn2(5); rn2(8); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 47,
+   "line": 40,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(20); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 53,
+   "line": 46,
    "text": "rn2(8); rn2(3); rn2(8); rn2(3); rn2(8); rn2(6); rnd(2); rnd(3); rnd(2); rn2(10); rn2(60);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 54,
+   "line": 47,
    "text": "rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(8); rn2(6); rnd(100); rnd(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 55,
+   "line": 48,
    "text": "rnd(2); rn2(10); rn2(11); rn2(10); rn2(10); rn2(40); rn2(100); rn2(80); rn2(80); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 56,
+   "line": 49,
    "text": "rn2(5); rn2(3); rn2(14); rn2(2); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 57,
+   "line": 50,
    "text": "rn2(16); rn2(21); rnd(2); rnd(4); rn2(50); rn2(100); rn2(100); rn2(8); rnd(25); rnd(25);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 58,
+   "line": 51,
    "text": "rnd(25); rnd(25); rnd(25); rn2(14); rn2(2); rnd(4); rn2(4); rnd(1000); rnd(2); rn2(6);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 59,
+   "line": 52,
    "text": "rn2(5); rn2(15); rnd(2); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 60,
+   "line": 53,
    "text": "rn2(21); rn2(2); rnz(25); rn2(8); rn2(3); rn2(14); rn2(2); rnd(2); rnd(3); rnd(2); rn2(10);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 61,
+   "line": 54,
    "text": "rn2(60); rn2(14); rn2(2); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 62,
+   "line": 55,
    "text": "rn2(4); rn2(5); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 63,
+   "line": 56,
    "text": "rnd(2); rnd(4); rn2(2); rn2(50); rn2(100); rn2(100); rn2(8); rn2(3); rn2(4); rn2(5); rnd(2);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 64,
+   "line": 57,
    "text": "rnd(3); rnd(2); rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(4); rn2(5); rn2(3); rn2(3);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 65,
+   "line": 58,
    "text": "rnd(2); rn2(6); rn2(2); rn2(9); rnd(2); rn2(4); rn2(5); rn2(3); rn2(10); rnd(1000); rnd(2);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 66,
+   "line": 59,
    "text": "rn2(3); rn2(6); rn2(30); rn2(3); rn2(4); rn2(5); rnd(100); rnd(1000); rnd(2); rn2(4); rn2(2);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 67,
+   "line": 60,
    "text": "rn2(5); rn2(3); rn2(8); rn2(3); rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 68,
+   "line": 61,
    "text": "rn2(3); rn2(3); rn2(8); rnd(25); rn2(7); rnd(25); rnd(25); rn2(7); rnd(25); rn2(4); rn2(2);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 69,
+   "line": 62,
    "text": "rnd(4); rn2(4); rnd(1000); rnd(2); rn2(6); rn2(5); rn2(15); rn2(10); rnd(2); rn2(3); rn2(4);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 70,
+   "line": 63,
    "text": "rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(2); rnz(25); rn2(8); rn2(3);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 71,
+   "line": 64,
    "text": "rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3); rn2(6);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 72,
+   "line": 65,
    "text": "rn2(3); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rnd(2);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 73,
+   "line": 66,
    "text": "rnd(4); rn2(2); rn2(50); rn2(100); rn2(100); rn2(8); rn2(3); rn2(10); rn2(60); rn2(60);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 74,
+   "line": 67,
    "text": "rn2(78); rn2(20); rn2(20); rn2(30); rn2(4); rn2(2); rn2(25762); rn2(25762); rn2(75); rn2(4);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 75,
+   "line": 68,
    "text": "rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 76,
+   "line": 69,
    "text": "rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 77,
+   "line": 70,
    "text": "rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1); rn2(75); rn2(4); rn2(75); rn2(4);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 78,
+   "line": 71,
    "text": "rn2(1); rn2(75); rn2(4); rn2(75); rn2(4); rn2(6); rn2(3); rn2(3); rn2(3); rn2(8); rn2(3);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 79,
+   "line": 72,
    "text": "rn2(3); rn2(4); rn2(3); rn2(4); rnd(2); rnd(3); rnd(2); rn2(10); rn2(60); rn2(60); rn2(3);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 80,
+   "line": 73,
    "text": "rn2(4); rn2(3); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3); rn2(11); rn2(4); rn2(3);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 81,
+   "line": 74,
    "text": "rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rnd(2); rnd(4); rn2(50);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 82,
+   "line": 75,
    "text": "rn2(100); rn2(100); rn2(8); rnd(25); rn2(11); rn2(4); rnd(4); rn2(8); rn2(3); rn2(10);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 83,
+   "line": 76,
    "text": "rn2(60); rn2(60); rn2(78); rn2(20); rn2(11); rn2(4); rnd(2); rn2(3); rn2(4); rn2(5); rn2(7);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
-   "line": 84,
+   "line": 77,
    "text": "rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(10); rn2(2); rn2(20); rn2(30); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 78,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 79,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 80,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 81,
+   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 82,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 83,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 84,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1685,13 +1689,13 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 87,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 88,
-   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1781,7 +1785,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 103,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3);"
   },
   {
    "check": "discarded-roll",
@@ -1817,13 +1821,13 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 109,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 110,
-   "text": "rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3);"
+   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1835,7 +1839,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 112,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1859,13 +1863,13 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 116,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 117,
-   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1877,7 +1881,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 119,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1889,13 +1893,13 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 121,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 122,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -1931,13 +1935,13 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 128,
-   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 129,
-   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2069,7 +2073,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 151,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3);"
   },
   {
    "check": "discarded-roll",
@@ -2087,7 +2091,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 154,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2111,7 +2115,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 158,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2129,7 +2133,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 161,
-   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2309,7 +2313,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 191,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2321,7 +2325,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 193,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2351,19 +2355,19 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 198,
-   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 199,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 200,
-   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2393,13 +2397,13 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 205,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 206,
-   "text": "rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2435,7 +2439,7 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 212,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+   "text": "rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
@@ -2447,78 +2451,36 @@
    "check": "discarded-roll",
    "file": "js/fastforward.js",
    "line": 214,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 215,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 216,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 217,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 218,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 219,
-   "text": "rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 220,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 221,
    "text": "rn2(1000); rn2(1000);"
   },
   {
    "check": "discarded-roll",
    "file": "js/mklev.js",
-   "line": 294,
+   "line": 295,
    "text": "rn2(398); // approximate: rn2(NUMMONS)"
   },
   {
    "check": "discarded-roll",
    "file": "js/mklev.js",
-   "line": 304,
+   "line": 305,
    "text": "rn2(398);"
   },
   {
    "check": "discarded-roll",
    "file": "js/mklev.js",
-   "line": 343,
+   "line": 344,
    "text": "rn2(1 + 27 / (text.length - i));"
   },
   {
    "check": "discarded-roll",
    "file": "js/mklev.js",
-   "line": 610,
+   "line": 595,
    "text": "rn2(100); // chance check (build_room)"
   },
   {
    "check": "discarded-roll",
    "file": "js/mklev.js",
-   "line": 1354,
+   "line": 1339,
    "text": "rn2(398); // mkclass(S_HUMAN)"
   }
  ]
