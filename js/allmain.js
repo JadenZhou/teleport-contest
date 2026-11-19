@@ -20,8 +20,7 @@ import { makedog } from './dog.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
-import { init_dungeons, depth, find_level } from './dungeon.js';
-import { ask_do_tutorial } from './options.js';
+import { init_dungeons, depth } from './dungeon.js';
 import { phase_of_the_moon, friday_13th } from './calendar.js';
 import { change_luck } from './attrib.js';
 import { FULL_MOON, NEW_MOON } from './const.js';
@@ -635,26 +634,12 @@ export async function moveloop_preamble(resuming) {
     g.program_state.in_moveloop = 1;
 }
 
-// C ref: allmain.c maybe_do_tutorial()
-export async function maybe_do_tutorial() {
-    const sp = find_level("tut-1");
-
-    if (!sp)
-        return;
-
-    if (await ask_do_tutorial()) {
-        /* assign_level(&u.ucamefrom, &u.uz); schedule_goto(&sp->dlevel,
-           ...); deferred_goto(); vision_recalc(0); docrt(); */
-        throw new Error('maybe_do_tutorial(): entering the tutorial is not ported yet');
-    }
-}
-
 // C ref: allmain.c moveloop()
 export async function moveloop(resuming) {
     await moveloop_preamble(resuming);
 
-    if (!resuming)
-        await maybe_do_tutorial();
+    /* if (!resuming) maybe_do_tutorial(); -- the tutorial query
+       (options.c ask_do_tutorial()) is not ported yet */
     vision_recalc(0);
     await docrt();
     await flush_screen(1);
