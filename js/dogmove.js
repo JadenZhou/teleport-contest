@@ -23,6 +23,11 @@ import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
 import { objects } from './objects.js';
+import { splitobj, obj_extract_self } from './mkobj.js';
+import { mpickobj } from './steal.js';
+import { distant_name, doname } from './objnam.js';
+import { newsym, pline } from './display.js';
+import { Monnam } from './mhitm.js';
 import {
     MMOVE_NOTHING, MMOVE_MOVED, MMOVE_DIED, MMOVE_DONE, MTSZ,
     M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED,
@@ -30,6 +35,7 @@ import {
     DOGFOOD, CADAVER, ACCFOOD, MANFOOD, APPORT, POISON, UNDEF, TABU,
     IS_ROOM, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, W_NONDIGGABLE,
     D_CLOSED, D_LOCKED, CONFLICT, NON_PM, isok, MAGIC_PORTAL, W_ARMG,
+    NEED_WEAPON, I_SPECIAL, W_ARMS,
 } from './const.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -49,6 +55,14 @@ function tunnels(ptr) { return (ptr.mflags1 & M.M1_TUNNEL) !== 0; }
 function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M.M1_METALLIVORE) !== 0; }
 function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
+// C ref: mondata.c attacktype()
+function attacktype(ptr, atyp) {
+    return ptr.mattk.some((a) => a.aatyp === atyp);
+}
+// C ref: mon.c check_gear_next_turn()
+function check_gear_next_turn(mon) {
+    mon.misc_worn_check = (mon.misc_worn_check || 0) | I_SPECIAL;
+}
 function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
 function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
 function likes_lava(ptr) {
@@ -400,11 +414,105 @@ export function can_carry(mtmp, otmp) {
 
 // ── C ref: dogmove.c droppables() ──
 function droppables(mon) {
-    for (const obj of minv(mon)) {
-        if (!obj.owornmask)
-            throw new Error('droppables(): pet inventory not ported yet');
+    /*
+     * 'key|pickaxe|&c = &dummy' is used to make various creatures
+     * that can't use a key/pick-axe/&c behave as if they are already
+     * holding one so that any other such item in their inventory will
+     * be considered a duplicate and get treated as a normal candidate
+     * for dropping.
+     */
+    const dummy = { otyp: O.GOLD_PIECE, /* not STRANGE_OBJECT or tools of interest */
+                    oartifact: 1 }; /* so real artifact won't override "don't keep it" */
+    let pickaxe = null, unihorn = null, key = null;
+
+    const wep = mon.mw || null; /* MON_WEP() */
+    const mdat = mon.data;
+    if (is_animal(mdat) || mindless(mdat)) {
+        /* won't hang on to any objects of these types */
+        pickaxe = unihorn = key = dummy; /* act as if already have them */
+    } else {
+        /* don't hang on to pick-axe if can't use one or don't need one */
+        if (!tunnels(mdat) || !(mdat.mflags1 & M.M1_NEEDPICK))
+            pickaxe = dummy;
+        /* don't hang on to key if can't open doors */
+        if ((mdat.mflags1 & M.M1_NOHANDS) || mdat.msize < M.MZ_SMALL)
+            key = dummy;
     }
-    return null;
+    if (wep) {
+        if (wep.otyp === O.PICK_AXE || wep.otyp === O.DWARVISH_MATTOCK) /* is_pick() */
+            pickaxe = wep;
+        if (wep.otyp === O.UNICORN_HORN)
+            unihorn = wep;
+        /* don't need any wielded check for keys... */
+    }
+    for (const obj of minv(mon)) {
+        let keep = false;
+        switch (obj.otyp) {
+        case O.DWARVISH_MATTOCK:
+        case O.PICK_AXE:
+            if (obj.otyp === O.DWARVISH_MATTOCK) {
+                /* reject mattock if couldn't wield it */
+                if ((mon.minvent || []).some(o => o.owornmask & W_ARMS))
+                    break;
+                /* keep mattock in preference to pick unless pick is already
+                   wielded or is an artifact and mattock isn't */
+                if (pickaxe && pickaxe.otyp === O.PICK_AXE && pickaxe !== wep
+                    && (!pickaxe.oartifact || obj.oartifact))
+                    return pickaxe; /* drop the one we earlier decided to keep */
+            }
+            /*FALLTHRU*/
+            if (!pickaxe || (obj.oartifact && !pickaxe.oartifact)) {
+                if (pickaxe)
+                    return pickaxe;
+                pickaxe = obj; /* keep this digging tool */
+                keep = true;
+            }
+            break;
+        case O.UNICORN_HORN:
+            /* reject cursed unicorn horns */
+            if (obj.cursed)
+                break;
+            /* keep artifact unihorn in preference to ordinary one */
+            if (!unihorn || (obj.oartifact && !unihorn.oartifact)) {
+                if (unihorn)
+                    return unihorn;
+                unihorn = obj; /* keep this unicorn horn */
+                keep = true;
+            }
+            break;
+        case O.SKELETON_KEY:
+        case O.LOCK_PICK:
+        case O.CREDIT_CARD:
+            if (obj.otyp === O.SKELETON_KEY) {
+                /* keep key in preference to lock-pick */
+                if (key && key.otyp === O.LOCK_PICK
+                    && (!key.oartifact || obj.oartifact))
+                    return key; /* drop the one we earlier decided to keep */
+            }
+            /*FALLTHRU*/
+            if (obj.otyp !== O.CREDIT_CARD) {
+                /* keep lock-pick in preference to credit card */
+                if (key && key.otyp === O.CREDIT_CARD
+                    && (!key.oartifact || obj.oartifact))
+                    return key;
+            }
+            /*FALLTHRU*/
+            if (!key || (obj.oartifact && !key.oartifact)) {
+                if (key)
+                    return key;
+                key = obj; /* keep this unlocking tool */
+                keep = true;
+            }
+            break;
+        default:
+            break;
+        }
+        if (keep)
+            continue;
+        if (!obj.owornmask && obj !== wep)
+            return obj;
+    }
+    return null; /* don't drop anything */
 }
 
 // ── C ref: dogmove.c cursed_object_at() ──
@@ -429,15 +537,19 @@ function dog_hunger(mtmp, edog) {
 
 // ── C ref: dogmove.c dog_invent() ──
 // do something with object (drop, pick up, eat) at current position
-function dog_invent(mtmp, edog, udist) {
+async function dog_invent(mtmp, edog, udist) {
     if (helpless(mtmp) || mtmp.meating)
         return 0;
 
     const omx = mtmp.mx, omy = mtmp.my;
 
     /* If we are carrying something then we drop it (perhaps near @). */
+    /* Note: if apport == 1 then our behavior is independent of udist.
+     * Use udist+1 so steed won't cause divide by zero. */
     if (droppables(mtmp)) {
-        throw new Error('dog_invent(): relobj() not ported yet');
+        if (!rn2(udist + 1) || !rn2(edog.apport))
+            if (rn2(10) < edog.apport)
+                throw new Error('dog_invent(): relobj() not ported yet');
     } else {
         const here = objects_at(omx, omy);
         const obj = here[0];
@@ -458,8 +570,28 @@ function dog_invent(mtmp, edog, udist) {
             if (carryamt > 0 && !obj.cursed
                 && could_reach_item(mtmp, obj.ox, obj.oy)) {
                 if (rn2(20) < edog.apport + 3) {
-                    if (rn2(udist) || !rn2(edog.apport))
-                        throw new Error('dog_invent(): mpickobj() not ported yet');
+                    if (rn2(udist) || !rn2(edog.apport)) {
+                        let otmp = obj;
+                        if (carryamt !== obj.quan)
+                            otmp = splitobj(obj, carryamt);
+                        if (cansee(omx, omy)) {
+                            /* call distant_name() for possible side-effects
+                               even if the result won't be printed; should be
+                               done before extract+pickup while otmp is still
+                               on floor */
+                            const otmpname = distant_name(otmp, doname);
+
+                            if (game.flags?.verbose)
+                                await pline(`${Monnam(mtmp)} picks up ${otmpname}.`);
+                        }
+                        obj_extract_self(otmp);
+                        newsym(omx, omy);
+                        mpickobj(mtmp, otmp);
+                        if (attacktype(mtmp.data, M.AT_WEAP)
+                            && mtmp.weapon_check === NEED_WEAPON)
+                            throw new Error('dog_invent(): mon_wield_item() not ported yet');
+                        check_gear_next_turn(mtmp);
+                    }
                 }
             }
         }
@@ -953,7 +1085,7 @@ export async function dog_move(mtmp, after) {
     cursemsg[0] = false; /* lint suppression */
 
     if (edog) {
-        j = dog_invent(mtmp, edog, udist);
+        j = await dog_invent(mtmp, edog, udist);
         if (j === 2)
             return helpless(mtmp) && mtmp.mhp < 1 ? MMOVE_DIED : MMOVE_DONE;
         else if (j === 1)

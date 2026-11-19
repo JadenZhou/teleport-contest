@@ -438,6 +438,179 @@ export function next_ident() {
     return res;
 }
 
+// C ref: shk.c oid_price_adjustment()
+/* used by nextoid() so that a split-off stack keeps the same price
+   adjustment as its parent */
+function oid_price_adjustment(obj, oid) {
+    let res = 0;
+    const otyp = obj.otyp;
+
+    if (!(obj.dknown && objects[otyp].oc_name_known)
+        && (obj.oclass !== O.GEM_CLASS || objects[otyp].oc_material !== O.GLASS)) {
+        res = ((oid % 4) === 0) ? 1 : 0; /* id%4 ==0 -> +1, ==1..3 -> 0 */
+    }
+    return res;
+}
+
+// C ref: mkobj.c nextoid()
+/* when splitting a stack that has o_id-based shop prices, pick an
+   o_id value for the new stack that will maintain the same price */
+function nextoid(oldobj, newobj) {
+    let trylimit = 256; /* limit of 4 suffices at present */
+    let oid = (game.context.ident - 1) >>> 0; /* loop increment will reverse -1 */
+    let newdif;
+
+    const olddif = oid_price_adjustment(oldobj, oldobj.o_id);
+    do {
+        oid = (oid + 1) >>> 0;
+        if (!oid) /* avoid using 0 (in case value wrapped) */
+            ++oid;
+        newdif = oid_price_adjustment(newobj, oid);
+    } while (newdif !== olddif && --trylimit >= 0);
+    game.context.ident = oid; /* update 'last ident used' */
+    next_ident(); /* increment context.ident for next use */
+    return oid; /* caller will use this ident */
+}
+
+// C ref: mkobj.c copy_oextra()
+/* oextra fields live directly on the JS object; the struct copy in
+   splitobj() already carried them, so only deep-copy the mutable ones */
+function copy_oextra(obj2, obj1) {
+    if (!obj2 || !obj1)
+        return;
+    if (obj1.omonst)
+        obj2.omonst = { ...obj1.omonst };
+}
+
+// C ref: mkobj.c splitobj()
+/*
+ * Split obj so that it gets size gets reduced by num. The quantity num is
+ * put in the object structure delivered by this call.  The returned object
+ * has its wornmask cleared and is positioned just following the original
+ * in the nobj chain (and nexthere chain when on the floor).
+ */
+export function splitobj(obj, num) {
+    /* can't split containers */
+    if ((obj.cobj && obj.cobj.length) || num <= 0 || obj.quan <= num)
+        throw new Error(`splitobj [num=${num} quan=${obj.quan}]`);
+
+    const otmp = { ...obj }; /* copies whole structure */
+    delete otmp.oextra;
+    otmp.o_id = nextoid(obj, otmp);
+    otmp.timed = 0; /* not timed, yet */
+    otmp.lamplit = 0; /* ditto */
+    otmp.owornmask = 0; /* new object isn't worn */
+    obj.quan -= num;
+    obj.owt = weight(obj);
+    otmp.quan = num;
+    otmp.owt = weight(otmp); /* -= obj->owt ? */
+    otmp.lua_ref_cnt = 0;
+    otmp.pickup_prev = 0;
+
+    if (!game.context.objsplit) game.context.objsplit = {};
+    game.context.objsplit.parent_oid = obj.o_id;
+    game.context.objsplit.child_oid = otmp.o_id;
+    /* obj->nobj = otmp; (and obj->nexthere = otmp when on the floor):
+       insert into chain: obj -> otmp -> next */
+    if (obj.where === 'OBJ_FLOOR') {
+        const fobj = game.level.objects || [];
+        fobj.splice(fobj.indexOf(obj) + 1, 0, otmp);
+    } else if (obj.where === 'OBJ_MINVENT') {
+        /* minvent arrays are kept oldest first (C chain reversed) */
+        const inv = obj.ocarry.minvent;
+        inv.splice(inv.indexOf(obj), 0, otmp);
+    } else if (obj.where !== 'OBJ_FREE' && obj.where !== 'OBJ_LUAFREE') {
+        throw new Error(`splitobj(): where=${obj.where} not ported yet`);
+    }
+    /* lua isn't tracking the split off portion even if it happens to
+       be tracking the original */
+    if (otmp.where === 'OBJ_LUAFREE')
+        otmp.where = 'OBJ_FREE';
+    if (obj.unpaid)
+        throw new Error('splitobj(): splitbill() not ported yet');
+    copy_oextra(otmp, obj);
+    if (otmp.omid)
+        delete otmp.omid; /* free_omid(): only one association with m_id */
+    if (obj.timed)
+        throw new Error('splitobj(): obj_split_timers() not ported yet');
+    if (obj.lamplit)
+        throw new Error('splitobj(): obj_split_light_source() not ported yet');
+    return otmp;
+}
+
+// C ref: mkobj.c obj_extract_self()
+/* the cases monster pickup reaches: floor objects live in
+   game.level.objects, monster inventory in mon.minvent */
+export function obj_extract_self(obj) {
+    switch (obj.where) {
+    case 'OBJ_FREE':
+    case 'OBJ_LUAFREE':
+        break;
+    case 'OBJ_FLOOR': { /* remove_object() */
+        const fobj = game.level.objects || [];
+        const i = fobj.indexOf(obj);
+        if (i >= 0)
+            fobj.splice(i, 1);
+        obj.where = 'OBJ_FREE';
+        break;
+    }
+    case 'OBJ_MINVENT': {
+        const inv = obj.ocarry.minvent || [];
+        const i = inv.indexOf(obj);
+        if (i >= 0)
+            inv.splice(i, 1);
+        obj.where = 'OBJ_FREE';
+        obj.ocarry = null;
+        break;
+    }
+    default:
+        throw new Error(`obj_extract_self: where=${obj.where} is not ported yet`);
+    }
+}
+
+// C ref: mkobj.c add_to_minv()
+/* add obj to mon's inventory; returns 1 if obj was merged (and freed) */
+export function add_to_minv(mon, obj) {
+    if (obj.where !== 'OBJ_FREE')
+        throw new Error(`add_to_minv: obj where=${obj.where}, not free`);
+
+    if (!mon.minvent) mon.minvent = [];
+    /* merge if possible (C walks the chain newest first) */
+    for (const otmp of mon.minvent.slice().reverse())
+        if (merged_minv(otmp, obj))
+            return 1; /* obj merged and then free'd */
+    /* else insert; don't bother forcing it to end of chain
+       (JS minvent arrays are oldest first: newest goes last) */
+    obj.where = 'OBJ_MINVENT';
+    obj.ocarry = mon;
+    mon.minvent.push(obj);
+    return 0; /* obj on mon's inventory chain */
+}
+
+// C ref: invent.c merged() -- only coin merging is ported; mergable()
+// for other objects is not
+function merged_minv(otmp, obj) {
+    if (obj === otmp || obj.otyp !== otmp.otyp
+        || obj.nomerge || otmp.nomerge || !objects[obj.otyp].oc_merge)
+        return false;
+    if (obj.oclass !== O.COIN_CLASS)
+        throw new Error('merged(): mergable() not ported yet');
+    /* coins of the same kind will always merge */
+    if (!obj.lamplit && !obj.globby)
+        otmp.age = Math.trunc(((otmp.age * otmp.quan) + (obj.age * obj.quan))
+                              / (otmp.quan + obj.quan));
+    if (!otmp.globby)
+        otmp.quan += obj.quan;
+    /* temporary special case for gold objects!!!! */
+    otmp.owt = weight(otmp);
+    otmp.bknown = 0;
+    if (!otmp.oname && obj.oname)
+        otmp.oname = obj.oname;
+    obj_extract_self(obj);
+    obj.where = 'OBJ_DELETED'; /* obfree(obj, otmp) */
+    return true;
+}
+
 // C ref: mkobj.c may_generate_eroded()
 /* can object be generated eroded? */
 function may_generate_eroded(otmp) {
