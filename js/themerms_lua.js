@@ -331,8 +331,8 @@ export function themerms_lua(L) {
                     shuffle(zombifiable);
                     const o = des.object({ id: 'corpse', montype: zombifiable[0],
                                            buried: true });
-                    o.stop_timer('rot-corpse');
-                    o.start_timer('zombify-mon', withRngCaller(
+                    lua_callmeth(o, 'stop_timer', 'rot-corpse');
+                    lua_callmeth(o, 'start_timer', 'zombify-mon', withRngCaller(
                         'random src=nhlib.lua:10 parent=contents(themerms.lua:167)',
                         () => G.math.random(990, 1010)));
                 }

@@ -53,7 +53,7 @@ import {
     MM_NOCOUNTBIRTH,
 } from './const.js';
 import {
-    mons, NUMMONS, LOW_PM, MAXMCLASSES, G_UNIQ, G_NOGEN, S_EEL, S_GHOST,
+    mons, NUMMONS, LOW_PM, MAXMCLASSES, G_UNIQ, G_NOGEN, G_IGNORE, S_EEL, S_GHOST,
     S_MIMIC, M1_AMPHIBIOUS, PM_FIRE_ELEMENTAL, PM_SALAMANDER, PM_FIRE_VORTEX,
     PM_FLAMING_SPHERE, PM_ARCHEOLOGIST, PM_WIZARD, PM_DWARF, PM_GNOME,
 } from './monsters.js';
@@ -74,6 +74,7 @@ import { enexto } from './teleport.js';
 import { strcmpi, strncmpi, strstri } from './hacklib.js';
 import { induced_align } from './dungeon.js';
 import { nhl_push_obj } from './nhlobj.js';
+import { bury_an_obj } from './dig.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -2054,8 +2055,16 @@ function create_object(o, croom) {
         if (o.lit)
             nhl_error(null, 'create_object: begin_burn() is not ported yet');
 
-        if (o.buried)
-            nhl_error(null, 'create_object: bury_an_obj() is not ported yet');
+        if (o.buried) {
+            const dealloced = { v: false };
+
+            bury_an_obj(otmp, dealloced);
+            if (dealloced.v) {
+                if (container_idx)
+                    container_obj[container_idx - 1] = null;
+                otmp = null;
+            }
+        }
     }
     return otmp;
 }
@@ -2175,8 +2184,41 @@ export function lspo_object(...args) {
     if (tmpobj.id === STATUE || tmpobj.id === EGG
         || tmpobj.id === CORPSE || tmpobj.id === TIN
         || tmpobj.id === FIGURINE) {
-        if (get_table_str_opt(args[0], 'montype', null))
-            nhl_error(null, 'lspo_object: montype is not ported yet');
+        let pm = null;
+        let nonpmobj = FALSE;
+        const montype = (lua_type(args[0]) === LUA_TTABLE)
+            ? get_table_str_opt(args[0], 'montype', null) : null;
+
+        if (montype) {
+            if ((tmpobj.id === TIN && (!strcmpi(montype, 'spinach')
+                /* id="tin",montype="empty" produces an empty tin */
+                                       || !strcmpi(montype, 'empty')))
+                /* id="egg",montype="empty" produces a generic, unhatchable
+                   egg rather than an "empty egg" */
+                || (tmpobj.id === EGG && !strcmpi(montype, 'empty'))) {
+                tmpobj.corpsenm = NON_PM;
+                tmpobj.spe = !strcmpi(montype, 'spinach') ? 1 : 0;
+                nonpmobj = TRUE;
+            } else if (montype.length === 1
+                       && def_char_to_monclass(montype) !== MAXMCLASSES) {
+                pm = mkclass(def_char_to_monclass(montype),
+                             G_NOGEN | G_IGNORE);
+            } else {
+                for (let i = LOW_PM; i < NUMMONS; i++)
+                    if (!strcmpi(mons[i].pmnames[NEUTRAL], montype)
+                        || (mons[i].pmnames[MALE]
+                            && !strcmpi(mons[i].pmnames[MALE], montype))
+                        || (mons[i].pmnames[FEMALE]
+                            && !strcmpi(mons[i].pmnames[FEMALE], montype))) {
+                        pm = mons[i];
+                        break;
+                    }
+            }
+            if (pm)
+                tmpobj.corpsenm = monsndx(pm);
+            else if (!nonpmobj)
+                nhl_error(null, 'Unknown montype');
+        }
         if (tmpobj.id === STATUE || tmpobj.id === CORPSE) {
             let lflags = 0;
 
@@ -2189,7 +2231,7 @@ export function lspo_object(...args) {
             tmpobj.spe = lflags;
         } else if (tmpobj.id === EGG) {
             tmpobj.spe = get_table_boolean_opt(args[0], 'laid_by_you', 0) ? 1 : 0;
-        } else {
+        } else if (!nonpmobj) { /* tmpobj.spe is already set for nonpmobj */
             tmpobj.spe = 0;
         }
     }
