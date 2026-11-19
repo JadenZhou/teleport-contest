@@ -6,12 +6,16 @@ import { cansee } from './vision.js';
 import { rank } from './botl.js';
 import { ACURR } from './attrib.js';
 import {
-    COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
+    COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS, LADDER, SDOOR, SCORR,
+    IRONBARS, TREE, POOL, MOAT, FOUNTAIN, SINK, ALTAR, GRAVE, THRONE,
+    LAVAPOOL, LAVAWALL, ICE, AIR, CLOUD, WATER, DBWALL, DRAWBRIDGE_UP,
+    DRAWBRIDGE_DOWN, D_BROKEN, LA_DOWN,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
     CROSSWALL, TUWALL, TDWALL, TLWALL, TRWALL,
     D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS,
 } from './const.js';
-import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, DEC_TO_UNICODE } from './terminal.js';
+import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
+         CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, DEC_TO_UNICODE } from './terminal.js';
 
 // ── ANSI color codes ──
 // Maps CLR_* constants (0-15) to ANSI SGR color codes.
@@ -52,28 +56,47 @@ const DEF_CMAP_FOR_DEC = {
 function terrain_glyph(loc, x, y) {
     const tg = terrain_glyph_dec(loc, x, y);
     if (tg.dec && !/^decgraphics$/i.test(game.symset_name || ''))
-        return { ch: DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch, color: tg.color, dec: false };
-    return tg;
+        return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch, color: tg.color, dec: false };
+    return { ch: tg.ch, color: tg.color, dec: tg.dec };
 }
 
+// C ref: stairs.c stairway_at()
+function stairway_at(x, y) {
+    for (let s = game.stairs; s; s = s.next)
+        if (s.sx === x && s.sy === y) return s;
+    return null;
+}
+
+// C ref: stairs.c known_branch_stairs() -- hero knows where the stairs go
+function known_branch_stairs(sway) {
+    return !!(sway && sway.tolev.dnum !== game.u?.uz?.dnum && sway.u_traversed);
+}
+
+// C ref: display.c back_to_glyph() -- the background glyph of a spot,
+// as { ch, color, dec } with the DECgraphics symset's line-drawing
+// characters (dat/symbols "DECgraphics") where it overrides defsym.h;
+// terrain_glyph() maps those back to the defsym.h defaults (asc) otherwise.
+// Walls are drawn by typ (wall_angle()'s seenv modes are not ported yet).
 function terrain_glyph_dec(loc, x, y) {
     const typ = loc.typ;
+    const arboreal = !!game.level?.flags?.arboreal;
+    const S_stone = { ch: ' ', color: NO_COLOR, dec: false };
+    const S_tree = { ch: 'g', color: CLR_GREEN, dec: true, asc: '#' };
+    const S_room = { ch: '~', color: NO_COLOR, dec: true };    /* '.' */
+    const S_ndoor = { ch: '~', color: CLR_GRAY, dec: true };   /* '.' */
+    const S_hwall = { ch: 'q', color: NO_COLOR, dec: true };   /* '-' */
+    const S_vwall = { ch: 'x', color: NO_COLOR, dec: true };   /* '|' */
     switch (typ) {
-    case STONE:     return { ch: ' ', color: NO_COLOR, dec: false };
-    case ROOM:      return { ch: '~', color: NO_COLOR, dec: true };  // DEC middle dot
-    case CORR:      return { ch: '#', color: NO_COLOR, dec: false };
-    case DOOR:
-        if (loc.doormask & D_ISOPEN) return { ch: '|', color: CLR_BROWN, dec: false };
-        if (loc.doormask & (D_CLOSED | D_LOCKED)) return { ch: '+', color: CLR_BROWN, dec: false };
-        return { ch: '~', color: NO_COLOR, dec: true };  // D_NODOOR = floor
-    case STAIRS:
-        // Check upstair vs downstair
-        if (game.level?.upstair?.x === x && game.level?.upstair?.y === y)
-            return { ch: '<', color: CLR_YELLOW, dec: false };
-        return { ch: '>', color: CLR_YELLOW, dec: false };
-    // Wall types → DEC line-drawing characters
-    case HWALL:     return { ch: 'q', color: NO_COLOR, dec: true };  // ─
-    case VWALL:     return { ch: 'x', color: NO_COLOR, dec: true };  // │
+    case SCORR:
+    case STONE:     return arboreal ? S_tree : S_stone;
+    case ROOM:      return S_room;
+    case CORR:      return { ch: '#', color: CLR_GRAY, dec: false }; /* S_corr/S_litcorr */
+    case SDOOR:
+        if (loc.arboreal_sdoor) return S_tree;
+        /* C ref: display.c wall_angle() case SDOOR: S_hwall or S_vwall */
+        return loc.horizontal ? S_hwall : S_vwall;
+    case HWALL:     return S_hwall;                                  // ─
+    case VWALL:     return S_vwall;                                  // │
     case TLCORNER:  return { ch: 'l', color: NO_COLOR, dec: true };  // ┌
     case TRCORNER:  return { ch: 'k', color: NO_COLOR, dec: true };  // ┐
     case BLCORNER:  return { ch: 'm', color: NO_COLOR, dec: true };  // └
@@ -83,8 +106,54 @@ function terrain_glyph_dec(loc, x, y) {
     case TDWALL:    return { ch: 'w', color: NO_COLOR, dec: true };  // ┬
     case TLWALL:    return { ch: 'u', color: NO_COLOR, dec: true };  // ┤
     case TRWALL:    return { ch: 't', color: NO_COLOR, dec: true };  // ├
-    default:        return { ch: '?', color: NO_COLOR, dec: false };
+    case DOOR:
+        if (loc.doormask) {
+            if (loc.doormask & D_BROKEN)
+                return S_ndoor;
+            else if (loc.doormask & D_ISOPEN) /* S_hodoor '|' / S_vodoor '-' */
+                return { ch: 'a', color: CLR_BROWN, dec: true, asc: loc.horizontal ? '|' : '-' };
+            else /* else is closed: S_hcdoor / S_vcdoor */
+                return { ch: '+', color: CLR_BROWN, dec: false };
+        }
+        return S_ndoor;
+    case IRONBARS:  return { ch: '|', color: CLR_CYAN, dec: true, asc: '#' };  /* S_bars */
+    case TREE:      return S_tree;
+    case POOL:
+    case MOAT:      return { ch: '`', color: CLR_BLUE, dec: true, asc: '}' };  /* S_pool */
+    case STAIRS:
+    case LADDER: {
+        let down;
+        if (loc.ladder) down = !!(loc.ladder & LA_DOWN);
+        else down = !(game.level?.upstair?.x === x && game.level?.upstair?.y === y);
+        /* S_brupstair/S_brdnstair (and ladders) for known branch stairs */
+        const br = known_branch_stairs(stairway_at(x, y));
+        if (typ === LADDER)
+            return { ch: down ? 'z' : 'y', color: br ? CLR_YELLOW : CLR_BROWN,
+                     dec: true, asc: down ? '>' : '<' };
+        return { ch: down ? '>' : '<', color: br ? CLR_YELLOW : CLR_GRAY, dec: false };
     }
+    case FOUNTAIN:  return { ch: '{', color: CLR_BRIGHT_BLUE, dec: false };
+    case SINK:      return { ch: '{', color: CLR_WHITE, dec: false };
+    case ALTAR:     return { ch: '{', color: CLR_GRAY, dec: true, asc: '_' };  /* S_altar */
+    case GRAVE:     return { ch: '|', color: CLR_WHITE, dec: false };
+    case THRONE:    return { ch: '\\', color: CLR_YELLOW, dec: false };
+    case LAVAPOOL:  return { ch: '`', color: CLR_RED, dec: true, asc: '}' };
+    case LAVAWALL:  return { ch: '`', color: CLR_ORANGE, dec: true, asc: '}' };
+    case ICE:       return { ch: '~', color: CLR_CYAN, dec: true, asc: '.' };
+    case AIR:       return { ch: ' ', color: CLR_CYAN, dec: false };
+    case CLOUD:     return { ch: '#', color: CLR_GRAY, dec: false };
+    case WATER:     return { ch: '`', color: CLR_BLUE, dec: true, asc: '}' };
+    case DBWALL:    return { ch: '#', color: CLR_BROWN, dec: false };
+    case DRAWBRIDGE_UP: return S_room;
+    case DRAWBRIDGE_DOWN: return { ch: '~', color: CLR_BROWN, dec: true, asc: '#' };
+    default:        return S_room;
+    }
+}
+
+// C ref: termcap.c init_hilite() -- hilites[CLR_GRAY] = hilites[NO_COLOR]
+// = 0, so term_start_color() emits nothing for gray: it shows as default
+function tty_color(color) {
+    return (color === undefined || color === CLR_GRAY) ? NO_COLOR : color;
 }
 
 // ── show_glyph_cell ──
@@ -194,7 +263,7 @@ export function row_refresh(start, stop, y) {
         const loc = game.level.at(x, y);
         if (!loc?.disp_ch || loc.disp_ch === ' ') continue;
         const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
-        display.setCell(x - 1, y + 1, ch, loc.disp_color ?? NO_COLOR, loc.disp_attr ?? 0);
+        display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), loc.disp_attr ?? 0);
     }
 }
 
@@ -367,7 +436,7 @@ function _buildScreenOutput() {
                 const loc = game.level?.at(x, y);
                 if (!loc?.disp_ch || loc.disp_ch === ' ') continue;
                 const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
-                display.setCell(x - 1, y + 1, ch, loc.disp_color ?? NO_COLOR, loc.disp_attr ?? 0);
+                display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), loc.disp_attr ?? 0);
             }
         }
         // Status lines

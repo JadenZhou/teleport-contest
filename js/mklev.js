@@ -77,7 +77,8 @@ const ydir = [0, -1, -1, -1, 0, 1, 1, 1];
 
 // Stairway list management
 function stairway_add(x, y, up, isladder, dest) {
-    const node = { sx: x, sy: y, up, isladder, tolev: { ...dest }, next: game.stairs };
+    const node = { sx: x, sy: y, up, isladder, tolev: { ...dest },
+                   u_traversed: false, next: game.stairs };
     game.stairs = node;
 }
 
@@ -371,11 +372,18 @@ async function makelevel() {
         do_mkroom(COCKNEST);
 
     /* skip0: */
-    /* prevstairs = gs.stairs: used to test for place_branch() success */
+    const prevstairs = game.stairs; /* used to test for place_branch() success */
     /* Place multi-dungeon branch. */
     if (branchp) {
         place_branch(branchp);
     }
+
+    /* for main dungeon level 1, the stairs up where the hero starts
+       are branch stairs; treat them as if hero had just come down
+       them by marking them as having been traversed; most recently
+       created stairway is held in 'gs.stairs' */
+    if (g.u.uz.dnum === 0 && g.u.uz.dlevel === 1 && game.stairs !== prevstairs)
+        game.stairs.u_traversed = true;
 
     /* some levels have specially generated items in ordinary
        rooms (intended to be indistinguishable from the normally
