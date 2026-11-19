@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T21:05:18.705Z",
+ "when": "2026-11-19T21:07:40.352Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -468,31 +468,31 @@
   {
    "session": "seed0102-ranger-name-cancel.session.json",
    "total": 4485,
-   "jsTotal": 4454,
+   "jsTotal": 4490,
    "totalScreens": 25,
-   "valuePrefix": 4454,
-   "rulePrefix": 4454,
+   "valuePrefix": 4458,
+   "rulePrefix": 4458,
    "screens": 1,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
-    "index": 4454,
+    "index": 4458,
     "step": 22,
-    "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
-    "js": "(none: JS log ended)",
+    "c": "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+    "js": "rn2(100)=16 @ obj_resists",
     "kind": "value",
-    "cCaller": "distfleeck",
-    "jsCaller": null,
+    "cCaller": "dog_move",
+    "jsCaller": "obj_resists",
     "context": [
-     "rn2(4)=2 @ dog_goal(dogmove.c:575)",
-     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
-     "rnd(5)=2 @ score_targ(dogmove.c:830)",
-     "rn2(5)=3 @ distfleeck(monmove.c:538)",
      "rn2(5)=2 @ distfleeck(monmove.c:538)",
-     "rn2(100)=3 @ obj_resists(zap.c:1469)"
+     "rn2(100)=3 @ obj_resists(zap.c:1469)",
+     "rn2(8)=5 @ dog_goal(dogmove.c:554)",
+     "rn2(1)=0 @ dog_move(dogmove.c:1255)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(12)=3 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at async dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:23) |     at async movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:5)"
   },
   {
    "session": "seed0103-knight-ride-pony.session.json",
@@ -526,7 +526,7 @@
   {
    "session": "seed0104-knight-ride-combat.session.json",
    "total": 3223,
-   "jsTotal": 2724,
+   "jsTotal": 2753,
    "totalScreens": 43,
    "valuePrefix": 2630,
    "rulePrefix": 2630,
@@ -550,7 +550,7 @@
      "rn2(4)=0 @ dochug(monmove.c:886)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
   },
   {
    "session": "seed0105-valk-chat-lamp-ration.session.json",
@@ -584,7 +584,7 @@
   {
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
-   "jsTotal": 2631,
+   "jsTotal": 2811,
    "totalScreens": 267,
    "valuePrefix": 2607,
    "rulePrefix": 2607,
@@ -608,7 +608,7 @@
      "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
   },
   {
    "session": "seed0107-samurai-twoweapon-enhance.session.json",
@@ -642,7 +642,7 @@
   {
    "session": "seed0108-wizard-extcmd-wishlist.session.json",
    "total": 16958,
-   "jsTotal": 2777,
+   "jsTotal": 2779,
    "totalScreens": 303,
    "valuePrefix": 2772,
    "rulePrefix": 2772,
@@ -666,7 +666,7 @@
      "rn2(2)=0 @ blessorcurse(mkobj.c:1846)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: find_misc() not ported yet |     at find_misc (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:475:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:598:16) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
   },
   {
    "session": "seed0116-wizard-wear-shop.session.json",
@@ -700,7 +700,7 @@
   {
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
-   "jsTotal": 3297,
+   "jsTotal": 3363,
    "totalScreens": 40,
    "valuePrefix": 3256,
    "rulePrefix": 3256,
@@ -724,12 +724,12 @@
      "rn2(100)=48 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: find_defensive() not ported yet |     at find_defensive (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:462:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:596:9) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
   },
   {
    "session": "seed0360-wizard-world-tour.session.json",
    "total": 120639,
-   "jsTotal": 2927,
+   "jsTotal": 2929,
    "totalScreens": 833,
    "valuePrefix": 2898,
    "rulePrefix": 2898,
@@ -753,7 +753,7 @@
      "rn2(7)=3 @ newpw(exper.c:64)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: find_defensive() not ported yet |     at find_defensive (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:462:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:596:9) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
   },
   {
    "session": "seed0361-archeologist-tour.session.json",
@@ -990,7 +990,7 @@
   {
    "session": "seed0900-tourist-explore-actions.session.json",
    "total": 2983,
-   "jsTotal": 2519,
+   "jsTotal": 2552,
    "totalScreens": 84,
    "valuePrefix": 2473,
    "rulePrefix": 2473,
@@ -1014,7 +1014,7 @@
      "rn2(12)=3 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:221:11)"
   },
   {
    "session": "seed1150-caveman-explore-move.session.json",
@@ -1135,7 +1135,7 @@
   {
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
-   "jsTotal": 2865,
+   "jsTotal": 3137,
    "totalScreens": 38,
    "valuePrefix": 2830,
    "rulePrefix": 2830,
@@ -1159,7 +1159,7 @@
      "rn2(12)=8 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
+   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
   },
   {
    "session": "seed4500-knight-coverage.session.json",
@@ -1280,23 +1280,14 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 133512,
-  "value": 133514,
+  "rule": 133516,
+  "value": 133518,
   "rolls": 792838,
   "honestScreens": 244,
   "screens": 249,
   "totalScreens": 11405
  },
  "todo": [
-  {
-   "fn": "distfleeck",
-   "sessions": 7,
-   "blockedRolls": 45994,
-   "examples": [
-    "seed0002-healer-reflection-drummer @2375: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"rn2(100)=20 @ obj_resists\"",
-    "seed0004-feeding-pony @3695: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\""
-   ]
-  },
   {
    "fn": "newhp",
    "sessions": 6,
@@ -1316,21 +1307,30 @@
    ]
   },
   {
+   "fn": "distfleeck",
+   "sessions": 6,
+   "blockedRolls": 45963,
+   "examples": [
+    "seed0002-healer-reflection-drummer @2375: C \"rn2(5)=0 @ distfleeck(monmove.c:538)\" / JS \"rn2(100)=20 @ obj_resists\"",
+    "seed0004-feeding-pony @3695: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\""
+   ]
+  },
+  {
+   "fn": "dog_move",
+   "sessions": 4,
+   "blockedRolls": 2228,
+   "examples": [
+    "seed0017-samurai-altar-pray @2871: C \"rn2(12)=4 @ dog_move(dogmove.c:1257)\" / JS \"rn2(100)=96 @ obj_resists\"",
+    "seed0102-ranger-name-cancel @4458: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(100)=16 @ obj_resists\""
+   ]
+  },
+  {
    "fn": "next_ident",
    "sessions": 3,
    "blockedRolls": 9291,
    "examples": [
     "seed0016-healer-newmoon-eat-zap @2493: C \"rnd(2)=2 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=1 @ mcalcmove\"",
     "seed0101-ranger-quiver-throw-travel-engrave @2293: C \"rnd(2)=1 @ next_ident(mkobj.c:521)\" / JS \"rn2(12)=8 @ mcalcmove\""
-   ]
-  },
-  {
-   "fn": "dog_move",
-   "sessions": 3,
-   "blockedRolls": 2201,
-   "examples": [
-    "seed0017-samurai-altar-pray @2871: C \"rn2(12)=4 @ dog_move(dogmove.c:1257)\" / JS \"rn2(100)=96 @ obj_resists\"",
-    "seed0105-valk-chat-lamp-ration @2479: C \"rn2(1)=0 @ dog_move(dogmove.c:1255)\" / JS \"rn2(4)=1 @ dog_goal\""
    ]
   },
   {
