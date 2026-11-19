@@ -9,6 +9,7 @@
 // Not ported yet: m_initgrp (groups), newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm segments, qt_montype() for the quest.
 
+import { christen_monst, rndghostname } from './do_name.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
@@ -1753,8 +1754,7 @@ export function makemon(ptr, x, y, mmflags) {
         if (game.context.no_of_wizards === 1 && Is_earthlevel())
             mitem = O.SPE_DIG;
     } else if (mndx === M.PM_GHOST && !(mmflags & MM_NONAME)) {
-        /* mtmp = christen_monst(mtmp, rndghostname()): not ported yet */
-        impossible('makemon: rndghostname not ported');
+        mtmp = christen_monst(mtmp, rndghostname());
     } else if (mndx === M.PM_CROESUS) {
         mitem = O.TWO_HANDED_SWORD;
     } else if (ptr.msound === M.MS_NEMESIS) {

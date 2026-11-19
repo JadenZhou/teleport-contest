@@ -31,7 +31,7 @@ import {
     HOLE, TRAPDOOR, TELEP_TRAP, LEVEL_TELEP, MAGIC_PORTAL, WEB, STATUE_TRAP,
     MAGIC_TRAP, ANTI_MAGIC, POLY_TRAP, VIBRATING_SQUARE,
     MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_SEEN, MKTRAP_NOVICTIM,
-    D_NODOOR, D_BROKEN, D_ISOPEN, D_LOCKED, D_TRAPPED, D_SECRET, DOOR,
+    STRAT_WAITFORU, D_NODOOR, D_BROKEN, D_ISOPEN, D_LOCKED, D_TRAPPED, D_SECRET, DOOR,
     W_NORTH, W_SOUTH, W_EAST, W_WEST, W_ANY, W_RANDOM,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring } from './nhlua.js';
@@ -65,7 +65,7 @@ import {
     POTION_CLASS, SCROLL_CLASS, SPBOOK_CLASS, WAND_CLASS, MAXOCLASSES,
 } from './objects.js';
 import {
-    name_to_monplus, is_male, is_female, monsndx, is_swimmer, is_flyer,
+    name_to_monplus, is_male, is_female, monsndx, is_vampshifter, is_vampire, is_swimmer, is_flyer,
     is_floater, passes_walls, your_race,
 } from './mondata.js';
 import {
@@ -1661,8 +1661,15 @@ function create_monster(m, croom) {
             mtmp.mflee = 1;
             mtmp.mfleetim = (m.fleeing % 127);
         }
-        if (m.waiting)
-            nhl_error(null, 'create_monster: waiting monsters are not ported yet');
+        if (m.waiting) {
+            mtmp.mstrategy |= STRAT_WAITFORU;
+            /* if this is a vampire that got created already shifted into
+               bat/fog/wolf form and the special level or theme room didn't
+               explicitly request that, shift back to vampire */
+            if (is_vampshifter(mtmp) && !is_vampire(mtmp.data)
+                && m.appear !== M_AP_MONSTER) /* vampshifted() */
+                nhl_error(null, 'create_monster: newcham() is not ported yet');
+        }
         if (m.m_lev_adj) {
             if (mtmp.m_lev + m.m_lev_adj > 49)
                 mtmp.m_lev = 49;
