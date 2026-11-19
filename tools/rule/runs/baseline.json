@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T18:52:44.892Z",
+ "when": "2026-11-19T18:57:26.168Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -153,9 +153,9 @@
    "totalScreens": 308,
    "valuePrefix": 3083,
    "rulePrefix": 3083,
-   "screens": 17,
-   "honestScreens": 17,
-   "firstScreenMiss": 17,
+   "screens": 19,
+   "honestScreens": 19,
+   "firstScreenMiss": 18,
    "first": {
     "index": 3083,
     "step": 21,
@@ -1283,8 +1283,8 @@
   "rule": 127776,
   "value": 127778,
   "rolls": 792838,
-  "honestScreens": 238,
-  "screens": 245,
+  "honestScreens": 240,
+  "screens": 247,
   "totalScreens": 11405
  },
  "todo": [
