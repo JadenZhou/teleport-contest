@@ -6,6 +6,9 @@
 
 import * as M from './monsters.js';
 import { game } from './gstate.js';
+import { strncmpi, strcmpi, strstri } from './hacklib.js';
+import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS } from './const.js';
+import { title_to_mon } from './botl.js';
 import {
     mons, NATTK, AT_ANY, AD_DRLI, M1_FLY, M1_SWIM, M1_WALLWALK, M1_NOEYES,
     M1_REGEN, M1_SEE_INVIS, M1_TPORT, M1_TPORT_CNTRL, M2_UNDEAD, M2_WERE,
@@ -261,4 +264,187 @@ export function big_to_little(montype) {
             break;
         }
     return montype;
+}
+
+// C ref: mondata.c name_to_mon()
+/* figure out what type of monster a user-supplied string is specifying;
+   ignore anything past the monster name */
+export function name_to_mon(in_str, gender_name_var) {
+    return name_to_monplus(in_str, null, gender_name_var);
+}
+
+// C ref: mondata.c name_to_monplus() names[] (struct alt_spl)
+const alt_spl_names = [
+    /* Alternate spellings */
+    ['grey dragon', M.PM_GRAY_DRAGON, NEUTRAL],
+    ['baby grey dragon', M.PM_BABY_GRAY_DRAGON, NEUTRAL],
+    ['grey unicorn', M.PM_GRAY_UNICORN, NEUTRAL],
+    ['grey ooze', M.PM_GRAY_OOZE, NEUTRAL],
+    ['gray-elf', M.PM_GREY_ELF, NEUTRAL],
+    ['mindflayer', M.PM_MIND_FLAYER, NEUTRAL],
+    ['master mindflayer', M.PM_MASTER_MIND_FLAYER, NEUTRAL],
+    /* More alternates; priest and priestess are separate monster
+       types but that isn't the case for {aligned,high} priests */
+    ['aligned priest', M.PM_ALIGNED_CLERIC, MALE],
+    ['aligned priestess', M.PM_ALIGNED_CLERIC, FEMALE],
+    ['high priest', M.PM_HIGH_CLERIC, MALE],
+    ['high priestess', M.PM_HIGH_CLERIC, FEMALE],
+    /* Inappropriate singularization by -ves check above */
+    ['master of thief', M.PM_MASTER_OF_THIEVES, NEUTRAL],
+    /* Potential misspellings where we want to avoid falling back
+       to the rank title prefix (input has been singularized) */
+    ['master thief', M.PM_MASTER_OF_THIEVES, NEUTRAL],
+    ['master of assassin', M.PM_MASTER_ASSASSIN, NEUTRAL],
+    ['master-lich', M.PM_MASTER_LICH, NEUTRAL], /* cf arch-lich */
+    ['masterlich', M.PM_MASTER_LICH, NEUTRAL], /* cf demilich */
+    /* Outdated names */
+    ['invisible stalker', M.PM_STALKER, NEUTRAL],
+    ['high-elf', M.PM_ELVEN_MONARCH, NEUTRAL], /* PM_HIGH_ELF is obsolete */
+    /* other misspellings or incorrect words */
+    ['wood-elf', M.PM_WOODLAND_ELF, NEUTRAL],
+    ['wood elf', M.PM_WOODLAND_ELF, NEUTRAL],
+    ['woodland nymph', M.PM_WOOD_NYMPH, NEUTRAL],
+    ['halfling', M.PM_HOBBIT, NEUTRAL], /* potential guess for polyself */
+    ['genie', M.PM_DJINNI, NEUTRAL], /* potential guess for ^G/#wizgenesis */
+    /* prefix used to workaround duplicate monster names for
+       monsters with alternate forms */
+    ['human wererat', M.PM_HUMAN_WERERAT, NEUTRAL],
+    ['human werejackal', M.PM_HUMAN_WEREJACKAL, NEUTRAL],
+    ['human werewolf', M.PM_HUMAN_WEREWOLF, NEUTRAL],
+    /* for completeness */
+    ['rat wererat', M.PM_WERERAT, NEUTRAL],
+    ['jackal werejackal', M.PM_WEREJACKAL, NEUTRAL],
+    ['wolf werewolf', M.PM_WEREWOLF, NEUTRAL],
+    /* Hyphenated names -- it would be nice to handle these via
+       fuzzymatch() but it isn't able to ignore trailing stuff */
+    ['ki rin', M.PM_KI_RIN, NEUTRAL],
+    ['kirin', M.PM_KI_RIN, NEUTRAL],
+    ['uruk hai', M.PM_URUK_HAI, NEUTRAL],
+    ['orc captain', M.PM_ORC_CAPTAIN, NEUTRAL],
+    ['woodland elf', M.PM_WOODLAND_ELF, NEUTRAL],
+    ['green elf', M.PM_GREEN_ELF, NEUTRAL],
+    ['grey elf', M.PM_GREY_ELF, NEUTRAL],
+    ['gray elf', M.PM_GREY_ELF, NEUTRAL],
+    ['elf lady', M.PM_ELF_NOBLE, FEMALE],
+    ['elf lord', M.PM_ELF_NOBLE, MALE],
+    ['elf noble', M.PM_ELF_NOBLE, NEUTRAL],
+    ['olog hai', M.PM_OLOG_HAI, NEUTRAL],
+    ['arch lich', M.PM_ARCH_LICH, NEUTRAL],
+    ['archlich', M.PM_ARCH_LICH, NEUTRAL],
+    /* Some irregular plurals */
+    ['incubi', M.PM_AMOROUS_DEMON, MALE],
+    ['succubi', M.PM_AMOROUS_DEMON, FEMALE],
+    ['violet fungi', M.PM_VIOLET_FUNGUS, NEUTRAL],
+    ['homunculi', M.PM_HOMUNCULUS, NEUTRAL],
+    ['baluchitheria', M.PM_BALUCHITHERIUM, NEUTRAL],
+    ['lurkers above', M.PM_LURKER_ABOVE, NEUTRAL],
+    ['cavemen', M.PM_CAVE_DWELLER, MALE],
+    ['cavewomen', M.PM_CAVE_DWELLER, FEMALE],
+    ['watchmen', M.PM_WATCHMAN, NEUTRAL],
+    ['djinn', M.PM_DJINNI, NEUTRAL],
+    ['mumakil', M.PM_MUMAK, NEUTRAL],
+    ['erinyes', M.PM_ERINYS, NEUTRAL],
+];
+
+// C ref: mondata.c name_to_monplus()
+/* figure out what type of monster a user-supplied string is specifying;
+   remainder_p.p gets whatever is past the monster name (C: a pointer into
+   in_str); gender_name_var.v gets the gender of the matched name */
+export function name_to_monplus(in_str, remainder_p, gender_name_var) {
+    let i;
+    let mntmp = NON_PM;
+    let str, off = 0; /* C: str == buf + off */
+    let len, mgend, matchgend = -1;
+    let slen;
+    let exact_match = false;
+    let s;
+
+    if (remainder_p)
+        remainder_p.p = null;
+
+    if (in_str.startsWith('a '))
+        off = 2;
+    else if (in_str.startsWith('an '))
+        off = 3;
+    else if (in_str.startsWith('the '))
+        off = 4;
+    str = in_str.slice(off);
+
+    slen = str.length;
+
+    if ((s = strstri(str, 'vortices')) >= 0)
+        str = str.slice(0, s + 4) + 'ex';
+    /* be careful with "ies"; "priest", "zombies" */
+    else if (slen > 3 && !strcmpi(str.slice(slen - 3), 'ies')
+             && (slen < 7 || strcmpi(str.slice(slen - 7), 'zombies')))
+        str = str.slice(0, slen - 3) + 'y';
+    /* luckily no monster names end in fe or ve with ves plurals */
+    else if (slen > 3 && !strcmpi(str.slice(slen - 3), 'ves'))
+        str = str.slice(0, slen - 3) + 'f';
+
+    slen = str.length; /* length possibly needs recomputing */
+
+    for (const [name, pm_val, genderhint] of alt_spl_names) {
+        len = name.length;
+        if (!strncmpi(str, name, len)
+            /* force full word (which could conceivably be possessive) */
+            && (len >= str.length || str[len] === ' ' || str[len] === '\'')) {
+            if (remainder_p)
+                remainder_p.p = in_str.slice(off + len);
+            if (gender_name_var)
+                gender_name_var.v = genderhint;
+            return pm_val;
+        }
+    }
+
+    for (len = 0, i = LOW_PM; i < M.NUMMONS; i++) {
+        for (mgend = MALE; mgend < NUM_MGENDERS; mgend++) {
+            const pmname = mons[i].pmnames[mgend];
+
+            if (!pmname)
+                continue;
+
+            const m_i_len = pmname.length;
+            if (m_i_len > len && !strncmpi(pmname, str, m_i_len)) {
+                const rest = str.slice(m_i_len);
+                if (m_i_len === slen) {
+                    mntmp = i;
+                    len = m_i_len;
+                    matchgend = mgend;
+                    exact_match = true;
+                    break; /* exact match */
+                } else if (slen > m_i_len
+                           && (str[m_i_len] === ' '
+                               || !strcmpi(rest, 's')
+                               || !strncmpi(rest, 's ', 2)
+                               || !strcmpi(rest, '\'')
+                               || !strncmpi(rest, '\' ', 2)
+                               || !strcmpi(rest, '\'s')
+                               || !strncmpi(rest, '\'s ', 3)
+                               || !strcmpi(rest, 'es')
+                               || !strncmpi(rest, 'es ', 3))) {
+                    mntmp = i;
+                    len = m_i_len;
+                    matchgend = mgend;
+                }
+            }
+        }
+        if (exact_match)
+            break;
+    }
+    /* FIXME: some titles have gender; title_to_mon() doesn't propagate it */
+    if (mntmp === NON_PM) {
+        const tout = {};
+        mntmp = title_to_mon(str, tout);
+        len = tout.title_length;
+    }
+    if (len && remainder_p)
+        remainder_p.p = in_str.slice(off + len);
+    if (gender_name_var && matchgend !== -1) {
+        /* don't override with neuter if caller has already specified male
+           or female and we've matched the neuter name */
+        if (gender_name_var.v === -1 || matchgend !== NEUTRAL)
+            gender_name_var.v = matchgend;
+    }
+    return mntmp;
 }

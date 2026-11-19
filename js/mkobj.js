@@ -297,12 +297,12 @@ function is_multigen(otmp) {
 
 // C ref: artifact.c permapoisoned() — is_art(obj, ART_GRIMTOOTH); no
 // artifacts are created yet
-function permapoisoned(obj) {
+export function permapoisoned(obj) {
     return !!(obj && obj.oartifact && false);
 }
 
 // C ref: obj.h is_poisonable()
-function is_poisonable(otmp) {
+export function is_poisonable(otmp) {
     return ((otmp.oclass === WEAPON_CLASS
              && objects[otmp.otyp].oc_skill >= -P_SHURIKEN
              && objects[otmp.otyp].oc_skill <= -P_BOW)
@@ -310,12 +310,12 @@ function is_poisonable(otmp) {
 }
 
 // C ref: obj.h is_weptool()
-function is_weptool(o) {
+export function is_weptool(o) {
     return (o.oclass === TOOL_CLASS && objects[o.otyp].oc_skill !== P_NONE);
 }
 
 // C ref: obj.h Is_candle()
-function Is_candle(otmp) {
+export function Is_candle(otmp) {
     return (otmp.otyp === O.TALLOW_CANDLE || otmp.otyp === O.WAX_CANDLE);
 }
 
@@ -354,23 +354,23 @@ export function is_rottable(otmp) {
 
 // C ref: objclass.h is_rustprone(), is_crackable(), is_corrodeable(),
 // is_damageable()
-function is_rustprone(otmp) { return objects[otmp.otyp].oc_material === O.IRON; }
-function is_crackable(otmp) {
+export function is_rustprone(otmp) { return objects[otmp.otyp].oc_material === O.IRON; }
+export function is_crackable(otmp) {
     return (objects[otmp.otyp].oc_material === O.GLASS
             && otmp.oclass === ARMOR_CLASS); /* erosion_matters() */
 }
-function is_corrodeable(otmp) {
+export function is_corrodeable(otmp) {
     return (objects[otmp.otyp].oc_material === O.COPPER
             || objects[otmp.otyp].oc_material === O.IRON);
 }
-function is_damageable(otmp) {
+export function is_damageable(otmp) {
     return (is_rustprone(otmp) || is_flammable(otmp)
             || is_rottable(otmp) || is_corrodeable(otmp)
             || is_crackable(otmp));
 }
 
 // C ref: objnam.c erosion_matters()
-function erosion_matters(obj) {
+export function erosion_matters(obj) {
     switch (obj.oclass) {
     case TOOL_CLASS:
         return is_weptool(obj) ? true : false;
@@ -476,7 +476,7 @@ function place_object(otmp, x, y) {
 }
 
 // C ref: o_init.c rnd_class()
-function rnd_class(first, last) {
+export function rnd_class(first, last) {
     let i, x, sum = 0;
 
     if (last > first) {
@@ -586,12 +586,79 @@ function Is_mbag(otmp) {
 
 // C ref: mkobj.c add_to_container() -- container chains are kept as a
 // plain array on the box (no merging yet)
-function add_to_container(container, obj) {
+export function add_to_container(container, obj) {
     obj.where = 'OBJ_CONTAINED';
     obj.ocontainer = container;
     if (!container.cobj) container.cobj = [];
     container.cobj.unshift(obj);
     return obj;
+}
+
+// C ref: obj.h Is_container()
+export function Is_container(otmp) {
+    return otmp.otyp >= O.LARGE_BOX && otmp.otyp <= O.BAG_OF_TRICKS;
+}
+
+// C ref: mkobj.c weight()
+/*
+ * Calculate the weight of the given object.  This will recursively follow
+ * and calculate the weight of any containers.  (C's container chain is a
+ * plain array, obj.cobj, here.)
+ */
+export function weight(obj) {
+    let wt = objects[obj.otyp].oc_weight; /* weight of 1 'otyp' */
+
+    if (obj.quan < 1) {
+        impossible(`Calculating weight of ${obj.quan} objects?`);
+        return 0;
+    }
+    /* glob absorption means that merging globs combines their weight
+       while quantity stays 1 */
+    if (obj.globby)
+        return obj.owt;
+    if (Is_container(obj) || obj.otyp === O.STATUE) {
+        let cwt;
+
+        if (obj.otyp === O.STATUE && obj.corpsenm >= LOW_PM) {
+            const msize = mons[obj.corpsenm].msize, /* 0..7 */
+                  minwt = (msize + msize + 1) * 100;
+
+            /* default statue weight is 1.5 times corpse weight */
+            wt = Math.trunc(3 * mons[obj.corpsenm].cwt / 2);
+            if (wt < minwt)
+                wt = minwt;
+            /* this has no effect because statues don't stack */
+            wt *= obj.quan;
+        }
+
+        cwt = 0; /* contents weight */
+        for (const contents of (obj.cobj || []))
+            cwt += weight(contents);
+        if (obj.otyp === O.BAG_OF_HOLDING)
+            cwt = obj.cursed ? (cwt * 2)
+                  : obj.blessed ? Math.trunc((cwt + 3) / 4)
+                    : Math.trunc((cwt + 1) / 2); /* uncursed */
+
+        return wt + cwt;
+    }
+    if (obj.otyp === O.CORPSE && obj.corpsenm >= LOW_PM) {
+        wt = obj.quan * mons[obj.corpsenm].cwt;
+        if (obj.oeaten)
+            not_ported('eaten_stat()');
+        return wt;
+    } else if (obj.oclass === O.FOOD_CLASS && obj.oeaten) {
+        not_ported('eaten_stat()');
+        return obj.quan * wt;
+    } else if (obj.oclass === O.COIN_CLASS) {
+        /* 5.0: always weigh at least 1 unit; used to yield 0 for 1..49 */
+        wt = Math.trunc((obj.quan + 50) / 100);
+        return Math.max(wt, 1);
+    } else if (obj.otyp === O.HEAVY_IRON_BALL && obj.owt !== 0) {
+        return obj.owt; /* kludge for "very" heavy iron ball */
+    } else if (obj.otyp === O.CANDELABRUM_OF_INVOCATION && obj.spe) {
+        return wt + obj.spe * objects[O.TALLOW_CANDLE].oc_weight;
+    }
+    return (wt ? wt * obj.quan : (obj.quan + 1) >> 1);
 }
 
 // C ref: mkobj.c mkbox_cnts()
@@ -689,7 +756,7 @@ function nonrotting_corpse(mnum) {
 // C ref: eat.c set_tin_variety()
 /* set a tin's variety; HEALTHY_TIN (tin_variety()) is not reached by
    object creation and is not ported yet */
-function set_tin_variety(obj, forcetype) {
+export function set_tin_variety(obj, forcetype) {
     let r;
     const mnum = obj.corpsenm;
 
@@ -708,7 +775,7 @@ function set_tin_variety(obj, forcetype) {
 }
 
 // C ref: mon.c can_be_hatched()
-function can_be_hatched(mnum) {
+export function can_be_hatched(mnum) {
     /* ranger quest nemesis has the oviparous bit set, making it
        be possible to wish for eggs of that unique monster; turn
        such into ordinary eggs rather than forbidding them outright */
@@ -729,7 +796,7 @@ function can_be_hatched(mnum) {
 }
 
 // C ref: mon.c dead_species()
-function dead_species(m_idx, egg) {
+export function dead_species(m_idx, egg) {
     /* generic eggs are unhatchable and have corpsenm of NON_PM */
     if (m_idx < 0)
         return true;
@@ -1082,7 +1149,7 @@ export function mksobj(otyp, init, artif) {
     if (objects[otyp].oc_unique && !otmp.oartifact) {
         not_ported('mk_artifact() for unique objects');
     }
-    otmp.owt = objects[otyp].oc_weight; /* weight(otmp) */
+    otmp.owt = weight(otmp);
     return otmp;
 }
 

@@ -7,8 +7,9 @@
 // check_room() and create_room() (also sp_lev.c) live in mklev.js for now,
 // next to the room code they share with makerooms().
 //
-// Ported so far: des.room, des.map, des.region and des.altar as themed rooms use
-// them (with their helpers mapfrag_*, sel_set_ter, get_location). The
+// Ported so far: des.room, des.map, des.region, des.altar, des.object,
+// des.monster and des.exclusion as themed rooms use them (with their helpers
+// mapfrag_*, sel_set_ter, get_location, create_object, create_monster). The
 // other des.* functions are registered by name but raise a Lua error until
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
@@ -33,10 +34,44 @@ import { selection_new, selection_setpoint } from './selvar.js';
 import {
     get_table_int_opt, get_table_str_opt, get_table_option, nhl_error,
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
-    LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, lua_error,
+    LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
 import { create_room, topologize, add_door, add_room, somex, somey, somexy } from './mklev.js';
-import { mkgold } from './mkobj.js';
+import {
+    mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
+    rndmonnum, weight, add_to_container,
+} from './mkobj.js';
+import {
+    NON_PM, MALE, FEMALE, NEUTRAL, G_EXTINCT, G_GONE, LR_TELE, LR_UPTELE,
+    LR_DOWNTELE, LR_MONGEN, M_AP_OBJECT, M_AP_MONSTER, M_AP_FURNITURE,
+    NO_MM_FLAGS, MM_NOTAIL, MM_NOGRP, MM_ADJACENTOK, MM_IGNOREWATER,
+    MM_NOCOUNTBIRTH,
+} from './const.js';
+import {
+    mons, NUMMONS, LOW_PM, MAXMCLASSES, G_UNIQ, G_NOGEN, S_EEL, S_GHOST,
+    S_MIMIC, M1_AMPHIBIOUS, PM_FIRE_ELEMENTAL, PM_SALAMANDER, PM_FIRE_VORTEX,
+    PM_FLAMING_SPHERE, PM_ARCHEOLOGIST, PM_WIZARD, PM_DWARF, PM_GNOME,
+} from './monsters.js';
+import {
+    objects, OBJ_NAME, OBJ_DESCR, NUM_OBJECTS, STRANGE_OBJECT, STATUE, EGG,
+    CORPSE, TIN, FIGURINE, RANDOM_CLASS, COIN_CLASS, RING_CLASS,
+    POTION_CLASS, SCROLL_CLASS, SPBOOK_CLASS, WAND_CLASS, MAXOCLASSES,
+} from './objects.js';
+import {
+    name_to_monplus, is_male, is_female, monsndx, is_swimmer, is_flyer,
+    is_floater, passes_walls, your_race,
+} from './mondata.js';
+import {
+    def_char_to_monclass, def_monsyms, def_char_to_objclass,
+} from './drawing.js';
+import { mkclass, makemon, set_malign, m_at } from './makemon.js';
+import { enexto } from './teleport.js';
+import { strcmpi, strncmpi, strstri } from './hacklib.js';
+import { induced_align } from './dungeon.js';
+import { nhl_push_obj } from './nhlobj.js';
+
+// C ref: dungeon.h In_mines()
+function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
 
 // C's impossible() and panic() (pline.c) are not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -1095,9 +1130,10 @@ function sp_amask_to_amask(sp_amask) {
 
     if (sp_amask === AM_SPLEV_CO)
         amask = Align2amask(game.u.ualignbase[A_ORIGINAL]);
-    else if (sp_amask === AM_SPLEV_NONCO || sp_amask === AM_SPLEV_RANDOM)
-        /* noncoalignment() and induced_align() are not ported yet */
-        nhl_error(null, 'sp_amask_to_amask: random/non-co-aligned altars are not ported yet');
+    else if (sp_amask === AM_SPLEV_NONCO)
+        amask = Align2amask(noncoalignment(game.u.ualignbase[A_ORIGINAL]));
+    else if (sp_amask === AM_SPLEV_RANDOM)
+        amask = induced_align(80);
     else
         amask = sp_amask & AM_MASK;
 
@@ -1179,6 +1215,886 @@ export function lspo_altar(tbl) {
     return 0;
 }
 
+// C ref: sp_lev.c noncoalignment()
+function noncoalignment(alignment) {
+    let k;
+
+    k = rn2(2);
+    if (!alignment)
+        return (k ? -1 : 1);
+    return (k ? -alignment : 0);
+}
+
+// sp_lev.h SP_COORD_PACK(), SP_COORD_PACK_RANDOM()
+function SP_COORD_PACK(x, y) { return (x & 0xff) + ((y & 0xff) << 16); }
+function SP_COORD_PACK_RANDOM(l) { return SP_COORD_IS_RANDOM | l; }
+
+// sp_lev.h object containment flags
+const SP_OBJ_CONTENT = 0x1;
+const SP_OBJ_CONTAINER = 0x2;
+const MAX_CONTAINMENT = 10;
+// sp_lev.h monster inventory flags
+const DEFAULT_INVENT = 0x01;
+const CUSTOM_INVENT = 0x02;
+const NO_INVENT = 0x00;
+const BOOL_RANDOM = -1;
+// hack.h CORPSTAT_* flags for lspo_object()
+const CORPSTAT_HISTORIC = 0x04;
+const CORPSTAT_FEMALE = 1;
+const CORPSTAT_MALE = 2;
+
+// C ref: sp_lev.c container_obj[], container_idx, invent_carrying_monster
+let container_obj = new Array(MAX_CONTAINMENT).fill(null);
+let container_idx = 0;
+let invent_carrying_monster = null;
+
+// C ref: sp_lev.c pm_to_humidity()
+function pm_to_humidity(pm) {
+    let loc = DRY;
+
+    if (!pm)
+        return loc;
+    if (pm.mlet === S_EEL || amphibious(pm) || is_swimmer(pm))
+        loc = WET;
+    if (is_flyer(pm) || is_floater(pm))
+        loc |= (HOT | WET);
+    if (passes_walls(pm) || noncorporeal(pm))
+        loc |= SOLID;
+    if (likes_fire(pm))
+        loc |= HOT;
+    return loc;
+}
+
+// C ref: mondata.h amphibious(), noncorporeal(), likes_lava(), likes_fire()
+function amphibious(ptr) { return (ptr.mflags1 & M1_AMPHIBIOUS) !== 0; }
+function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
+function likes_lava(ptr) {
+    return ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER];
+}
+function likes_fire(ptr) {
+    return ptr === mons[PM_FIRE_VORTEX] || ptr === mons[PM_FLAMING_SPHERE]
+           || likes_lava(ptr);
+}
+
+// C ref: sp_lev.c create_monster()
+function create_monster(m, croom) {
+    let mtmp;
+    let mclass;
+    let amask;
+    const cc = { x: 0, y: 0 };
+    let pm;
+    let g_mvflags;
+    const c = { x: 0, y: 0 };
+
+    if (m.class !== -1)
+        mclass = def_char_to_monclass(m.class);
+    else
+        mclass = 0;
+
+    if (mclass === MAXMCLASSES)
+        panic(`create_monster: unknown monster class '${m.class}'`);
+
+    amask = sp_amask_to_amask(m.sp_amask);
+
+    if (!mclass) {
+        pm = null;
+    } else if (m.id !== NON_PM) {
+        pm = mons[m.id];
+        g_mvflags = game.mvitals[monsndx(pm)].mvflags;
+        if ((pm.geno & G_UNIQ) && (g_mvflags & G_EXTINCT))
+            return;
+        if (g_mvflags & G_GONE) /* genocided or extinct */
+            pm = null; /* make random monster */
+    } else {
+        pm = mkclass(mclass, G_NOGEN);
+        /* if we can't get a specific monster type (pm == 0) then the
+           class has been genocided, so settle for a random monster */
+    }
+    if (In_mines(game.u.uz) && pm && your_race(pm)
+        && (game.urace.mnum === PM_DWARF || game.urace.mnum === PM_GNOME)
+        && rn2(3))
+        pm = null;
+
+    if (pm) {
+        let loc = pm_to_humidity(pm);
+
+        /* If water-liking monster, first try is without DRY */
+        get_location_coord(c, loc | NO_LOC_WARN, croom, m.coord);
+        if (c.x === -1 && c.y === -1) {
+            loc |= DRY;
+            get_location_coord(c, loc, croom, m.coord);
+        }
+    } else {
+        get_location_coord(c, DRY, croom, m.coord);
+    }
+    let x = c.x, y = c.y;
+
+    /* try to find a close place if someone else is already there */
+    if (m_at(x, y) && enexto(cc, x, y, pm))
+        x = cc.x, y = cc.y;
+
+    if (croom && !inside_room(croom, x, y))
+        return;
+
+    if (m.sp_amask !== AM_SPLEV_RANDOM)
+        nhl_error(null, 'create_monster: mk_roamer() is not ported yet');
+    else if (PM_ARCHEOLOGIST <= m.id && m.id <= PM_WIZARD)
+        nhl_error(null, 'create_monster: mk_mplayer() is not ported yet');
+    else
+        mtmp = makemon(pm, x, y, m.mm_flags);
+
+    if (mtmp) {
+        x = mtmp.mx, y = mtmp.my; /* sanity precaution */
+        m.x = x, m.y = y;
+        /* handle specific attributes for some special monsters */
+        if (m.name)
+            nhl_error(null, 'create_monster: christen_monst() is not ported yet');
+
+        if (m.appear_as
+            && ((mtmp.data.mlet === S_MIMIC)
+                /* shapechanger (chameleons, et al, and vampires) */
+                || (mtmp.cham >= LOW_PM && m.appear === M_AP_MONSTER)))
+            nhl_error(null, 'create_monster: appear_as is not ported yet');
+
+        mtmp.female = m.female;
+        if (m.peaceful > BOOL_RANDOM) {
+            mtmp.mpeaceful = m.peaceful;
+            /* changed mpeaceful again; have to reset malign */
+            set_malign(mtmp);
+        }
+        if (m.asleep > BOOL_RANDOM)
+            mtmp.msleeping = m.asleep;
+        if (m.seentraps)
+            mtmp.mtrapseen = m.seentraps;
+        if (m.cancelled)
+            mtmp.mcan = 1;
+        if (m.revived)
+            mtmp.mrevived = 1;
+        if (m.avenge)
+            mtmp.mavenge = 1;
+        if (m.stunned)
+            mtmp.mstun = 1;
+        if (m.confused)
+            mtmp.mconf = 1;
+        if (m.invis) {
+            mtmp.minvis = mtmp.perminvis = 1;
+        }
+        if (m.blinded) {
+            mtmp.mcansee = 0;
+            mtmp.mblinded = (m.blinded % 127);
+        }
+        if (m.paralyzed) {
+            mtmp.mcanmove = 0;
+            mtmp.mfrozen = (m.paralyzed % 127);
+        }
+        if (m.fleeing) {
+            mtmp.mflee = 1;
+            mtmp.mfleetim = (m.fleeing % 127);
+        }
+        if (m.waiting)
+            nhl_error(null, 'create_monster: waiting monsters are not ported yet');
+        if (m.m_lev_adj) {
+            if (mtmp.m_lev + m.m_lev_adj > 49)
+                mtmp.m_lev = 49;
+            else if (mtmp.m_lev + m.m_lev_adj < 0)
+                mtmp.m_lev = 0;
+            else
+                mtmp.m_lev += m.m_lev_adj;
+        }
+        if (!(m.has_invent & DEFAULT_INVENT))
+            nhl_error(null, 'create_monster: mdrop_special_objs()/discard_minvent() are not ported yet');
+        if (m.has_invent & CUSTOM_INVENT) {
+            invent_carrying_monster = mtmp;
+        }
+    }
+}
+
+// C ref: sp_lev.c get_table_monclass()
+function get_table_monclass(tbl) {
+    const s = get_table_str_opt(tbl, 'class', null);
+    let ret = -1;
+
+    if (s && s.length === 1)
+        ret = s;
+    return ret;
+}
+
+// C ref: sp_lev.c find_montype()
+function find_montype(s, mgender) {
+    let i;
+    const g = { v: NEUTRAL };
+
+    i = name_to_monplus(s, null, g);
+    let mgend = g.v;
+    if (i >= LOW_PM && i < NUMMONS) {
+        if (is_male(mons[i]) || is_female(mons[i]))
+            mgend = is_female(mons[i]) ? FEMALE : MALE;
+        else
+            mgend = (mgend === FEMALE) ? FEMALE
+                        : (mgend === MALE) ? MALE : rn2(2);
+        if (mgender)
+            mgender.v = mgend;
+        return i;
+    }
+    if (mgender)
+        mgender.v = NEUTRAL;
+    return NON_PM;
+}
+
+// C ref: sp_lev.c get_table_montype()
+function get_table_montype(tbl, mgender) {
+    const s = get_table_str_opt(tbl, 'id', null);
+    let ret = NON_PM;
+
+    if (s) {
+        ret = find_montype(s, mgender);
+        if (ret === NON_PM)
+            nhl_error(null, 'Unknown monster id');
+    }
+    return ret;
+}
+
+// C ref: sp_lev.c lspo_monster()
+/* monster(); */
+/* monster("wood nymph"); */
+/* monster("D"); */
+/* monster("giant eel",11,06); */
+/* monster("hill giant", {08,06}); */
+/* monster({ id = "giant mimic", appear_as = "obj:boulder" }); */
+/* monster({ class = "H", peaceful = 0 }); */
+export function lspo_monster(...args) {
+    const argc = args.length;
+    const tmpmons = {};
+    let mx = -1, my = -1;
+    const mgend = { v: NEUTRAL };
+    let invfn = null;
+
+    create_des_coder();
+
+    tmpmons.peaceful = -1;
+    tmpmons.asleep = -1;
+    tmpmons.name = null;
+    tmpmons.appear = 0;
+    tmpmons.appear_as = null;
+    tmpmons.sp_amask = AM_SPLEV_RANDOM;
+    tmpmons.female = 0;
+    tmpmons.invis = 0;
+    tmpmons.cancelled = 0;
+    tmpmons.revived = 0;
+    tmpmons.avenge = 0;
+    tmpmons.fleeing = 0;
+    tmpmons.blinded = 0;
+    tmpmons.paralyzed = 0;
+    tmpmons.stunned = 0;
+    tmpmons.confused = 0;
+    tmpmons.seentraps = 0;
+    tmpmons.has_invent = DEFAULT_INVENT;
+    tmpmons.waiting = 0;
+    tmpmons.mm_flags = NO_MM_FLAGS;
+    tmpmons.m_lev_adj = 0;
+
+    const from_paramstr = (paramstr) => {
+        if (paramstr.length === 1) {
+            tmpmons.class = paramstr;
+            tmpmons.id = NON_PM;
+        } else {
+            tmpmons.class = -1;
+            tmpmons.id = find_montype(paramstr, mgend);
+            tmpmons.female = (mgend.v === FEMALE) ? FEMALE
+                                : (mgend.v === MALE) ? MALE : rn2(2);
+        }
+    };
+
+    if (argc === 1 && lua_type(args[0]) === LUA_TSTRING) {
+        from_paramstr(luaL_checkstring(args[0]));
+    } else if (argc === 2 && lua_type(args[0]) === LUA_TSTRING
+               && lua_type(args[1]) === LUA_TTABLE) {
+        const paramstr = luaL_checkstring(args[0]);
+        const crd = get_coord(args[1]);
+        if (crd)
+            mx = crd.x, my = crd.y;
+        from_paramstr(paramstr);
+    } else if (argc === 3) {
+        const paramstr = luaL_checkstring(args[0]);
+
+        mx = luaL_checkinteger(args[1]);
+        my = luaL_checkinteger(args[2]);
+        from_paramstr(paramstr);
+    } else {
+        const tbl = args[0];
+        let keep_default_invent = -1; /* -1 = unspecified */
+        if (lua_type(tbl) !== LUA_TTABLE)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        tmpmons.peaceful = get_table_boolean_opt(tbl, 'peaceful', BOOL_RANDOM);
+        tmpmons.asleep = get_table_boolean_opt(tbl, 'asleep', BOOL_RANDOM);
+        tmpmons.name = get_table_str_opt(tbl, 'name', null);
+        tmpmons.appear = 0;
+        tmpmons.appear_as = null;
+        tmpmons.sp_amask = get_table_align(tbl);
+        tmpmons.female = get_table_boolean_opt(tbl, 'female', BOOL_RANDOM);
+        tmpmons.invis = get_table_boolean_opt(tbl, 'invisible', FALSE);
+        tmpmons.cancelled = get_table_boolean_opt(tbl, 'cancelled', FALSE);
+        tmpmons.revived = get_table_boolean_opt(tbl, 'revived', FALSE);
+        tmpmons.avenge = get_table_boolean_opt(tbl, 'avenge', FALSE);
+        tmpmons.fleeing = get_table_int_opt(tbl, 'fleeing', 0);
+        tmpmons.blinded = get_table_int_opt(tbl, 'blinded', 0);
+        tmpmons.paralyzed = get_table_int_opt(tbl, 'paralyzed', 0);
+        tmpmons.stunned = get_table_boolean_opt(tbl, 'stunned', FALSE);
+        tmpmons.confused = get_table_boolean_opt(tbl, 'confused', FALSE);
+        tmpmons.waiting = get_table_boolean_opt(tbl, 'waiting', FALSE);
+        tmpmons.m_lev_adj = get_table_int_opt(tbl, 'm_lev_adj', 0);
+        tmpmons.seentraps = 0; /* TODO: list of trap names to bitfield */
+        keep_default_invent =
+            get_table_boolean_opt(tbl, 'keep_default_invent', -1);
+
+        if (!get_table_boolean_opt(tbl, 'tail', TRUE))
+            tmpmons.mm_flags |= MM_NOTAIL;
+        if (!get_table_boolean_opt(tbl, 'group', TRUE))
+            tmpmons.mm_flags |= MM_NOGRP;
+        if (get_table_boolean_opt(tbl, 'adjacentok', FALSE))
+            tmpmons.mm_flags |= MM_ADJACENTOK;
+        if (get_table_boolean_opt(tbl, 'ignorewater', FALSE))
+            tmpmons.mm_flags |= MM_IGNOREWATER;
+        if (!get_table_boolean_opt(tbl, 'countbirth', TRUE))
+            tmpmons.mm_flags |= MM_NOCOUNTBIRTH;
+
+        const mappear = get_table_str_opt(tbl, 'appear_as', null);
+        if (mappear) {
+            if (mappear.startsWith('obj:')) {
+                tmpmons.appear = M_AP_OBJECT;
+            } else if (mappear.startsWith('mon:')) {
+                tmpmons.appear = M_AP_MONSTER;
+            } else if (mappear.startsWith('ter:')) {
+                tmpmons.appear = M_AP_FURNITURE;
+            } else {
+                nhl_error(null, 'Unknown appear_as type');
+            }
+            tmpmons.appear_as = mappear.slice(4);
+        }
+
+        const xy = get_table_xy_or_coord(tbl);
+        mx = xy.x, my = xy.y;
+
+        tmpmons.id = get_table_montype(tbl, mgend);
+        /* get_table_montype will return a random gender if the species isn't
+         * all-male or all-female; if the level designer specified a certain
+         * gender, override that random one now, unless it *is* a one-gender
+         * species */
+        if (mgend.v !== NEUTRAL
+            && (tmpmons.female === BOOL_RANDOM || is_female(mons[tmpmons.id])
+                || is_male(mons[tmpmons.id])))
+            tmpmons.female = mgend.v;
+        /* safety net - if find_montype did not find a gender for this species
+         * (should cause a lua error anyway) */
+        if (tmpmons.female === BOOL_RANDOM)
+            tmpmons.female = 0;
+
+        tmpmons.class = get_table_monclass(tbl);
+
+        if (lua_type(tbl.inventory) !== LUA_TNIL) {
+            /* overwrite DEFAULT_INVENT - most times inventory is specified,
+             * the monster should not get its species' default inventory. */
+            tmpmons.has_invent = CUSTOM_INVENT;
+            if (keep_default_invent === TRUE)
+                tmpmons.has_invent |= DEFAULT_INVENT;
+            invfn = tbl.inventory;
+        } else {
+            /* if keep_default_invent was explicitly set to false, provide
+             * *no* inventory. */
+            if (keep_default_invent === FALSE)
+                tmpmons.has_invent = NO_INVENT;
+        }
+    }
+
+    if (mx === -1 && my === -1)
+        tmpmons.coord = SP_COORD_PACK_RANDOM(0);
+    else
+        tmpmons.coord = SP_COORD_PACK(mx, my);
+
+    if (tmpmons.id !== NON_PM && tmpmons.class === -1)
+        tmpmons.class = def_monsyms[mons[tmpmons.id].mlet]; /* monsym() */
+
+    create_monster(tmpmons, game.coder.croom);
+
+    if ((tmpmons.has_invent & CUSTOM_INVENT)
+        && lua_type(invfn) === LUA_TFUNCTION) {
+        nhl_error(null, 'lspo_monster: custom monster inventory (spo_end_moninvent) is not ported yet');
+    }
+
+    return 0;
+}
+
+// C ref: sp_lev.c get_table_int_or_random()
+/* the hash key 'name' is an integer or "random",
+   or if not existent, also return rndval */
+function get_table_int_or_random(tbl, name, rndval) {
+    const v = tbl[name];
+
+    if (lua_type(v) === LUA_TNIL)
+        return rndval;
+    if (lua_type(v) !== LUA_TNUMBER
+        && !(lua_type(v) === LUA_TSTRING && v.trim() !== '' && !isNaN(Number(v)))) {
+        const tmp = lua_type(v) === LUA_TSTRING ? v : null;
+
+        if (tmp && !strcmpi("random", tmp))
+            return rndval;
+        nhl_error(null, `Expected integer or "random" for "${name}", got `
+                        + (tmp ? `"${tmp}"` : '<Null>'));
+        /*NOTREACHED*/
+        return 0;
+    }
+    return luaL_checkinteger(v);
+}
+
+// C ref: sp_lev.c get_table_buc()
+function get_table_buc(tbl) {
+    const bucs = [
+        'random', 'blessed', 'uncursed', 'cursed',
+        'not-cursed', 'not-uncursed', 'not-blessed',
+    ];
+    const bucs2i = [0, 1, 2, 3, 4, 5, 6, 0];
+    const curse_state = bucs2i[get_table_option(tbl, 'buc', 'random', bucs)];
+
+    return curse_state;
+}
+
+// C ref: sp_lev.c get_table_objclass()
+/* the class character (C: its char code), or -1 */
+export function get_table_objclass(tbl) {
+    const s = get_table_str_opt(tbl, 'class', null);
+    let ret = -1;
+
+    if (s && s.length === 1)
+        ret = s;
+    return ret;
+}
+
+// C ref: sp_lev.c find_objtype()
+/* find object otyp by text s (optionally considering oclass) */
+function find_objtype(s, oclass) {
+    if (s) {
+        let i;
+        let objname;
+        let oc = def_char_to_objclass(oclass);
+
+        /* In objects.h, some item classes are defined without prefixes
+           (such as "scroll of ") in their names, making some names (such
+           as "teleportation") ambiguous.  Get the object class if it is
+           specified, and only return an object of the matching class. */
+        const class_prefixes = [
+            ['ring of ', RING_CLASS],
+            ['potion of ', POTION_CLASS],
+            ['scroll of ', SCROLL_CLASS],
+            ['spellbook of ', SPBOOK_CLASS],
+            ['wand of ', WAND_CLASS],
+        ];
+
+        if (oc === MAXOCLASSES)
+            oc = 0;
+
+        if (strstri(s, ' of ') >= 0) {
+            for (const [p, pclass] of class_prefixes) {
+                if (!strncmpi(s, p, p.length)) {
+                    oc = pclass;
+                    s = s.slice(p.length);
+                    break;
+                }
+            }
+        }
+
+        /* find by object name */
+        for (i = 0; i < NUM_OBJECTS; i++) {
+            objname = OBJ_NAME(objects[i]);
+            if ((!oc || oc === objects[i].oc_class)
+                && objname && !strcmpi(s, objname))
+                return i;
+        }
+
+        /* find by object description */
+        for (i = 0; i < NUM_OBJECTS; i++) {
+            objname = OBJ_DESCR(objects[i]);
+            if (objname && !strcmpi(s, objname))
+                return i;
+        }
+
+        nhl_error(null, 'Unknown object id');
+    }
+    return STRANGE_OBJECT;
+}
+
+// C ref: sp_lev.c get_table_objtype()
+export function get_table_objtype(tbl) {
+    const s = get_table_str_opt(tbl, 'id', null);
+    const oclass = get_table_objclass(tbl);
+    const ret = find_objtype(s, oclass);
+
+    return ret;
+}
+
+// C ref: mkobj.c unbless(), uncurse() — the light-source and inventory
+// updates are not needed during level creation
+function unbless(otmp) { otmp.blessed = 0; }
+function uncurse(otmp) { otmp.cursed = 0; }
+
+// C ref: sp_lev.c create_object()
+function create_object(o, croom) {
+    let otmp;
+    let c;
+    const named = o.name ? TRUE : FALSE; /* has a name been supplied in level description? */
+    const crd = { x: 0, y: 0 };
+
+    get_location_coord(crd, DRY, croom, o.coord);
+    const x = crd.x, y = crd.y;
+
+    if (o.class !== -1) /* C: o->class >= 0 (a class char, or an
+                           objects[].oc_class number set by lspo_object) */
+        c = o.class;
+    else
+        c = 0;
+
+    if (!c) {
+        otmp = mkobj_at(RANDOM_CLASS, x, y, !named);
+    } else if (o.id !== -1) {
+        otmp = mksobj_at(o.id, x, y, TRUE, !named);
+    } else {
+        /*
+         * The special levels are compiled with the default "text" object
+         * class characters.  We must convert them to the internal format.
+         */
+        const oclass = def_char_to_objclass(c);
+
+        if (oclass === MAXOCLASSES)
+            panic(`create_object:  unexpected object class '${c}'`);
+
+        /* KMH -- Create piles of gold properly */
+        if (oclass === COIN_CLASS)
+            otmp = mkgold(0, x, y);
+        else
+            otmp = mkobj_at(oclass, x, y, !named);
+    }
+
+    if (o.spe !== -127) /* That means NOT RANDOM! */
+        otmp.spe = o.spe;
+
+    switch (o.curse_state) {
+    case 1: /* blessed */
+        bless(otmp);
+        break;
+    case 2: /* uncursed */
+        unbless(otmp);
+        uncurse(otmp);
+        break;
+    case 3: /* cursed */
+        curse(otmp);
+        break;
+    case 4: /* not cursed */
+        uncurse(otmp);
+        break;
+    case 5: /* not uncursed */
+        blessorcurse(otmp, 1);
+        break;
+    case 6: /* not blessed */
+        unbless(otmp);
+        break;
+    default: /* random */
+        break; /* keep what mkobj gave us */
+    }
+
+    /* corpsenm is "empty" if -1, random if -2, otherwise specific */
+    if (o.corpsenm !== NON_PM) {
+        if (o.corpsenm === NON_PM - 1)
+            set_corpsenm(otmp, rndmonnum());
+        else
+            set_corpsenm(otmp, o.corpsenm);
+    }
+    /* set_corpsenm() took care of egg hatch and corpse timers */
+
+    if (named)
+        nhl_error(null, 'create_object: oname() is not ported yet');
+    if (o.eroded) {
+        if (o.eroded < 0) {
+            otmp.oerodeproof = 1;
+        } else {
+            otmp.oeroded = (o.eroded % 4);
+            otmp.oeroded2 = ((o.eroded >> 2) % 4);
+        }
+    } else {
+        otmp.oeroded = otmp.oeroded2 = 0;
+        otmp.oerodeproof = 0;
+    }
+    if (o.recharged)
+        otmp.recharged = (o.recharged % 8);
+    if (o.locked === 0 || o.locked === 1) {
+        otmp.olocked = o.locked;
+    } else if (o.broken) {
+        otmp.obroken = 1;
+        otmp.olocked = 0; /* obj generation may set */
+    }
+    if (o.trapped === 0 || o.trapped === 1)
+        otmp.otrapped = o.trapped;
+    if (o.trapped && (o.tknown === 0 || o.tknown === 1))
+        otmp.tknown = o.tknown;
+    otmp.greased = o.greased ? 1 : 0;
+
+    if (o.quan > 0 && objects[otmp.otyp].oc_merge) {
+        otmp.quan = o.quan;
+        otmp.owt = weight(otmp);
+    }
+
+    /* contents (of a container or monster's inventory) */
+    if ((o.containment & SP_OBJ_CONTENT) || invent_carrying_monster) {
+        if (!container_idx) {
+            if (!invent_carrying_monster) {
+                /* don't complain, the monster may be gone legally */
+                ; /* ['otmp' remains on floor] */
+            } else {
+                nhl_error(null, 'create_object: monster inventory (mpickobj) is not ported yet');
+            }
+        } else {
+            const cobj = container_obj[container_idx - 1];
+
+            otmp.where = 'OBJ_FREE'; /* remove_object(): no floor chains yet */
+            if (cobj) {
+                otmp = add_to_container(cobj, otmp);
+                cobj.owt = weight(cobj);
+            } else {
+                nhl_error(null, 'create_object: obfree() of an orphaned content object is not ported yet');
+            }
+        }
+    }
+    /* container */
+    if (o.containment & SP_OBJ_CONTAINER) {
+        otmp.cobj = null; /* delete_contents() */
+        if (container_idx < MAX_CONTAINMENT) {
+            container_obj[container_idx] = otmp;
+            container_idx++;
+        } else
+            impossible('create_object: too deeply nested containers.');
+    }
+
+    /* Medusa level special case: statues are petrified monsters */
+    if (o.id === STATUE && Is_medusa_level(game.u.uz) && o.corpsenm === NON_PM)
+        nhl_error(null, 'create_object: Medusa statues are not ported yet');
+
+    if (o.achievement)
+        nhl_error(null, 'create_object: achievement prizes are not ported yet');
+
+    if (!(o.containment & SP_OBJ_CONTENT)) {
+        /* stackobj(otmp): floor object chains are not ported yet, so
+           there is no pile to merge with */
+
+        if (o.lit)
+            nhl_error(null, 'create_object: begin_burn() is not ported yet');
+
+        if (o.buried)
+            nhl_error(null, 'create_object: bury_an_obj() is not ported yet');
+    }
+    return otmp;
+}
+
+// C ref: dungeon.h Is_medusa_level()
+function Is_medusa_level(lev) {
+    const z = game.dungeon_topology?.d_medusa_level;
+    return !!(z && (z.dlevel || z.dnum) && lev.dnum === z.dnum
+              && lev.dlevel === z.dlevel);
+}
+
+// C ref: sp_lev.c spo_pop_container()
+function spo_pop_container() {
+    if (container_idx > 0) {
+        container_idx--;
+        container_obj[container_idx] = null;
+    }
+}
+
+// C ref: sp_lev.c lspo_object()
+/* object(); */
+/* object("sack"); */
+/* object("scimitar", 6,7); */
+/* object("scimitar", {6,7}); */
+/* object({ class = "%" }); */
+/* object({ id = "boulder", x = 03, y = 12}); */
+/* object({ id = "boulder", coord = {03,12} }); */
+export function lspo_object(...args) {
+    let quancnt;
+    const tmpobj = {
+        name: null, corpsenm: 0, id: 0, spe: 0, coord: 0, x: 0, y: 0,
+        class: 0, containment: 0, curse_state: 0, quan: 0, buried: 0,
+        lit: 0, eroded: 0, locked: 0, trapped: 0, tknown: 0, recharged: 0,
+        invis: 0, greased: 0, broken: 0, achievement: 0,
+    };
+    let ox = -1, oy = -1;
+    const argc = args.length;
+    let maybe_contents = 0;
+    let otmp = null;
+    let contents = null;
+
+    create_des_coder();
+
+    tmpobj.name = null;
+    tmpobj.spe = -127;
+    tmpobj.quan = -1;
+    tmpobj.trapped = -1;
+    tmpobj.tknown = -1;
+    tmpobj.locked = -1;
+    tmpobj.corpsenm = NON_PM;
+
+    const from_paramstr = (paramstr) => {
+        if (paramstr.length === 1) {
+            tmpobj.class = paramstr;
+            tmpobj.id = STRANGE_OBJECT;
+        } else {
+            tmpobj.class = -1;
+            tmpobj.id = find_objtype(paramstr, -1);
+        }
+    };
+
+    if (argc === 1 && lua_type(args[0]) === LUA_TSTRING) {
+        from_paramstr(luaL_checkstring(args[0]));
+    } else if (argc === 2 && lua_type(args[0]) === LUA_TSTRING
+               && lua_type(args[1]) === LUA_TTABLE) {
+        const paramstr = luaL_checkstring(args[0]);
+        const crd = get_coord(args[1]);
+        if (crd)
+            ox = crd.x, oy = crd.y;
+        from_paramstr(paramstr);
+    } else if (argc === 3 && lua_type(args[1]) === LUA_TNUMBER
+               && lua_type(args[2]) === LUA_TNUMBER) {
+        const paramstr = luaL_checkstring(args[0]);
+
+        ox = luaL_checkinteger(args[1]);
+        oy = luaL_checkinteger(args[2]);
+        from_paramstr(paramstr);
+    } else {
+        const tbl = args[0];
+        if (lua_type(tbl) !== LUA_TTABLE)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        tmpobj.spe = get_table_int_or_random(tbl, 'spe', -127);
+        tmpobj.curse_state = get_table_buc(tbl);
+        tmpobj.corpsenm = NON_PM;
+        tmpobj.name = get_table_str_opt(tbl, 'name', null);
+        tmpobj.quan = get_table_int_or_random(tbl, 'quantity', -1);
+        tmpobj.buried = get_table_boolean_opt(tbl, 'buried', 0);
+        tmpobj.lit = get_table_boolean_opt(tbl, 'lit', 0);
+        tmpobj.eroded = get_table_int_opt(tbl, 'eroded', 0);
+        tmpobj.locked = get_table_boolean_opt(tbl, 'locked', -1);
+        tmpobj.trapped = get_table_boolean_opt(tbl, 'trapped', -1);
+        tmpobj.tknown = get_table_boolean_opt(tbl, 'trap_known', -1);
+        tmpobj.recharged = get_table_int_opt(tbl, 'recharged', 0);
+        tmpobj.greased = get_table_boolean_opt(tbl, 'greased', 0);
+        tmpobj.broken = get_table_boolean_opt(tbl, 'broken', 0);
+        tmpobj.achievement = get_table_boolean_opt(tbl, 'achievement', 0);
+
+        const xy = get_table_xy_or_coord(tbl);
+        ox = xy.x, oy = xy.y;
+
+        tmpobj.id = get_table_objtype(tbl);
+        tmpobj.class = get_table_objclass(tbl);
+        maybe_contents = 1;
+    }
+
+    if (ox === -1 && oy === -1)
+        tmpobj.coord = SP_COORD_PACK_RANDOM(0);
+    else
+        tmpobj.coord = SP_COORD_PACK(ox, oy);
+
+    if (tmpobj.class === -1 && tmpobj.id > STRANGE_OBJECT)
+        tmpobj.class = objects[tmpobj.id].oc_class;
+    else if (tmpobj.class !== -1 && tmpobj.id === STRANGE_OBJECT)
+        tmpobj.id = -1;
+
+    if (tmpobj.id === STATUE || tmpobj.id === EGG
+        || tmpobj.id === CORPSE || tmpobj.id === TIN
+        || tmpobj.id === FIGURINE) {
+        if (get_table_str_opt(args[0], 'montype', null))
+            nhl_error(null, 'lspo_object: montype is not ported yet');
+        if (tmpobj.id === STATUE || tmpobj.id === CORPSE) {
+            let lflags = 0;
+
+            if (get_table_boolean_opt(args[0], 'historic', 0))
+                lflags |= CORPSTAT_HISTORIC;
+            if (get_table_boolean_opt(args[0], 'male', 0))
+                lflags |= CORPSTAT_MALE;
+            if (get_table_boolean_opt(args[0], 'female', 0))
+                lflags |= CORPSTAT_FEMALE;
+            tmpobj.spe = lflags;
+        } else if (tmpobj.id === EGG) {
+            tmpobj.spe = get_table_boolean_opt(args[0], 'laid_by_you', 0) ? 1 : 0;
+        } else {
+            tmpobj.spe = 0;
+        }
+    }
+
+    quancnt = (tmpobj.id > STRANGE_OBJECT) ? tmpobj.quan : 0;
+
+    if (container_idx)
+        tmpobj.containment |= SP_OBJ_CONTENT;
+
+    if (maybe_contents) {
+        contents = args[0].contents;
+        if (lua_type(contents) !== LUA_TNIL)
+            tmpobj.containment |= SP_OBJ_CONTAINER;
+    }
+
+    do {
+        otmp = create_object(tmpobj, game.coder.croom);
+        quancnt--;
+    } while ((quancnt > 0) && ((tmpobj.id > STRANGE_OBJECT)
+                               && !objects[tmpobj.id].oc_merge));
+
+    if (lua_type(contents) === LUA_TFUNCTION) {
+        /* nhl_pcall_handle(L, 1, 0, "lspo_object", NHLpa_panic) */
+        const saved = game.lua_des_caller;
+        game.lua_des_caller = 'object';
+        try {
+            contents(nhl_push_obj(otmp));
+        } finally {
+            game.lua_des_caller = saved;
+        }
+    }
+
+    if ((tmpobj.containment & SP_OBJ_CONTAINER) !== 0)
+        spo_pop_container();
+
+    return nhl_push_obj(otmp);
+}
+
+// C ref: sp_lev.c lspo_exclusion()
+/* exclusion({ type = "teleport", region = { x1,y1, x2,y2 } }); */
+export function lspo_exclusion(tbl) {
+    const ez_types = [
+        'teleport', 'teleport-up', 'teleport-down', 'monster-generation',
+    ];
+    const ez_types2i = [LR_TELE, LR_UPTELE, LR_DOWNTELE, LR_MONGEN, 0];
+    const ez = {};
+
+    create_des_coder();
+    if (lua_type(tbl) !== LUA_TTABLE)
+        nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+    ez.zonetype = ez_types2i[get_table_option(tbl, 'type', 'teleport',
+                                              ez_types)];
+    const r = get_table_region(tbl, 'region', FALSE);
+
+    const a = { x: r.x1, y: r.y1 };
+    const b = { x: r.x2, y: r.y2 };
+
+    get_location_coord(a, ANY_LOC | NO_LOC_WARN, game.coder.croom,
+                       SP_COORD_PACK(a.x, a.y));
+    get_location_coord(b, ANY_LOC | NO_LOC_WARN, game.coder.croom,
+                       SP_COORD_PACK(b.x, b.y));
+
+    ez.lx = a.x;
+    ez.ly = a.y;
+    ez.hx = b.x;
+    ez.hy = b.y;
+
+    ez.next = game.exclusion_zones || null;
+    game.exclusion_zones = ez;
+    return 0;
+}
+
 // C ref: sp_lev.c l_register_des() — the des_functions[] names. Only
 // des.room is ported; the others raise a Lua error when called.
 const sp_lev_des_names = [
@@ -1206,5 +2122,8 @@ export function l_register_des(L) {
     des.map = lspo_map;
     des.region = lspo_region;
     des.altar = lspo_altar;
+    des.object = lspo_object;
+    des.monster = lspo_monster;
+    des.exclusion = lspo_exclusion;
     L.globals.des = des;
 }
