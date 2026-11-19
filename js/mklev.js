@@ -10,12 +10,13 @@ import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
-import { Is_branchlev, level_difficulty, on_level, dungeon_branch,
+import { Is_branchlev, In_hell, level_difficulty, on_level, dungeon_branch,
          at_dgn_entrance, insert_branch, is_wizard_mode } from './dungeon.js';
 import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE } from './monsters.js';
 import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
          NHLpa_panic, NHLpa_impossible } from './nhlua.js';
 import { litstate_rnd } from './mkmap.js';
+import { make_engr_at, wipe_engr_at } from './engrave.js';
 import { create_des_coder, reset_xystart_size, fill_special_room } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
@@ -31,7 +32,7 @@ import {
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
     LR_UPTELE, NHL_SB_SAFE, G_GONE, SHOPBASE, COURT, LEPREHALL, ZOO, TEMPLE,
-    BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST,
+    BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST, DUST, MARK,
 } from './const.js';
 
 // Object/class constants (normally from objects.js, not in contest template)
@@ -70,8 +71,6 @@ const CHEST = 215;
 const FOOD_RATION = 143;
 const CRAM_RATION = 145;
 const LEMBAS_WAFER = 146;
-const DUST = 3;
-const MARK = 6;
 
 const XLIM = 4;
 const YLIM = 3;
@@ -323,9 +322,6 @@ async function maketrap(x, y, typ) {
     return trap;
 }
 
-// engrave stubs
-function make_engr_at(x, y, text, pristine, epoch, engr_type) { /* stub */ }
-function wipe_engr_at(x, y, cnt, perm) { /* stub */ }
 function make_grave(x, y, text) {
     const loc = game.level?.at(x, y);
     if (loc) loc.typ = GRAVE;
@@ -338,15 +334,6 @@ function random_engraving() {
     return { text: 'placeholder', pristine: 'placeholder' };
 }
 
-// wipeout_text stub — consumes rn2 for character corruption
-function wipeout_text(text) {
-    for (let i = 0; i < text.length; i++) {
-        if (text[i] !== ' ') {
-            rn2(1 + 27 / (text.length - i));
-        }
-    }
-    return text;
-}
 
 // in_rooms stub
 function in_rooms(x, y, rtype) { return []; }
@@ -1394,6 +1381,48 @@ function place_niche(aroom) {
     return { dy, xx, yy };
 }
 
+// C ref: mklev.c trap_engravings[]
+/* there should be one of these per trap, in the same order as trap.h */
+const trap_engravings = [
+    null, null, null, null, null,
+    null, null, null, null, null,
+    null, null, null, null,
+    /* 14..16: trap door, teleport, level-teleport */
+    'Vlad was here', 'ad aerarium', 'ad aerarium', null, null,
+    null, null, null, null, null,
+    /* 24..25 */
+    null, null,
+];
+
+// C ref: dungeon.c Can_fall_thru()
+function Can_fall_thru(lev) {
+    return (Can_dig_down(lev) || Is_stronghold(lev));
+}
+
+// C ref: dungeon.c Can_dig_down()
+function Can_dig_down(lev) {
+    return (!game.level.flags.hardfloor
+            && !Is_botlevel(lev)
+            && !Invocation_lev(lev));
+}
+
+// C ref: dungeon.c Is_botlevel()
+function Is_botlevel(lev) {
+    return (lev.dlevel === game.dungeons[lev.dnum].num_dunlevs);
+}
+
+// C ref: dungeon.h Is_stronghold() macro — Lcheck(x, &stronghold_level)
+function Is_stronghold(lev) {
+    const z = game.dungeon_topology.d_stronghold_level;
+    return ((z.dlevel || z.dnum) && on_level(lev, z)) ? true : false;
+}
+
+// C ref: dungeon.c Invocation_lev()
+function Invocation_lev(lev) {
+    return (In_hell(lev)
+            && lev.dlevel === game.dungeons[lev.dnum].num_dunlevs - 1);
+}
+
 async function makeniche(trap_type) {
     const g = game;
     let vct = 8;
@@ -1409,9 +1438,20 @@ async function makeniche(trap_type) {
         if (trap_type || !rn2(4)) {
             rm.typ = SCORR;
             if (trap_type) {
-                let actualTrap = trap_type;
-                if (is_hole(actualTrap)) actualTrap = ROCKTRAP;
-                await maketrap(xx, yy + dy, actualTrap);
+                if (is_hole(trap_type) && !Can_fall_thru(g.u.uz))
+                    trap_type = ROCKTRAP;
+                const ttmp = await maketrap(xx, yy + dy, trap_type);
+                if (ttmp) {
+                    if (trap_type !== ROCKTRAP)
+                        ttmp.once = 1;
+                    if (trap_engravings[trap_type]) {
+                        make_engr_at(xx, yy - dy,
+                                     trap_engravings[trap_type], null, 0,
+                                     DUST);
+                        wipe_engr_at(xx, yy - dy, 5,
+                                     false); /* age it a little */
+                    }
+                }
             }
             dosdoor(xx, yy, aroom, SDOOR);
         } else {
