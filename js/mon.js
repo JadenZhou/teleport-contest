@@ -15,6 +15,7 @@ import {
     ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
     NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
     M_AP_MONSTER, MON_DETACH, W_AMUL, NON_PM, NATTK, Is_rogue_level,
+    G_GENOD,
 } from './const.js';
 import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
@@ -47,7 +48,8 @@ import {
     PM_AIR_ELEMENTAL, M1_ANIMAL, M1_MINDLESS, S_MUMMY,
 } from './monsters.js';
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
-         LOCK_PICK } from './objects.js';
+         LOCK_PICK, EGG } from './objects.js';
+import { dead_species } from './mkobj.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect } from './monmove.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -978,4 +980,48 @@ export function mfndpos(mon, data, flag) {
     }
     data.cnt = cnt;
     return cnt;
+}
+
+// C ref: mon.c kill_eggs()
+// Object chains are arrays here (invent, level.objects, minvent, cobj).
+// kill_egg() itself (stopping the hatch timer) is not ported yet.
+function kill_eggs(obj_list) {
+    if (!obj_list)
+        return;
+    for (const otmp of obj_list)
+        if (otmp.otyp === EGG) {
+            if (dead_species(otmp.corpsenm, true))
+                throw new Error('kill_eggs(): kill_egg() not ported yet');
+        } else if (otmp.cobj && otmp.cobj.length) { /* Has_contents() */
+            kill_eggs(otmp.cobj);
+        }
+}
+
+// C ref: mon.c kill_genocided_monsters()
+/* kill all members of genocided species */
+export function kill_genocided_monsters() {
+    const g = game;
+    let mtmp, mtmp2;
+    let kill_cham;
+    let mndx;
+
+    for (mtmp = g.fmon; mtmp; mtmp = mtmp2) {
+        mtmp2 = mtmp.nmon;
+        if (mtmp.mhp <= 0) /* DEADMONSTER() */
+            continue;
+        mndx = monsndx(mtmp.data);
+        kill_cham = (mtmp.cham !== undefined && mtmp.cham >= LOW_PM /* ismnum() */
+                     && (g.mvitals[mtmp.cham].mvflags & G_GENOD));
+        if ((g.mvitals[mndx].mvflags & G_GENOD) || kill_cham) {
+            /* newcham(mtmp, NULL, NC_SHOW_MSG) or mondead(mtmp) */
+            throw new Error('kill_genocided_monsters(): removing genocided monsters not ported yet');
+        }
+        if (mtmp.minvent)
+            kill_eggs(mtmp.minvent);
+    }
+
+    kill_eggs(g.invent);
+    kill_eggs(g.level.objects);
+    kill_eggs(g.migrating_objs);
+    kill_eggs(g.level.buriedobjlist);
 }

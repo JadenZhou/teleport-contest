@@ -12,8 +12,10 @@ import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
     In_hell, builds_up,
 } from './dungeon.js';
-import { In_endgame } from './const.js';
-import { keepdogs } from './dog.js';
+import { In_endgame, Is_waterlevel, Is_airlevel } from './const.js';
+import { keepdogs, losedogs } from './dog.js';
+import { kill_genocided_monsters } from './mon.js';
+import { m_at } from './makemon.js';
 import { mklev, place_lregion } from './mklev.js';
 import { vision_reset } from './vision.js';
 import { LR_UPTELE, LR_DOWNTELE } from './const.js';
@@ -223,8 +225,30 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* obj_delivery(FALSE) */
     if (g.migrating_objs)
         throw new Error('goto_level(): obj_delivery() not ported yet');
-    /* losedogs() */
-    throw new Error('goto_level(): losedogs() not ported yet');
+    losedogs();
+    kill_genocided_monsters(); /* for those wiped out while in limbo */
+    /*
+     * Expire all timers that have gone off while away.  Must be
+     * after migrating monsters and objects are delivered
+     * (losedogs and obj_delivery).
+     */
+    /* run_timers(): the timer queue isn't ported yet (see timeout.js) */
+
+    /* hero might be arriving at a spot containing a monster;
+       if so, move one or the other to another location */
+    if (m_at(u.ux, u.uy))
+        throw new Error('goto_level(): u_collide_m() not ported yet');
+
+    /* initial movement of bubbles just before vision_recalc */
+    if (Is_waterlevel(u.uz) || Is_airlevel(u.uz))
+        throw new Error('goto_level(): movebubbles() not ported yet');
+    else if (g.level.flags?.fumaroles)
+        throw new Error('goto_level(): fumaroles() not ported yet');
+
+    /* Reset the screen. */
+    vision_reset(); /* reset the blockages */
+    /* reset_glyphmap(gm_levelchange); notice_mon_off() */
+    throw new Error('goto_level(): docrt() not ported yet');
 }
 
 // C ref: dungeon.c u_on_rndspot()
