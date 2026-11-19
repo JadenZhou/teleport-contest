@@ -127,6 +127,34 @@ function m_calcdistress(mtmp) {
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 
+// C ref: mon.c mongone() -- the parts reached so far (level creation):
+// unstuck(), mdrop_special_objs() and the vault guard case are not ported.
+/* remove a monster from the game without leaving a corpse */
+export function mongone(mdef) {
+    mdef.mhp = 0; /* can skip some inventory bookkeeping */
+
+    if (mdef.isgd)
+        throw new Error('mongone: vault guards are not ported yet');
+    /* release rest of monster's inventory--it is removed from game */
+    /* discard_minvent(mdef, FALSE): obfree() each; nothing to free in JS */
+    for (const o of mdef.minvent || [])
+        o.where = 'OBJ_DELETED';
+    mdef.minvent = null;
+    m_detach(mdef, mdef.data, false);
+}
+
+// C ref: mon.c m_detach() -- the parts reached so far: remove_monster()
+// and leaving the corpse on fmon for dmonsfree() to purge.
+function m_detach(mtmp, mptr, due_to_death) {
+    /* remove_monster(mx, my) */
+    const lst = game.level.monsters || [];
+    const i = lst.indexOf(mtmp);
+    if (i >= 0)
+        lst.splice(i, 1);
+    mtmp.mhp = 0; /* simplify some tests: force mhp to 0 */
+    game.purge_monsters = (game.purge_monsters || 0) + 1;
+}
+
 // C ref: mon.c minliquid() -- monsters in pools or lava aren't ported yet
 function minliquid(mtmp) {
     if (is_pool(mtmp.mx, mtmp.my) || is_lava(mtmp.mx, mtmp.my))

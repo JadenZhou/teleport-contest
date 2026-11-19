@@ -236,6 +236,8 @@ function clear_level_structures() {
     g.level = new GameMap();
     g.level.nroom = 0;
     g.level.rooms = [];
+    g.level.nsubroom = 0;
+    g.level.subrooms = [];
     g.made_branch = false;
     g.smeq = new Array(MAXNROFROOMS + 1).fill(0);
     g.level.doorindex = 0;
@@ -739,6 +741,26 @@ export function add_room(lowx, lowy, hix, hiy, lit, rtype, special) {
 }
 
 // C ref: mklev.c do_room_or_subroom()
+// C ref: mklev.c add_subroom()
+/* C keeps gs.subrooms in svr.rooms[] after the MAXNROFROOMS+1 room slots,
+   so a subroom's roomno indexes svr.rooms[] too; JS mirrors that layout in
+   game.level.rooms[] and also lists them in game.level.subrooms[]. */
+export function add_subroom(proom, lowx, lowy, hix, hiy, lit, rtype, special) {
+    const g = game;
+    if (!g.level.subrooms) g.level.subrooms = [];
+    if (!g.level.nsubroom) g.level.nsubroom = 0;
+    const croom = {
+        roomnoidx: MAXNROFROOMS + 1 + g.level.nsubroom,
+        needfill: 0,
+    };
+    do_room_or_subroom(croom, lowx, lowy, hix, hiy, lit, rtype, special,
+                       false);
+    proom.sbrooms[proom.nsubrooms++] = croom;
+    g.level.subrooms[g.level.nsubroom] = croom;
+    g.level.rooms[croom.roomnoidx] = croom;
+    g.level.nsubroom++;
+}
+
 function do_room_or_subroom(croom, lowx, lowy, hix, hiy, lit, _rtype, special, is_room) {
     const map = game.level;
     if (!lowx) lowx++;
@@ -800,8 +822,12 @@ function sort_rooms() {
     const oldToNew = new Array(n).fill(0);
     const liveRooms = g.level.rooms.slice(0, n)
         .sort((a, b) => (a?.lx || 0) - (b?.lx || 0));
+    /* gs.subrooms live after the room slots and are not sorted */
+    const subrooms = g.level.rooms.slice(MAXNROFROOMS + 1);
     g.level.rooms = liveRooms;
     if (n < MAXNROFROOMS) g.level.rooms[n] = { hx: -1 };
+    for (let i = 0; i < subrooms.length; i++)
+        if (subrooms[i]) g.level.rooms[MAXNROFROOMS + 1 + i] = subrooms[i];
     for (let i = 0; i < n; i++) {
         if (g.level.rooms[i]) {
             oldToNew[g.level.rooms[i].roomnoidx] = i;
@@ -841,6 +867,9 @@ export function topologize(croom) {
             const loc = game.level.at(x, y);
             if (loc) { loc.edge = true; loc.roomno = loc.roomno ? SHARED : roomno; }
         }
+    /* gs.subrooms */
+    for (let subindex = 0; subindex < (croom.nsubrooms || 0); subindex++)
+        topologize(croom.sbrooms[subindex]);
 }
 
 // ============================================================
@@ -1059,9 +1088,15 @@ export function add_door(x, y, aroom) {
     aroom.doorct++;
     for (let tmp = g.level.doorindex; tmp > aroom.fdoor; tmp--)
         g.level.doors[tmp] = g.level.doors[tmp - 1];
-    for (const broom of g.level.rooms || []) {
+    for (let i = 0; i < g.level.nroom; i++) {
+        const broom = g.level.rooms[i];
         if (!broom || broom.hx <= 0 || broom === aroom || !(broom.doorct > 0)) continue;
         if ((broom.fdoor ?? 0) >= aroom.fdoor) broom.fdoor++;
+    }
+    for (let i = 0; i < (g.level.nsubroom || 0); i++) {
+        const broom = g.level.subrooms[i];
+        if (broom !== aroom && broom.doorct && broom.fdoor >= aroom.fdoor)
+            broom.fdoor++;
     }
     g.level.doors[aroom.fdoor] = { x, y };
     g.level.doorindex++;
@@ -1077,7 +1112,8 @@ function bydoor(x, y) {
     return false;
 }
 
-function okdoor(x, y) {
+// C ref: mklev.c okdoor()
+export function okdoor(x, y) {
     const map = game.level;
     const loc = map.at(x, y);
     if (!loc) return false;

@@ -17,7 +17,10 @@ import {
 import { objects, OBJ_NAME, OBJ_DESCR, MAXOCLASSES, RANDOM_CLASS } from './objects.js';
 import { def_oc_syms, def_char_to_objclass } from './drawing.js';
 import { readobjnam } from './objnam.js';
-import { mksobj, mkobj, add_to_container, weight } from './mkobj.js';
+import { mksobj, mkobj, add_to_container, weight, Is_container, is_poisonable } from './mkobj.js';
+import { Has_contents, CORPSTAT_HISTORIC, CORPSTAT_MALE, CORPSTAT_FEMALE, NON_PM, NEUTRAL } from './const.js';
+import { STATUE, CORPSE, TIN, EGG, FIGURINE, POTION_CLASS } from './objects.js';
+import { mons } from './monsters.js';
 import { get_table_objtype, get_table_objclass } from './sp_lev.js';
 
 const FIRST_OBJECT = 1; /* objects.h */
@@ -223,6 +226,192 @@ function l_obj_not_ported(name) {
     };
 }
 
+/* obj.h OBJ_* (obj->where); JS keeps the names as strings */
+const obj_where_names = [
+    'OBJ_FREE', 'OBJ_FLOOR', 'OBJ_CONTAINED', 'OBJ_INVENT', 'OBJ_MINVENT',
+    'OBJ_MIGRATING', 'OBJ_BURIED', 'OBJ_ONBILL', 'OBJ_LUAFREE',
+];
+
+// C ref: nhlobj.c l_obj_to_table()
+/* local tbl = o:totable(); */
+function l_obj_to_table(v) {
+    const lo = l_obj_check(v);
+    const obj = lo.obj;
+    const t = {};
+    const b = (x) => (x ? 1 : 0);
+
+    if (!obj || obj.where === 'OBJ_LUAFREE') {
+        t.NO_OBJ = 1;
+        return t;
+    }
+
+    t.has_contents = b(Has_contents(obj));
+    t.is_container = b(Is_container(obj));
+    t.o_id = obj.o_id;
+    t.ox = obj.ox;
+    t.oy = obj.oy;
+    t.otyp = obj.otyp;
+    if (OBJ_NAME(objects[obj.otyp]))
+        t.otyp_name = OBJ_NAME(objects[obj.otyp]);
+    if (OBJ_DESCR(objects[obj.otyp]))
+        t.otyp_descr = OBJ_DESCR(objects[obj.otyp]);
+    t.owt = obj.owt;
+    t.quan = obj.quan;
+    t.spe = obj.spe;
+
+    if (obj.otyp === STATUE)
+        t.historic = b((obj.spe & CORPSTAT_HISTORIC) !== 0);
+    if (obj.otyp === CORPSE || obj.otyp === STATUE) {
+        t.male = b((obj.spe & CORPSTAT_MALE) !== 0);
+        t.female = b((obj.spe & CORPSTAT_FEMALE) !== 0);
+    }
+
+    t.oclass = def_oc_syms[obj.oclass];
+    t.invlet = obj.invlet || '\0';
+    t.where = obj_where_names.indexOf(obj.where);
+    t.cursed = b(obj.cursed);
+    t.blessed = b(obj.blessed);
+    t.unpaid = b(obj.unpaid);
+    t.no_charge = b(obj.no_charge);
+    t.known = b(obj.known);
+    t.dknown = b(obj.dknown);
+    t.bknown = b(obj.bknown);
+    t.rknown = b(obj.rknown);
+    t.tknown = b(obj.tknown);
+    if (obj.oclass === POTION_CLASS)
+        t.odiluted = b(obj.odiluted);
+    else
+        t.oeroded = obj.oeroded || 0;
+    t.oeroded2 = obj.oeroded2 || 0;
+    t.oerodeproof = b(obj.oerodeproof);
+    t.olocked = b(obj.olocked);
+    t.obroken = b(obj.obroken);
+    if (is_poisonable(obj))
+        t.opoisoned = b(obj.opoisoned);
+    else
+        t.otrapped = b(obj.otrapped);
+    t.recharged = obj.recharged || 0;
+    t.lamplit = b(obj.lamplit);
+    t.globby = b(obj.globby);
+    t.greased = b(obj.greased);
+    t.nomerge = b(obj.nomerge);
+    t.how_lost = obj.how_lost || 0;
+    t.in_use = b(obj.in_use);
+    t.bypass = b(obj.bypass);
+    t.cknown = b(obj.cknown);
+    t.lknown = b(obj.lknown);
+    t.corpsenm = obj.corpsenm;
+    if (obj.corpsenm !== NON_PM
+        && (obj.otyp === TIN || obj.otyp === CORPSE || obj.otyp === EGG
+            || obj.otyp === FIGURINE || obj.otyp === STATUE))
+        t.corpsenm_name = mons[obj.corpsenm].pmnames[NEUTRAL];
+    t.usecount = obj.usecount || 0;
+    t.oeaten = obj.oeaten || 0;
+    t.age = obj.age;
+    t.owornmask = obj.owornmask || 0;
+    t.has_oname = b(obj.oname);
+    if (obj.oname)
+        t.oname = obj.oname;
+    return t;
+}
+
+// C ref: nhlua.c nhl_get_timertype()
+/* these are in the same order as enum timeout_types in timeout.h; the JS
+   timer stand-in (obj.timer.action) uses the enum names */
+const timerstr = [
+    "rot-organic", "rot-corpse", "revive-mon",    "zombify-mon",
+    "burn-obj",    "hatch-egg",  "fig-transform", "shrink-glob",
+    "melt-ice",
+];
+const timer_enum = [
+    'ROT_ORGANIC', 'ROT_CORPSE', 'REVIVE_MON', 'ZOMBIFY_MON',
+    'BURN_OBJECT', 'HATCH_EGG', 'FIG_TRANSFORM', 'SHRINK_GLOB',
+    'MELT_ICE_AWAY',
+];
+function nhl_get_timertype(v) {
+    const ret = timerstr.indexOf(luaL_checkstring(v));
+    if (ret < 0)
+        nhl_error(null, "Unknown timer type");
+    return timer_enum[ret];
+}
+
+// C ref: timeout.c timer_is_obj()
+function timer_is_obj(timertype) {
+    return timertype === 'ROT_ORGANIC' || timertype === 'ROT_CORPSE'
+        || timertype === 'REVIVE_MON' || timertype === 'ZOMBIFY_MON'
+        || timertype === 'BURN_OBJECT' || timertype === 'HATCH_EGG'
+        || timertype === 'FIG_TRANSFORM' || timertype === 'SHRINK_GLOB';
+}
+
+// C ref: timeout.c obj_has_timer() -- timers are not ported yet; the
+// object's pending timer is kept in obj.timer = { when, action }
+function obj_has_timer(obj, timertype) {
+    return !!(obj.timer && obj.timer.action === timertype);
+}
+
+// C ref: timeout.c stop_timer() -- see obj_has_timer()
+function stop_timer(timertype, obj) {
+    if (!obj_has_timer(obj, timertype))
+        return 0;
+    const when = obj.timer.when;
+    obj.timer = null;
+    return when;
+}
+
+// C ref: nhlobj.c l_obj_timer_has()
+/* local hastimer = o:has_timer("rot-organic"); */
+function l_obj_timer_has(...args) {
+    if (args.length === 2) {
+        const lo = l_obj_check(args[0]);
+        const timertype = nhl_get_timertype(args[1]);
+
+        return !!(timer_is_obj(timertype) && lo && lo.obj
+                  && obj_has_timer(lo.obj, timertype));
+    }
+    nhl_error(null, "l_obj_timer_has: Wrong args");
+    return 0;
+}
+
+// C ref: nhlobj.c l_obj_timer_stop()
+/* local timeout = o:stop_timer("rot-organic"); */
+function l_obj_timer_stop(...args) {
+    if (args.length === 1) {
+        const lo = l_obj_check(args[0]);
+
+        if (lo && lo.obj)
+            lo.obj.timer = null; /* obj_stop_timers() */
+        return undefined;
+    } else if (args.length === 2) {
+        const lo = l_obj_check(args[0]);
+        const timertype = nhl_get_timertype(args[1]);
+
+        if (timer_is_obj(timertype) && lo && lo.obj)
+            return stop_timer(timertype, lo.obj);
+        return 0;
+    }
+    nhl_error(null, "l_obj_timer_stop: Wrong args");
+    return 0;
+}
+
+// C ref: nhlobj.c l_obj_timer_start()
+/* o:start_timer("hatch-egg", 10); */
+function l_obj_timer_start(...args) {
+    if (args.length === 3) {
+        const lo = l_obj_check(args[0]);
+        const timertype = nhl_get_timertype(args[1]);
+        const when = luaL_checkinteger(args[2]);
+
+        if (timer_is_obj(timertype) && lo && lo.obj && when > 0) {
+            if (obj_has_timer(lo.obj, timertype))
+                stop_timer(timertype, lo.obj);
+            /* start_timer(when, TIMER_OBJECT, timertype, obj_to_any(obj)) */
+            lo.obj.timer = { when, action: timertype };
+        }
+    } else
+        nhl_error(null, "l_obj_timer_start: Wrong args");
+    return 0;
+}
+
 // C ref: nhlobj.c l_obj_register()
 export function l_obj_register(L) {
     /* Table of instance methods (e.g. an_object:isnull())
@@ -233,16 +422,16 @@ export function l_obj_register(L) {
         isnull: l_obj_not_ported('isnull'),
         at: l_obj_not_ported('at'),
         next: l_obj_not_ported('next'),
-        totable: l_obj_not_ported('totable'),
+        totable: l_obj_to_table,
         class: l_obj_objects_to_table,
         placeobj: l_obj_not_ported('placeobj'),
         container: l_obj_not_ported('container'),
         contents: l_obj_not_ported('contents'),
         addcontent: l_obj_add_to_container,
-        has_timer: l_obj_not_ported('has_timer'),
+        has_timer: l_obj_timer_has,
         peek_timer: l_obj_not_ported('peek_timer'),
-        stop_timer: l_obj_not_ported('stop_timer'),
-        start_timer: l_obj_not_ported('start_timer'),
+        stop_timer: l_obj_timer_stop,
+        start_timer: l_obj_timer_start,
         bury: l_obj_not_ported('bury'),
     };
 

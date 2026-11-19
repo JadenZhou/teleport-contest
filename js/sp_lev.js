@@ -14,7 +14,7 @@
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
 import { game } from './gstate.js';
-import { rn2, rn1 } from './rng.js';
+import { rn2, rn1, rnd, ROLL_FROM } from './rng.js';
 import { depth } from './dungeon.js';
 import {
     COLNO, ROWNO, OROOM, THEMEROOM, COURT, SWAMP, VAULT, BEEHIVE, MORGUE,
@@ -31,6 +31,8 @@ import {
     HOLE, TRAPDOOR, TELEP_TRAP, LEVEL_TELEP, MAGIC_PORTAL, WEB, STATUE_TRAP,
     MAGIC_TRAP, ANTI_MAGIC, POLY_TRAP, VIBRATING_SQUARE,
     MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_SEEN, MKTRAP_NOVICTIM,
+    STRAT_WAITFORU, D_NODOOR, D_BROKEN, D_ISOPEN, D_LOCKED, D_TRAPPED, D_SECRET, DOOR,
+    W_NORTH, W_SOUTH, W_EAST, W_WEST, W_ANY, W_RANDOM,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring } from './nhlua.js';
 import { set_levltyp, set_levltyp_lit } from './mkmaze.js';
@@ -41,7 +43,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, somex, somey, somexy, mktrap } from './mklev.js';
+import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container,
@@ -53,7 +55,7 @@ import {
     MM_NOCOUNTBIRTH,
 } from './const.js';
 import {
-    mons, NUMMONS, LOW_PM, MAXMCLASSES, G_UNIQ, G_NOGEN, S_EEL, S_GHOST,
+    mons, NUMMONS, LOW_PM, MAXMCLASSES, G_UNIQ, G_NOGEN, G_IGNORE, S_EEL, S_GHOST,
     S_MIMIC, M1_AMPHIBIOUS, PM_FIRE_ELEMENTAL, PM_SALAMANDER, PM_FIRE_VORTEX,
     PM_FLAMING_SPHERE, PM_ARCHEOLOGIST, PM_WIZARD, PM_DWARF, PM_GNOME,
 } from './monsters.js';
@@ -63,7 +65,7 @@ import {
     POTION_CLASS, SCROLL_CLASS, SPBOOK_CLASS, WAND_CLASS, MAXOCLASSES,
 } from './objects.js';
 import {
-    name_to_monplus, is_male, is_female, monsndx, is_swimmer, is_flyer,
+    name_to_monplus, is_male, is_female, monsndx, is_vampshifter, is_vampire, is_swimmer, is_flyer,
     is_floater, passes_walls, your_race,
 } from './mondata.js';
 import {
@@ -74,6 +76,7 @@ import { enexto } from './teleport.js';
 import { strcmpi, strncmpi, strstri } from './hacklib.js';
 import { induced_align } from './dungeon.js';
 import { nhl_push_obj } from './nhlobj.js';
+import { bury_an_obj } from './dig.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -420,6 +423,268 @@ export function fill_special_room(croom) {
     }
 }
 
+// C ref: rm.h IS_DOORJOIN()
+function IS_DOORJOIN(typ) { return IS_OBSTRUCTED(typ) || typ === IRONBARS; }
+
+// C ref: sp_lev.c set_door_orientation()
+function set_door_orientation(x, y) {
+    const lv = (xx, yy) => game.level.at(xx, yy);
+    const wallish = (xx, yy) => (isok(xx, yy) && (IS_WALL(lv(xx, yy).typ)
+                                                  || IS_DOOR(lv(xx, yy).typ)
+                                                  || lv(xx, yy).typ === SDOOR));
+    let wleft = wallish(x - 1, y);
+    let wright = wallish(x + 1, y);
+    let wup = wallish(x, y - 1);
+    let wdown = wallish(x, y + 1);
+
+    if (!wleft && !wright && !wup && !wdown) {
+        /* out of bounds is treated as implicit wall; should be academic
+           because we don't expect to have doors so near the level's edge */
+        wleft  = (!isok(x - 1, y) || IS_DOORJOIN(lv(x - 1, y).typ));
+        wright = (!isok(x + 1, y) || IS_DOORJOIN(lv(x + 1, y).typ));
+        wup    = (!isok(x, y - 1) || IS_DOORJOIN(lv(x, y - 1).typ));
+        wdown  = (!isok(x, y + 1) || IS_DOORJOIN(lv(x, y + 1).typ));
+    }
+    lv(x, y).horizontal = ((wleft || wright) && !(wup && wdown)) ? 1 : 0;
+}
+
+// C ref: sp_lev.c rnddoor()
+/*
+ * Choose randomly the state (nodoor, open, closed or locked) for a door
+ */
+function rnddoor() {
+    const state = [D_NODOOR, D_BROKEN, D_ISOPEN, D_CLOSED, D_LOCKED];
+
+    return ROLL_FROM(state);
+}
+
+// C ref: sp_lev.c create_door()
+/*
+ * Create a new door in a room.
+ * It's placed on a wall (north, south, east or west).
+ */
+function create_door(dd, broom) {
+    let x = 0, y = 0;
+    let trycnt;
+    const levl = (xx, yy) => game.level.at(xx, yy);
+
+    if (dd.secret === -1)
+        dd.secret = rn2(2);
+
+    if (dd.wall === W_RANDOM)
+        dd.wall = W_ANY; /* speeds things up in the below loop */
+
+    if (dd.mask === -1) {
+        /* is it a locked door, closed, or a doorway? */
+        if (!dd.secret) {
+            if (!rn2(3)) {
+                if (!rn2(5))
+                    dd.mask = D_ISOPEN;
+                else if (!rn2(6))
+                    dd.mask = D_LOCKED;
+                else
+                    dd.mask = D_CLOSED;
+                if (dd.mask !== D_ISOPEN && !rn2(25))
+                    dd.mask |= D_TRAPPED;
+            } else
+                dd.mask = D_NODOOR;
+        } else {
+            if (!rn2(5))
+                dd.mask = D_LOCKED;
+            else
+                dd.mask = D_CLOSED;
+
+            if (!rn2(20))
+                dd.mask |= D_TRAPPED;
+        }
+    }
+
+    for (trycnt = 0; trycnt < 100; ++trycnt) {
+        const dwall = dd.wall, dpos = dd.pos;
+
+        /* Convert wall and pos into an absolute coordinate! */
+        switch (rn2(4)) {
+        case 0:
+            if (!(dwall & W_NORTH))
+                continue;
+            y = broom.ly - 1;
+            x = broom.lx + ((dpos === -1) ? rn2(1 + broom.hx - broom.lx)
+                                          : dpos);
+            if (!isok(x, y - 1) || IS_OBSTRUCTED(levl(x, y - 1).typ))
+                continue;
+            break;
+        case 1:
+            if (!(dwall & W_SOUTH))
+                continue;
+            y = broom.hy + 1;
+            x = broom.lx + ((dpos === -1) ? rn2(1 + broom.hx - broom.lx)
+                                          : dpos);
+            if (!isok(x, y + 1) || IS_OBSTRUCTED(levl(x, y + 1).typ))
+                continue;
+            break;
+        case 2:
+            if (!(dwall & W_WEST))
+                continue;
+            x = broom.lx - 1;
+            y = broom.ly + ((dpos === -1) ? rn2(1 + broom.hy - broom.ly)
+                                          : dpos);
+            if (!isok(x - 1, y) || IS_OBSTRUCTED(levl(x - 1, y).typ))
+                continue;
+            break;
+        case 3:
+            if (!(dwall & W_EAST))
+                continue;
+            x = broom.hx + 1;
+            y = broom.ly + ((dpos === -1) ? rn2(1 + broom.hy - broom.ly)
+                                          : dpos);
+            if (!isok(x + 1, y) || IS_OBSTRUCTED(levl(x + 1, y).typ))
+                continue;
+            break;
+        default:
+            /*NOTREACHED*/
+            break;
+        }
+
+        if (okdoor(x, y))
+            break;
+    }
+    if (trycnt >= 100) {
+        impossible("create_door: Can't find a proper place!");
+        return;
+    }
+    if (!set_levltyp(x, y, (dd.secret ? SDOOR : DOOR)))
+        return;
+    levl(x, y).doormask = dd.mask;
+}
+
+// C ref: sp_lev.c sel_set_door()
+function sel_set_door(dx, dy, typ) {
+    const x = dx, y = dy;
+    const loc = game.level.at(x, y);
+
+    if (!IS_DOOR(loc.typ) && loc.typ !== SDOOR)
+        loc.typ = (typ & D_SECRET) ? SDOOR : DOOR;
+    if (typ & D_SECRET) {
+        typ &= ~D_SECRET;
+        if (typ < D_CLOSED)
+            typ = D_CLOSED;
+    }
+    set_door_orientation(x, y); /* set/clear levl[x][y].horizontal */
+    loc.doormask = typ;
+    if (!game.SpLev_Map) game.SpLev_Map = [];
+    if (!game.SpLev_Map[x]) game.SpLev_Map[x] = [];
+    game.SpLev_Map[x][y] = 1;
+}
+
+// C ref: sp_lev.c lspo_door()
+/* door({ x = 1, y = 1, state = "nodoor" }); */
+/* door({ coord = {1, 1}, state = "nodoor" }); */
+/* door({ wall = "north", pos = 3, state="secret" }); */
+/* door("nodoor", 1, 2); */
+export function lspo_door(...args) {
+    const doorstates = [
+        'random', 'open', 'closed', 'locked', 'nodoor', 'broken', 'secret',
+    ];
+    const doorstates2i = [
+        -1, D_ISOPEN, D_CLOSED, D_LOCKED, D_NODOOR, D_BROKEN, D_SECRET,
+    ];
+    let msk;
+    let x, y;
+    let tbl = null;
+
+    create_des_coder();
+
+    if (args.length === 3) {
+        const i = doorstates.indexOf(luaL_checkstring(args[0]));
+        if (i < 0) /* luaL_checkoption() */
+            nhl_error(null, `bad door state '${args[0]}'`);
+        msk = doorstates2i[i];
+        x = luaL_checkinteger(args[1]);
+        y = luaL_checkinteger(args[2]);
+    } else {
+        if (args.length < 1)
+            args[0] = {}; /* lcheck_param_table(): lua_createtable() */
+        tbl = args[0];
+        if (lua_type(tbl) !== LUA_TTABLE)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        const xy = get_table_xy_or_coord(tbl);
+        x = xy.x, y = xy.y;
+        msk = doorstates2i[get_table_option(tbl, 'state', 'random',
+                                            doorstates)];
+    }
+
+    const typ = (msk === -1) ? rnddoor() : msk;
+
+    if (x === -1 && y === -1) {
+        const walldirs = [
+            'all', 'random', 'north', 'west', 'east', 'south',
+        ];
+        /* Note that "random" is also W_ANY, because create_door just wants a
+         * mask of acceptable walls */
+        const walldirs2i = [
+            W_ANY, W_ANY, W_NORTH, W_WEST, W_EAST, W_SOUTH, 0,
+        ];
+        const tmpd = {};
+
+        tmpd.secret = (typ === D_SECRET) ? 1 : 0;
+        tmpd.mask = msk;
+        tmpd.pos = get_table_int_opt(tbl, 'pos', -1);
+        tmpd.wall = walldirs2i[get_table_option(tbl, 'wall', 'all', walldirs)];
+
+        create_door(tmpd, game.coder.croom);
+    } else {
+        /*selection_iterate(sel, sel_set_door, (genericptr_t) &typ);*/
+        const c = { x, y };
+        get_location_coord(c, ANY_LOC, game.coder.croom,
+                           SP_COORD_PACK(x, y));
+        x = c.x, y = c.y;
+        if (!isok(x, y)) {
+            nhl_error(null, 'door coord not ok');
+            /*NOTREACHED*/
+            return 0;
+        }
+        sel_set_door(x, y, typ);
+    }
+
+    return 0;
+}
+
+// C ref: sp_lev.c create_subroom()
+function create_subroom(proom, x, y, w, h, rtype, rlit) {
+    const width = proom.hx - proom.lx + 1;
+    const height = proom.hy - proom.ly + 1;
+
+    /* There is a minimum size for the parent room */
+    if (width < 4 || height < 4)
+        return FALSE;
+
+    /* Check for random position, size, etc... */
+
+    if (w === -1)
+        w = rnd(width - 3);
+    if (h === -1)
+        h = rnd(height - 3);
+    if (x === -1)
+        x = rnd(width - w);
+    if (y === -1)
+        y = rnd(height - h);
+    if (x === 1)
+        x = 0;
+    if (y === 1)
+        y = 0;
+    if ((x + w + 1) === width)
+        x++;
+    if ((y + h + 1) === height)
+        y++;
+    if (rtype === -1)
+        rtype = OROOM;
+    rlit = litstate_rnd(rlit);
+    add_subroom(proom, proom.lx + x, proom.ly + y, proom.lx + x + w - 1,
+                proom.ly + y + h - 1, rlit, rtype, FALSE);
+    return TRUE;
+}
+
 // C ref: sp_lev.c build_room()
 function build_room(r, mkr) {
     let okroom;
@@ -427,8 +692,8 @@ function build_room(r, mkr) {
     const rtype = (!r.chance || rn2(100) < r.chance) ? r.rtype : OROOM;
 
     if (mkr) {
-        /* create_subroom() is not ported yet */
-        nhl_error(null, 'des.room: subrooms are not ported yet');
+        okroom = create_subroom(mkr, r.x, r.y, r.w, r.h, rtype, r.rlit);
+        aroom = okroom ? game.level.subrooms[game.level.nsubroom - 1] : null;
     } else {
         okroom = create_room(r.x, r.y, r.w, r.h, r.xalign, r.yalign,
                              rtype, r.rlit);
@@ -1396,8 +1661,15 @@ function create_monster(m, croom) {
             mtmp.mflee = 1;
             mtmp.mfleetim = (m.fleeing % 127);
         }
-        if (m.waiting)
-            nhl_error(null, 'create_monster: waiting monsters are not ported yet');
+        if (m.waiting) {
+            mtmp.mstrategy |= STRAT_WAITFORU;
+            /* if this is a vampire that got created already shifted into
+               bat/fog/wolf form and the special level or theme room didn't
+               explicitly request that, shift back to vampire */
+            if (is_vampshifter(mtmp) && !is_vampire(mtmp.data)
+                && m.appear !== M_AP_MONSTER) /* vampshifted() */
+                nhl_error(null, 'create_monster: newcham() is not ported yet');
+        }
         if (m.m_lev_adj) {
             if (mtmp.m_lev + m.m_lev_adj > 49)
                 mtmp.m_lev = 49;
@@ -1526,8 +1798,10 @@ export function lspo_monster(...args) {
         my = luaL_checkinteger(args[2]);
         from_paramstr(paramstr);
     } else {
-        const tbl = args[0];
         let keep_default_invent = -1; /* -1 = unspecified */
+        if (args.length < 1)
+            args[0] = {}; /* lcheck_param_table(): lua_createtable() */
+        const tbl = args[0];
         if (lua_type(tbl) !== LUA_TTABLE)
             nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
 
@@ -2054,8 +2328,16 @@ function create_object(o, croom) {
         if (o.lit)
             nhl_error(null, 'create_object: begin_burn() is not ported yet');
 
-        if (o.buried)
-            nhl_error(null, 'create_object: bury_an_obj() is not ported yet');
+        if (o.buried) {
+            const dealloced = { v: false };
+
+            bury_an_obj(otmp, dealloced);
+            if (dealloced.v) {
+                if (container_idx)
+                    container_obj[container_idx - 1] = null;
+                otmp = null;
+            }
+        }
     }
     return otmp;
 }
@@ -2134,6 +2416,8 @@ export function lspo_object(...args) {
         oy = luaL_checkinteger(args[2]);
         from_paramstr(paramstr);
     } else {
+        if (args.length < 1)
+            args[0] = {}; /* lcheck_param_table(): lua_createtable() */
         const tbl = args[0];
         if (lua_type(tbl) !== LUA_TTABLE)
             nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
@@ -2175,8 +2459,41 @@ export function lspo_object(...args) {
     if (tmpobj.id === STATUE || tmpobj.id === EGG
         || tmpobj.id === CORPSE || tmpobj.id === TIN
         || tmpobj.id === FIGURINE) {
-        if (get_table_str_opt(args[0], 'montype', null))
-            nhl_error(null, 'lspo_object: montype is not ported yet');
+        let pm = null;
+        let nonpmobj = FALSE;
+        const montype = (lua_type(args[0]) === LUA_TTABLE)
+            ? get_table_str_opt(args[0], 'montype', null) : null;
+
+        if (montype) {
+            if ((tmpobj.id === TIN && (!strcmpi(montype, 'spinach')
+                /* id="tin",montype="empty" produces an empty tin */
+                                       || !strcmpi(montype, 'empty')))
+                /* id="egg",montype="empty" produces a generic, unhatchable
+                   egg rather than an "empty egg" */
+                || (tmpobj.id === EGG && !strcmpi(montype, 'empty'))) {
+                tmpobj.corpsenm = NON_PM;
+                tmpobj.spe = !strcmpi(montype, 'spinach') ? 1 : 0;
+                nonpmobj = TRUE;
+            } else if (montype.length === 1
+                       && def_char_to_monclass(montype) !== MAXMCLASSES) {
+                pm = mkclass(def_char_to_monclass(montype),
+                             G_NOGEN | G_IGNORE);
+            } else {
+                for (let i = LOW_PM; i < NUMMONS; i++)
+                    if (!strcmpi(mons[i].pmnames[NEUTRAL], montype)
+                        || (mons[i].pmnames[MALE]
+                            && !strcmpi(mons[i].pmnames[MALE], montype))
+                        || (mons[i].pmnames[FEMALE]
+                            && !strcmpi(mons[i].pmnames[FEMALE], montype))) {
+                        pm = mons[i];
+                        break;
+                    }
+            }
+            if (pm)
+                tmpobj.corpsenm = monsndx(pm);
+            else if (!nonpmobj)
+                nhl_error(null, 'Unknown montype');
+        }
         if (tmpobj.id === STATUE || tmpobj.id === CORPSE) {
             let lflags = 0;
 
@@ -2189,7 +2506,7 @@ export function lspo_object(...args) {
             tmpobj.spe = lflags;
         } else if (tmpobj.id === EGG) {
             tmpobj.spe = get_table_boolean_opt(args[0], 'laid_by_you', 0) ? 1 : 0;
-        } else {
+        } else if (!nonpmobj) { /* tmpobj.spe is already set for nonpmobj */
             tmpobj.spe = 0;
         }
     }
@@ -2306,5 +2623,6 @@ export function l_register_des(L) {
     des.monster = lspo_monster;
     des.exclusion = lspo_exclusion;
     des.trap = lspo_trap;
+    des.door = lspo_door;
     L.globals.des = des;
 }
