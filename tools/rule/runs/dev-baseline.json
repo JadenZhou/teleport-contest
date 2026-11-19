@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T21:00:42.864Z",
+ "when": "2026-11-19T21:04:06.176Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -28,7 +28,7 @@
      "rn2(100)=89 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81041-feeding-pony.session.json",
@@ -57,7 +57,7 @@
      "rn2(100)=66 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dog_move(): dog_eat() not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1034:31) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: dog_move(): dog_eat() not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1100:31) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81082-wizard-water-demon.session.json",
@@ -115,12 +115,12 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81164-swimmer-mforce.session.json",
    "total": 3280,
-   "jsTotal": 2907,
+   "jsTotal": 2908,
    "totalScreens": 73,
    "valuePrefix": 2885,
    "rulePrefix": 2885,
@@ -144,7 +144,7 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
   },
   {
    "session": "dev81205-monk-vault-escort.session.json",
@@ -173,36 +173,36 @@
      "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:642:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:933:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:644:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:966:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81246-friday13-save-then-fullmoon-restore.session.json",
    "total": 2953,
-   "jsTotal": 2748,
+   "jsTotal": 2752,
    "totalScreens": 49,
-   "valuePrefix": 2748,
-   "rulePrefix": 2748,
+   "valuePrefix": 2752,
+   "rulePrefix": 2752,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 2748,
+    "index": 2752,
     "step": 4,
-    "c": "rnd(20)=3 @ mattackm(mhitm.c:441)",
+    "c": "rn2(2)=1 @ corpse_chance(mon.c:3248)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "mattackm",
+    "cCaller": "corpse_chance",
     "jsCaller": null,
     "context": [
-     "rn2(5)=1 @ distfleeck(monmove.c:538)",
-     "rn2(100)=59 @ obj_resists(zap.c:1469)",
-     "rn2(8)=1 @ dog_goal(dogmove.c:554)",
-     "rnd(20)=3 @ mattackm(mhitm.c:441)",
      "d(1,6)=4 @ mdamagem(mhitm.c:1025)",
-     "rn2(3)=1 @ mhitm_knockback(uhitm.c:5258)"
+     "rn2(3)=1 @ mhitm_knockback(uhitm.c:5258)",
+     "rn2(6)=0 @ mhitm_knockback(uhitm.c:5269)",
+     "rn2(2)=1 @ corpse_chance(mon.c:3248)",
+     "rnd(1)=1 @ grow_up(makemon.c:2095)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
   },
   {
    "session": "dev81287-rogue-friday13-combat.session.json",
@@ -260,7 +260,7 @@
      "rn2(12)=7 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:460:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:923:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:462:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:956:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81369-valk-level2-pit-dog-wait.session.json",
@@ -289,7 +289,7 @@
      "rn2(100)=10 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:642:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:933:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:644:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:966:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81410-healer-newmoon-eat-zap.session.json",
@@ -510,31 +510,31 @@
   {
    "session": "dev81738-knight-ride-combat.session.json",
    "total": 3154,
-   "jsTotal": 3106,
+   "jsTotal": 3107,
    "totalScreens": 43,
-   "valuePrefix": 3106,
-   "rulePrefix": 3106,
+   "valuePrefix": 3107,
+   "rulePrefix": 3107,
    "screens": 2,
    "honestScreens": 2,
    "firstScreenMiss": 1,
    "first": {
-    "index": 3106,
+    "index": 3107,
     "step": 40,
-    "c": "rnd(20)=1 @ mattackm(mhitm.c:441)",
+    "c": "d(1,6)=4 @ mdamagem(mhitm.c:1025)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "mattackm",
+    "cCaller": "mdamagem",
     "jsCaller": null,
     "context": [
-     "rn2(8)=4 @ dog_goal(dogmove.c:554)",
      "rn2(4)=0 @ dog_goal(dogmove.c:575)",
      "rn2(100)=22 @ obj_resists(zap.c:1469)",
      "rnd(20)=1 @ mattackm(mhitm.c:441)",
      "d(1,6)=4 @ mdamagem(mhitm.c:1025)",
-     "rn2(3)=2 @ mhitm_knockback(uhitm.c:5258)"
+     "rn2(3)=2 @ mhitm_knockback(uhitm.c:5258)",
+     "rn2(6)=4 @ mhitm_knockback(uhitm.c:5269)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
   },
   {
    "session": "dev81779-valk-chat-lamp-ration.session.json",
@@ -621,7 +621,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev81902-wizard-extcmd-wishlist.session.json",
@@ -737,12 +737,12 @@
      "rn2(8)=6 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:460:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:923:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:462:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:956:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev82066-archeologist-tour.session.json",
    "total": 46184,
-   "jsTotal": 2312,
+   "jsTotal": 2316,
    "totalScreens": 366,
    "valuePrefix": 2301,
    "rulePrefix": 2301,
@@ -766,7 +766,7 @@
      "rn2(10)=7 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: mdamagem(): monkilled() not ported yet |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:479:15) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:369:12) |     at async mattackm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:290:26)"
   },
   {
    "session": "dev82107-priest-quest-tour.session.json",
@@ -795,7 +795,7 @@
      "rn2(11)=8 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev82148-barbarian-quest-tour.session.json",
@@ -853,7 +853,7 @@
      "d(6,8)=21 @ newmonhp(makemon.c:1042)"
     ]
    },
-   "error": "Error: can_touch_safely(): mon_hates_silver() not ported yet |     at can_touch_safely (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:319:15) |     at can_carry (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:335:10) |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:576:31)"
+   "error": "Error: can_touch_safely(): mon_hates_silver() not ported yet |     at can_touch_safely (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:321:15) |     at can_carry (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:337:10) |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:578:31)"
   },
   {
    "session": "dev82230-wizard-wandpoly-pile.session.json",
@@ -911,7 +911,7 @@
      "rn2(6)=0 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
   },
   {
    "session": "dev82312-priest-cast-read-turn.session.json",
@@ -945,7 +945,7 @@
   {
    "session": "dev82353-samurai-explore-descend.session.json",
    "total": 2574,
-   "jsTotal": 2371,
+   "jsTotal": 2372,
    "totalScreens": 51,
    "valuePrefix": 2363,
    "rulePrefix": 2363,
@@ -969,7 +969,7 @@
      "rn2(5)=0 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
   },
   {
    "session": "dev82394-tourist-explore-actions.session.json",
@@ -998,12 +998,12 @@
      "rn2(12)=6 @ m_move(monmove.c:1963)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev82435-caveman-explore-move.session.json",
    "total": 3116,
-   "jsTotal": 2726,
+   "jsTotal": 2727,
    "totalScreens": 51,
    "valuePrefix": 2684,
    "rulePrefix": 2684,
@@ -1027,7 +1027,7 @@
      "rn2(12)=1 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: dog_move(): pet attacking monsters not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:987:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:62:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:68:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:71:15)"
   },
   {
    "session": "dev82476-rogue-explore-move.session.json",
@@ -1056,7 +1056,7 @@
      "rn2(5)=0 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:642:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:933:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:644:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:966:12) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev82517-tourist-eat-throw.session.json",
@@ -1085,7 +1085,7 @@
      "rn2(100)=41 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: pet_ranged_attk(): mattacku()/mattackm() not ported yet |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:873:15) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1082:14) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "ReferenceError: M_ATTK_MISS is not defined |     at pet_ranged_attk (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:875:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1148:20) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:51)"
   },
   {
    "session": "dev82558-wizard-quaff-zap-read.session.json",
@@ -1264,8 +1264,8 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 124881,
-  "value": 124881,
+  "rule": 124886,
+  "value": 124886,
   "rolls": 504996,
   "honestScreens": 236,
   "screens": 253,
@@ -1297,15 +1297,6 @@
    "examples": [
     "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
     "dev81451-samurai-altar-pray @2832: C \"rn2(5)=2 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
-   ]
-  },
-  {
-   "fn": "mattackm",
-   "sessions": 3,
-   "blockedRolls": 464,
-   "examples": [
-    "dev81246-friday13-save-then-fullmoon-restore @2748: C \"rnd(20)=3 @ mattackm(mhitm.c:441)\" / JS \"(none: JS log ended)\"",
-    "dev81738-knight-ride-combat @3106: C \"rnd(20)=1 @ mattackm(mhitm.c:441)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
@@ -1409,6 +1400,22 @@
    ]
   },
   {
+   "fn": "mattackm",
+   "sessions": 1,
+   "blockedRolls": 211,
+   "examples": [
+    "dev82353-samurai-explore-descend @2363: C \"rnd(20)=20 @ mattackm(mhitm.c:441)\" / JS \"rn2(100)=79 @ obj_resists\""
+   ]
+  },
+  {
+   "fn": "corpse_chance",
+   "sessions": 1,
+   "blockedRolls": 201,
+   "examples": [
+    "dev81246-friday13-save-then-fullmoon-restore @2752: C \"rn2(2)=1 @ corpse_chance(mon.c:3248)\" / JS \"(none: JS log ended)\""
+   ]
+  },
+  {
    "fn": "throw_obj",
    "sessions": 1,
    "blockedRolls": 73,
@@ -1422,6 +1429,14 @@
    "blockedRolls": 66,
    "examples": [
     "dev81656-ranger-name-cancel @4474: C \"rn2(4)=1 @ set_apparxy(monmove.c:2239)\" / JS \"rn2(5)=0 @ distfleeck\""
+   ]
+  },
+  {
+   "fn": "mdamagem",
+   "sessions": 1,
+   "blockedRolls": 47,
+   "examples": [
+    "dev81738-knight-ride-combat @3107: C \"d(1,6)=4 @ mdamagem(mhitm.c:1025)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
