@@ -118,7 +118,24 @@ function blocksMove(x, y) {
 // C ref: cmd.c rhack — main command dispatcher
 export async function rhack(key) {
     const firsttime = (key === 0);
-    if (key === 0) {
+    if (key === 0 && game.cmdq?.length) {
+        /* C ref: cmd.c rhack() -- a queued (CQ_CANNED) command from
+           itemactions_pushkeys() runs before reading the keyboard */
+        const cmdq = game.cmdq.shift();
+        if (cmdq.typ === 'ec') {
+            const fn = ext_funcs[cmdq.fn];
+            if (!fn) {
+                /* the queued command is not ported yet: nothing happens,
+                   and the keys queued for it go with it (cmdq_clear()) */
+                game.cmdq = [];
+                game.context.move = 0;
+                return;
+            }
+            game.context.move = (await fn()) ? 1 : 0;
+            return;
+        }
+        key = cmdq.key.charCodeAt(0);
+    } else if (key === 0) {
         // Read key from input
         await flush_screen(1);
         key = await nhgetch();

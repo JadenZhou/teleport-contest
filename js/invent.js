@@ -17,6 +17,7 @@ import { objects } from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { weight, erosion_matters, Is_candle } from './mkobj.js';
+import { itemactions } from './iactions.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
     tty_select_menu,
@@ -340,8 +341,14 @@ async function dispinv_with_action(lets, use_inuse_ordering, alt_label) {
 
     game.iflags.force_invmenu = save_force_invmenu;
 
-    if (c && c !== '\x1b')
-        throw new Error('dispinv_with_action(): itemactions() is not ported yet');
+    if (c && c !== '\x1b') {
+        let nextobj;
+        for (let otmp = game.invent; otmp; otmp = nextobj) {
+            nextobj = otmp.nobj;
+            if (otmp.invlet === c)
+                return await itemactions(otmp);
+        }
+    }
     return 0; /* ECMD_OK */
 }
 
