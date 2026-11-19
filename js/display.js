@@ -3,6 +3,7 @@
 
 import { game } from './gstate.js';
 import { cansee } from './vision.js';
+import { rank } from './botl.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
@@ -184,7 +185,7 @@ function _statusLine1() {
     const u = game.u;
     if (!u) return '';
     const name = game.plname || 'Hero';
-    const role = game.urole?.rank?.m || game.urole?.name?.m || 'Adventurer';
+    const role = game.urole?.rank ? rank() : 'Adventurer'; // C ref: botl.c rank()
     const title = `${name} the ${role}`;
     const stats = `St:${u.acurr?.a?.[0] || '?'} Dx:${u.acurr?.a?.[1] || '?'} Co:${u.acurr?.a?.[2] || '?'} In:${u.acurr?.a?.[3] || '?'} Wi:${u.acurr?.a?.[4] || '?'} Ch:${u.acurr?.a?.[5] || '?'}`;
     const align = u.ualign?.type === 0 ? 'Neutral' : u.ualign?.type > 0 ? 'Lawful' : 'Chaotic';

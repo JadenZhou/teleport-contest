@@ -1048,6 +1048,22 @@ export function Is_branchlev(lev) {
     return null;
 }
 
+// C ref: dungeon.c Is_special()
+export function Is_special(lev) {
+    let levtmp;
+
+    for (levtmp = game.sp_levchn; levtmp; levtmp = levtmp.next)
+        if (on_level(lev, levtmp.dlevel))
+            return levtmp;
+
+    return null;
+}
+
+// C ref: dungeon.c In_hell()
+export function In_hell(lev) {
+    return game.dungeons[lev.dnum].flags.hellish ? true : false;
+}
+
 // C ref: dungeon.c assign_level()
 /* equivalent to dest = source */
 export function assign_level(dest, src) {
