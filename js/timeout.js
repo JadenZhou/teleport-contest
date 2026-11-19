@@ -158,3 +158,11 @@ export async function nh_timeout() {
        level creation (corpse rot, revival, melting ice) comes due within
        the turns the sessions reach so far */
 }
+
+// C ref: timeout.c kill_egg()
+/* prevent an egg from ever hatching */
+export function kill_egg(egg) {
+    /* stop previous timer, if any */
+    /* (void) stop_timer(HATCH_EGG, obj_to_any(egg)): the timer queue isn't
+       ported yet and no hatch timer is ever started, so there is none */
+}

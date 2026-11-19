@@ -50,6 +50,7 @@ import {
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
          LOCK_PICK, EGG } from './objects.js';
 import { dead_species } from './mkobj.js';
+import { kill_egg } from './timeout.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect } from './monmove.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -983,15 +984,28 @@ export function mfndpos(mon, data, flag) {
 }
 
 // C ref: mon.c kill_eggs()
-// Object chains are arrays here (invent, level.objects, minvent, cobj).
-// kill_egg() itself (stopping the hatch timer) is not ported yet.
+// Object chains here are either arrays (level.objects, minvent, cobj) or
+// nobj-linked lists (invent).
 function kill_eggs(obj_list) {
     if (!obj_list)
         return;
-    for (const otmp of obj_list)
+    const objs = [];
+    if (Array.isArray(obj_list))
+        objs.push(...obj_list);
+    else
+        for (let o = obj_list; o; o = o.nobj)
+            objs.push(o);
+    for (const otmp of objs)
         if (otmp.otyp === EGG) {
-            if (dead_species(otmp.corpsenm, true))
-                throw new Error('kill_eggs(): kill_egg() not ported yet');
+            if (dead_species(otmp.corpsenm, true)) {
+                /*
+                 * It seems we could also just catch this when
+                 * it attempted to hatch, so we wouldn't have to
+                 * search all of the objlists.. or stop all
+                 * hatch timers based on a corpsenm.
+                 */
+                kill_egg(otmp);
+            }
         } else if (otmp.cobj && otmp.cobj.length) { /* Has_contents() */
             kill_eggs(otmp.cobj);
         }
