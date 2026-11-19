@@ -80,6 +80,17 @@ task stream once rolls get past level creation. Use the scorer's first screen mi
 - Public vs private honest-screen rates: the port's own generalization gap.
 - Rejections by reason: how often the gate stopped shortcuts or regressions.
 
+## Recorder setup notes (local, after `nethack-c/build-recorder.sh`)
+
+`make install` stops at the man pages on macOS (no `tbl`/`nroff`), so `sysconf` is never
+installed. Copy `nethack-c/recorder/sys/unix/sysconf` into
+`nethack-c/recorder/install/games/lib/nethackdir/` and set `WIZARDS=*` (debug-mode
+sessions need it), `GREPPATH=/usr/bin/grep`, `#GDBPATH` and `PANICTRACE_GDB=0`. With
+that, `scripts/verify-rerecord.mjs` reproduces 39/44 public sessions exactly. The 5
+failures diverge late (step 64+) and look like recorder screen-capture quirks, not
+gameplay. The private sessions (`~/code/teleport-research/private-sessions/recorded`: 12
+public recipes with new seeds, 1,071 screens) were recorded this way.
+
 ## Deferred
 
 - **Messages half of the rule** (every message from the same C function): a recorder patch
