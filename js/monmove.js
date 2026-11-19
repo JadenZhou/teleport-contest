@@ -1450,8 +1450,21 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
 
     if (mmoved === MMOVE_MOVED || mmoved === MMOVE_DONE) {
         if (OBJ_AT(mtmp.mx, mtmp.my) && mtmp.mcanmove) {
-            /* metallivores, g.cubes, corpse eaters, mpickstuff() */
-            throw new Error('postmov(): mpickstuff() not ported yet');
+            /* Maybe a rock mole just ate some metal object */
+            if (metallivorous(ptr))
+                throw new Error('postmov(): meatmetal() not ported yet');
+            /* Maybe a cube ate just about anything */
+            if (ptr === mons[M.PM_GELATINOUS_CUBE])
+                throw new Error('postmov(): meatobj() not ported yet');
+            /* Maybe a purple worm ate a corpse */
+            if (corpse_eater(ptr))
+                throw new Error('postmov(): meatcorpse() not ported yet');
+
+            if (mpickstuff(mtmp))
+                mmoved = MMOVE_DONE;
+
+            if (mtmp.minvis)
+                newsym(mtmp.mx, mtmp.my);
         }
 
         /* maybe_spin_web(mtmp) */
@@ -1465,6 +1478,44 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
     }
     return mmoved;
 }
+// ── C ref: mon.c mpickstuff() ──
+function mpickstuff(mtmp) {
+    /* prevent shopkeepers from leaving the door of their shop */
+    if (mtmp.isshk)
+        throw new Error('mpickstuff(): inhishop() not ported yet');
+
+    /* non-tame monsters normally don't go shopping */
+    if (!mtmp.mtame && in_shop(mtmp.mx, mtmp.my) && rn2(25))
+        return false;
+
+    /* item in a pool, but monster can't swim */
+    if (!could_reach_item(mtmp, mtmp.mx, mtmp.my))
+        return false;
+
+    for (const otmp of objects_at(mtmp.mx, mtmp.my)) {
+        /* avoid special items (is_mines_prize/is_soko_prize): those
+           levels aren't ported yet */
+
+        /* Nymphs take everything.  Most monsters don't pick up corpses. */
+        if (mon_would_take_item(mtmp, otmp)) {
+            if (otmp.otyp === CORPSE && mtmp.data.mlet !== M.S_NYMPH
+                /* let a handful of corpse types thru to can_carry() */
+                && !(otmp.corpsenm === M.PM_COCKATRICE
+                     || otmp.corpsenm === M.PM_CHICKATRICE)
+                && otmp.corpsenm !== M.PM_LIZARD
+                && !(mons[otmp.corpsenm].mflags1 & M.M1_ACID))
+                continue;
+            if (!can_touch_safely(mtmp, otmp))
+                continue;
+            const carryamt = can_carry(mtmp, otmp);
+            if (carryamt === 0)
+                continue;
+            throw new Error('mpickstuff(): splitobj()/mpickobj() not ported yet');
+        }
+    }
+    return false;
+}
+
 function webmaker(ptr) {
     return ptr === mons[M.PM_CAVE_SPIDER] || ptr === mons[M.PM_GIANT_SPIDER];
 }
