@@ -14,6 +14,7 @@ import { initRng, enableRngLog, getRngLog } from './rng.js';
 import { pushKey, nhgetch } from './input.js';
 import { early_init, newgame, moveloop_preamble, moveloop_core, maybe_do_tutorial } from './allmain.js';
 import { parseNethackrc, set_playmode } from './options.js';
+import { wd_message } from './sys.js';
 import { plnamesuffix } from './role.js';
 import { tty_init_nhwindows, tty_player_selection } from './wintty.js';
 import { flush_screen } from './display.js';
@@ -147,6 +148,7 @@ export class NethackGame {
 
         // Run game startup
         await newgame();
+        await wd_message();
         /* C ref: unixmain.c main() -> moveloop(0) -> moveloop_preamble();
            the caller drives moveloop_core() itself */
         await moveloop_preamble(false);
