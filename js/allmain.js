@@ -11,13 +11,25 @@ import { rhack } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { fastforward_pre_mklev, fastforward_post_mklev, fastforward_step, fastforward_fill_mineralize } from './fastforward.js';
+import { objects_globals_init } from './objects.js';
+import { init_objects } from './o_init.js';
+
+// C ref: allmain.c early_init()
+// Not ported yet: program_state_init(), decl_globals_init(),
+// monst_globals_init(), sys_early_init(), runtime_info_init().
+export function early_init() {
+    objects_globals_init();
+}
 
 // C ref: allmain.c newgame()
 export async function newgame() {
     const g = game;
 
-    // Fast-forward through pre-mklev startup RNG calls.
-    // Covers: o_init (shuffles), dungeon init, u_init_misc.
+    init_objects(); /* must be before u_init() */
+
+    // Fast-forward through the rest of the pre-mklev startup RNG calls.
+    // Covers: role_init/init_dungeons (nhlib.lua shuffle, dungeon init),
+    // init_castle_tune, u_init_misc.
     fastforward_pre_mklev();
 
     // C ref: allmain.c l_nhcore_init() — shuffle align[] for Lua
