@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T17:47:50.000Z",
+ "when": "2026-11-19T17:56:27.356Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -265,28 +265,28 @@
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
-   "jsTotal": 1007,
+   "jsTotal": 1050,
    "totalScreens": 44,
-   "valuePrefix": 358,
-   "rulePrefix": 358,
+   "valuePrefix": 363,
+   "rulePrefix": 363,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 358,
+    "index": 363,
     "step": 0,
-    "c": "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
-    "js": "rn2(1)=0 @ rnd_rect",
+    "c": "rn2(7)=3 @ rndghostname(do_name.c:774)",
+    "js": "rn2(50)=16 @ m_initinv",
     "kind": "value",
-    "cCaller": "find_montype",
-    "jsCaller": "rnd_rect",
+    "cCaller": "rndghostname",
+    "jsCaller": "m_initinv",
     "context": [
-     "rn2(12)=8 @ nh.rn2 src=themerms.lua:1039 parent=region([C]:-1)",
-     "rn2(13)=8 @ nh.rn2 src=themerms.lua:1039 parent=region([C]:-1)",
-     "rn2(36)=5 @ selection_rndcoord(selvar.c:302)",
-     "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
-     "rn2(3)=2 @ induced_align(dungeon.c:2012)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)"
+     "rnd(2)=1 @ next_ident(mkobj.c:521)",
+     "d(9,8)=31 @ newmonhp(makemon.c:1042)",
+     "rn2(2)=1 @ makemon(makemon.c:1279)",
+     "rn2(7)=3 @ rndghostname(do_name.c:774)",
+     "rn2(34)=21 @ rndghostname(do_name.c:774)",
+     "rn2(50)=4 @ m_initinv(makemon.c:826)"
     ]
    },
    "error": null
@@ -1282,8 +1282,8 @@
   "discarded-roll": 9
  },
  "totals": {
-  "rule": 118570,
-  "value": 118705,
+  "rule": 118575,
+  "value": 118710,
   "rolls": 792838,
   "honestScreens": 145,
   "screens": 160,
@@ -1363,11 +1363,11 @@
    ]
   },
   {
-   "fn": "find_montype",
+   "fn": "rndghostname",
    "sessions": 1,
-   "blockedRolls": 8205,
+   "blockedRolls": 8200,
    "examples": [
-    "seed0015-valk-level2-pit-dog-wait @358: C \"rn2(2)=0 @ find_montype(sp_lev.c:3156)\" / JS \"rn2(1)=0 @ rnd_rect\""
+    "seed0015-valk-level2-pit-dog-wait @363: C \"rn2(7)=3 @ rndghostname(do_name.c:774)\" / JS \"rn2(50)=16 @ m_initinv\""
    ]
   },
   {

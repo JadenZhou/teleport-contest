@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T17:48:04.957Z",
+ "when": "2026-11-19T17:56:42.619Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -207,28 +207,31 @@
   {
    "session": "dev81287-rogue-friday13-combat.session.json",
    "total": 3681,
-   "jsTotal": 0,
+   "jsTotal": 3158,
    "totalScreens": 59,
-   "valuePrefix": 0,
-   "rulePrefix": 0,
-   "screens": 0,
-   "honestScreens": 0,
-   "firstScreenMiss": 0,
+   "valuePrefix": 3012,
+   "rulePrefix": 3012,
+   "screens": 1,
+   "honestScreens": 1,
+   "firstScreenMiss": 1,
    "first": {
-    "index": 0,
-    "step": 0,
-    "c": "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
-    "js": "(none: JS log ended)",
+    "index": 3012,
+    "step": 4,
+    "c": "rn2(7)=0 @ do_attack(uhitm.c:474)",
+    "js": "rn2(12)=9 @ mcalcmove",
     "kind": "value",
-    "cCaller": "randomize_gem_colors",
-    "jsCaller": null,
+    "cCaller": "do_attack",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(2)=1 @ randomize_gem_colors(o_init.c:89)",
-     "rn2(2)=0 @ randomize_gem_colors(o_init.c:92)",
-     "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
+     "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=2965 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=13 @ moveloop_preamble(allmain.c:79)",
+     "rn2(7)=0 @ do_attack(uhitm.c:474)",
+     "rnd(6)=2 @ do_attack(uhitm.c:497)",
+     "rn2(12)=0 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "TypeError: Cannot read properties of undefined (reading 'new') |     at contents (file:///home/user/repo/js/themerms_lua.js:666:39) |     at Object.lspo_map [as map] (file:///home/user/repo/js/sp_lev.js:762:13) |     at Object.contents (file:///home/user/repo/js/themerms_lua.js:656:21)"
+   "error": null
   },
   {
    "session": "dev81328-dequa-fountain-explore.session.json",
@@ -552,28 +555,28 @@
   {
    "session": "dev81779-valk-chat-lamp-ration.session.json",
    "total": 2428,
-   "jsTotal": 1064,
+   "jsTotal": 1069,
    "totalScreens": 30,
-   "valuePrefix": 401,
-   "rulePrefix": 401,
+   "valuePrefix": 406,
+   "rulePrefix": 406,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 401,
+    "index": 406,
     "step": 0,
-    "c": "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
-    "js": "rn2(3)=0 @ rnd_rect",
+    "c": "rn2(7)=6 @ rndghostname(do_name.c:774)",
+    "js": "rn2(50)=12 @ m_initinv",
     "kind": "value",
-    "cCaller": "find_montype",
-    "jsCaller": "rnd_rect",
+    "cCaller": "rndghostname",
+    "jsCaller": "m_initinv",
     "context": [
-     "rn2(12)=9 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(13)=5 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(42)=29 @ selection_rndcoord(selvar.c:302)",
-     "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
-     "rn2(3)=1 @ induced_align(dungeon.c:2012)",
-     "rnd(2)=2 @ next_ident(mkobj.c:521)"
+     "rnd(2)=2 @ next_ident(mkobj.c:521)",
+     "d(9,8)=45 @ newmonhp(makemon.c:1042)",
+     "rn2(2)=1 @ makemon(makemon.c:1279)",
+     "rn2(7)=6 @ rndghostname(do_name.c:774)",
+     "rn2(34)=9 @ rndghostname(do_name.c:774)",
+     "rn2(50)=42 @ m_initinv(makemon.c:826)"
     ]
    },
    "error": null
@@ -842,28 +845,28 @@
   {
    "session": "dev82189-wizard-hallucinate.session.json",
    "total": 24088,
-   "jsTotal": 1956,
+   "jsTotal": 2896,
    "totalScreens": 219,
-   "valuePrefix": 399,
-   "rulePrefix": 398,
+   "valuePrefix": 641,
+   "rulePrefix": 641,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 398,
+    "index": 641,
     "step": 0,
-    "c": "rn2(4)=1 @ somex(mkroom.c:668)",
-    "js": "rn2(4)=1 @ rnd_rect",
-    "kind": "caller",
-    "cCaller": "somex",
-    "jsCaller": "rnd_rect",
+    "c": "rn2(3)=1 @ rndmonst_adj(makemon.c:1716)",
+    "js": "rnd(4)=1 @ mktrap",
+    "kind": "value",
+    "cCaller": "rndmonst_adj",
+    "jsCaller": "mktrap",
     "context": [
-     "rn2(5)=2 @ random src=nhlib.lua:10 parent=d(nhlib.lua:36)",
-     "rn2(5)=4 @ random src=nhlib.lua:10 parent=d(nhlib.lua:36)",
-     "rn2(5)=1 @ random src=nhlib.lua:10 parent=d(nhlib.lua:36)",
-     "rn2(4)=1 @ somex(mkroom.c:668)",
-     "rn2(5)=1 @ somey(mkroom.c:674)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)"
+     "rn2(3)=2 @ nh.random src=nhlib.lua:10 parent=contents(themerms.lua:197)",
+     "rn2(4)=3 @ somex(mkroom.c:668)",
+     "rn2(5)=2 @ somey(mkroom.c:674)",
+     "rn2(3)=1 @ rndmonst_adj(makemon.c:1716)",
+     "rn2(5)=0 @ rndmonst_adj(makemon.c:1716)",
+     "rn2(7)=3 @ rndmonst_adj(makemon.c:1716)"
     ]
    },
    "error": null
@@ -1161,28 +1164,28 @@
   {
    "session": "dev82640-knight-coverage.session.json",
    "total": 71392,
-   "jsTotal": 8273,
+   "jsTotal": 7097,
    "totalScreens": 1112,
-   "valuePrefix": 482,
-   "rulePrefix": 482,
+   "valuePrefix": 515,
+   "rulePrefix": 515,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 482,
+    "index": 515,
     "step": 0,
-    "c": "rn2(5)=1 @ somex(mkroom.c:668)",
-    "js": "rn2(3)=2 @ rnd_rect",
+    "c": "rn2(100)=26 @ obj_resists(zap.c:1469)",
+    "js": "rn2(3)=1 @ rnd_rect",
     "kind": "value",
-    "cCaller": "somex",
+    "cCaller": "obj_resists",
     "jsCaller": "rnd_rect",
     "context": [
-     "rn2(11)=3 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(12)=5 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(13)=3 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(5)=1 @ somex(mkroom.c:668)",
-     "rn2(2)=0 @ somey(mkroom.c:674)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)"
+     "rnd(1000)=237 @ mkobj(mkobj.c:289)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)",
+     "rn2(17)=1 @ blessorcurse(mkobj.c:1846)",
+     "rn2(100)=26 @ obj_resists(zap.c:1469)",
+     "rn2(100)=20 @ obj_resists(zap.c:1469)",
+     "rnd(250)=86 @ bury_an_obj(dig.c:2034)"
     ]
    },
    "error": null
@@ -1279,11 +1282,11 @@
   "discarded-roll": 9
  },
  "totals": {
-  "rule": 112930,
-  "value": 112945,
+  "rule": 116223,
+  "value": 116237,
   "rolls": 504996,
-  "honestScreens": 138,
-  "screens": 138,
+  "honestScreens": 139,
+  "screens": 139,
   "totalScreens": 8438
  },
  "todo": [
@@ -1297,21 +1300,21 @@
    ]
   },
   {
+   "fn": "do_attack",
+   "sessions": 7,
+   "blockedRolls": 5669,
+   "examples": [
+    "dev81287-rogue-friday13-combat @3012: C \"rn2(7)=0 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=9 @ mcalcmove\"",
+    "dev81328-dequa-fountain-explore @2537: C \"rn2(7)=0 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=4 @ mcalcmove\""
+   ]
+  },
+  {
    "fn": "newhp",
    "sessions": 6,
    "blockedRolls": 231669,
    "examples": [
     "dev82025-wizard-world-tour @2317: C \"rnd(8)=2 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=9 @ mcalcmove\"",
     "dev82066-archeologist-tour @2301: C \"rnd(8)=5 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=8 @ mcalcmove\""
-   ]
-  },
-  {
-   "fn": "do_attack",
-   "sessions": 6,
-   "blockedRolls": 5000,
-   "examples": [
-    "dev81328-dequa-fountain-explore @2537: C \"rn2(7)=0 @ do_attack(uhitm.c:474)\" / JS \"rn2(12)=4 @ mcalcmove\"",
-    "dev81369-valk-level2-pit-dog-wait @2285: C \"rn2(7)=3 @ do_attack(uhitm.c:474)\" / JS \"rn2(5)=2 @ fastforward_step\""
    ]
   },
   {
@@ -1324,15 +1327,6 @@
    ]
   },
   {
-   "fn": "somex",
-   "sessions": 2,
-   "blockedRolls": 94600,
-   "examples": [
-    "dev82189-wizard-hallucinate @398: C \"rn2(4)=1 @ somex(mkroom.c:668)\" / JS \"rn2(4)=1 @ rnd_rect\"",
-    "dev82640-knight-coverage @482: C \"rn2(5)=1 @ somex(mkroom.c:668)\" / JS \"rn2(3)=2 @ rnd_rect\""
-   ]
-  },
-  {
    "fn": "rnd_otyp_by_namedesc",
    "sessions": 2,
    "blockedRolls": 9051,
@@ -1342,19 +1336,27 @@
    ]
   },
   {
-   "fn": "randomize_gem_colors",
+   "fn": "obj_resists",
    "sessions": 1,
-   "blockedRolls": 3681,
+   "blockedRolls": 70877,
    "examples": [
-    "dev81287-rogue-friday13-combat @0: C \"rn2(2)=1 @ randomize_gem_colors(o_init.c:89)\" / JS \"(none: JS log ended)\""
+    "dev82640-knight-coverage @515: C \"rn2(100)=26 @ obj_resists(zap.c:1469)\" / JS \"rn2(3)=1 @ rnd_rect\""
    ]
   },
   {
-   "fn": "find_montype",
+   "fn": "rndmonst_adj",
    "sessions": 1,
-   "blockedRolls": 2027,
+   "blockedRolls": 23447,
    "examples": [
-    "dev81779-valk-chat-lamp-ration @401: C \"rn2(2)=0 @ find_montype(sp_lev.c:3156)\" / JS \"rn2(3)=0 @ rnd_rect\""
+    "dev82189-wizard-hallucinate @641: C \"rn2(3)=1 @ rndmonst_adj(makemon.c:1716)\" / JS \"rnd(4)=1 @ mktrap\""
+   ]
+  },
+  {
+   "fn": "rndghostname",
+   "sessions": 1,
+   "blockedRolls": 2022,
+   "examples": [
+    "dev81779-valk-chat-lamp-ration @406: C \"rn2(7)=6 @ rndghostname(do_name.c:774)\" / JS \"rn2(50)=12 @ m_initinv\""
    ]
   },
   {
