@@ -12,6 +12,9 @@ import { rhack } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { fastforward_post_mklev, fastforward_step } from './fastforward.js';
+import { m_at } from './makemon.js';
+import { mnexto } from './teleport.js';
+import { makedog } from './dog.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
 import { init_dungeons } from './dungeon.js';
@@ -21,7 +24,9 @@ import { sys_early_init } from './sys.js';
 import { role_init, genders, Hello } from './role.js';
 import { u_init_misc } from './u_init.js';
 import { align_str } from './insight.js';
-import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE } from './const.js';
+import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG } from './const.js';
+
+const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
 // C ref: allmain.c early_init()
 // Not ported yet: program_state_init(), runtime_info_init().
@@ -59,9 +64,19 @@ export async function newgame() {
     // Real mklev generates the level with correct room positions
     // Structural phase consumes RNG for rooms/corridors/doors/stairs
     await mklev();
+    u_on_upstairs();
+    init_vision_globals();   /* C: vision_init() at program startup */
+    vision_reset();          /* set up internals for level (after mklev) */
+    /* check_special_room(FALSE): no special room is entered on arrival
+       at level 1 yet -- not ported yet (hack.c) */
 
-    // Fast-forward through post-mklev startup RNG calls.
-    // Covers: u_init_role, ini_inv, attributes, moveloop_preamble.
+    if (MON_AT(g.u.ux, g.u.uy))
+        mnexto(m_at(g.u.ux, g.u.uy), RLOC_NOMSG);
+    makedog();
+
+    // Fast-forward through the remaining post-mklev startup RNG calls.
+    // Covers: u_init_inventory_attrs (u_init_role, ini_inv, attributes),
+    // moveloop_preamble.
     fastforward_post_mklev();
 
     // Hardcoded player state for seed8000 Tourist, standing in for
@@ -74,13 +89,7 @@ export async function newgame() {
     g.u.amax = { a: [9, 14, 12, 11, 16, 16] };
     g.moves = 1; /* u_init_role() */
 
-    // C ref: allmain.c newgame() → u_on_upstairs()
-    // Places hero on upstair, or special stair, or random room position.
-    u_on_upstairs();
-
     // Initial display
-    init_vision_globals();
-    vision_reset();
     vision_recalc(0);
     await cls();
     await docrt();
