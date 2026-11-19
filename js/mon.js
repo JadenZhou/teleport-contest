@@ -366,7 +366,8 @@ export async function mondied(mdef) {
 export async function monkilled(mdef, fltxt, how) {
     const mptr = mdef.data;
 
-    if (fltxt && (mdef.wormno ? worm_known(mdef)
+    /* C tests the pointer: "" is non-null and still gives the message */
+    if (fltxt != null && (mdef.wormno ? worm_known(mdef)
                               : cansee(mdef.mx, mdef.my)))
         await pline(`${Monnam(mdef)} is ${nonliving(mptr) ? 'destroyed' : 'killed'}`
                     + `${fltxt ? ' by the ' : ''}${fltxt}!`);
