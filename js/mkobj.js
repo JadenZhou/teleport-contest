@@ -2,14 +2,15 @@
 // C ref: mkobj.c — mkobjprobs[], rogueprobs[], hellprobs[], next_ident,
 // may_generate_eroded, mkobj_erosions, mkobj_at, mksobj_at, mkobj, mksobj,
 // mksobj_init, blessorcurse, bless, curse, bcsign, mkgold, is_flammable,
-// is_rottable; objnam.c erosion_matters.
+// is_rottable, rndmonnum, rndmonnum_adj, start_corpse_timeout,
+// set_corpsenm, mkcorpstat; objnam.c erosion_matters; mon.c
+// undead_to_corpse; o_init.c rnd_class.
 //
 // Objects are plain JS objects with the struct obj fields that are set
 // here. Not ported yet (each is reported with impossible() where C would
-// call it): placing objects on the map (place_object), containers
-// (mkbox_cnts, add_to_container), monster-type objects that need
-// rndmonnum() (corpses, eggs, tins, figurines, statues), mk_artifact,
-// candy wrappers, glob timers, novels, weight().
+// call it): the floor object lists (place_object only records ox/oy),
+// containers (mkbox_cnts, add_to_container), egg/tin/figurine monster
+// types, mk_artifact, candy wrappers, timers, novels, weight().
 
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rne, rnz } from './rng.js';
@@ -472,7 +473,7 @@ function place_object(otmp, x, y) {
     otmp.where = 'OBJ_FLOOR';
 }
 
-// C ref: o_init.c rnd_class() — not ported yet (spellbooks only)
+// C ref: o_init.c rnd_class()
 function rnd_class(first, last) {
     let i, x, sum = 0;
 
