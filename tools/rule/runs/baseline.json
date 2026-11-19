@@ -1,13 +1,16 @@
 {
- "when": "2026-11-19T04:53:46.207Z",
+ "when": "2026-11-19T05:10:09.182Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
    "total": 27158,
    "jsTotal": 3181,
-   "totalSteps": 595,
+   "totalScreens": 595,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 7,
@@ -28,9 +31,12 @@
    "session": "seed0004-feeding-pony.session.json",
    "total": 12084,
    "jsTotal": 3022,
-   "totalSteps": 409,
+   "totalScreens": 409,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 7,
@@ -51,9 +57,12 @@
    "session": "seed0006-wizard-water-demon.session.json",
    "total": 6736,
    "jsTotal": 3568,
-   "totalSteps": 123,
+   "totalScreens": 123,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 11,
@@ -74,9 +83,12 @@
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
    "jsTotal": 3755,
-   "totalSteps": 302,
+   "totalScreens": 302,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 8,
@@ -97,9 +109,12 @@
    "session": "seed0009-swimmer-mforce.session.json",
    "total": 3713,
    "jsTotal": 3215,
-   "totalSteps": 73,
+   "totalScreens": 73,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 9,
@@ -120,9 +135,12 @@
    "session": "seed0012-monk-vault-escort.session.json",
    "total": 13878,
    "jsTotal": 3358,
-   "totalSteps": 308,
+   "totalScreens": 308,
    "valuePrefix": 210,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 16,
@@ -143,9 +161,12 @@
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
    "total": 4804,
    "jsTotal": 6428,
-   "totalSteps": 99,
+   "totalScreens": 99,
    "valuePrefix": 210,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -166,9 +187,12 @@
    "session": "seed0013-rogue-friday13-combat.session.json",
    "total": 4838,
    "jsTotal": 3237,
-   "totalSteps": 59,
+   "totalScreens": 59,
    "valuePrefix": 210,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -189,9 +213,12 @@
    "session": "seed0014-dequa-fountain-explore.session.json",
    "total": 59178,
    "jsTotal": 3085,
-   "totalSteps": 714,
+   "totalScreens": 714,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 8,
@@ -212,9 +239,12 @@
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
    "jsTotal": 2900,
-   "totalSteps": 44,
+   "totalScreens": 44,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -235,9 +265,12 @@
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
    "jsTotal": 2975,
-   "totalSteps": 36,
+   "totalScreens": 36,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -258,9 +291,12 @@
    "session": "seed0017-samurai-altar-pray.session.json",
    "total": 3465,
    "jsTotal": 3452,
-   "totalSteps": 67,
+   "totalScreens": 67,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 8,
@@ -281,9 +317,12 @@
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
    "jsTotal": 33754,
-   "totalSteps": 1953,
+   "totalScreens": 1953,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -304,9 +343,12 @@
    "session": "seed0060-orc-rogue-kick-search.session.json",
    "total": 3626,
    "jsTotal": 3025,
-   "totalSteps": 41,
+   "totalScreens": 41,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -327,9 +369,12 @@
    "session": "seed0077-rogue-chargen.session.json",
    "total": 3242,
    "jsTotal": 2745,
-   "totalSteps": 33,
+   "totalScreens": 33,
    "valuePrefix": 0,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 8,
@@ -350,9 +395,12 @@
    "session": "seed0101-ranger-quiver-throw-travel-engrave.session.json",
    "total": 2371,
    "jsTotal": 2881,
-   "totalSteps": 27,
+   "totalScreens": 27,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -373,9 +421,12 @@
    "session": "seed0102-ranger-name-cancel.session.json",
    "total": 4485,
    "jsTotal": 3054,
-   "totalSteps": 25,
+   "totalScreens": 25,
    "valuePrefix": 230,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -396,9 +447,12 @@
    "session": "seed0103-knight-ride-pony.session.json",
    "total": 2640,
    "jsTotal": 3706,
-   "totalSteps": 60,
+   "totalScreens": 60,
    "valuePrefix": 230,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -419,9 +473,12 @@
    "session": "seed0104-knight-ride-combat.session.json",
    "total": 3223,
    "jsTotal": 2835,
-   "totalSteps": 43,
+   "totalScreens": 43,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -442,9 +499,12 @@
    "session": "seed0105-valk-chat-lamp-ration.session.json",
    "total": 2499,
    "jsTotal": 2888,
-   "totalSteps": 30,
+   "totalScreens": 30,
    "valuePrefix": 230,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -465,9 +525,12 @@
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
    "jsTotal": 3085,
-   "totalSteps": 267,
+   "totalScreens": 267,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -488,9 +551,12 @@
    "session": "seed0107-samurai-twoweapon-enhance.session.json",
    "total": 2902,
    "jsTotal": 2887,
-   "totalSteps": 98,
+   "totalScreens": 98,
    "valuePrefix": 234,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -511,9 +577,12 @@
    "session": "seed0108-wizard-extcmd-wishlist.session.json",
    "total": 16958,
    "jsTotal": 3808,
-   "totalSteps": 303,
+   "totalScreens": 303,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -534,9 +603,12 @@
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
    "jsTotal": 3636,
-   "totalSteps": 127,
+   "totalScreens": 127,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -557,9 +629,12 @@
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
    "jsTotal": 2523,
-   "totalSteps": 40,
+   "totalScreens": 40,
    "valuePrefix": 234,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -580,9 +655,12 @@
    "session": "seed0360-wizard-world-tour.session.json",
    "total": 120639,
    "jsTotal": 7213,
-   "totalSteps": 833,
+   "totalScreens": 833,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -603,9 +681,12 @@
    "session": "seed0361-archeologist-tour.session.json",
    "total": 53865,
    "jsTotal": 3757,
-   "totalSteps": 366,
+   "totalScreens": 366,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -626,9 +707,12 @@
    "session": "seed0367-priest-quest-tour.session.json",
    "total": 50125,
    "jsTotal": 4069,
-   "totalSteps": 324,
+   "totalScreens": 324,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -649,9 +733,12 @@
    "session": "seed0373-barbarian-quest-tour.session.json",
    "total": 35386,
    "jsTotal": 4507,
-   "totalSteps": 124,
+   "totalScreens": 124,
    "valuePrefix": 201,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -672,9 +759,12 @@
    "session": "seed0383-wizard-hallucinate.session.json",
    "total": 16915,
    "jsTotal": 3873,
-   "totalSteps": 219,
+   "totalScreens": 219,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -695,9 +785,12 @@
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
    "jsTotal": 3541,
-   "totalSteps": 87,
+   "totalScreens": 87,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -718,9 +811,12 @@
    "session": "seed0399-wizard-hallu-actions.session.json",
    "total": 11409,
    "jsTotal": 3898,
-   "totalSteps": 532,
+   "totalScreens": 532,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -741,9 +837,12 @@
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
    "jsTotal": 3446,
-   "totalSteps": 28,
+   "totalScreens": 28,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -764,9 +863,12 @@
    "session": "seed0700-samurai-explore-descend.session.json",
    "total": 3230,
    "jsTotal": 3125,
-   "totalSteps": 51,
+   "totalScreens": 51,
    "valuePrefix": 210,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -787,9 +889,12 @@
    "session": "seed0900-tourist-explore-actions.session.json",
    "total": 2983,
    "jsTotal": 3619,
-   "totalSteps": 84,
+   "totalScreens": 84,
    "valuePrefix": 235,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -810,9 +915,12 @@
    "session": "seed1150-caveman-explore-move.session.json",
    "total": 3137,
    "jsTotal": 3133,
-   "totalSteps": 51,
+   "totalScreens": 51,
    "valuePrefix": 230,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -833,9 +941,12 @@
    "session": "seed1500-rogue-explore-move.session.json",
    "total": 2768,
    "jsTotal": 2685,
-   "totalSteps": 40,
+   "totalScreens": 40,
    "valuePrefix": 229,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -856,9 +967,12 @@
    "session": "seed1800-tourist-eat-throw.session.json",
    "total": 2458,
    "jsTotal": 3067,
-   "totalSteps": 26,
+   "totalScreens": 26,
    "valuePrefix": 210,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -879,9 +993,12 @@
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
    "jsTotal": 3209,
-   "totalSteps": 230,
+   "totalScreens": 230,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -902,9 +1019,12 @@
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
    "jsTotal": 3568,
-   "totalSteps": 38,
+   "totalScreens": 38,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -925,9 +1045,12 @@
    "session": "seed4500-knight-coverage.session.json",
    "total": 108275,
    "jsTotal": 3001,
-   "totalSteps": 1814,
+   "totalScreens": 1814,
    "valuePrefix": 201,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -948,9 +1071,12 @@
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
    "jsTotal": 7353,
-   "totalSteps": 410,
+   "totalScreens": 410,
    "valuePrefix": 199,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -971,9 +1097,12 @@
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
    "jsTotal": 6873,
-   "totalSteps": 249,
+   "totalScreens": 249,
    "valuePrefix": 201,
    "rulePrefix": 0,
+   "screens": 0,
+   "honestScreens": 0,
+   "firstScreenMiss": 0,
    "first": {
     "index": 0,
     "step": 0,
@@ -994,9 +1123,12 @@
    "session": "seed8000-tourist-starter.session.json",
    "total": 3130,
    "jsTotal": 3270,
-   "totalSteps": 23,
+   "totalScreens": 23,
    "valuePrefix": 3103,
    "rulePrefix": 0,
+   "screens": 15,
+   "honestScreens": 0,
+   "firstScreenMiss": 11,
    "first": {
     "index": 0,
     "step": 0,
@@ -1014,6 +1146,17 @@
    "error": null
   }
  ],
+ "staticCounts": {
+  "discarded-roll": 263
+ },
+ "totals": {
+  "rule": 0,
+  "value": 10798,
+  "rolls": 792838,
+  "honestScreens": 0,
+  "screens": 15,
+  "totalScreens": 11405
+ },
  "todo": [
   {
    "fn": "randomize_gem_colors",
@@ -1049,6 +1192,1586 @@
    "examples": [
     "seed0014-dequa-fountain-explore @0: C \"rn2(1)=0 @ pick_gend(role.c:1157)\" / JS \"rn2(2)=0 @ fastforward_pre_mklev\""
    ]
+  }
+ ],
+ "violations": [
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 13,
+   "text": "rn2(2); rn2(2); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 15,
+   "text": "rn2(11); rn2(10); rn2(9); rn2(8); rn2(7); rn2(6); rn2(5); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 16,
+   "text": "rn2(3); rn2(2); rn2(1); rn2(25); rn2(24); rn2(23); rn2(22); rn2(21);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 17,
+   "text": "rn2(20); rn2(19); rn2(18); rn2(17); rn2(16); rn2(15); rn2(14); rn2(13);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 18,
+   "text": "rn2(12); rn2(11); rn2(10); rn2(9); rn2(8); rn2(7); rn2(6); rn2(5);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 19,
+   "text": "rn2(4); rn2(3); rn2(2); rn2(1); rn2(28); rn2(27); rn2(26); rn2(25);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 20,
+   "text": "rn2(24); rn2(23); rn2(22); rn2(21); rn2(20); rn2(19); rn2(18); rn2(17);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 21,
+   "text": "rn2(16); rn2(15); rn2(14); rn2(13); rn2(12); rn2(11); rn2(10); rn2(9);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 22,
+   "text": "rn2(8); rn2(7); rn2(6); rn2(5); rn2(4); rn2(3); rn2(2); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 23,
+   "text": "rn2(41); rn2(40); rn2(39); rn2(38); rn2(37); rn2(36); rn2(35); rn2(34);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 24,
+   "text": "rn2(33); rn2(32); rn2(31); rn2(30); rn2(29); rn2(28); rn2(27); rn2(26);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 25,
+   "text": "rn2(25); rn2(24); rn2(23); rn2(22); rn2(21); rn2(20); rn2(19); rn2(18);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 26,
+   "text": "rn2(17); rn2(16); rn2(15); rn2(14); rn2(13); rn2(12); rn2(11); rn2(10);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 27,
+   "text": "rn2(9); rn2(8); rn2(7); rn2(6); rn2(5); rn2(4); rn2(3); rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 28,
+   "text": "rn2(1); rn2(41); rn2(40); rn2(39); rn2(38); rn2(37); rn2(36); rn2(35);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 29,
+   "text": "rn2(34); rn2(33); rn2(32); rn2(31); rn2(30); rn2(29); rn2(28); rn2(27);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 30,
+   "text": "rn2(26); rn2(25); rn2(24); rn2(23); rn2(22); rn2(21); rn2(20); rn2(19);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 31,
+   "text": "rn2(18); rn2(17); rn2(16); rn2(15); rn2(14); rn2(13); rn2(12); rn2(11);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 32,
+   "text": "rn2(10); rn2(9); rn2(8); rn2(7); rn2(6); rn2(5); rn2(4); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 33,
+   "text": "rn2(2); rn2(1); rn2(28); rn2(27); rn2(26); rn2(25); rn2(24); rn2(23);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 34,
+   "text": "rn2(22); rn2(21); rn2(20); rn2(19); rn2(18); rn2(17); rn2(16); rn2(15);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 35,
+   "text": "rn2(14); rn2(13); rn2(12); rn2(11); rn2(10); rn2(9); rn2(8); rn2(7);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 36,
+   "text": "rn2(6); rn2(5); rn2(4); rn2(3); rn2(2); rn2(1); rn2(2); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 37,
+   "text": "rn2(4); rn2(3); rn2(2); rn2(1); rn2(4); rn2(3); rn2(2); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 38,
+   "text": "rn2(4); rn2(3); rn2(2); rn2(1); rn2(7); rn2(6); rn2(5); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 39,
+   "text": "rn2(3); rn2(2); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 41,
+   "text": "rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 43,
+   "text": "rn2(3); rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 45,
+   "text": "rn2(100); rn2(5);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 47,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 49,
+   "text": "rn2(4); rn2(5); rn2(4); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 51,
+   "text": "rn2(100); rn2(5);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 53,
+   "text": "rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 55,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 56,
+   "text": "rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 58,
+   "text": "rn2(1); rn2(1); rn2(4); rn2(3); rn2(5); rn2(6); rn2(1); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 59,
+   "text": "rn2(4); rn2(4); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 61,
+   "text": "rn2(100); rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 63,
+   "text": "rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 65,
+   "text": "rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 67,
+   "text": "rn2(2); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 69,
+   "text": "rn2(100); rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 71,
+   "text": "rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 73,
+   "text": "rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 75,
+   "text": "rn2(1); rn2(1); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 77,
+   "text": "rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 79,
+   "text": "rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 81,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 83,
+   "text": "rn2(1); rn2(1); rn2(1); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 85,
+   "text": "rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 87,
+   "text": "rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 89,
+   "text": "rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 91,
+   "text": "rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 93,
+   "text": "rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 95,
+   "text": "rn2(5);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 97,
+   "text": "rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 99,
+   "text": "rn2(1); rn2(1); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 101,
+   "text": "rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 103,
+   "text": "rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 105,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 107,
+   "text": "rn2(1); rn2(1); rn2(1); rn2(1); rn2(1); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 109,
+   "text": "rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 111,
+   "text": "rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 113,
+   "text": "rn2(1); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 115,
+   "text": "rn2(7); rn2(7); rn2(7); rn2(7); rn2(7);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 117,
+   "text": "rn2(10);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 123,
+   "text": "rnd(1000); rn2(20); rnd(2); rn2(6); rn2(11); rn2(10); rn2(10); rn2(100); rn2(20); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 124,
+   "text": "rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 125,
+   "text": "rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 126,
+   "text": "rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6); rnd(1000); rnd(2); rn2(6);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 127,
+   "text": "rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(15); rn2(10);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 128,
+   "text": "rn2(6); rn2(1); rnd(2); rn2(4); rn2(2); rnd(2); rn2(4); rn2(2); rn2(1); rnd(2); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 129,
+   "text": "rnd(2); rn2(4); rnd(2); rn2(4); rnd(2); rn2(4); rn2(1); rnd(2); rn2(10); rn2(11); rn2(10);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 130,
+   "text": "rn2(10); rn2(1); rnd(2); rn2(70); rn2(1); rn2(1); rnd(2); rn2(1); rn2(25); rn2(25); rn2(25);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 131,
+   "text": "rn2(20); rn2(1); rnd(2); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 132,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 133,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 134,
+   "text": "rn2(100); rn2(100); rn2(100); rn2(20); rn2(20); rn2(20); rn2(7); rn2(20); rn2(20); rn2(20);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 135,
+   "text": "rnd(9000); rnd(30);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 141,
+   "text": "() => { rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 1"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 142,
+   "text": "() => { rn2(5); rn2(5); rn2(5); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // s"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 143,
+   "text": "() => { rn2(5); rn2(32); rn2(5); rn2(5); rn2(32); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 144,
+   "text": "() => { rn2(5); rn2(24); rn2(5); rn2(5); rn2(24); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 145,
+   "text": "() => { rn2(5); rn2(16); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 5"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 146,
+   "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 147,
+   "text": "() => { rn2(5); rn2(16); rn2(5); rn2(5); rn2(16); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 148,
+   "text": "() => { rn2(5); rn2(12); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20); rn2(82); }, // step 8"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 149,
+   "text": "() => { rn2(5); rn2(20); rn2(5); rn2(5); rn2(8); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 150,
+   "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(20); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 156,
+   "text": "rn2(8); rn2(3); rn2(8); rn2(3); rn2(8); rn2(6); rnd(2); rnd(3); rnd(2); rn2(10); rn2(60);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 157,
+   "text": "rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(8); rn2(6); rnd(100); rnd(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 158,
+   "text": "rnd(2); rn2(10); rn2(11); rn2(10); rn2(10); rn2(40); rn2(100); rn2(80); rn2(80); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 159,
+   "text": "rn2(5); rn2(3); rn2(14); rn2(2); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 160,
+   "text": "rn2(16); rn2(21); rnd(2); rnd(4); rn2(50); rn2(100); rn2(100); rn2(8); rnd(25); rnd(25);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 161,
+   "text": "rnd(25); rnd(25); rnd(25); rn2(14); rn2(2); rnd(4); rn2(4); rnd(1000); rnd(2); rn2(6);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 162,
+   "text": "rn2(5); rn2(15); rnd(2); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 163,
+   "text": "rn2(21); rn2(2); rnz(25); rn2(8); rn2(3); rn2(14); rn2(2); rnd(2); rnd(3); rnd(2); rn2(10);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 164,
+   "text": "rn2(60); rn2(14); rn2(2); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 165,
+   "text": "rn2(4); rn2(5); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 166,
+   "text": "rnd(2); rnd(4); rn2(2); rn2(50); rn2(100); rn2(100); rn2(8); rn2(3); rn2(4); rn2(5); rnd(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 167,
+   "text": "rnd(3); rnd(2); rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(4); rn2(5); rn2(3); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 168,
+   "text": "rnd(2); rn2(6); rn2(2); rn2(9); rnd(2); rn2(4); rn2(5); rn2(3); rn2(10); rnd(1000); rnd(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 169,
+   "text": "rn2(3); rn2(6); rn2(30); rn2(3); rn2(4); rn2(5); rnd(100); rnd(1000); rnd(2); rn2(4); rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 170,
+   "text": "rn2(5); rn2(3); rn2(8); rn2(3); rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 171,
+   "text": "rn2(3); rn2(3); rn2(8); rnd(25); rn2(7); rnd(25); rnd(25); rn2(7); rnd(25); rn2(4); rn2(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 172,
+   "text": "rnd(4); rn2(4); rnd(1000); rnd(2); rn2(6); rn2(5); rn2(15); rn2(10); rnd(2); rn2(3); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 173,
+   "text": "rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(2); rnz(25); rn2(8); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 174,
+   "text": "rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3); rn2(6);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 175,
+   "text": "rn2(3); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rnd(2);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 176,
+   "text": "rnd(4); rn2(2); rn2(50); rn2(100); rn2(100); rn2(8); rn2(3); rn2(10); rn2(60); rn2(60);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 177,
+   "text": "rn2(78); rn2(20); rn2(20); rn2(30); rn2(4); rn2(2); rn2(25762); rn2(25762); rn2(75); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 178,
+   "text": "rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 179,
+   "text": "rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 180,
+   "text": "rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1); rn2(75); rn2(4); rn2(75); rn2(4);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 181,
+   "text": "rn2(1); rn2(75); rn2(4); rn2(75); rn2(4); rn2(6); rn2(3); rn2(3); rn2(3); rn2(8); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 182,
+   "text": "rn2(3); rn2(4); rn2(3); rn2(4); rnd(2); rnd(3); rnd(2); rn2(10); rn2(60); rn2(60); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 183,
+   "text": "rn2(4); rn2(3); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3); rn2(11); rn2(4); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 184,
+   "text": "rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rnd(2); rnd(4); rn2(50);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 185,
+   "text": "rn2(100); rn2(100); rn2(8); rnd(25); rn2(11); rn2(4); rnd(4); rn2(8); rn2(3); rn2(10);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 186,
+   "text": "rn2(60); rn2(60); rn2(78); rn2(20); rn2(11); rn2(4); rnd(2); rn2(3); rn2(4); rn2(5); rn2(7);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 187,
+   "text": "rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(10); rn2(2); rn2(20); rn2(30); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 188,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 189,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 190,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 191,
+   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 192,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 193,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 194,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 195,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 196,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 197,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 198,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 199,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 200,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 201,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 202,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 203,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 204,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 205,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 206,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 207,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 208,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 209,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 210,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 211,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 212,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 213,
+   "text": "rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 214,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 215,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 216,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 217,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 218,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 219,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 220,
+   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 221,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 222,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 223,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 224,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 225,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 226,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 227,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 228,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 229,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 230,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 231,
+   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 232,
+   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 233,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 234,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 235,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 236,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 237,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 238,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 239,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 240,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 241,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 242,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 243,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 244,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 245,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 246,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 247,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 248,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 249,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 250,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 251,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 252,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 253,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 254,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 255,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 256,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 257,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 258,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 259,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 260,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 261,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 262,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 263,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 264,
+   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 265,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 266,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 267,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 268,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 269,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 270,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 271,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 272,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 273,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 274,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 275,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 276,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 277,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 278,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 279,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 280,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 281,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 282,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 283,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 284,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 285,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 286,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 287,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 288,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 289,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 290,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 291,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 292,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 293,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 294,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 295,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 296,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 297,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 298,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 299,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 300,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 301,
+   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 302,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 303,
+   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 304,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 305,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 306,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 307,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 308,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 309,
+   "text": "rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 310,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 311,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 312,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 313,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 314,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 315,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 316,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 317,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 318,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 319,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 320,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 321,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 322,
+   "text": "rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 323,
+   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/fastforward.js",
+   "line": 324,
+   "text": "rn2(1000); rn2(1000);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/mklev.js",
+   "line": 293,
+   "text": "rn2(398); // approximate: rn2(NUMMONS)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/mklev.js",
+   "line": 303,
+   "text": "rn2(398);"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/mklev.js",
+   "line": 342,
+   "text": "rn2(1 + 27 / (text.length - i));"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/mklev.js",
+   "line": 609,
+   "text": "rn2(100); // chance check (build_room)"
+  },
+  {
+   "check": "discarded-roll",
+   "file": "js/mklev.js",
+   "line": 1353,
+   "text": "rn2(398); // mkclass(S_HUMAN)"
   }
  ]
 }
