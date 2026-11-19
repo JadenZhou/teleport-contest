@@ -24,7 +24,10 @@ import * as O from './objects.js';
 import { objects, OBJ_NAME, OBJ_DESCR } from './objects.js';
 import {
     NON_PM, MALE, FEMALE, NEUTRAL, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG,
+    BLINDED, HALLUC, Has_contents,
 } from './const.js';
+import * as M from './monsters.js';
+import { observe_object } from './o_init.js';
 import { mons, LOW_PM, S_PUDDING, PM_GRAY_OOZE, PM_BLACK_PUDDING,
          PM_GRAY_DRAGON, PM_YELLOW_DRAGON } from './monsters.js';
 import {
@@ -35,6 +38,7 @@ import {
     mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
     is_rustprone, is_crackable, is_corrodeable, is_rottable, is_damageable,
     is_poisonable, permapoisoned, Is_candle, is_weptool, rnd_class,
+    Is_container,
 } from './mkobj.js';
 
 // C ref: decl.c vowels[]
@@ -1837,4 +1841,441 @@ function is_ammo(otmp) {
 // C ref: artifact.c is_quest_artifact() — otmp->oartifact == urole.questarti
 function is_quest_artifact(otmp) {
     return !!otmp.oartifact && otmp.oartifact === game.urole?.questarti;
+}
+
+// ---------------------------------------------------------------------
+// xname() / doname()
+// C ref: objnam.c xname_flags(), doname_base()
+// Branches that need code not ported yet throw (named objects and
+// artifacts, Samurai item names, figurine/statue/tin/fruit details,
+// makeplural(), erosion words, corpses, eggs, worn/wielded suffixes,
+// shop prices).
+
+function xn_not_ported(what) {
+    throw new Error(`xname/doname: ${what} is not ported yet`);
+}
+
+// C ref: you.h Blind
+function xn_Blind() {
+    const p = game.u?.uprops?.[BLINDED];
+    return !!(p?.intrinsic || p?.extrinsic);
+}
+// C ref: you.h Hallucination
+function xn_Hallucination() {
+    const p = game.u?.uprops?.[HALLUC];
+    return !!(p?.intrinsic || p?.extrinsic);
+}
+
+// C ref: objnam.c xcalled()
+function xcalled(pfx, sfx) {
+    return `${pfx}${pfx[0] ? " " : ""}called ${sfx}`;
+}
+
+// C ref: objnam.c xname()
+export function xname(obj) {
+    return xname_flags(obj, 0);
+}
+
+// C ref: objnam.c xname_flags()
+function xname_flags(obj, cxn_flags) {
+    const typ = obj.otyp;
+    const ocl = objects[typ];
+    const nn = ocl.oc_name_known;
+    const omndx = obj.corpsenm;
+    let actualn = OBJ_NAME(ocl);
+    let dn = OBJ_DESCR(ocl);
+    const un = ocl.oc_uname;
+    const pluralize = (obj.quan !== 1) && !(cxn_flags & 1 /* CXN_SINGULAR */);
+    let buf = '';
+
+    if (Role_if_x(M.PM_SAMURAI))
+        xn_not_ported('Japanese_item_name()');
+    if (!actualn)
+        actualn = (typ > 0 && typ < O.MAXOCLASSES) ? "generic" : "object?";
+    if (!dn)
+        dn = actualn;
+
+    if (!nn && ocl.oc_uses_known && ocl.oc_unique)
+        obj.known = 0;
+    if (!xn_Blind() /* && !gd.distantname */)
+        observe_object(obj, xn_Hallucination());
+    if (Role_if_x(M.PM_CLERIC))
+        obj.bknown = 1;
+
+    /* iflags.override_ID (wizard-mode ^I) is not ported */
+    const known = obj.known;
+    const dknown = obj.dknown;
+    const bknown = obj.bknown;
+
+    if (obj.oartifact || obj.oextra?.oname)
+        xn_not_ported('artifact/named object (obj_is_pname, find_artifact)');
+
+    switch (obj.oclass) {
+    case O.AMULET_CLASS:
+        if (!dknown)
+            buf = "amulet";
+        else if (typ === O.AMULET_OF_YENDOR || typ === O.FAKE_AMULET_OF_YENDOR)
+            buf = known ? actualn : dn;
+        else if (nn)
+            buf = actualn;
+        else if (un)
+            buf = xcalled("amulet", un);
+        else
+            buf = `${dn} amulet`;
+        break;
+    case O.WEAPON_CLASS:
+        if (is_poisonable(obj) && obj.opoisoned)
+            buf = "poisoned ";
+        /* FALLTHROUGH */
+    case O.VENOM_CLASS:
+    case O.TOOL_CLASS:
+        if (typ === O.LENSES)
+            buf = "pair of ";
+        else if (typ === O.TOWEL && obj.spe > 0) /* is_wet_towel() */
+            buf = (obj.spe < 3) ? "moist " : "wet ";
+
+        if (!dknown)
+            buf += dn;
+        else if (nn)
+            buf += actualn;
+        else if (un)
+            buf = xcalled(buf + dn, un);
+        else
+            buf += dn;
+
+        if (typ === O.FIGURINE && omndx_ok(omndx)) {
+            xn_not_ported('figurine monster name (obj_pmname)');
+        } else if (typ === O.TOWEL && obj.spe > 0) {
+            if (game.flags?.debug)
+                buf += ` (${obj.spe})`;
+        }
+        break;
+    case O.ARMOR_CLASS:
+        if (typ >= O.GRAY_DRAGON_SCALES && typ <= O.YELLOW_DRAGON_SCALES) {
+            buf = `set of ${actualn}`;
+            break;
+        } else if (ocl.oc_subtyp === O.ARM_BOOTS || ocl.oc_subtyp === O.ARM_GLOVES) {
+            buf = "pair of ";
+        } else if (ocl.oc_subtyp === O.ARM_SHIELD && !dknown) {
+            if (obj.otyp >= O.ELVEN_SHIELD && obj.otyp <= O.ORCISH_SHIELD) {
+                buf = "shield";
+                break;
+            } else if (obj.otyp === O.SHIELD_OF_REFLECTION) {
+                buf = "smooth shield";
+                break;
+            }
+        }
+        if (nn)
+            buf += actualn;
+        else if (un)
+            xn_not_ported('armor_simple_name()');
+        else
+            buf += dn;
+        break;
+    case O.FOOD_CLASS:
+        if (typ === O.SLIME_MOLD)
+            xn_not_ported('fruit names (fruit_from_indx)');
+        if (obj.globby)
+            xn_not_ported('globby food names');
+        buf += actualn;
+        if (typ === O.TIN && known)
+            xn_not_ported('tin_details()');
+        break;
+    case O.COIN_CLASS:
+    case O.CHAIN_CLASS:
+        buf = actualn;
+        break;
+    case O.ROCK_CLASS:
+        if (typ === O.STATUE && omndx_ok(omndx))
+            xn_not_ported('statue monster name (obj_pmname)');
+        else if (typ === O.BOULDER && obj.next_boulder === 1) {
+            buf = "next " + actualn;
+            obj.next_boulder = 0;
+        } else
+            buf = actualn;
+        break;
+    case O.BALL_CLASS:
+        buf = `${(obj.owt > ocl.oc_weight) ? "very " : ""}heavy iron ball`;
+        break;
+    case O.POTION_CLASS:
+        if (dknown && obj.odiluted)
+            buf = "diluted ";
+        if (nn || un || !dknown) {
+            buf += "potion";
+            if (!dknown)
+                break;
+            if (nn) {
+                buf += " of ";
+                if (typ === O.POT_WATER && bknown
+                    && (obj.blessed || obj.cursed)) {
+                    buf += obj.blessed ? "holy " : "unholy ";
+                }
+                buf += actualn;
+            } else {
+                buf = xcalled(buf, un);
+            }
+        } else {
+            buf += dn;
+            buf += " potion";
+        }
+        break;
+    case O.SCROLL_CLASS:
+        buf = "scroll";
+        if (!dknown)
+            break;
+        if (nn) {
+            buf += " of ";
+            buf += actualn;
+        } else if (un) {
+            buf = xcalled(buf, un);
+        } else if (ocl.oc_magic) {
+            buf += " labeled ";
+            buf += dn;
+        } else {
+            buf = dn;
+            buf += " scroll";
+        }
+        break;
+    case O.WAND_CLASS:
+        if (!dknown)
+            buf = "wand";
+        else if (nn)
+            buf = `wand of ${actualn}`;
+        else if (un)
+            buf = xcalled("wand", un);
+        else
+            buf = `${dn} wand`;
+        break;
+    case O.SPBOOK_CLASS:
+        if (typ === O.SPE_NOVEL) { /* 3.6 tribute */
+            if (!dknown)
+                buf = "book";
+            else if (nn)
+                buf = actualn;
+            else if (un)
+                buf = xcalled("novel", un);
+            else
+                buf = `${dn} book`;
+            break;
+        } else if (!dknown) {
+            buf = "spellbook";
+        } else if (nn) {
+            if (typ !== O.SPE_BOOK_OF_THE_DEAD)
+                buf = "spellbook of ";
+            buf += actualn;
+        } else if (un) {
+            buf = xcalled("spellbook", un);
+        } else
+            buf = `${dn} spellbook`;
+        break;
+    case O.RING_CLASS:
+        if (!dknown)
+            buf = "ring";
+        else if (nn)
+            buf = `ring of ${actualn}`;
+        else if (un)
+            buf = xcalled("ring", un);
+        else
+            buf = `${dn} ring`;
+        break;
+    case O.GEM_CLASS: {
+        const rock = (ocl.oc_material === O.MINERAL) ? "stone" : "gem";
+
+        if (!dknown) {
+            buf = rock;
+        } else if (!nn) {
+            if (un)
+                buf = xcalled(rock, un);
+            else
+                buf = `${dn} ${rock}`;
+        } else {
+            buf = actualn;
+            if (GemStone_x(typ))
+                buf += " stone";
+        }
+        break;
+    } /* gem */
+    default:
+        buf = `glorkum ${obj.oclass} ${typ} ${obj.spe}`;
+        break;
+    } /* switch */
+
+    if (pluralize)
+        xn_not_ported('makeplural()');
+    if (game.program_state?.gameover && obj.o_id)
+        xn_not_ported('end-of-game shirt/apron text');
+    return buf;
+}
+
+// C ref: objnam.c add_erosion_words() -- only the no-erosion case
+function add_erosion_words(obj, prefix) {
+    if (obj.oeroded || obj.oeroded2 || (obj.rknown && obj.oerodeproof))
+        xn_not_ported('add_erosion_words()');
+    return prefix;
+}
+
+// C ref: objnam.c doname()
+export function doname(obj) {
+    return doname_base(obj, 0);
+}
+
+// C ref: objnam.c doname_base()
+function doname_base(obj, doname_flags) {
+    let ispoisoned = false;
+    const with_price = (doname_flags & 1 /* DONAME_WITH_PRICE */) !== 0;
+    const vague_quan = (doname_flags & 2 /* DONAME_VAGUE_QUAN */) !== 0;
+    let prefix = '';
+    let bp = xname(obj);
+
+    /* iflags.override_ID is not ported */
+    const known = obj.known, dknown = obj.dknown, cknown = obj.cknown,
+          bknown = obj.bknown, lknown = obj.lknown;
+
+    if (bp.startsWith("poisoned ") && obj.opoisoned) {
+        bp = bp.slice(9);
+        ispoisoned = true;
+    }
+
+    if (obj.otyp === O.SLIME_MOLD)
+        xn_not_ported('fake artifact fruit names (artifact_name)');
+
+    if (obj.quan !== 1) {
+        if (dknown || !vague_quan)
+            prefix = `${obj.quan} `;
+        else
+            prefix = "some ";
+    } else if (obj.otyp === O.CORPSE) {
+        /* nothing */
+    } else if (objects[obj.otyp].oc_unique || obj.oartifact) {
+        xn_not_ported('the_unique_obj()/obj_is_pname()');
+    } else {
+        prefix = "a ";
+    }
+
+    if (cknown
+        && ((obj.otyp === O.BAG_OF_TRICKS || obj.otyp === O.HORN_OF_PLENTY)
+            ? (obj.spe === 0 && !known)
+            : ((Is_container(obj) || obj.otyp === O.STATUE)
+               && !Has_contents(obj))))
+        prefix += "empty ";
+
+    if (bknown && obj.oclass !== O.COIN_CLASS
+        && (obj.otyp !== O.POT_WATER || !objects[O.POT_WATER].oc_name_known
+            || (!obj.cursed && !obj.blessed))) {
+        if (obj.cursed)
+            prefix += "cursed ";
+        else if (obj.blessed)
+            prefix += "blessed ";
+        else if (!(game.flags?.implicit_uncursed ?? true)
+                 || ((!known || !objects[obj.otyp].oc_charged
+                      || obj.oclass === O.ARMOR_CLASS
+                      || obj.oclass === O.RING_CLASS)
+                     && obj.otyp !== O.SCR_MAIL
+                     && obj.otyp !== O.FAKE_AMULET_OF_YENDOR
+                     && obj.otyp !== O.AMULET_OF_YENDOR
+                     && !Role_if_x(M.PM_CLERIC)))
+            prefix += "uncursed ";
+    }
+
+    if (Is_box(obj) && obj.otrapped && obj.tknown && obj.dknown)
+        prefix += "trapped ";
+    if (lknown && Is_box(obj)) {
+        if (obj.obroken)
+            prefix += "broken ";
+        else if (obj.olocked)
+            prefix += "locked ";
+        else
+            prefix += "unlocked ";
+    }
+
+    if (obj.greased)
+        prefix += "greased ";
+
+    if (cknown && Has_contents(obj))
+        xn_not_ported('count_contents()');
+
+    if (obj.owornmask)
+        xn_not_ported('worn/wielded suffixes');
+
+    switch (is_weptool(obj) ? O.WEAPON_CLASS : obj.oclass) {
+    case O.AMULET_CLASS:
+        break;
+    case O.ARMOR_CLASS:
+        /* FALLTHROUGH */
+    case O.WEAPON_CLASS:
+        if (ispoisoned)
+            prefix += "poisoned ";
+        prefix = add_erosion_words(obj, prefix);
+        if (known)
+            prefix += `${obj.spe >= 0 ? "+" : ""}${obj.spe} `;
+        break;
+    case O.TOOL_CLASS:
+        if (obj.otyp === O.LEASH && obj.leashmon)
+            xn_not_ported('leash suffix');
+        if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
+            xn_not_ported('candelabrum suffix');
+        } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
+                   || obj.otyp === O.BRASS_LANTERN || Is_candle_x(obj)) {
+            if (Is_candle_x(obj))
+                xn_not_ported('partly used candles');
+            if (obj.lamplit)
+                bp += " (lit)";
+            break;
+        }
+        if (objects[obj.otyp].oc_charged && known)
+            bp += ` (${obj.recharged | 0}:${obj.spe})`;
+        break;
+    case O.WAND_CLASS:
+        if (known)
+            bp += ` (${obj.recharged | 0}:${obj.spe})`;
+        break;
+    case O.POTION_CLASS:
+        if (obj.otyp === O.POT_OIL && obj.lamplit)
+            bp += " (lit)";
+        break;
+    case O.RING_CLASS:
+        if (known && objects[obj.otyp].oc_charged)
+            prefix += `${obj.spe >= 0 ? "+" : ""}${obj.spe} `;
+        break;
+    case O.FOOD_CLASS:
+        if (obj.oeaten)
+            prefix += "partly eaten ";
+        if (obj.otyp === O.CORPSE)
+            xn_not_ported('corpse_xname()');
+        else if (obj.otyp === O.EGG && omndx_ok(obj.corpsenm))
+            xn_not_ported('egg monster names');
+        else if (obj.otyp === O.MEAT_RING)
+            xn_not_ported('meat ring');
+        break;
+    case O.BALL_CLASS:
+    case O.CHAIN_CLASS:
+        prefix = add_erosion_words(obj, prefix);
+        break;
+    }
+
+    if (with_price)
+        xn_not_ported('shop prices');
+
+    if (prefix.startsWith("a ")) {
+        const tmpbuf = prefix.slice(2);
+        prefix = just_an(tmpbuf ? tmpbuf : bp) + tmpbuf;
+    }
+    return prefix + bp; /* strprepend(bp, prefix) */
+}
+
+function omndx_ok(n) { return n != null && n >= 0; }
+// C ref: role.h Role_if()
+function Role_if_x(pm) { return game.urole?.mnum === pm; }
+// C ref: obj.h Is_candle()
+function Is_candle_x(otmp) {
+    return otmp.otyp === O.TALLOW_CANDLE || otmp.otyp === O.WAX_CANDLE;
+}
+// C ref: objclass.h GemStone()
+function GemStone_x(typ) {
+    return typ === O.FLINT
+        || (objects[typ].oc_material === O.GEMSTONE
+            && typ !== O.DILITHIUM_CRYSTAL && typ !== O.RUBY
+            && typ !== O.DIAMOND && typ !== O.SAPPHIRE
+            && typ !== O.BLACK_OPAL && typ !== O.EMERALD
+            && typ !== O.OPAL);
 }

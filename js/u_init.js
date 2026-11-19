@@ -30,6 +30,7 @@ function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
 import { init_uhunger } from './eat.js';
 import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
+import { assigninvlet, reorder_invent } from './invent.js';
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
 // Every numeric field reads as 0, nested structs are zero-filled objects.
@@ -734,18 +735,26 @@ function discover_object(oindx, mark_as_known, mark_as_encountered,
     }
 }
 
-// C ref: invent.c addinv() -- appends to the hero's inventory chain;
-// merging with an existing stack and inventory letters are not ported yet
+// C ref: invent.c addinv(), addinv_core0() -- inventory letter and chain
+// insertion; merging with an existing stack (merged()), addinv_core1/2()
+// side effects and update_inventory() are not ported yet
 export function addinv(obj) {
-    obj.where = 'OBJ_INVENT';
-    obj.nobj = null;
-    if (!game.invent) {
+    /* merge with quiver / other inventory (merged()) -- not ported yet */
+    let prev = null;
+    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
+        prev = otmp;
+    /* didn't merge, so insert into chain */
+    assigninvlet(obj);
+    if ((game.flags?.invlet_constant ?? true) || !prev) {
+        obj.nobj = game.invent; /* insert at beginning */
         game.invent = obj;
+        if (game.flags?.invlet_constant ?? true)
+            reorder_invent();
     } else {
-        let otmp = game.invent;
-        while (otmp.nobj) otmp = otmp.nobj;
-        otmp.nobj = obj;
+        prev.nobj = obj; /* insert at end */
+        obj.nobj = null;
     }
+    obj.where = 'OBJ_INVENT';
     return obj;
 }
 

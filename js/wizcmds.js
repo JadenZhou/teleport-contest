@@ -9,10 +9,11 @@
 import { game } from './gstate.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
-import { MAXULEV } from './const.js';
+import { MAXULEV, IRONBARS, ICE, Is_airlevel, Is_waterlevel } from './const.js';
 import { rn1 } from './rng.js';
 import { readobjnam } from './objnam.js';
 import { addinv } from './u_init.js';
+import { prinv } from './invent.js';
 import * as O from './objects.js';
 
 // C ref: wizcmds.c wiz_level_change() -- #levelchange
@@ -75,10 +76,16 @@ async function hold_another_object(obj, drop_fmt, drop_arg, hold_msg) {
         throw new Error('hold_another_object(): wished-for corpse is not ported yet');
     /* prev_encumbr = near_capacity() ...; inv_cnt()/near_capacity() drop
        check -- not ported yet */
+    const oquan = obj.quan;
     obj = addinv(obj); /* addinv_core0(obj, NULL, FALSE) */
-    /* setuqwep() for autoquiver; prinv(hold_msg, obj, oquan);
-       update_inventory(); encumber_msg() -- not ported yet */
-    void drop_fmt; void drop_arg; void hold_msg;
+    /* if (flags.autoquiver && !uquiver && !obj->owornmask
+           && (is_missile(obj) || ammo_and_launcher(obj, uwep)
+               || ammo_and_launcher(obj, uswapwep)))
+           setuqwep(obj); -- not ported yet */
+    if (hold_msg || drop_fmt)
+        await prinv(hold_msg, obj, oquan);
+    /* update_inventory(); encumber_msg() -- not ported yet */
+    void drop_arg;
     return obj;
 }
 
@@ -143,9 +150,20 @@ async function makewish() {
         throw new Error('makewish(): corpse wishes (u_safe_from_fatal_corpse) are not ported yet');
     if (u.uswallow || u.uinwater)
         throw new Error('makewish(): wishing while engulfed/underwater is not ported yet');
-    /* verb / oops_msg: "drop", "Oops!  %s to the floor!" or "... away
-       from you!"; The(aobjnam(otmp, verb)) -- not ported yet */
-    await hold_another_object(otmp, null, null, null);
+    /* verb: "slip" / "materialize" / "drop" -- only used by
+       The(aobjnam(otmp, verb)), which is not ported yet (it is the
+       drop_arg, shown only on the drop path that throws above) */
+    const typ = g.level.at(u.ux, u.uy).typ;
+    const oops_msg = (u.uswallow
+                      ? "Oops!  %s out of your reach!"
+                      : (Is_airlevel(u.uz) || Is_waterlevel(u.uz)
+                         || typ < IRONBARS || typ >= ICE)
+                        ? "Oops!  %s away from you!"
+                        : !(otmp.otyp === O.CORPSE && otmp.wishedfor)
+                          ? "Oops!  %s to the floor!"
+                          : "Careful! %s on the floor!");
+
+    await hold_another_object(otmp, oops_msg, null, null);
     u.ublesscnt += rn1(100, 50); /* the gods take notice */
     void oldwisharti;
 }
