@@ -60,7 +60,7 @@ const ext_funcs = {
 };
 
 // C ref: cmd.c doextcmd() -- here is the main command dispatcher for
-// the extended commands
+// the extended commands (not bound to '#' in rhack() yet)
 async function doextcmd() {
     let idx, retval, func;
 
@@ -113,23 +113,6 @@ function blocksMove(x, y) {
     return false;
 }
 
-// C ref: hacklib.c visctrl() -- make a control or meta character visible
-function visctrl(c) {
-    let s = '';
-    if (c & 0o200) {
-        s += 'M-';
-        c &= 0o177;
-    }
-    if (c < 0o40) {
-        s += '^' + String.fromCharCode(c | 0o100); /* letter */
-    } else if (c === 0o177) {
-        s += '^?';
-    } else {
-        s += String.fromCharCode(c);
-    }
-    return s;
-}
-
 // C ref: cmd.c rhack — main command dispatcher
 export async function rhack(key) {
     if (key === 0) {
@@ -159,20 +142,18 @@ export async function rhack(key) {
         /* C ref: cmd.c Cmd ^V (wizard mode) -> wizcmds.c wiz_level_tele() */
         await level_tele();
         game.context.move = 0; /* ECMD_OK */
-    } else if (ch === '#') {
-        /* C ref: cmd.c Cmd '#' -> doextcmd() */
-        game.context.move = (await doextcmd()) ? 1 : 0;
     } else if (ch === '.') {
         /* C ref: cmd.c Cmd '.' -> donull(); ECMD_TIME takes a move */
         game.context.move = (await donull()) ? 1 : 0;
-    } else if (ch === 's') {
-        /* C ref: cmd.c Cmd 's' -> dosearch(); ECMD_TIME takes a move */
-        game.context.move = (await dosearch()) ? 1 : 0;
     } else {
-        // Unknown command
+        /* every other command is not ported yet ('#' doextcmd() and 's'
+           dosearch() wait for the tutorial query, without which keys
+           typed at it would reach the command loop), and neither are the
+           prompts and windows whose keys would otherwise arrive here.
+           C's "Unknown command '%s'." for keys missing from cmdlist[] is
+           left out until the key bindings (cmd.c reset_commands()) are
+           ported -- nothing happens */
         game.context.move = 0;
-        /* custompline(SUPPRESS_HISTORY, ...) */
-        await pline(`Unknown command '${visctrl(key)}'.`);
     }
 }
 
