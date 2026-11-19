@@ -8,7 +8,7 @@
 import { game } from './gstate.js';
 import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
-import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
+import { init_rect, rnd_rect, get_rect, split_rects, within_bounded_area } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
 import { Is_branchlev, In_hell, level_difficulty, on_level, dungeon_branch,
          dunlev, dunlevs_in_dungeon, Is_special,
@@ -36,7 +36,8 @@ import {
     SPACE_POS, isok, W_NONDIGGABLE, FILL_NORMAL,
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
-    LR_UPTELE, NHL_SB_SAFE, G_GONE, SHOPBASE, COURT, LEPREHALL, ZOO, TEMPLE,
+    LR_UPTELE, LR_TELE, LR_DOWNTELE, LR_BRANCH, LR_PORTAL, LR_DOWNSTAIR,
+    LR_UPSTAIR, AIR, MAX_TYPE, NHL_SB_SAFE, G_GONE, SHOPBASE, COURT, LEPREHALL, ZOO, TEMPLE,
     BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST, DUST, MARK,
     TAINT_AGE, MM_NOGRP, NO_MM_FLAGS, MKTRAP_NOFLAGS, MKTRAP_SEEN,
     MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_NOVICTIM,
@@ -58,7 +59,7 @@ import {
     mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
     CORPSTAT_INIT,
 } from './mkobj.js';
-import { mkclass, makemon } from './makemon.js';
+import { mkclass, makemon, m_at } from './makemon.js';
 import { shtypes } from './shknam.js';
 import {
     NO_TRAP, TRAPNUM, ARROW_TRAP, DART_TRAP, ROCKTRAP, SQKY_BOARD, LANDMINE,
@@ -99,49 +100,160 @@ function stairway_find_special_dir(up) {
 
 // ── Hero placement (C ref: stairs.c, mkmaze.c) ──
 
-function u_on_newpos(x, y) {
-    game.u.ux = x;
-    game.u.uy = y;
+// C ref: dungeon.c u_on_newpos()
+export function u_on_newpos(x, y) {
+    const u = game.u;
+    if (!isok(x, y)) /* validate location */
+        throw new Error(`u_on_newpos: trying to place hero off map <${x},${y}>`);
+    u.ux = x;
+    u.uy = y;
+    /* cliparound(u.ux, u.uy): CLIPPING is display only */
+    u.uundetected = 0;
+    /* ridden steed always shares hero's location */
+    if (u.usteed)
+        u.usteed.mx = u.ux, u.usteed.my = u.uy;
+    /* when changing levels, don't leave old position set with
+       stale values from previous level */
+    if (u.uz0 && !on_level(u.uz, u.uz0)) {
+        u.ux0 = u.ux, u.uy0 = u.uy;
+        /* map_location(u.ux, u.uy, FALSE): display only, the arrival
+           docrt() redraws the map */
+        if (game.iflags) game.iflags.terrain_typ = MAX_TYPE; /* "none of the above" value */
+    } else {
+        /* see_nearby_objects(): display only */
+    }
+    /* earth_sense(): no rolls; buried-object feedback isn't ported yet */
 }
 
-// C ref: mkmaze.c bad_location — simplified for skeleton
-function bad_location(x, y, nlx, nly, nhx, nhy) {
-    const loc = game.level?.at(x, y);
-    if (!loc) return true;
-    // Excluded region
-    if (nlx && x >= nlx && x <= nhx && y >= nly && y <= nhy) return true;
-    // Must be ROOM or (CORR in maze)
-    if (loc.typ !== ROOM && !(loc.typ === CORR && game.level?.flags?.is_maze_lev))
-        return true;
+// C ref: mkmaze.c is_exclusion_zone()
+function is_exclusion_zone(type, x, y) {
+    let ez = game.exclusion_zones;
+
+    while (ez) {
+        if (((type === LR_DOWNTELE
+              && (ez.zonetype === LR_DOWNTELE || ez.zonetype === LR_TELE))
+             || (type === LR_UPTELE
+                 && (ez.zonetype === LR_UPTELE || ez.zonetype === LR_TELE))
+             || type === ez.zonetype)
+            && within_bounded_area(x, y, ez.lx, ez.ly, ez.hx, ez.hy))
+            return true;
+        ez = ez.next;
+    }
     return false;
 }
 
-// C ref: mkmaze.c place_lregion — place hero (LR_UPTELE/LR_DOWNTELE)
-export function place_lregion(lx, ly, hx, hy, nlx, nly, nhx, nhy, rtype, lev) {
-    if (!lx) {
-        lx = 1; hx = COLNO - 1; ly = 0; hy = ROWNO - 1;
-    }
-    if (lx < 1) lx = 1;
-    if (hx > COLNO - 1) hx = COLNO - 1;
-    if (ly < 0) ly = 0;
-    if (hy > ROWNO - 1) hy = ROWNO - 1;
+// C ref: mkmaze.c bad_location()
+/*
+ * Bad if:
+ *      pos is occupied OR
+ *      pos is inside restricted region (nlx,nly,nhx,nhy) OR
+ *      NOT (pos is corridor and a maze level OR pos is a room OR pos is air)
+ */
+function bad_location(x, y, nlx, nly, nhx, nhy) {
+    const typ = game.level.at(x, y).typ;
+    return !!(occupied(x, y)
+              || within_bounded_area(x, y, nlx, nly, nhx, nhy)
+              || !((typ === CORR && game.level.flags.is_maze_lev)
+                   || typ === ROOM
+                   || typ === AIR));
+}
 
-    // Probabilistic search
-    for (let trycnt = 0; trycnt < 200; trycnt++) {
-        const x = rn1((hx - lx) + 1, lx);
-        const y = rn1((hy - ly) + 1, ly);
-        if (!bad_location(x, y, nlx, nly, nhx, nhy)) {
-            u_on_newpos(x, y);
+// C ref: mkmaze.c place_lregion()
+/* pick a location in area (lx, ly, hx, hy) but not in (nlx, nly, nhx, nhy)
+   and place something (based on rtype) in that region */
+export function place_lregion(lx, ly, hx, hy, nlx, nly, nhx, nhy, rtype, lev) {
+    let trycnt;
+    let oneshot;
+    let x, y;
+
+    if (!lx) { /* default to whole level */
+        /*
+         * if there are rooms and this a branch, let place_branch choose
+         * the branch location (to avoid putting branches in corridors).
+         */
+        if (rtype === LR_BRANCH && game.level.nroom)
+            throw new Error('place_lregion(): LR_BRANCH not ported yet');
+
+        lx = 1; /* column 0 is not used */
+        hx = COLNO - 1;
+        ly = 0; /* 3.6.0 and earlier erroneously had 1 here */
+        hy = ROWNO - 1;
+    }
+
+    /* clamp the area to the map */
+    if (lx < 1)
+        lx = 1;
+    if (hx > COLNO - 1)
+        hx = COLNO - 1;
+    if (ly < 0)
+        ly = 0;
+    if (hy > ROWNO - 1)
+        hy = ROWNO - 1;
+
+    /* first a probabilistic approach */
+
+    oneshot = (lx === hx && ly === hy);
+    for (trycnt = 0; trycnt < 200; trycnt++) {
+        x = rn1((hx - lx) + 1, lx);
+        y = rn1((hy - ly) + 1, ly);
+        if (put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, oneshot, lev))
             return;
+    }
+
+    /* then a deterministic one */
+
+    for (x = lx; x <= hx; x++)
+        for (y = ly; y <= hy; y++)
+            if (put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, true, lev))
+                return;
+
+    /* impossible("Couldn't place lregion type %d!", rtype) */
+}
+
+// C ref: mkmaze.c put_lregion_here()
+function put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, oneshot, lev) {
+    let mtmp;
+
+    if (bad_location(x, y, nlx, nly, nhx, nhy)
+        || is_exclusion_zone(rtype, x, y)) {
+        if (!oneshot) {
+            return false; /* caller should try again */
+        } else {
+            /* Must make do with the only location possible;
+               avoid failure due to a misplaced trap.
+               It might still fail if there's a dungeon feature here. */
+            const t = t_at(x, y);
+
+            if (t)
+                throw new Error('put_lregion_here(): deltrap() not ported yet');
+            if (bad_location(x, y, nlx, nly, nhx, nhy)
+                || is_exclusion_zone(rtype, x, y))
+                return false;
         }
     }
-    // Deterministic fallback
-    for (let x = lx; x <= hx; x++)
-        for (let y = ly; y <= hy; y++)
-            if (!bad_location(x, y, nlx, nly, nhx, nhy)) {
-                u_on_newpos(x, y);
-                return;
-            }
+    switch (rtype) {
+    case LR_TELE:
+    case LR_UPTELE:
+    case LR_DOWNTELE:
+        /* "something" means the player in this case */
+        if ((mtmp = m_at(x, y)) != null) {
+            /* move the monster if no choice, or just try again */
+            if (oneshot)
+                throw new Error('put_lregion_here(): rloc() not ported yet');
+            else
+                return false;
+        }
+        u_on_newpos(x, y);
+        break;
+    case LR_PORTAL:
+        throw new Error('put_lregion_here(): mkportal() not ported yet');
+    case LR_DOWNSTAIR:
+    case LR_UPSTAIR:
+        throw new Error('put_lregion_here(): mkstairs() not ported yet');
+    case LR_BRANCH:
+        throw new Error('put_lregion_here(): place_branch() not ported yet');
+    }
+    return true;
 }
 
 // C ref: stairs.c u_on_upstairs — place hero on upstairs or fallback
