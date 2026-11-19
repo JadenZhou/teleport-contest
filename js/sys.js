@@ -52,6 +52,11 @@ export function authorize_explore_mode() {
     return false;
 }
 
+// C ref: pline.c You() -- pline() with "You " prepended
+async function You(line) {
+    await pline(`You ${line}`);
+}
+
 // C ref: unixmain.c wd_message()
 export async function wd_message() {
     const sysopt = game.sysopt;
@@ -60,14 +65,14 @@ export async function wd_message() {
         if (sysopt.wizards && sysopt.wizards[0]) {
             throw new Error('wd_message(): build_english_list() not ported yet');
         } else {
-            await pline("You cannot access debug (wizard) mode."); /* You() */
+            await You("cannot access debug (wizard) mode.");
         }
         game.flags.debug = false; /* (paranoia) */
         if (!game.iflags.explore_error_flag)
             await pline("Entering explore/discovery mode instead.");
     } else if (game.iflags.explore_error_flag) {
-        await pline("You cannot access explore mode."); /* same as enter_explore_mode */
+        await You("cannot access explore mode."); /* same as enter_explore_mode */
         game.flags.explore = game.iflags.deferred_X = false; /* (more paranoia) */
     } else if (game.flags.explore)
-        await pline("You are in non-scoring explore/discovery mode."); /* You() */
+        await You("are in non-scoring explore/discovery mode.");
 }
