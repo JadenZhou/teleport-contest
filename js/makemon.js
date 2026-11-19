@@ -6,7 +6,7 @@
 // peace_minded, set_malign; muse.c rnd_{defensive,offensive,misc}_item;
 // teleport.c goodpos.
 //
-// Not ported yet: m_initgrp (groups), enexto, newcham (shapechangers),
+// Not ported yet: m_initgrp (groups), newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm segments, qt_montype() for the quest.
 
 import { game } from './gstate.js';
@@ -38,6 +38,8 @@ import {
     is_bat,
 } from './mondata.js';
 import { engr_at } from './engrave.js';
+import { enexto_core } from './teleport.js';
+import { newedog } from './dog.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -405,7 +407,7 @@ function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
 function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function likes_gold(ptr) { return (ptr.mflags2 & M.M2_GREEDY) !== 0; }
 function likes_gems(ptr) { return (ptr.mflags2 & M.M2_JEWELS) !== 0; }
-function is_domestic(ptr) { return (ptr.mflags2 & M.M2_DOMESTIC) !== 0; }
+export function is_domestic(ptr) { return (ptr.mflags2 & M.M2_DOMESTIC) !== 0; }
 function always_peaceful(ptr) { return (ptr.mflags2 & M.M2_PEACEFUL) !== 0; }
 function always_hostile(ptr) { return (ptr.mflags2 & M.M2_HOSTILE) !== 0; }
 function race_peaceful(ptr) { return (ptr.mflags2 & game.urace.lovemask) !== 0; }
@@ -1579,9 +1581,12 @@ export function makemon(ptr, x, y, mmflags) {
         x = cc.x;
         y = cc.y;
     } else if (byyou && !game.in_mklev) {
-        /* enexto_core(): not ported yet (no caller outside mklev yet) */
-        impossible('makemon: enexto_core not ported');
-        return null;
+        if (!enexto_core(cc, game.u.ux, game.u.uy, ptr, gpflags)
+            && !enexto_core(cc, game.u.ux, game.u.uy, ptr,
+                            gpflags & ~GP_CHECKSCARY))
+            return null;
+        x = cc.x;
+        y = cc.y;
     }
 
     /* sanity check */
@@ -1592,8 +1597,11 @@ export function makemon(ptr, x, y, mmflags) {
 
     /* Does monster already exist at the position? */
     if (MON_AT(x, y)) {
-        /* MM_ADJACENTOK -> enexto_core(): not ported yet */
-        return null;
+        if (!(mmflags & MM_ADJACENTOK)
+            || !enexto_core(cc, x, y, ptr, gpflags))
+            return null;
+        x = cc.x;
+        y = cc.y;
     }
 
     if (ptr) {
@@ -1638,7 +1646,7 @@ export function makemon(ptr, x, y, mmflags) {
     if (mmflags & MM_EPRI) mtmp.epri = {};  /* newepri() */
     if (mmflags & MM_ESHK) mtmp.eshk = {};  /* neweshk() */
     if (mmflags & MM_EMIN) mtmp.emin = {};  /* newemin() */
-    if (mmflags & MM_EDOG) mtmp.edog = {};  /* newedog() */
+    if (mmflags & MM_EDOG) newedog(mtmp);
     if (mmflags & MM_ASLEEP)
         mtmp.msleeping = 1;
     mtmp.nmon = game.fmon;
@@ -1883,7 +1891,7 @@ function initworm(worm, wseg_count) {
 // C ref: worn.c m_dowear() -- wearing state only, no rolls; not ported yet
 function m_dowear(mon, creation) { }
 // C ref: steed.c put_saddle_on_mon()
-function put_saddle_on_mon(saddle, mtmp) {
+export function put_saddle_on_mon(saddle, mtmp) {
     if (!can_saddle(mtmp) || which_armor(mtmp, W_SADDLE)) {
         return;
     }

@@ -1,17 +1,22 @@
 // allmain.js — Main game loop.
-// C ref: allmain.c — newgame, moveloop, moveloop_core.
+// C ref: allmain.c — newgame, welcome, moveloop_preamble, moveloop,
+// moveloop_core.
 //
-// Uses fastforward.js for post-mklev RNG parity on seed8000.
+// Uses fastforward.js for per-turn RNG parity on seed8000 (fastforward_step).
 // Real mklev.js handles level generation for screen parity.
 
 import { game } from './gstate.js';
-import { rn2 } from './rng.js';
+import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init } from './nhlua.js';
 import { rhack } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
-import { fastforward_post_mklev, fastforward_step } from './fastforward.js';
+import { fastforward_step } from './fastforward.js';
+import { m_at } from './makemon.js';
+import { mnexto } from './teleport.js';
+import { makedog } from './dog.js';
+import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
 import { init_dungeons } from './dungeon.js';
@@ -19,9 +24,12 @@ import { mons, monst_globals_init, LOW_PM, NUMMONS, G_NOCORPSE } from './monster
 import { decl_globals_init } from './decl.js';
 import { sys_early_init } from './sys.js';
 import { role_init, genders, Hello } from './role.js';
-import { u_init_misc } from './u_init.js';
+import { u_init_misc, u_init_inventory_attrs, u_init_skills_discoveries,
+         money_cnt } from './u_init.js';
 import { align_str } from './insight.js';
-import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE } from './const.js';
+import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED } from './const.js';
+
+const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
 // C ref: allmain.c early_init()
 // Not ported yet: program_state_init(), runtime_info_init().
@@ -59,33 +67,33 @@ export async function newgame() {
     // Real mklev generates the level with correct room positions
     // Structural phase consumes RNG for rooms/corridors/doors/stairs
     await mklev();
-
-    // Fast-forward through post-mklev startup RNG calls.
-    // Covers: u_init_role, ini_inv, attributes, moveloop_preamble.
-    fastforward_post_mklev();
-
-    // Hardcoded player state for seed8000 Tourist, standing in for
-    // u_init_inventory_attrs() (u_init_role(), ini_inv(), init_attr(),
-    // find_ac()), which is not ported yet. Hit points, energy, level,
-    // alignment, role and race now come from role_init()/u_init_misc().
-    g._goldCount = 757;
-    g.u.uac = 10;
-    g.u.acurr = { a: [9, 14, 12, 11, 16, 16] };
-    g.u.amax = { a: [9, 14, 12, 11, 16, 16] };
-    g.moves = 1; /* u_init_role() */
-
-    // C ref: allmain.c newgame() → u_on_upstairs()
-    // Places hero on upstair, or special stair, or random room position.
     u_on_upstairs();
+    init_vision_globals();   /* C: vision_init() at program startup */
+    vision_reset();          /* set up internals for level (after mklev) */
+    /* check_special_room(FALSE): no special room is entered on arrival
+       at level 1 yet -- not ported yet (hack.c) */
 
-    // Initial display
-    init_vision_globals();
-    vision_reset();
+    if (MON_AT(g.u.ux, g.u.uy))
+        mnexto(m_at(g.u.ux, g.u.uy), RLOC_NOMSG);
+    makedog();
+
+    u_init_inventory_attrs();
+    /* the status line's gold: botl.c shows money_cnt(invent) */
+    g._goldCount = money_cnt(g.invent);
     vision_recalc(0);
     await cls();
     await docrt();
     await flush_screen(1);
     await bot();
+    /* while (u.uroleplay.reroll && reroll_menu()): reroll is not ported */
+    u_init_skills_discoveries();
+
+    /* if (wizard) { read_wizkit(); obj_delivery(FALSE); }: wizard mode
+       isn't ported yet */
+
+    if (g.flags.legacy) {
+        com_pager(g.u.uroleplay.pauper ? "pauper_legacy" : "legacy");
+    }
 
     /* Success! */
     await welcome(true);
@@ -162,8 +170,46 @@ export async function moveloop_core() {
     }
 }
 
+// C ref: allmain.c moveloop_preamble()
+export function moveloop_preamble(resuming) {
+    const g = game;
+    const u = g.u;
+
+    /* if (resuming && iflags.deferred_X) enter_explore_mode(): restore
+       isn't ported yet */
+
+    /* side-effects from the real world: phase_of_the_moon() and
+       friday_13th() (calendar.c) with their luck changes and messages
+       are not ported yet */
+
+    if (!resuming) { /* new game */
+        g.program_state.beyond_savefile_load = 1; /* for TTY_PERM_INVENT */
+        g.context.rndencode = rnd(9000);
+        /* set_wear((struct obj *) 0): side-effects of starting gear;
+           reset_justpicked(gi.invent); (void) pickup(1): autopickup at
+           initial location -- not ported yet */
+        /* only matters if someday a character is able to start with
+           clairvoyance (wizard with cornuthaum perhaps?); without this,
+           first "random" occurrence would always kick in on turn 1 */
+        g.context.seer_turn = rnd(30);
+        /* give hero initial movement points; new game only--for restore,
+           pending movement points were included in the save file */
+        u.umovement = NORMAL_SPEED;
+        /* initrack(): not ported yet */
+    }
+    g.disp_botlx = true; /* for STATUS_HILITES */
+    /* resuming: read_engr_at(), fix_shop_damage(); encumber_msg();
+       deferred see_monsters() -- not ported yet */
+
+    u.uz0.dlevel = u.uz.dlevel;
+    g.context.move = 0;
+
+    g.program_state.in_moveloop = 1;
+}
+
 // C ref: allmain.c moveloop()
 export async function moveloop(resuming) {
+    moveloop_preamble(resuming);
     vision_recalc(0);
     await docrt();
     await flush_screen(1);

@@ -38,6 +38,7 @@ import { nhlib_lua } from './nhlib_lua.js';
 import { dungeon_lua } from './dungeon_lua.js';
 import { nhcore_lua } from './nhcore_lua.js';
 import { themerms_lua } from './themerms_lua.js';
+import { quest_lua } from './quest_lua.js';
 import { l_register_des } from './sp_lev.js';
 import { l_selection_register } from './selvar.js';
 import { level_difficulty } from './dungeon.js';
@@ -293,6 +294,7 @@ const nhl_lua_files = {
     'dungeon.lua': dungeon_lua,
     'nhcore.lua': nhcore_lua,
     'themerms.lua': themerms_lua,
+    'quest.lua': quest_lua,
 };
 
 // C ref: nhlua.c nhlL_newstate()
