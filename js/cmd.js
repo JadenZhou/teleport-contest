@@ -11,6 +11,16 @@ import { newsym, flush_screen, pline } from './display.js';
 import { vision_recalc } from './vision.js';
 import { tty_clear_nhwindow } from './wintty.js';
 import { dosearch } from './detect.js';
+import { cmd_safety_prevention } from './hack.js';
+
+// C ref: do.c donull() -- '.' command: do nothing == rest
+async function donull() {
+    if (await cmd_safety_prevention("Waiting", "a no-op (to rest)",
+                                    "Are you waiting to get hit?",
+                                    "did_nothing_flag"))
+        return 0; /* ECMD_OK */
+    return 1; /* ECMD_TIME: Do nothing, but let other things happen */
+}
 import { COLNO, ROWNO, STONE, DOOR, D_CLOSED, D_LOCKED,
          IS_WALL, IS_OBSTRUCTED } from './const.js';
 
@@ -50,6 +60,9 @@ export async function rhack(key) {
     if (isMovementKey(ch)) {
         await domove(DIR_DX[ch], DIR_DY[ch]);
         game.context.move = 1;
+    } else if (ch === '.') {
+        /* C ref: cmd.c Cmd '.' -> donull(); ECMD_TIME takes a move */
+        game.context.move = (await donull()) ? 1 : 0;
     } else if (ch === 's') {
         /* C ref: cmd.c Cmd 's' -> dosearch(); ECMD_TIME takes a move */
         game.context.move = (await dosearch()) ? 1 : 0;
