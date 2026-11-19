@@ -19,6 +19,8 @@ import { plnamesuffix } from './role.js';
 import { tty_init_nhwindows, tty_player_selection } from './wintty.js';
 import { flush_screen } from './display.js';
 import { GameDisplay } from './game_display.js';
+import { fruitadd } from './objnam.js';
+import { objects, OBJ_NAME, SLIME_MOLD } from './objects.js';
 
 // ── NethackGame ──
 // Wraps a single game session with replay infrastructure.
@@ -114,6 +116,11 @@ export class NethackGame {
         g.u = { ux: 0, uy: 0, ux0: 0, uy0: 0, uroleplay: {} };
         g.context = { move: 0 };
         g.program_state = {};
+        /* C ref: options.c initoptions_init() -- default fruit name;
+           initoptions_finish() -- fruitadd(pl_fruit) */
+        g.pl_fruit = OBJ_NAME(objects[SLIME_MOLD]);
+        g.ffruit = null;
+        fruitadd(g.pl_fruit, null);
         g.moves = 0; /* C: svm.moves stays 0 until u_init_role() sets it to 1 */
 
         // Initialize PRNG

@@ -18,6 +18,97 @@ import { objects, RIN_SLOW_DIGESTION, MEAT_RING, RIN_PROTECTION,
          FAKE_AMULET_OF_YENDOR } from './objects.js';
 import { near_capacity } from './hack.js';
 import { ACURR } from './attrib.js';
+import * as M from './monsters.js';
+import { mons } from './monsters.js';
+import { SPINACH_TIN, ROTTEN_TIN, HOMEMADE_TIN, NON_PM, NEUTRAL } from './const.js';
+
+// C ref: eat.c tintxts[] (only the names are used so far)
+const tintxts = [
+    "rotten", /* ROTTEN_TIN = 0 */
+    "homemade", /* HOMEMADE_TIN = 1 */
+    "soup made from", "french fried", "pickled", "boiled", "smoked",
+    "dried", "deep fried", "szechuan", "broiled", "stir fried", "sauteed",
+    "candied", "pureed", "",
+];
+const TTSZ = tintxts.length;
+
+/* C ref: mondata.h is_rider(), vegan(), vegetarian() */
+function is_rider_pm(mnum) {
+    return mnum === M.PM_DEATH || mnum === M.PM_FAMINE || mnum === M.PM_PESTILENCE;
+}
+function vegan(ptr) {
+    return (ptr.mlet === M.S_BLOB || ptr.mlet === M.S_JELLY
+            || ptr.mlet === M.S_FUNGUS || ptr.mlet === M.S_VORTEX
+            || ptr.mlet === M.S_LIGHT
+            || ((ptr.mlet === M.S_ELEMENTAL && ptr !== mons[M.PM_STALKER]))
+            || (ptr.mlet === M.S_GOLEM && ptr !== mons[M.PM_FLESH_GOLEM]
+                && ptr !== mons[M.PM_LEATHER_GOLEM])
+            || ptr.mlet === M.S_GHOST /* noncorporeal() */);
+}
+function vegetarian(ptr) {
+    return vegan(ptr)
+        || (ptr.mlet === M.S_PUDDING && ptr !== mons[M.PM_BLACK_PUDDING]);
+}
+/* C ref: eat.c nonrotting_corpse() */
+function nonrotting_corpse(mnum) {
+    return mnum === M.PM_LIZARD || mnum === M.PM_LICHEN
+        || is_rider_pm(mnum) || mnum === M.PM_ACID_BLOB;
+}
+
+// C ref: eat.c tin_variety()
+export function tin_variety(obj, displ /* we're just displaying */) {
+    let r;
+    const mnum = obj.corpsenm;
+
+    if (obj.spe === 1) {
+        r = SPINACH_TIN;
+    } else if (obj.cursed) {
+        r = ROTTEN_TIN; /* always rotten if cursed */
+    } else if (obj.spe < 0) {
+        r = -(obj.spe);
+        --r; /* get rid of the offset */
+    } else {
+        r = rn2(TTSZ - 1);
+    }
+
+    if (!displ && r === HOMEMADE_TIN && !obj.blessed && !rn2(7))
+        r = ROTTEN_TIN; /* some homemade tins go bad */
+
+    if (r === ROTTEN_TIN && (mnum >= M.LOW_PM && nonrotting_corpse(mnum)))
+        r = HOMEMADE_TIN; /* lizards don't rot */
+    return r;
+}
+
+// C ref: eat.c tin_details() -- returns the new buf (C edits it in
+// place); buf already contains the word "tin"
+export function tin_details(obj, mnum, buf) {
+    if (!obj || buf == null)
+        return buf;
+
+    const r = tin_variety(obj, true);
+
+    if (r === SPINACH_TIN)
+        buf += " of spinach";
+    else if (mnum === NON_PM)
+        buf = "empty tin";
+    else {
+        if ((obj.cknown || game.iflags?.override_ID) && obj.spe < 0) {
+            if (r === ROTTEN_TIN || r === HOMEMADE_TIN) {
+                /* put these before the word tin */
+                buf = `${tintxts[r]} ${buf} of `;
+            } else {
+                buf += ` of ${tintxts[r]} `;
+            }
+        } else {
+            buf += " of ";
+        }
+        if (vegetarian(mons[mnum]))
+            buf += mons[mnum].pmnames[NEUTRAL];
+        else
+            buf += `${mons[mnum].pmnames[NEUTRAL]} meat`;
+    }
+    return buf;
+}
 
 /* C ref: mondata.h carnivorous(), herbivorous(), metallivorous() */
 function carnivorous(ptr) { return (ptr.mflags1 & M1_CARNIVORE) !== 0; }

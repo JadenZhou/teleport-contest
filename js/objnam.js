@@ -36,6 +36,8 @@ import {
 } from './mondata.js';
 import { def_char_to_objclass } from './drawing.js';
 import { genders } from './role.js';
+import { artifact_name } from './artilist.js';
+import { tin_details } from './eat.js';
 import {
     mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
     is_rustprone, is_crackable, is_corrodeable, is_rottable, is_damageable,
@@ -303,6 +305,96 @@ function badman(basestr, to_plural) {
             return true;
     }
     return false;
+}
+
+// C ref: objnam.c fruit_from_indx()
+export function fruit_from_indx(indx) {
+    let f;
+
+    for (f = game.ffruit; f; f = f.nextf)
+        if (f.fid === indx)
+            break;
+    return f || null;
+}
+
+// C ref: objnam.c fruit_from_name() -- exact (strcmp) match part only;
+// the prefix/singular/plural fallbacks for !exact are not ported yet
+export function fruit_from_name(fname, exact, highest_fid) {
+    let f;
+
+    if (highest_fid)
+        highest_fid.v = 0;
+    /* first try for an exact match */
+    for (f = game.ffruit; f; f = f.nextf)
+        if (f.fname === fname)
+            return f;
+        else if (highest_fid && f.fid > highest_fid.v)
+            highest_fid.v = f.fid;
+
+    if (!exact && game.ffruit)
+        throw new Error('fruit_from_name(): inexact matching is not ported yet');
+    return null;
+}
+
+// C ref: options.c fruitadd() -- the user-specified (pl_fruit) case
+export function fruitadd(str, replace_fruit) {
+    const user_specified = (str === game.pl_fruit);
+    let f;
+
+    if (!user_specified || replace_fruit)
+        throw new Error('fruitadd(): bones/orctown fruit and replace_fruit are not ported yet');
+
+    /* force fruit to be singular */
+    game.pl_fruit = makesingular(str);
+    const pl_fruit = game.pl_fruit;
+
+    /* disallow naming after other foods (since it'd be impossible
+     * to tell the difference); globs might have a size prefix which
+     * needs to be skipped in order to match the object type name
+     */
+    const globpfx = (pl_fruit.startsWith("small ")
+                     || pl_fruit.startsWith("large ")) ? 6
+        : pl_fruit.startsWith("medium ") ? 7
+            : pl_fruit.startsWith("very large ") ? 11
+                : 0;
+    let found = false, numeric = false;
+    /* svb.bases[] is still zero when initoptions() runs before o_init() */
+    for (let i = game.bases?.[O.FOOD_CLASS] ?? 0;
+         objects[i] && objects[i].oc_class === O.FOOD_CLASS; i++) {
+        if (OBJ_NAME(objects[i]) === pl_fruit
+            || (globpfx > 0 && OBJ_NAME(objects[i]) === pl_fruit.slice(globpfx))) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        const c = pl_fruit.replace(/^[0-9]*/, '');
+        if (!c || c[0] === ' ')
+            numeric = true;
+    }
+    if (found || numeric
+        || pl_fruit.startsWith("cursed ") || pl_fruit.startsWith("uncursed ")
+        || pl_fruit.startsWith("blessed ") || pl_fruit.startsWith("partly eaten ")
+        || pl_fruit.startsWith("tin of ") || pl_fruit === "empty tin"
+        || pl_fruit === "glob" || / corpse$| egg$/.test(pl_fruit))
+        throw new Error('fruitadd(): candied/food-named fruit is not ported yet');
+
+    /* This flag indicates that a fruit has been made since the
+     * last time the user set the fruit. */
+    game.flags.made_fruit = false;
+
+    const hf = { v: 0 };
+    f = fruit_from_name(pl_fruit, false, hf); /* str aliases pl_fruit */
+    if (!f) {
+        if (hf.v >= 127)
+            throw new Error('fruitadd(): fruit overflow is not ported yet');
+        f = { fname: pl_fruit, fid: ++hf.v, nextf: game.ffruit };
+        /* simple insertion at start */
+        game.ffruit = f;
+    }
+    /* nonew: */
+    game.context.current_fruit = f.fid;
+    return f.fid;
 }
 
 // C ref: hacklib.c letter()
@@ -1635,8 +1727,67 @@ function readobjnam_postparse3(d) {
      * they are checked for last, after stripping all the possible
      * prefixes and seeing if there's a real name in there.
      */
-    if (game.ffruit)
-        not_ported('fruit name matching (gf.ffruit)');
+    /* Note: not strcmpi.  2 fruits, one capital, one not, are possible.
+       Also not strncmp. */
+    {
+        let fp, l, cntf;
+        let blessedf, iscursedf, uncursedf, halfeatenf;
+
+        blessedf = iscursedf = uncursedf = halfeatenf = 0;
+        cntf = 0;
+
+        fp = d.fruitbuf;
+        for (;;) {
+            if (!fp)
+                break;
+            if (!strncmpi(fp, "an ", l = 3) || !strncmpi(fp, "a ", l = 2)) {
+                cntf = 1;
+            } else if (!cntf && fp[0] >= '0' && fp[0] <= '9') {
+                cntf = parseInt(fp, 10);
+                fp = fp.replace(/^[0-9]+/, '').replace(/^ +/, '');
+                l = 0;
+            } else if (!strncmpi(fp, "blessed ", l = 8)) {
+                blessedf = 1;
+            } else if (!strncmpi(fp, "cursed ", l = 7)) {
+                iscursedf = 1;
+            } else if (!strncmpi(fp, "uncursed ", l = 9)) {
+                uncursedf = 1;
+            } else if (!strncmpi(fp, "partly eaten ", l = 13)
+                       || !strncmpi(fp, "partially eaten ", l = 16)) {
+                halfeatenf = 1;
+            } else
+                break;
+            fp = fp.slice(l);
+        }
+
+        for (let f = game.ffruit; f; f = f.nextf) {
+            /* match type: 0=none, 1=exact, 2=singular, 3=plural */
+            let ftyp = 0;
+
+            if (fp === f.fname)
+                ftyp = 1;
+            else if (fp === makesingular(f.fname))
+                ftyp = 2;
+            else if (fp === makeplural(f.fname))
+                ftyp = 3;
+            if (ftyp) {
+                d.typ = O.SLIME_MOLD;
+                d.blessed = blessedf;
+                d.iscursed = iscursedf;
+                d.uncursed = uncursedf;
+                d.halfeaten = halfeatenf;
+                /* adjust count if user explicitly asked for
+                   singular amount or for plural amount */
+                if (ftyp === 2 && !cntf)
+                    cntf = 1;
+                else if (ftyp === 3 && !cntf)
+                    cntf = 2;
+                d.cnt = cntf;
+                d.ftype = f.fid;
+                return 2; /*goto typfnd;*/
+            }
+        }
+    }
 
     if (!d.oclass && d.actualn) {
         /* Perhaps it's an artifact specified by name, not type */
@@ -2087,7 +2238,7 @@ function xname_flags(obj, cxn_flags) {
     let actualn = OBJ_NAME(ocl);
     let dn = OBJ_DESCR(ocl);
     const un = ocl.oc_uname;
-    const pluralize = (obj.quan !== 1) && !(cxn_flags & 1 /* CXN_SINGULAR */);
+    let pluralize = (obj.quan !== 1) && !(cxn_flags & 1 /* CXN_SINGULAR */);
     let buf = '';
 
     if (Role_if_x(M.PM_SAMURAI))
@@ -2175,13 +2326,31 @@ function xname_flags(obj, cxn_flags) {
             buf += dn;
         break;
     case O.FOOD_CLASS:
-        if (typ === O.SLIME_MOLD)
-            xn_not_ported('fruit names (fruit_from_indx)');
+        /* we could include partly-eaten-hack on fruit but don't need to */
+        if (typ === O.SLIME_MOLD) {
+            const f = fruit_from_indx(obj.spe);
+
+            if (!f) {
+                /* impossible("Bad fruit #%d?", obj->spe) */
+                buf = "fruit";
+            } else {
+                buf = f.fname;
+                if (pluralize) {
+                    /* already pluralized fruit names are allowed--we
+                       want to try to avoid adding a redundant plural
+                       suffix */
+                    buf = makesingular(buf);
+                    buf = makeplural(buf);
+                    pluralize = false;
+                }
+            }
+            break;
+        }
         if (obj.globby)
             xn_not_ported('globby food names');
         buf += actualn;
         if (typ === O.TIN && known)
-            xn_not_ported('tin_details()');
+            buf = tin_details(obj, omndx, buf);
         break;
     case O.COIN_CLASS:
     case O.CHAIN_CLASS:
@@ -2338,8 +2507,13 @@ function doname_base(obj, doname_flags) {
         ispoisoned = true;
     }
 
-    if (obj.otyp === O.SLIME_MOLD)
-        xn_not_ported('fake artifact fruit names (artifact_name)');
+    /* fruits are allowed to be given artifact names; when that happens,
+       format the name like the corresponding artifact, which may or may not
+       want "the" prefix and when it doesn't, avoid "a"/"an" prefix too */
+    let aname = null;
+    const fake_arti = (obj.otyp === O.SLIME_MOLD
+                       && (aname = artifact_name(bp, null, false)) !== null);
+    const force_the = (fake_arti && !strncmpi(aname, "the ", 4));
 
     if (obj.quan !== 1) {
         if (dknown || !vague_quan)
@@ -2348,9 +2522,14 @@ function doname_base(obj, doname_flags) {
             prefix = "some ";
     } else if (obj.otyp === O.CORPSE) {
         /* nothing */
+    } else if (force_the) {
+        if (!strncmpi(bp, "the ", 4))
+            bp = bp.slice(4);
+        prefix = "the ";
     } else if (objects[obj.otyp].oc_unique || obj.oartifact) {
         xn_not_ported('the_unique_obj()/obj_is_pname()');
-    } else {
+    } else if (!fake_arti) {
+        /* default prefix */
         prefix = "a ";
     }
 
