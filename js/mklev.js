@@ -51,7 +51,7 @@ import {
     SCR_ENCHANT_WEAPON, SCR_ENCHANT_ARMOR, SCR_CONFUSE_MONSTER,
     SCR_SCARE_MONSTER, WAN_DIGGING, SPE_HEALING, LARGE_BOX, CHEST,
     FOOD_RATION, CRAM_RATION, LEMBAS_WAFER,
-    ARROW, DART, TALLOW_CANDLE, WAX_CANDLE, objects,
+    ARROW, DART, TALLOW_CANDLE, WAX_CANDLE, objects, WAND_CLASS, SPBOOK_CLASS,
 } from './objects.js';
 import {
     SPBOOK_no_NOVEL, next_ident, blessorcurse, curse, mksobj, mksobj_at,
@@ -501,10 +501,174 @@ function mk_knox_portal(x, y) {
     place_branch(br, x, y);
 }
 
-// C ref: mkroom.c do_mkroom() — not ported yet (only reached below
-// dungeon level 1).
+// C ref: shknam.c shtypes[] — only the fields mkshop() reads so far
+// (symb, prob); names/iprobs/shknms belong with stock_room()/shkinit().
+const shtypes = [
+    { name: 'general store', symb: RANDOM_CLASS, prob: 42 },
+    { name: 'used armor dealership', symb: ARMOR_CLASS, prob: 14 },
+    { name: 'second-hand bookstore', symb: SCROLL_CLASS, prob: 10 },
+    { name: 'liquor emporium', symb: POTION_CLASS, prob: 10 },
+    { name: 'antique weapons outlet', symb: WEAPON_CLASS, prob: 5 },
+    { name: 'delicatessen', symb: FOOD_CLASS, prob: 5 },
+    { name: 'jewelers', symb: RING_CLASS, prob: 3 },
+    { name: 'quality apparel and accessories', symb: WAND_CLASS, prob: 3 },
+    { name: 'hardware store', symb: TOOL_CLASS, prob: 3 },
+    { name: 'rare books', symb: SPBOOK_CLASS, prob: 3 },
+    { name: 'health food store', symb: FOOD_CLASS, prob: 2 },
+    { name: 'lighting store', symb: TOOL_CLASS, prob: 0 },
+];
+
+// C ref: mkroom.c isbig()
+function isbig(sroom) {
+    const area = (sroom.hx - sroom.lx + 1)
+                        * (sroom.hy - sroom.ly + 1);
+
+    return (area > 20);
+}
+
+// C ref: mkroom.c do_mkroom()
 function do_mkroom(roomtype) {
-    console.error(`impossible: do_mkroom(${roomtype}) is not ported yet`);
+    if (roomtype >= SHOPBASE) {
+        mkshop(); /* someday, we should be able to specify shop type */
+    } else {
+        /* mkzoo()/mkswamp()/mktemple() are not ported yet */
+        console.error(`impossible: do_mkroom(${roomtype}) is not ported yet`);
+    }
+}
+
+// C ref: mkroom.c mkshop()
+function mkshop() {
+    const g = game;
+    let sroom;
+    let i = -1;
+    const ep = null; /* (wizard) nh_getenv("SHOPTYPE"): the JS port has no
+                      * environment */
+
+    /* gottype: */
+    for (let ri = 0;; ri++) {
+        sroom = g.level.rooms[ri];
+        /* return from this loop: cannot find any eligible room to be a shop
+         * continue: sroom is ineligible
+         * break: sroom is eligible
+         */
+        if (!sroom || sroom.hx < 0)
+            return;
+        if (ri >= g.level.nroom) {
+            console.error('impossible: rooms[] not closed by -1?');
+            return;
+        }
+        if (sroom.rtype !== OROOM)
+            continue;
+        if (has_dnstairs(sroom) || has_upstairs(sroom))
+            continue;
+        if (sroom.doorct === 1 || (is_wizard_mode() && ep && sroom.doorct !== 0)) {
+            if (invalid_shop_shape(sroom))
+                continue;
+            else
+                break;
+        }
+    }
+    if (!sroom.rlit) {
+        for (let x = sroom.lx - 1; x <= sroom.hx + 1; x++)
+            for (let y = sroom.ly - 1; y <= sroom.hy + 1; y++)
+                g.level.at(x, y).lit = 1;
+        sroom.rlit = 1;
+    }
+
+    if (i < 0) { /* shoptype not yet determined */
+        let j;
+
+        /* pick a shop type at random */
+        for (j = rnd(100), i = 0; (j -= shtypes[i].prob) > 0; i++)
+            continue;
+
+        /* big rooms cannot be wand or book shops,
+         * - so make them general stores
+         */
+        if (isbig(sroom) && (shtypes[i].symb === WAND_CLASS
+                             || shtypes[i].symb === SPBOOK_CLASS))
+            i = 0;
+    }
+    sroom.rtype = SHOPBASE + i;
+
+    /* set room bits before stocking the shop */
+    topologize(sroom);
+
+    /* The shop used to be stocked here, but this no longer happens--all we do
+       is set its rtype, and it gets stocked at the end of makelevel() along
+       with other special rooms. */
+    sroom.needfill = FILL_NORMAL;
+}
+
+// C ref: mkroom.c has_dnstairs()
+function has_dnstairs(sroom) {
+    let stway = game.stairs;
+
+    while (stway) {
+        if (!stway.up && inside_room(sroom, stway.sx, stway.sy))
+            return true;
+        stway = stway.next;
+    }
+    return false;
+}
+
+// C ref: mkroom.c has_upstairs()
+function has_upstairs(sroom) {
+    let stway = game.stairs;
+
+    while (stway) {
+        if (stway.up && inside_room(sroom, stway.sx, stway.sy))
+            return true;
+        stway = stway.next;
+    }
+    return false;
+}
+
+// C ref: mkroom.c invalid_shop_shape()
+function invalid_shop_shape(sroom) {
+    const doorx = game.level.doors[sroom.fdoor].x;
+    const doory = game.level.doors[sroom.fdoor].y;
+    let insidex = 0, insidey = 0, insidect = 0;
+
+    /* First, identify squares inside the room and next to the door. */
+    for (let x = Math.max(doorx - 1, sroom.lx);
+         x <= Math.min(doorx + 1, sroom.hx); x++) {
+        for (let y = Math.max(doory - 1, sroom.ly);
+             y <= Math.min(doory + 1, sroom.hy); y++) {
+            if (game.level.at(x, y).typ === ROOM) {
+                insidex = x;
+                insidey = y;
+                insidect++;
+            }
+        }
+    }
+    if (insidect < 1) {
+        console.error('impossible: invalid_shop_shape: no squares inside door?');
+        return true;
+    }
+    /* if insidect > 1, then the shopkeeper already has alternate
+     * squares to move to so we don't need to check further. */
+    if (insidect === 1) {
+        /* But if it is 1, scan all adjacent squares for other squares
+         * that are part of this room. */
+        insidect = 0;
+        for (let x = Math.max(insidex - 1, sroom.lx);
+             x <= Math.min(insidex + 1, sroom.hx); x++) {
+            for (let y = Math.max(insidey - 1, sroom.ly);
+                 y <= Math.min(insidey + 1, sroom.hy); y++) {
+                if (x === insidex && y === insidey)
+                    continue;
+                if (game.level.at(x, y).typ === ROOM)
+                    insidect++;
+            }
+        }
+        if (insidect === 1) {
+            /* shopkeeper standing just inside the door can only move
+             * to one other square; this cannot be a shop. */
+            return true;
+        }
+    }
+    return false;
 }
 
 // C ref: mkroom.c antholemon() — not ported yet (only reached below
