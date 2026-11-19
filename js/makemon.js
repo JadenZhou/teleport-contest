@@ -32,6 +32,17 @@ import {
     W_NONPASSWALL, D_CLOSED, D_LOCKED, P_POLEARMS, P_SHORT_SWORD, P_SABER,
     ALTAR, COLNO, ROWNO, isok, ACCESSIBLE, IS_STWALL, IS_DOOR,
 } from './const.js';
+import {
+    ROOMOFFSET, OBJ_AT, IS_WALL, SDOOR, SCORR, HWALL, TLCORNER, TRWALL, BLCORNER,
+    TDWALL, CROSSWALL, TUWALL, M_AP_OBJECT, M_AP_FURNITURE,
+    ZOO, VAULT, DELPHI, TEMPLE, SHOPBASE, FODDERSHOP,
+    TRUE, FALSE, Align2amask,
+} from './const.js';
+import { ROLL_FROM } from './rng.js';
+import { depth } from './dungeon.js';
+import { mkobj, rndmonnum, can_be_hatched } from './mkobj.js';
+import { t_at } from './trap.js';
+import { get_shop_item } from './shknam.js';
 import { mksobj, mkobj_at, curse, bless, next_ident, set_corpsenm } from './mkobj.js';
 import {
     monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
@@ -1646,7 +1657,10 @@ export function makemon(ptr, x, y, mmflags) {
 
     if (mmflags & MM_EGD) mtmp.egd = {};    /* newegd() */
     if (mmflags & MM_EPRI) mtmp.epri = {};  /* newepri() */
-    if (mmflags & MM_ESHK) mtmp.eshk = {};  /* neweshk() */
+    if (mmflags & MM_ESHK) {                /* neweshk() */
+        if (!mtmp.mextra) mtmp.mextra = {};
+        mtmp.mextra.eshk = { bill_p: null };
+    }
     if (mmflags & MM_EMIN) mtmp.emin = {};  /* newemin() */
     if (mmflags & MM_EDOG) newedog(mtmp);
     if (mmflags & MM_ASLEEP)
@@ -1861,9 +1875,182 @@ function m_initgrp(mtmp, x, y, n, mmflags) {
 function m_initsgrp(mtmp, x, y, mmflags) { m_initgrp(mtmp, x, y, 3, mmflags); }
 function m_initlgrp(mtmp, x, y, mmflags) { m_initgrp(mtmp, x, y, 10, mmflags); }
 
-// C ref: mondata.c set_mimic_sym() -- not ported yet (mimics don't
-// generate at the depths reached so far)
-function set_mimic_sym(mtmp) { impossible('set_mimic_sym not ported'); }
+// C ref: makemon.c syms[]
+const syms = [
+    O.MAXOCLASSES,  O.MAXOCLASSES,     O.RING_CLASS,   O.WAND_CLASS,   O.WEAPON_CLASS,
+    O.FOOD_CLASS,   O.COIN_CLASS,      O.SCROLL_CLASS, O.POTION_CLASS, O.ARMOR_CLASS,
+    O.AMULET_CLASS, O.TOOL_CLASS,      O.ROCK_CLASS,   O.GEM_CLASS,    O.SPBOOK_CLASS,
+    M.S_MIMIC_DEF,  M.S_MIMIC_DEF,
+];
+// C ref: defsym.h pchar indices used by set_mimic_sym()
+const S_vwall = 1, S_hwall = 2, S_vcdoor = 15, S_hcdoor = 16, S_upstair = 25,
+    S_dnstair = 26, S_altar = 33, S_grave = 34, S_throne = 35, S_sink = 36,
+    S_fountain = 37;
+
+// C ref: makemon.c set_mimic_sym()
+export function set_mimic_sym(mtmp) {
+    let typ, roomno, rt;
+    let appear, ap_type;
+    let s_sym;
+    let otmp;
+    let mx, my;
+    const levl = (x, y) => game.level.at(x, y);
+    let assign = false;
+
+    if (!mtmp /* || Protection_from_shape_changers */)
+        return;
+    mx = mtmp.mx;
+    my = mtmp.my;
+    typ = levl(mx, my).typ;
+    /* only valid for INSIDE of room */
+    roomno = levl(mx, my).roomno - ROOMOFFSET;
+    if (roomno >= 0)
+        rt = game.level.rooms[roomno].rtype;
+    else
+        rt = 0; /* roomno < 0 case for GCC_WARN */
+
+    if (OBJ_AT(mx, my)) {
+        ap_type = M_AP_OBJECT;
+        appear = game.level.objects.find(o => o.ox === mx && o.oy === my).otyp;
+    } else if (IS_DOOR(typ) || IS_WALL(typ) || typ === SDOOR || typ === SCORR) {
+        ap_type = M_AP_FURNITURE;
+        /*
+         *  If there is a wall to the left that connects to this
+         *  location, then the mimic mimics a horizontal closed door.
+         *  This does not allow doors to be in corners of rooms.
+         *  Since rogue has no closed doors, mimic a wall there
+         *  (yes, mimics can end up on this level by various means).
+         */
+        if (mx !== 0 && (levl(mx - 1, my).typ === HWALL
+                         || levl(mx - 1, my).typ === TLCORNER
+                         || levl(mx - 1, my).typ === TRWALL
+                         || levl(mx - 1, my).typ === BLCORNER
+                         || levl(mx - 1, my).typ === TDWALL
+                         || levl(mx - 1, my).typ === CROSSWALL
+                         || levl(mx - 1, my).typ === TUWALL))
+            appear = Is_rogue_level(game.u.uz) ? S_hwall : S_hcdoor;
+        else
+            appear = Is_rogue_level(game.u.uz) ? S_vwall : S_vcdoor;
+    } else if (game.level.flags.is_maze_lev
+               && !(In_mines(game.u.uz)
+                    && (() => { throw new Error('set_mimic_sym(): in_town() not ported yet'); })())
+               && !In_sokoban(game.u.uz) && rn2(2)) {
+        ap_type = M_AP_OBJECT;
+        appear = O.STATUE;
+    } else if (roomno < 0 && !t_at(mx, my)) {
+        ap_type = M_AP_OBJECT;
+        appear = O.BOULDER;
+    } else if (rt === ZOO || rt === VAULT) {
+        ap_type = M_AP_OBJECT;
+        appear = O.GOLD_PIECE;
+    } else if (rt === DELPHI) {
+        if (rn2(2)) {
+            ap_type = M_AP_OBJECT;
+            appear = O.STATUE;
+        } else {
+            ap_type = M_AP_FURNITURE;
+            appear = S_fountain;
+        }
+    } else if (rt === TEMPLE) {
+        ap_type = M_AP_FURNITURE;
+        appear = S_altar;
+
+    /*
+     * We won't bother with beehives, morgues, barracks, throne rooms
+     * since they shouldn't contain too many mimics anyway...
+     */
+
+    } else if (rt >= SHOPBASE) {
+        if (rn2(10) >= depth(game.u.uz)) {
+            s_sym = M.S_MIMIC_DEF; /* -> STRANGE_OBJECT */
+            assign = true; /* goto assign_sym */
+        } else {
+            s_sym = get_shop_item(rt - SHOPBASE);
+            if (s_sym < 0) {
+                ap_type = M_AP_OBJECT;
+                appear = -s_sym;
+            } else if (rt === FODDERSHOP && s_sym > O.MAXOCLASSES) {
+                /* health food store usually generates pseudo-class
+                   VEGETARIAN_CLASS which is MAXOCLASSES+1; we don't bother
+                   trying to select among all possible vegetarian food items */
+                ap_type = M_AP_OBJECT;
+                appear = rn2(2) ? O.LUMP_OF_ROYAL_JELLY : O.SLIME_MOLD;
+            } else {
+                if (s_sym === O.RANDOM_CLASS || s_sym >= O.MAXOCLASSES)
+                    s_sym = syms[rn2(syms.length - 2) + 2];
+                assign = true; /* goto assign_sym */
+            }
+        }
+    } else {
+        s_sym = ROLL_FROM(syms);
+        assign = true;
+    }
+    if (assign) {
+ /* assign_sym: */
+        if (s_sym === O.MAXOCLASSES) {
+            const furnsyms = [
+                S_upstair, S_upstair, S_dnstair, S_dnstair,
+                S_altar, S_grave, S_throne, S_sink,
+            ];
+
+            ap_type = M_AP_FURNITURE;
+            appear = ROLL_FROM(furnsyms);
+        } else {
+            ap_type = M_AP_OBJECT;
+            if (s_sym === M.S_MIMIC_DEF) {
+                appear = O.STRANGE_OBJECT;
+            } else if (s_sym === O.COIN_CLASS) {
+                appear = O.GOLD_PIECE;
+            } else {
+                otmp = mkobj(s_sym, FALSE);
+                appear = otmp.otyp;
+                /* make sure container contents are free'ed */
+                /* obfree(otmp, (struct obj *) 0): JS garbage-collects it */
+            }
+        }
+    }
+    mtmp.m_ap_type = ap_type;
+    mtmp.mappearance = appear;
+    /* when appearing as an object based on a monster type, pick a shape */
+    if (ap_type === M_AP_OBJECT
+        && (appear === O.STATUE || appear === O.FIGURINE
+            || appear === O.CORPSE || appear === O.EGG || appear === O.TIN)) {
+        let mndx = rndmonnum();
+        const nocorpse_ndx = (game.mvitals[mndx].mvflags & M.G_NOCORPSE) !== 0;
+
+        if (appear === O.CORPSE && nocorpse_ndx)
+            mndx = rn1(M.PM_WIZARD - M.PM_ARCHEOLOGIST + 1, M.PM_ARCHEOLOGIST);
+        else if ((appear === O.EGG && !can_be_hatched(mndx))
+                 || (appear === O.TIN && nocorpse_ndx))
+            mndx = NON_PM; /* revert to generic egg or empty tin */
+
+        if (!mtmp.mextra) mtmp.mextra = {}; /* newmcorpsenm(mtmp) */
+        mtmp.mextra.mcorpsenm = mndx;
+    } else if (ap_type === M_AP_OBJECT && appear === O.SLIME_MOLD) {
+        if (!mtmp.mextra) mtmp.mextra = {}; /* newmcorpsenm(mtmp) */
+        mtmp.mextra.mcorpsenm = game.context.current_fruit;
+        /* if no objects of this fruit type have been created yet,
+           context.current_fruit is available for re-use when the player
+           assigns a new fruit name; override that--having a mimic as the
+           current_fruit is equivalent to creating an instance of that
+           fruit (no-op if a fruit of this type has actually been made) */
+        game.flags.made_fruit = TRUE;
+    } else if (ap_type === M_AP_FURNITURE && appear === S_altar) {
+        const algn = rn2(3) - 1; /* -1 (A_Cha) or 0 (A_Neu) or +1 (A_Law) */
+
+        if (!mtmp.mextra) mtmp.mextra = {}; /* newmcorpsenm(mtmp) */
+        mtmp.mextra.mcorpsenm = (In_hell(game.u.uz) && rn2(3)) ? AM_NONE : Align2amask(algn);
+    } else if (mtmp.mextra?.mcorpsenm !== undefined) { /* has_mcorpsenm() */
+        /* don't retain stale value from a previously mimicked shape */
+        mtmp.mextra.mcorpsenm = NON_PM;
+    }
+
+    /* if (does_block(mx, my, &levl[mx][my])) block_point(mx, my);
+       -- the JS vision has no block_point(); recompute vision instead */
+    if ((ap_type === M_AP_FURNITURE && (appear === S_hcdoor || appear === S_vcdoor))
+        || (ap_type === M_AP_OBJECT && appear === O.BOULDER))
+        game.vision_full_recalc = 1;
+}
 // C ref: mon.c newcham() -- not ported yet
 function newcham(mtmp, mdat, ncflags) {
     impossible('newcham not ported');

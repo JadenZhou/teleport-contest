@@ -77,6 +77,7 @@ import { strcmpi, strncmpi, strstri } from './hacklib.js';
 import { induced_align } from './dungeon.js';
 import { nhl_push_obj } from './nhlobj.js';
 import { bury_an_obj } from './dig.js';
+import { stock_room } from './shknam.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -349,19 +350,6 @@ function add_doors_to_room(croom) {
         }
     for (let i = 0; i < croom.nsubrooms; i++)
         add_doors_to_room(croom.sbrooms[i]);
-}
-
-// C ref: shknam.c stock_room()
-function stock_room(shp_indx, sroom) {
-    /* first, try to place a shopkeeper in the room */
-    if (shkinit(shp_indx, sroom) < 0)
-        return;
-    throw new Error('stock_room(): door fixup and mkshobj_at() stocking not ported yet');
-}
-
-// C ref: shknam.c shkinit()
-function shkinit(shp_indx, sroom) {
-    throw new Error('shkinit(): good_shopdoor() and makemon(PM_SHOPKEEPER, MM_ESHK) not ported yet');
 }
 
 // C ref: sp_lev.c fill_special_room()

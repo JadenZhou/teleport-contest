@@ -59,6 +59,7 @@ import {
     CORPSTAT_INIT,
 } from './mkobj.js';
 import { mkclass, makemon } from './makemon.js';
+import { shtypes } from './shknam.js';
 import {
     NO_TRAP, TRAPNUM, ARROW_TRAP, DART_TRAP, ROCKTRAP, SQKY_BOARD, LANDMINE,
     ROLLING_BOULDER_TRAP, SLP_GAS_TRAP, RUST_TRAP, FIRE_TRAP, PIT, SPIKED_PIT,
@@ -500,23 +501,6 @@ function mk_knox_portal(x, y) {
     /* debugpline0("Made knox portal."); */
     place_branch(br, x, y);
 }
-
-// C ref: shknam.c shtypes[] — only the fields mkshop() reads so far
-// (symb, prob); names/iprobs/shknms belong with stock_room()/shkinit().
-const shtypes = [
-    { name: 'general store', symb: RANDOM_CLASS, prob: 42 },
-    { name: 'used armor dealership', symb: ARMOR_CLASS, prob: 14 },
-    { name: 'second-hand bookstore', symb: SCROLL_CLASS, prob: 10 },
-    { name: 'liquor emporium', symb: POTION_CLASS, prob: 10 },
-    { name: 'antique weapons outlet', symb: WEAPON_CLASS, prob: 5 },
-    { name: 'delicatessen', symb: FOOD_CLASS, prob: 5 },
-    { name: 'jewelers', symb: RING_CLASS, prob: 3 },
-    { name: 'quality apparel and accessories', symb: WAND_CLASS, prob: 3 },
-    { name: 'hardware store', symb: TOOL_CLASS, prob: 3 },
-    { name: 'rare books', symb: SPBOOK_CLASS, prob: 3 },
-    { name: 'health food store', symb: FOOD_CLASS, prob: 2 },
-    { name: 'lighting store', symb: TOOL_CLASS, prob: 0 },
-];
 
 // C ref: mkroom.c isbig()
 function isbig(sroom) {
