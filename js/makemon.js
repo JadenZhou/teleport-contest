@@ -1646,7 +1646,10 @@ export function makemon(ptr, x, y, mmflags) {
 
     if (mmflags & MM_EGD) mtmp.egd = {};    /* newegd() */
     if (mmflags & MM_EPRI) mtmp.epri = {};  /* newepri() */
-    if (mmflags & MM_ESHK) mtmp.eshk = {};  /* neweshk() */
+    if (mmflags & MM_ESHK) {                /* neweshk() */
+        if (!mtmp.mextra) mtmp.mextra = {};
+        mtmp.mextra.eshk = { bill_p: null };
+    }
     if (mmflags & MM_EMIN) mtmp.emin = {};  /* newemin() */
     if (mmflags & MM_EDOG) newedog(mtmp);
     if (mmflags & MM_ASLEEP)
