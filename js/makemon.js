@@ -39,6 +39,7 @@ import {
 } from './mondata.js';
 import { engr_at } from './engrave.js';
 import { enexto_core } from './teleport.js';
+import { newedog } from './dog.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -1645,7 +1646,7 @@ export function makemon(ptr, x, y, mmflags) {
     if (mmflags & MM_EPRI) mtmp.epri = {};  /* newepri() */
     if (mmflags & MM_ESHK) mtmp.eshk = {};  /* neweshk() */
     if (mmflags & MM_EMIN) mtmp.emin = {};  /* newemin() */
-    if (mmflags & MM_EDOG) mtmp.edog = {};  /* newedog() */
+    if (mmflags & MM_EDOG) newedog(mtmp);
     if (mmflags & MM_ASLEEP)
         mtmp.msleeping = 1;
     mtmp.nmon = game.fmon;

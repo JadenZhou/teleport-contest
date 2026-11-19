@@ -20,22 +20,21 @@ function Role_if(pm) { return game.urole.mnum === pm; }
 
 // C ref: dog.c newedog()
 export function newedog(mtmp) {
+    /* if (!mtmp->mextra) mtmp->mextra = newmextra(); -- mextra fields
+       live directly on the monster in JS */
     if (!mtmp.edog) {
-        mtmp.edog = {};
-    }
-    if (mtmp.edog.parentmid === undefined) {
-        Object.assign(mtmp.edog, {
+        /* alloc + memset(0) */
+        mtmp.edog = {
             droptime: 0, dropdist: 0, apport: 0, whistletime: 0,
             hungrytime: 0, ogoal: { x: 0, y: 0 }, abuse: 0, revivals: 0,
-            mhpmax_penalty: 0, killed_by_u: 0,
-        });
+            mhpmax_penalty: 0, killed_by_u: 0, parentmid: 0,
+        };
         mtmp.edog.parentmid = mtmp.m_id;
     }
 }
 
 // C ref: dog.c initedog()
 export function initedog(mtmp, everything) {
-    newedog(mtmp); /* makemon(MM_EDOG) allocated it; make sure it's zeroed */
     const edogp = mtmp.edog;
     const minhungry = (game.moves || 0) + 1000;
     const minimumtame = is_domestic(mtmp.data) ? 10 : 5;
