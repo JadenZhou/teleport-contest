@@ -1170,7 +1170,7 @@ export async function m_move(mtmp, after) {
         throw new Error('m_move(): long worms not ported yet');
     /* my dog gets special treatment */
     if (mtmp.mtame) {
-        return postmov(mtmp, ptr, omx, omy, dog_move(mtmp, after),
+        return postmov(mtmp, ptr, omx, omy, await dog_move(mtmp, after),
                        seenflgs, can_tunnel, can_unlock, can_open);
     }
 
