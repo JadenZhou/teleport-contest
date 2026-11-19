@@ -20,6 +20,7 @@ import { objects } from './objects.js';
 import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE } from './const.js';
 import { rndmonst_adj } from './makemon.js';
 import { monsndx } from './mondata.js';
+import { assign_candy_wrapper } from './read.js';
 import {
     mons, LOW_PM, SPECIAL_PM, G_UNIQ, G_NOGEN, G_HELL, G_NOHELL, G_NOCORPSE,
     M2_MALE, M2_FEMALE, M2_NEUTER, MZ_SMALL, S_TROLL,
@@ -253,9 +254,9 @@ const {
     VENOM_CLASS,
 } = O;
 
-// C ref: mkobj.c SPBOOK_no_NOVEL — mkobj() class code for "spellbook, but
-// not a novel"
-export const SPBOOK_no_NOVEL = 0;
+// C ref: objclass.h SPBOOK_no_NOVEL — mkobj() class code for "spellbook,
+// but not a novel"
+export const SPBOOK_no_NOVEL = O.SPBOOK_no_NOVEL;
 
 // C ref: mkobj.c mkobjprobs[]
 const mkobjprobs = [
@@ -729,7 +730,7 @@ function mksobj_init(otmp, artif) {
             otmp.quan = rnd(2);
             break;
         case O.CANDY_BAR:
-            not_ported('assign_candy_wrapper()');
+            assign_candy_wrapper(otmp);
             break;
         default:
             break;
