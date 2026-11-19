@@ -15,7 +15,7 @@ import { schedule_goto, UTOTYPE_NONE } from './do.js';
 import {
     COLNO, ROWNO, ZAP_POS, isok, GP_ALLOW_XY, GP_CHECKSCARY, NO_MM_FLAGS,
     CC_NO_FLAGS, CC_INCL_CENTER, CC_UNSHUFFLED, CC_RING_PAIRS, CC_SKIP_MONS,
-    CC_SKIP_INACCS,
+    CC_SKIP_INACCS, RLOC_NOMSG,
 } from './const.js';
 import { mons } from './monsters.js';
 import { set_mon_data } from './mondata.js';
@@ -210,6 +210,11 @@ export function mnexto(mtmp, rlocflags) {
 
     rloc_to_flag(mtmp, mm.x, mm.y, rlocflags);
     return;
+}
+
+// C ref: teleport.c rloc_to()
+export function rloc_to(mtmp, x, y) {
+    rloc_to_flag(mtmp, x, y, RLOC_NOMSG);
 }
 
 // C ref: teleport.c rloc_to_flag()

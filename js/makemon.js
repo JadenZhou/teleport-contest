@@ -1546,7 +1546,7 @@ function makemon_rnd_goodpos(mon, gpflags, cc) {
 }
 
 // C ref: mon.c pm_to_cham()
-function pm_to_cham(mndx) {
+export function pm_to_cham(mndx) {
     let mcham = NON_PM;
     switch (mndx) {
     case M.PM_CHAMELEON:
