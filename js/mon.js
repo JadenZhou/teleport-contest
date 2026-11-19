@@ -18,7 +18,9 @@ import {
 import { dist2 } from './hacklib.js';
 import { vision_recalc } from './vision.js';
 import { m_at, sobj_at, is_pool, is_lava, may_passwall } from './makemon.js';
-import { t_at } from './trap.js';
+import { t_at, TRAPNUM, fixed_tele_trap, m_harmless_trap } from './trap.js';
+import { hastrack } from './track.js';
+import { mon_knows_traps } from './mondata.js';
 import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls,
          perceives, is_were, is_human, is_undead, is_vampshifter,
          dmgtype } from './mondata.js';
@@ -662,10 +664,27 @@ export function mfndpos(mon, data, flag) {
                         continue;
                     /* The monster avoids a particular type of trap if it's
                      * familiar with the trap type.  Pets get ALLOW_TRAPS
-                     * and checking is done in dogmove.c.
+                     * and checking is done in dogmove.c.  In either case,
+                     * "harmless" traps are neither avoided nor marked in info[].
                      */
-                    if (t_at(nx, ny))
-                        throw new Error('mfndpos(): trap avoidance not ported yet');
+                    const ttmp = t_at(nx, ny);
+                    if (ttmp) {
+                        if (ttmp.ttyp >= TRAPNUM || ttmp.ttyp === 0) {
+                            /* impossible("A monster looked at a very
+                               strange trap of type %d.") */
+                            continue;
+                        }
+                        /* fixed-destination teleport trap, was used by hero */
+                        if (fixed_tele_trap(ttmp) && hastrack(nx, ny))
+                            info |= ALLOW_TRAPS;
+                        else if (!m_harmless_trap(mon, ttmp)) {
+                            if (!(flag & ALLOW_TRAPS)) {
+                                if (mon_knows_traps(mon, ttmp.ttyp))
+                                    continue;
+                            }
+                            info |= ALLOW_TRAPS;
+                        }
+                    }
                     data.poss[cnt] = { x: nx, y: ny };
                     data.info[cnt] = info;
                     cnt++;
