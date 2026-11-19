@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T19:19:37.704Z",
+ "when": "2026-11-19T20:53:39.088Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -862,9 +862,9 @@
    "totalScreens": 87,
    "valuePrefix": 2607,
    "rulePrefix": 2607,
-   "screens": 27,
-   "honestScreens": 27,
-   "firstScreenMiss": 26,
+   "screens": 28,
+   "honestScreens": 28,
+   "firstScreenMiss": 27,
    "first": {
     "index": 2607,
     "step": 34,
@@ -974,7 +974,7 @@
   {
    "session": "dev82394-tourist-explore-actions.session.json",
    "total": 3081,
-   "jsTotal": 2780,
+   "jsTotal": 2769,
    "totalScreens": 84,
    "valuePrefix": 2615,
    "rulePrefix": 2615,
@@ -1267,8 +1267,8 @@
   "rule": 121145,
   "value": 121145,
   "rolls": 504996,
-  "honestScreens": 234,
-  "screens": 246,
+  "honestScreens": 235,
+  "screens": 247,
   "totalScreens": 8438
  },
  "todo": [

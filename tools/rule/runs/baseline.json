@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T19:19:24.069Z",
+ "when": "2026-11-19T20:53:25.975Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -352,7 +352,7 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 40784,
+   "jsTotal": 36917,
    "totalScreens": 1953,
    "valuePrefix": 6276,
    "rulePrefix": 6276,
@@ -376,7 +376,7 @@
      "rn2(100)=1 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: mpickstuff(): splitobj()/mpickobj() not ported yet |     at mpickstuff (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1513:19) |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1463:17) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12)"
+   "error": "Error: dog_invent(): mpickobj() not ported yet |     at dog_invent (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:460:31) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:923:13) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
   },
   {
    "session": "seed0060-orc-rogue-kick-search.session.json",
@@ -878,9 +878,9 @@
    "totalScreens": 87,
    "valuePrefix": 2803,
    "rulePrefix": 2803,
-   "screens": 26,
-   "honestScreens": 26,
-   "firstScreenMiss": 26,
+   "screens": 27,
+   "honestScreens": 27,
+   "firstScreenMiss": 27,
    "first": {
     "index": 2803,
     "step": 34,
@@ -1217,7 +1217,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:44:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1715:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:115:16)"
+   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:48:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1719:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:122:16)"
   },
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
@@ -1283,8 +1283,8 @@
   "rule": 127817,
   "value": 127819,
   "rolls": 792838,
-  "honestScreens": 240,
-  "screens": 249,
+  "honestScreens": 241,
+  "screens": 250,
   "totalScreens": 11405
  },
  "todo": [
