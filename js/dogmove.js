@@ -855,7 +855,7 @@ function best_target(mtmp, forced) {
 }
 
 // ── C ref: dogmove.c pet_ranged_attk() ──
-function pet_ranged_attk(mtmp, forced) {
+async function pet_ranged_attk(mtmp, forced) {
     let hungry = false;
 
     /* How hungry is the pet? */
@@ -872,7 +872,38 @@ function pet_ranged_attk(mtmp, forced) {
 
     /* Hungry pets are unlikely to use breath/spit attacks */
     if (mtarg && (!hungry || !rn2(5))) {
-        throw new Error('pet_ranged_attk(): mattacku()/mattackm() not ported yet');
+        let mstatus = M_ATTK_MISS;
+
+        if (mtarg === game.youmonst) {
+            throw new Error('pet_ranged_attk(): mattacku() not ported yet');
+        } else {
+            game.bhitpos = { x: mtmp.mx, y: mtmp.my };
+            game.notonhead = false;
+            mstatus = await mattackm(mtmp, mtarg);
+
+            /* aggressor (pet) died */
+            if (mstatus & M_ATTK_AGR_DIED)
+                return MMOVE_DIED;
+
+            /* the defender may retaliate if it's still alive and can
+               see the pet */
+            if ((mstatus & M_ATTK_HIT) && !(mstatus & M_ATTK_DEF_DIED)
+                && rn2(4) && mtarg !== game.youmonst) {
+                if (mtarg.mcansee && haseyes(mtarg.data)) {
+                    let mresp;
+
+                    game.bhitpos = { x: mtmp.mx, y: mtmp.my };
+                    game.notonhead = false;
+                    mresp = await mattackm(mtarg, mtmp);
+                    if (mresp & M_ATTK_DEF_DIED)
+                        return MMOVE_DIED;
+                }
+            }
+        }
+        /* Only return 3 if the pet actually made a ranged attack, and
+         * thus should lose the rest of its move. */
+        if (mstatus !== M_ATTK_MISS)
+            return MMOVE_DONE;
     } else if (forced)
         throw new Error('pet_ranged_attk(): domonnoise() not ported yet');
     return MMOVE_NOTHING;
@@ -1114,7 +1145,7 @@ export async function dog_move(mtmp, after) {
      * now's the time for ranged attacks. Note that the pet can move
      * after it performs its ranged attack. Should this be changed?
      */
-    if ((i = pet_ranged_attk(mtmp, false)) !== MMOVE_NOTHING)
+    if ((i = await pet_ranged_attk(mtmp, false)) !== MMOVE_NOTHING)
         return i;
 
     /* newdogpos: */
