@@ -1,31 +1,31 @@
 {
- "when": "2026-11-19T07:25:13.992Z",
+ "when": "2026-11-19T07:46:51.532Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
    "total": 27158,
-   "jsTotal": 2750,
+   "jsTotal": 2451,
    "totalScreens": 595,
-   "valuePrefix": 1001,
-   "rulePrefix": 1000,
+   "valuePrefix": 2157,
+   "rulePrefix": 2157,
    "screens": 8,
    "honestScreens": 8,
    "firstScreenMiss": 8,
    "first": {
-    "index": 1000,
+    "index": 2157,
     "step": 8,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=75 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(10)=4 @ somex(mkroom.c:668)",
-     "rn2(6)=4 @ somey(mkroom.c:674)",
-     "rn2(6)=2 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(4)=2 @ somex(mkroom.c:668)",
-     "rn2(6)=1 @ somey(mkroom.c:674)"
+     "rn2(1000)=151 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=232 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=936 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=6 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -33,28 +33,28 @@
   {
    "session": "seed0004-feeding-pony.session.json",
    "total": 12084,
-   "jsTotal": 4077,
+   "jsTotal": 3806,
    "totalScreens": 409,
-   "valuePrefix": 2362,
-   "rulePrefix": 2359,
+   "valuePrefix": 3544,
+   "rulePrefix": 2588,
    "screens": 8,
    "honestScreens": 8,
    "firstScreenMiss": 8,
    "first": {
-    "index": 2359,
+    "index": 2588,
     "step": 8,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
+    "c": "rn2(2894)=2474 @ random_engraving(engrave.c:57)",
+    "js": "rn2(2894)=2474 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "random_engraving",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(6)=5 @ somex(mkroom.c:668)",
-     "rn2(6)=4 @ somey(mkroom.c:674)",
-     "rn2(10)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=6 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(25)=9 @ fill_ordinary_room(mklev.c:1137)",
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=0 @ random_engraving(engrave.c:57)",
+     "rn2(2894)=2474 @ random_engraving(engrave.c:57)",
+     "rn2(2894)=1907 @ random_engraving(engrave.c:57)",
+     "rn2(15)=6 @ wipeout_text(engrave.c:134)"
     ]
    },
    "error": null
@@ -62,28 +62,28 @@
   {
    "session": "seed0006-wizard-water-demon.session.json",
    "total": 6736,
-   "jsTotal": 3298,
+   "jsTotal": 3001,
    "totalScreens": 123,
-   "valuePrefix": 1194,
-   "rulePrefix": 1193,
+   "valuePrefix": 2351,
+   "rulePrefix": 2351,
    "screens": 35,
    "honestScreens": 35,
    "firstScreenMiss": 35,
    "first": {
-    "index": 1193,
+    "index": 2351,
     "step": 35,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=6 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=47 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(8)=1 @ somex(mkroom.c:668)",
-     "rn2(5)=2 @ somey(mkroom.c:674)",
-     "rn2(6)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(9)=3 @ somex(mkroom.c:668)",
-     "rn2(4)=3 @ somey(mkroom.c:674)"
+     "rn2(1000)=534 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=815 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=56 @ mineralize(mklev.c:1526)",
+     "rn2(8)=6 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)",
+     "rn2(6)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -91,28 +91,28 @@
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
    "total": 16373,
-   "jsTotal": 3540,
+   "jsTotal": 3293,
    "totalScreens": 302,
-   "valuePrefix": 1496,
-   "rulePrefix": 1495,
+   "valuePrefix": 2703,
+   "rulePrefix": 1628,
    "screens": 14,
    "honestScreens": 14,
    "firstScreenMiss": 14,
    "first": {
-    "index": 1495,
+    "index": 1628,
     "step": 14,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
+    "c": "rn2(25762)=25553 @ getrumor(rumors.c:151)",
+    "js": "rn2(25762)=25553 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(9)=6 @ somex(mkroom.c:668)",
-     "rn2(5)=4 @ somey(mkroom.c:674)",
-     "rn2(7)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(13)=0 @ somex(mkroom.c:668)",
-     "rn2(4)=3 @ somey(mkroom.c:674)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=3 @ random_engraving(engrave.c:57)",
+     "rn2(2)=0 @ getrumor(rumors.c:151)",
+     "rn2(25762)=25553 @ getrumor(rumors.c:151)",
+     "rn2(2)=1 @ getrumor(rumors.c:151)",
+     "rn2(24924)=9972 @ getrumor(rumors.c:151)"
     ]
    },
    "error": null
@@ -120,28 +120,28 @@
   {
    "session": "seed0009-swimmer-mforce.session.json",
    "total": 3713,
-   "jsTotal": 3692,
+   "jsTotal": 3563,
    "totalScreens": 73,
-   "valuePrefix": 1902,
-   "rulePrefix": 1901,
+   "valuePrefix": 3228,
+   "rulePrefix": 3228,
    "screens": 10,
    "honestScreens": 10,
    "firstScreenMiss": 10,
    "first": {
-    "index": 1901,
+    "index": 3228,
     "step": 10,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=2 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=11 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(3)=2 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(7)=1 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(11)=9 @ somex(mkroom.c:668)",
-     "rn2(4)=3 @ somey(mkroom.c:674)"
+     "rn2(1000)=194 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=519 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=203 @ mineralize(mklev.c:1526)",
+     "rn2(8)=2 @ collect_coords(teleport.c:700)",
+     "rn2(7)=6 @ collect_coords(teleport.c:700)",
+     "rn2(6)=1 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -149,28 +149,28 @@
   {
    "session": "seed0012-monk-vault-escort.session.json",
    "total": 13878,
-   "jsTotal": 3092,
+   "jsTotal": 3333,
    "totalScreens": 308,
-   "valuePrefix": 1216,
-   "rulePrefix": 1215,
+   "valuePrefix": 2911,
+   "rulePrefix": 2911,
    "screens": 16,
    "honestScreens": 16,
    "firstScreenMiss": 16,
    "first": {
-    "index": 1215,
+    "index": 2911,
     "step": 16,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=31 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(3)=2 @ somex(mkroom.c:668)",
-     "rn2(5)=4 @ somey(mkroom.c:674)",
-     "rn2(6)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(3)=2 @ somex(mkroom.c:668)",
-     "rn2(5)=1 @ somey(mkroom.c:674)"
+     "rn2(1000)=586 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=510 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=155 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=4 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -178,7 +178,7 @@
   {
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
    "total": 4804,
-   "jsTotal": 6194,
+   "jsTotal": 6093,
    "totalScreens": 99,
    "valuePrefix": 528,
    "rulePrefix": 528,
@@ -207,7 +207,7 @@
   {
    "session": "seed0013-rogue-friday13-combat.session.json",
    "total": 4838,
-   "jsTotal": 3123,
+   "jsTotal": 3031,
    "totalScreens": 59,
    "valuePrefix": 528,
    "rulePrefix": 528,
@@ -236,28 +236,28 @@
   {
    "session": "seed0014-dequa-fountain-explore.session.json",
    "total": 59178,
-   "jsTotal": 3627,
+   "jsTotal": 3459,
    "totalScreens": 714,
-   "valuePrefix": 1555,
-   "rulePrefix": 1552,
+   "valuePrefix": 2839,
+   "rulePrefix": 2839,
    "screens": 10,
    "honestScreens": 10,
    "firstScreenMiss": 10,
    "first": {
-    "index": 1552,
+    "index": 2839,
     "step": 10,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=557 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(10)=1 @ somex(mkroom.c:668)",
-     "rn2(6)=5 @ somey(mkroom.c:674)",
-     "rn2(9)=6 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=3 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=609 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=931 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=459 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=2 @ collect_coords(teleport.c:700)",
+     "rn2(7)=4 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -265,7 +265,7 @@
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
-   "jsTotal": 2932,
+   "jsTotal": 2773,
    "totalScreens": 44,
    "valuePrefix": 357,
    "rulePrefix": 357,
@@ -294,28 +294,28 @@
   {
    "session": "seed0016-healer-newmoon-eat-zap.session.json",
    "total": 3656,
-   "jsTotal": 3194,
+   "jsTotal": 2806,
    "totalScreens": 36,
-   "valuePrefix": 1297,
-   "rulePrefix": 1294,
+   "valuePrefix": 2362,
+   "rulePrefix": 2362,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1294,
+    "index": 2362,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=264 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(3)=1 @ somex(mkroom.c:668)",
-     "rn2(4)=0 @ somey(mkroom.c:674)",
-     "rn2(9)=8 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=6 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=287 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=235 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=682 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=3 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -323,28 +323,28 @@
   {
    "session": "seed0017-samurai-altar-pray.session.json",
    "total": 3465,
-   "jsTotal": 3275,
+   "jsTotal": 2999,
    "totalScreens": 67,
-   "valuePrefix": 1370,
-   "rulePrefix": 1368,
+   "valuePrefix": 2547,
+   "rulePrefix": 2547,
    "screens": 8,
    "honestScreens": 8,
    "firstScreenMiss": 8,
    "first": {
-    "index": 1368,
+    "index": 2547,
     "step": 8,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=256 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(4)=0 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=5 @ somex(mkroom.c:668)",
-     "rn2(5)=1 @ somey(mkroom.c:674)"
+     "rn2(1000)=798 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=411 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=247 @ mineralize(mklev.c:1526)",
+     "rn2(8)=7 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)",
+     "rn2(6)=5 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -352,28 +352,28 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 35320,
+   "jsTotal": 32223,
    "totalScreens": 1953,
-   "valuePrefix": 4998,
-   "rulePrefix": 4997,
+   "valuePrefix": 6105,
+   "rulePrefix": 5165,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 4997,
+    "index": 5165,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
+    "c": "rn2(25762)=7767 @ getrumor(rumors.c:151)",
+    "js": "rn2(25762)=7767 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(3)=1 @ somex(mkroom.c:668)",
-     "rn2(2)=0 @ somey(mkroom.c:674)",
-     "rn2(5)=4 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(9)=3 @ somex(mkroom.c:668)",
-     "rn2(3)=2 @ somey(mkroom.c:674)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=2 @ random_engraving(engrave.c:57)",
+     "rn2(2)=0 @ getrumor(rumors.c:151)",
+     "rn2(25762)=7767 @ getrumor(rumors.c:151)",
+     "rn2(70)=46 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -381,28 +381,28 @@
   {
    "session": "seed0060-orc-rogue-kick-search.session.json",
    "total": 3626,
-   "jsTotal": 3025,
+   "jsTotal": 2848,
    "totalScreens": 41,
-   "valuePrefix": 984,
-   "rulePrefix": 983,
+   "valuePrefix": 2263,
+   "rulePrefix": 2263,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 983,
+    "index": 2263,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=660 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(6)=0 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=2 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(6)=1 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)"
+     "rn2(1000)=753 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=74 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=664 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=5 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -410,28 +410,28 @@
   {
    "session": "seed0077-rogue-chargen.session.json",
    "total": 3242,
-   "jsTotal": 3391,
+   "jsTotal": 3434,
    "totalScreens": 33,
-   "valuePrefix": 1573,
-   "rulePrefix": 1570,
+   "valuePrefix": 3068,
+   "rulePrefix": 3068,
    "screens": 11,
    "honestScreens": 11,
    "firstScreenMiss": 11,
    "first": {
-    "index": 1570,
+    "index": 3068,
     "step": 11,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=222 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(5)=4 @ somex(mkroom.c:668)",
-     "rn2(6)=5 @ somey(mkroom.c:674)",
-     "rn2(7)=4 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=7 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=198 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=555 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=902 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=7 @ collect_coords(teleport.c:700)",
+     "rn2(7)=2 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -439,28 +439,28 @@
   {
    "session": "seed0101-ranger-quiver-throw-travel-engrave.session.json",
    "total": 2371,
-   "jsTotal": 2881,
+   "jsTotal": 2630,
    "totalScreens": 27,
-   "valuePrefix": 983,
-   "rulePrefix": 980,
+   "valuePrefix": 2184,
+   "rulePrefix": 2184,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 980,
+    "index": 2184,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=0 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=161 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(9)=8 @ somex(mkroom.c:668)",
-     "rn2(2)=0 @ somey(mkroom.c:674)",
-     "rn2(8)=4 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=6 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=147 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=124 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=918 @ mineralize(mklev.c:1526)",
+     "rn2(8)=0 @ collect_coords(teleport.c:700)",
+     "rn2(7)=2 @ collect_coords(teleport.c:700)",
+     "rn2(6)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -468,28 +468,28 @@
   {
    "session": "seed0102-ranger-name-cancel.session.json",
    "total": 4485,
-   "jsTotal": 3054,
+   "jsTotal": 4740,
    "totalScreens": 25,
-   "valuePrefix": 1195,
-   "rulePrefix": 1192,
+   "valuePrefix": 4334,
+   "rulePrefix": 4334,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1192,
+    "index": 4334,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=56 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(14)=6 @ somex(mkroom.c:668)",
-     "rn2(4)=0 @ somey(mkroom.c:674)",
-     "rn2(6)=3 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=5 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=185 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=236 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=786 @ mineralize(mklev.c:1526)",
+     "rn2(8)=7 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)",
+     "rn2(6)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -497,28 +497,28 @@
   {
    "session": "seed0103-knight-ride-pony.session.json",
    "total": 2640,
-   "jsTotal": 3494,
+   "jsTotal": 3096,
    "totalScreens": 60,
-   "valuePrefix": 1235,
-   "rulePrefix": 1232,
+   "valuePrefix": 2289,
+   "rulePrefix": 2289,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1232,
+    "index": 2289,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=181 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(13)=3 @ somex(mkroom.c:668)",
-     "rn2(5)=1 @ somey(mkroom.c:674)",
-     "rn2(6)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=1 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=408 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=434 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=564 @ mineralize(mklev.c:1526)",
+     "rn2(8)=4 @ collect_coords(teleport.c:700)",
+     "rn2(7)=4 @ collect_coords(teleport.c:700)",
+     "rn2(6)=1 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -526,28 +526,28 @@
   {
    "session": "seed0104-knight-ride-combat.session.json",
    "total": 3223,
-   "jsTotal": 3045,
+   "jsTotal": 2808,
    "totalScreens": 43,
-   "valuePrefix": 1261,
-   "rulePrefix": 1259,
+   "valuePrefix": 2477,
+   "rulePrefix": 1415,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1259,
+    "index": 1415,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
+    "c": "rn2(24075)=11551 @ somey(mkroom.c:674)",
+    "js": "rn2(24075)=11551 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "somey",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(7)=0 @ somex(mkroom.c:668)",
-     "rn2(5)=1 @ somey(mkroom.c:674)",
-     "rn2(7)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=0 @ fill_ordinary_room(mklev.c:984)",
-     "rnd(25)=23 @ traptype_rnd(mklev.c:1941)"
+     "rn2(10)=3 @ mkgrave(mklev.c:2358)",
+     "rn2(5)=3 @ somex(mkroom.c:668)",
+     "rn2(5)=4 @ somey(mkroom.c:674)",
+     "rn2(24075)=11551 @ somey(mkroom.c:674)",
+     "rn2(3)=1 @ mkgrave(mklev.c:2370)",
+     "rn2(5)=2 @ mkgrave(mklev.c:2383)"
     ]
    },
    "error": null
@@ -555,28 +555,28 @@
   {
    "session": "seed0105-valk-chat-lamp-ration.session.json",
    "total": 2499,
-   "jsTotal": 2924,
+   "jsTotal": 2830,
    "totalScreens": 30,
-   "valuePrefix": 991,
-   "rulePrefix": 990,
+   "valuePrefix": 2354,
+   "rulePrefix": 2354,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 990,
+    "index": 2354,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=37 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(10)=0 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(7)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(9)=1 @ somex(mkroom.c:668)",
-     "rn2(3)=2 @ somey(mkroom.c:674)"
+     "rn2(1000)=460 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=151 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=887 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=5 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -584,28 +584,28 @@
   {
    "session": "seed0106-priest-extcmd-sweep.session.json",
    "total": 4194,
-   "jsTotal": 3135,
+   "jsTotal": 2923,
    "totalScreens": 267,
-   "valuePrefix": 1169,
-   "rulePrefix": 1166,
+   "valuePrefix": 2409,
+   "rulePrefix": 2409,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1166,
+    "index": 2409,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=671 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(4)=1 @ somex(mkroom.c:668)",
-     "rn2(5)=0 @ somey(mkroom.c:674)",
-     "rn2(6)=1 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=5 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=919 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=773 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=644 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=4 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -613,28 +613,28 @@
   {
    "session": "seed0107-samurai-twoweapon-enhance.session.json",
    "total": 2902,
-   "jsTotal": 2887,
+   "jsTotal": 2872,
    "totalScreens": 98,
-   "valuePrefix": 1093,
-   "rulePrefix": 1089,
+   "valuePrefix": 2529,
+   "rulePrefix": 2529,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1089,
+    "index": 2529,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=688 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(5)=2 @ somex(mkroom.c:668)",
-     "rn2(5)=3 @ somey(mkroom.c:674)",
-     "rn2(7)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=3 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=915 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=576 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=131 @ mineralize(mklev.c:1526)",
+     "rn2(8)=7 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)",
+     "rn2(6)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -642,28 +642,28 @@
   {
    "session": "seed0108-wizard-extcmd-wishlist.session.json",
    "total": 16958,
-   "jsTotal": 3845,
+   "jsTotal": 3639,
    "totalScreens": 303,
-   "valuePrefix": 1348,
-   "rulePrefix": 1347,
+   "valuePrefix": 2597,
+   "rulePrefix": 1482,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1347,
+    "index": 1482,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
+    "c": "rn2(24075)=4690 @ somey(mkroom.c:674)",
+    "js": "rn2(24075)=4690 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "somey",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(10)=2 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(9)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(11)=5 @ somex(mkroom.c:668)",
-     "rn2(5)=4 @ somey(mkroom.c:674)"
+     "rn2(10)=4 @ mkgrave(mklev.c:2358)",
+     "rn2(6)=3 @ somex(mkroom.c:668)",
+     "rn2(3)=2 @ somey(mkroom.c:674)",
+     "rn2(24075)=4690 @ somey(mkroom.c:674)",
+     "rn2(3)=1 @ mkgrave(mklev.c:2370)",
+     "rn2(5)=4 @ mkgrave(mklev.c:2383)"
     ]
    },
    "error": null
@@ -671,28 +671,28 @@
   {
    "session": "seed0116-wizard-wear-shop.session.json",
    "total": 12562,
-   "jsTotal": 3719,
+   "jsTotal": 3494,
    "totalScreens": 127,
-   "valuePrefix": 1576,
-   "rulePrefix": 1575,
+   "valuePrefix": 2805,
+   "rulePrefix": 1698,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1575,
+    "index": 1698,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
+    "c": "rn2(24924)=2045 @ getrumor(rumors.c:151)",
+    "js": "rn2(24924)=2045 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(4)=0 @ somex(mkroom.c:668)",
-     "rn2(4)=2 @ somey(mkroom.c:674)",
-     "rn2(11)=3 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(5)=1 @ somex(mkroom.c:668)",
-     "rn2(5)=2 @ somey(mkroom.c:674)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=1 @ random_engraving(engrave.c:57)",
+     "rn2(2)=1 @ getrumor(rumors.c:151)",
+     "rn2(24924)=2045 @ getrumor(rumors.c:151)",
+     "rn2(29)=10 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -700,28 +700,28 @@
   {
    "session": "seed0200-monk-north-search.session.json",
    "total": 3822,
-   "jsTotal": 3360,
+   "jsTotal": 3346,
    "totalScreens": 40,
-   "valuePrefix": 1649,
-   "rulePrefix": 1646,
+   "valuePrefix": 3087,
+   "rulePrefix": 1768,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1646,
+    "index": 1768,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
+    "c": "rn2(2894)=1743 @ random_engraving(engrave.c:57)",
+    "js": "rn2(2894)=1743 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "random_engraving",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(8)=3 @ somex(mkroom.c:668)",
-     "rn2(6)=1 @ somey(mkroom.c:674)",
-     "rn2(7)=4 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=2 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(17)=1 @ fill_ordinary_room(mklev.c:1137)",
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=0 @ random_engraving(engrave.c:57)",
+     "rn2(2894)=1743 @ random_engraving(engrave.c:57)",
+     "rn2(16)=0 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=3 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -729,28 +729,28 @@
   {
    "session": "seed0360-wizard-world-tour.session.json",
    "total": 120639,
-   "jsTotal": 3751,
+   "jsTotal": 3706,
    "totalScreens": 833,
-   "valuePrefix": 1324,
-   "rulePrefix": 1323,
+   "valuePrefix": 2733,
+   "rulePrefix": 1355,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1323,
+    "index": 1355,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
+    "c": "rn2(2894)=151 @ random_engraving(engrave.c:57)",
+    "js": "rn2(2894)=151 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "random_engraving",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(3)=1 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=2 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(4)=0 @ somex(mkroom.c:668)",
-     "rn2(4)=1 @ somey(mkroom.c:674)"
+     "rn2(20)=6 @ fill_ordinary_room(mklev.c:1137)",
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=0 @ random_engraving(engrave.c:57)",
+     "rn2(2894)=151 @ random_engraving(engrave.c:57)",
+     "rn2(11)=6 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=2 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -758,28 +758,28 @@
   {
    "session": "seed0361-archeologist-tour.session.json",
    "total": 53865,
-   "jsTotal": 3673,
+   "jsTotal": 3744,
    "totalScreens": 366,
-   "valuePrefix": 1268,
-   "rulePrefix": 1266,
+   "valuePrefix": 2793,
+   "rulePrefix": 2793,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1266,
+    "index": 2793,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=825 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(4)=1 @ somex(mkroom.c:668)",
-     "rn2(3)=2 @ somey(mkroom.c:674)",
-     "rn2(8)=7 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=0 @ fill_ordinary_room(mklev.c:984)",
-     "rnd(25)=17 @ traptype_rnd(mklev.c:1941)"
+     "rn2(1000)=388 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=88 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=766 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=2 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -787,28 +787,28 @@
   {
    "session": "seed0367-priest-quest-tour.session.json",
    "total": 50125,
-   "jsTotal": 3408,
+   "jsTotal": 2786,
    "totalScreens": 324,
-   "valuePrefix": 871,
-   "rulePrefix": 868,
+   "valuePrefix": 1705,
+   "rulePrefix": 1705,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 868,
+    "index": 1705,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=664 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(6)=1 @ somex(mkroom.c:668)",
-     "rn2(4)=3 @ somey(mkroom.c:674)",
-     "rn2(7)=6 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=7 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=159 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=559 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=235 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=1 @ collect_coords(teleport.c:700)",
+     "rn2(7)=6 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -816,28 +816,28 @@
   {
    "session": "seed0373-barbarian-quest-tour.session.json",
    "total": 35386,
-   "jsTotal": 4365,
+   "jsTotal": 4126,
    "totalScreens": 124,
-   "valuePrefix": 1204,
-   "rulePrefix": 1201,
+   "valuePrefix": 2418,
+   "rulePrefix": 1417,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1201,
+    "index": 1417,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
+    "c": "rn2(25762)=5789 @ getrumor(rumors.c:151)",
+    "js": "rn2(25762)=5789 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(10)=4 @ somex(mkroom.c:668)",
-     "rn2(6)=4 @ somey(mkroom.c:674)",
-     "rn2(7)=6 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=2 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=3 @ random_engraving(engrave.c:57)",
+     "rn2(2)=0 @ getrumor(rumors.c:151)",
+     "rn2(25762)=5789 @ getrumor(rumors.c:151)",
+     "rn2(59)=9 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=3 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -845,28 +845,28 @@
   {
    "session": "seed0383-wizard-hallucinate.session.json",
    "total": 16915,
-   "jsTotal": 3404,
+   "jsTotal": 3263,
    "totalScreens": 219,
-   "valuePrefix": 984,
-   "rulePrefix": 982,
+   "valuePrefix": 2296,
+   "rulePrefix": 1102,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 982,
+    "index": 1102,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
+    "c": "rn2(25762)=15312 @ getrumor(rumors.c:151)",
+    "js": "rn2(25762)=15312 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(12)=7 @ somex(mkroom.c:668)",
-     "rn2(4)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=1 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=0 @ somex(mkroom.c:668)",
-     "rn2(4)=1 @ somey(mkroom.c:674)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=1 @ random_engraving(engrave.c:57)",
+     "rn2(2)=0 @ getrumor(rumors.c:151)",
+     "rn2(25762)=15312 @ getrumor(rumors.c:151)",
+     "rn2(50)=19 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -874,28 +874,28 @@
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
    "total": 3026,
-   "jsTotal": 3791,
+   "jsTotal": 3491,
    "totalScreens": 87,
-   "valuePrefix": 1504,
-   "rulePrefix": 1502,
+   "valuePrefix": 2657,
+   "rulePrefix": 2657,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1502,
+    "index": 2657,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(1)=0 @ trquan(u_init.c:1110)",
+    "js": "rnd(1000)=979 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "trquan",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(8)=5 @ somex(mkroom.c:668)",
-     "rn2(4)=1 @ somey(mkroom.c:674)",
-     "rn2(9)=1 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=0 @ fill_ordinary_room(mklev.c:984)",
-     "rnd(25)=10 @ traptype_rnd(mklev.c:1941)"
+     "rn2(1000)=654 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=260 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=947 @ mineralize(mklev.c:1526)",
+     "rn2(1)=0 @ trquan(u_init.c:1110)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)",
+     "rn2(11)=10 @ mksobj_init(mkobj.c:878)"
     ]
    },
    "error": null
@@ -903,28 +903,28 @@
   {
    "session": "seed0399-wizard-hallu-actions.session.json",
    "total": 11409,
-   "jsTotal": 3626,
+   "jsTotal": 3595,
    "totalScreens": 532,
-   "valuePrefix": 1207,
-   "rulePrefix": 1204,
+   "valuePrefix": 2628,
+   "rulePrefix": 2628,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1204,
+    "index": 2628,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=221 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(6)=3 @ somex(mkroom.c:668)",
-     "rn2(4)=2 @ somey(mkroom.c:674)",
-     "rn2(7)=3 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=4 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=503 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=574 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=438 @ mineralize(mklev.c:1526)",
+     "rn2(8)=4 @ collect_coords(teleport.c:700)",
+     "rn2(7)=4 @ collect_coords(teleport.c:700)",
+     "rn2(6)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -932,28 +932,28 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 3056,
+   "jsTotal": 2483,
    "totalScreens": 28,
-   "valuePrefix": 1172,
-   "rulePrefix": 1169,
+   "valuePrefix": 2051,
+   "rulePrefix": 1223,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1169,
+    "index": 1223,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
+    "c": "rn2(24924)=3453 @ getrumor(rumors.c:151)",
+    "js": "rn2(24924)=3453 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(7)=1 @ somex(mkroom.c:668)",
-     "rn2(4)=3 @ somey(mkroom.c:674)",
-     "rn2(9)=2 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=7 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=1 @ random_engraving(engrave.c:57)",
+     "rn2(2)=1 @ getrumor(rumors.c:151)",
+     "rn2(24924)=3453 @ getrumor(rumors.c:151)",
+     "rn2(25)=21 @ wipeout_text(engrave.c:134)",
+     "rn2(4)=0 @ wipeout_text(engrave.c:135)"
     ]
    },
    "error": null
@@ -961,28 +961,28 @@
   {
    "session": "seed0700-samurai-explore-descend.session.json",
    "total": 3230,
-   "jsTotal": 3476,
+   "jsTotal": 2870,
    "totalScreens": 51,
-   "valuePrefix": 1773,
-   "rulePrefix": 1770,
+   "valuePrefix": 2619,
+   "rulePrefix": 2619,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1770,
+    "index": 2619,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=613 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(5)=1 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=3 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=5 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rnd(2)=1 @ next_ident(mkobj.c:521)",
+     "rn2(6)=3 @ mksobj_init(mkobj.c:982)",
+     "rn2(3)=1 @ mineralize(mklev.c:1533)",
+     "rn2(8)=4 @ collect_coords(teleport.c:700)",
+     "rn2(7)=5 @ collect_coords(teleport.c:700)",
+     "rn2(6)=4 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -990,28 +990,28 @@
   {
    "session": "seed0900-tourist-explore-actions.session.json",
    "total": 2983,
-   "jsTotal": 3498,
+   "jsTotal": 3063,
    "totalScreens": 84,
-   "valuePrefix": 1272,
-   "rulePrefix": 1269,
+   "valuePrefix": 2291,
+   "rulePrefix": 2291,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1269,
+    "index": 2291,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=0 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=629 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(6)=0 @ somex(mkroom.c:668)",
-     "rn2(5)=1 @ somey(mkroom.c:674)",
-     "rn2(6)=4 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=1 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=690 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=394 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=440 @ mineralize(mklev.c:1526)",
+     "rn2(2)=0 @ pet_type(dog.c:100)",
+     "rn2(8)=7 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1019,28 +1019,28 @@
   {
    "session": "seed1150-caveman-explore-move.session.json",
    "total": 3137,
-   "jsTotal": 2614,
+   "jsTotal": 2504,
    "totalScreens": 51,
-   "valuePrefix": 908,
-   "rulePrefix": 907,
+   "valuePrefix": 2253,
+   "rulePrefix": 2253,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 907,
+    "index": 2253,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=6 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=975 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(12)=0 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=6 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(14)=8 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)"
+     "rn2(1000)=868 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=802 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=880 @ mineralize(mklev.c:1526)",
+     "rn2(8)=6 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)",
+     "rn2(6)=2 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1048,28 +1048,28 @@
   {
    "session": "seed1500-rogue-explore-move.session.json",
    "total": 2768,
-   "jsTotal": 2689,
+   "jsTotal": 2414,
    "totalScreens": 40,
-   "valuePrefix": 986,
-   "rulePrefix": 983,
+   "valuePrefix": 2163,
+   "rulePrefix": 2163,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 983,
+    "index": 2163,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=872 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(14)=11 @ somex(mkroom.c:668)",
-     "rn2(3)=1 @ somey(mkroom.c:674)",
-     "rn2(9)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=6 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=969 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=668 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=676 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=5 @ collect_coords(teleport.c:700)",
+     "rn2(7)=2 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1077,28 +1077,28 @@
   {
    "session": "seed1800-tourist-eat-throw.session.json",
    "total": 2458,
-   "jsTotal": 2719,
+   "jsTotal": 2628,
    "totalScreens": 26,
-   "valuePrefix": 843,
-   "rulePrefix": 842,
+   "valuePrefix": 2206,
+   "rulePrefix": 2206,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 842,
+    "index": 2206,
     "step": 0,
-    "c": "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=0 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=812 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(4)=0 @ somex(mkroom.c:668)",
-     "rn2(3)=2 @ somey(mkroom.c:674)",
-     "rn2(7)=4 @ makelevel(mklev.c:1402)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(10)=1 @ somex(mkroom.c:668)",
-     "rn2(4)=2 @ somey(mkroom.c:674)"
+     "rn2(1000)=533 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=175 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=950 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=5 @ collect_coords(teleport.c:700)",
+     "rn2(7)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1106,28 +1106,28 @@
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
    "total": 3018,
-   "jsTotal": 3162,
+   "jsTotal": 3036,
    "totalScreens": 230,
-   "valuePrefix": 1231,
-   "rulePrefix": 1228,
+   "valuePrefix": 2557,
+   "rulePrefix": 2557,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1228,
+    "index": 2557,
     "step": 0,
-    "c": "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=2 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=0 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=345 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(13)=11 @ somex(mkroom.c:668)",
-     "rn2(4)=0 @ somey(mkroom.c:674)",
-     "rn2(6)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=2 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=2 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=560 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=969 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=175 @ mineralize(mklev.c:1526)",
+     "rn2(8)=0 @ collect_coords(teleport.c:700)",
+     "rn2(7)=1 @ collect_coords(teleport.c:700)",
+     "rn2(6)=5 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1135,28 +1135,28 @@
   {
    "session": "seed2600-wizard-custom-binds.session.json",
    "total": 11647,
-   "jsTotal": 3231,
+   "jsTotal": 3256,
    "totalScreens": 38,
-   "valuePrefix": 1196,
-   "rulePrefix": 1193,
+   "valuePrefix": 2673,
+   "rulePrefix": 2673,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1193,
+    "index": 2673,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(8)=4 @ collect_coords(teleport.c:700)",
+    "js": "rnd(1000)=613 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "collect_coords",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(7)=0 @ somex(mkroom.c:668)",
-     "rn2(2)=1 @ somey(mkroom.c:674)",
-     "rn2(7)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=1 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=888 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=538 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=267 @ mineralize(mklev.c:1526)",
+     "rn2(8)=4 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)",
+     "rn2(6)=0 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1164,28 +1164,28 @@
   {
    "session": "seed4500-knight-coverage.session.json",
    "total": 108275,
-   "jsTotal": 3071,
+   "jsTotal": 3063,
    "totalScreens": 1814,
-   "valuePrefix": 1238,
-   "rulePrefix": 1235,
+   "valuePrefix": 2684,
+   "rulePrefix": 2684,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1235,
+    "index": 2684,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(1)=0 @ trquan(u_init.c:1110)",
+    "js": "rnd(1000)=596 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "trquan",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(3)=1 @ somex(mkroom.c:668)",
-     "rn2(4)=2 @ somey(mkroom.c:674)",
-     "rn2(7)=5 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=3 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=439 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=379 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=75 @ mineralize(mklev.c:1526)",
+     "rn2(1)=0 @ trquan(u_init.c:1110)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)",
+     "rn2(11)=10 @ mksobj_init(mkobj.c:878)"
     ]
    },
    "error": null
@@ -1193,28 +1193,28 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 7697,
+   "jsTotal": 7103,
    "totalScreens": 410,
-   "valuePrefix": 1512,
-   "rulePrefix": 1509,
+   "valuePrefix": 2557,
+   "rulePrefix": 1714,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1509,
+    "index": 1714,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
+    "c": "rn2(24075)=10502 @ somey(mkroom.c:674)",
+    "js": "rn2(24075)=10502 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "somey",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(12)=2 @ somex(mkroom.c:668)",
-     "rn2(4)=1 @ somey(mkroom.c:674)",
-     "rn2(8)=7 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=4 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(10)=8 @ mkgrave(mklev.c:2358)",
+     "rn2(4)=3 @ somex(mkroom.c:668)",
+     "rn2(6)=0 @ somey(mkroom.c:674)",
+     "rn2(24075)=10502 @ somey(mkroom.c:674)",
+     "rn2(3)=0 @ mkgrave(mklev.c:2370)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)"
     ]
    },
    "error": null
@@ -1222,28 +1222,28 @@
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
    "total": 13923,
-   "jsTotal": 6512,
+   "jsTotal": 6144,
    "totalScreens": 249,
-   "valuePrefix": 1142,
-   "rulePrefix": 1139,
+   "valuePrefix": 2196,
+   "rulePrefix": 2196,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 1139,
+    "index": 2196,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
-    "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "c": "rn2(2)=1 @ pet_type(dog.c:100)",
+    "js": "rnd(1000)=250 @ fastforward_post_mklev",
+    "kind": "value",
+    "cCaller": "pet_type",
+    "jsCaller": "fastforward_post_mklev",
     "context": [
-     "rn2(5)=4 @ somex(mkroom.c:668)",
-     "rn2(5)=3 @ somey(mkroom.c:674)",
-     "rn2(7)=0 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=7 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(1000)=913 @ mineralize(mklev.c:1526)",
+     "rn2(1000)=41 @ mineralize(mklev.c:1515)",
+     "rn2(1000)=788 @ mineralize(mklev.c:1526)",
+     "rn2(2)=1 @ pet_type(dog.c:100)",
+     "rn2(8)=0 @ collect_coords(teleport.c:700)",
+     "rn2(7)=5 @ collect_coords(teleport.c:700)"
     ]
    },
    "error": null
@@ -1254,36 +1254,36 @@
    "jsTotal": 3270,
    "totalScreens": 23,
    "valuePrefix": 3103,
-   "rulePrefix": 1394,
+   "rulePrefix": 1633,
    "screens": 15,
    "honestScreens": 0,
    "firstScreenMiss": 11,
    "first": {
-    "index": 1394,
+    "index": 1633,
     "step": 0,
-    "c": "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-    "js": "rn2(3)=1 @ fastforward_fill_mineralize",
+    "c": "rn2(25762)=21575 @ getrumor(rumors.c:151)",
+    "js": "rn2(25762)=21575 @ get_rnd_line",
     "kind": "caller",
-    "cCaller": "fill_ordinary_room",
-    "jsCaller": "fastforward_fill_mineralize",
+    "cCaller": "getrumor",
+    "jsCaller": "get_rnd_line",
     "context": [
-     "rn2(6)=2 @ somex(mkroom.c:668)",
-     "rn2(6)=3 @ somey(mkroom.c:674)",
-     "rn2(8)=2 @ makelevel(mklev.c:1402)",
-     "rn2(3)=1 @ fill_ordinary_room(mklev.c:974)",
-     "rn2(8)=7 @ fill_ordinary_room(mklev.c:984)",
-     "rn2(3)=0 @ fill_ordinary_room(mklev.c:986)"
+     "rn2(30)=0 @ fill_ordinary_room(mklev.c:1142)",
+     "rn2(4)=1 @ random_engraving(engrave.c:57)",
+     "rn2(2)=0 @ getrumor(rumors.c:151)",
+     "rn2(25762)=21575 @ getrumor(rumors.c:151)",
+     "rn2(25762)=12552 @ getrumor(rumors.c:151)",
+     "rn2(75)=65 @ wipeout_text(engrave.c:134)"
     ]
    },
    "error": null
   }
  ],
  "staticCounts": {
-  "discarded-roll": 193
+  "discarded-roll": 23
  },
  "totals": {
-  "rule": 57800,
-  "value": 59599,
+  "rule": 96851,
+  "value": 111139,
   "rolls": 792838,
   "honestScreens": 120,
   "screens": 135,
@@ -1291,12 +1291,57 @@
  },
  "todo": [
   {
-   "fn": "fill_ordinary_room",
-   "sessions": 41,
-   "blockedRolls": 718246,
+   "fn": "pet_type",
+   "sessions": 14,
+   "blockedRolls": 209836,
    "examples": [
-    "seed0002-healer-reflection-drummer @1000: C \"rn2(3)=0 @ fill_ordinary_room(mklev.c:974)\" / JS \"rn2(3)=0 @ fastforward_fill_mineralize\"",
-    "seed0004-feeding-pony @2359: C \"rn2(3)=1 @ fill_ordinary_room(mklev.c:974)\" / JS \"rn2(3)=1 @ fastforward_fill_mineralize\""
+    "seed0002-healer-reflection-drummer @2157: C \"rn2(2)=0 @ pet_type(dog.c:100)\" / JS \"rnd(1000)=75 @ fastforward_post_mklev\"",
+    "seed0012-monk-vault-escort @2911: C \"rn2(2)=0 @ pet_type(dog.c:100)\" / JS \"rnd(1000)=31 @ fastforward_post_mklev\""
+   ]
+  },
+  {
+   "fn": "collect_coords",
+   "sessions": 12,
+   "blockedRolls": 26561,
+   "examples": [
+    "seed0006-wizard-water-demon @2351: C \"rn2(8)=6 @ collect_coords(teleport.c:700)\" / JS \"rnd(1000)=47 @ fastforward_post_mklev\"",
+    "seed0009-swimmer-mforce @3228: C \"rn2(8)=2 @ collect_coords(teleport.c:700)\" / JS \"rnd(1000)=11 @ fastforward_post_mklev\""
+   ]
+  },
+  {
+   "fn": "getrumor",
+   "sessions": 7,
+   "blockedRolls": 178267,
+   "examples": [
+    "seed0007-rogue-snake-swamp @1628: C \"rn2(25762)=25553 @ getrumor(rumors.c:151)\" / JS \"rn2(25762)=25553 @ get_rnd_line\"",
+    "seed0030-ten-diverse-deaths @5165: C \"rn2(25762)=7767 @ getrumor(rumors.c:151)\" / JS \"rn2(25762)=7767 @ get_rnd_line\""
+   ]
+  },
+  {
+   "fn": "random_engraving",
+   "sessions": 3,
+   "blockedRolls": 130834,
+   "examples": [
+    "seed0004-feeding-pony @2588: C \"rn2(2894)=2474 @ random_engraving(engrave.c:57)\" / JS \"rn2(2894)=2474 @ get_rnd_line\"",
+    "seed0200-monk-north-search @1768: C \"rn2(2894)=1743 @ random_engraving(engrave.c:57)\" / JS \"rn2(2894)=1743 @ get_rnd_line\""
+   ]
+  },
+  {
+   "fn": "somey",
+   "sessions": 3,
+   "blockedRolls": 27737,
+   "examples": [
+    "seed0104-knight-ride-combat @1415: C \"rn2(24075)=11551 @ somey(mkroom.c:674)\" / JS \"rn2(24075)=11551 @ get_rnd_line\"",
+    "seed0108-wizard-extcmd-wishlist @1482: C \"rn2(24075)=4690 @ somey(mkroom.c:674)\" / JS \"rn2(24075)=4690 @ get_rnd_line\""
+   ]
+  },
+  {
+   "fn": "trquan",
+   "sessions": 2,
+   "blockedRolls": 105960,
+   "examples": [
+    "seed0398-wizard-wandpoly-pile @2657: C \"rn2(1)=0 @ trquan(u_init.c:1110)\" / JS \"rnd(1000)=979 @ fastforward_post_mklev\"",
+    "seed4500-knight-coverage @2684: C \"rn2(1)=0 @ trquan(u_init.c:1110)\" / JS \"rnd(1000)=596 @ fastforward_post_mklev\""
    ]
   },
   {
@@ -1455,1026 +1500,6 @@
    "file": "js/fastforward.js",
    "line": 40,
    "text": "() => { rn2(5); rn2(12); rn2(5); rn2(5); rn2(20); rn2(5); rn2(12); rn2(12); rn2(12); rn2(12); rn2(70); rn2(300); rn2(20)"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 47,
-   "text": "rn2(3); rn2(8); rn2(3); rn2(8); rn2(6); rnd(2); rnd(3); rnd(2); rn2(10); rn2(60);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 48,
-   "text": "rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(8); rn2(6); rnd(100); rnd(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 49,
-   "text": "rnd(2); rn2(10); rn2(11); rn2(10); rn2(10); rn2(40); rn2(100); rn2(80); rn2(80); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 50,
-   "text": "rn2(5); rn2(3); rn2(14); rn2(2); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 51,
-   "text": "rn2(16); rn2(21); rnd(2); rnd(4); rn2(50); rn2(100); rn2(100); rn2(8); rnd(25); rnd(25);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 52,
-   "text": "rnd(25); rnd(25); rnd(25); rn2(14); rn2(2); rnd(4); rn2(4); rnd(1000); rnd(2); rn2(6);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 53,
-   "text": "rn2(5); rn2(15); rnd(2); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 54,
-   "text": "rn2(21); rn2(2); rnz(25); rn2(8); rn2(3); rn2(14); rn2(2); rnd(2); rnd(3); rnd(2); rn2(10);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 55,
-   "text": "rn2(60); rn2(14); rn2(2); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 56,
-   "text": "rn2(4); rn2(5); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 57,
-   "text": "rnd(2); rnd(4); rn2(2); rn2(50); rn2(100); rn2(100); rn2(8); rn2(3); rn2(4); rn2(5); rnd(2);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 58,
-   "text": "rnd(3); rnd(2); rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(4); rn2(5); rn2(3); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 59,
-   "text": "rnd(2); rn2(6); rn2(2); rn2(9); rnd(2); rn2(4); rn2(5); rn2(3); rn2(10); rnd(1000); rnd(2);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 60,
-   "text": "rn2(3); rn2(6); rn2(30); rn2(3); rn2(4); rn2(5); rnd(100); rnd(1000); rnd(2); rn2(4); rn2(2);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 61,
-   "text": "rn2(5); rn2(3); rn2(8); rn2(3); rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 62,
-   "text": "rn2(3); rn2(3); rn2(8); rnd(25); rn2(7); rnd(25); rnd(25); rn2(7); rnd(25); rn2(4); rn2(2);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 63,
-   "text": "rnd(4); rn2(4); rnd(1000); rnd(2); rn2(6); rn2(5); rn2(15); rn2(10); rnd(2); rn2(3); rn2(4);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 64,
-   "text": "rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(2); rnz(25); rn2(8); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 65,
-   "text": "rn2(10); rn2(60); rn2(60); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3); rn2(6);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 66,
-   "text": "rn2(3); rn2(3); rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rnd(2);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 67,
-   "text": "rnd(4); rn2(2); rn2(50); rn2(100); rn2(100); rn2(8); rn2(3); rn2(10); rn2(60); rn2(60);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 68,
-   "text": "rn2(78); rn2(20); rn2(20); rn2(30); rn2(4); rn2(2); rn2(25762); rn2(25762); rn2(75); rn2(4);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 69,
-   "text": "rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(75);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 70,
-   "text": "rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 71,
-   "text": "rn2(75); rn2(4); rn2(75); rn2(4); rn2(75); rn2(4); rn2(1); rn2(75); rn2(4); rn2(75); rn2(4);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 72,
-   "text": "rn2(1); rn2(75); rn2(4); rn2(75); rn2(4); rn2(6); rn2(3); rn2(3); rn2(3); rn2(8); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 73,
-   "text": "rn2(3); rn2(4); rn2(3); rn2(4); rnd(2); rnd(3); rnd(2); rn2(10); rn2(60); rn2(60); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 74,
-   "text": "rn2(4); rn2(3); rn2(78); rn2(20); rn2(20); rn2(30); rn2(3); rn2(3); rn2(11); rn2(4); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 75,
-   "text": "rn2(4); rn2(5); rn2(7); rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rnd(2); rnd(4); rn2(50);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 76,
-   "text": "rn2(100); rn2(100); rn2(8); rnd(25); rn2(11); rn2(4); rnd(4); rn2(8); rn2(3); rn2(10);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 77,
-   "text": "rn2(60); rn2(60); rn2(78); rn2(20); rn2(11); rn2(4); rnd(2); rn2(3); rn2(4); rn2(5); rn2(7);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 78,
-   "text": "rn2(8); rn2(11); rn2(15); rn2(16); rn2(21); rn2(10); rn2(2); rn2(20); rn2(30); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 79,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 80,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 81,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 82,
-   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 83,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 84,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 85,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 86,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 87,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 88,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 89,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 90,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 91,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 92,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 93,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 94,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 95,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 96,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 97,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 98,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 99,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 100,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 101,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 102,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 103,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 104,
-   "text": "rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 105,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 106,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 107,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 108,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 109,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 110,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 111,
-   "text": "rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 112,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 113,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 114,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 115,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 116,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 117,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 118,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 119,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 120,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 121,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 122,
-   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 123,
-   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 124,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 125,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 126,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 127,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 128,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 129,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 130,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 131,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 132,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 133,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 134,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 135,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 136,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 137,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 138,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 139,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 140,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 141,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 142,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 143,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 144,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 145,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 146,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 147,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 148,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 149,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 150,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 151,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 152,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 153,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 154,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 155,
-   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 156,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 157,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 158,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 159,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 160,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 161,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 162,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 163,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 164,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 165,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 166,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 167,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 168,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 169,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 170,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 171,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 172,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 173,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 174,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 175,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 176,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 177,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 178,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 179,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 180,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 181,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 182,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 183,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 184,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 185,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 186,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 187,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 188,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 189,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 190,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 191,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 192,
-   "text": "rn2(1000); rn2(1000); rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 193,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 194,
-   "text": "rnd(2); rnd(60); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 195,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 196,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 197,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 198,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 199,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rnd(2); rnd(1000); rnd(2); rn2(6);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 200,
-   "text": "rn2(3); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 201,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 202,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 203,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 204,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 205,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 206,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 207,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 208,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 209,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 210,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 211,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 212,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 213,
-   "text": "rnd(2); rnd(1000); rnd(2); rn2(6); rn2(3); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 214,
-   "text": "rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/fastforward.js",
-   "line": 215,
-   "text": "rn2(1000); rn2(1000);"
-  },
-  {
-   "check": "discarded-roll",
-   "file": "js/mklev.js",
-   "line": 191,
-   "text": "rn2(398);"
   }
  ]
 }
