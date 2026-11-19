@@ -1,11 +1,44 @@
 // mon.js — Monster movement allotment and per-turn monster upkeep.
 // C ref: mon.c
 //
-// Ported so far: mcalcmove().
+// Ported so far: mcalcmove(), mcalcdistress(), movemon(), mfndpos(),
+// monnear(), mon_allowflags().
 
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
-import { MSLOW, MFAST, NORMAL_SPEED } from './const.js';
+import {
+    MSLOW, MFAST, NORMAL_SPEED, LOW_PM, I_SPECIAL, CONFLICT, INVIS,
+    DISPLACED, COLNO, ROWNO, IS_OBSTRUCTED, IS_TREE, IS_WATERWALL, IS_DOOR,
+    IS_STWALL, IRONBARS, LAVAWALL, W_NONDIGGABLE, D_CLOSED, D_LOCKED,
+    D_BROKEN, isok,
+    ALLOW_U, ALLOW_M, ALLOW_TM, ALLOW_ALL, ALLOW_MDISP, ALLOW_TRAPS,
+    ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
+    NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
+} from './const.js';
+import { dist2 } from './hacklib.js';
+import { vision_recalc } from './vision.js';
+import { m_at, sobj_at, is_pool, is_lava, may_passwall } from './makemon.js';
+import { t_at } from './trap.js';
+import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls,
+         perceives, is_were, is_human, is_undead, is_vampshifter,
+         dmgtype } from './mondata.js';
+import {
+    mons, S_EEL, S_UNICORN, S_GHOST, S_VORTEX, S_ZOMBIE, S_LICH,
+    M1_NOHANDS, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, M1_UNSOLID,
+    M1_SLITHY, M1_HIDE, M1_METALLIVORE, M2_GIANT, M2_ROCKTHROW, M2_MINION,
+    M2_JEWELS, M3_DISPLACES, MZ_SMALL, MZ_LARGE, MS_LEADER, AD_RUST, AD_CORR,
+    PM_GRID_BUG, PM_DEATH, PM_FAMINE, PM_PESTILENCE, PM_MINOTAUR,
+    PM_FIRE_ELEMENTAL, PM_SALAMANDER, PM_FLOATING_EYE, PM_PURPLE_WORM,
+    PM_BABY_PURPLE_WORM, PM_SHRIEKER, PM_GHOUL, PM_SKELETON,
+    PM_AIR_ELEMENTAL,
+} from './monsters.js';
+import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
+         LOCK_PICK } from './objects.js';
+import { dochugw, onscary, mon_regen, m_everyturn_effect } from './monmove.js';
+
+/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
+   order; C prepends, so walk it newest first */
+function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 
 // C ref: mon.c mcalcmove()
 export function mcalcmove(mon,
@@ -50,4 +83,572 @@ export function mcalcmove(mon,
             mmove += NORMAL_SPEED;
     }
     return mmove;
+}
+
+// ── C ref: mon.c mcalcdistress() / m_calcdistress() ──
+export function mcalcdistress() {
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (DEADMONSTER(mtmp)) continue; /* iter_mons() */
+        m_calcdistress(mtmp);
+    }
+}
+
+function m_calcdistress(mtmp) {
+    /* must check non-moving monsters once/turn in case they managed
+       to end up in water or lava; note: when not in liquid they regen,
+       shape-shift, timeout temporary maladies just like other monsters */
+    if (mtmp.data.mmove === 0) {
+        if (game.vision_full_recalc)
+            vision_recalc(0);
+        if (minliquid(mtmp))
+            return;
+    }
+
+    /* regenerate hit points */
+    mon_regen(mtmp, false);
+
+    /* possibly polymorph shapechangers and lycanthropes */
+    if (mtmp.cham !== undefined && mtmp.cham >= LOW_PM) /* ismnum() */
+        throw new Error('m_calcdistress(): decide_to_shapeshift() not ported yet');
+    if (is_were(mtmp.data))
+        throw new Error('m_calcdistress(): were_change() not ported yet');
+
+    /* gradually time out temporary problems */
+    if (mtmp.mblinded && !--mtmp.mblinded)
+        mtmp.mcansee = 1;
+    if (mtmp.mfrozen && !--mtmp.mfrozen)
+        mtmp.mcanmove = 1;
+    if (mtmp.mfleetim && !--mtmp.mfleetim)
+        mtmp.mflee = 0;
+
+    /* FIXME: mtmp->mlstmv ought to be updated here */
+}
+
+/* C ref: monst.h DEADMONSTER() */
+function DEADMONSTER(mon) { return mon.mhp < 1; }
+
+// C ref: mon.c minliquid() -- monsters in pools or lava aren't ported yet
+function minliquid(mtmp) {
+    if (is_pool(mtmp.mx, mtmp.my) || is_lava(mtmp.mx, mtmp.my))
+        throw new Error('minliquid() not ported yet');
+    return 0;
+}
+
+function Conflict() {
+    const p = game.u.uprops[CONFLICT];
+    return !!(p.intrinsic || p.extrinsic);
+}
+
+// ── C ref: mon.c movemon_singlemon() ──
+// perform movement for a single monster
+async function movemon_singlemon(mtmp) {
+    const u = game.u;
+    /* end monster movement early if hero is flagged to leave the level */
+    if (u.utotype) {
+        game.somebody_can_move = false;
+        return true;
+    }
+
+    /* one dead monster needs to perform a move after death: vault guard */
+    if (mtmp.isgd && !mtmp.mx)
+        throw new Error('movemon_singlemon(): gd_move() not ported yet');
+    if (DEADMONSTER(mtmp))
+        return false;
+
+    /* monster isn't on this map anymore: migration isn't ported yet */
+
+    m_everyturn_effect(mtmp);
+
+    /* Find a monster that we have not treated yet. */
+    if (mtmp.movement < NORMAL_SPEED)
+        return false;
+
+    mtmp.movement -= NORMAL_SPEED;
+    if (mtmp.movement >= NORMAL_SPEED)
+        game.somebody_can_move = true;
+
+    if (game.vision_full_recalc)
+        vision_recalc(0); /* vision! */
+
+    /* reset obj bypasses before next monster moves: clear_bypasses() and
+       clear_splitobjs() -- object bypass bits aren't ported yet */
+    if (minliquid(mtmp))
+        return false;
+
+    /* after losing equipment, try to put on replacement */
+    if ((mtmp.misc_worn_check ?? 0) & I_SPECIAL)
+        throw new Error('movemon_singlemon(): m_dowear() not ported yet');
+
+    if ((mtmp.data.mflags1 & M1_HIDE) !== 0) { /* is_hider() */
+        throw new Error('movemon_singlemon(): restrap() not ported yet');
+    } else if (mtmp.data.mlet === S_EEL && !mtmp.mundetected) {
+        throw new Error('movemon_singlemon(): eel hideunder() not ported yet');
+    }
+
+    /* continue if the monster died fighting */
+    if (Conflict() && !mtmp.iswiz)
+        throw new Error('movemon_singlemon(): fightm() not ported yet');
+    await dochugw(mtmp, true); /* otherwise just move the monster */
+    return false;
+}
+
+// ── C ref: mon.c movemon() ──
+// perform movement for all monsters
+export async function movemon() {
+    game.somebody_can_move = false;
+
+    /* iter_mons_safe(movemon_singlemon) */
+    const all = [];
+    for (let m = game.fmon; m; m = m.nmon) all.push(m);
+    for (const m of all) {
+        if (await movemon_singlemon(m))
+            break;
+    }
+
+    /* if (any_light_source()) vision_full_recalc = 1: light sources
+       aren't ported yet */
+    /* clear_bypasses(), clear_splitobjs(): not ported yet */
+    /* remove dead monsters */
+    dmonsfree();
+
+    /* a monster may have levteleported player -dlc */
+    if (game.u.utotype)
+        throw new Error('movemon(): deferred_goto() not ported yet');
+
+    return game.somebody_can_move;
+}
+
+// ── C ref: mon.c dmonsfree() ──
+// really free dead monsters
+function dmonsfree() {
+    let prev = null;
+    for (let m = game.fmon; m; m = m.nmon) {
+        if (DEADMONSTER(m) && !m.isgd) {
+            if (prev) prev.nmon = m.nmon; else game.fmon = m.nmon;
+        } else prev = m;
+    }
+}
+
+// ── C ref: mon.c monnear() ──
+// Is the square close enough for the monster to move or attack into?
+export function monnear(mon, x, y) {
+    const distance = dist2(mon.mx, mon.my, x, y);
+
+    if (distance === 2 && NODIAG(monsndx(mon.data)))
+        return false;
+    return (distance < 3);
+}
+/* C ref: mondata.h NODIAG() */
+function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
+
+/* mondata.h */
+function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
+function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
+function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
+function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
+function tunnels(ptr) { return (ptr.mflags1 & M1_TUNNEL) !== 0; }
+function needspick(ptr) { return (ptr.mflags1 & M1_NEEDPICK) !== 0; }
+function is_whirly(ptr) {
+    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
+}
+function is_rider(ptr) {
+    const n = monsndx(ptr);
+    return n === PM_DEATH || n === PM_FAMINE || n === PM_PESTILENCE;
+}
+
+/* C ref: monmove.c m_can_break_boulder() */
+function m_can_break_boulder(mtmp) {
+    return (is_rider(mtmp.data)
+            || (!mtmp.mspec_used
+                && (mtmp.isshk || mtmp.ispriest
+                    || (mtmp.data.msound === MS_LEADER))));
+}
+/* C ref: mthrowu.c m_carrying() */
+function m_carrying(mtmp, type) {
+    for (const otmp of minv(mtmp))
+        if (otmp.otyp === type) return otmp;
+    return null;
+}
+/* C ref: monmove.c monhaskey() */
+function monhaskey(mon, for_unlocking) {
+    if (for_unlocking && m_carrying(mon, CREDIT_CARD))
+        return true;
+    return !!(m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK));
+}
+/* C ref: mondata.c passes_bars() */
+function passes_bars(mptr) {
+    return (passes_walls(mptr) || amorphous(mptr)
+            || (mptr.mflags1 & M1_UNSOLID) !== 0
+            || is_whirly(mptr) || verysmall(mptr)
+            /* rust monsters and some puddings can destroy bars */
+            || dmgtype(mptr, AD_RUST) || dmgtype(mptr, AD_CORR)
+            /* rock moles can eat bars */
+            || (mptr.mflags1 & M1_METALLIVORE) !== 0
+            || (slithy(mptr) && !bigmonst(mptr)));
+}
+
+// ── C ref: mon.c mon_allowflags() ──
+// return flags based on monster data, for mfndpos()
+export function mon_allowflags(mtmp) {
+    const u = game.u;
+    const ptr = mtmp.data;
+    let allowflags = 0;
+    const can_open = !((ptr.mflags1 & M1_NOHANDS) !== 0 || verysmall(ptr));
+    const can_unlock = ((can_open && monhaskey(mtmp, true))
+                        || mtmp.iswiz || is_rider(ptr));
+    const doorbuster = (ptr.mflags2 & M2_GIANT) !== 0;
+    /* don't tunnel if on rogue level or if hostile and close enough
+       to prefer a weapon; same criteria as in m_move() */
+    let can_tunnel = tunnels(ptr); /* && !Is_rogue_level(&u.uz) */
+
+    if (can_tunnel && needspick(ptr)
+        && ((!mtmp.mpeaceful || Conflict())
+            && dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) <= 8))
+        can_tunnel = false;
+
+    if (mtmp.mtame)
+        allowflags |= ALLOW_M | ALLOW_TRAPS | ALLOW_SANCT | ALLOW_SSM;
+    else if (mtmp.mpeaceful)
+        allowflags |= ALLOW_SANCT | ALLOW_SSM;
+    else
+        allowflags |= ALLOW_U;
+    if (Conflict())
+        throw new Error('mon_allowflags(): resist_conflict() not ported yet');
+    if (mtmp.isshk)
+        allowflags |= ALLOW_SSM;
+    if (mtmp.ispriest)
+        allowflags |= ALLOW_SSM | ALLOW_SANCT;
+    if (passes_walls(ptr))
+        allowflags |= (ALLOW_ROCK | ALLOW_WALL);
+    if ((ptr.mflags2 & M2_ROCKTHROW) || m_can_break_boulder(mtmp))
+        allowflags |= ALLOW_ROCK;
+    if (can_tunnel)
+        allowflags |= ALLOW_DIG;
+    if (doorbuster)
+        allowflags |= BUSTDOOR;
+    if (can_open)
+        allowflags |= OPENDOOR;
+    if (can_unlock)
+        allowflags |= UNLOCKDOOR;
+    if (passes_bars(ptr)
+        /* restrict engulfer or holder who might try to pass iron bars while
+           carrying hero; accept small subset for poly'd hero passes_bars() */
+        && (mtmp !== u.ustuck))
+        allowflags |= ALLOW_BARS;
+    if ((ptr.mflags2 & M2_MINION) || is_rider(ptr))
+        allowflags |= ALLOW_SANCT;
+    /* unicorn may not be able to avoid hero on a noteleport level */
+    if (ptr.mlet === S_UNICORN && (ptr.mflags2 & M2_JEWELS) /* is_unicorn */
+        && !game.level.flags?.noteleport)
+        allowflags |= NOTONL;
+    if (is_human(ptr) || ptr === mons[PM_MINOTAUR])
+        allowflags |= ALLOW_SSM;
+    if ((is_undead(ptr) && ptr.mlet !== S_GHOST) || is_vampshifter(mtmp))
+        allowflags |= NOGARLIC;
+
+    return allowflags;
+}
+
+/* C ref: obj.h OBJ_AT() -- floor objects live in game.level.objects */
+function OBJ_AT(x, y) {
+    for (const o of game.level.objects || [])
+        if (o.ox === x && o.oy === y) return true;
+    return false;
+}
+
+/* C ref: hacklib.c online2() */
+function online2(x0, y0, x1, y1) {
+    const dx = x0 - x1, dy = y0 - y1;
+    /*  If either delta is zero then they're on an orthogonal line,
+     *  else if the deltas are equal (signs ignored) they're on a diagonal.
+     */
+    return (!dy || !dx || dy === dx || dy === -dx);
+}
+/* C ref: mon.c monlineu() */
+function monlineu(mon, nx, ny) {
+    return online2(nx, ny, mon.mux, mon.muy);
+}
+
+/* C ref: hack.c may_dig() */
+function may_dig(x, y) {
+    const lev = game.level.at(x, y);
+    return !((IS_STWALL(lev.typ) || IS_TREE(lev.typ))
+             && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
+}
+/* C ref: hack.c bad_rock() */
+function bad_rock(mdat, x, y) {
+    return (/* (Sokoban && sobj_at(BOULDER, x, y)) || */
+            (IS_OBSTRUCTED(game.level.at(x, y).typ)
+             && (!tunnels(mdat) || needspick(mdat) || !may_dig(x, y))
+             && !(passes_walls(mdat) && may_passwall(x, y))));
+}
+/* C ref: hack.c cant_squeeze_thru() */
+function cant_squeeze_thru(mon) {
+    const ptr = mon.data;
+
+    if (passes_walls(ptr))
+        return 0;
+
+    /* too big? */
+    if (bigmonst(ptr)
+        && !(amorphous(ptr) || is_whirly(ptr) || ptr.mlet === S_GHOST
+             || slithy(ptr) /* || can_fog(mon) */))
+        return 1;
+
+    /* lugging too much junk? curr_mon_load() */
+    if (minv(mon).length)
+        throw new Error('cant_squeeze_thru(): curr_mon_load() not ported yet');
+
+    /* can squeeze through */
+    return 0;
+}
+
+/* C ref: mon.c zombie_maker() */
+function zombie_maker(mon) {
+    const pm = mon.data;
+    if (mon.mcan) return false;
+    switch (pm.mlet) {
+    case S_ZOMBIE:
+        /* Z-class monsters that aren't actually zombies go here */
+        if (pm === mons[PM_GHOUL] || pm === mons[PM_SKELETON])
+            return false;
+        return true;
+    case S_LICH:
+        /* all liches will create zombies as well */
+        return true;
+    }
+    return false;
+}
+/* C ref: mon.c mm_2way_aggression() */
+function mm_2way_aggression(magr, mdef) {
+    /* On_W_tower_level(): the Wizard's tower isn't ported yet */
+    /* liches/zombies vs things that can be zombified */
+    if (zombie_maker(magr))
+        throw new Error('mm_2way_aggression(): zombie_form() not ported yet');
+    return 0;
+}
+/* C ref: mon.c mm_aggression() */
+function mm_aggression(magr, mdef) {
+    const mndx = monsndx(magr.data);
+
+    /* don't allow pets to fight each other */
+    if (magr.mtame && mdef.mtame)
+        return 0;
+
+    /* supposedly purple worms are attracted to shrieking because they
+       like to eat shriekers, so attack the latter when feasible */
+    if ((mndx === PM_PURPLE_WORM || mndx === PM_BABY_PURPLE_WORM)
+        && mdef.data === mons[PM_SHRIEKER])
+        return ALLOW_M | ALLOW_TM;
+    return (mm_2way_aggression(magr, mdef) | mm_2way_aggression(mdef, magr));
+}
+/* C ref: mon.c mm_displacement() */
+function mm_displacement(magr, mdef) {
+    const pa = magr.data, pd = mdef.data;
+    const is_displacer = p => (p.mflags3 & M3_DISPLACES) !== 0;
+
+    if (is_displacer(pa) && (!is_displacer(pd) || magr.m_lev > mdef.m_lev)
+        /* no displacing grid bugs diagonally */
+        && !(magr.mx !== mdef.mx && magr.my !== mdef.my
+             && NODIAG(monsndx(pd)))
+        /* no displacing trapped monsters or multi-location longworms
+           (long worms aren't ported yet) */
+        && !mdef.mtrapped && !mdef.wormno
+        /* riders can move anything; others, same size or smaller only */
+        && (is_rider(pa) || pa.msize >= pd.msize))
+        return ALLOW_MDISP;
+    return 0;
+}
+
+// ── C ref: mon.c mfndpos() ──
+// return number of acceptable neighbour positions
+export function mfndpos(mon, data, flag) {
+    const u = game.u;
+    const lev = game.level;
+    const mdat = mon.data;
+    let cnt = 0;
+    const rockok = false, treeok = false;
+
+    const x = mon.mx;
+    const y = mon.my;
+    const nowtyp = lev.at(x, y).typ;
+
+    data.cnt = 0; data.poss = []; data.info = [];
+
+    const nodiag = NODIAG(monsndx(mdat));
+    let wantpool = (mdat.mlet === S_EEL);
+    /* m_in_air(): clinging hiders aren't ported yet */
+    const in_air = is_flyer(mdat) || is_floater(mdat);
+    const poolok = ((/* !Is_waterlevel(&u.uz) && */ in_air)
+                    || (is_swimmer(mdat) && !wantpool));
+    let lavaok = (in_air || mdat === mons[PM_FIRE_ELEMENTAL]
+                  || mdat === mons[PM_SALAMANDER]); /* likes_lava() */
+    if (mdat === mons[PM_FLOATING_EYE]) /* prefers to avoid heat */
+        lavaok = false;
+    const thrudoor = ((flag & (ALLOW_WALL | BUSTDOOR)) !== 0);
+    /* poison gas regions aren't ported yet (none exist) */
+
+    if (flag & ALLOW_DIG)
+        throw new Error('mfndpos(): ALLOW_DIG not ported yet');
+
+    for (;;) { /* nexttry: eels prefer the water, but if there is no water
+                  nearby, they will crawl over land */
+        if (mon.mconf) {
+            flag |= ALLOW_ALL;
+            flag &= ~NOTONL;
+        }
+        if (!mon.mcansee)
+            flag |= ALLOW_SSM;
+        const maxx = Math.min(x + 1, COLNO - 1);
+        const maxy = Math.min(y + 1, ROWNO - 1);
+        for (let nx = Math.max(1, x - 1); nx <= maxx; nx++)
+            for (let ny = Math.max(0, y - 1); ny <= maxy; ny++) {
+                if (nx === x && ny === y)
+                    continue;
+                const nloc = lev.at(nx, ny);
+                const ntyp = nloc.typ;
+                if (IS_OBSTRUCTED(ntyp)
+                    && !((flag & ALLOW_WALL) && may_passwall(nx, ny))
+                    && !((IS_TREE(ntyp) ? treeok : rockok) && may_dig(nx, ny)))
+                    continue;
+                /* intelligent peacefuls avoid digging shop/temple walls:
+                   only reachable with rockok (ALLOW_DIG, above) */
+                if (IS_WATERWALL(ntyp) && !is_swimmer(mdat))
+                    continue;
+                /* KMH -- Added iron bars */
+                if (ntyp === IRONBARS
+                    && (!(flag & ALLOW_BARS)
+                        || (((nloc.wall_info ?? 0) & W_NONDIGGABLE)
+                            && (dmgtype(mdat, AD_RUST)
+                                || dmgtype(mdat, AD_CORR)))))
+                    continue;
+                if (IS_DOOR(ntyp)
+                    /* an amorphous creature can only move under/through a
+                       closed door if it doesn't currently have hero
+                       engulfed (can_fog(): vampshifters aren't ported) */
+                    && !(amorphous(mdat) && !(u.uswallow && u.ustuck === mon))
+                    && ((((nloc.doormask ?? 0) & D_CLOSED) && !(flag & OPENDOOR))
+                        || (((nloc.doormask ?? 0) & D_LOCKED)
+                            && !(flag & UNLOCKDOOR))) && !thrudoor)
+                    continue;
+                /* first diagonal checks (tight squeezes handled below) */
+                if (nx !== x && ny !== y
+                    && (nodiag
+                        || (IS_DOOR(nowtyp) && ((lev.at(x, y).doormask ?? 0) & ~D_BROKEN))
+                        || (IS_DOOR(ntyp) && ((nloc.doormask ?? 0) & ~D_BROKEN))
+                        /* Is_rogue_level() and long worm segment crossing:
+                           not ported yet */
+                        ))
+                    continue;
+                if ((!lavaok || !(flag & ALLOW_WALL)) && ntyp === LAVAWALL)
+                    continue;
+                if ((poolok || is_pool(nx, ny) === wantpool)
+                    && (lavaok || !is_lava(nx, ny))) {
+                    let dispx, dispy;
+                    const Invis = (u.uprops[INVIS].intrinsic
+                                   || u.uprops[INVIS].extrinsic)
+                                  && !u.uprops[INVIS].blocked;
+                    const Displaced = (u.uprops[DISPLACED].intrinsic
+                                       || u.uprops[DISPLACED].extrinsic)
+                                      && !u.uprops[DISPLACED].blocked;
+                    const monseeu = (mon.mcansee
+                                     && (!Invis || perceives(mdat)));
+                    const checkobj = OBJ_AT(nx, ny);
+
+                    /* Displacement also displaces the Elbereth/scare monster,
+                     * as long as you are visible.
+                     */
+                    if (Displaced && monseeu
+                        && mon.mux === nx && mon.muy === ny) {
+                        dispx = u.ux;
+                        dispy = u.uy;
+                    } else {
+                        dispx = nx;
+                        dispy = ny;
+                    }
+
+                    let info = 0;
+                    if (onscary(dispx, dispy, mon)) {
+                        if (!(flag & ALLOW_SSM))
+                            continue;
+                        info |= ALLOW_SSM;
+                    }
+                    if ((u.ux === nx && u.uy === ny)
+                        || (nx === mon.mux && ny === mon.muy)) {
+                        if (u.ux === nx && u.uy === ny) {
+                            /* If it's right next to you, it found you,
+                             * displaced or no.  We must set mux and muy
+                             * right now, so when we return we can tell
+                             * that the ALLOW_U means to attack _you_ and
+                             * not the image.
+                             */
+                            mon.mux = u.ux;
+                            mon.muy = u.uy;
+                        }
+                        if (!(flag & ALLOW_U))
+                            continue;
+                        info |= ALLOW_U;
+                    } else {
+                        const mtmp2 = m_at(nx, ny);
+                        if (mtmp2) {
+                            let mmflag = flag | mm_aggression(mon, mtmp2);
+
+                            if (mmflag & ALLOW_M) {
+                                info |= ALLOW_M;
+                                if (mtmp2.mtame) {
+                                    if (!(mmflag & ALLOW_TM))
+                                        continue;
+                                    info |= ALLOW_TM;
+                                }
+                            } else {
+                                flag &= ~ALLOW_MDISP; /* depends upon defender */
+                                mmflag = flag | mm_displacement(mon, mtmp2);
+                                if (!(mmflag & ALLOW_MDISP))
+                                    continue;
+                                info |= ALLOW_MDISP;
+                            }
+                        }
+                        /* Note: ALLOW_SANCT only prevents movement, not
+                           attack, into a temple. */
+                        if (lev.flags?.has_temple)
+                            throw new Error('mfndpos(): temples not ported yet');
+                    }
+                    if (checkobj && sobj_at(CLOVE_OF_GARLIC, nx, ny)) {
+                        if (flag & NOGARLIC)
+                            continue;
+                        info |= NOGARLIC;
+                    }
+                    if (checkobj && sobj_at(BOULDER, nx, ny)) {
+                        if (!(flag & ALLOW_ROCK))
+                            continue;
+                        info |= ALLOW_ROCK;
+                    }
+                    if (monseeu && monlineu(mon, nx, ny)) {
+                        if (flag & NOTONL)
+                            continue;
+                        info |= NOTONL;
+                    }
+                    /* check for diagonal tight squeeze */
+                    if (nx !== x && ny !== y && bad_rock(mdat, x, ny)
+                        && bad_rock(mdat, nx, y) && cant_squeeze_thru(mon))
+                        continue;
+                    /* The monster avoids a particular type of trap if it's
+                     * familiar with the trap type.  Pets get ALLOW_TRAPS
+                     * and checking is done in dogmove.c.
+                     */
+                    if (t_at(nx, ny))
+                        throw new Error('mfndpos(): trap avoidance not ported yet');
+                    data.poss[cnt] = { x: nx, y: ny };
+                    data.info[cnt] = info;
+                    cnt++;
+                }
+            }
+        if (!cnt && wantpool && !is_pool(x, y)) {
+            wantpool = false;
+            continue; /* goto nexttry */
+        }
+        break;
+    }
+    data.cnt = cnt;
+    return cnt;
 }

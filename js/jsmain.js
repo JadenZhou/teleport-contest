@@ -239,6 +239,13 @@ export async function runSegment(input) {
             await moveloop_core();
         } catch (e) {
             if (String(e?.message || '').includes('Input queue empty')) break;
+            /* C code that isn't ported yet: the game stops here, keeping
+               everything it did up to this point (no rolls are invented
+               or skipped past the stop) */
+            if (String(e?.message || '').includes('not ported yet')) {
+                nhGame.notPortedError = e;
+                break;
+            }
             throw e;
         }
     }
