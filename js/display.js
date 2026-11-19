@@ -36,8 +36,27 @@ const ANSI_COLOR = [
     97,  // CLR_WHITE     15
 ];
 
+// C ref: defsym.h PCHAR() default symbols for the DEC line-drawing
+// symbols the DECgraphics symset (dat/symbols) substitutes
+const DEF_CMAP_FOR_DEC = {
+    '~': '.',                               /* S_room, S_ndoor */
+    'q': '-', 'x': '|',                     /* S_hwall, S_vwall */
+    'l': '-', 'k': '-', 'm': '-', 'j': '-', /* corners */
+    'n': '-', 'v': '-', 'w': '-',           /* S_crwall, S_tuwall, S_tdwall */
+    'u': '|', 't': '|',                     /* S_tlwall, S_trwall */
+};
+
 // ── Terrain to display character + color + DEC flag ──
+// With symset:DECgraphics the DEC line-drawing glyphs are used;
+// otherwise the default symbols.
 function terrain_glyph(loc, x, y) {
+    const tg = terrain_glyph_dec(loc, x, y);
+    if (tg.dec && !/^decgraphics$/i.test(game.symset_name || ''))
+        return { ch: DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch, color: tg.color, dec: false };
+    return tg;
+}
+
+function terrain_glyph_dec(loc, x, y) {
     const typ = loc.typ;
     switch (typ) {
     case STONE:     return { ch: ' ', color: NO_COLOR, dec: false };
