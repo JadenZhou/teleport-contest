@@ -25,7 +25,12 @@ import {
     STONE, MAX_TYPE, INVALID_TYPE, NO_ROOM, HWALL, IRONBARS, CLOUD, D_CLOSED,
     IS_WALL, MAXNROFROOMS, ROOM, ALTAR, SPACE_POS, IS_OBSTRUCTED,
     IS_POOL, IS_LAVA, AM_NONE, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC, AM_MASK,
-    Align2amask, A_ORIGINAL,
+    Align2amask, A_ORIGINAL, STAIRS, LADDER,
+    NO_TRAP, ARROW_TRAP, DART_TRAP, ROCKTRAP, SQKY_BOARD, BEAR_TRAP, LANDMINE,
+    ROLLING_BOULDER_TRAP, SLP_GAS_TRAP, RUST_TRAP, FIRE_TRAP, PIT, SPIKED_PIT,
+    HOLE, TRAPDOOR, TELEP_TRAP, LEVEL_TELEP, MAGIC_PORTAL, WEB, STATUE_TRAP,
+    MAGIC_TRAP, ANTI_MAGIC, POLY_TRAP, VIBRATING_SQUARE,
+    MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_SEEN, MKTRAP_NOVICTIM,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring } from './nhlua.js';
 import { set_levltyp, set_levltyp_lit } from './mkmaze.js';
@@ -36,7 +41,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, somex, somey, somexy } from './mklev.js';
+import { create_room, topologize, add_door, add_room, somex, somey, somexy, mktrap } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container,
@@ -1625,6 +1630,168 @@ export function lspo_monster(...args) {
     return 0;
 }
 
+// C ref: sp_lev.c create_trap()
+/*
+ * Create a trap in a room.
+ */
+function create_trap(t, croom) {
+    const c = { x: -1, y: -1 };
+    let mktrap_flags = MKTRAP_MAZEFLAG;
+
+    if (t.type === VIBRATING_SQUARE) {
+        /* pick_vibrasquare_location() is not ported yet */
+        nhl_error(null, 'create_trap: vibrating square is not ported yet');
+    } else if (croom) {
+        get_free_room_loc(c, croom, t.coord);
+    } else {
+        let trycnt = 0;
+
+        do {
+            get_location_coord(c, DRY, croom, t.coord);
+        } while ((game.level.at(c.x, c.y).typ === STAIRS
+                  || game.level.at(c.x, c.y).typ === LADDER)
+                 && ++trycnt <= 100);
+        if (trycnt > 100)
+            return;
+    }
+
+    if (!t.spider_on_web)
+        mktrap_flags |= MKTRAP_NOSPIDERONWEB;
+    if (t.seen)
+        mktrap_flags |= MKTRAP_SEEN;
+    if (t.novictim)
+        mktrap_flags |= MKTRAP_NOVICTIM;
+
+    const tm = { x: c.x, y: c.y };
+
+    mktrap(t.type, mktrap_flags, null, tm);
+}
+
+// C ref: sp_lev.c trap_types[]
+const trap_types = [
+    { name: 'arrow', type: ARROW_TRAP },
+    { name: 'dart', type: DART_TRAP },
+    { name: 'falling rock', type: ROCKTRAP },
+    { name: 'board', type: SQKY_BOARD },
+    { name: 'bear', type: BEAR_TRAP },
+    { name: 'land mine', type: LANDMINE },
+    { name: 'rolling boulder', type: ROLLING_BOULDER_TRAP },
+    { name: 'sleep gas', type: SLP_GAS_TRAP },
+    { name: 'rust', type: RUST_TRAP },
+    { name: 'fire', type: FIRE_TRAP },
+    { name: 'pit', type: PIT },
+    { name: 'spiked pit', type: SPIKED_PIT },
+    { name: 'hole', type: HOLE },
+    { name: 'trap door', type: TRAPDOOR },
+    { name: 'teleport', type: TELEP_TRAP },
+    { name: 'level teleport', type: LEVEL_TELEP },
+    { name: 'magic portal', type: MAGIC_PORTAL },
+    { name: 'web', type: WEB },
+    { name: 'statue', type: STATUE_TRAP },
+    { name: 'magic', type: MAGIC_TRAP },
+    { name: 'anti magic', type: ANTI_MAGIC },
+    { name: 'polymorph', type: POLY_TRAP },
+    { name: 'vibrating square', type: VIBRATING_SQUARE },
+    { name: 'random', type: -1 },
+];
+
+// C ref: sp_lev.c get_table_traptype_opt()
+function get_table_traptype_opt(tbl, name, defval) {
+    const trapstr = get_table_str_opt(tbl, name, '');
+    let res = defval;
+
+    if (trapstr) {
+        for (const tt of trap_types)
+            if (trapstr.toLowerCase() === tt.name) {
+                res = tt.type;
+                break;
+            }
+    }
+    return res;
+}
+
+// C ref: sp_lev.c get_traptype_byname()
+function get_traptype_byname(trapname) {
+    for (const tt of trap_types)
+        if (trapname.toLowerCase() === tt.name)
+            return tt.type;
+
+    return NO_TRAP;
+}
+
+// C ref: sp_lev.c lspo_trap()
+/* trap({ type = "hole", x = 1, y = 1 }); */
+/* trap({ type = "web", spider_on_web = 0 }); */
+/* trap("hole", 3, 4); */
+/* trap("level teleport", {5, 8}); */
+/* trap("rust") */
+/* trap(); */
+export function lspo_trap(...args) {
+    const tmptrap = {};
+    let x, y;
+    const argc = args.length;
+
+    create_des_coder();
+
+    tmptrap.spider_on_web = TRUE;
+    tmptrap.seen = FALSE;
+    tmptrap.novictim = FALSE;
+
+    if (argc === 1 && lua_type(args[0]) === LUA_TSTRING) {
+        const trapstr = luaL_checkstring(args[0]);
+
+        tmptrap.type = get_traptype_byname(trapstr);
+        x = y = -1;
+    } else if (argc === 2 && lua_type(args[0]) === LUA_TSTRING
+               && lua_type(args[1]) === 5 /* LUA_TTABLE */) {
+        const trapstr = luaL_checkstring(args[0]);
+
+        tmptrap.type = get_traptype_byname(trapstr);
+        const c = get_coord(args[1]) || { x: -1, y: -1 };
+        x = c.x;
+        y = c.y;
+    } else if (argc === 3) {
+        const trapstr = luaL_checkstring(args[0]);
+
+        tmptrap.type = get_traptype_byname(trapstr);
+        x = luaL_checkinteger(args[1]);
+        y = luaL_checkinteger(args[2]);
+    } else {
+        const tbl = args[0];
+        if (lua_type(tbl) !== 5 /* LUA_TTABLE */)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        ({ x, y } = get_table_xy_or_coord(tbl));
+        tmptrap.type = get_table_traptype_opt(tbl, 'type', -1);
+        tmptrap.spider_on_web = get_table_boolean_opt(tbl, 'spider_on_web', 1);
+        tmptrap.seen = get_table_boolean_opt(tbl, 'seen', FALSE);
+        tmptrap.novictim = !get_table_boolean_opt(tbl, 'victim', TRUE);
+
+        if (lua_type(tbl.launchfrom) === 5 /* LUA_TTABLE */) {
+            const c = get_coord(tbl.launchfrom) || { x: -1, y: -1 };
+            game.launchplace = { x: c.x, y: c.y };
+        }
+
+        if (lua_type(tbl.teledest) === 5 /* LUA_TTABLE */) {
+            const c = get_coord(tbl.teledest) || { x: -1, y: -1 };
+            game.launchplace = { x: c.x, y: c.y };
+        }
+    }
+
+    if (tmptrap.type === NO_TRAP)
+        nhl_error(null, 'Unknown trap type');
+
+    if (x === -1 && y === -1)
+        tmptrap.coord = SP_COORD_IS_RANDOM | 0; /* SP_COORD_PACK_RANDOM(0) */
+    else
+        tmptrap.coord = (x & 0xff) + ((y & 0xff) << 16); /* SP_COORD_PACK(x, y) */
+
+    create_trap(tmptrap, game.coder.croom);
+    game.launchplace = { x: 0, y: 0 };
+
+    return 0;
+}
+
 // C ref: sp_lev.c get_table_int_or_random()
 /* the hash key 'name' is an integer or "random",
    or if not existent, also return rndval */
@@ -2095,8 +2262,21 @@ export function lspo_exclusion(tbl) {
     return 0;
 }
 
-// C ref: sp_lev.c l_register_des() — the des_functions[] names. Only
-// des.room is ported; the others raise a Lua error when called.
+// C ref: sp_lev.c cvt_to_relcoord()
+/* inverse of cvt_to_abscoord; turn an absolute svl.level.locations coordinate
+ * into one relative to the current map or room. */
+export function cvt_to_relcoord(c) {
+    if (game.coder && game.coder.croom) {
+        c.x -= game.coder.croom.lx;
+        c.y -= game.coder.croom.ly;
+    } else {
+        c.x -= game.xstart;
+        c.y -= game.ystart;
+    }
+}
+
+// C ref: sp_lev.c l_register_des() — the des_functions[] names. The
+// ported ones are installed below; the others raise a Lua error when called.
 const sp_lev_des_names = [
     'message', 'monster', 'object', 'level_flags', 'level_init',
     'engraving', 'mineralize', 'door', 'stair', 'ladder', 'grave', 'altar',
@@ -2125,5 +2305,6 @@ export function l_register_des(L) {
     des.object = lspo_object;
     des.monster = lspo_monster;
     des.exclusion = lspo_exclusion;
+    des.trap = lspo_trap;
     L.globals.des = des;
 }

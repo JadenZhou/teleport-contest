@@ -21,9 +21,10 @@ import {
     MENU_NEXT_PAGE, MENU_PREVIOUS_PAGE, MENU_SELECT_ALL, MENU_UNSELECT_ALL,
     MENU_INVERT_ALL, MENU_SELECT_PAGE, MENU_UNSELECT_PAGE, MENU_INVERT_PAGE,
     MENU_SEARCH, COPYRIGHT_BANNER_A, COPYRIGHT_BANNER_B, COPYRIGHT_BANNER_D,
-    TELEPORT_BANNER_C, PL_NSIZ,
+    TELEPORT_BANNER_C, PL_NSIZ, ROWNO, COLNO,
 } from './const.js';
 import { genl_player_setup } from './role.js';
+import { row_refresh, bot } from './display.js';
 
 // C ref: wintty.h TOPLINE_* states
 const TOPLINE_EMPTY = 0;          /* empty */
@@ -242,12 +243,38 @@ function erase_menu_or_text(window, cw, clear) {
     }
 }
 
-// C ref: wintty.c docorner() -- the role-selection case: nothing is
-// drawn underneath a corner menu yet, so the corner is just cleared
+// C ref: wintty.c docorner()
+// During role selection there is no map window yet, so the corner is
+// just cleared. Afterwards the map rows underneath are refreshed
+// (WIN_MAP has offx 0, offy 1) and the status lines redrawn if the
+// corner reached them.
 function docorner(xmin, ymax, ystart_offset) {
-    for (let y = ystart_offset; y < ymax; y++) {
-        tty_curs(game.BASE_WINDOW, xmin + 1, y);
-        cl_end();
+    const t = tty();
+    const have_map = !!game.level && !game.program_state?.in_role_selection;
+
+    if (!have_map) {
+        for (let y = ystart_offset; y < ymax; y++) {
+            tty_curs(game.BASE_WINDOW, xmin + 1, y);
+            cl_end();
+        }
+        return;
+    }
+    const map_offy = 1;
+    const ystart = ystart_offset ? ystart_offset : 0;
+
+    for (let y = ystart; y < ymax; y++) {
+        tty_curs(game.BASE_WINDOW, xmin, y); /* move cursor */
+        if (!ystart_offset)
+            cl_end();                         /* clear to end of line */
+        if (y < map_offy || y > ROWNO)
+            continue; /* only refresh board */
+        row_refresh(xmin, COLNO - 1, y - map_offy);
+    }
+
+    if (ymax >= t.rows - 2 /* wins[WIN_STATUS]->offy */ && !ystart_offset) {
+        /* we have wrecked the bottom line */
+        game.disp_botlx = true;
+        bot();
     }
 }
 
@@ -318,6 +345,39 @@ export function tty_putstr(window, attr, str) {
         cw.cury++;
         term_end_attr(attr);
         break;
+    case NHW_MENU:
+    case NHW_TEXT: {
+        /* H2344_BROKEN */
+        if (cw.type === NHW_TEXT && (cw.cury + cw.offy) === t.rows - 1)
+            throw new Error('tty_putstr: NHW_TEXT page-at-a-time output not ported yet');
+        /* always grows one at a time */
+        if (!cw.data)
+            cw.data = [];
+        while (cw.cury >= cw.rows) {
+            cw.rows += 12;
+            for (let i = cw.data.length; i < cw.rows; i++)
+                cw.data[i] = null;
+        }
+        const n0 = str.length + 1;
+        /* data[i] = { attr, str }: C keeps attr + 1 in the first byte */
+        cw.data[cw.cury] = { attr, str };
+
+        if (n0 > cw.maxcol)
+            cw.maxcol = n0;
+        if (++cw.cury > cw.maxrow)
+            cw.maxrow = cw.cury;
+        if (n0 > t.cols) { /* CO */
+            /* attempt to break the line */
+            let i;
+            for (i = t.cols - 1; i && str[i] !== ' ' && str[i] !== '\n';)
+                i--;
+            if (i) {
+                cw.data[cw.cury - 1].str = str.slice(0, ++i);
+                tty_putstr(window, attr, str.slice(i));
+            }
+        }
+        break;
+    }
     default:
         throw new Error(`tty_putstr: window type ${cw.type} not ported yet`);
     }
@@ -601,8 +661,8 @@ export async function tty_select_menu(window, how) {
     return { n, selected };
 }
 
-// C ref: wintty.c tty_display_nhwindow() (NHW_MENU)
-async function tty_display_nhwindow(window, blocking) {
+// C ref: wintty.c tty_display_nhwindow() (NHW_TEXT and NHW_MENU)
+export async function tty_display_nhwindow(window, blocking) {
     const cw = wins()[window];
     const t = tty();
 
@@ -611,6 +671,9 @@ async function tty_display_nhwindow(window, blocking) {
     t.lastwin = window;
 
     switch (cw.type) {
+    case NHW_TEXT:
+        cw.maxcol = t.cols; /* force full-screen mode */
+        /*FALLTHRU*/
     case NHW_MENU: {
         cw.active = 1;
         const s_maxcol = cw.maxcol;
@@ -639,7 +702,10 @@ async function tty_display_nhwindow(window, blocking) {
                 tty_clear_nhwindow(game.WIN_MESSAGE);
         }
 
-        await process_menu_window(window, cw);
+        if (cw.data || !cw.maxrow)
+            await process_text_window(window, cw);
+        else
+            await process_menu_window(window, cw);
         break;
     }
     default:
@@ -798,6 +864,64 @@ async function dmore(cw, s) {
     cmov(t.curx, t.cury);
 
     await xwaitforspace(s);
+}
+
+// C ref: wintty.c quitchars
+const quitchars = " \r\n\x1b";
+
+// C ref: wintty.c process_text_window()
+async function process_text_window(window, cw) {
+    const t = tty();
+    let i, n, attr;
+
+    for (n = 0, i = 0; i < cw.maxrow; i++) {
+        if (!cw.offx && (n + cw.offy === t.rows - 1)) {
+            tty_curs(window, 1, n);
+            cl_end();
+            await dmore(cw, quitchars);
+            if (game.morc === '\x1b') {
+                cw.flags |= WIN_CANCELLED;
+                break;
+            }
+            if (cw.offy) {
+                tty_curs(window, 1, 0);
+                cl_eos();
+            } else
+                term_clear_screen();
+            n = 0;
+        }
+        tty_curs(window, 1, n++);
+        /* H2344_BROKEN */
+        cl_end();
+        if (cw.data[i]) {
+            attr = cw.data[i].attr;
+            if (cw.offx) {
+                xputc(' ');
+                ++t.curx;
+            }
+            term_start_attr(attr);
+            const str = cw.data[i].str;
+            for (let cp = 0; cp < str.length && ++t.curx < t.cols; cp++) {
+                t.curx--; /* xputc() writes at curx; NOMUX bookkeeping */
+                xputc(str[cp]);
+                t.curx++;
+            }
+            term_end_attr(attr);
+        }
+    }
+    if (i === cw.maxrow) {
+        /* H2344_BROKEN */
+        if (cw.type === NHW_TEXT) {
+            tty_curs(game.BASE_WINDOW, 1, t.cury + 1);
+            cl_eos();
+        }
+        tty_curs(game.BASE_WINDOW, cw.offx + 1,
+                 (cw.type === NHW_TEXT) ? t.rows - 1 : n);
+        cl_end();
+        await dmore(cw, quitchars);
+        if (game.morc === '\x1b')
+            cw.flags |= WIN_CANCELLED;
+    }
 }
 
 // C ref: wintty.c process_menu_window()

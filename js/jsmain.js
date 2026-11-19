@@ -97,9 +97,12 @@ export class NethackGame {
            game without OPTIONS=name asks "Who are you?" */
         g.plname = opts.name || '';
         /* boolean options that default to on (optlist.h) */
-        g.flags = { verbose: true, legacy: true, ...opts.flags };
+        g.flags = { verbose: true, legacy: true, acoustics: true, ...opts.flags };
         g.iflags = { ...opts.iflags };
         g.pl_character = opts.pl_character || '';
+        /* symset option (options.c optfn_symset); the default is the
+           plain ASCII symbol set */
+        g.symset_name = opts.symset || null;
         g.pl_race = opts.pl_race || '';
         if (opts.preferred_pet) g.preferred_pet = opts.preferred_pet;
         if (opts.tutorial_set) g.tutorial_set_in_config = true;
