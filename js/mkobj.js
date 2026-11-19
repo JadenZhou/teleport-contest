@@ -17,9 +17,10 @@ import { rn2, rnd, rn1, rne, rnz } from './rng.js';
 import { depth, level_difficulty, In_hell } from './dungeon.js';
 import * as O from './objects.js';
 import { objects } from './objects.js';
-import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE } from './const.js';
+import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD } from './const.js';
 import { rndmonst_adj } from './makemon.js';
-import { monsndx } from './mondata.js';
+import { monsndx, little_to_big, big_to_little } from './mondata.js';
+import * as M from './monsters.js';
 import { assign_candy_wrapper } from './read.js';
 import {
     mons, LOW_PM, SPECIAL_PM, G_UNIQ, G_NOGEN, G_HELL, G_NOHELL, G_NOCORPSE,
@@ -668,6 +669,75 @@ function mkbox_cnts(box) {
     /* caller will update box->owt */
 }
 
+// C ref: hack.h tin varieties
+const ROTTEN_TIN = 0;
+const HOMEMADE_TIN = 1;
+const SPINACH_TIN = -1;
+const RANDOM_TIN = -2;
+const HEALTHY_TIN = -3;
+// C ref: eat.c TTSZ == SIZE(tintxts); tintxts[] has 16 entries
+const TTSZ = 16;
+
+// C ref: eat.c nonrotting_corpse()
+function nonrotting_corpse(mnum) {
+    return mnum === M.PM_LIZARD || mnum === M.PM_LICHEN
+           || mnum === M.PM_DEATH || mnum === M.PM_FAMINE
+           || mnum === M.PM_PESTILENCE /* is_rider() */
+           || mnum === M.PM_ACID_BLOB;
+}
+
+// C ref: eat.c set_tin_variety()
+/* set a tin's variety; HEALTHY_TIN (tin_variety()) is not reached by
+   object creation and is not ported yet */
+function set_tin_variety(obj, forcetype) {
+    let r;
+    const mnum = obj.corpsenm;
+
+    if (forcetype === SPINACH_TIN) {
+        obj.corpsenm = NON_PM; /* not based on any monster */
+        obj.spe = 1;           /* spinach */
+        return;
+    } else if (forcetype >= 0 && forcetype < TTSZ - 1) {
+        r = forcetype;
+    } else {               /* RANDOM_TIN */
+        r = rn2(TTSZ - 1); /* take your pick */
+        if (r === ROTTEN_TIN && (mnum >= 0 && nonrotting_corpse(mnum)))
+            r = HOMEMADE_TIN; /* lizards don't rot */
+    }
+    obj.spe = -(r + 1); /* offset by 1 to allow index 0 */
+}
+
+// C ref: mon.c can_be_hatched()
+function can_be_hatched(mnum) {
+    /* ranger quest nemesis has the oviparous bit set, making it
+       be possible to wish for eggs of that unique monster; turn
+       such into ordinary eggs rather than forbidding them outright */
+    if (mnum === M.PM_SCORPIUS)
+        mnum = M.PM_SCORPION;
+
+    mnum = little_to_big(mnum);
+    /*
+     * Queen bees lay killer bee eggs (usually), but killer bees don't
+     * grow into queen bees.  Ditto for [winged-]gargoyles.
+     */
+    if (mnum === M.PM_KILLER_BEE || mnum === M.PM_GARGOYLE
+        || ((mons[mnum].mflags1 & M.M1_OVIPAROUS) !== 0 /* lays_eggs() */
+            && (!rn2(77) /* BREEDER_EGG */
+                || (mnum !== M.PM_QUEEN_BEE && mnum !== M.PM_WINGED_GARGOYLE))))
+        return mnum;
+    return NON_PM;
+}
+
+// C ref: mon.c dead_species()
+function dead_species(m_idx, egg) {
+    /* generic eggs are unhatchable and have corpsenm of NON_PM */
+    if (m_idx < 0)
+        return true;
+    const alt_idx = egg ? big_to_little(m_idx) : m_idx;
+    return ((game.mvitals[m_idx].mvflags & G_GENOD) !== 0
+            || (game.mvitals[alt_idx].mvflags & G_GENOD) !== 0);
+}
+
 // C ref: mkobj.c mksobj_init()
 function mksobj_init(otmp, artif) {
     const let_ = objects[otmp.otyp].oc_class;
@@ -711,16 +781,31 @@ function mksobj_init(otmp, artif) {
             break;
         }
         case O.EGG:
-            otmp.corpsenm = -1; /* NON_PM: generic egg */
+            otmp.corpsenm = NON_PM; /* generic egg */
             if (!rn2(3))
-                not_ported('egg monster type (rndmonnum)');
+                for (let tryct = 200; tryct > 0; --tryct) {
+                    const mndx = can_be_hatched(rndmonnum());
+                    if (mndx !== NON_PM && !dead_species(mndx, true)) {
+                        otmp.corpsenm = mndx; /* typed egg */
+                        break;
+                    }
+                }
+            /* timer set below */
             break;
         case O.TIN:
-            otmp.corpsenm = -1; /* empty (so far) */
+            otmp.corpsenm = NON_PM; /* empty (so far) */
             if (!rn2(6))
-                otmp.spe = 1; /* set_tin_variety(otmp, SPINACH_TIN) */
+                set_tin_variety(otmp, SPINACH_TIN);
             else
-                not_ported('tin monster type (rndmonnum)');
+                for (let tryct = 200; tryct > 0; --tryct) {
+                    const mndx = undead_to_corpse(rndmonnum());
+                    if (mons[mndx].cnutrit
+                        && !(game.mvitals[mndx].mvflags & G_NOCORPSE)) {
+                        otmp.corpsenm = mndx;
+                        set_tin_variety(otmp, RANDOM_TIN);
+                        break;
+                    }
+                }
             blessorcurse(otmp, 10);
             break;
         case O.SLIME_MOLD:
