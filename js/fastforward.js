@@ -6,84 +6,10 @@
 
 import { rn2, rnd, d, rne, rnz } from "./rng.js";
 
-// Pre-mklev startup after init_objects() (now real, in o_init.js):
-// nhlib.lua shuffle, dungeon init, castle tune, u_init_misc.
-// 101 leaf RNG calls.
+// Pre-mklev startup after init_objects() and init_dungeons() (now real, in
+// o_init.js and dungeon.js): u_init_misc.
+// 1 leaf RNG call.
 export function fastforward_pre_mklev() {
-    // random
-    rn2(3); rn2(2);
-    // init_dungeon_dungeons
-    rn2(100); rn2(5);
-    // init_level
-    rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);
-    // place_level
-    rn2(4); rn2(5); rn2(4); rn2(1);
-    // init_dungeon_dungeons
-    rn2(100); rn2(5);
-    // parent_dlevel
-    rn2(1);
-    // init_level
-    rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);
-    rn2(100); rn2(100); rn2(100);
-    // place_level
-    rn2(1); rn2(1); rn2(4); rn2(3); rn2(5); rn2(6); rn2(1); rn2(1);
-    rn2(4); rn2(4); rn2(3);
-    // init_dungeon_dungeons
-    rn2(100); rn2(2);
-    // parent_dlevel
-    rn2(3);
-    // init_level
-    rn2(100); rn2(100);
-    // place_level
-    rn2(2); rn2(1);
-    // init_dungeon_dungeons
-    rn2(100); rn2(2);
-    // parent_dlevel
-    rn2(2);
-    // init_level
-    rn2(100); rn2(100); rn2(100);
-    // place_level
-    rn2(1); rn2(1); rn2(1);
-    // init_dungeon_dungeons
-    rn2(100);
-    // parent_dlevel
-    rn2(1);
-    // init_level
-    rn2(100); rn2(100); rn2(100); rn2(100);
-    // place_level
-    rn2(1); rn2(1); rn2(1); rn2(1);
-    // init_dungeon_dungeons
-    rn2(100);
-    // parent_dlevel
-    rn2(4);
-    // init_level
-    rn2(100);
-    // place_level
-    rn2(1);
-    // init_dungeon_dungeons
-    rn2(100);
-    // parent_dlevel
-    rn2(5);
-    // init_level
-    rn2(100); rn2(100); rn2(100);
-    // place_level
-    rn2(1); rn2(1); rn2(1);
-    // init_dungeon_dungeons
-    rn2(100);
-    // parent_dlevel
-    rn2(1);
-    // init_level
-    rn2(100); rn2(100); rn2(100); rn2(100); rn2(100); rn2(100);
-    // place_level
-    rn2(1); rn2(1); rn2(1); rn2(1); rn2(1); rn2(1);
-    // init_dungeon_dungeons
-    rn2(100);
-    // init_level
-    rn2(100); rn2(100);
-    // place_level
-    rn2(1); rn2(1);
-    // init_castle_tune
-    rn2(7); rn2(7); rn2(7); rn2(7); rn2(7);
     // u_init_misc
     rn2(10);
 }

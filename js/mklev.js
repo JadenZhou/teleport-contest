@@ -10,6 +10,7 @@ import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { init_rect, rnd_rect, get_rect, split_rects } from './rect.js';
 import { depth as depth_of_level } from './hacklib.js';
+import { Is_branchlev } from './dungeon.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
@@ -461,7 +462,7 @@ async function makelevel() {
 
     // C ref: mklev.c:1295 — check for below-Medusa maze level
     // This rn2(5) is consumed even when the condition fails (short-circuit)
-    const medusa = g.medusa_level;
+    const medusa = g.dungeon_topology?.d_medusa_level; // C: medusa_level
     if (rn2(5) && g.u?.uz?.dnum === medusa?.dnum
         && (g.u?.uz?.dlevel ?? 1) > (medusa?.dlevel ?? 999)) {
         // Would generate maze — not applicable for contest level 1
@@ -1388,14 +1389,9 @@ async function make_niches() {
 // Branch placement
 // ============================================================
 
+// C: Is_branchlev(&u.uz) (dungeon.c); svb.branches is filled by init_dungeons().
 function is_branchlev() {
-    const g = game;
-    if (!g.branches) return null;
-    for (const br of g.branches) {
-        if (br?.end1?.dnum === (g.u?.uz?.dnum ?? 0) && br?.end1?.dlevel === (g.u?.uz?.dlevel ?? 1)) return br;
-        if (br?.end2?.dnum === (g.u?.uz?.dnum ?? 0) && br?.end2?.dlevel === (g.u?.uz?.dlevel ?? 1)) return br;
-    }
-    return null;
+    return Is_branchlev(game.u.uz);
 }
 
 function find_branch_room(mp) {
@@ -1688,7 +1684,7 @@ async function fill_ordinary_room(croom, bonus_items) {
     let skip_chests = false;
     if (bonus_items && somexyspace(croom, pos)) {
         const branchp = is_branchlev();
-        const oracle_dlevel = g.oracle_level?.dlevel ?? 5;
+        const oracle_dlevel = g.dungeon_topology?.d_oracle_level?.dlevel ?? 5; // C: oracle_level
         if (branchp) {
             // Mines entrance bonus food
             mksobj_at((rn2(5) < 3) ? FOOD_RATION : rn2(2) ? CRAM_RATION : LEMBAS_WAFER,
