@@ -154,8 +154,17 @@ export async function rhack(key) {
 
     if (isMovementKey(ch)) {
         set_move_cmd(ch, 0); /* do_move_<dir>() */
-        await domove();
+        /* C ref: cmd.c rhack() -- for DOMOVE_WALK rhack() calls domove()
+           and returns straight away; context.move stays TRUE as parse()
+           set it ("assume next command will take game time") unless
+           domove_core() clears it, e.g. hack.c test_move() failing:
+           "context.move = 0; nomul(0);" */
         game.context.move = 1;
+        if (game.multi)
+            game.context.mv = 1;
+        await domove();
+        game.context.forcefight = 0;
+        game.iflags.menu_requested = false;
     } else if (isMovementKey(ch.toLowerCase())) {
         /* C ref: cmd.c do_run_<dir>() -- shift+dir is MV_RUN */
         set_move_cmd(ch.toLowerCase(), 1);
