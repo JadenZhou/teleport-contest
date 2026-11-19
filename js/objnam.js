@@ -25,6 +25,7 @@ import { objects, OBJ_NAME, OBJ_DESCR } from './objects.js';
 import {
     NON_PM, MALE, FEMALE, NEUTRAL, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG,
     BLINDED, HALLUC, Has_contents,
+    W_ARMOR, W_AMUL, W_WEP, W_SWAPWEP, W_QUIVER,
 } from './const.js';
 import * as M from './monsters.js';
 import { observe_object } from './o_init.js';
@@ -34,6 +35,9 @@ import {
     name_to_mon, name_to_monplus, is_male, is_female, is_neuter,
 } from './mondata.js';
 import { def_char_to_objclass } from './drawing.js';
+import { genders } from './role.js';
+import { artifact_name } from './artilist.js';
+import { tin_details } from './eat.js';
 import {
     mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
     is_rustprone, is_crackable, is_corrodeable, is_rottable, is_damageable,
@@ -301,6 +305,296 @@ function badman(basestr, to_plural) {
             return true;
     }
     return false;
+}
+
+// C ref: objnam.c fruit_from_indx()
+export function fruit_from_indx(indx) {
+    let f;
+
+    for (f = game.ffruit; f; f = f.nextf)
+        if (f.fid === indx)
+            break;
+    return f || null;
+}
+
+// C ref: objnam.c fruit_from_name() -- exact (strcmp) match part only;
+// the prefix/singular/plural fallbacks for !exact are not ported yet
+export function fruit_from_name(fname, exact, highest_fid) {
+    let f;
+
+    if (highest_fid)
+        highest_fid.v = 0;
+    /* first try for an exact match */
+    for (f = game.ffruit; f; f = f.nextf)
+        if (f.fname === fname)
+            return f;
+        else if (highest_fid && f.fid > highest_fid.v)
+            highest_fid.v = f.fid;
+
+    if (!exact && game.ffruit)
+        throw new Error('fruit_from_name(): inexact matching is not ported yet');
+    return null;
+}
+
+// C ref: options.c fruitadd() -- the user-specified (pl_fruit) case
+export function fruitadd(str, replace_fruit) {
+    const user_specified = (str === game.pl_fruit);
+    let f;
+
+    if (!user_specified || replace_fruit)
+        throw new Error('fruitadd(): bones/orctown fruit and replace_fruit are not ported yet');
+
+    /* force fruit to be singular */
+    game.pl_fruit = makesingular(str);
+    const pl_fruit = game.pl_fruit;
+
+    /* disallow naming after other foods (since it'd be impossible
+     * to tell the difference); globs might have a size prefix which
+     * needs to be skipped in order to match the object type name
+     */
+    const globpfx = (pl_fruit.startsWith("small ")
+                     || pl_fruit.startsWith("large ")) ? 6
+        : pl_fruit.startsWith("medium ") ? 7
+            : pl_fruit.startsWith("very large ") ? 11
+                : 0;
+    let found = false, numeric = false;
+    /* svb.bases[] is still zero when initoptions() runs before o_init() */
+    for (let i = game.bases?.[O.FOOD_CLASS] ?? 0;
+         objects[i] && objects[i].oc_class === O.FOOD_CLASS; i++) {
+        if (OBJ_NAME(objects[i]) === pl_fruit
+            || (globpfx > 0 && OBJ_NAME(objects[i]) === pl_fruit.slice(globpfx))) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        const c = pl_fruit.replace(/^[0-9]*/, '');
+        if (!c || c[0] === ' ')
+            numeric = true;
+    }
+    if (found || numeric
+        || pl_fruit.startsWith("cursed ") || pl_fruit.startsWith("uncursed ")
+        || pl_fruit.startsWith("blessed ") || pl_fruit.startsWith("partly eaten ")
+        || pl_fruit.startsWith("tin of ") || pl_fruit === "empty tin"
+        || pl_fruit === "glob" || / corpse$| egg$/.test(pl_fruit))
+        throw new Error('fruitadd(): candied/food-named fruit is not ported yet');
+
+    /* This flag indicates that a fruit has been made since the
+     * last time the user set the fruit. */
+    game.flags.made_fruit = false;
+
+    const hf = { v: 0 };
+    f = fruit_from_name(pl_fruit, false, hf); /* str aliases pl_fruit */
+    if (!f) {
+        if (hf.v >= 127)
+            throw new Error('fruitadd(): fruit overflow is not ported yet');
+        f = { fname: pl_fruit, fid: ++hf.v, nextf: game.ffruit };
+        /* simple insertion at start */
+        game.ffruit = f;
+    }
+    /* nonew: */
+    game.context.current_fruit = f.fid;
+    return f.fid;
+}
+
+// C ref: hacklib.c letter()
+function letter(c) {
+    return ('@' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
+}
+
+// C ref: objnam.c ch_ksound()
+function ch_ksound(basestr) {
+    /* these are some *ch words/suffixes that make a k-sound. They pluralize by
+       adding 's' rather than 'es' */
+    const ch_k = [
+        "monarch",     "poch",    "tech",     "mech",      "stomach", "psych",
+        "amphibrach",  "anarch",  "atriarch", "azedarach", "broch",
+        "gastrotrich", "isopach", "loch",     "oligarch",  "peritrich",
+        "sandarach",   "sumach",  "symposiarch",
+    ];
+
+    if (!basestr || basestr.length < 4)
+        return false;
+
+    const endstr = basestr.length;
+    for (const k of ch_k) {
+        if (!BSTRCMPI(basestr, endstr - k.length, k))
+            return true;
+    }
+    return false;
+}
+
+// C ref: objnam.c makeplural()
+export function makeplural(oldstr) {
+    let excess = null;
+    let str;
+
+    if (oldstr)
+        oldstr = oldstr.replace(/^ +/, '');
+    if (!oldstr) {
+        /* impossible("plural of null?") */
+        return "s";
+    }
+    /* makeplural() is sometimes used on monsters rather than objects
+       and sometimes pronouns are used for monsters, so check those */
+    str = '';
+    for (let i = 0; i <= 2; ++i) {
+        if (!strcmpi(genders[i].he, oldstr))
+            str = genders[3].he; /* "they" */
+        else if (!strcmpi(genders[i].him, oldstr))
+            str = genders[3].him; /* "them" */
+        else if (!strcmpi(genders[i].his, oldstr))
+            str = genders[3].his; /* "their" */
+        if (str) {
+            if (oldstr[0] === highc(oldstr[0]))
+                str = highc(str[0]) + str.slice(1);
+            return str;
+        }
+    }
+
+    str = oldstr;
+
+    bottom: {
+        /* Skip changing "pair of" to "pairs of". */
+        if (!strncmpi(str, "pair of ", 8))
+            break bottom;
+
+        /* look for "foo of bar" so that we can focus on "foo" */
+        const p = singplur_compound(str);
+        if (p >= 0) {
+            excess = oldstr.slice(p);
+            str = str.slice(0, p);
+        }
+        /* Strip blanks from end (C keeps at least the first char) */
+        let spot = str.length - 1;
+        while (spot > 0 && str[spot] === ' ')
+            spot--;
+        str = str.slice(0, spot + 1);
+        /* Now spot is the last character of the string */
+
+        const len = str.length;
+        /* !strcmpi(spot - k, s) */
+        const tailis = (k, s) => (spot - k >= 0) && !strcmpi(str.slice(spot - k), s);
+
+        /* Single letters */
+        if (len === 1 || !letter(str[spot])) {
+            str += "'s";
+            break bottom;
+        }
+
+        /* dispense with some words which don't need pluralization */
+        {
+            const already_plural = [
+                "ae",  /* algae, larvae, &c */
+                "eaux", /* chateaux, gateaux */
+                "matzot",
+            ];
+            const r = { s: str };
+            if (singplur_lookup(r, true, already_plural)) {
+                str = r.s;
+                break bottom;
+            }
+            /* more of same, but not suitable for blanket loop checking */
+            if ((len === 2 && !strcmpi(str, "ya"))
+                || (len >= 3 && tailis(2, " ya")))
+                break bottom;
+        }
+
+        /* man/men ("Wiped out all cavemen.") */
+        if (len >= 3 && tailis(2, "man")
+            /* exclude shamans and humans etc */
+            && !badman(str, true)) {
+            str = Strcasecpy(str, spot - 1, "en");
+            break bottom;
+        }
+        if (lowc(str[spot]) === 'f') { /* (staff handled via one_off[]) */
+            const lo_c = lowc(str[spot - 1]);
+            if (len >= 3 && tailis(2, "erf")) {
+                /* avoid "nerf" -> "nerves", "serf" -> "serves" */
+                ; /* fall through to default (append 's') */
+            } else if ("lr".includes(lo_c) || vowels.includes(lo_c)) {
+                /* [aeioulr]f to [aeioulr]ves */
+                str = Strcasecpy(str, spot, "ves");
+                break bottom;
+            }
+        }
+        /* ium/ia (mycelia, baluchitheria) */
+        if (len >= 3 && tailis(2, "ium")) {
+            str = Strcasecpy(str, spot - 2, "ia");
+            break bottom;
+        }
+        /* algae, larvae, hyphae (another fungus part) */
+        if ((len >= 4 && tailis(3, "alga"))
+            || (len >= 5 && (tailis(4, "hypha") || tailis(4, "larva")))
+            || (len >= 6 && tailis(5, "amoeba"))
+            || (len >= 8 && tailis(7, "vertebra"))) {
+            /* a to ae */
+            str = Strcasecpy(str, spot + 1, "e");
+            break bottom;
+        }
+        /* fungus/fungi, homunculus/homunculi, but buses, lotuses, wumpuses */
+        if (len > 3 && tailis(1, "us")
+            && !((len >= 5 && tailis(4, "lotus"))
+                 || (len >= 6 && tailis(5, "wumpus")))) {
+            str = Strcasecpy(str, spot - 1, "i");
+            break bottom;
+        }
+        /* sis/ses (nemesis) */
+        if (len >= 3 && tailis(2, "sis")) {
+            str = Strcasecpy(str, spot - 1, "es");
+            break bottom;
+        }
+        /* -eau/-eaux (gateau, chapeau...) */
+        if (len >= 3 && tailis(2, "eau")
+            /* 'bureaus' is the more common plural of 'bureau' */
+            && BSTRCMPI(str, spot - 5, "bureau")) {
+            str = Strcasecpy(str, spot + 1, "x");
+            break bottom;
+        }
+        /* matzoh/matzot, possible food name */
+        if (len >= 6 && (tailis(5, "matzoh") || tailis(5, "matzah"))) {
+            str = Strcasecpy(str, spot - 1, "ot"); /* oh/ah -> ot */
+            break bottom;
+        }
+        if (len >= 5 && (tailis(4, "matzo") || tailis(4, "matza"))) {
+            str = Strcasecpy(str, spot, "ot"); /* o/a -> ot */
+            break bottom;
+        }
+
+        /* note: ox/oxen, VAX/VAXen, goose/geese */
+
+        const lo_c = lowc(str[spot]);
+
+        /* codex/spadix/neocortex and the like */
+        if (len >= 5
+            && (tailis(2, "dex") || tailis(2, "dix") || tailis(2, "tex"))
+            /* indices would have been ok too, but stick with indexes */
+            && !tailis(4, "index")) {
+            str = Strcasecpy(str, spot - 1, "ices"); /* ex|ix -> ices */
+            break bottom;
+        }
+        /* Ends in z, x, s, ch, sh; add an "es" */
+        if ("zxs".includes(lo_c)
+            || (len >= 2 && lo_c === 'h' && "cs".includes(lowc(str[spot - 1]))
+                /* 21st century k-sound */
+                && !(len >= 4 && lowc(str[spot - 1]) === 'c' && ch_ksound(str)))
+            /* Kludge to get "tomatoes" and "potatoes" right */
+            || (len >= 4 && tailis(2, "ato"))
+            || (len >= 5 && tailis(4, "dingo"))) {
+            str = Strcasecpy(str, spot + 1, "es"); /* append es */
+            break bottom;
+        }
+        /* Ends in y preceded by consonant (note: also "qu") change to "ies" */
+        if (lo_c === 'y' && !vowels.includes(lowc(str[spot - 1]))) {
+            str = Strcasecpy(str, spot, "ies"); /* y -> ies */
+            break bottom;
+        }
+        /* Default: append an 's' */
+        str = Strcasecpy(str, spot + 1, "s");
+    }
+    if (excess)
+        str += excess;
+    return str;
 }
 
 // C ref: objnam.c makesingular()
@@ -1433,8 +1727,67 @@ function readobjnam_postparse3(d) {
      * they are checked for last, after stripping all the possible
      * prefixes and seeing if there's a real name in there.
      */
-    if (game.ffruit)
-        not_ported('fruit name matching (gf.ffruit)');
+    /* Note: not strcmpi.  2 fruits, one capital, one not, are possible.
+       Also not strncmp. */
+    {
+        let fp, l, cntf;
+        let blessedf, iscursedf, uncursedf, halfeatenf;
+
+        blessedf = iscursedf = uncursedf = halfeatenf = 0;
+        cntf = 0;
+
+        fp = d.fruitbuf;
+        for (;;) {
+            if (!fp)
+                break;
+            if (!strncmpi(fp, "an ", l = 3) || !strncmpi(fp, "a ", l = 2)) {
+                cntf = 1;
+            } else if (!cntf && fp[0] >= '0' && fp[0] <= '9') {
+                cntf = parseInt(fp, 10);
+                fp = fp.replace(/^[0-9]+/, '').replace(/^ +/, '');
+                l = 0;
+            } else if (!strncmpi(fp, "blessed ", l = 8)) {
+                blessedf = 1;
+            } else if (!strncmpi(fp, "cursed ", l = 7)) {
+                iscursedf = 1;
+            } else if (!strncmpi(fp, "uncursed ", l = 9)) {
+                uncursedf = 1;
+            } else if (!strncmpi(fp, "partly eaten ", l = 13)
+                       || !strncmpi(fp, "partially eaten ", l = 16)) {
+                halfeatenf = 1;
+            } else
+                break;
+            fp = fp.slice(l);
+        }
+
+        for (let f = game.ffruit; f; f = f.nextf) {
+            /* match type: 0=none, 1=exact, 2=singular, 3=plural */
+            let ftyp = 0;
+
+            if (fp === f.fname)
+                ftyp = 1;
+            else if (fp === makesingular(f.fname))
+                ftyp = 2;
+            else if (fp === makeplural(f.fname))
+                ftyp = 3;
+            if (ftyp) {
+                d.typ = O.SLIME_MOLD;
+                d.blessed = blessedf;
+                d.iscursed = iscursedf;
+                d.uncursed = uncursedf;
+                d.halfeaten = halfeatenf;
+                /* adjust count if user explicitly asked for
+                   singular amount or for plural amount */
+                if (ftyp === 2 && !cntf)
+                    cntf = 1;
+                else if (ftyp === 3 && !cntf)
+                    cntf = 2;
+                d.cnt = cntf;
+                d.ftype = f.fid;
+                return 2; /*goto typfnd;*/
+            }
+        }
+    }
 
     if (!d.oclass && d.actualn) {
         /* Perhaps it's an artifact specified by name, not type */
@@ -1885,7 +2238,7 @@ function xname_flags(obj, cxn_flags) {
     let actualn = OBJ_NAME(ocl);
     let dn = OBJ_DESCR(ocl);
     const un = ocl.oc_uname;
-    const pluralize = (obj.quan !== 1) && !(cxn_flags & 1 /* CXN_SINGULAR */);
+    let pluralize = (obj.quan !== 1) && !(cxn_flags & 1 /* CXN_SINGULAR */);
     let buf = '';
 
     if (Role_if_x(M.PM_SAMURAI))
@@ -1973,13 +2326,31 @@ function xname_flags(obj, cxn_flags) {
             buf += dn;
         break;
     case O.FOOD_CLASS:
-        if (typ === O.SLIME_MOLD)
-            xn_not_ported('fruit names (fruit_from_indx)');
+        /* we could include partly-eaten-hack on fruit but don't need to */
+        if (typ === O.SLIME_MOLD) {
+            const f = fruit_from_indx(obj.spe);
+
+            if (!f) {
+                /* impossible("Bad fruit #%d?", obj->spe) */
+                buf = "fruit";
+            } else {
+                buf = f.fname;
+                if (pluralize) {
+                    /* already pluralized fruit names are allowed--we
+                       want to try to avoid adding a redundant plural
+                       suffix */
+                    buf = makesingular(buf);
+                    buf = makeplural(buf);
+                    pluralize = false;
+                }
+            }
+            break;
+        }
         if (obj.globby)
             xn_not_ported('globby food names');
         buf += actualn;
         if (typ === O.TIN && known)
-            xn_not_ported('tin_details()');
+            buf = tin_details(obj, omndx, buf);
         break;
     case O.COIN_CLASS:
     case O.CHAIN_CLASS:
@@ -2101,7 +2472,7 @@ function xname_flags(obj, cxn_flags) {
     } /* switch */
 
     if (pluralize)
-        xn_not_ported('makeplural()');
+        buf = makeplural(buf);
     if (game.program_state?.gameover && obj.o_id)
         xn_not_ported('end-of-game shirt/apron text');
     return buf;
@@ -2136,8 +2507,13 @@ function doname_base(obj, doname_flags) {
         ispoisoned = true;
     }
 
-    if (obj.otyp === O.SLIME_MOLD)
-        xn_not_ported('fake artifact fruit names (artifact_name)');
+    /* fruits are allowed to be given artifact names; when that happens,
+       format the name like the corresponding artifact, which may or may not
+       want "the" prefix and when it doesn't, avoid "a"/"an" prefix too */
+    let aname = null;
+    const fake_arti = (obj.otyp === O.SLIME_MOLD
+                       && (aname = artifact_name(bp, null, false)) !== null);
+    const force_the = (fake_arti && !strncmpi(aname, "the ", 4));
 
     if (obj.quan !== 1) {
         if (dknown || !vague_quan)
@@ -2146,9 +2522,14 @@ function doname_base(obj, doname_flags) {
             prefix = "some ";
     } else if (obj.otyp === O.CORPSE) {
         /* nothing */
+    } else if (force_the) {
+        if (!strncmpi(bp, "the ", 4))
+            bp = bp.slice(4);
+        prefix = "the ";
     } else if (objects[obj.otyp].oc_unique || obj.oartifact) {
         xn_not_ported('the_unique_obj()/obj_is_pname()');
-    } else {
+    } else if (!fake_arti) {
+        /* default prefix */
         prefix = "a ";
     }
 
@@ -2194,13 +2575,19 @@ function doname_base(obj, doname_flags) {
     if (cknown && Has_contents(obj))
         xn_not_ported('count_contents()');
 
-    if (obj.owornmask)
-        xn_not_ported('worn/wielded suffixes');
-
     switch (is_weptool(obj) ? O.WEAPON_CLASS : obj.oclass) {
     case O.AMULET_CLASS:
+        if (obj.owornmask & W_AMUL)
+            bp += " (being worn)";
         break;
     case O.ARMOR_CLASS:
+        if (obj.owornmask & W_ARMOR) {
+            /* uskin, doffing()/donning() and slippery gloves are not
+               ported yet */
+            if (obj === game.uskin || game.afternmv)
+                xn_not_ported('uskin/doffing/donning suffixes');
+            bp += " (being worn)";
+        }
         /* FALLTHROUGH */
     case O.WEAPON_CLASS:
         if (ispoisoned)
@@ -2252,6 +2639,66 @@ function doname_base(obj, doname_flags) {
         prefix = add_erosion_words(obj, prefix);
         break;
     }
+
+    if ((obj.owornmask & W_WEP) && !game.mrg_to_wielded) {
+        const twoweap_primary = (obj === game.uwep && game.u?.twoweap),
+              tethered = (obj.otyp === O.AKLYS);
+
+        /* use alternate phrasing for non-weapons and for wielded ammo
+           (arrows, bolts), or missiles (darts, shuriken, boomerangs)
+           except when those are being actively dual-wielded */
+        if ((obj.quan !== 1
+             || ((obj.oclass === O.WEAPON_CLASS)
+                 ? (is_ammo(obj) || is_missile(obj))
+                 : !is_weptool(obj)))
+            && !twoweap_primary) {
+            bp += " (wielded)";
+        } else {
+            /* body_part(HAND) for an unpolymorphed hero; body_part() and
+               polymorph are not ported yet */
+            let hand_s = "hand";
+            if (objects[obj.otyp].oc_bimanual) /* bimanual(): "hands" */
+                hand_s = makeplural(hand_s);
+            else /* "right hand" or "left hand" */
+                hand_s = `${(game.u?.uhandedness ?? 0) === 0 ? "right" : "left"} ${hand_s}`;
+            bp += ` (${tethered ? "tethered to"
+                      : twoweap_primary ? "wielded in"
+                        : "weapon in"} ${hand_s})`;
+            /* Sting's warning glow and artifact light are not ported */
+        }
+    }
+    if (obj.owornmask & W_SWAPWEP) {
+        if (game.u?.twoweap)
+            xn_not_ported('twoweapon swap weapon suffix');
+        else
+            bp += ` (alternate weapon${obj.quan === 1 ? "" : "s"}; not wielded)`;
+    }
+    if (obj.owornmask & W_QUIVER) {
+        let Qtyp;
+
+        switch (obj.oclass) {
+        case O.WEAPON_CLASS:
+            Qtyp = !is_ammo(obj) ? 3 /* not ammo: "at the ready" */
+                : (objects[obj.otyp].oc_skill !== -P_BOW) ? 2 /* non-bow */
+                    : 1; /* ammo for a bow: "in quiver" */
+            break;
+        case O.RING_CLASS:
+        case O.AMULET_CLASS:
+        case O.WAND_CLASS:
+        case O.COIN_CLASS:
+        case O.GEM_CLASS:
+            Qtyp = 2; /* small, non-bow: "in quiver pouch" */
+            break;
+        default: /* odd things */
+            Qtyp = 3; /* "at the ready" */
+            break;
+        }
+        bp += ` (${(Qtyp === 1) ? "in quiver"
+                  : (Qtyp === 2) ? "in quiver pouch"
+                    : "at the ready"})`;
+    }
+    if (obj.owornmask & ~(W_ARMOR | W_AMUL | W_WEP | W_SWAPWEP | W_QUIVER))
+        xn_not_ported('ring/tool/leash worn suffixes');
 
     if (with_price)
         xn_not_ported('shop prices');

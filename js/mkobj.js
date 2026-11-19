@@ -325,6 +325,40 @@ function Is_pudding(o) {
             || o.otyp === O.GLOB_OF_GREEN_SLIME || o.otyp === O.GLOB_OF_BLACK_PUDDING);
 }
 
+// C ref: mkobj.c dknowns[]
+const dknowns = [O.WAND_CLASS, O.RING_CLASS, O.POTION_CLASS, O.SCROLL_CLASS,
+                 O.GEM_CLASS, O.SPBOOK_CLASS, O.WEAPON_CLASS, O.TOOL_CLASS,
+                 O.VENOM_CLASS];
+
+// C ref: mkobj.c clear_dknown()
+/* set obj->dknown to 0 for most types of objects, to 1 otherwise */
+export function clear_dknown(obj) {
+    /* note: this is an unobserving not an observing, so don't call
+       observe_object even if dknown is being set to 1 */
+    obj.dknown = dknowns.includes(obj.oclass) ? 0 : 1;
+    if ((obj.otyp >= O.ELVEN_SHIELD && obj.otyp <= O.ORCISH_SHIELD)
+        || obj.otyp === O.SHIELD_OF_REFLECTION
+        || objects[obj.otyp].oc_merge)
+        obj.dknown = 0;
+    /* globs always have dknown flag set (to maximize merging) but for new
+       object, globby flag won't be set yet so isn't available to check */
+    if (Is_pudding(obj))
+        obj.dknown = 1;
+}
+
+// C ref: mkobj.c unknow_object()
+/* some init for a brand new object, or partial re-init when hero loses
+   potentially known info about an object */
+export function unknow_object(obj) {
+    clear_dknown(obj); /* obj->dknown = 0; */
+
+    obj.bknown = obj.rknown = 0;
+    obj.cknown = obj.lknown = 0;
+    obj.tknown = 0;
+    /* [object types which don't use the known flag have it set True] */
+    obj.known = objects[obj.otyp].oc_uses_known ? 0 : 1;
+}
+
 // C ref: mkobj.c is_flammable()
 export function is_flammable(otmp) {
     const otyp = otmp.otyp;
@@ -1100,6 +1134,7 @@ export function mksobj(otyp, init, artif) {
         spe: 0, blessed: 0, cursed: 0, oeroded: 0, oeroded2: 0,
         oerodeproof: 0, greased: 0, oartifact: 0, owt: 0,
     };
+    unknow_object(otmp); /* set up dknown and known: non-0 for some things */
 
     if (init)
         mksobj_init(otmp, artif);
