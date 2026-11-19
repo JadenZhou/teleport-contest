@@ -12,6 +12,7 @@ import { cansee, couldsee, clear_path } from './vision.js';
 import { m_at, MON_AT, place_monster, is_pool, is_lava, sobj_at, u_at,
          may_passwall } from './makemon.js';
 import { t_at } from './trap.js';
+import { mattackm, max_passive_dmg } from './mhitm.js';
 import { mfndpos, monnear, mon_allowflags } from './mon.js';
 import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add,
@@ -24,6 +25,7 @@ import * as O from './objects.js';
 import { objects } from './objects.js';
 import {
     MMOVE_NOTHING, MMOVE_MOVED, MMOVE_DIED, MMOVE_DONE, MTSZ,
+    M_ATTK_HIT, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED,
     ALLOW_U, ALLOW_M, ALLOW_MDISP, ALLOW_TRAPS, COLNO, ROWNO,
     DOGFOOD, CADAVER, ACCFOOD, MANFOOD, APPORT, POISON, UNDEF, TABU,
     IS_ROOM, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, W_NONDIGGABLE,
@@ -882,7 +884,7 @@ function pet_ranged_attk(mtmp, forced) {
 // 1: moved, possibly can attack.
 // 2: monster died.
 // 3: did not move, and can't do anything else either.
-export function dog_move(mtmp, after) {
+export async function dog_move(mtmp, after) {
     const u = game.u;
     let omx, omy; /* original mtmp position */
     let appr, whappr, udist;
@@ -980,11 +982,44 @@ export function dog_move(mtmp, after) {
             const balk = mtmp.m_lev + Math.trunc((5 * mtmp.mhp) / mtmp.mhpmax) - 2;
 
             if (mtmp2.m_lev >= balk
-                || (mtmp2.mtame && mtmp.mtame && !Conflict()))
+                || (mtmp2.mtame && mtmp.mtame && !Conflict())
+                || (max_passive_dmg(mtmp2, mtmp) >= mtmp.mhp)
+                || ((mtmp.mhp * 4 < mtmp.mhpmax
+                     || mtmp2.data.msound === M.MS_GUARDIAN
+                     || mtmp2.data.msound === M.MS_LEADER)
+                    && mtmp2.mpeaceful && !Conflict())) {
                 continue;
-            /* max_passive_dmg(), peaceful/leader checks, floating eye,
-               mattackm(): not ported yet */
-            throw new Error('dog_move(): pet attacking monsters not ported yet');
+            }
+            if (mtmp2.data === mons[M.PM_FLOATING_EYE]
+                || mtmp2.data === mons[M.PM_GELATINOUS_CUBE]
+                || mtmp2.data === mons[M.PM_COCKATRICE]
+                || mtmp2.data === mons[M.PM_CHICKATRICE])
+                throw new Error('dog_move(): floating eye/cube/cockatrice foes not ported yet');
+
+            if (after)
+                return MMOVE_NOTHING; /* hit only once each move */
+
+            game.bhitpos = { x: nx, y: ny };
+            game.notonhead = mtmp2.mx !== nx || mtmp2.my !== ny;
+            let mstatus = await mattackm(mtmp, mtmp2);
+
+            /* aggressor (pet) died */
+            if (mstatus & M_ATTK_AGR_DIED)
+                return MMOVE_DIED;
+
+            if ((mstatus & (M_ATTK_HIT | M_ATTK_DEF_DIED)) === M_ATTK_HIT
+                && rn2(4)
+                && mtmp2.mlstmv !== game.moves
+                && !onscary(mtmp.mx, mtmp.my, mtmp2)
+                /* monnear check needed: long worms hit on tail */
+                && monnear(mtmp2, mtmp.mx, mtmp.my)) {
+                game.bhitpos = { x: mtmp.mx, y: mtmp.my };
+                game.notonhead = false;
+                mstatus = await mattackm(mtmp2, mtmp); /* return attack */
+                if (mstatus & M_ATTK_DEF_DIED)
+                    return MMOVE_DIED;
+            }
+            return MMOVE_DONE;
         }
         if ((mfp.info[i] & ALLOW_MDISP) && MON_AT(nx, ny)
             && better_with_displacing)
