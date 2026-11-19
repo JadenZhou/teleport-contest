@@ -29,7 +29,8 @@ import { role_init, genders, Hello } from './role.js';
 import { u_init_misc, u_init_inventory_attrs, u_init_skills_discoveries,
          money_cnt } from './u_init.js';
 import { align_str } from './insight.js';
-import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED, NO_MM_FLAGS } from './const.js';
+import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED, NO_MM_FLAGS,
+         FAST, INTRINSIC } from './const.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -169,8 +170,20 @@ function u_calc_moveamt(wtcap) {
     } else {
         moveamt = g.youmonst.data.mmove;
 
-        /* Very_fast / Fast free actions (rn2(3)): not ported yet --
-           the hero's speed properties aren't available yet */
+        /* C ref: youprop.h HFast, EFast, Fast, Very_fast */
+        const HFast = u.uprops[FAST].intrinsic, EFast = u.uprops[FAST].extrinsic;
+        const Fast = (HFast || EFast);
+        const Very_fast = ((HFast & ~INTRINSIC) || EFast);
+
+        if (Very_fast) { /* speed boots, potion, or spell */
+            /* gain a free action on 2/3 of turns */
+            if (rn2(3) !== 0)
+                moveamt += NORMAL_SPEED;
+        } else if (Fast) { /* intrinsic */
+            /* gain a free action on 1/3 of turns */
+            if (rn2(3) === 0)
+                moveamt += NORMAL_SPEED;
+        }
     }
 
     /* switch (wtcap): encumbrance reduction -- near_capacity() isn't
