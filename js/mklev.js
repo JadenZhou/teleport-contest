@@ -15,6 +15,7 @@ import { Is_branchlev, level_difficulty, on_level, dungeon_branch,
 import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE } from './monsters.js';
 import { nhl_init, nhl_loadlua, nhl_done, nhl_pcall_handle,
          NHLpa_panic, NHLpa_impossible } from './nhlua.js';
+import { litstate_rnd } from './mkmap.js';
 import { create_des_coder, reset_xystart_size, fill_special_room } from './sp_lev.js';
 import { getbones } from './bones.js';
 import {
@@ -430,14 +431,6 @@ function clear_level_structures() {
     init_rect();
 }
 
-// C ref: mkmap.c litstate_rnd()
-function litstate_rnd(litstate) {
-    if (litstate < 0) {
-        const d = depth_of_level(game.u?.uz);
-        return (rnd(1 + Math.abs(d)) < 11 && rn2(77)) ? true : false;
-    }
-    return !!litstate;
-}
 
 // C ref: mklev.c makelevel()
 async function makelevel() {
@@ -834,7 +827,7 @@ function create_vault() {
 }
 
 // C ref: mklev.c add_room()
-function add_room(lowx, lowy, hix, hiy, lit, rtype, special) {
+export function add_room(lowx, lowy, hix, hiy, lit, rtype, special) {
     const g = game;
     const croom = {
         lx: lowx, ly: lowy, hx: hix, hy: hiy,
@@ -1250,8 +1243,8 @@ function makecorridors() {
 // Room helper functions
 // ============================================================
 
-function somex(croom) { return rn1(croom.hx - croom.lx + 1, croom.lx); }
-function somey(croom) { return rn1(croom.hy - croom.ly + 1, croom.ly); }
+export function somex(croom) { return rn1(croom.hx - croom.lx + 1, croom.lx); }
+export function somey(croom) { return rn1(croom.hy - croom.ly + 1, croom.ly); }
 
 function somexy(croom, c) {
     if (!croom.nsubrooms) {

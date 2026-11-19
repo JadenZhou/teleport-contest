@@ -33,6 +33,7 @@
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
 import { TRUE, FALSE, NHL_SB_SAFE } from './const.js';
+import * as C from './const.js';
 import { nhlib_lua } from './nhlib_lua.js';
 import { dungeon_lua } from './dungeon_lua.js';
 import { nhcore_lua } from './nhcore_lua.js';
@@ -121,6 +122,52 @@ export function luaL_checkoption(v, def, lst) {
 // C ref: nhlua.c nhl_error()
 export function nhl_error(L, msg) {
     lua_error(msg);
+}
+
+// C ref: nhlua.c char2typ[]
+const char2typ = [
+    [' ', C.STONE],
+    ['#', C.CORR],
+    ['.', C.ROOM],
+    ['-', C.HWALL],
+    ['-', C.TLCORNER],
+    ['-', C.TRCORNER],
+    ['-', C.BLCORNER],
+    ['-', C.BRCORNER],
+    ['-', C.CROSSWALL],
+    ['-', C.TUWALL],
+    ['-', C.TDWALL],
+    ['-', C.TLWALL],
+    ['-', C.TRWALL],
+    ['-', C.DBWALL],
+    ['|', C.VWALL],
+    ['+', C.DOOR],
+    ['A', C.AIR],
+    ['C', C.CLOUD],
+    ['S', C.SDOOR],
+    ['H', C.SCORR],
+    ['{', C.FOUNTAIN],
+    ['\\', C.THRONE],
+    ['K', C.SINK],
+    ['}', C.MOAT],
+    ['P', C.POOL],
+    ['L', C.LAVAPOOL],
+    ['Z', C.LAVAWALL],
+    ['I', C.ICE],
+    ['W', C.WATER],
+    ['T', C.TREE],
+    ['F', C.IRONBARS], /* Fe = iron */
+    ['x', C.MAX_TYPE], /* "see-through" */
+    ['B', C.CROSSWALL], /* hack: boundary location */
+    ['w', C.MATCH_WALL], /* IS_STWALL() */
+];
+
+// C ref: nhlua.c splev_chr2typ()
+export function splev_chr2typ(c) {
+    for (const [ch, typ] of char2typ)
+        if (c === ch)
+            return typ;
+    return C.INVALID_TYPE;
 }
 
 // C ref: nhlua.c get_table_int()

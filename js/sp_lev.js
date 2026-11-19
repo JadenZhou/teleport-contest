@@ -7,7 +7,8 @@
 // check_room() and create_room() (also sp_lev.c) live in mklev.js for now,
 // next to the room code they share with makerooms().
 //
-// Ported so far: what themerms.lua's "default" room needs (des.room). The
+// Ported so far: des.room, des.map and des.region as themed rooms use
+// them (with their helpers mapfrag_*, sel_set_ter, get_location). The
 // other des.* functions are registered by name but raise a Lua error until
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
@@ -20,19 +21,27 @@ import {
     ARMORSHOP, SCROLLSHOP, POTIONSHOP, WEAPONSHOP, FOODSHOP, RINGSHOP,
     WANDSHOP, TOOLSHOP, BOOKSHOP, FODDERSHOP, CANDLESHOP, ROOMOFFSET,
     IS_DOOR, SDOOR, isok, TRUE, FALSE, FILL_NONE, FILL_NORMAL,
+    STONE, MAX_TYPE, INVALID_TYPE, NO_ROOM, HWALL, IRONBARS, CLOUD, D_CLOSED,
+    IS_WALL, MAXNROFROOMS,
 } from './const.js';
+import { splev_chr2typ, luaL_checkstring } from './nhlua.js';
+import { set_levltyp_lit } from './mkmaze.js';
+import { flood_fill_rm, litstate_rnd } from './mkmap.js';
+import { selection_new, selection_setpoint } from './selvar.js';
 import {
     get_table_int_opt, get_table_str_opt, get_table_option, nhl_error,
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, mkgold } from './mklev.js';
+import { create_room, topologize, add_door, add_room, mkgold, somex, somey } from './mklev.js';
 
 // C's impossible() and panic() (pline.c) are not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 function panic(msg) { throw new Error(`panic: ${msg}`); }
 
 const MAX_NESTED_ROOMS = 5;
+const MAP_Y_LIM = 21; /* sp_lev.h */
+const ANY_LOC = 0x10; /* sp_lev.h getloc_flags_t; only random locations use it */
 
 // sp_lev.h alignment codes
 const SPLEV_LEFT = 1;
@@ -474,6 +483,444 @@ export function lspo_room(tbl) {
     return 0;
 }
 
+// C ref: sp_lev.c mapfrag_fromstr()
+function mapfrag_fromstr(str) {
+    const mf = {};
+
+    mf.data = str.replace(/[0-9]/g, ''); /* stripdigits() */
+    const lines = mf.data.split('\n');
+    mf.wid = Math.max(...lines.map(l => l.length)); /* str_lines_maxlen() */
+    mf.hei = 0;
+    let tmps = 0;
+    while (tmps !== null && tmps < mf.data.length) {
+        const s1 = mf.data.indexOf('\n', tmps);
+
+        if (mf.hei > MAP_Y_LIM) {
+            return null;
+        }
+        tmps = (s1 >= 0) ? s1 + 1 : null;
+        mf.hei++;
+    }
+    return mf;
+}
+
+// C ref: sp_lev.c mapfrag_get()
+function mapfrag_get(mf, x, y) {
+    if (y < 0 || x < 0 || y > mf.hei - 1 || x > mf.wid - 1)
+        panic(`outside mapfrag (${mf.wid},${mf.hei}), wanted (${x},${y})`);
+    return splev_chr2typ(mf.data[y * (mf.wid + 1) + x]);
+}
+
+// C ref: sp_lev.c sel_set_ter()
+function sel_set_ter(x, y, terr) {
+    const levl = (xx, yy) => game.level.at(xx, yy);
+
+    if (!set_levltyp_lit(x, y, terr.ter, terr.tlit))
+        return;
+    /* TODO: move this below into set_levltyp? */
+    /* handle doors and secret doors */
+    if (levl(x, y).typ === SDOOR || IS_DOOR(levl(x, y).typ)) {
+        if (levl(x, y).typ === SDOOR)
+            levl(x, y).doormask = D_CLOSED;
+        if (x && (IS_WALL(levl(x - 1, y).typ) || levl(x - 1, y).horizontal))
+            levl(x, y).horizontal = true;
+    } else if (levl(x, y).typ === HWALL || levl(x, y).typ === IRONBARS) {
+        levl(x, y).horizontal = true;
+    } else if (levl(x, y).typ === CLOUD) {
+        /* del_engr_at(x, y): no engravings exist yet */
+    }
+}
+
+// C ref: sp_lev.c l_push_wid_hei_table()
+function l_push_wid_hei_table(wid, hei) {
+    return { width: wid, height: hei };
+}
+
+// C ref: sp_lev.c lspo_map()
+/* map({ x = 10, y = 10, map = [[...]] }); */
+/* map({ coord = {10, 10}, map = [[...]] }); */
+/* map({ halign = "center", valign = "center", map = [[...]] }); */
+/* map([[...]]) */
+export function lspo_map(...args) {
+    const left_or_right = [
+        'left', 'half-left', 'center', 'half-right', 'right', 'none',
+    ];
+    const l_or_r2i = [
+        SPLEV_LEFT, SPLEV_H_LEFT, SPLEV_CENTER, SPLEV_H_RIGHT,
+        SPLEV_RIGHT, -1, -1,
+    ];
+    const top_or_bot = ['top', 'center', 'bottom', 'none'];
+    const t_or_b2i = [TOP, SPLEV_CENTER, BOTTOM, -1, -1];
+    let lr, tb;
+    let x = -1, y = -1;
+    let mf;
+    let tmpstr;
+    const argc = args.length;
+    let has_contents = FALSE;
+    let contents = null;
+    let tryct = 0;
+    let ox, oy;
+    let lit = FALSE;
+    const levl = (xx, yy) => game.level.at(xx, yy);
+
+    create_des_coder();
+    const coder = game.coder;
+
+    if (game.in_mk_themerooms && game.themeroom_failed)
+        return 0;
+
+    if (argc === 1 && lua_type(args[0]) === LUA_TSTRING) {
+        tmpstr = luaL_checkstring(args[0]);
+        lr = tb = SPLEV_CENTER;
+        mf = mapfrag_fromstr(tmpstr);
+    } else {
+        const tbl = args[0];
+        if (lua_type(tbl) !== 5 /* LUA_TTABLE */)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+        lr = l_or_r2i[get_table_option(tbl, 'halign', 'none', left_or_right)];
+        tb = t_or_b2i[get_table_option(tbl, 'valign', 'none', top_or_bot)];
+        ({ x, y } = get_table_xy_or_coord(tbl));
+        tmpstr = luaL_checkstring(tbl.map); /* get_table_str(L, "map") */
+        lit = get_table_boolean_opt(tbl, 'lit', FALSE);
+        if (lua_type(tbl.contents) === LUA_TFUNCTION) {
+            contents = tbl.contents;
+            has_contents = TRUE;
+        }
+        mf = mapfrag_fromstr(tmpstr);
+    }
+
+    if (!mf) {
+        nhl_error(null, 'Map data error');
+        /*NOTREACHED*/
+        return 0;
+    }
+
+    const sel = selection_new();
+    ox = x;
+    oy = y;
+    let skipmap = false;
+    redo_maploc: for (;;) {
+        game.xsize = mf.wid;
+        game.ysize = mf.hei;
+
+        if (lr === -1 && tb === -1) {
+            if (game.in_mk_themerooms && (ox === -1 || oy === -1)) {
+                if (ox === -1) {
+                    if (coder.croom) {
+                        x = somex(coder.croom) - mf.wid;
+                        if (x < 1)
+                            x = 1;
+                    } else {
+                        x = 1 + rn2(COLNO - 1 - mf.wid);
+                    }
+                }
+
+                if (oy === -1) {
+                    if (coder.croom) {
+                        y = somey(coder.croom) - mf.hei;
+                        if (y < 1)
+                            y = 1;
+                    } else {
+                        y = rn2(ROWNO - mf.hei);
+                    }
+                }
+            }
+
+            if (isok(x, y)) {
+                /* x,y is given, place map starting at x,y */
+                if (coder.croom) {
+                    /* in a room? adjust to room relative coords */
+                    game.xstart = x + coder.croom.lx;
+                    game.ystart = y + coder.croom.ly;
+                    game.xsize = Math.min(mf.wid,
+                                          (coder.croom.hx - coder.croom.lx));
+                    game.ysize = Math.min(mf.hei,
+                                          (coder.croom.hy - coder.croom.ly));
+                } else {
+                    game.xsize = mf.wid;
+                    game.ysize = mf.hei;
+                    game.xstart = x;
+                    game.ystart = y;
+                }
+            } else {
+                nhl_error(null, 'Map requires either x,y or halign,valign params');
+                return 0;
+            }
+        } else {
+            /* place map starting at halign,valign: x_maze_max/y_maze_max
+               (mkmaze.c) are not ported yet */
+            nhl_error(null, 'des.map: halign/valign placement is not ported yet');
+        }
+
+        if (game.ystart < 0 || game.ystart + game.ysize > ROWNO) {
+            if (game.in_mk_themerooms) {
+                game.themeroom_failed = TRUE;
+                skipmap = true;
+                break redo_maploc;
+            }
+            /* try to move the start a bit */
+            game.ystart += (game.ystart > 0) ? -2 : 2;
+            if (game.ysize === ROWNO)
+                game.ystart = 0;
+            if (game.ystart < 0 || game.ystart + game.ysize > ROWNO)
+                game.ystart = 0;
+        }
+        if (game.xsize <= 1 && game.ysize <= 1) {
+            reset_xystart_size();
+        } else {
+            let mptyp;
+
+            /* Themed rooms should never overwrite anything */
+            if (game.in_mk_themerooms) {
+                let isokp = TRUE;
+                for (y = game.ystart - 1;
+                     y < Math.min(ROWNO, game.ystart + game.ysize) + 1; y++)
+                    for (x = game.xstart - 1;
+                         x < Math.min(COLNO, game.xstart + game.xsize) + 1; x++) {
+                        if (!isok(x, y)) {
+                            isokp = FALSE;
+                        } else if (y < game.ystart || y >= (game.ystart + game.ysize)
+                                   || x < game.xstart || x >= (game.xstart + game.xsize)) {
+                            if (levl(x, y).typ !== STONE
+                                || levl(x, y).roomno !== NO_ROOM)
+                                isokp = FALSE;
+                        } else {
+                            mptyp = mapfrag_get(mf, x - game.xstart, y - game.ystart);
+                            if (mptyp >= MAX_TYPE)
+                                continue;
+                            if ((levl(x, y).typ !== STONE
+                                 && levl(x, y).typ !== mptyp)
+                                || levl(x, y).roomno !== NO_ROOM)
+                                isokp = FALSE;
+                        }
+                        if (!isokp) {
+                            if (tryct++ < 100 && (lr === -1 || tb === -1))
+                                continue redo_maploc;
+                            game.themeroom_failed = TRUE;
+                            skipmap = true;
+                            break redo_maploc;
+                        }
+                    }
+            }
+
+            /* Load the map */
+            for (y = game.ystart; y < Math.min(ROWNO, game.ystart + game.ysize); y++)
+                for (x = game.xstart; x < Math.min(COLNO, game.xstart + game.xsize); x++) {
+                    mptyp = mapfrag_get(mf, (x - game.xstart), (y - game.ystart));
+                    if (mptyp === INVALID_TYPE) {
+                        /* TODO: warn about illegal map char */
+                        continue;
+                    }
+                    if (mptyp >= MAX_TYPE)
+                        continue;
+                    /* clear out levl: load_common_data may set them */
+                    levl(x, y).flags = 0;
+                    levl(x, y).horizontal = false;
+                    levl(x, y).roomno = 0;
+                    levl(x, y).edge = false;
+                    if (!game.SpLev_Map) game.SpLev_Map = [];
+                    if (!game.SpLev_Map[x]) game.SpLev_Map[x] = [];
+                    game.SpLev_Map[x][y] = 1;
+                    selection_setpoint(x, y, sel, 1);
+                    sel_set_ter(x, y, { ter: mptyp, tlit: lit });
+                }
+        }
+        break;
+    }
+
+    /* skipmap: */
+    if (game.in_mk_themerooms && game.themeroom_failed) {
+        /* this mutated xstart and ystart in the process of trying to make a
+         * themed room, so undo them */
+        reset_xystart_size();
+    } else if (has_contents) {
+        /* nhl_pcall_handle(L, 1, 0, "lspo_map", NHLpa_panic) */
+        const saved = game.lua_des_caller;
+        game.lua_des_caller = 'map';
+        try {
+            contents(l_push_wid_hei_table(game.xsize, game.ysize));
+        } finally {
+            game.lua_des_caller = saved;
+        }
+        reset_xystart_size();
+    }
+
+    /* return selection where map locations were put */
+    return sel; /* l_selection_push_copy(L, sel) */
+}
+
+// C ref: sp_lev.c get_table_region()
+function get_table_region(tbl, name, add_xstart) {
+    const v = tbl[name];
+    if (lua_type(v) !== 5 /* LUA_TTABLE */ || v.length !== 4)
+        nhl_error(null, `Region '${name}' is not a table of 4 integers`);
+    let x1 = luaL_checkinteger(v[0]);
+    let y1 = luaL_checkinteger(v[1]);
+    let x2 = luaL_checkinteger(v[2]);
+    let y2 = luaL_checkinteger(v[3]);
+    if (add_xstart) {
+        x1 += game.xstart; y1 += game.ystart;
+        x2 += game.xstart; y2 += game.ystart;
+    }
+    return { x1, y1, x2, y2 };
+}
+
+// C ref: sp_lev.c get_table_coords_or_region()
+function get_table_coords_or_region(tbl) {
+    let dx1 = get_table_int_opt(tbl, 'x1', -1);
+    let dy1 = get_table_int_opt(tbl, 'y1', -1);
+    let dx2 = get_table_int_opt(tbl, 'x2', -1);
+    let dy2 = get_table_int_opt(tbl, 'y2', -1);
+
+    if (dx1 === -1 && dy1 === -1 && dx2 === -1 && dy2 === -1) {
+        const r = get_table_region(tbl, 'region', FALSE);
+        dx1 = r.x1; dy1 = r.y1;
+        dx2 = r.x2; dy2 = r.y2;
+    }
+    return { dx1, dy1, dx2, dy2 };
+}
+
+// C ref: sp_lev.c get_location() — the fixed-location case only.
+function get_location(c, humidity, croom) {
+    let mx, my;
+
+    if (croom) {
+        mx = croom.lx;
+        my = croom.ly;
+    } else {
+        mx = game.xstart;
+        my = game.ystart;
+    }
+
+    if (c.x >= 0) { /* normal locations */
+        c.x += mx;
+        c.y += my;
+    } else { /* random location: is_ok_location() is not ported yet */
+        nhl_error(null, 'get_location: random locations are not ported yet');
+    }
+}
+
+// C ref: sp_lev.c lspo_region()
+/* region(selection, lit); */
+/* region({ x1=NN, y1=NN, x2=NN, y2=NN, lit=BOOL, type=ROOMTYPE, joined=BOOL,
+ *          irregular=BOOL, filled=NN [ , contents = FUNCTION ] }); */
+/* region({ region={x1,y1, x2,y2}, type="ordinary" }); */
+export function lspo_region(...args) {
+    let dx1, dy1, dx2, dy2;
+    let troom;
+    let do_arrival_room = FALSE, room_not_needed,
+        irregular = FALSE, joined = TRUE;
+    let rtype = OROOM, rlit = 1, needfill = 0;
+    const argc = args.length;
+    const tbl = args[0];
+
+    create_des_coder();
+    const coder = game.coder;
+
+    if (argc <= 1) {
+        if (lua_type(tbl) !== 5 /* LUA_TTABLE */)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        /* TODO: "unfilled" => filled=0, "filled" => filled=1, and
+         * "lvflags_only" => filled=2, probably in a get_table_needfill_opt */
+        needfill = get_table_int_opt(tbl, 'filled', 0);
+        irregular = get_table_boolean_opt(tbl, 'irregular', 0);
+        joined = get_table_boolean_opt(tbl, 'joined', TRUE);
+        do_arrival_room = get_table_boolean_opt(tbl, 'arrival_room', 0);
+        rtype = get_table_roomtype_opt(tbl, 'type', OROOM);
+        rlit = get_table_int_opt(tbl, 'lit', -1);
+
+        ({ dx1, dy1, dx2, dy2 } = get_table_coords_or_region(tbl));
+
+        if (dx1 === -1 && dy1 === -1 && dx2 === -1 && dy2 === -1) {
+            nhl_error(null, 'region needs region');
+        }
+    } else if (argc === 2) {
+        /* region(selection, "lit"): selection_do_grow() and
+           selection_iterate() are not ported yet */
+        nhl_error(null, 'des.region(selection, lit) is not ported yet');
+    } else {
+        nhl_error(null, 'Wrong parameters');
+        /*NOTREACHED*/
+        return 0;
+    }
+
+    rlit = litstate_rnd(rlit);
+
+    const c1 = { x: dx1, y: dy1 }, c2 = { x: dx2, y: dy2 };
+    get_location(c1, ANY_LOC, null);
+    get_location(c2, ANY_LOC, null);
+    dx1 = c1.x; dy1 = c1.y; dx2 = c2.x; dy2 = c2.y;
+
+    /* Many regions are simple, rectangular areas that just need to set
+     * lighting in an area. In that case, we don't need to do anything
+     * complicated by creating a room. The exceptions are:
+     *  - Special rooms (which usually need to be filled).
+     *  - Irregular regions (more convenient to use the room-making code).
+     *  - Themed room regions (which often have contents).
+     *  - When a room is desired to constrain the arrival of migrating
+     *    monsters (see the mon_arrive function for details).
+     */
+    room_not_needed = (rtype === OROOM && !irregular
+                       && !do_arrival_room && !game.in_mk_themerooms);
+    if (room_not_needed || game.level.nroom >= MAXNROFROOMS) {
+        if (!room_not_needed)
+            impossible('Too many rooms on new level!');
+        /* light_region(&tmpregion) is not ported yet */
+        nhl_error(null, 'des.region: light_region() is not ported yet');
+        return 0;
+    }
+
+    /* troom = &svr.rooms[svn.nroom]: add_room() below creates it */
+    const nroom = game.level.nroom;
+
+    if (irregular) {
+        game.min_rx = game.max_rx = dx1;
+        game.min_ry = game.max_ry = dy1;
+        game.smeq[nroom] = nroom;
+        flood_fill_rm(dx1, dy1, nroom + ROOMOFFSET, rlit, TRUE);
+        add_room(game.min_rx, game.min_ry, game.max_rx, game.max_ry, FALSE, rtype,
+                 TRUE);
+        troom = game.level.rooms[nroom];
+        troom.rlit = rlit ? 1 : 0;
+        troom.irregular = TRUE;
+    } else {
+        add_room(dx1, dy1, dx2, dy2, rlit, rtype, TRUE);
+        troom = game.level.rooms[nroom];
+        topologize(troom); /* set roomno */
+    }
+
+    /* mark rooms that must be filled, but do it later */
+    troom.needfill = needfill;
+
+    troom.needjoining = joined;
+
+    if (!room_not_needed) {
+        if (coder.n_subroom > 1) {
+            impossible('region as subroom');
+        } else {
+            coder.tmproomlist[coder.n_subroom] = troom;
+            coder.failed_room[coder.n_subroom] = FALSE;
+            coder.n_subroom++;
+            update_croom();
+            if (lua_type(tbl.contents) === LUA_TFUNCTION) {
+                /* nhl_pcall_handle(L, 1, 0, "lspo_region", NHLpa_panic) */
+                const saved = game.lua_des_caller;
+                game.lua_des_caller = 'region';
+                try {
+                    tbl.contents(l_push_mkroom_table(troom));
+                } finally {
+                    game.lua_des_caller = saved;
+                }
+            }
+            spo_endroom(coder);
+            add_doors_to_room(troom);
+        }
+    }
+
+    return 0;
+}
+
 // C ref: sp_lev.c l_register_des() — the des_functions[] names. Only
 // des.room is ported; the others raise a Lua error when called.
 const sp_lev_des_names = [
@@ -498,5 +945,7 @@ export function l_register_des(L) {
     for (const name of sp_lev_des_names)
         des[name] = des_not_ported(name);
     des.room = lspo_room;
+    des.map = lspo_map;
+    des.region = lspo_region;
     L.globals.des = des;
 }
