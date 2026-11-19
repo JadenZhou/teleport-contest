@@ -9,7 +9,7 @@ import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
     CROSSWALL, TUWALL, TDWALL, TLWALL, TRWALL,
-    D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED,
+    D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS,
 } from './const.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, DEC_TO_UNICODE } from './terminal.js';
 
@@ -79,6 +79,33 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
     loc.gnew = 1;
 }
 
+// C ref: defsym.h MONSYMS -- def_monsyms[].sym, indexed by mlet (S_ANT = 1)
+const def_monsyms = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@ '&;:~]";
+
+// C ref: display.h m_at() via level.monsters[][]
+function mon_at_loc(x, y) {
+    for (const m of game.level?.monsters || [])
+        if (m.mx === x && m.my === y && !m.dead) return m;
+    return null;
+}
+
+// C ref: display.h mon_visible(): not invisible (or hero sees invisible)
+// and not hiding
+function mon_visible(mon) {
+    const See_invisible = !!(game.u?.uprops?.[SEE_INVIS]?.intrinsic
+                             || game.u?.uprops?.[SEE_INVIS]?.extrinsic);
+    return (!mon.minvis || See_invisible) && !mon.mundetected;
+}
+
+// C ref: display.c display_monster() -- the plain case: the monster's own
+// glyph (mon_to_glyph()), in its mons[] color; mimic appearances,
+// hilite_pet/ridden-steed flags and warnings are not ported yet
+function display_monster(x, y, mon) {
+    const ptr = mon.data;
+    const ch = def_monsyms[ptr.mlet] ?? '?';
+    show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false);
+}
+
 // ── newsym ──
 export function newsym(x, y) {
     const loc = game.level?.at(x, y);
@@ -92,7 +119,7 @@ export function newsym(x, y) {
         return;
     }
 
-    // Contestants: add monster, object, and trap display here.
+    // Not ported yet: object and trap display.
 
     const tg = terrain_glyph(loc, x, y);
     // Only update display/memory if cell is IN_SIGHT (lit and visible)
@@ -101,6 +128,11 @@ export function newsym(x, y) {
         if (game.level?.flags?.hero_memory) {
             loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
         }
+        /* C ref: display.c newsym(): a monster seen at the spot is shown
+           over the remembered background (display_monster()) */
+        const mon = mon_at_loc(x, y);
+        if (mon && mon_visible(mon) && !mon.m_ap_type)
+            display_monster(x, y, mon);
     } else if (loc.remembered_glyph) {
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
@@ -120,6 +152,31 @@ export async function docrt() {
             }
         }
     if (game.u?.ux > 0) show_glyph_cell(game.u.ux, game.u.uy, '@', CLR_WHITE, false);
+    /* overlay with monsters */
+    see_monsters();
+}
+
+// C ref: display.c see_monsters() -- the newsym() of each monster's spot;
+// warning and sensing updates are not ported yet
+export function see_monsters() {
+    for (const mon of game.level?.monsters || []) {
+        if (mon.dead) continue;
+        newsym(mon.mx, mon.my);
+    }
+}
+
+// C ref: display.c row_refresh()
+// Redraw map row y, columns start..stop, from the glyph buffer (here the
+// per-location disp_* fields) onto the map window (offy 1, offx 0).
+export function row_refresh(start, stop, y) {
+    const display = game?.nhDisplay;
+    if (!display || !game.level) return;
+    for (let x = Math.max(start, 1); x <= stop && x < COLNO; x++) {
+        const loc = game.level.at(x, y);
+        if (!loc?.disp_ch || loc.disp_ch === ' ') continue;
+        const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
+        display.setCell(x - 1, y + 1, ch, loc.disp_color ?? NO_COLOR, loc.disp_attr ?? 0);
+    }
 }
 
 // ── Serialize a map row with DEC line-drawing and ANSI colors ──
@@ -203,7 +260,9 @@ function get_strength_str() {
 function _statusLine1() {
     const u = game.u;
     if (!u) return '';
-    const name = game.plname || 'Hero';
+    /* C ref: botl.c do_statusline1(): plname with its first letter capitalized */
+    const pn = game.plname || 'Hero';
+    const name = ('a' <= pn[0] && pn[0] <= 'z') ? pn[0].toUpperCase() + pn.slice(1) : pn;
     const role = game.urole?.rank ? rank() : 'Adventurer'; // C ref: botl.c rank()
     const title = `${name} the ${role}`;
     /* C ref: botl.c do_statusline1(): ACURR() of each attribute, in
@@ -220,7 +279,12 @@ function _statusLine1() {
 function _statusLine2() {
     const u = game.u;
     if (!u) return '';
-    return `Dlvl:${u.uz?.dlevel || 1} $:${game._goldCount || 0} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} Xp:${u.ulevel || 1}/${u.uexp || 0} T:${game.moves || 1}`;
+    /* C ref: botl.c do_statusline2(): experience is "Xp:N/pts" only with
+       the showexp option, and the turn counter is shown only with time */
+    const expr = game.flags?.showexp ? `Xp:${u.ulevel || 1}/${u.uexp || 0}`
+                                     : `Xp:${u.ulevel || 1}`;
+    const tmmv = game.flags?.time ? ` T:${game.moves}` : '';
+    return `Dlvl:${u.uz?.dlevel || 1} $:${game._goldCount || 0} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}`;
 }
 
 // ── Serialize terminal grid for screen comparison ──
@@ -265,8 +329,9 @@ function _buildScreenOutput() {
     }
 
     // Row 22-23: status
-    output += _statusLine1() + '\n';
-    output += _statusLine2();
+    const [st1, st2] = game._status_lines || ['', ''];
+    output += st1 + '\n';
+    output += st2;
 
     game._screen_output = output;
 
@@ -287,11 +352,11 @@ function _buildScreenOutput() {
             }
         }
         // Status lines
-        const s1 = _statusLine1().replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
+        const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
             m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');
         for (let c = 0; c < Math.min(s1.length, display.cols); c++)
             display.setCell(c, 22, s1[c], NO_COLOR, 0);
-        const s2 = _statusLine2();
+        const s2 = st2;
         for (let c = 0; c < Math.min(s2.length, display.cols); c++)
             display.setCell(c, 23, s2[c], NO_COLOR, 0);
         // Cursor at hero
@@ -302,6 +367,8 @@ function _buildScreenOutput() {
 
 // ── flush_screen ──
 export async function flush_screen(mode) {
+    if (game.disp_botl || game.disp_botlx)
+        bot();
     _buildScreenOutput();
 }
 
@@ -313,8 +380,26 @@ export async function cls() {
 }
 
 // ── bot ──
-export async function bot() {
-    // Status line updates happen in _buildScreenOutput
+// C ref: botl.c bot() -- the status lines are composed now (the tty status
+// window keeps them until the next bot()); they are drawn on rows 22-23
+// and again by each flush_screen() redraw.
+export function bot() {
+    const display = game?.nhDisplay;
+    if (game.u && game.u.uhp !== -1) {
+        const st1 = _statusLine1(), st2 = _statusLine2();
+        game._status_lines = [st1, st2];
+        if (display?.grid) {
+            const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
+                m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');
+            const rows = [s1, st2];
+            for (let r = 0; r < 2; r++) {
+                for (let c = 0; c < display.cols; c++)
+                    display.setCell(c, 22 + r, c < rows[r].length ? rows[r][c] : ' ',
+                                    NO_COLOR, 0);
+            }
+        }
+    }
+    game.disp_botl = game.disp_botlx = false;
 }
 
 // ── pline ──
