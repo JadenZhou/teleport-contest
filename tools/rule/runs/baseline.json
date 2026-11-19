@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T17:08:41.493Z",
+ "when": "2026-11-19T17:37:40.840Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -265,28 +265,28 @@
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
    "total": 8563,
-   "jsTotal": 2783,
+   "jsTotal": 992,
    "totalScreens": 44,
-   "valuePrefix": 357,
-   "rulePrefix": 357,
+   "valuePrefix": 358,
+   "rulePrefix": 358,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 357,
+    "index": 358,
     "step": 0,
-    "c": "rn2(36)=5 @ selection_rndcoord(selvar.c:302)",
+    "c": "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
     "js": "rn2(1)=0 @ rnd_rect",
     "kind": "value",
-    "cCaller": "selection_rndcoord",
+    "cCaller": "find_montype",
     "jsCaller": "rnd_rect",
     "context": [
-     "rn2(11)=0 @ nh.rn2 src=themerms.lua:1039 parent=region([C]:-1)",
      "rn2(12)=8 @ nh.rn2 src=themerms.lua:1039 parent=region([C]:-1)",
      "rn2(13)=8 @ nh.rn2 src=themerms.lua:1039 parent=region([C]:-1)",
      "rn2(36)=5 @ selection_rndcoord(selvar.c:302)",
      "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
-     "rn2(3)=2 @ induced_align(dungeon.c:2012)"
+     "rn2(3)=2 @ induced_align(dungeon.c:2012)",
+     "rnd(2)=1 @ next_ident(mkobj.c:521)"
     ]
    },
    "error": null
@@ -1282,8 +1282,8 @@
   "discarded-roll": 10
  },
  "totals": {
-  "rule": 118506,
-  "value": 118635,
+  "rule": 118507,
+  "value": 118636,
   "rolls": 792838,
   "honestScreens": 121,
   "screens": 135,
@@ -1354,11 +1354,11 @@
    ]
   },
   {
-   "fn": "selection_rndcoord",
+   "fn": "find_montype",
    "sessions": 1,
-   "blockedRolls": 8206,
+   "blockedRolls": 8205,
    "examples": [
-    "seed0015-valk-level2-pit-dog-wait @357: C \"rn2(36)=5 @ selection_rndcoord(selvar.c:302)\" / JS \"rn2(1)=0 @ rnd_rect\""
+    "seed0015-valk-level2-pit-dog-wait @358: C \"rn2(2)=0 @ find_montype(sp_lev.c:3156)\" / JS \"rn2(1)=0 @ rnd_rect\""
    ]
   },
   {

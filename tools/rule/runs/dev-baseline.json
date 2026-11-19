@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T17:09:37.202Z",
+ "when": "2026-11-19T17:37:55.532Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -228,7 +228,7 @@
      "rn2(4)=3 @ randomize_gem_colors(o_init.c:95)"
     ]
    },
-   "error": "TypeError: Cannot read properties of undefined (reading 'new') |     at contents (file:///Users/JadenZ/code/teleport-contest/js/themerms_lua.js:666:39) |     at Object.lspo_map [as map] (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:757:13) |     at Object.contents (file:///Users/JadenZ/code/teleport-contest/js/themerms_lua.js:656:21)"
+   "error": "TypeError: Cannot read properties of undefined (reading 'new') |     at contents (file:///home/user/repo/js/themerms_lua.js:666:39) |     at Object.lspo_map [as map] (file:///home/user/repo/js/sp_lev.js:762:13) |     at Object.contents (file:///home/user/repo/js/themerms_lua.js:656:21)"
   },
   {
    "session": "dev81328-dequa-fountain-explore.session.json",
@@ -552,28 +552,28 @@
   {
    "session": "dev81779-valk-chat-lamp-ration.session.json",
    "total": 2428,
-   "jsTotal": 1316,
+   "jsTotal": 1067,
    "totalScreens": 30,
-   "valuePrefix": 400,
-   "rulePrefix": 400,
+   "valuePrefix": 401,
+   "rulePrefix": 401,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 400,
+    "index": 401,
     "step": 0,
-    "c": "rn2(42)=29 @ selection_rndcoord(selvar.c:302)",
-    "js": "rn2(3)=2 @ rnd_rect",
+    "c": "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
+    "js": "rn2(3)=0 @ rnd_rect",
     "kind": "value",
-    "cCaller": "selection_rndcoord",
+    "cCaller": "find_montype",
     "jsCaller": "rnd_rect",
     "context": [
-     "rn2(11)=0 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
      "rn2(12)=9 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
      "rn2(13)=5 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
      "rn2(42)=29 @ selection_rndcoord(selvar.c:302)",
      "rn2(2)=0 @ find_montype(sp_lev.c:3156)",
-     "rn2(3)=1 @ induced_align(dungeon.c:2012)"
+     "rn2(3)=1 @ induced_align(dungeon.c:2012)",
+     "rnd(2)=2 @ next_ident(mkobj.c:521)"
     ]
    },
    "error": null
@@ -784,28 +784,28 @@
   {
    "session": "dev82107-priest-quest-tour.session.json",
    "total": 63213,
-   "jsTotal": 2655,
+   "jsTotal": 3645,
    "totalScreens": 324,
-   "valuePrefix": 597,
-   "rulePrefix": 597,
+   "valuePrefix": 3166,
+   "rulePrefix": 3166,
    "screens": 0,
    "honestScreens": 0,
    "firstScreenMiss": 0,
    "first": {
-    "index": 597,
-    "step": 0,
-    "c": "rn2(100)=53 @ selection_filter_percent(selvar.c:241)",
-    "js": "rn2(6)=1 @ generate_stairs_find_room",
+    "index": 3166,
+    "step": 19,
+    "c": "rnd(8)=6 @ newhp(attrib.c:1101)",
+    "js": "rn2(12)=5 @ mcalcmove",
     "kind": "value",
-    "cCaller": "selection_filter_percent",
-    "jsCaller": "generate_stairs_find_room",
+    "cCaller": "newhp",
+    "jsCaller": "mcalcmove",
     "context": [
-     "rn2(11)=8 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(12)=11 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(13)=4 @ nh.rn2 src=themerms.lua:1039 parent=room([C]:-1)",
-     "rn2(100)=53 @ selection_filter_percent(selvar.c:241)",
-     "rn2(100)=23 @ selection_filter_percent(selvar.c:241)",
-     "rn2(100)=82 @ selection_filter_percent(selvar.c:241)"
+     "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
+     "rnd(9000)=979 @ moveloop_preamble(allmain.c:72)",
+     "rnd(30)=18 @ moveloop_preamble(allmain.c:79)",
+     "rnd(8)=6 @ newhp(attrib.c:1101)",
+     "rnd(2)=1 @ newhp(attrib.c:1103)",
+     "rn2(11)=8 @ newpw(exper.c:64)"
     ]
    },
    "error": null
@@ -1279,8 +1279,8 @@
   "discarded-roll": 10
  },
  "totals": {
-  "rule": 110296,
-  "value": 110299,
+  "rule": 112866,
+  "value": 112869,
   "rolls": 504996,
   "honestScreens": 120,
   "screens": 120,
@@ -1307,8 +1307,8 @@
   },
   {
    "fn": "newhp",
-   "sessions": 5,
-   "blockedRolls": 171622,
+   "sessions": 6,
+   "blockedRolls": 231669,
    "examples": [
     "dev82025-wizard-world-tour @2317: C \"rnd(8)=2 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=9 @ mcalcmove\"",
     "dev82066-archeologist-tour @2301: C \"rnd(8)=5 @ newhp(attrib.c:1101)\" / JS \"rn2(12)=8 @ mcalcmove\""
@@ -1342,14 +1342,6 @@
    ]
   },
   {
-   "fn": "selection_filter_percent",
-   "sessions": 1,
-   "blockedRolls": 62616,
-   "examples": [
-    "dev82107-priest-quest-tour @597: C \"rn2(100)=53 @ selection_filter_percent(selvar.c:241)\" / JS \"rn2(6)=1 @ generate_stairs_find_room\""
-   ]
-  },
-  {
    "fn": "randomize_gem_colors",
    "sessions": 1,
    "blockedRolls": 3681,
@@ -1358,11 +1350,11 @@
    ]
   },
   {
-   "fn": "selection_rndcoord",
+   "fn": "find_montype",
    "sessions": 1,
-   "blockedRolls": 2028,
+   "blockedRolls": 2027,
    "examples": [
-    "dev81779-valk-chat-lamp-ration @400: C \"rn2(42)=29 @ selection_rndcoord(selvar.c:302)\" / JS \"rn2(3)=2 @ rnd_rect\""
+    "dev81779-valk-chat-lamp-ration @401: C \"rn2(2)=0 @ find_montype(sp_lev.c:3156)\" / JS \"rn2(3)=0 @ rnd_rect\""
    ]
   },
   {
