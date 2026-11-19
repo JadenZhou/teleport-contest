@@ -145,10 +145,14 @@ export async function rhack(key) {
     } else if (ch === '.') {
         /* C ref: cmd.c Cmd '.' -> donull(); ECMD_TIME takes a move */
         game.context.move = (await donull()) ? 1 : 0;
+    } else if (ch === 's') {
+        /* C ref: cmd.c Cmd 's' -> detect.c dosearch() */
+        game.context.move = (await dosearch()) ? 1 : 0;
+    } else if (ch === '#') {
+        /* C ref: cmd.c Cmd '#' -> doextcmd() */
+        game.context.move = (await doextcmd()) ? 1 : 0;
     } else {
-        /* every other command is not ported yet ('#' doextcmd() and 's'
-           dosearch() wait for the tutorial query, without which keys
-           typed at it would reach the command loop), and neither are the
+        /* every other command is not ported yet, and neither are the
            prompts and windows whose keys would otherwise arrive here.
            C's "Unknown command '%s'." for keys missing from cmdlist[] is
            left out until the key bindings (cmd.c reset_commands()) are
