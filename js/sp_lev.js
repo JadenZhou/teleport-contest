@@ -14,7 +14,7 @@
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
 import { game } from './gstate.js';
-import { rn2, rn1, rnd } from './rng.js';
+import { rn2, rn1, rnd, ROLL_FROM } from './rng.js';
 import { depth } from './dungeon.js';
 import {
     COLNO, ROWNO, OROOM, THEMEROOM, COURT, SWAMP, VAULT, BEEHIVE, MORGUE,
@@ -31,6 +31,8 @@ import {
     HOLE, TRAPDOOR, TELEP_TRAP, LEVEL_TELEP, MAGIC_PORTAL, WEB, STATUE_TRAP,
     MAGIC_TRAP, ANTI_MAGIC, POLY_TRAP, VIBRATING_SQUARE,
     MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_SEEN, MKTRAP_NOVICTIM,
+    D_NODOOR, D_BROKEN, D_ISOPEN, D_LOCKED, D_TRAPPED, D_SECRET, DOOR,
+    W_NORTH, W_SOUTH, W_EAST, W_WEST, W_ANY, W_RANDOM,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring } from './nhlua.js';
 import { set_levltyp, set_levltyp_lit } from './mkmaze.js';
@@ -41,7 +43,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, add_subroom, somex, somey, somexy, mktrap } from './mklev.js';
+import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container,
@@ -419,6 +421,233 @@ export function fill_special_room(croom) {
         game.level.flags.has_swamp = TRUE;
         break;
     }
+}
+
+// C ref: rm.h IS_DOORJOIN()
+function IS_DOORJOIN(typ) { return IS_OBSTRUCTED(typ) || typ === IRONBARS; }
+
+// C ref: sp_lev.c set_door_orientation()
+function set_door_orientation(x, y) {
+    const lv = (xx, yy) => game.level.at(xx, yy);
+    const wallish = (xx, yy) => (isok(xx, yy) && (IS_WALL(lv(xx, yy).typ)
+                                                  || IS_DOOR(lv(xx, yy).typ)
+                                                  || lv(xx, yy).typ === SDOOR));
+    let wleft = wallish(x - 1, y);
+    let wright = wallish(x + 1, y);
+    let wup = wallish(x, y - 1);
+    let wdown = wallish(x, y + 1);
+
+    if (!wleft && !wright && !wup && !wdown) {
+        /* out of bounds is treated as implicit wall; should be academic
+           because we don't expect to have doors so near the level's edge */
+        wleft  = (!isok(x - 1, y) || IS_DOORJOIN(lv(x - 1, y).typ));
+        wright = (!isok(x + 1, y) || IS_DOORJOIN(lv(x + 1, y).typ));
+        wup    = (!isok(x, y - 1) || IS_DOORJOIN(lv(x, y - 1).typ));
+        wdown  = (!isok(x, y + 1) || IS_DOORJOIN(lv(x, y + 1).typ));
+    }
+    lv(x, y).horizontal = ((wleft || wright) && !(wup && wdown)) ? 1 : 0;
+}
+
+// C ref: sp_lev.c rnddoor()
+/*
+ * Choose randomly the state (nodoor, open, closed or locked) for a door
+ */
+function rnddoor() {
+    const state = [D_NODOOR, D_BROKEN, D_ISOPEN, D_CLOSED, D_LOCKED];
+
+    return ROLL_FROM(state);
+}
+
+// C ref: sp_lev.c create_door()
+/*
+ * Create a new door in a room.
+ * It's placed on a wall (north, south, east or west).
+ */
+function create_door(dd, broom) {
+    let x = 0, y = 0;
+    let trycnt;
+    const levl = (xx, yy) => game.level.at(xx, yy);
+
+    if (dd.secret === -1)
+        dd.secret = rn2(2);
+
+    if (dd.wall === W_RANDOM)
+        dd.wall = W_ANY; /* speeds things up in the below loop */
+
+    if (dd.mask === -1) {
+        /* is it a locked door, closed, or a doorway? */
+        if (!dd.secret) {
+            if (!rn2(3)) {
+                if (!rn2(5))
+                    dd.mask = D_ISOPEN;
+                else if (!rn2(6))
+                    dd.mask = D_LOCKED;
+                else
+                    dd.mask = D_CLOSED;
+                if (dd.mask !== D_ISOPEN && !rn2(25))
+                    dd.mask |= D_TRAPPED;
+            } else
+                dd.mask = D_NODOOR;
+        } else {
+            if (!rn2(5))
+                dd.mask = D_LOCKED;
+            else
+                dd.mask = D_CLOSED;
+
+            if (!rn2(20))
+                dd.mask |= D_TRAPPED;
+        }
+    }
+
+    for (trycnt = 0; trycnt < 100; ++trycnt) {
+        const dwall = dd.wall, dpos = dd.pos;
+
+        /* Convert wall and pos into an absolute coordinate! */
+        switch (rn2(4)) {
+        case 0:
+            if (!(dwall & W_NORTH))
+                continue;
+            y = broom.ly - 1;
+            x = broom.lx + ((dpos === -1) ? rn2(1 + broom.hx - broom.lx)
+                                          : dpos);
+            if (!isok(x, y - 1) || IS_OBSTRUCTED(levl(x, y - 1).typ))
+                continue;
+            break;
+        case 1:
+            if (!(dwall & W_SOUTH))
+                continue;
+            y = broom.hy + 1;
+            x = broom.lx + ((dpos === -1) ? rn2(1 + broom.hx - broom.lx)
+                                          : dpos);
+            if (!isok(x, y + 1) || IS_OBSTRUCTED(levl(x, y + 1).typ))
+                continue;
+            break;
+        case 2:
+            if (!(dwall & W_WEST))
+                continue;
+            x = broom.lx - 1;
+            y = broom.ly + ((dpos === -1) ? rn2(1 + broom.hy - broom.ly)
+                                          : dpos);
+            if (!isok(x - 1, y) || IS_OBSTRUCTED(levl(x - 1, y).typ))
+                continue;
+            break;
+        case 3:
+            if (!(dwall & W_EAST))
+                continue;
+            x = broom.hx + 1;
+            y = broom.ly + ((dpos === -1) ? rn2(1 + broom.hy - broom.ly)
+                                          : dpos);
+            if (!isok(x + 1, y) || IS_OBSTRUCTED(levl(x + 1, y).typ))
+                continue;
+            break;
+        default:
+            /*NOTREACHED*/
+            break;
+        }
+
+        if (okdoor(x, y))
+            break;
+    }
+    if (trycnt >= 100) {
+        impossible("create_door: Can't find a proper place!");
+        return;
+    }
+    if (!set_levltyp(x, y, (dd.secret ? SDOOR : DOOR)))
+        return;
+    levl(x, y).doormask = dd.mask;
+}
+
+// C ref: sp_lev.c sel_set_door()
+function sel_set_door(dx, dy, typ) {
+    const x = dx, y = dy;
+    const loc = game.level.at(x, y);
+
+    if (!IS_DOOR(loc.typ) && loc.typ !== SDOOR)
+        loc.typ = (typ & D_SECRET) ? SDOOR : DOOR;
+    if (typ & D_SECRET) {
+        typ &= ~D_SECRET;
+        if (typ < D_CLOSED)
+            typ = D_CLOSED;
+    }
+    set_door_orientation(x, y); /* set/clear levl[x][y].horizontal */
+    loc.doormask = typ;
+    if (!game.SpLev_Map) game.SpLev_Map = [];
+    if (!game.SpLev_Map[x]) game.SpLev_Map[x] = [];
+    game.SpLev_Map[x][y] = 1;
+}
+
+// C ref: sp_lev.c lspo_door()
+/* door({ x = 1, y = 1, state = "nodoor" }); */
+/* door({ coord = {1, 1}, state = "nodoor" }); */
+/* door({ wall = "north", pos = 3, state="secret" }); */
+/* door("nodoor", 1, 2); */
+export function lspo_door(...args) {
+    const doorstates = [
+        'random', 'open', 'closed', 'locked', 'nodoor', 'broken', 'secret',
+    ];
+    const doorstates2i = [
+        -1, D_ISOPEN, D_CLOSED, D_LOCKED, D_NODOOR, D_BROKEN, D_SECRET,
+    ];
+    let msk;
+    let x, y;
+    let tbl = null;
+
+    create_des_coder();
+
+    if (args.length === 3) {
+        const i = doorstates.indexOf(luaL_checkstring(args[0]));
+        if (i < 0) /* luaL_checkoption() */
+            nhl_error(null, `bad door state '${args[0]}'`);
+        msk = doorstates2i[i];
+        x = luaL_checkinteger(args[1]);
+        y = luaL_checkinteger(args[2]);
+    } else {
+        if (args.length < 1)
+            args[0] = {}; /* lcheck_param_table(): lua_createtable() */
+        tbl = args[0];
+        if (lua_type(tbl) !== LUA_TTABLE)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        const xy = get_table_xy_or_coord(tbl);
+        x = xy.x, y = xy.y;
+        msk = doorstates2i[get_table_option(tbl, 'state', 'random',
+                                            doorstates)];
+    }
+
+    const typ = (msk === -1) ? rnddoor() : msk;
+
+    if (x === -1 && y === -1) {
+        const walldirs = [
+            'all', 'random', 'north', 'west', 'east', 'south',
+        ];
+        /* Note that "random" is also W_ANY, because create_door just wants a
+         * mask of acceptable walls */
+        const walldirs2i = [
+            W_ANY, W_ANY, W_NORTH, W_WEST, W_EAST, W_SOUTH, 0,
+        ];
+        const tmpd = {};
+
+        tmpd.secret = (typ === D_SECRET) ? 1 : 0;
+        tmpd.mask = msk;
+        tmpd.pos = get_table_int_opt(tbl, 'pos', -1);
+        tmpd.wall = walldirs2i[get_table_option(tbl, 'wall', 'all', walldirs)];
+
+        create_door(tmpd, game.coder.croom);
+    } else {
+        /*selection_iterate(sel, sel_set_door, (genericptr_t) &typ);*/
+        const c = { x, y };
+        get_location_coord(c, ANY_LOC, game.coder.croom,
+                           SP_COORD_PACK(x, y));
+        x = c.x, y = c.y;
+        if (!isok(x, y)) {
+            nhl_error(null, 'door coord not ok');
+            /*NOTREACHED*/
+            return 0;
+        }
+        sel_set_door(x, y, typ);
+    }
+
+    return 0;
 }
 
 // C ref: sp_lev.c create_subroom()
@@ -2387,5 +2616,6 @@ export function l_register_des(L) {
     des.monster = lspo_monster;
     des.exclusion = lspo_exclusion;
     des.trap = lspo_trap;
+    des.door = lspo_door;
     L.globals.des = des;
 }

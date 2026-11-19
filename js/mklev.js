@@ -1112,7 +1112,8 @@ function bydoor(x, y) {
     return false;
 }
 
-function okdoor(x, y) {
+// C ref: mklev.c okdoor()
+export function okdoor(x, y) {
     const map = game.level;
     const loc = map.at(x, y);
     if (!loc) return false;
