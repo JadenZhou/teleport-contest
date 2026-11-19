@@ -13,8 +13,10 @@ import {
     In_hell, builds_up,
 } from './dungeon.js';
 import { In_endgame } from './const.js';
-import { mklev } from './mklev.js';
 import { keepdogs } from './dog.js';
+import { mklev, place_lregion } from './mklev.js';
+import { vision_reset } from './vision.js';
+import { LR_UPTELE, LR_DOWNTELE } from './const.js';
 
 export const UTOTYPE_NONE = 0x00;
 export const UTOTYPE_ATSTAIRS = 0x01;
@@ -69,8 +71,13 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     let up = (depth(newlevel) < depth(u.uz));
     const newdungeon = (u.uz.dnum !== newlevel.dnum);
     let leaving_tutorial = false;
-    /* was_in_W_tower, familiar, new, dist, do_fall_dmg,
-       prev_temperature: used by the arrival half, not ported yet */
+    /* familiar, new, dist, do_fall_dmg, prev_temperature: used by the
+       rest of the arrival half, not ported yet */
+    /* was_in_W_tower = In_W_tower(u.ux, u.uy, &u.uz): the Wizard's Tower
+       levels are only in Gehennom, which isn't ported yet */
+    if (In_hell(u.uz))
+        throw new Error('goto_level(): In_W_tower() not ported yet');
+    const was_in_W_tower = false;
 
     if (dunlev(newlevel) > dunlevs_in_dungeon(newlevel))
         newlevel.dlevel = dunlevs_in_dungeon(newlevel);
@@ -193,7 +200,60 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         /* returning to previously visited level; reload it */
         throw new Error('goto_level(): returning to a saved level not ported yet');
     }
-    /* reglyph_darkroom(), vision_reset(), u_on_rndspot()/u_on_newpos()/
-       stairs placement, losedogs(), docrt() and the arrival messages */
-    throw new Error('goto_level(): arrival on the new level not ported yet');
+    /* reglyph_darkroom(): display only */
+    /* set_uinwater(0) */
+    u.uinwater = 0;
+    /* do this prior to level-change pline messages */
+    vision_reset();             /* clear old level's line-of-sight */
+    g.vision_full_recalc = 0;   /* don't let that reenable vision yet */
+    /* flush_screen(-1): ensure all map flushes are postponed */
+
+    if (portal && !In_endgame(u.uz)) {
+        /* find the portal on the new level */
+        throw new Error('goto_level(): portal arrival not ported yet');
+    } else if (at_stairs && !In_endgame(u.uz)) {
+        throw new Error('goto_level(): stairs arrival not ported yet');
+    } else { /* trap door or level_tele or In_endgame */
+        u_on_rndspot((up ? 1 : 0) | (was_in_W_tower ? 2 : 0));
+        if (falling)
+            throw new Error('goto_level(): falling arrival not ported yet');
+    }
+
+    /* if (Punished) placebc(): punishment not ported */
+    /* obj_delivery(FALSE) */
+    if (g.migrating_objs)
+        throw new Error('goto_level(): obj_delivery() not ported yet');
+    /* losedogs() */
+    throw new Error('goto_level(): losedogs() not ported yet');
+}
+
+// C ref: dungeon.c u_on_rndspot()
+/* place you on a random location when arriving on a level */
+export function u_on_rndspot(upflag) {
+    const g = game;
+    const up = (upflag & 1), was_in_W_tower = (upflag & 2);
+
+    /*
+     * Place the hero at a random location within the relevant region.
+     * place_lregion(xTELE) -> put_lregion_here(xTELE) -> u_on_newpos()
+     * Unspecified region (.lx == 0) defaults to entire level.
+     */
+    if (was_in_W_tower /* && On_W_tower_level(&u.uz) */)
+        throw new Error('u_on_rndspot(): the Wizard Tower not ported yet');
+    else if (up)
+        place_lregion(g.updest.lx, g.updest.ly,
+                      g.updest.hx, g.updest.hy,
+                      g.updest.nlx, g.updest.nly,
+                      g.updest.nhx, g.updest.nhy,
+                      LR_UPTELE, null);
+    else
+        place_lregion(g.dndest.lx, g.dndest.ly,
+                      g.dndest.hx, g.dndest.hy,
+                      g.dndest.nlx, g.dndest.nly,
+                      g.dndest.nhx, g.dndest.nhy,
+                      LR_DOWNTELE, null);
+
+    /* might have just left solid rock and unblocked levitation */
+    /* switch_terrain(): no rolls; Levitation/Flying blocking by terrain
+       isn't ported yet */
 }
