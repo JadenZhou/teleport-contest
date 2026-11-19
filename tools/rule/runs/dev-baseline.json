@@ -1,5 +1,5 @@
 {
- "when": "2026-11-19T21:29:56.961Z",
+ "when": "2026-11-19T22:06:43.780Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -655,7 +655,7 @@
   {
    "session": "dev81943-wizard-wear-shop.session.json",
    "total": 15567,
-   "jsTotal": 4801,
+   "jsTotal": 4821,
    "totalScreens": 127,
    "valuePrefix": 2498,
    "rulePrefix": 2498,
@@ -679,7 +679,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): losedogs() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:227:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:54:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev81984-monk-north-search.session.json",
@@ -824,7 +824,7 @@
      "rn2(5)=1 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: stock_room(): \"Closed for inventory\" engraving not ported yet |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:434:15) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:374:13) |     at makelevel (file:///Users/JadenZ/code/teleport-contest/js/mklev.js:422:9)"
+   "error": "Error: stock_room(): \"Closed for inventory\" engraving not ported yet |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:434:15) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:374:13) |     at makelevel (file:///Users/JadenZ/code/teleport-contest/js/mklev.js:534:9)"
   },
   {
    "session": "dev82189-wizard-hallucinate.session.json",
@@ -1148,7 +1148,7 @@
   {
    "session": "dev82640-knight-coverage.session.json",
    "total": 71392,
-   "jsTotal": 6475,
+   "jsTotal": 6507,
    "totalScreens": 1112,
    "valuePrefix": 2967,
    "rulePrefix": 2967,
@@ -1172,65 +1172,65 @@
      "rnd(7)=2 @ drain_en(trap.c:5222)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): losedogs() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:227:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:54:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
    "total": 4743,
-   "jsTotal": 4507,
+   "jsTotal": 4509,
    "totalScreens": 124,
-   "valuePrefix": 4507,
-   "rulePrefix": 4507,
+   "valuePrefix": 4509,
+   "rulePrefix": 4509,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 4507,
+    "index": 4509,
     "step": 4,
-    "c": "rn2(79)=10 @ place_lregion(mkmaze.c:396)",
+    "c": "rn2(10)=3 @ mon_arrive(dog.c:475)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "place_lregion",
+    "cCaller": "mon_arrive",
     "jsCaller": null,
     "context": [
-     "rn2(1000)=619 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=788 @ mineralize(mklev.c:1515)",
      "rn2(1000)=363 @ mineralize(mklev.c:1526)",
      "rn2(79)=10 @ place_lregion(mkmaze.c:396)",
      "rn2(21)=6 @ place_lregion(mkmaze.c:397)",
-     "rn2(10)=3 @ mon_arrive(dog.c:475)"
+     "rn2(10)=3 @ mon_arrive(dog.c:475)",
+     "rn2(8)=1 @ collect_coords(teleport.c:700)",
+     "rn2(7)=4 @ collect_coords(teleport.c:700)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): losedogs() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:227:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:54:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev82722-tourist-stress-disaster.session.json",
    "total": 7545,
-   "jsTotal": 7279,
+   "jsTotal": 7285,
    "totalScreens": 194,
-   "valuePrefix": 7279,
-   "rulePrefix": 7279,
+   "valuePrefix": 7285,
+   "rulePrefix": 7285,
    "screens": 4,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
-    "index": 7279,
+    "index": 7285,
     "step": 4,
-    "c": "rn2(79)=75 @ place_lregion(mkmaze.c:396)",
+    "c": "rn2(10)=8 @ mon_arrive(dog.c:475)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "place_lregion",
+    "cCaller": "mon_arrive",
     "jsCaller": null,
     "context": [
-     "rn2(1000)=762 @ mineralize(mklev.c:1526)",
-     "rn2(1000)=748 @ mineralize(mklev.c:1515)",
-     "rn2(1000)=584 @ mineralize(mklev.c:1526)",
-     "rn2(79)=75 @ place_lregion(mkmaze.c:396)",
-     "rn2(21)=12 @ place_lregion(mkmaze.c:397)",
-     "rn2(79)=8 @ place_lregion(mkmaze.c:396)"
+     "rn2(21)=9 @ place_lregion(mkmaze.c:397)",
+     "rn2(79)=4 @ place_lregion(mkmaze.c:396)",
+     "rn2(21)=14 @ place_lregion(mkmaze.c:397)",
+     "rn2(10)=8 @ mon_arrive(dog.c:475)",
+     "rn2(8)=0 @ collect_coords(teleport.c:700)",
+     "rn2(7)=3 @ collect_coords(teleport.c:700)"
     ]
    },
-   "error": "Error: goto_level(): arrival on the new level not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:198:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:52:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): losedogs() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:227:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:54:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
   },
   {
    "session": "dev82763-tourist-starter.session.json",
@@ -1264,8 +1264,8 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 126397,
-  "value": 126397,
+  "rule": 126405,
+  "value": 126405,
   "rolls": 504996,
   "honestScreens": 238,
   "screens": 255,
@@ -1336,12 +1336,12 @@
    ]
   },
   {
-   "fn": "place_lregion",
+   "fn": "mon_arrive",
    "sessions": 2,
-   "blockedRolls": 502,
+   "blockedRolls": 494,
    "examples": [
-    "dev82681-wizard-coverage-pair @4507: C \"rn2(79)=10 @ place_lregion(mkmaze.c:396)\" / JS \"(none: JS log ended)\"",
-    "dev82722-tourist-stress-disaster @7279: C \"rn2(79)=75 @ place_lregion(mkmaze.c:396)\" / JS \"(none: JS log ended)\""
+    "dev82681-wizard-coverage-pair @4509: C \"rn2(10)=3 @ mon_arrive(dog.c:475)\" / JS \"(none: JS log ended)\"",
+    "dev82722-tourist-stress-disaster @7285: C \"rn2(10)=8 @ mon_arrive(dog.c:475)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
