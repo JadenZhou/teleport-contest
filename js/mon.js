@@ -44,7 +44,7 @@ import {
     PM_GRID_BUG, PM_DEATH, PM_FAMINE, PM_PESTILENCE, PM_MINOTAUR,
     PM_FIRE_ELEMENTAL, PM_SALAMANDER, PM_FLOATING_EYE, PM_PURPLE_WORM,
     PM_BABY_PURPLE_WORM, PM_SHRIEKER, PM_GHOUL, PM_SKELETON,
-    PM_AIR_ELEMENTAL,
+    PM_AIR_ELEMENTAL, M1_ANIMAL, M1_MINDLESS, S_MUMMY,
 } from './monsters.js';
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
          LOCK_PICK } from './objects.js';
@@ -458,8 +458,20 @@ async function movemon_singlemon(mtmp) {
         return false;
 
     /* after losing equipment, try to put on replacement */
-    if ((mtmp.misc_worn_check ?? 0) & I_SPECIAL)
-        throw new Error('movemon_singlemon(): m_dowear() not ported yet');
+    if ((mtmp.misc_worn_check ?? 0) & I_SPECIAL) {
+        /* hostiles only try to equip things if they think hero isn't
+         * nearby; if they think hero is nearby, leave the flag intact so
+         * that it can be checked again on subsequent moves until the hero
+         * is perceived to be farther away. */
+        if (mtmp.mpeaceful || mtmp.mtame
+            || dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > (3 * 3)) {
+            mtmp.misc_worn_check &= ~I_SPECIAL;
+            const oldworn = mtmp.misc_worn_check;
+            m_dowear(mtmp, false);
+            if (mtmp.misc_worn_check !== oldworn || !mtmp.mcanmove)
+                return false; /* is spending this turn equipping */
+        }
+    }
 
     if ((mtmp.data.mflags1 & M1_HIDE) !== 0) { /* is_hider() */
         throw new Error('movemon_singlemon(): restrap() not ported yet');
@@ -525,6 +537,22 @@ function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 
 /* mondata.h */
 function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
+
+// C ref: worn.c m_dowear() -- only the early returns are ported
+function m_dowear(mon, creation) {
+    /* Note the restrictions here are the same as in dowear in do_wear.c
+     * except for the additional restriction on intelligence. */
+    if (verysmall(mon.data) || (mon.data.mflags1 & M1_NOHANDS) !== 0
+        || (mon.data.mflags1 & M1_ANIMAL) !== 0)
+        return;
+    /* give mummies a chance to wear their wrappings
+     * and let skeletons wear their initial armor */
+    if ((mon.data.mflags1 & M1_MINDLESS) !== 0
+        && (!creation || (mon.data.mlet !== S_MUMMY
+                          && mon.data !== mons[PM_SKELETON])))
+        return;
+    throw new Error('m_dowear(): m_dowear_type() not ported yet');
+}
 function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
 function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
 function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }

@@ -18,8 +18,9 @@
 import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import {
-    lowc, highc, strncmpi, strcmpi, mungspaces, strstri, fuzzymatch,
+    lowc, highc, strncmpi, strcmpi, mungspaces, strstri, fuzzymatch, dist2,
 } from './hacklib.js';
+import { cansee } from './vision.js';
 import * as O from './objects.js';
 import { objects, OBJ_NAME, OBJ_DESCR } from './objects.js';
 import {
@@ -2224,6 +2225,61 @@ function xcalled(pfx, sfx) {
     return `${pfx}${pfx[0] ? " " : ""}called ${sfx}`;
 }
 
+/* C ref: decl.c gd.distantname -- set while distant_name() formats an
+   object the hero only sees from afar */
+let distantname = 0;
+
+// C ref: mkobj.c get_obj_location() -- the locations distant_name() needs
+function get_obj_location(obj) {
+    switch (obj.where) {
+    case 'OBJ_INVENT':
+        return [game.u.ux, game.u.uy];
+    case 'OBJ_FLOOR':
+        return [obj.ox, obj.oy];
+    case 'OBJ_MINVENT':
+        if (obj.ocarry.mx)
+            return [obj.ocarry.mx, obj.ocarry.my];
+        break;
+    default:
+        break;
+    }
+    return null;
+}
+
+// C ref: objnam.c distant_name()
+/* format the object's name, treating it as seen up close only when the
+   hero can see its location from nearby */
+export function distant_name(obj, func) {
+    const u = game.u;
+    const r = (u.xray_range > 2) ? u.xray_range : 2,
+        neardist = (r * r) * 2 - r; /* same as r*r + r*(r-1) */
+    let str;
+
+    const save_oid = obj.o_id;
+    if (game.program_state?.gameover)
+        obj.o_id = 0;
+
+    /* this maybe-nearby part used to be replicated in multiple callers */
+    const loc = get_obj_location(obj);
+    if (loc && cansee(loc[0], loc[1])
+        && (obj.oartifact
+            || dist2(loc[0], loc[1], u.ux, u.uy) <= neardist)) {
+        /* side-effects:  treat as having been seen up close */
+        str = func(obj);
+    } else {
+        ++distantname;
+        try {
+            str = func(obj);
+        } finally {
+            --distantname;
+        }
+    }
+
+    obj.o_id = save_oid; /* reset to normal */
+
+    return str;
+}
+
 // C ref: objnam.c xname()
 export function xname(obj) {
     return xname_flags(obj, 0);
@@ -2250,7 +2306,7 @@ function xname_flags(obj, cxn_flags) {
 
     if (!nn && ocl.oc_uses_known && ocl.oc_unique)
         obj.known = 0;
-    if (!xn_Blind() /* && !gd.distantname */)
+    if (!xn_Blind() && !distantname)
         observe_object(obj, xn_Hallucination());
     if (Role_if_x(M.PM_CLERIC))
         obj.bknown = 1;
