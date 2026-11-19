@@ -732,7 +732,7 @@ function discover_object(oindx, mark_as_known, mark_as_encountered,
 
 // C ref: invent.c addinv() -- appends to the hero's inventory chain;
 // merging with an existing stack and inventory letters are not ported yet
-function addinv(obj) {
+export function addinv(obj) {
     obj.where = 'OBJ_INVENT';
     obj.nobj = null;
     if (!game.invent) {

@@ -2,13 +2,18 @@
 // C ref: wizcmds.c
 //
 // Ported so far: the #levelchange prompt (wiz_level_change()) and the ^W
-// wish prompt (wiz_wish(), zap.c makewish()); the level changes
-// themselves (losexp(), pluslvl()) and readobjnam() are not ported yet.
+// wish (wiz_wish(), zap.c makewish()); the level changes
+// themselves (losexp(), pluslvl()) and most of hold_another_object()
+// (merging, inventory letters, prinv()) are not ported yet.
 
 import { game } from './gstate.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { MAXULEV } from './const.js';
+import { rn1 } from './rng.js';
+import { readobjnam } from './objnam.js';
+import { addinv } from './u_init.js';
+import * as O from './objects.js';
 
 // C ref: wizcmds.c wiz_level_change() -- #levelchange
 export async function wiz_level_change() {
@@ -54,12 +59,38 @@ export async function wiz_level_change() {
     return 0; /* ECMD_OK */
 }
 
-// C ref: zap.c makewish() -- up to the wish text; readobjnam() and the
-// rest are not ported yet
+const MAXWISHTRY = 5;
+const thats_enough_tries = "That's enough tries!";
+
+// C ref: invent.c hold_another_object() -- only the plain "add it to
+// inventory" path is ported; addinv() is the simplified u_init.js one
+// (no merging, no inventory letters yet)
+async function hold_another_object(obj, drop_fmt, drop_arg, hold_msg) {
+    /* if (!Blind) observe_object(obj) -- not ported yet */
+    if (obj.oartifact)
+        throw new Error('hold_another_object(): artifacts are not ported yet');
+    if (game.u.Fumbling)
+        throw new Error('hold_another_object(): Fumbling is not ported yet');
+    if (obj.otyp === O.CORPSE && obj.wishedfor)
+        throw new Error('hold_another_object(): wished-for corpse is not ported yet');
+    /* prev_encumbr = near_capacity() ...; inv_cnt()/near_capacity() drop
+       check -- not ported yet */
+    obj = addinv(obj); /* addinv_core0(obj, NULL, FALSE) */
+    /* setuqwep() for autoquiver; prinv(hold_msg, obj, oquan);
+       update_inventory(); encumber_msg() -- not ported yet */
+    void drop_fmt; void drop_arg; void hold_msg;
+    return obj;
+}
+
+// C ref: zap.c makewish()
 async function makewish() {
     const g = game;
+    const u = g.u;
     let buf;
     let tries = 0;
+    let otmp;
+    const nothing = {}; /* only its address matters */
+    const oldwisharti = u.uconduct.wisharti || 0;
 
     g.context.resume_wish = 0;
     if (g.flags.verbose)
@@ -78,12 +109,45 @@ async function makewish() {
         if (buf[0] === '\x1b') {
             buf = '';
         } else if (buf.toLowerCase() === "help") {
-            /* wishcmdassist(MAXWISHTRY - tries) -- not ported yet */
+            throw new Error('wishcmdassist() is not ported yet');
+        }
+        const bufcpy = buf;
+        otmp = readobjnam(buf, nothing);
+        if (!otmp) {
+            await pline("Nothing fitting that description exists in the game.");
+            if (++tries < MAXWISHTRY)
+                continue;
+            await pline(thats_enough_tries);
+            otmp = readobjnam(null, null);
+            if (!otmp)
+                return; /* for safety; should never happen */
+        } else if (otmp === nothing) {
+            /* livelog_printf(LL_WISH, "declined to make a wish") */
+            return;
+        } else if (otmp === 'hands_obj') {
+            /* wish_history_add(bufcpy) -- not ported yet */
             return;
         }
+        void bufcpy; /* wish_history_add(bufcpy) -- not ported yet */
         break;
     }
-    /* otmp = readobjnam(buf, &nothing); ... -- not ported yet */
+
+    if (otmp.oartifact)
+        throw new Error('artifact_origin() for a wished-for artifact is not ported yet');
+
+    /* wisharti conduct handled in readobjnam(); livelog -- not ported */
+    if (!u.uconduct.wishes) u.uconduct.wishes = 0;
+    u.uconduct.wishes++;
+
+    if (otmp.otyp === O.CORPSE)
+        throw new Error('makewish(): corpse wishes (u_safe_from_fatal_corpse) are not ported yet');
+    if (u.uswallow || u.uinwater)
+        throw new Error('makewish(): wishing while engulfed/underwater is not ported yet');
+    /* verb / oops_msg: "drop", "Oops!  %s to the floor!" or "... away
+       from you!"; The(aobjnam(otmp, verb)) -- not ported yet */
+    await hold_another_object(otmp, null, null, null);
+    u.ublesscnt += rn1(100, 50); /* the gods take notice */
+    void oldwisharti;
 }
 
 // C ref: wizcmds.c wiz_wish() -- ^W
