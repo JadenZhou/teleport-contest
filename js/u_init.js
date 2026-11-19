@@ -23,6 +23,10 @@ import { aligns } from './role.js';
 import { set_uasmon } from './polyself.js';
 import { newhp, adjabil, adjattrib, init_attr, vary_init_attr } from './attrib.js';
 import { newpw } from './exper.js';
+import { initialspell, num_spells } from './spell.js';
+
+/* C ref: spell.h SPELL_LEV_PW() */
+function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
 import { init_uhunger } from './eat.js';
 import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
@@ -1419,8 +1423,8 @@ function ini_inv_use_obj(obj) {
             setuswapwep(obj);
         }
     }
-    /* if (obj->oclass == SPBOOK_CLASS && obj->otyp != SPE_BLANK_PAPER)
-           initialspell(obj); -- spell.c not ported yet */
+    if (obj.oclass === O.SPBOOK_CLASS && obj.otyp !== O.SPE_BLANK_PAPER)
+        initialspell(obj);
 }
 
 // C ref: do_wear.c find_ac()
@@ -1463,6 +1467,7 @@ export function find_ac() {
 /* side effects of starting inventory (e.g. discovering it) and skills (both
    those based on role and those based on starting inventory) */
 export function u_init_skills_discoveries() {
+    const u = game.u;
     let otmp;
     for (otmp = game.invent; otmp; otmp = otmp.nobj)
         ini_inv_use_obj(otmp);
@@ -1471,8 +1476,9 @@ export function u_init_skills_discoveries() {
     /* if (u.uroleplay.pauper) pauper_reinit(); -- not ported yet */
 
     /* If we have at least one spell, force starting Pw to be enough,
-       so hero can cast the level 1 spell they should have:
-       num_spells() needs initialspell() (spell.c), not ported yet */
+       so hero can cast the level 1 spell they should have */
+    if (num_spells() && (u.uenmax < SPELL_LEV_PW(1)))
+        u.uen = u.uenmax = u.uenpeak = u.ueninc[u.ulevel] = SPELL_LEV_PW(1);
 
     find_ac(); /* get initial ac value */
 }
