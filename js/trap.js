@@ -42,7 +42,7 @@ import { mksobj, place_object } from './mkobj.js';
 import { stackobj } from './invent.js';
 import { dmgval } from './weapon.js';
 import { doname } from './objnam.js';
-import { monkilled } from './mon.js';
+import { monkilled, maybe_unhide_at } from './mon.js';
 import { find_mac, which_armor } from './worn.js';
 import { mtele_trap, mlevel_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
@@ -1313,7 +1313,7 @@ export async function mintrap(mtmp, mintrapflags) {
            zaps wand of locking or spell of wizard lock at spot triggering
            the trap and trapping mtmp there) */
         if (!(mtmp.mhp < 1) && mtmp.mtrapped)
-            throw new Error('mintrap(): maybe_unhide_at() not ported yet');
+            maybe_unhide_at(mtmp.mx, mtmp.my);
     }
     return trap_result;
 }
