@@ -15,6 +15,7 @@ import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
 import { objects, ALCHEMY_SMOCK, WEAPON_CLASS } from './objects.js';
 import { is_weptool } from './mkobj.js';
 import { title_to_mon } from './botl.js';
+import { clear_path } from './vision.js';
 import {
     mons, NATTK, AT_ANY, AD_DRLI, M1_FLY, M1_SWIM, M1_WALLWALK, M1_NOEYES,
     M1_REGEN, M1_SEE_INVIS, M1_TPORT, M1_TPORT_CNTRL, M2_UNDEAD, M2_WERE,
@@ -287,6 +288,26 @@ export function mon_learns_traps(mtmp, ttyp) {
         mtmp.mtrapseen = 0;
     else
         mtmp.mtrapseen |= (1 << (ttyp - 1));
+}
+
+// C ref: mondata.c mons_see_trap()
+/* monsters see a trap trigger, and remember it */
+export function mons_see_trap(ttmp) {
+    const tx = ttmp.tx, ty = ttmp.ty;
+    const maxdist = game.level.at(tx, ty).lit ? 7 * 7 : 2;
+
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+        if ((mtmp.data.mflags1 & M.M1_ANIMAL) /* is_animal */
+            || (mtmp.data.mflags1 & M.M1_MINDLESS) /* mindless */
+            || !haseyes(mtmp.data) || !mtmp.mcansee)
+            continue;
+        const dx = mtmp.mx - tx, dy = mtmp.my - ty;
+        if (dx * dx + dy * dy > maxdist)
+            continue;
+        if (!clear_path(mtmp.mx, mtmp.my, tx, ty)) /* m_cansee() */
+            continue;
+        mon_learns_traps(mtmp, ttmp.ttyp);
+    }
 }
 
 // C ref: mondata.c resists_drli()

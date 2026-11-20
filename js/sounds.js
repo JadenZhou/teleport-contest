@@ -48,7 +48,7 @@ function Hallucination() {
 /* C ref: pline.c You_hear() -- the "You hear" prefix; the hearing-
    while-asleep/unconscious variant ("You dream that you hear") isn't
    ported yet */
-async function You_hear(msg) {
+export async function You_hear(msg) {
     await pline(`You hear ${msg}`);
 }
 

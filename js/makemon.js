@@ -31,6 +31,7 @@ import {
     A_LAWFUL, POOL, MOAT, WATER, DRAWBRIDGE_UP, LAVAPOOL, LAVAWALL,
     W_NONPASSWALL, D_CLOSED, D_LOCKED, P_POLEARMS, P_SHORT_SWORD, P_SABER,
     ALTAR, COLNO, ROWNO, isok, ACCESSIBLE, IS_STWALL, IS_DOOR,
+    W_ARM, I_SPECIAL,
 } from './const.js';
 import {
     ROOMOFFSET, OBJ_AT, IS_WALL, SDOOR, SCORR, HWALL, TLCORNER, TRWALL, BLCORNER,
@@ -47,7 +48,7 @@ import { mksobj, mkobj_at, curse, bless, next_ident, set_corpsenm } from './mkob
 import {
     monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
     is_neuter, is_undead, is_swimmer, is_floater, passes_walls, haseyes,
-    is_bat, little_to_big,
+    is_bat, little_to_big, pm_invisible,
 } from './mondata.js';
 import { engr_at } from './engrave.js';
 import { enexto_core } from './teleport.js';
@@ -58,6 +59,9 @@ import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon } from './display.js';
 import { set_apparxy } from './monmove.js';
+import { newcham } from './mon.js';
+import { mpickobj } from './steal.js';
+import { add_to_minv } from './mkobj.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -75,7 +79,7 @@ function sgn(n) { return (n < 0) ? -1 : (n !== 0); }
 
 // C ref: mondata.h pm_resistance(), is_placeholder()
 function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
-function is_placeholder(ptr) {
+export function is_placeholder(ptr) {
     return (ptr === mons[PM_ORC] || ptr === mons[PM_GIANT]
             || ptr === mons[PM_ELF] || ptr === mons[PM_HUMAN]);
 }
@@ -85,7 +89,7 @@ function Is_rogue_level(lev) {
     const z = game.dungeon_topology.d_rogue_level;
     return !!((z.dlevel || z.dnum) && lev.dnum === z.dnum && lev.dlevel === z.dlevel);
 }
-function In_endgame(lev) {
+export function In_endgame(lev) {
     return lev.dnum === game.dungeon_topology.d_astral_level.dnum;
 }
 
@@ -682,16 +686,6 @@ export function goodpos(x, y, mtmp, gpflags) {
 }
 
 // ---- inventory helpers ----
-// C ref: steal.c mpickobj() -- merging not ported; never merges
-function mpickobj(mtmp, otmp) {
-    otmp.where = 'OBJ_MINVENT';
-    otmp.ocarry = mtmp;
-    if (!mtmp.minvent) mtmp.minvent = [];
-    mtmp.minvent.push(otmp);
-    return false;
-}
-// C ref: mkobj.c add_to_minv()
-function add_to_minv(mtmp, otmp) { return mpickobj(mtmp, otmp); }
 // C ref: worn.c which_armor()
 export function which_armor(mon, flag) {
     for (const o of mon.minvent || [])
@@ -1389,7 +1383,7 @@ function rnd_class(first, last) {
 }
 
 // C ref: makemon.c mbirth_limit()
-function mbirth_limit(mndx) {
+export function mbirth_limit(mndx) {
     /* There is an implicit limit of 4 for "high priest of <deity>",
      * but aligned priests can grow into high priests, thus they aren't
      * really limited to 4, so leave the default amount in place for them.
@@ -2139,14 +2133,9 @@ export function set_mimic_sym(mtmp) {
         || (ap_type === M_AP_OBJECT && appear === O.BOULDER))
         game.vision_full_recalc = 1;
 }
-// C ref: mon.c newcham() -- not ported yet
-function newcham(mtmp, mdat, ncflags) {
-    impossible('newcham not ported');
-    return false;
-}
 // C ref: mon.c hideunder() -- concealment state only (no rolls); floor
 // objects aren't kept in a list yet, so there is nothing to hide under
-function hideunder(mtmp) {
+export function hideunder(mtmp) {
     return false;
 }
 // C ref: worm.c get_wormno()

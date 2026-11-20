@@ -55,8 +55,11 @@ export function mpickobj(mtmp, otmp) {
         if (!canseemon(mtmp) && mtmp !== game.u.ustuck)
             unknow_object(otmp);
         /* if otmp has flags set for how it left hero's inventory, change
-           those flags; if thrown, now stolen; if previously dropped, now
-           forgotten */
+           those flags; if thrown, now stolen and autopickup might override
+           pickup_types and autopickup exceptions based on 'pickup_stolen'
+           rather than 'pickup_thrown'; if previously stolen, stays stolen;
+           if previously dropped, now forgotten and autopickup will operate
+           normally regardless of the setting for 'dropped_nopick' */
         if (otmp.how_lost === LOST_THROWN)
             otmp.how_lost = LOST_STOLEN;
         else if (otmp.how_lost === LOST_DROPPED)

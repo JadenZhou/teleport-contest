@@ -122,6 +122,20 @@ export function vision_reset() {
     game._viz_rmax = null;
 }
 
+// C ref: vision.c recalc_block_point() -- recalc if point should be
+// blocked or unblocked.  This port's viz_clear[] and row pointers come
+// from vision_reset()'s _blocks() scan, so redo that scan instead of C's
+// incremental block_point()/unblock_point() (fill_point()/dig_point());
+// the "could see it, so do a full recalc" rule is the same.
+export function recalc_block_point(x, y) {
+    const rmin = game._viz_rmin, rmax = game._viz_rmax;
+    vision_reset();
+    game._viz_rmin = rmin;
+    game._viz_rmax = rmax;
+    if (game.viz_array?.[y]?.[x])
+        game.vision_full_recalc = 1;
+}
+
 // Bresenham quadrant path functions (C ref: vision.c q1-q4_path)
 function q1_path(srow, scol, y2, x2) {
     let x = scol, y = srow;
@@ -594,12 +608,3 @@ export function clear_path(col1, row1, col2, row2) {
     return !!result;
 }
 
-// C ref: vision.c recalc_block_point() -- recalc if point should be
-// blocked or unblocked.  block_point()/unblock_point() (fill_point(),
-// dig_point()) aren't ported; rebuilding the clear map from the level
-// (vision_reset()) gives the same viz_clear[] and left/right pointers.
-export function recalc_block_point(x, y) {
-    vision_reset();
-    if (game.viz_array?.[y]?.[x])
-        game.vision_full_recalc = 1;
-}
