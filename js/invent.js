@@ -16,7 +16,7 @@ import {
 import { objects } from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
-import { weight, erosion_matters, Is_candle } from './mkobj.js';
+import { weight, erosion_matters, Is_candle, obj_extract_self } from './mkobj.js';
 import { itemactions } from './iactions.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
@@ -517,8 +517,8 @@ export function merged(r) {
             otmp.owt = weight(otmp);
         if (!has_oname(otmp) && has_oname(obj))
             throw new Error('merged(): oname() is not ported yet');
-        if (obj.where !== 'OBJ_FREE')
-            throw new Error('merged(): obj_extract_self() is not ported yet');
+        obj_extract_self(obj);
+
         if (obj.pickup_prev && otmp.where === 'OBJ_INVENT')
             otmp.pickup_prev = 1;
         /* really should merge the timeouts */
@@ -552,7 +552,7 @@ export function merged(r) {
             && (obj.how_lost || 0) !== LOST_THROWN
             && (otmp.how_lost || 0) !== LOST_THROWN)
             throw new Error('merged(): "You learn more about your items" is not ported yet');
-        /* obfree(obj, otmp): nothing to free */
+        obj.where = 'OBJ_DELETED'; /* obfree(obj, otmp): free(obj), bill->otmp */
         return 1;
     }
     return 0;

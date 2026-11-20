@@ -33,6 +33,7 @@ import {
     PM_ETTIN_MUMMY, PM_ETTIN, PM_LIZARD, PM_LICHEN, PM_DEATH, PM_FAMINE,
     PM_PESTILENCE,
 } from './monsters.js';
+import { merged } from './invent.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -577,7 +578,7 @@ export function add_to_minv(mon, obj) {
     if (!mon.minvent) mon.minvent = [];
     /* merge if possible (C walks the chain newest first) */
     for (const otmp of mon.minvent.slice().reverse())
-        if (merged_minv(otmp, obj))
+        if (merged({ otmp, obj }))
             return 1; /* obj merged and then free'd */
     /* else insert; don't bother forcing it to end of chain
        (JS minvent arrays are oldest first: newest goes last) */
@@ -585,30 +586,6 @@ export function add_to_minv(mon, obj) {
     obj.ocarry = mon;
     mon.minvent.push(obj);
     return 0; /* obj on mon's inventory chain */
-}
-
-// C ref: invent.c merged() -- only coin merging is ported; mergable()
-// for other objects is not
-function merged_minv(otmp, obj) {
-    if (obj === otmp || obj.otyp !== otmp.otyp
-        || obj.nomerge || otmp.nomerge || !objects[obj.otyp].oc_merge)
-        return false;
-    if (obj.oclass !== O.COIN_CLASS)
-        throw new Error('merged(): mergable() not ported yet');
-    /* coins of the same kind will always merge */
-    if (!obj.lamplit && !obj.globby)
-        otmp.age = Math.trunc(((otmp.age * otmp.quan) + (obj.age * obj.quan))
-                              / (otmp.quan + obj.quan));
-    if (!otmp.globby)
-        otmp.quan += obj.quan;
-    /* temporary special case for gold objects!!!! */
-    otmp.owt = weight(otmp);
-    otmp.bknown = 0;
-    if (!otmp.oname && obj.oname)
-        otmp.oname = obj.oname;
-    obj_extract_self(obj);
-    obj.where = 'OBJ_DELETED'; /* obfree(obj, otmp) */
-    return true;
 }
 
 // C ref: mkobj.c may_generate_eroded()
