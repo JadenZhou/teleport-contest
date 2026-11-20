@@ -9,7 +9,8 @@ import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline } from './display.js';
 import { vision_recalc } from './vision.js';
-import { tty_clear_nhwindow, tty_get_ext_cmd } from './wintty.js';
+import { tty_clear_nhwindow, tty_get_ext_cmd, tty_yn_function } from './wintty.js';
+import { doride } from './steed.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD } from './func_tab.js';
 import { strcmpi, strncmpi } from './hacklib.js';
@@ -17,7 +18,9 @@ import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
 import { ddoinv } from './invent.js';
-import { cmd_safety_prevention, nomul } from './hack.js';
+import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
+         DOMOVE_RUSH, confdir } from './hack.js';
+export { domove };
 import { IS_DOOR, IS_FURNITURE } from './const.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -59,6 +62,7 @@ const ext_funcs = {
     donull: () => donull(),
     wiz_level_change: () => wiz_level_change(),
     wiz_wish: () => wiz_wish(),
+    doride: () => doride(),
 };
 
 // C ref: cmd.c doextcmd() -- here is the main command dispatcher for
@@ -92,8 +96,8 @@ async function donull() {
         return 0; /* ECMD_OK */
     return 1; /* ECMD_TIME: Do nothing, but let other things happen */
 }
-import { COLNO, ROWNO, STONE, DOOR, D_CLOSED, D_LOCKED,
-         IS_WALL, IS_OBSTRUCTED } from './const.js';
+import { COLNO, ROWNO, xdir, ydir, zdir } from './const.js';
+import { PM_GRID_BUG } from './monsters.js';
 
 // Direction deltas: y u k
 //                   h . l
@@ -103,16 +107,6 @@ const DIR_DY = { h: 0, l: 0, j: 1, k: -1, y: -1, u: -1, b: 1, n: 1 };
 
 function isMovementKey(ch) {
     return 'hjklyubn'.includes(ch);
-}
-
-// C ref: hack.c — check if a cell blocks movement
-function blocksMove(x, y) {
-    const loc = game.level?.at(x, y);
-    if (!loc) return true;
-    if (loc.typ === STONE) return true;
-    if (IS_WALL(loc.typ)) return true;
-    if (loc.typ === DOOR && (loc.doormask & (D_CLOSED | D_LOCKED))) return true;
-    return false;
 }
 
 // C ref: cmd.c rhack — main command dispatcher
@@ -154,8 +148,17 @@ export async function rhack(key) {
 
     if (isMovementKey(ch)) {
         set_move_cmd(ch, 0); /* do_move_<dir>() */
-        await domove();
+        /* C ref: cmd.c rhack() -- for DOMOVE_WALK rhack() calls domove()
+           and returns straight away; context.move stays TRUE as parse()
+           set it ("assume next command will take game time") unless
+           domove_core() clears it, e.g. hack.c test_move() failing:
+           "context.move = 0; nomul(0);" */
         game.context.move = 1;
+        if (game.multi)
+            game.context.mv = 1;
+        await domove();
+        game.context.forcefight = 0;
+        game.iflags.menu_requested = false;
     } else if (isMovementKey(ch.toLowerCase())) {
         /* C ref: cmd.c do_run_<dir>() -- shift+dir is MV_RUN */
         set_move_cmd(ch.toLowerCase(), 1);
@@ -183,10 +186,14 @@ export async function rhack(key) {
         /* C ref: cmd.c Cmd 'i' -> invent.c ddoinv(); ECMD_OK, no time */
         await ddoinv();
         game.context.move = 0;
+    } else if (ch === 's') {
+        /* C ref: cmd.c Cmd 's' -> detect.c dosearch() */
+        game.context.move = (await dosearch()) ? 1 : 0;
+    } else if (ch === '#') {
+        /* C ref: cmd.c Cmd '#' -> doextcmd() */
+        game.context.move = (await doextcmd()) ? 1 : 0;
     } else {
-        /* every other command is not ported yet ('#' doextcmd() and 's'
-           dosearch() wait for the tutorial query, without which keys
-           typed at it would reach the command loop), and neither are the
+        /* every other command is not ported yet, and neither are the
            prompts and windows whose keys would otherwise arrive here.
            C's "Unknown command '%s'." for keys missing from cmdlist[] is
            left out until the key bindings (cmd.c reset_commands()) are
@@ -206,45 +213,87 @@ function set_move_cmd(dir, run) {
     if (game.iflags.menu_requested)
         game.context.nopick = 1;
     game.context.travel = game.context.travel1 = 0;
-    /* if (!gd.domove_attempting && !u.dz): prefixes aren't ported yet */
-    game.context.run = run;
+    if (!game.domove_attempting && !u.dz) {
+        game.context.run = run;
+        game.domove_attempting |= (!run ? DOMOVE_WALK : DOMOVE_RUSH);
+    }
 }
 
-// C ref: hack.c domove() / domove_core() -- execute a movement in
-// direction u.dx, u.dy
-export async function domove() {
+/* C ref: cmd.c quitchars[] */
+const quitchars = " \r\n\x1b";
+/* C ref: cmd.c Cmd.dirchars[] (number_pad off): DIR_W .. DIR_SW, then
+   DIR_DOWN '>' and DIR_UP '<' */
+const dirchars = "hykulnjb><";
+
+// C ref: cmd.c movecmd() -- mode MV_ANY: a walk, run or rush key
+// (move_funcs[][]) sets u.dx, u.dy, u.dz; returns !u.dz for a move
+function movecmd(sym) {
     const u = game.u;
-    const newx = u.ux + u.dx;
-    const newy = u.uy + u.dy;
+    let d = -1; /* DIR_ERR */
+    const c = String.fromCharCode(sym);
+    const lc = c.toLowerCase();
 
-    if (blocksMove(newx, newy)) {
-        // Can't move there: test_move() failed
-        game.context.move = 0;
-        nomul(0);
-        return;
+    if (dirchars.includes(c))
+        d = dirchars.indexOf(c);                 /* MV_WALK, '>' and '<' */
+    else if ('hykulnjb'.includes(lc))
+        d = dirchars.indexOf(lc);                /* MV_RUN: shifted */
+    else if (sym >= 1 && sym <= 26
+             && 'hykulnjb'.includes(String.fromCharCode(sym + 96)))
+        d = dirchars.indexOf(String.fromCharCode(sym + 96)); /* MV_RUSH: ^dir */
+
+    if (d !== -1) {
+        u.dx = xdir[d];
+        u.dy = ydir[d];
+        u.dz = zdir[d];
+        return !u.dz;
     }
+    u.dz = 0;
+    return 0;
+}
 
-    // Move the hero
-    const oldx = u.ux, oldy = u.uy;
-    u.ux0 = oldx;
-    u.uy0 = oldy;
-    u.ux = newx;
-    u.uy = newy;
+// C ref: cmd.c dxdy_moveok()
+function dxdy_moveok() {
+    const u = game.u;
+    if (u.dx && u.dy && u.umonnum === PM_GRID_BUG) /* NODIAG(u.umonnum) */
+        return false;
+    return true;
+}
 
-    const tmpr = game.level.at(u.ux, u.uy);
-    if (game.context.run) {
-        if (game.context.run < 8)
-            if (IS_DOOR(tmpr.typ) || IS_OBSTRUCTED(tmpr.typ)
-                || IS_FURNITURE(tmpr.typ))
-                nomul(0);
+// C ref: cmd.c getdir() -- the direction prompt; the command queue,
+// the mouse ('_') and the cmdassist help window aren't ported yet
+export async function getdir(s) {
+    const u = game.u;
+    let dirsym, is_mov;
+
+    /* cmdq_pop(): queued directions aren't ported */
+    dirsym = await tty_yn_function((s && s[0] !== '^') ? s : "In what direction?",
+                                   null, '\0');
+    if (typeof dirsym === 'string')
+        dirsym = dirsym.charCodeAt(0);
+    /* remove the prompt string so caller won't have to */
+    tty_clear_nhwindow(game.WIN_MESSAGE);
+
+    if (dirsym === 0x12) /* redraw_cmd(): ^R */
+        throw new Error('getdir(): ^R redraw not ported yet');
+    /* cmdq_add_key(CQ_REPEAT, dirsym): ^A repeat isn't ported */
+
+    const ch = String.fromCharCode(dirsym);
+    if (ch === '.' || ch === 's') { /* NHKF_GETDIR_SELF, NHKF_GETDIR_SELF2 */
+        u.dx = u.dy = u.dz = 0;
+    } else if (ch === '_') { /* NHKF_GETDIR_MOUSE */
+        throw new Error('getdir(): getpos() not ported yet');
+    } else if (!(is_mov = movecmd(dirsym)) && !u.dz) {
+        if (!quitchars.includes(ch)) {
+            /* help_dir() for '?' or iflags.cmdassist (default on):
+               "Invalid direction key!" */
+            throw new Error('getdir(): help_dir() not ported yet');
+        }
+        return 0;
+    } else if (is_mov && !dxdy_moveok()) {
+        await pline("You can't orient yourself that direction."); /* You_cant() */
+        return 0;
     }
-
-    if (u.ux0 !== u.ux || u.uy0 !== u.uy) {
-        u.umoved = 1;
-        // Update display
-        newsym(oldx, oldy);
-        vision_recalc(1);
-        newsym(newx, newy);
-    }
-    /* runmode_delay_output(): display timing only */
+    if (!u.dz)
+        confdir(false);
+    return 1;
 }
