@@ -15,7 +15,103 @@ import { MALE, FEMALE, NEUTRAL, NUM_MGENDERS, M_AP_MONSTER, W_SADDLE,
 import { mons, M2_PNAME, G_UNIQ, PM_GHOST, PM_WIZARD_OF_YENDOR,
          PM_ARCHEOLOGIST, PM_WIZARD } from './monsters.js';
 
+import { getobj } from './invent.js';
+import { name_ok, call_ok } from './iactions.js';
+import { xname } from './objnam.js';
+import { You } from './display.js';
+import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
+         tty_select_menu, tty_destroy_nhwindow } from './wintty.js';
+import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
+         GETOBJ_PROMPT, GETOBJ_NOFLAGS, ECMD_OK } from './const.js';
+import { NO_COLOR, ATR_NONE } from './terminal.js';
+
 const PL_PSIZ = 63; /* global.h */
+
+// C ref: do_name.c docallcmd() -- #call / #name command to give a name
+// to a monster, an object or an object type
+export async function docallcmd() {
+    let obj;
+    let ch = '\0';
+    /* if player wants a,b,c instead of i,o when looting, do that here too */
+    const abc = !!game.flags?.lootabc;
+    const clr = NO_COLOR;
+
+    if (game.cmdq?.length) {
+        const cq = game.cmdq.shift();
+        if (cq.typ === 'key')
+            ch = cq.key;
+        else
+            game.cmdq = []; /* cmdq_clear(CQ_CANNED) */
+    } else {
+        const win = tty_create_nhwindow(NHW_MENU);
+        tty_start_menu(win, MENU_BEHAVE_STANDARD);
+        /* any.a_char = 'm'; group accelerator 'C' */
+        tty_add_menu(win, null, 'm', abc ? 0 : 'm', 'C', ATR_NONE, clr,
+                     "a monster", MENU_ITEMFLAGS_NONE);
+        if (game.invent) {
+            /* we use y and n as accelerators so that we can accept user's
+               response keyed to old "name an individual object?" prompt */
+            tty_add_menu(win, null, 'i', abc ? 0 : 'i', 'y', ATR_NONE, clr,
+                         "a particular object in inventory",
+                         MENU_ITEMFLAGS_NONE);
+            tty_add_menu(win, null, 'o', abc ? 0 : 'o', 'n', ATR_NONE, clr,
+                         "the type of an object in inventory",
+                         MENU_ITEMFLAGS_NONE);
+        }
+        tty_add_menu(win, null, 'f', abc ? 0 : 'f', ',', ATR_NONE, clr,
+                     "the type of an object upon the floor",
+                     MENU_ITEMFLAGS_NONE);
+        tty_add_menu(win, null, 'd', abc ? 0 : 'd', '\\', ATR_NONE, clr,
+                     "the type of an object on discoveries list",
+                     MENU_ITEMFLAGS_NONE);
+        tty_add_menu(win, null, 'a', abc ? 0 : 'a', 'l', ATR_NONE, clr,
+                     "record an annotation for the current level",
+                     MENU_ITEMFLAGS_NONE);
+        tty_end_menu(win, "What do you want to name?");
+        const res = await tty_select_menu(win, PICK_ONE);
+        if (res.n > 0)
+            ch = res.selected[0].item;
+        else
+            ch = 'q';
+        await tty_destroy_nhwindow(win);
+    }
+
+    /* docallcmd: */
+    switch (ch) {
+    default:
+    case 'q':
+        break;
+    case 'm': /* name a visible monster */
+        throw new Error('docallcmd(): do_mgivenname() not ported yet');
+    case 'i': /* name an individual object in inventory */
+        obj = await getobj("name", name_ok, GETOBJ_PROMPT);
+        if (obj)
+            throw new Error('docallcmd(): do_oname() not ported yet');
+        break;
+    case 'o': /* name a type of object in inventory */
+        obj = await getobj("call", call_ok, GETOBJ_NOFLAGS);
+        if (obj) {
+            /* behave as if examining it in inventory;
+               this might set dknown if it was picked up
+               while blind and the hero can now see */
+            xname(obj);
+
+            if (!obj.dknown) {
+                await You("would never recognize another one.");
+            } else {
+                throw new Error('docallcmd(): docall() not ported yet');
+            }
+        }
+        break;
+    case 'f': /* name a type of object visible on the floor */
+        throw new Error('docallcmd(): namefloorobj() not ported yet');
+    case 'd': /* name a type of object on the discoveries list */
+        throw new Error('docallcmd(): rename_disco() not ported yet');
+    case 'a': /* annotate level */
+        throw new Error('docallcmd(): donamelevel() not ported yet');
+    }
+    return ECMD_OK;
+}
 
 // C ref: do_name.c christen_monst()
 export function christen_monst(mtmp, name) {

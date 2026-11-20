@@ -190,7 +190,7 @@ function objtyp_is_callable(i) {
 }
 
 /* C ref: do_name.c name_ok() */
-function name_ok(obj) {
+export function name_ok(obj) {
     if (!obj || obj.oclass === O.COIN_CLASS)
         return GETOBJ_EXCLUDE;
 
@@ -201,7 +201,7 @@ function name_ok(obj) {
 }
 
 /* C ref: do_name.c call_ok() */
-function call_ok(obj) {
+export function call_ok(obj) {
     if (!obj || !objtyp_is_callable(obj.otyp))
         return GETOBJ_EXCLUDE;
 

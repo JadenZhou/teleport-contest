@@ -31,6 +31,9 @@ import { doattributes } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
 import { dodrop } from './do.js';
 import { dozap } from './zap.js';
+import { docallcmd } from './do_name.js';
+import { dofire } from './dothrow.js';
+import { doswapweapon } from './wield.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -85,6 +88,9 @@ const cmd_funcs = {
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),
     dozap: () => dozap(),
+    docallcmd: () => docallcmd(),
+    dofire: () => dofire(),
+    doswapweapon: () => doswapweapon(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
