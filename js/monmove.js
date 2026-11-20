@@ -9,8 +9,13 @@
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
-import { cansee, couldsee, clear_path } from './vision.js';
-import { newsym } from './display.js';
+import { cansee, couldsee, clear_path, vision_recalc } from './vision.js';
+import { newsym, pline } from './display.js';
+import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
+         Trap_Moved_Mon } from './trap.js';
+import { Monnam } from './mhitm.js';
+import { You_hear } from './sounds.js';
+import { recalc_block_point } from './vision.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -40,6 +45,8 @@ import {
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
     COLNO, ROWNO, IS_OBSTRUCTED, MFAST,
+    NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF,
+    MON_OFFMAP, MON_DETACH, MON_MIGRATING, MON_LIMBO,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR } from './artilist.js';
@@ -68,6 +75,21 @@ function Displaced() { return uhave(DISPLACED); }
 function Underwater() { return !!game.u.uinwater; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 function Hallucination() { return uhave(HALLUC); }
+/* C ref: youprop.h Deaf */
+function Deaf() {
+    const p = game.u.uprops[DEAF];
+    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
+}
+/* C ref: monst.h mon_offmap() */
+function mon_offmap(mon) {
+    return ((mon.mstate || 0)
+            & (MON_DETACH | MON_MIGRATING | MON_LIMBO | MON_OFFMAP)) !== 0;
+}
+/* C ref: pline.c You_see() -- the dreaming (Unaware) and Blind variants
+   aren't ported yet */
+async function You_see(msg) {
+    await pline(`You see ${msg}`);
+}
 
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
@@ -165,7 +187,7 @@ function m_canseeu(m) {
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 /* C ref: mon.c m_in_air() */
-function m_in_air(mtmp) {
+export function m_in_air(mtmp) {
     return is_flyer(mtmp.data) || is_floater(mtmp.data)
         || ((mtmp.data.mflags1 & M.M1_CLING) !== 0
             && false /* has_ceiling() && mundetected: not ported yet */
@@ -1141,8 +1163,16 @@ export async function m_move(mtmp, after) {
 
     if (!mtmp.mtrack) mon_track_clear(mtmp);
 
-    if (mtmp.mtrapped)
-        throw new Error('m_move(): mintrap() not ported yet');
+    if (mtmp.mtrapped) {
+        const i = await mintrap(mtmp, NO_TRAP_FLAGS);
+
+        if (i === Trap_Killed_Mon) {
+            newsym(mtmp.mx, mtmp.my);
+            return MMOVE_DIED;
+        } /* it died */
+        if (i === Trap_Caught_Mon)
+            return MMOVE_NOTHING; /* still in trap, so didn't move */
+    }
     ptr = mtmp.data; /* mintrap() can change mtmp->data -dlc */
 
     if (mtmp.meating) {
@@ -1170,7 +1200,7 @@ export async function m_move(mtmp, after) {
         throw new Error('m_move(): long worms not ported yet');
     /* my dog gets special treatment */
     if (mtmp.mtame) {
-        return postmov(mtmp, ptr, omx, omy, await dog_move(mtmp, after),
+        return await postmov(mtmp, ptr, omx, omy, await dog_move(mtmp, after),
                        seenflgs, can_tunnel, can_unlock, can_open);
     }
 
@@ -1249,7 +1279,7 @@ export async function m_move(mtmp, after) {
         const found = m_search_items(mtmp, st);
         ggx = st.ggx; ggy = st.ggy; mmoved = st.mmoved; appr = st.appr;
         if (found)
-            return postmov(mtmp, ptr, omx, omy, mmoved,
+            return await postmov(mtmp, ptr, omx, omy, mmoved,
                            seenflgs, can_tunnel, can_unlock, can_open);
     }
 
@@ -1382,7 +1412,7 @@ export async function m_move(mtmp, after) {
     } else {
         /* (is_unicorn handled above); long worms aren't ported yet */
     }
-    return postmov(mtmp, ptr, omx, omy, mmoved,
+    return await postmov(mtmp, ptr, omx, omy, mmoved,
                    seenflgs, can_tunnel, can_unlock, can_open);
 }
 
@@ -1407,8 +1437,12 @@ export function m_everyturn_effect(mtmp) {
 }
 
 // ── C ref: monmove.c postmov() ──
-function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
-                 can_tunnel, can_unlock, can_open) {
+async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
+                       can_tunnel, can_unlock, can_open) {
+    let trapret;
+    let canseeit = cansee(mtmp.mx, mtmp.my);
+    const didseeit = canseeit;
+
     /* notice_mon(mtmp): a11y.mon_notices is off by default */
 
     if (mmoved === MMOVE_MOVED) {
@@ -1421,9 +1455,14 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             throw new Error('postmov(): vamp_shift() not ported yet');
 
         newsym(omx, omy); /* update the old position */
-        /* trapret = mintrap(mtmp, NO_TRAP_FLAGS) */
-        if (game.level.traps?.some?.(t => t.tx === mtmp.mx && t.ty === mtmp.my))
-            throw new Error('postmov(): mintrap() not ported yet');
+        trapret = await mintrap(mtmp, NO_TRAP_FLAGS);
+        if (trapret === Trap_Killed_Mon || trapret === Trap_Moved_Mon) {
+            if (mtmp.mx)
+                newsym(mtmp.mx, mtmp.my);
+            return MMOVE_DIED; /* it died */
+        } else if (mon_offmap(mtmp)) {
+            return MMOVE_DONE;
+        }
         ptr = mtmp.data; /* in case mintrap() caused polymorph */
 
         /* open a door, or crash through it, if 'mtmp' can */
@@ -1431,8 +1470,79 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             && !passes_walls(ptr) /* doesn't need to open doors */
             && !can_tunnel) {     /* taken care of below */
             const here = lev.at(mtmp.mx, mtmp.my);
-            if ((here.doormask & (D_LOCKED | D_CLOSED | D_TRAPPED)) !== 0)
-                throw new Error('postmov(): door opening not ported yet');
+            const btrapped = (here.doormask & D_TRAPPED) !== 0;
+
+            /* used after monster 'who' has been moved to closed door spot
+               'where' which will now be changed to door state 'what' with
+               map update */
+            const UnblockDoor = (where, who, what) => {
+                where.doormask = what;
+                newsym(who.mx, who.my);
+                recalc_block_point(who.mx, who.my);
+                vision_recalc(0);
+                /* update cached value since it might change */
+                canseeit = didseeit || cansee(who.mx, who.my);
+            };
+
+            /* if mon has MKoT, disarm door trap; no message given */
+            if (btrapped /* && has_magic_key(mtmp) */)
+                throw new Error('postmov(): has_magic_key()/mb_trapped() not ported yet');
+            if ((here.doormask & (D_LOCKED | D_CLOSED)) !== 0
+                && amorphous(ptr)) {
+                if (game.flags.verbose && canseemon(mtmp))
+                    throw new Error('postmov(): oozing under a door message not ported yet');
+            } else if ((here.doormask & D_LOCKED) !== 0 && can_unlock) {
+                /* like the vampshift hack, there are sequencing
+                   issues when the monster is moved to the door's spot
+                   first then door handling plus feedback comes after */
+
+                UnblockDoor(here, mtmp, !btrapped ? D_ISOPEN : D_NODOOR);
+                /* btrapped: mb_trapped() -- not reached, see above */
+                /* Soundeffect(se_door_unlock_and_open, 50) */
+                if (game.flags.verbose) {
+                    if (canseeit && canspotmon(mtmp)) {
+                        await pline(`${Monnam(mtmp)} unlocks and opens a door.`);
+                    } else if (canseeit) {
+                        await You_see("a door unlock and open.");
+                    } else if (!Deaf()) {
+                        await You_hear("a door unlock and open.");
+                    }
+                }
+            } else if (here.doormask === D_CLOSED && can_open) {
+                UnblockDoor(here, mtmp, !btrapped ? D_ISOPEN : D_NODOOR);
+                /* btrapped: mb_trapped() -- not reached, see above */
+                /* Soundeffect(se_door_open, 100) */
+                if (game.flags.verbose) {
+                    if (canseeit && canspotmon(mtmp)) {
+                        await pline(`${Monnam(mtmp)} opens a door.`);
+                    } else if (canseeit) {
+                        await You_see("a door open.");
+                    } else if (!Deaf()) {
+                        await You_hear("a door open.");
+                    }
+                }
+            } else if ((here.doormask & (D_LOCKED | D_CLOSED)) !== 0) {
+                /* mfndpos guarantees this must be a doorbuster */
+                const mask = ((btrapped
+                               || ((here.doormask & D_LOCKED) !== 0 && !rn2(2)))
+                              ? D_NODOOR
+                              : D_BROKEN);
+                UnblockDoor(here, mtmp, mask);
+                /* btrapped: mb_trapped() -- not reached, see above */
+                /* Soundeffect(se_door_crash_open, 50) */
+                if (game.flags.verbose) {
+                    if (canseeit && canspotmon(mtmp)) {
+                        await pline(`${Monnam(mtmp)} smashes down a door.`);
+                    } else if (canseeit) {
+                        await You_see("a door crash open.");
+                    } else if (!Deaf()) {
+                        await You_hear("a door crash open.");
+                    }
+                }
+                /* if it's a shop door, schedule repair */
+                if (in_shop(mtmp.mx, mtmp.my))
+                    throw new Error('postmov(): add_damage() not ported yet');
+            }
         } else if (lev.at(mtmp.mx, mtmp.my).typ === IRONBARS) {
             throw new Error('postmov(): iron bars not ported yet');
         } /* doors and bars */

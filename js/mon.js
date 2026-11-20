@@ -15,7 +15,7 @@ import {
     ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
     NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
     M_AP_MONSTER, MON_DETACH, W_AMUL, NON_PM, NATTK, Is_rogue_level,
-    G_GENOD,
+    G_GENOD, STRAT_WAITMASK,
 } from './const.js';
 import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
@@ -46,12 +46,14 @@ import {
     PM_FIRE_ELEMENTAL, PM_SALAMANDER, PM_FLOATING_EYE, PM_PURPLE_WORM,
     PM_BABY_PURPLE_WORM, PM_SHRIEKER, PM_GHOUL, PM_SKELETON,
     PM_AIR_ELEMENTAL, M1_ANIMAL, M1_MINDLESS, S_MUMMY,
+    PM_FLESH_GOLEM, G_UNIQ,
 } from './monsters.js';
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
-         LOCK_PICK, EGG } from './objects.js';
+         LOCK_PICK, EGG, CORPSE } from './objects.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
-import { dochugw, onscary, mon_regen, m_everyturn_effect } from './monmove.js';
+import { dochugw, onscary, mon_regen, m_everyturn_effect, canseemon,
+         mon_track_clear } from './monmove.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -526,6 +528,55 @@ function dmonsfree() {
         if (DEADMONSTER(m) && !m.isgd) {
             if (prev) prev.nmon = m.nmon; else game.fmon = m.nmon;
         } else prev = m;
+    }
+}
+
+// C ref: mon.c wake_msg()
+async function wake_msg(mtmp, interesting) {
+    if (mtmp.msleeping && canseemon(mtmp)) {
+        await pline(`${Monnam(mtmp)} wakes up${interesting ? "!" : "."}${
+            mtmp.data === mons[PM_FLESH_GOLEM] ? " It's alive!" : ""}`);
+    }
+}
+
+// C ref: mon.c wake_nearto_core()
+/* Wake up monsters near some particular location. */
+async function wake_nearto_core(x, y, distance, petcall) {
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (DEADMONSTER(mtmp))
+            continue;
+        if (distance === 0 || dist2(mtmp.mx, mtmp.my, x, y) < distance) {
+            /* sleep for N turns uses mtmp->mfrozen, but so does paralysis
+               so we leave mfrozen monsters alone */
+            await wake_msg(mtmp, false);
+            mtmp.msleeping = 0; /* wake indeterminate sleep */
+            if (!(mtmp.data.geno & G_UNIQ))
+                mtmp.mstrategy &= ~STRAT_WAITMASK; /* wake 'meditation' */
+            if (game.context.mon_moving || !petcall)
+                continue;
+            if (mtmp.mtame) {
+                if (!mtmp.isminion)
+                    mtmp.edog.whistletime = game.moves;
+                /* Fix up a pet who is stuck "fleeing" its master */
+                mon_track_clear(mtmp);
+            }
+        }
+    }
+    disturb_buried_zombies(x, y);
+}
+
+// C ref: mon.c wake_nearto()
+export async function wake_nearto(x, y, distance) {
+    await wake_nearto_core(x, y, distance, false);
+}
+
+// C ref: hack.c disturb_buried_zombies()
+function disturb_buried_zombies(x, y) {
+    for (const otmp of game.level.buriedobjlist || []) {
+        if (otmp.otyp === CORPSE && otmp.timed
+            && otmp.ox >= x - 1 && otmp.ox <= x + 1
+            && otmp.oy >= y - 1 && otmp.oy <= y + 1)
+            throw new Error('disturb_buried_zombies(): ZOMBIFY_MON timers not ported yet');
     }
 }
 
