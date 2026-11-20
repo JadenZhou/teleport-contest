@@ -799,7 +799,9 @@ export function mfndpos(mon, data, flag) {
     if (mdat === mons[PM_FLOATING_EYE]) /* prefers to avoid heat */
         lavaok = false;
     const thrudoor = ((flag & (ALLOW_WALL | BUSTDOOR)) !== 0);
-    /* poison gas regions aren't ported yet (none exist) */
+    /* poison gas regions: visible_region_at() is not ported yet; the
+       only regions so far are harmless clouds (S_cloud), which mfndpos()
+       does not avoid */
 
     if (flag & ALLOW_DIG)
         throw new Error('mfndpos(): ALLOW_DIG not ported yet');
