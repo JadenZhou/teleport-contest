@@ -4,11 +4,13 @@
 // C ref: worn.c.  The hero's setworn()/setnotworn() and the bypass bits
 // aren't ported here.
 //
-// m_dowear(), m_dowear_type(), mon_adjust_speed() and
-// update_mon_extrinsics() print messages, so they are async.  Their
-// callers with creation (or silently) set are synchronous (makemon() and
-// friends); on that path every pline() is skipped, so these functions
-// never reach an await and finish before they return, exactly like C.
+// m_dowear_type(), mon_adjust_speed() and update_mon_extrinsics() can print
+// messages but have synchronous callers (makemon() and friends, with
+// creation/silently set, where C prints nothing).  Their bodies are
+// generators that yield each message where C calls pline(): the async
+// entry points print every yielded message in order (run_msgs()), and the
+// synchronous ones (run_msgs_sync()) run the same body, where no message
+// can come up.
 
 import { game } from './gstate.js';
 import { objects } from './objects.js';
@@ -32,6 +34,17 @@ import { strncmpi, strcmpi } from './hacklib.js';
 import { monsndx } from './mondata.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
+
+/* print each message a worn.c generator yields, in order */
+async function run_msgs(gen) {
+    for (const msg of gen)
+        await pline(msg);
+}
+/* run a worn.c generator in a synchronous caller (creation/silently) */
+function run_msgs_sync(gen) {
+    for (const msg of gen)
+        throw new Error(`worn.c message in a synchronous caller not ported yet: ${msg}`);
+}
 
 /* C ref: monst.h MON_WEP() */
 function MON_WEP(mon) { return mon.mw || null; }
@@ -187,7 +200,10 @@ export function mon_set_minvis(mon, cursed_potion) {
 }
 
 // C ref: worn.c mon_adjust_speed()
-export async function mon_adjust_speed(
+export async function mon_adjust_speed(mon, adjust, obj) {
+    await run_msgs(mon_adjust_speed_g(mon, adjust, obj));
+}
+function* mon_adjust_speed_g(
     mon,
     adjust, /* positive => increase speed, negative => decrease */
     obj)    /* item to make known if effect can be seen */
@@ -254,11 +270,11 @@ export async function mon_adjust_speed(
             /* mimic the player's petrification countdown; "slowing down"
                even if fast movement rate retained via worn speed boots */
             if (game.flags?.verbose)
-                await pline(`${Monnam(mon)} is slowing down.`); /* pline_mon() */
+                yield `${Monnam(mon)} is slowing down.`; /* pline_mon() */
         } else if (adjust > 0 || mon.mspeed === MFAST)
-            await pline(`${Monnam(mon)} is suddenly moving ${howmuch}faster.`);
+            yield `${Monnam(mon)} is suddenly moving ${howmuch}faster.`;
         else
-            await pline(`${Monnam(mon)} seems to be moving ${howmuch}slower.`);
+            yield `${Monnam(mon)} seems to be moving ${howmuch}slower.`;
 
         /* might discover an object if we see the speed change happen */
         if (obj)
@@ -280,7 +296,14 @@ function altprop(o) {
 
 // C ref: worn.c update_mon_extrinsics()
 /* armor put on or taken off; might be magical variety */
-export async function update_mon_extrinsics(
+export async function update_mon_extrinsics(mon, obj, on, silently) {
+    await run_msgs(update_mon_extrinsics_g(mon, obj, on, silently));
+}
+/* silently set: for synchronous callers */
+export function update_mon_extrinsics_sync(mon, obj, on) {
+    run_msgs_sync(update_mon_extrinsics_g(mon, obj, on, true));
+}
+function* update_mon_extrinsics_g(
     mon,
     obj, /* armor being worn or taken off */
     on,
@@ -301,10 +324,11 @@ export async function update_mon_extrinsics(
                     const save_in_mklev = game.in_mklev;
                     if (silently)
                         game.in_mklev = true;
-                    const p = mon_adjust_speed(mon, 0, obj);
-                    if (!silently) /* silently: never awaits */
-                        await p;
-                    game.in_mklev = save_in_mklev;
+                    try {
+                        yield* mon_adjust_speed_g(mon, 0, obj);
+                    } finally {
+                        game.in_mklev = save_in_mklev;
+                    }
                     break;
                 }
                 /* properties handled elsewhere */
@@ -341,10 +365,11 @@ export async function update_mon_extrinsics(
                     const save_in_mklev = game.in_mklev;
                     if (silently)
                         game.in_mklev = true;
-                    const p = mon_adjust_speed(mon, 0, obj);
-                    if (!silently) /* silently: never awaits */
-                        await p;
-                    game.in_mklev = save_in_mklev;
+                    try {
+                        yield* mon_adjust_speed_g(mon, 0, obj);
+                    } finally {
+                        game.in_mklev = save_in_mklev;
+                    }
                     break;
                 }
                 case FIRE_RES:
@@ -456,7 +481,7 @@ export function find_mac(mon) {
  * players to influence what gets worn.  Putting on a shirt underneath
  * already worn body armor is too obviously buggy...
  *
- * With creation set this never awaits (see the top of this file), so
+ * With creation set this is synchronous (see the top of this file), so
  * synchronous callers may call it without await.  The C body is the
  * generator m_dowear_slots() below; each yield is one m_dowear_type() call,
  * so every condition is tested after the previous slot is done, as in C.
@@ -464,12 +489,12 @@ export function find_mac(mon) {
 export function m_dowear(mon, creation) {
     if (creation) {
         for (const [flag, racialexception] of m_dowear_slots(mon, creation))
-            m_dowear_type(mon, flag, creation, racialexception); /* no await */
+            run_msgs_sync(m_dowear_type(mon, flag, creation, racialexception));
         return undefined;
     }
     return (async () => {
         for (const [flag, racialexception] of m_dowear_slots(mon, creation))
-            await m_dowear_type(mon, flag, creation, racialexception);
+            await run_msgs(m_dowear_type(mon, flag, creation, racialexception));
     })();
 }
 
@@ -516,7 +541,7 @@ function* m_dowear_slots(mon, creation) {
 }
 
 // C ref: worn.c m_dowear_type()
-async function m_dowear_type(
+function* m_dowear_type(
     mon,
     flag,             /* wornmask value */
     creation,         /* no wear messages when mon is being created */
@@ -669,7 +694,7 @@ async function m_dowear_type(
                 else if (!strncmpi(newarm, "an ", 3))
                     newarm = newarm.replace("an ", "another ");
             }
-            await pline(`${Monnam(mon)}${buf} puts on ${newarm}.`); /* pline_mon() */
+            yield `${Monnam(mon)}${buf} puts on ${newarm}.`; /* pline_mon() */
             if (autocurse)
                 throw new Error('m_dowear_type(): autocurse glow message not ported yet');
         } /* can see it */
@@ -679,9 +704,7 @@ async function m_dowear_type(
             mon.mcanmove = 0;
     }
     if (old) {
-        const p = update_mon_extrinsics(mon, old, false, creation);
-        if (!creation)
-            await p;
+        yield* update_mon_extrinsics_g(mon, old, false, creation);
 
         /* owornmask was cleared above but artifact_light() expects it */
         old.owornmask = oldmask;
@@ -695,15 +718,11 @@ async function m_dowear_type(
         curse(best);
     if (artifact_light(best) && !best.lamplit)
         throw new Error('m_dowear_type(): begin_burn() not ported yet');
-    {
-        const p = update_mon_extrinsics(mon, best, true, creation);
-        if (!creation)
-            await p;
-    }
+    yield* update_mon_extrinsics_g(mon, best, true, creation);
     /* if couldn't see it but now can, or vice versa */
     if (!creation && (sawmon ^ canseemon(mon))) {
         if (mon.minvis && !See_invisible()) {
-            await pline(`Suddenly you cannot see ${nambuf}.`);
+            yield `Suddenly you cannot see ${nambuf}.`;
             throw new Error('m_dowear_type(): makeknown() not ported yet');
         /* } else if (!mon->minvis) {
          *     pline("%s suddenly appears!", Amonnam(mon)); */

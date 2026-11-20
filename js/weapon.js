@@ -813,7 +813,7 @@ export async function possibly_unwield(mon, polyspot) {
         return;
     }
     if (!attacktype(mon.data, M.AT_WEAP)) {
-        await setmnotwielded(mon, mw_tmp);
+        setmnotwielded(mon, mw_tmp);
         mon.weapon_check = NO_WEAPON_WANTED;
         void polyspot;
         /* "%s drops %s.", obj_extract_self(), flooreffects(),
@@ -907,7 +907,7 @@ export async function mon_wield_item(mon) {
             return 1;
         }
         mon.mw = obj; /* wield obj */
-        await setmnotwielded(mon, mw_tmp);
+        setmnotwielded(mon, mw_tmp);
         mon.weapon_check = NEED_WEAPON;
         if (canseemon(mon)) {
             let newly_welded;
@@ -939,17 +939,17 @@ export async function mon_wield_item(mon) {
 
 // C ref: weapon.c mwepgone()
 /* force monster to stop wielding current weapon, if any */
-export async function mwepgone(mon) {
+export function mwepgone(mon) {
     const mwep = MON_WEP(mon);
 
     if (mwep) {
-        await setmnotwielded(mon, mwep);
+        setmnotwielded(mon, mwep);
         mon.weapon_check = NEED_WEAPON;
     }
 }
 
 // C ref: weapon.c setmnotwielded()
-export async function setmnotwielded(mon, obj) {
+export function setmnotwielded(mon, obj) {
     if (!obj)
         return;
     if (artifact_light(obj) && obj.lamplit)
