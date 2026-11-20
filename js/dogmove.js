@@ -13,7 +13,7 @@ import { m_at, MON_AT, place_monster, is_pool, is_lava, sobj_at, u_at,
          may_passwall } from './makemon.js';
 import { t_at } from './trap.js';
 import { mattackm, max_passive_dmg } from './mhitm.js';
-import { mfndpos, monnear, mon_allowflags } from './mon.js';
+import { mfndpos, monnear, mon_allowflags, check_gear_next_turn } from './mon.js';
 import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add,
          canseemon } from './monmove.js';
@@ -58,10 +58,6 @@ function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
 // C ref: mondata.c attacktype()
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
-}
-// C ref: mon.c check_gear_next_turn()
-function check_gear_next_turn(mon) {
-    mon.misc_worn_check = (mon.misc_worn_check || 0) | I_SPECIAL;
 }
 function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
 function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }

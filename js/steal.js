@@ -3,10 +3,8 @@
 // invent.c carry_obj_effects(); worn.c extract_from_minvent()
 
 import { game } from './gstate.js';
-import { add_to_minv, obj_extract_self, place_object,
-         unknow_object } from './mkobj.js';
+import { add_to_minv, obj_extract_self, place_object, unknow_object } from './mkobj.js';
 import { canseemon } from './monmove.js';
-import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN } from './const.js';
 import * as O from './objects.js';
 import { cansee } from './vision.js';
 import { newsym, pline } from './display.js';
@@ -15,6 +13,7 @@ import { Monnam } from './mhitm.js';
 import { stackobj } from './invent.js';
 import { flooreffects, obj_no_longer_held } from './do.js';
 import { droppables } from './dogmove.js';
+import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN } from './const.js';
 
 // C ref: invent.c carry_obj_effects()
 function carry_obj_effects(obj) {
