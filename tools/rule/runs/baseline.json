@@ -1,5 +1,5 @@
 {
- "when": "2026-11-20T04:03:36.754Z",
+ "when": "2026-11-20T04:43:17.708Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -202,7 +202,7 @@
      "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1425:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "seed0013-rogue-friday13-combat.session.json",
@@ -231,7 +231,7 @@
      "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1425:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "seed0014-dequa-fountain-explore.session.json",
@@ -352,7 +352,7 @@
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 37333,
+   "jsTotal": 37726,
    "totalScreens": 1953,
    "valuePrefix": 6276,
    "rulePrefix": 6276,
@@ -695,7 +695,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "seed0200-monk-north-search.session.json",
@@ -782,7 +782,7 @@
      "rn2(10)=2 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1425:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
   },
   {
    "session": "seed0367-priest-quest-tour.session.json",
@@ -1193,7 +1193,7 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 10668,
+   "jsTotal": 11452,
    "totalScreens": 410,
    "valuePrefix": 5812,
    "rulePrefix": 5812,
@@ -1217,7 +1217,7 @@
      "rn2(5)=4 @ mksobj_init(mkobj.c:1124)"
     ]
    },
-   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
@@ -1246,7 +1246,7 @@
      "rn2(10)=7 @ mksobj_init(mkobj.c:1086)"
     ]
    },
-   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "seed8000-tourist-starter.session.json",

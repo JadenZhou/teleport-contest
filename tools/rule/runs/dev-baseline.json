@@ -1,5 +1,5 @@
 {
- "when": "2026-11-20T04:03:51.042Z",
+ "when": "2026-11-20T04:43:30.469Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -86,7 +86,7 @@
      "rn2(12)=5 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1425:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81123-rogue-snake-swamp.session.json",
@@ -173,7 +173,7 @@
      "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81246-friday13-save-then-fullmoon-restore.session.json",
@@ -347,7 +347,7 @@
      "rn2(12)=11 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: mpickstuff(): splitobj()/mpickobj() not ported yet |     at mpickstuff (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1513:19) |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1463:17) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1252:20)"
+   "error": "Error: mpickstuff(): splitobj()/mpickobj() not ported yet |     at mpickstuff (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1514:19) |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1464:17) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1252:20)"
   },
   {
    "session": "dev81492-ten-diverse-deaths.session.json",
@@ -434,7 +434,7 @@
      "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1425:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81615-ranger-quiver-throw-travel-engrave.session.json",
@@ -463,7 +463,7 @@
      "rn2(12)=8 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: mm_2way_aggression(): zombie_form() not ported yet |     at mm_2way_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:740:15) |     at mm_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:756:46) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:907:49)"
+   "error": "Error: mm_2way_aggression(): zombie_form() not ported yet |     at mm_2way_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:740:15) |     at mm_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:756:46) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:909:49)"
   },
   {
    "session": "dev81656-ranger-name-cancel.session.json",
@@ -492,7 +492,7 @@
      "rn2(3)=1 @ set_apparxy(monmove.c:2251)"
     ]
    },
-   "error": "Error: defended(): which_armor() not ported yet |     at defended (file:///Users/JadenZ/code/teleport-contest/js/mondata.js:146:19) |     at m_harmless_trap (file:///Users/JadenZ/code/teleport-contest/js/trap.js:234:35) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:963:35)"
+   "error": "Error: defended(): which_armor() not ported yet |     at defended (file:///Users/JadenZ/code/teleport-contest/js/mondata.js:146:19) |     at m_harmless_trap (file:///Users/JadenZ/code/teleport-contest/js/trap.js:234:35) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:965:35)"
   },
   {
    "session": "dev81697-knight-ride-pony.session.json",
@@ -505,7 +505,7 @@
    "honestScreens": 3,
    "firstScreenMiss": 1,
    "first": null,
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81738-knight-ride-combat.session.json",
@@ -650,12 +650,12 @@
      "rn2(2)=1 @ blessorcurse(mkobj.c:1846)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1384:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
   },
   {
    "session": "dev81943-wizard-wear-shop.session.json",
    "total": 15567,
-   "jsTotal": 3420,
+   "jsTotal": 5024,
    "totalScreens": 127,
    "valuePrefix": 2498,
    "rulePrefix": 2498,
@@ -679,7 +679,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: mkveggy_at(): shkveg()/veggy_item() not ported yet |     at mkveggy_at (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:500:11) |     at mkshobj_at (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:527:13) |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:457:17)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "dev81984-monk-north-search.session.json",
@@ -824,7 +824,7 @@
      "rn2(5)=1 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: stock_room(): \"Closed for inventory\" engraving not ported yet |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:434:15) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:374:13) |     at makelevel (file:///Users/JadenZ/code/teleport-contest/js/mklev.js:534:9)"
+   "error": "Error: stock_room(): \"Closed for inventory\" engraving not ported yet |     at stock_room (file:///Users/JadenZ/code/teleport-contest/js/shknam.js:434:15) |     at fill_special_room (file:///Users/JadenZ/code/teleport-contest/js/sp_lev.js:383:13) |     at makelevel (file:///Users/JadenZ/code/teleport-contest/js/mklev.js:535:9)"
   },
   {
    "session": "dev82189-wizard-hallucinate.session.json",
@@ -911,7 +911,7 @@
      "rn2(6)=0 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1434:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
   },
   {
    "session": "dev82312-priest-cast-read-turn.session.json",
@@ -1172,7 +1172,7 @@
      "rnd(7)=2 @ drain_en(trap.c:5222)"
     ]
    },
-   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
@@ -1201,7 +1201,7 @@
      "rn2(5)=4 @ mksobj_init(mkobj.c:1124)"
     ]
    },
-   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "dev82722-tourist-stress-disaster.session.json",
@@ -1230,7 +1230,7 @@
      "rn2(10)=1 @ mksobj_init(mkobj.c:1086)"
     ]
    },
-   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:611:9)"
+   "error": "Error: goto_level(): docrt() not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/js/do.js:251:11) |     at async deferred_goto (file:///Users/JadenZ/code/teleport-contest/js/do.js:56:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:614:9)"
   },
   {
    "session": "dev82763-tourist-starter.session.json",
