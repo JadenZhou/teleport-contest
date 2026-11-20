@@ -173,6 +173,50 @@ function optfn_alignment(result, negated, val) {
     return true;
 }
 
+/* C ref: options.c unlocktypes[][2] (names only) */
+const unlocktypes = ["untrap", "apply-key", "kick", "force"];
+
+// C ref: options.c optfn_autounlock() (req == do_set; do_init sets
+// AUTOUNLOCK_APPLY_KEY, which lock.js uses when the option is unset)
+function optfn_autounlock(result, negated, op) {
+    /* autounlock:none or autounlock:untrap+apply-key+kick+force;
+       autounlock without a value is same as autounlock:apply-key and
+       !autounlock is same as autounlock:none */
+    if (!op) {
+        result.flags.autounlock = negated ? 0 : 2; /* AUTOUNLOCK_APPLY_KEY */
+        return true;
+    }
+    let newflags = 0;
+    const sep = op.includes('+') ? '+' : ' ';
+    for (let part of op.split(sep)) {
+        let matched = false;
+        part = part.trim();
+        if ("none".startsWith(part.toLowerCase()) && part.length)
+            negated = true, matched = true;
+        for (let i = 0; i < unlocktypes.length && !matched; ++i) {
+            /* str_start_is() or fuzzymatch(op, unlocktypes[i], " -_") */
+            const fuzzy = (s) => s.toLowerCase().replace(/[ \-_]/g, '');
+            if ((part.length && unlocktypes[i].startsWith(part.toLowerCase()))
+                || fuzzy(part) === fuzzy(unlocktypes[i])) {
+                matched = true;
+                switch (part[0].toLowerCase()) {
+                case 'u': newflags |= 1; break; /* AUTOUNLOCK_UNTRAP */
+                case 'a': newflags |= 2; break; /* AUTOUNLOCK_APPLY_KEY */
+                case 'k': newflags |= 4; break; /* AUTOUNLOCK_KICK */
+                case 'f': newflags |= 8; break; /* AUTOUNLOCK_FORCE */
+                default: matched = false; break;
+                }
+            }
+        }
+        if (!matched)
+            return false; /* config_error_add("Invalid value ...") */
+    }
+    if (negated && newflags !== 0)
+        return false; /* 'none' with some */
+    result.flags.autounlock = negated ? 0 : newflags;
+    return true;
+}
+
 // C ref: options.c optfn_playmode() (req == do_set)
 /* play mode: normal, explore/discovery, or debug/wizard;
    'wizard' is flags.debug and 'discover' is flags.explore (flag.h) */
@@ -276,6 +320,7 @@ export function parseNethackrc(rc) {
                     else if (val === 'cat' || val === 'c') result.preferred_pet = 'c';
                 }
                 else if (key === 'symset') result.symset = val;
+                else if (key === 'autounlock') optfn_autounlock(result, negated, val);
                 else if (key === 'suppress_alert') result.flags.suppress_alert = val;
                 else if (key === 'msg_window') result.iflags.prevmsg_window = val;
                 else result.flags[key] = val;
@@ -297,6 +342,7 @@ export function parseNethackrc(rc) {
                 else if (lname === 'safe_pet') result.flags.safe_dog = value;
                 else if (lname === 'autoopen') result.flags.autoopen = value;
                 else if (lname === 'mention_walls') result.flags.mention_walls = value;
+                else if (lname === 'autounlock') optfn_autounlock(result, negated, '');
                 // C ref: options.c boolean option case opt_female ("female",
                 // alias "male"); go.opt_initial is TRUE while reading the rc
                 else if (lname.length >= 3 && !strncmpi(lname, "female", Math.max(lname.length, 3)))
