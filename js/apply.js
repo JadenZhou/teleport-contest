@@ -3,7 +3,8 @@
 //
 // Ported so far: the #apply and #rub commands up to choosing the object
 // (apply_ok(), rub_ok() and their getobj() calls); using the chosen
-// object is not ported yet.
+// object is not ported yet. The #jump command: dojump(), jump(),
+// check_jump(), is_valid_jump_pos(), get_valid_jump_position().
 
 import { game } from './gstate.js';
 import { You } from './display.js';

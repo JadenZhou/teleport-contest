@@ -5,7 +5,7 @@
 // The chunk only defines globals; it rolls no dice. Its functions are
 // ported as far as their callees exist: those needing parts of the nh
 // table that aren't ported yet (nh.dump_fmtstr, nh.dnum_name, nh.pline,
-// nh.text, io, u) raise a Lua error when called. nhlib.lua's
+// io, u) raise a Lua error when called. nhlib.lua's
 // table_stringify, tutorial_enter and tutorial_leave are not ported yet
 // either (see nhlib_lua.js), so nhcore.enter_tutorial/leave_tutorial are
 // nil for now.
