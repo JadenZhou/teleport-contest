@@ -54,6 +54,12 @@ import { AT_ENGL, AT_HUGS, AD_STCK } from './monsters.js';
 import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
          LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
 import { CORPSE } from './objects.js';
+import { l_nhcore_call } from './nhlua.js';
+import { NUM_TIPS, TIP_ENHANCE, TIP_SWIM, TIP_UNTRAP_MON, TIP_GETPOS,
+         NHCORE_GETPOS_TIP } from './const.js';
+
+// C's impossible() (pline.c) is not ported yet.
+function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -500,6 +506,37 @@ export function end_running(and_travel) {
     /* cancel multi */
     if (g.multi > 0)
         g.multi = 0;
+}
+
+// C ref: hack.c handle_tip() -- maybe show a helpful gameplay tip?
+// returns True if tip gets shown
+export async function handle_tip(tip) {
+    if (game.flags.tips === false) /* flags.tips: On by default */
+        return false;
+
+    const ctx = game.context;
+    if (tip >= 0 && tip < NUM_TIPS && !((ctx.tips || 0) & (1 << tip))) {
+        ctx.tips = (ctx.tips || 0) | (1 << tip);
+        /* the "Tip:" prefix is a hint to use of OPTIONS=!tips to suppress */
+        switch (tip) {
+        case TIP_ENHANCE:
+            await pline("(Tip: use the #enhance command to advance them.)");
+            break;
+        case TIP_SWIM:
+            throw new Error('handle_tip(): TIP_SWIM not ported yet');
+        case TIP_UNTRAP_MON:
+            await pline("(Tip: perhaps #untrap would help?)");
+            break;
+        case TIP_GETPOS:
+            await l_nhcore_call(NHCORE_GETPOS_TIP);
+            break;
+        default:
+            impossible(`Unknown tip in handle_tip(${tip})`);
+            break;
+        }
+        return true;
+    }
+    return false;
 }
 
 // C ref: hack.c nomul()

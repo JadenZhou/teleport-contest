@@ -180,3 +180,78 @@ export async function dofire() {
        was wielded to be unwielded) even if the throw itself gets cancelled */
     return (res === ECMD_TIME) ? res : altres;
 }
+
+// C ref: dothrow.c walk_path()
+/*
+ * Walk a path from src_cc to dest_cc, calling a proc for each location
+ * except the starting one.  If the proc returns FALSE, stop walking
+ * and return FALSE.  If stopped early, dest_cc will be the location
+ * before the failed callback.
+ */
+export async function walk_path(src_cc, dest_cc, check_proc, arg) {
+    let err;
+    let x, y, dx, dy, x_change, y_change, i, prev_x, prev_y;
+    let keep_going = true;
+
+    /* Use Bresenham's Line Algorithm to walk from src to dest. */
+    dx = dest_cc.x - src_cc.x;
+    dy = dest_cc.y - src_cc.y;
+    prev_x = x = src_cc.x;
+    prev_y = y = src_cc.y;
+
+    if (dx < 0) {
+        x_change = -1;
+        dx = -dx;
+    } else {
+        x_change = 1;
+    }
+    if (dy < 0) {
+        y_change = -1;
+        dy = -dy;
+    } else {
+        y_change = 1;
+    }
+    i = err = 0;
+    if (dx < dy) {
+        while (i++ < dy) {
+            prev_x = x;
+            prev_y = y;
+            y += y_change;
+            err += dx << 1;
+            if (err > dy) {
+                x += x_change;
+                err -= dy << 1;
+            }
+            /* check for early exit condition */
+            if (!(keep_going = await check_proc(arg, x, y)))
+                break;
+        }
+    } else {
+        while (i++ < dx) {
+            prev_x = x;
+            prev_y = y;
+            x += x_change;
+            err += dy << 1;
+            if (err > dx) {
+                y += y_change;
+                err -= dx << 1;
+            }
+            /* check for early exit condition */
+            if (!(keep_going = await check_proc(arg, x, y)))
+                break;
+        }
+    }
+
+    if (keep_going)
+        return true; /* successful */
+
+    dest_cc.x = prev_x;
+    dest_cc.y = prev_y;
+    return false;
+}
+
+// C ref: dothrow.c hurtle_jump() -- hurtle_step() for jumping, with water
+// walking forced on so a jump over water doesn't land in that water
+export async function hurtle_jump(arg, x, y) {
+    throw new Error('hurtle_jump(): hurtle_step() not ported yet');
+}

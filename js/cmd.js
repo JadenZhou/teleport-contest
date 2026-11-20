@@ -36,7 +36,7 @@ import { doloot } from './pickup.js';
 import { Never_mind, isok } from './const.js';
 import { dofire } from './dothrow.js';
 import { doswapweapon, dowieldquiver } from './wield.js';
-import { doapply, dorub } from './apply.js';
+import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon } from './do_wear.js';
 import { dodrink } from './potion.js';
@@ -106,6 +106,7 @@ const cmd_funcs = {
     doputon: () => doputon(),
     dodrink: () => dodrink(),
     dolook: () => dolook(),
+    dojump: () => dojump(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
@@ -471,6 +472,43 @@ function movecmd(sym) {
     return 0;
 }
 
+/* C ref: hack.h enum movemodes */
+export const MV_ANY = -1, MV_WALK = 0, MV_RUN = 1, MV_RUSH = 2;
+
+// C ref: cmd.c movecmd() with a mode -- is sym bound to the move_funcs[][]
+// command of that mode? sets u.dx, u.dy, u.dz; returns !u.dz for a move
+export function movecmd_mode(sym, mode) {
+    const u = game.u;
+    let d = -1; /* DIR_ERR */
+    const bind = cmdbind_get(sym);
+
+    if (bind) {
+        const fnc = bind.ef_funct;
+        const modename = ["move", "run", "rush"];
+
+        for (d = N_DIRS + 2 - 1; d > -1; d--) {
+            if (d >= N_DIRS) { /* dodown, doup */
+                if (fnc === (d === N_DIRS ? "dodown" : "doup"))
+                    break;
+                continue;
+            }
+            if (mode === MV_ANY
+                ? modename.some(m => fnc === `do_${m}_${move_dirnames[d]}`)
+                : fnc === `do_${modename[mode]}_${move_dirnames[d]}`)
+                break;
+        }
+    }
+
+    if (d !== -1) {
+        u.dx = xdir[d];
+        u.dy = ydir[d];
+        u.dz = zdir[d];
+        return !u.dz;
+    }
+    u.dz = 0;
+    return 0;
+}
+
 // C ref: cmd.c dxdy_moveok()
 function dxdy_moveok() {
     const u = game.u;
@@ -480,7 +518,7 @@ function dxdy_moveok() {
 }
 
 // C ref: cmd.c cmd_from_func() -- a key bound to the command
-function cmd_from_func(fn) {
+export function cmd_from_func(fn) {
     if (!cmd_bindings)
         cmd_bindings = commands_init();
     for (const [key, ec] of cmd_bindings)

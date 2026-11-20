@@ -75,9 +75,17 @@ export function nhcore_lua(L) {
 
     // -- Show a helpful tip when player first uses getpos()
     // function show_getpos_tip()
-    G.show_getpos_tip = function show_getpos_tip() {
-        /* nh.text([[ Tip: Farlooking or selecting a map location ... ]]) */
-        lua_error('show_getpos_tip: nh.text is not ported yet');
+    G.show_getpos_tip = async function show_getpos_tip() {
+        /* a Lua [[long string]] drops the newline right after [[ */
+        await G.nh.text(`Tip: Farlooking or selecting a map location
+
+You are now in a "farlook" mode - the movement keys move the cursor,
+not your character.  Game time does not advance.  This mode is used
+to look around the map, or to select a location on it.
+
+When in this mode, you can press ESC to return to normal game mode,
+and pressing ? will show the key help.
+`);
     };
 
     // -- Callback functions
