@@ -10,10 +10,13 @@ import { strncmpi, strcmpi, strstri } from './hacklib.js';
 import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
          FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
          ACID_RES, STONE_RES, DRAIN_RES, ANTIMAGIC, BLND_RES, ALL_TRAPS,
-         NO_TRAP, W_ARMOR, W_ACCESSORY, W_WEP, W_SWAPWEP, W_ARMC,
+         NO_TRAP, W_ARMOR, W_ACCESSORY, W_WEP, W_SWAPWEP, W_ARMC, W_ARM,
        } from './const.js';
-import { objects, ALCHEMY_SMOCK, WEAPON_CLASS } from './objects.js';
+import { objects, ALCHEMY_SMOCK, WEAPON_CLASS, GRAY_DRAGON_SCALES,
+         YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
+         YELLOW_DRAGON_SCALE_MAIL } from './objects.js';
 import { is_weptool } from './mkobj.js';
+import { which_armor } from './worn.js';
 import { title_to_mon } from './botl.js';
 import {
     mons, NATTK, AT_ANY, AD_DRLI, M1_FLY, M1_SWIM, M1_WALLWALK, M1_NOEYES,
@@ -123,6 +126,13 @@ export function set_mon_data(mon, ptr) {
     return;
 }
 
+/* C ref: obj.h Is_dragon_scales(), Is_dragon_mail(), Is_dragon_armor() */
+function Is_dragon_armor(obj) {
+    return (obj.otyp >= GRAY_DRAGON_SCALES && obj.otyp <= YELLOW_DRAGON_SCALES)
+        || (obj.otyp >= GRAY_DRAGON_SCALE_MAIL
+            && obj.otyp <= YELLOW_DRAGON_SCALE_MAIL);
+}
+
 // C ref: mondata.c defended()
 /* is 'mon' (possibly youmonst) protected against damage type 'adtype' via
    wielded weapon or worn dragon scales? [or by virtue of being a dragon?] */
@@ -142,13 +152,11 @@ export function defended(mon, adtyp) {
         throw new Error('defended(): dragon scales (defends()) not ported yet');
     } else {
         /* ordinary case: not an adult dragon */
-        if (!is_you)
-            throw new Error('defended(): which_armor() not ported yet');
-        o = g.uarm;
+        o = is_you ? g.uarm : which_armor(mon, W_ARM);
     }
     /* is 'mon' wearing dragon scales that protect against 'adtyp'? */
-    if (o)
-        throw new Error('defended(): Is_dragon_armor()/defends() not ported yet');
+    if (o && Is_dragon_armor(o))
+        throw new Error('defended(): defends() not ported yet');
 
     return false;
 }

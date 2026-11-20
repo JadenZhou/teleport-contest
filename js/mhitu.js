@@ -7,7 +7,7 @@
 import { game } from './gstate.js';
 import { rn2, rnd, d, AC_VALUE } from './rng.js';
 import { cansee } from './vision.js';
-import { pline, bot } from './display.js';
+import { pline, bot, mon_visible } from './display.js';
 import { nomul } from './hack.js';
 import { Monnam } from './mhitm.js';
 import { monnear } from './mon.js';
@@ -15,7 +15,7 @@ import { canseemon } from './monmove.js';
 import { find_offensive, use_offensive } from './muse.js';
 import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer,
-         perceives, is_orc, dmgtype } from './mondata.js';
+         perceives, is_orc, dmgtype, is_neuter } from './mondata.js';
 import { midnight } from './calendar.js';
 import * as M from './monsters.js';
 import { mons, AT_NONE, AT_CLAW, AT_KICK, AT_BITE, AT_STNG, AT_TUCH,
@@ -25,11 +25,17 @@ import { mons, AT_NONE, AT_CLAW, AT_KICK, AT_BITE, AT_STNG, AT_TUCH,
          AD_PHYS, AD_ACID, AD_STON, AD_ENCH, AD_COLD } from './monsters.js';
 import { M_ATTK_MISS, M_ATTK_HIT, M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK,
          NON_PM, INVIS, DISPLACED, SEE_INVIS, BLINDED, CONFLICT,
-         HALF_PHDAM, PROTECTION, COLD_RES, W_ARMOR, W_AMUL, TT_PIT,
+         HALF_PHDAM, PROTECTION, COLD_RES, W_ARMOR, W_AMUL, TT_PIT, HALLUC,
+         NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, P_WHIP,
          is_pit } from './const.js';
 import { t_at } from './trap.js';
 import { u_at } from './makemon.js';
-import { objects, AMULET_OF_GUARDING } from './objects.js';
+import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
+         PIERCE } from './objects.js';
+import { mon_wield_item, hitval } from './weapon.js';
+import { ART_SNICKERSNEE } from './artilist.js';
+import { genders } from './role.js';
+import { xname } from './objnam.js';
 
 /* C ref: mhitu.c static mon_currwep */
 let mon_currwep = null;
@@ -93,6 +99,73 @@ function poly_gender() {
     if (Upolyd())
         throw new Error('poly_gender(): polymorphed hero not ported yet');
     return game.flags.female ? 1 : 0;
+}
+
+/* C ref: obj.h is_pole(), is_art() */
+function is_art(o, art) { return !!(o && o.oartifact === art); }
+function is_pole(otmp) {
+    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
+           && (objects[otmp.otyp].oc_skill === P_POLEARMS
+               || objects[otmp.otyp].oc_skill === P_LANCE
+               || is_art(otmp, ART_SNICKERSNEE));
+}
+/* C ref: obj.h is_wet_towel() */
+function is_wet_towel(o) { return o.otyp === TOWEL && (o.spe || 0) > 0; }
+// C ref: mondata.c pronoun_gender()
+function pronoun_gender(mtmp, pg_flags) {
+    const override_vis = (pg_flags & 1 /* PRONOUN_NO_IT */) !== 0,
+          hallu_rand = (pg_flags & 2 /* PRONOUN_HALLU */) !== 0;
+
+    if (hallu_rand && game.u.uprops[HALLUC].intrinsic)
+        return rn2(4); /* 0..3 */
+    if (!override_vis && !canspotmon(mtmp))
+        return 2;
+    if (is_neuter(mtmp.data))
+        return 2;
+    return ((mtmp.data.mflags1 & M.M1_HUMANOID) !== 0
+            || (mtmp.data.geno & M.G_UNIQ)
+            || (mtmp.data.mflags2 & M.M2_PNAME) !== 0) ? (mtmp.female ? 1 : 0) : 2;
+}
+/* C ref: you.h mhis() */
+export function mhis(mtmp) { return genders[pronoun_gender(mtmp, 2 /* PRONOUN_HALLU */)].his; }
+
+// C ref: mhitu.c mswings_verb()
+/* strike types P|S|B: Pierce (pointed: stab) => "thrusts",
+   Slash (edged: slice) or whack (blunt: Bash) => "swings" */
+export function mswings_verb(
+    mwep, /* attacker's weapon */
+    bash) /* True: using polearm while too close */
+{
+    let verb;
+    const otyp = mwep.otyp,
+        /* (monsters don't actually wield towels, wet or otherwise) */
+        lash = (objects[otyp].oc_skill === P_WHIP || is_wet_towel(mwep)),
+        /* some weapons can have more than one strike type; for those,
+           give a mix of thrust and swing (caller doesn't care either way) */
+        thrust = ((objects[otyp].oc_dir & PIERCE) !== 0
+                  && ((objects[otyp].oc_dir & ~PIERCE) === 0 || !rn2(2)));
+
+    verb = bash ? "bashes with" /*sigh*/
+           : lash ? "lashes"
+             : thrust ? "thrusts"
+               : "swings";
+    /* (might have caller also pass attacker's formatted name so that
+       if hallucination makes that be plural, we could use vtense() to
+       adjust the result to match) */
+    return verb;
+}
+
+// C ref: mhitu.c mswings()
+/* monster swings obj */
+async function mswings(
+    mtmp,  /* attacker */
+    otemp, /* attacker's weapon */
+    bash)  /* True: polearm used at too close range */
+{
+    if (game.flags.verbose && !Blind() && mon_visible(mtmp)) {
+        await pline(`${Monnam(mtmp)} ${mswings_verb(otemp, bash)} ${
+            (otemp.quan > 1) ? "one of " : ""}${mhis(mtmp)} ${xname(otemp)}.`); /* pline_mon() */
+    }
 }
 
 // C ref: allmain.c stop_occupation()
@@ -449,13 +522,41 @@ export async function mattacku(mtmp) {
                 /* if (!Is_rogue_level(&u.uz)) */
                 throw new Error('mattacku(): thrwmu() not ported yet');
             } else {
+                let hittmp = 0;
+
                 /* Rare but not impossible.  Normally the monster
                  * wields when 2 spaces away, but it can be
                  * teleported or whatever....
                  */
-                if (mtmp.weapon_check === 1 /* NEED_WEAPON */ || !mtmp.mw)
-                    throw new Error('mattacku(): mon_wield_item() not ported yet');
-                throw new Error('mattacku(): wielded weapon attack (hitval()) not ported yet');
+                if (mtmp.weapon_check === NEED_WEAPON || !mtmp.mw) {
+                    mtmp.weapon_check = NEED_HTH_WEAPON;
+                    /* mon_wield_item resets weapon_check as appropriate */
+                    if (await mon_wield_item(mtmp) !== 0)
+                        break;
+                }
+                if (v.foundyou) {
+                    mon_currwep = mtmp.mw || null; /* MON_WEP(mtmp) */
+                    if (mon_currwep) {
+                        const bash = (is_pole(mon_currwep)
+                                      && !is_art(mon_currwep, ART_SNICKERSNEE)
+                                      && m_next2u(mtmp));
+
+                        hittmp = hitval(mon_currwep, game.youmonst);
+                        tmp += hittmp;
+                        await mswings(mtmp, mon_currwep, bash);
+                    }
+                    if (tmp > (j = game.mhitu_dieroll = rnd(20 + i)))
+                        sum[i] = await hitmu(mtmp, mattk);
+                    else
+                        await missmu(mtmp, (tmp === j), mattk);
+                    /* KMH -- Don't accumulate to-hit bonuses */
+                    if (mon_currwep)
+                        tmp -= hittmp;
+                } else {
+                    await wildmiss(mtmp, mattk);
+                    /* skip any remaining non-spell attacks */
+                    skipnonmagc = true;
+                }
             }
             break;
         case AT_MAGC:

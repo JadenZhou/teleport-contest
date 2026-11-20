@@ -6,6 +6,7 @@
 // 'not ported yet' error instead of skipping their rolls.
 
 import { game } from './gstate.js';
+import { mon_wield_item } from './weapon.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path } from './vision.js';
@@ -35,7 +36,7 @@ import {
     DOGFOOD, CADAVER, ACCFOOD, MANFOOD, APPORT, POISON, UNDEF, TABU,
     IS_ROOM, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, W_NONDIGGABLE,
     D_CLOSED, D_LOCKED, CONFLICT, NON_PM, isok, MAGIC_PORTAL, W_ARMG,
-    NEED_WEAPON, I_SPECIAL, W_ARMS,
+    NEED_WEAPON, NEED_HTH_WEAPON, I_SPECIAL, W_ARMS,
 } from './const.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -593,8 +594,10 @@ async function dog_invent(mtmp, edog, udist) {
                         newsym(omx, omy);
                         mpickobj(mtmp, otmp);
                         if (attacktype(mtmp.data, M.AT_WEAP)
-                            && mtmp.weapon_check === NEED_WEAPON)
-                            throw new Error('dog_invent(): mon_wield_item() not ported yet');
+                            && mtmp.weapon_check === NEED_WEAPON) {
+                            mtmp.weapon_check = NEED_HTH_WEAPON;
+                            await mon_wield_item(mtmp);
+                        }
                         check_gear_next_turn(mtmp);
                     }
                 }

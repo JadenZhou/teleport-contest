@@ -24,6 +24,7 @@ import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
          nonliving, is_golem, is_mplayer } from './makemon.js';
 import { set_mon_data } from './mondata.js';
 import { Monnam } from './mhitm.js';
+import { m_dowear, which_armor } from './worn.js';
 import {
     MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
     PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
@@ -48,7 +49,7 @@ import {
     PM_AIR_ELEMENTAL, M1_ANIMAL, M1_MINDLESS, S_MUMMY,
 } from './monsters.js';
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
-         LOCK_PICK, EGG } from './objects.js';
+         LOCK_PICK, EGG, AMULET_OF_LIFE_SAVING } from './objects.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect } from './monmove.js';
@@ -247,8 +248,10 @@ function m_detach(mtmp, mptr, due_to_death) {
 /* find the worn amulet of life saving which will save a monster */
 function mlifesaver(mon) {
     if (!nonliving(mon.data) || is_vampshifter(mon)) {
-        if (mon.misc_worn_check & W_AMUL)
-            throw new Error('mlifesaver(): which_armor() not ported yet');
+        const otmp = which_armor(mon, W_AMUL);
+
+        if (otmp && otmp.otyp === AMULET_OF_LIFE_SAVING)
+            return otmp;
     }
     return null;
 }
@@ -473,7 +476,7 @@ async function movemon_singlemon(mtmp) {
             || dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > (3 * 3)) {
             mtmp.misc_worn_check &= ~I_SPECIAL;
             const oldworn = mtmp.misc_worn_check;
-            m_dowear(mtmp, false);
+            await m_dowear(mtmp, false);
             if (mtmp.misc_worn_check !== oldworn || !mtmp.mcanmove)
                 return false; /* is spending this turn equipping */
         }
@@ -544,21 +547,6 @@ function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 /* mondata.h */
 function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 
-// C ref: worn.c m_dowear() -- only the early returns are ported
-function m_dowear(mon, creation) {
-    /* Note the restrictions here are the same as in dowear in do_wear.c
-     * except for the additional restriction on intelligence. */
-    if (verysmall(mon.data) || (mon.data.mflags1 & M1_NOHANDS) !== 0
-        || (mon.data.mflags1 & M1_ANIMAL) !== 0)
-        return;
-    /* give mummies a chance to wear their wrappings
-     * and let skeletons wear their initial armor */
-    if ((mon.data.mflags1 & M1_MINDLESS) !== 0
-        && (!creation || (mon.data.mlet !== S_MUMMY
-                          && mon.data !== mons[PM_SKELETON])))
-        return;
-    throw new Error('m_dowear(): m_dowear_type() not ported yet');
-}
 function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
 function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
 function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
