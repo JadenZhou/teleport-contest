@@ -14,7 +14,11 @@ import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          ECMD_TIME, W_ARMOR, W_ACCESSORY } from './const.js';
 import { ARMOR_CLASS, RING_CLASS, AMULET_CLASS, MEAT_RING, BLINDFOLD, TOWEL,
          LENSES } from './objects.js';
-import { M1_NOHANDS, MZ_SMALL, M1_NOLIMBS, M1_HUMANOID } from './monsters.js';
+import { M1_NOHANDS, MZ_SMALL, M1_NOLIMBS, M1_HUMANOID, M1_NOHEAD,
+         M3_INFRAVISION } from './monsters.js';
+import { xname, an } from './objnam.js';
+import { vision_recalc } from './vision.js';
+import { HEAD, BLINDED, TELEPAT, INFRAVISION } from './const.js';
 import * as O from './objects.js';
 import { prinv } from './invent.js';
 import { tty_yn_function } from './wintty.js';
@@ -109,7 +113,65 @@ async function on_msg(otmp) {
         await prinv(null, otmp, 0);
         return;
     }
-    throw new Error('on_msg(): "You are now wearing" not ported yet');
+    if (game.flags?.verbose ?? true) {
+        /* call xname() before obj_is_pname(); formatting obj's name
+           might set obj->dknown and that affects the pname test */
+        const otmp_name = xname(otmp);
+        let how = '';
+
+        if (otmp.otyp === TOWEL)
+            how = ` around your ${body_part(HEAD)}`;
+        if (otmp.oartifact)
+            throw new Error('on_msg(): obj_is_pname() not ported yet');
+        await You(`are now wearing ${an(otmp_name)}${how}.`);
+    }
+}
+
+/* C ref: you.h Blind -- Blinded intrinsic or extrinsic (blindfold),
+   not blocked */
+function Blind() {
+    const p = game.u.uprops?.[BLINDED];
+    return !!((p?.intrinsic || p?.extrinsic) && !p?.blocked);
+}
+
+// C ref: potion.c toggle_blindness() -- blindness has just been toggled
+function toggle_blindness() {
+    game.disp_botl = true; /* status conditions need update */
+    game.vision_full_recalc = 1; /* vision has changed */
+    vision_recalc(0);
+    /* Blind_telepat || Infravision || Stinging: see_monsters() */
+    if (game.u.uprops?.[TELEPAT]?.intrinsic || game.u.uprops?.[TELEPAT]?.extrinsic
+        || game.u.uprops?.[INFRAVISION]?.intrinsic || game.u.uprops?.[INFRAVISION]?.extrinsic)
+        throw new Error('toggle_blindness(): see_monsters() not ported yet');
+    /* update dknown flag for inventory picked up while blind */
+    if (!Blind())
+        throw new Error('toggle_blindness(): learn_unseen_invent() not ported yet');
+}
+
+// C ref: do_wear.c Blindf_on()
+async function Blindf_on(otmp) {
+    const already_blind = Blind();
+    let changed = false;
+
+    /* blindfold might be wielded; release it for wearing */
+    if (otmp.owornmask)
+        throw new Error('Blindf_on(): remove_worn_item() not ported yet');
+    setworn(otmp, W_TOOL);
+    await on_msg(otmp);
+
+    if (Blind() && !already_blind) {
+        changed = true;
+        if (game.flags?.verbose ?? true)
+            await pline("You can't see any more."); /* You_cant() */
+        /* set ball&chain variables before the hero goes blind */
+        if (game.uball)
+            throw new Error('Blindf_on(): set_bc() not ported yet');
+    } else if (already_blind && !Blind()) {
+        throw new Error('Blindf_on(): regaining sight not ported yet');
+    }
+    if (changed) {
+        toggle_blindness(); /* potion.c */
+    }
 }
 
 // C ref: do_wear.c Ring_on() -- rings whose effect is only the
@@ -218,7 +280,10 @@ async function accessory_or_armor_on(obj) {
         } else if (amulet) {
             throw new Error('accessory_or_armor_on(): amulets not ported yet');
         } else if (eyewear) {
-            throw new Error('accessory_or_armor_on(): eyewear not ported yet');
+            if (game.youmonst.data.mflags1 & M1_NOHEAD)
+                throw new Error('accessory_or_armor_on(): no-head message not ported yet');
+            if (game.ublindf)
+                throw new Error('accessory_or_armor_on(): already wearing eyewear not ported yet');
         } else {
             /* neither armor nor accessory */
             await pline("You can't wear that!"); /* You_cant() */
@@ -238,6 +303,11 @@ async function accessory_or_armor_on(obj) {
            on a ring of levitation while at a sink location */
         if (obj.owornmask & (W_ARMOR | W_ACCESSORY | W_SADDLE | W_WEAPONS))
             await on_msg(obj);
+    } else if (amulet) {
+        throw new Error('accessory_or_armor_on(): Amulet_on() not ported yet');
+    } else if (eyewear) {
+        /* setworn() and on_msg() handled by Blindf_on() */
+        await Blindf_on(obj);
     }
     return ECMD_TIME;
 }

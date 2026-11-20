@@ -10,7 +10,7 @@ import { P_NONE, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, P_POLEARMS, P_LANCE,
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, TIN_OPENER,
          HEAVY_IRON_BALL, IRON_CHAIN, TOWEL, CORPSE, AKLYS, SILVER } from './objects.js';
 import { ECMD_OK, ECMD_TIME, ECMD_FAIL, W_ARMOR, W_ACCESSORY,
-         W_SADDLE, W_RINGL, W_RINGR } from './const.js';
+         W_SADDLE, W_RINGL, W_RINGR, W_TOOL } from './const.js';
 import { M1_NOHANDS, M2_DEMON, M2_WERE, S_IMP, S_VAMPIRE, MZ_SMALL, mons,
          PM_SHADE, PM_TENGU } from './monsters.js';
 import { pline, You } from './display.js';
@@ -75,9 +75,10 @@ const weapon_slots = [
     { w_mask: W_QUIVER, w_obj: 'uquiver' },
     { w_mask: W_RINGL, w_obj: 'uleft' },
     { w_mask: W_RINGR, w_obj: 'uright' },
+    { w_mask: W_TOOL, w_obj: 'ublindf' },
 ];
 export function setworn(obj, mask) {
-    if (mask & ~(W_WEP | W_SWAPWEP | W_QUIVER | W_RINGL | W_RINGR))
+    if (mask & ~(W_WEP | W_SWAPWEP | W_QUIVER | W_RINGL | W_RINGR | W_TOOL))
         throw new Error('setworn(): armor/amulet/eyewear slots not ported yet');
     for (const wp of weapon_slots) {
         if (wp.w_mask & mask) {
@@ -102,7 +103,7 @@ export function setworn(obj, mask) {
                     if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
                         || mask !== W_WEP) {
                         const p = objects[obj.otyp].oc_oprop;
-                        if (p && (wp.w_mask & (W_RINGL | W_RINGR))) {
+                        if (p && (wp.w_mask & (W_RINGL | W_RINGR | W_TOOL))) {
                             /* u.uprops[p].extrinsic |= wp->w_mask */
                             const up = game.u.uprops[p];
                             up.extrinsic = (up.extrinsic || 0) | wp.w_mask;
