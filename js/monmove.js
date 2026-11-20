@@ -10,7 +10,11 @@ import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path } from './vision.js';
-import { newsym } from './display.js';
+import { newsym, pline } from './display.js';
+import { splitobj, obj_extract_self } from './mkobj.js';
+import { distant_name, doname } from './objnam.js';
+import { Monnam } from './mhitm.js';
+import { mpickobj } from './steal.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -39,7 +43,7 @@ import {
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
-    COLNO, ROWNO, IS_OBSTRUCTED, MFAST,
+    COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR } from './artilist.js';
@@ -509,6 +513,13 @@ function m_respond(mtmp) {
         throw new Error('aggravate() not ported yet');
 }
 
+// C ref: monmove.c m_arrival()
+function m_arrival(mon) {
+    mon.mstrategy &= ~STRAT_ARRIVE; /* always reset */
+
+    return -1;
+}
+
 // ── C ref: monmove.c dochug() ──
 export async function dochug(mtmp) {
     const u = game.u;
@@ -523,8 +534,11 @@ export async function dochug(mtmp) {
 
     mdat = mtmp.data;
 
-    if (mtmp.mstrategy & STRAT_ARRIVE)
-        throw new Error('dochug(): m_arrival() not ported yet');
+    if (mtmp.mstrategy & STRAT_ARRIVE) {
+        const res = m_arrival(mtmp);
+        if (res >= 0)
+            return res;
+    }
     /* check for waitmask status change */
     if ((mtmp.mstrategy & STRAT_WAITFORU)
         && (m_canseeu(mtmp) || mtmp.mhp < mtmp.mhpmax))
@@ -1407,7 +1421,7 @@ export function m_everyturn_effect(mtmp) {
 }
 
 // ── C ref: monmove.c postmov() ──
-function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
+async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
                  can_tunnel, can_unlock, can_open) {
     /* notice_mon(mtmp): a11y.mon_notices is off by default */
 
@@ -1461,7 +1475,7 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             if (corpse_eater(ptr))
                 throw new Error('postmov(): meatcorpse() not ported yet');
 
-            if (mpickstuff(mtmp))
+            if (await mpickstuff(mtmp))
                 mmoved = MMOVE_DONE;
 
             if (mtmp.minvis)
@@ -1480,7 +1494,7 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
     return mmoved;
 }
 // ── C ref: mon.c mpickstuff() ──
-function mpickstuff(mtmp) {
+async function mpickstuff(mtmp) {
     /* prevent shopkeepers from leaving the door of their shop */
     if (mtmp.isshk)
         throw new Error('mpickstuff(): inhishop() not ported yet');
@@ -1511,10 +1525,35 @@ function mpickstuff(mtmp) {
             const carryamt = can_carry(mtmp, otmp);
             if (carryamt === 0)
                 continue;
-            throw new Error('mpickstuff(): splitobj()/mpickobj() not ported yet');
+            /* handle cases where the critter can only get some */
+            let otmp3 = otmp;
+            if (carryamt !== otmp.quan) {
+                otmp3 = splitobj(otmp, carryamt);
+            }
+            if (cansee(mtmp.mx, mtmp.my)) {
+                /* call distant_name() for its possible side-effects even
+                   if the result won't be printed; do it before the extract
+                   from floor and subsequent pickup by mtmp */
+                const otmpname = distant_name(otmp, doname);
+
+                if (game.flags?.verbose)
+                    await pline(`${Monnam(mtmp)} picks up ${otmpname}.`); /* pline_mon() */
+            }
+            obj_extract_self(otmp3); /* remove from floor */
+            mpickobj(mtmp, otmp3); /* may merge and free otmp3 */
+            /* let them try to equip it on the next turn */
+            check_gear_next_turn(mtmp);
+            newsym(mtmp.mx, mtmp.my);
+            return true; /* pick only one object */
         }
     }
     return false;
+}
+
+// C ref: mon.c check_gear_next_turn()
+/* monster has acquired an item; let it try to equip it on its next move */
+function check_gear_next_turn(mon) {
+    mon.misc_worn_check = (mon.misc_worn_check || 0) | I_SPECIAL;
 }
 
 function webmaker(ptr) {
