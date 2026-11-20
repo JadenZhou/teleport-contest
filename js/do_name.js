@@ -24,6 +24,63 @@ export function christen_monst(mtmp, name) {
     return mtmp;
 }
 
+import { exist_artifact, artifact_exists } from './artifact.js';
+import { ONAME_VIA_NAMING, ONAME_SKIP_INVUPD } from './const.js';
+
+// C ref: do_name.c oname()
+export function oname(
+    obj,   /* item to assign name to */
+    name,  /* name to assign */
+    oflgs) /* flags, mostly for artifact creation */
+{
+    let lth;
+    const via_naming = (oflgs & ONAME_VIA_NAMING) !== 0,
+          skip_inv_update = (oflgs & ONAME_SKIP_INVUPD) !== 0;
+
+    lth = name ? (name.length + 1) : 0;
+    if (lth > PL_PSIZ) {
+        lth = PL_PSIZ;
+        name = name.slice(0, PL_PSIZ - 1);
+    }
+    /* If named artifact exists in the game, do not create another.
+       Also trying to create an artifact shouldn't de-artifact
+       it (e.g. Excalibur from prayer). In this case the object
+       will retain its current name. */
+    if (obj.oartifact || (lth && exist_artifact(obj.otyp, name)))
+        return obj;
+
+    /* new_oname(obj, lth): removes old name if one is present */
+    if (!obj.oextra)
+        obj.oextra = {};
+    obj.oextra.oname = lth ? name : '';
+
+    if (lth)
+        artifact_exists(obj, name, true, oflgs);
+    if (obj.oartifact) {
+        /* can't dual-wield with artifact as secondary weapon */
+        if (obj === game.uswapwep)
+            throw new Error('oname(): untwoweapon() is not ported yet');
+        /* activate warning if you've just named your weapon "Sting" */
+        if (obj === game.uwep)
+            throw new Error('oname(): set_artifact_intrinsic() is not ported yet');
+        /* if obj is owned by a shop, increase your bill */
+        if (obj.unpaid)
+            throw new Error('oname(): alter_cost() is not ported yet');
+        if (via_naming) {
+            /* violate illiteracy conduct since successfully wrote arti-name */
+            const literate = game.u.uconduct.literate || 0;
+            game.u.uconduct.literate = literate + 1;
+            if (!literate) {
+                /* livelog_printf(): no livelog */
+            }
+        }
+    }
+    /* if (carried(obj) && !skip_inv_update) update_inventory():
+       no persistent inventory window */
+    void skip_inv_update;
+    return obj;
+}
+
 const ghostnames = [
     /* these names should have length < PL_NSIZ */
     /* Capitalize the names for aesthetics -dgk */
