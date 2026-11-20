@@ -918,6 +918,15 @@ const Japanese_items = [
     [O.POT_BOOZE, "sake"],
 ];
 
+// C ref: objnam.c Japanese_item_name()
+export function Japanese_item_name(i, ordinaryname) {
+    for (const [item, name] of Japanese_items) {
+        if (i === item)
+            return name;
+    }
+    return ordinaryname;
+}
+
 // C ref: objnam.c wrp[], wrpsym[]
 const wrp = [
     "wand",   "ring",      "potion",     "scroll", "gem",
@@ -2297,8 +2306,13 @@ function xname_flags(obj, cxn_flags) {
     let pluralize = (obj.quan !== 1) && !(cxn_flags & 1 /* CXN_SINGULAR */);
     let buf = '';
 
-    if (Role_if_x(M.PM_SAMURAI))
-        xn_not_ported('Japanese_item_name()');
+    if (Role_if_x(M.PM_SAMURAI)) {
+        actualn = Japanese_item_name(typ, actualn);
+        if (typ === O.WOODEN_HARP || typ === O.MAGIC_HARP)
+            dn = "koto";
+    }
+    /* generic items don't have an actual-name; we shouldn't ever be called
+       for those; pacify static analyzer without resorting to impossible() */
     if (!actualn)
         actualn = (typ > 0 && typ < O.MAXOCLASSES) ? "generic" : "object?";
     if (!dn)
@@ -2534,10 +2548,54 @@ function xname_flags(obj, cxn_flags) {
     return buf;
 }
 
-// C ref: objnam.c add_erosion_words() -- only the no-erosion case
+// C ref: objnam.c add_erosion_words() -- returns the extended prefix
+// (C appends to its prefix buffer in place)
 function add_erosion_words(obj, prefix) {
-    if (obj.oeroded || obj.oeroded2 || (obj.rknown && obj.oerodeproof))
-        xn_not_ported('add_erosion_words()');
+    const iscrys = (obj.otyp === O.CRYSKNIFE);
+    /* iflags.override_ID (wizard-mode ^I) is not ported */
+    const rknown = obj.rknown;
+
+    if (!is_damageable(obj) && !iscrys)
+        return prefix;
+
+    /* The only cases where any of these bits do double duty are for
+     * rotted food and diluted potions, which are all not is_damageable().
+     */
+    if (obj.oeroded && !iscrys) {
+        switch (obj.oeroded) {
+        case 2:
+            prefix += "very ";
+            break;
+        case 3:
+            prefix += "thoroughly ";
+            break;
+        }
+        prefix += is_rustprone(obj) ? "rusty "
+                  : is_crackable(obj) ? "cracked "
+                    : "burnt ";
+    }
+    if (obj.oeroded2 && !iscrys) {
+        switch (obj.oeroded2) {
+        case 2:
+            prefix += "very ";
+            break;
+        case 3:
+            prefix += "thoroughly ";
+            break;
+        }
+        prefix += is_corrodeable(obj) ? "corroded " : "rotted ";
+    }
+    /* note: it is possible for an item to be both eroded and erodeproof
+       (cursed scroll of destroy armor read while confused erodeproofs an
+       item of armor without repairing existing erosion) */
+    if (rknown && obj.oerodeproof)
+        prefix += iscrys ? "fixed "
+                  : is_rustprone(obj) ? "rustproof "
+                    : is_corrodeable(obj) ? "corrodeproof "
+                      : is_flammable(obj) ? "fireproof "
+                        : is_crackable(obj) ? "tempered " /* hardened */
+                          : is_rottable(obj) ? "rotproof "
+                            : "";
     return prefix;
 }
 
