@@ -14,6 +14,9 @@ import { newsym, pline } from './display.js';
 import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon, t_at, POLY_TRAP } from './trap.js';
 import { Monnam } from './mhitm.js';
+import { splitobj, obj_extract_self } from './mkobj.js';
+import { mpickobj } from './steal.js';
+import { distant_name, doname } from './objnam.js';
 import { You_hear } from './sounds.js';
 import { recalc_block_point } from './vision.js';
 import { wipe_engr_at } from './engrave.js';
@@ -44,7 +47,7 @@ import {
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
-    COLNO, ROWNO, IS_OBSTRUCTED, MFAST,
+    COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL,
     NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF, W_ARMG, STONE_RES,
     MON_OFFMAP, MON_DETACH, MON_MIGRATING, MON_LIMBO,
 } from './const.js';
@@ -1805,7 +1808,7 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             if (corpse_eater(ptr))
                 throw new Error('postmov(): meatcorpse() not ported yet');
 
-            if (mpickstuff(mtmp))
+            if (await mpickstuff(mtmp))
                 mmoved = MMOVE_DONE;
 
             if (mtmp.minvis)
@@ -1824,7 +1827,7 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
     return mmoved;
 }
 // ── C ref: mon.c mpickstuff() ──
-function mpickstuff(mtmp) {
+async function mpickstuff(mtmp) {
     /* prevent shopkeepers from leaving the door of their shop */
     if (mtmp.isshk)
         throw new Error('mpickstuff(): inhishop() not ported yet');
@@ -1855,7 +1858,27 @@ function mpickstuff(mtmp) {
             const carryamt = can_carry(mtmp, otmp);
             if (carryamt === 0)
                 continue;
-            throw new Error('mpickstuff(): splitobj()/mpickobj() not ported yet');
+            /* handle cases where the critter can only get some */
+            let otmp3 = otmp;
+            if (carryamt !== otmp.quan) {
+                otmp3 = splitobj(otmp, carryamt);
+            }
+            if (cansee(mtmp.mx, mtmp.my)) {
+                /* call distant_name() for its possible side-effects even
+                   if the result won't be printed; do it before the extract
+                   from floor and subsequent pickup by mtmp */
+                const otmpname = distant_name(otmp, doname);
+
+                if (game.flags.verbose)
+                    await pline(`${Monnam(mtmp)} picks up ${otmpname}.`);
+            }
+            obj_extract_self(otmp3);   /* remove from floor */
+            mpickobj(mtmp, otmp3);     /* may merge and free otmp3 */
+            /* let them try to equip it on the next turn */
+            mtmp.misc_worn_check = (mtmp.misc_worn_check || 0)
+                                   | I_SPECIAL; /* check_gear_next_turn() */
+            newsym(mtmp.mx, mtmp.my);
+            return true; /* pick only one object */
         }
     }
     return false;
