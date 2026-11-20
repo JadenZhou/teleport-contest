@@ -48,6 +48,9 @@ import { an, xname } from './objnam.js';
 import { the } from './iactions.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
+import { set_ustuck } from './uhitm.js';
+import { CONFLICT } from './const.js';
+import { AT_ENGL, AT_HUGS, AD_STCK } from './monsters.js';
 import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
          LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
 import { CORPSE } from './objects.js';
@@ -1232,6 +1235,71 @@ async function moverock_core(sx, sy) {
     return 0;
 }
 
+/* C ref: mondata.c attacktype(), sticks() */
+function hero_sticks(ptr) {
+    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL || a.aatyp === AT_HUGS
+                                       || a.adtyp === AD_STCK);
+}
+
+// C ref: hack.c escape_from_sticky_mon() -- try to pull free from
+// sticking monster, or you release a monster you're sticking to.
+// returns TRUE if you lose your movement.
+async function escape_from_sticky_mon(x, y) {
+    const u = game.u;
+    if (u.ustuck && (x !== u.ustuck.mx || y !== u.ustuck.my)) {
+        let mtmp;
+
+        if (!(Math.abs(u.ustuck.mx - u.ux) <= 1 && Math.abs(u.ustuck.my - u.uy) <= 1)) {
+            /* perhaps it fled (or was teleported or ... ) */
+            set_ustuck(null);
+        } else if (hero_sticks(game.youmonst.data)) {
+            /* When polymorphed into a sticking monster,
+             * u.ustuck means it's stuck to you, not you to it.
+             */
+            mtmp = u.ustuck;
+            set_ustuck(null);
+            await You(`release ${y_monnam(mtmp)}.`);
+        } else {
+            /* If holder is asleep or paralyzed:
+             *      37.5% chance of getting away,
+             *      12.5% chance of waking/releasing it;
+             * otherwise:
+             *       7.5% chance of getting away.
+             * If holder is tame and there is no conflict,
+             * guaranteed escape.
+             */
+            let pullfree = false;
+            switch (rn2(!u.ustuck.mcanmove ? 8 : 40)) {
+            case 3:
+                if (!u.ustuck.mcanmove) {
+                    /* it's free to move on next turn */
+                    u.ustuck.mfrozen = 1;
+                    u.ustuck.msleeping = 0;
+                }
+                /*FALLTHRU*/
+            default:
+                if (uhave(CONFLICT) || u.ustuck.mconf || !u.ustuck.mtame) {
+                    await You(`cannot escape from ${y_monnam(u.ustuck)}!`);
+                    nomul(0);
+                    return true;
+                }
+                /*FALLTHRU*/
+            case 0:
+            case 1:
+            case 2:
+                pullfree = true;
+                break;
+            }
+            if (pullfree) {
+                mtmp = u.ustuck;
+                set_ustuck(null);
+                await You(`pull free from ${y_monnam(mtmp)}.`);
+            }
+        }
+    }
+    return false;
+}
+
 /* C ref: hack.c carrying_too_much() */
 async function carrying_too_much() {
     const u = game.u;
@@ -1523,9 +1591,8 @@ async function domove_core() {
         if (avoid_running_into_trap_or_liquid(x, y))
             return;
 
-        /* escape_from_sticky_mon(x, y) */
-        if (u.ustuck && (x !== u.ustuck.mx || y !== u.ustuck.my))
-            throw new Error('domove_core(): escape_from_sticky_mon() not ported yet');
+        if (await escape_from_sticky_mon(x, y))
+            return;
 
         mtmp = m_at(x, y);
         if (mtmp && !is_safemon(mtmp)) {

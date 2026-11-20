@@ -97,7 +97,7 @@ function is_blade(otmp) {
             && objects[otmp.otyp].oc_skill <= P_SABER);
 }
 function is_wet_towel(o) { return o.otyp === O.TOWEL && o.spe > 0; }
-function is_graystone(obj) {
+export function is_graystone(obj) {
     return (obj.otyp === O.LUCKSTONE || obj.otyp === O.LOADSTONE
             || obj.otyp === O.FLINT || obj.otyp === O.TOUCHSTONE);
 }
@@ -123,7 +123,7 @@ function body_part_hand() {
 }
 
 /* C ref: eat.c is_edible() -- for an unpolymorphed hero */
-function is_edible(obj) {
+export function is_edible(obj) {
     if (objects[obj.otyp].oc_unique)
         return false;
     /* fire elemental, metallivore, gelatinous cube and lithivore forms */

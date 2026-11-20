@@ -10,7 +10,7 @@ import { P_NONE, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, P_POLEARMS, P_LANCE,
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, TIN_OPENER,
          HEAVY_IRON_BALL, IRON_CHAIN, TOWEL, CORPSE, AKLYS, SILVER } from './objects.js';
 import { ECMD_OK, ECMD_TIME, ECMD_FAIL, W_ARMOR, W_ACCESSORY,
-         W_SADDLE } from './const.js';
+         W_SADDLE, W_RINGL, W_RINGR } from './const.js';
 import { M1_NOHANDS, M2_DEMON, M2_WERE, S_IMP, S_VAMPIRE, MZ_SMALL, mons,
          PM_SHADE, PM_TENGU } from './monsters.js';
 import { pline, You } from './display.js';
@@ -73,10 +73,12 @@ const weapon_slots = [
     { w_mask: W_WEP, w_obj: 'uwep' },
     { w_mask: W_SWAPWEP, w_obj: 'uswapwep' },
     { w_mask: W_QUIVER, w_obj: 'uquiver' },
+    { w_mask: W_RINGL, w_obj: 'uleft' },
+    { w_mask: W_RINGR, w_obj: 'uright' },
 ];
 export function setworn(obj, mask) {
-    if (mask & ~(W_WEP | W_SWAPWEP | W_QUIVER))
-        throw new Error('setworn(): armor/accessory slots not ported yet');
+    if (mask & ~(W_WEP | W_SWAPWEP | W_QUIVER | W_RINGL | W_RINGR))
+        throw new Error('setworn(): armor/amulet/eyewear slots not ported yet');
     for (const wp of weapon_slots) {
         if (wp.w_mask & mask) {
             const oobj = game[wp.w_obj];
@@ -100,7 +102,12 @@ export function setworn(obj, mask) {
                     if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
                         || mask !== W_WEP) {
                         const p = objects[obj.otyp].oc_oprop;
-                        if (p)
+                        if (p && (wp.w_mask & (W_RINGL | W_RINGR))) {
+                            /* u.uprops[p].extrinsic |= wp->w_mask */
+                            const up = game.u.uprops[p];
+                            up.extrinsic = (up.extrinsic || 0) | wp.w_mask;
+                            /* w_blocks(): rings don't block properties */
+                        } else if (p)
                             throw new Error('setworn(): extrinsic-granting weapon not ported yet');
                     }
                     if (obj.oartifact)
@@ -148,7 +155,7 @@ function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 
 // C ref: artifact.c retouch_object() -- only the hero-can-handle-it case
-function retouch_object(wep) {
+export function retouch_object(wep) {
     if (wep.oartifact)
         throw new Error('retouch_object(): touch_artifact() not ported yet');
     if (objects[wep.otyp].oc_material === SILVER && Hate_silver())

@@ -718,7 +718,7 @@ export async function tty_yn_function(query, resp, def) {
         if (rb >= 0)
             respbuf = respbuf.slice(0, rb);
         prompt = `${query.slice(0, 255)} [${respbuf}]`;
-        if (def)
+        if (def && def !== '\0')
             prompt += ` (${def})`;
         /* not pline("%s ", prompt);
            trailing space is wanted here in case of reprompt */
