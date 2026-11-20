@@ -34,6 +34,8 @@ import {
     PM_ETTIN_MUMMY, PM_ETTIN, PM_LIZARD, PM_LICHEN, PM_DEATH, PM_FAMINE,
     PM_PESTILENCE,
 } from './monsters.js';
+import { merged } from './invent.js';
+import { obj_no_longer_held } from './do.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -578,7 +580,7 @@ export function add_to_minv(mon, obj) {
     if (!mon.minvent) mon.minvent = [];
     /* merge if possible (C walks the chain newest first) */
     for (const otmp of mon.minvent.slice().reverse())
-        if (merged_minv(otmp, obj))
+        if (merged({ otmp, obj }))
             return 1; /* obj merged and then free'd */
     /* else insert; don't bother forcing it to end of chain
        (JS minvent arrays are oldest first: newest goes last) */
@@ -586,30 +588,6 @@ export function add_to_minv(mon, obj) {
     obj.ocarry = mon;
     mon.minvent.push(obj);
     return 0; /* obj on mon's inventory chain */
-}
-
-// C ref: invent.c merged() -- only coin merging is ported; mergable()
-// for other objects is not
-function merged_minv(otmp, obj) {
-    if (obj === otmp || obj.otyp !== otmp.otyp
-        || obj.nomerge || otmp.nomerge || !objects[obj.otyp].oc_merge)
-        return false;
-    if (obj.oclass !== O.COIN_CLASS)
-        throw new Error('merged(): mergable() not ported yet');
-    /* coins of the same kind will always merge */
-    if (!obj.lamplit && !obj.globby)
-        otmp.age = Math.trunc(((otmp.age * otmp.quan) + (obj.age * obj.quan))
-                              / (otmp.quan + obj.quan));
-    if (!otmp.globby)
-        otmp.quan += obj.quan;
-    /* temporary special case for gold objects!!!! */
-    otmp.owt = weight(otmp);
-    otmp.bknown = 0;
-    if (!otmp.oname && obj.oname)
-        otmp.oname = obj.oname;
-    obj_extract_self(obj);
-    obj.where = 'OBJ_DELETED'; /* obfree(obj, otmp) */
-    return true;
 }
 
 // C ref: mkobj.c may_generate_eroded()
@@ -678,7 +656,8 @@ export function mksobj_at(otyp, x, y, init, artif) {
 // C ref: mkobj.c place_object() -- the level's floor object chain (fobj)
 // is game.level.objects, newest first; per-square piles are read from it
 // in the same order (boulder-first pile ordering isn't ported yet).
-function place_object(otmp, x, y) {
+export function place_object(otmp, x, y) {
+    obj_no_longer_held(otmp);
     otmp.ox = x;
     otmp.oy = y;
     otmp.where = 'OBJ_FLOOR';
