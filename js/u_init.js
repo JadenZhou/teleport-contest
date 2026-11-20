@@ -33,6 +33,7 @@ import { init_uhunger } from './eat.js';
 import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
 import { assigninvlet, reorder_invent, merged } from './invent.js';
+import { Japanese_item_name } from './objnam.js';
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
 // Every numeric field reads as 0, nested structs are zero-filled objects.
@@ -932,8 +933,15 @@ function u_init_role() {
         knows_class(O.WEAPON_CLASS); /* all weapons */
         knows_class(O.ARMOR_CLASS);
         /* in order to assist non-Japanese speakers, pre-discover items
-           that switch to Japanese names when playing as a Samurai:
-           Japanese_item_name() (objnam.c) is not ported yet */
+           that switch to Japanese names when playing as a Samurai */
+        for (let i = O.MAXOCLASSES; i < O.NUM_OBJECTS; ++i) {
+            if (objects[i].oc_magic) /* skip "magic koto" */
+                continue;
+            if (Japanese_item_name(i, null))
+                /* we don't override pauper here because that would give
+                   samarai an advantage of knowing several items in advance */
+                knows_object(i, false);
+        }
         break;
     case M.PM_TOURIST:
         u.umoney0 = rnd(1000);

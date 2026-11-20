@@ -51,6 +51,7 @@ import { age_spells } from './spell.js';
 import { u_wipe_engr } from './engrave.js';
 import { dosearch0 } from './detect.js';
 import { set_uasmon } from './polyself.js';
+import { init_artifacts } from './artifact.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -84,7 +85,8 @@ export async function newgame() {
     init_dungeons();  /* must be before u_init() to avoid rndmonst()
                        * creating odd monsters for any tins and eggs
                        * in hero's initial inventory */
-    // init_artifacts(); -- not ported yet (artifact.c)
+    init_artifacts(); /* before u_init() in case $WIZKIT specifies
+                       * any artifacts */
     u_init_misc();
 
     l_nhcore_init();  /* create a Lua state that lasts until end of game */

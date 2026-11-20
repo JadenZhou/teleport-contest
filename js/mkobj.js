@@ -754,10 +754,8 @@ export function bcsign(otmp) {
     return (!!otmp.blessed - !!otmp.cursed);
 }
 
-// C ref: artifact.c nartifact_exist() — no artifacts exist yet
-function nartifact_exist() {
-    return game.nartifacts_made || 0;
-}
+// nartifact_exist(): C ref artifact.c, ported in artifact.js
+import { nartifact_exist } from './artifact.js';
 
 function not_ported(what) {
     impossible(`mksobj_init: ${what} is not ported yet`);

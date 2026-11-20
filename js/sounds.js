@@ -11,7 +11,7 @@ import { pline } from './display.js';
 import {
     DEAF, HALLUC, HALLUC_RES, ROOMOFFSET, VAULT, ANY_SHOP, ANY_TYPE, OROOM,
     SHOPBASE, COURT, BEEHIVE, MORGUE, ZOO, BARRACKS,
-    Is_astralevel, Is_oracle_level, STRANGLED, BLINDED, FULL_MOON, IS_WALL,
+    Is_astralevel, Is_oracle_level, Is_sanctum, STRANGLED, BLINDED, FULL_MOON, IS_WALL,
     SDOOR, M_AP_FURNITURE, M_AP_OBJECT, STRAT_WAITMASK, isok, ECMD_OK,
     ECMD_TIME, ECMD_CANCEL,
 } from './const.js';
@@ -366,7 +366,7 @@ export async function dosounds() {
         return;
     }
     if (lf.has_temple && !rn2(200)
-        && !(Is_astralevel(u.uz) || false /* Is_sanctum(): not ported yet */)) {
+        && !(Is_astralevel(u.uz) || Is_sanctum(u.uz))) {
         if (await get_iter_mons(temple_priest_sound))
             return;
     }
