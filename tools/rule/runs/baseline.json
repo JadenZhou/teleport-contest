@@ -1,5 +1,5 @@
 {
- "when": "2026-11-20T09:26:25.720Z",
+ "when": "2026-11-20T09:29:14.380Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -115,7 +115,7 @@
      "rn2(12)=10 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: doapply(): applying an object not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/js/apply.js:137:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: doapply(): applying an object not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/js/apply.js:137:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed0009-swimmer-mforce.session.json",
@@ -144,7 +144,7 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:696:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/js/jsmain.js:165:9) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/js/jsmain.js:262:9)"
+   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:698:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/js/jsmain.js:165:9) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/js/jsmain.js:262:9)"
   },
   {
    "session": "seed0012-monk-vault-escort.session.json",
@@ -318,7 +318,7 @@
      "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: doapply(): applying an object not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/js/apply.js:137:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: doapply(): applying an object not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/js/apply.js:137:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed0017-samurai-altar-pray.session.json",
@@ -327,9 +327,9 @@
    "totalScreens": 67,
    "valuePrefix": 3434,
    "rulePrefix": 3434,
-   "screens": 55,
-   "honestScreens": 55,
-   "firstScreenMiss": 55,
+   "screens": 59,
+   "honestScreens": 59,
+   "firstScreenMiss": 59,
    "first": {
     "index": 3434,
     "step": 64,
@@ -347,12 +347,12 @@
      "rn2(100)=96 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2397:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2489:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2473:12)"
+   "error": "Error: dodiscovered(): Japanese_item_name() is not ported yet |     at dodiscovered (file:///Users/JadenZ/code/teleport-contest/js/o_init.js:610:15) |     at dodiscovered (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:91:25) |     at rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:25)"
   },
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
    "total": 105529,
-   "jsTotal": 40123,
+   "jsTotal": 40203,
    "totalScreens": 1953,
    "valuePrefix": 6838,
    "rulePrefix": 6838,
@@ -434,7 +434,7 @@
      "rn2(70)=23 @ maybe_generate_rnd_mon(allmain.c:166)"
     ]
    },
-   "error": "Error: doapply(): applying an object not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/js/apply.js:137:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: doapply(): applying an object not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/js/apply.js:137:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed0101-ranger-quiver-throw-travel-engrave.session.json",
@@ -663,7 +663,7 @@
      "rn2(100)=27 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dozap(): zapping a wand (zappable()/weffects()) not ported yet |     at dozap (file:///Users/JadenZ/code/teleport-contest/js/zap.js:39:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: dozap(): zapping a wand (zappable()/weffects()) not ported yet |     at dozap (file:///Users/JadenZ/code/teleport-contest/js/zap.js:39:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed0200-monk-north-search.session.json",
@@ -721,12 +721,12 @@
      "rn2(7)=3 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2261:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:123:16)"
+   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:57:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2280:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:144:16)"
   },
   {
    "session": "seed0361-archeologist-tour.session.json",
    "total": 53865,
-   "jsTotal": 2924,
+   "jsTotal": 2937,
    "totalScreens": 366,
    "valuePrefix": 2924,
    "rulePrefix": 2924,
@@ -737,10 +737,10 @@
     "index": 2924,
     "step": 19,
     "c": "rnd(8)=4 @ newhp(attrib.c:1101)",
-    "js": "(none: JS log ended)",
+    "js": "rnd(2)=2 @ next_ident",
     "kind": "value",
     "cCaller": "newhp",
-    "jsCaller": null,
+    "jsCaller": "next_ident",
     "context": [
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)",
      "rnd(9000)=8060 @ moveloop_preamble(allmain.c:72)",
@@ -750,7 +750,7 @@
      "rn2(10)=2 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1983:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2055:22)"
+   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:57:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2280:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:144:16)"
   },
   {
    "session": "seed0367-priest-quest-tour.session.json",
@@ -779,7 +779,7 @@
      "rn2(10)=0 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1983:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2055:22)"
+   "error": "Error: readobjnam: wizterrainwish() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:57:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2086:13) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:144:16)"
   },
   {
    "session": "seed0373-barbarian-quest-tour.session.json",
@@ -837,7 +837,7 @@
      "rn2(8)=6 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2261:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:123:16)"
+   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:57:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2280:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:144:16)"
   },
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
@@ -866,7 +866,7 @@
      "rn2(20)=13 @ m_move(monmove.c:1963)"
     ]
    },
-   "error": "Error: dozap(): zapping a wand (zappable()/weffects()) not ported yet |     at dozap (file:///Users/JadenZ/code/teleport-contest/js/zap.js:39:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: dozap(): zapping a wand (zappable()/weffects()) not ported yet |     at dozap (file:///Users/JadenZ/code/teleport-contest/js/zap.js:39:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed0399-wizard-hallu-actions.session.json",
@@ -895,7 +895,7 @@
      "rn2(9)=2 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2261:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:123:16)"
+   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:57:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2280:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:144:16)"
   },
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
@@ -933,9 +933,9 @@
    "totalScreens": 51,
    "valuePrefix": 3165,
    "rulePrefix": 3165,
-   "screens": 37,
-   "honestScreens": 37,
-   "firstScreenMiss": 37,
+   "screens": 43,
+   "honestScreens": 43,
+   "firstScreenMiss": 43,
    "first": {
     "index": 3165,
     "step": 48,
@@ -953,7 +953,7 @@
      "rn2(4)=2 @ dog_goal(dogmove.c:575)"
     ]
    },
-   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2397:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2489:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2473:12)"
+   "error": "Error: dodiscovered(): Japanese_item_name() is not ported yet |     at dodiscovered (file:///Users/JadenZ/code/teleport-contest/js/o_init.js:610:15) |     at dodiscovered (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:91:25) |     at rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:25)"
   },
   {
    "session": "seed0900-tourist-explore-actions.session.json",
@@ -1069,7 +1069,7 @@
      "rn2(19)=12 @ exercise(attrib.c:509)"
     ]
    },
-   "error": "Error: doeat(): eating (start_eating()) not ported yet |     at doeat (file:///Users/JadenZ/code/teleport-contest/js/eat.js:455:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: doeat(): eating (start_eating()) not ported yet |     at doeat (file:///Users/JadenZ/code/teleport-contest/js/eat.js:455:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed2200-wizard-quaff-zap-read.session.json",
@@ -1098,7 +1098,7 @@
      "rn2(12)=4 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: dodrink(): drinking a potion not ported yet |     at dodrink (file:///Users/JadenZ/code/teleport-contest/js/potion.js:67:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: dodrink(): drinking a potion not ported yet |     at dodrink (file:///Users/JadenZ/code/teleport-contest/js/potion.js:67:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed2600-wizard-custom-binds.session.json",
@@ -1185,7 +1185,7 @@
      "rn2(20)=2 @ zap_hit(zap.c:4709)"
     ]
    },
-   "error": "Error: dozap(): zapping a wand (zappable()/weffects()) not ported yet |     at dozap (file:///Users/JadenZ/code/teleport-contest/js/zap.js:39:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:628:9)"
+   "error": "Error: dozap(): zapping a wand (zappable()/weffects()) not ported yet |     at dozap (file:///Users/JadenZ/code/teleport-contest/js/zap.js:39:11) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:361:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:630:9)"
   },
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
@@ -1235,8 +1235,8 @@
   "rule": 143625,
   "value": 143626,
   "rolls": 792838,
-  "honestScreens": 1049,
-  "screens": 1078,
+  "honestScreens": 1059,
+  "screens": 1088,
   "totalScreens": 11405
  },
  "todo": [
@@ -1255,7 +1255,7 @@
    "blockedRolls": 272922,
    "examples": [
     "seed0360-wizard-world-tour @2898: C \"rnd(8)=7 @ newhp(attrib.c:1101)\" / JS \"rn2(67)=30 @ rnd_otyp_by_namedesc\"",
-    "seed0361-archeologist-tour @2924: C \"rnd(8)=4 @ newhp(attrib.c:1101)\" / JS \"(none: JS log ended)\""
+    "seed0361-archeologist-tour @2924: C \"rnd(8)=4 @ newhp(attrib.c:1101)\" / JS \"rnd(2)=2 @ next_ident\""
    ]
   },
   {
