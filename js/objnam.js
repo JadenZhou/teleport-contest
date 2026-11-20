@@ -26,7 +26,7 @@ import { objects, OBJ_NAME, OBJ_DESCR } from './objects.js';
 import {
     NON_PM, MALE, FEMALE, NEUTRAL, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG,
     BLINDED, HALLUC, Has_contents,
-    W_ARMOR, W_AMUL, W_WEP, W_SWAPWEP, W_QUIVER,
+    W_ARMOR, W_AMUL, W_WEP, W_SWAPWEP, W_QUIVER, W_RINGL, W_RINGR,
 } from './const.js';
 import * as M from './monsters.js';
 import { observe_object } from './o_init.js';
@@ -2865,6 +2865,13 @@ function doname_base(obj, doname_flags) {
             bp += " (lit)";
         break;
     case O.RING_CLASS:
+        /* ring: normal rings reach here 'naturally' */
+        if (obj.owornmask & W_RINGR)
+            bp += " (on right ";
+        if (obj.owornmask & W_RINGL)
+            bp += " (on left ";
+        if (obj.owornmask & (W_RINGL | W_RINGR)) /* either left or right */
+            bp += "hand)"; /* body_part(HAND) for an unpolymorphed hero */
         if (known && objects[obj.otyp].oc_charged)
             prefix += `${obj.spe >= 0 ? "+" : ""}${obj.spe} `;
         break;
@@ -2941,8 +2948,10 @@ function doname_base(obj, doname_flags) {
                   : (Qtyp === 2) ? "in quiver pouch"
                     : "at the ready"})`;
     }
-    if (obj.owornmask & ~(W_ARMOR | W_AMUL | W_WEP | W_SWAPWEP | W_QUIVER))
-        xn_not_ported('ring/tool/leash worn suffixes');
+    if ((obj.owornmask & ~(W_ARMOR | W_AMUL | W_WEP | W_SWAPWEP | W_QUIVER
+                           | W_RINGL | W_RINGR))
+        || ((obj.owornmask & (W_RINGL | W_RINGR)) && obj.oclass !== O.RING_CLASS))
+        xn_not_ported('meat ring/tool/leash worn suffixes');
 
     if (with_price)
         xn_not_ported('shop prices');

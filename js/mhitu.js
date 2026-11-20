@@ -9,9 +9,9 @@ import { rn2, rnd, d, AC_VALUE } from './rng.js';
 import { cansee } from './vision.js';
 import { pline, bot } from './display.js';
 import { nomul } from './hack.js';
-import { Monnam } from './mhitm.js';
+import { Monnam } from './do_name.js';
 import { monnear } from './mon.js';
-import { canseemon } from './monmove.js';
+import { canseemon } from './display.js';
 import { find_offensive, use_offensive } from './muse.js';
 import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer,
