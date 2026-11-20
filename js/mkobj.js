@@ -522,6 +522,10 @@ export function splitobj(obj, num) {
         /* minvent arrays are kept oldest first (C chain reversed) */
         const inv = obj.ocarry.minvent;
         inv.splice(inv.indexOf(obj), 0, otmp);
+    } else if (obj.where === 'OBJ_INVENT') {
+        /* hero's inventory is a linked chain (gi.invent) */
+        otmp.nobj = obj.nobj;
+        obj.nobj = otmp;
     } else if (obj.where !== 'OBJ_FREE' && obj.where !== 'OBJ_LUAFREE') {
         throw new Error(`splitobj(): where=${obj.where} not ported yet`);
     }

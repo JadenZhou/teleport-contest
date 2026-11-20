@@ -259,7 +259,7 @@ function minimal_xname(obj) {
 }
 
 /* C ref: objnam.c simpleonames() */
-function simpleonames(obj) {
+export function simpleonames(obj) {
     let simpleoname = minimal_xname(obj);
 
     if (obj.quan !== 1)

@@ -32,8 +32,10 @@ import { wiz_genesis } from './wizcmds.js';
 import { dodrop } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
+import { doloot } from './pickup.js';
+import { Never_mind, isok } from './const.js';
 import { dofire } from './dothrow.js';
-import { doswapweapon } from './wield.js';
+import { doswapweapon, dowieldquiver } from './wield.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -89,8 +91,10 @@ const cmd_funcs = {
     dodrop: () => dodrop(),
     dozap: () => dozap(),
     docallcmd: () => docallcmd(),
+    doloot: () => doloot(),
     dofire: () => dofire(),
     doswapweapon: () => doswapweapon(),
+    dowieldquiver: () => dowieldquiver(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
@@ -556,6 +560,26 @@ async function help_dir(sym, spkey, msg) {
 
 // C ref: cmd.c getdir() -- the direction prompt; the command queue and
 // the mouse ('_') aren't ported yet
+// C ref: cmd.c get_adjacent_loc() -- prompts the user for a direction and
+// returns the adjacent location in cc
+export async function get_adjacent_loc(prompt, emsg, x, y, cc) {
+    if (!(await getdir(prompt))) {
+        await pline(Never_mind);
+        return 0;
+    }
+    const new_x = x + game.u.dx;
+    const new_y = y + game.u.dy;
+    if (cc && isok(new_x, new_y)) {
+        cc.x = new_x;
+        cc.y = new_y;
+    } else {
+        if (emsg)
+            await pline(emsg);
+        return 0;
+    }
+    return 1;
+}
+
 export async function getdir(s) {
     const u = game.u;
     let dirsym, is_mov;

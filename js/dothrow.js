@@ -10,7 +10,7 @@ import { game } from './gstate.js';
 import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
-import { is_ammo, is_pole, ammo_and_launcher } from './wield.js';
+import { is_ammo, is_pole, ammo_and_launcher, doquiver_core } from './wield.js';
 import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP } from './const.js';
 import { BULLWHIP, BOOMERANG, AKLYS } from './objects.js';
 import { M1_NOHANDS, M1_NOTAKE } from './monsters.js';
@@ -136,8 +136,18 @@ export async function dofire() {
     }
 
     /* if autoquiver is disabled or has failed, prompt for missile */
-    if (!obj)
-        throw new Error('dofire(): doquiver_core("fire") not ported yet');
+    if (!obj) {
+        /* in case we're using ^A to repeat prior 'f' command, don't
+           use direction of previous throw as getobj()'s choice here */
+        game.in_doagain = 0;
+
+        /* this gives its own feedback about populating the quiver slot */
+        res = await doquiver_core("fire");
+        if (res !== ECMD_OK && res !== ECMD_TIME)
+            return res;
+
+        obj = game.uquiver;
+    }
 
     if (game.uquiver && is_ammo(game.uquiver) && (game.iflags?.fireassist ?? true)
         && !skip_fireassist) {
