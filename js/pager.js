@@ -22,6 +22,7 @@ import { canspotmon, vobj_at } from './display.js';
 import { cansee } from './vision.js';
 import { m_at, closed_door, is_pool, is_lava } from './makemon.js';
 import { t_at } from './trap.js';
+import { engr_at } from './engrave.js';
 import { x_monnam, ARTICLE_NONE } from './do_name.js';
 import { pmname } from './do_name.js';
 import { distant_name, doname } from './objnam.js';
@@ -225,8 +226,65 @@ function look_at_monster(mtmp, x, y) {
     return buf;
 }
 
+// C ref: engrave.h spot_shows_engravings()
+function spot_shows_engravings(x, y) {
+    const typ = game.level.at(x, y).typ;
+    return typ === CORR || typ === ICE || typ === ROOM;
+}
+
+// C ref: display.c _map_location() -- which kind of glyph a spot in view
+// shows when no monster is displayed there: object, trap, engraving or
+// the background
+function map_location_kind(x, y) {
+    const covers = is_pool(x, y) || is_lava(x, y); /* covers_objects() */
+    let trap, ep;
+
+    if (vobj_at(x, y) && !covers)
+        return 'object';
+    else if ((trap = t_at(x, y)) && trap.tseen && !covers)
+        return 'trap';
+    else if (spot_shows_engravings(x, y) && (ep = engr_at(x, y)) && ep.erevealed
+             && !covers)
+        return 'engraving';
+    return 'cmap';
+}
+
+// C ref: pager.c lookat() -- the glyph_is_cmap() case
+function cmap_lookat(symidx, x, y) {
+    const lev = game.level.at(x, y);
+
+    switch (symidx) {
+    case S_altar:
+        throw new Error('lookat(): altar description not ported yet');
+    case S_ndoor:
+        /* is_drawbridge_wall(x, y) >= 0: drawbridges aren't ported */
+        if ((lev.doormask & ~D_TRAPPED) === D_BROKEN)
+            return "broken door";
+        return "doorway";
+    case S_cloud:
+        return "fog/vapor cloud"; /* Is_airlevel(): "cloudy area" */
+    case S_pool:
+    case S_water:
+    case S_lava:
+    case S_lavawall:
+    case S_ice:
+        throw new Error('lookat(): waterbody_name() not ported yet');
+    case S_stone:
+        if (!lev.seenv)
+            return "unexplored";
+        else if (game.u.uinwater)
+            throw new Error('lookat(): Underwater not ported yet');
+        else if (lev.typ === STONE || lev.typ === SCORR)
+            return "stone";
+        return defsyms_explanation[symidx];
+    default:
+        return defsyms_explanation[symidx];
+    }
+}
+
 // C ref: pager.c lookat() -- describe the glyph shown at <x,y>
 export function lookat(x, y) {
+    const lev = game.level.at(x, y);
     let buf = "";
 
     if (u_at(x, y)) { /* && canspotself() */
@@ -235,7 +293,6 @@ export function lookat(x, y) {
         throw new Error('lookat(): swallowed not ported yet');
     } else {
         const mtmp = m_at(x, y);
-        const lev = game.level.at(x, y);
 
         if (mtmp && mtmp.m_ap_type && cansee(x, y))
             throw new Error('lookat(): mimic appearance not ported yet');
@@ -243,15 +300,18 @@ export function lookat(x, y) {
             /* glyph_is_monster(glyph) */
             buf = look_at_monster(mtmp, x, y);
         } else if (cansee(x, y)) {
-            const otmp = vobj_at(x, y);
-            const trap = t_at(x, y);
-
-            if (otmp && !is_pool(x, y) && !is_lava(x, y)) {
-                buf = look_at_object(x, y, otmp); /* glyph_is_object() */
-            } else if (trap && trap.tseen) {
+            switch (map_location_kind(x, y)) {
+            case 'object':
+                buf = look_at_object(x, y, vobj_at(x, y));
+                break;
+            case 'trap':
                 throw new Error('lookat(): trap_description() not ported yet');
-            } else {
-                buf = defsyms_explanation[back_to_cmap(x, y)];
+            case 'engraving':
+                buf = "engraving";
+                break;
+            default:
+                buf = cmap_lookat(back_to_cmap(x, y), x, y);
+                break;
             }
         } else if (!lev.seenv && !lev.remembered_glyph) {
             /* glyph_is_unexplored(glyph) */
@@ -259,46 +319,13 @@ export function lookat(x, y) {
         } else {
             /* what the hero remembers here: only the background is
                worked out so far */
-            const trap = t_at(x, y);
-            if ((trap && trap.tseen) || vobj_at(x, y))
-                throw new Error('lookat(): remembered objects/traps not ported yet');
+            if (map_location_kind(x, y) !== 'cmap')
+                throw new Error('lookat(): remembered objects/traps/engravings not ported yet');
             let idx = back_to_cmap(x, y);
             /* remembered lit floor out of sight is shown as dark room */
             if (idx === S_room && game.flags.dark_room !== false)
                 idx = S_darkroom;
-            if (idx === S_stone) {
-                /* S_stone */
-                if (!lev.seenv)
-                    buf = "unexplored";
-                else if (lev.typ === STONE || lev.typ === SCORR)
-                    buf = "stone";
-                else
-                    buf = defsyms_explanation[idx];
-            } else if (idx === S_ndoor) {
-                buf = ((lev.doormask & ~D_TRAPPED) === D_BROKEN)
-                      ? "broken door" : "doorway";
-            } else {
-                buf = defsyms_explanation[idx];
-            }
-        }
-        if (cansee(x, y) && !buf.length)
-            buf = "unexplored area";
-        /* lookat() cmap cases for a location in view */
-        if (cansee(x, y) && !(mtmp && canspotmon(mtmp))) {
-            const idx = back_to_cmap(x, y);
-            if (!vobj_at(x, y) && idx === S_ndoor)
-                buf = ((lev.doormask & ~D_TRAPPED) === D_BROKEN)
-                      ? "broken door" : "doorway";
-            else if (!vobj_at(x, y) && idx === S_stone)
-                buf = !lev.seenv ? "unexplored"
-                      : (lev.typ === STONE || lev.typ === SCORR) ? "stone"
-                      : defsyms_explanation[idx];
-            else if (!vobj_at(x, y) && (idx === S_pool || idx === S_water
-                                         || idx === S_lava || idx === S_lavawall
-                                         || idx === S_ice))
-                throw new Error('lookat(): waterbody_name() not ported yet');
-            else if (!vobj_at(x, y) && idx === S_altar)
-                throw new Error('lookat(): altar description not ported yet');
+            buf = cmap_lookat(idx, x, y);
         }
     }
     return buf;
