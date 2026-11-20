@@ -102,7 +102,7 @@ export async function newgame() {
        at level 1 yet -- not ported yet (hack.c) */
 
     if (MON_AT(g.u.ux, g.u.uy))
-        mnexto(m_at(g.u.ux, g.u.uy), RLOC_NOMSG);
+        await mnexto(m_at(g.u.ux, g.u.uy), RLOC_NOMSG);
     makedog();
 
     await u_init_inventory_attrs();

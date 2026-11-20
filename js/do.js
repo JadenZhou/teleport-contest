@@ -243,7 +243,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* obj_delivery(FALSE) */
     if (g.migrating_objs)
         throw new Error('goto_level(): obj_delivery() not ported yet');
-    losedogs();
+    await losedogs();
     kill_genocided_monsters(); /* for those wiped out while in limbo */
     /*
      * Expire all timers that have gone off while away.  Must be

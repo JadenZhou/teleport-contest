@@ -59,6 +59,7 @@ import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon } from './display.js';
 import { set_apparxy } from './monmove.js';
+import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
 import { mpickobj } from './steal.js';
 import { add_to_minv } from './mkobj.js';
@@ -2391,19 +2392,6 @@ export function set_malign(mtmp) {
 }
 
 // ---- muse.c: random items for monsters ----
-// C ref: muse.c noteleport_level()
-function noteleport_level(mon) {
-    /* demon court in Gehennom prevent others from teleporting */
-    if (In_hell(game.u.uz) && !(is_dlord(mon.data) || is_dprince(mon.data)))
-        for (const m of game.level.monsters || [])
-            if (!m.dead && (is_dlord(m.data) || is_dprince(m.data)) && m !== mon)
-                return true;
-    /* natural no-teleport level */
-    if (game.level.flags.noteleport)
-        return true;
-    return false;
-}
-
 // C ref: muse.c rnd_defensive_item()
 export function rnd_defensive_item(mtmp) {
     const pm = mtmp.data;

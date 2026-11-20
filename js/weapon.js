@@ -14,6 +14,11 @@ import {
     P_BARE_HANDED_COMBAT, P_RIDING, P_CROSSBOW, P_BOW,
 } from './const.js';
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS } from './objects.js';
+import * as O from './objects.js';
+import { rnd, d } from './rng.js';
+import { P_AXE } from './const.js';
+import { is_weptool } from './mkobj.js';
+import { mon_hates_silver, mon_hates_blessings } from './mondata.js';
 import * as M from './monsters.js';
 import { spell_skilltype, skill_based_spellbook_id } from './spell.js';
 
@@ -154,4 +159,148 @@ export function skill_init(class_skill) {
 
     if (!game.u.uroleplay?.pauper) /* paupers lack advanced access to books */
         skill_based_spellbook_id();
+}
+
+/* C ref: mondata.h bigmonst(), thick_skinned(), is_wooden(); obj.h is_axe(),
+   greatest_erosion() */
+function bigmonst(ptr) { return ptr.msize >= M.MZ_LARGE; }
+function thick_skinned(ptr) { return (ptr.mflags1 & M.M1_THICK_HIDE) !== 0; }
+function is_wooden(ptr) { return ptr === M.mons[M.PM_WOOD_GOLEM]; }
+function is_axe(otmp) {
+    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
+            && objects[otmp.otyp].oc_skill === P_AXE);
+}
+function greatest_erosion(otmp) {
+    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
+}
+
+// C ref: weapon.c dmgval()
+/* Return the damage value of the object otmp when used against monster mon */
+export function dmgval(otmp, mon) {
+    let tmp = 0;
+    const otyp = otmp.otyp;
+    const ptr = mon.data;
+    const Is_weapon = (otmp.oclass === WEAPON_CLASS || is_weptool(otmp));
+
+    if (otyp === O.CREAM_PIE)
+        return 0;
+
+    if (bigmonst(ptr)) {
+        if (objects[otyp].oc_wldam)
+            tmp = rnd(objects[otyp].oc_wldam);
+        switch (otyp) {
+        case O.IRON_CHAIN:
+        case O.CROSSBOW_BOLT:
+        case O.MORNING_STAR:
+        case O.PARTISAN:
+        case O.RUNESWORD:
+        case O.ELVEN_BROADSWORD:
+        case O.BROADSWORD:
+            tmp++;
+            break;
+
+        case O.FLAIL:
+        case O.RANSEUR:
+        case O.VOULGE:
+            tmp += rnd(4);
+            break;
+
+        case O.ACID_VENOM:
+        case O.HALBERD:
+        case O.SPETUM:
+            tmp += rnd(6);
+            break;
+
+        case O.BATTLE_AXE:
+        case O.BARDICHE:
+        case O.TRIDENT:
+            tmp += d(2, 4);
+            break;
+
+        case O.TSURUGI:
+        case O.DWARVISH_MATTOCK:
+        case O.TWO_HANDED_SWORD:
+            tmp += d(2, 6);
+            break;
+        }
+    } else {
+        if (objects[otyp].oc_wsdam)
+            tmp = rnd(objects[otyp].oc_wsdam);
+        switch (otyp) {
+        case O.IRON_CHAIN:
+        case O.CROSSBOW_BOLT:
+        case O.MACE:
+        case O.SILVER_MACE:
+        case O.WAR_HAMMER:
+        case O.FLAIL:
+        case O.SPETUM:
+        case O.TRIDENT:
+            tmp++;
+            break;
+
+        case O.BATTLE_AXE:
+        case O.BARDICHE:
+        case O.BILL_GUISARME:
+        case O.GUISARME:
+        case O.LUCERN_HAMMER:
+        case O.MORNING_STAR:
+        case O.RANSEUR:
+        case O.BROADSWORD:
+        case O.ELVEN_BROADSWORD:
+        case O.RUNESWORD:
+        case O.VOULGE:
+            tmp += rnd(4);
+            break;
+
+        case O.ACID_VENOM:
+            tmp += rnd(6);
+            break;
+        }
+    }
+    if (Is_weapon) {
+        tmp += otmp.spe;
+        /* negative enchantment mustn't produce negative damage */
+        if (tmp < 0)
+            tmp = 0;
+    }
+
+    if (objects[otyp].oc_material <= O.LEATHER && thick_skinned(ptr))
+        /* thick-skinned or scaled creatures don't feel it */
+        tmp = 0;
+    if (ptr === M.mons[M.PM_SHADE])
+        throw new Error('dmgval(): shade_glare() not ported yet');
+
+    /* "very heavy iron ball"; weight increase is in increments */
+    if (otyp === O.HEAVY_IRON_BALL && tmp > 0)
+        throw new Error('dmgval(): heavy iron ball weight bonus not ported yet');
+
+    /* Put weapon vs. monster type damage bonuses in below: */
+    if (Is_weapon || otmp.oclass === GEM_CLASS || otmp.oclass === O.BALL_CLASS
+        || otmp.oclass === O.CHAIN_CLASS) {
+        let bonus = 0;
+
+        if (otmp.blessed && mon_hates_blessings(mon))
+            bonus += rnd(4);
+        if (is_axe(otmp) && is_wooden(ptr))
+            bonus += rnd(4);
+        if (objects[otyp].oc_material === O.SILVER && mon_hates_silver(mon))
+            bonus += rnd(20);
+        if (otmp.oartifact)
+            throw new Error('dmgval(): artifact_light()/spec_dbon() not ported yet');
+
+        tmp += bonus;
+    }
+
+    if (tmp > 0) {
+        /* It's debatable whether a rusted blunt instrument
+           should do less damage than a pristine one, since
+           it will hit with essentially the same impact, but
+           there ought to some penalty for using damaged gear
+           so always subtract erosion even for blunt weapons. */
+        tmp -= greatest_erosion(otmp);
+        if (tmp < 1)
+            tmp = 1;
+    }
+
+    return tmp;
 }

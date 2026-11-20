@@ -18,7 +18,7 @@ import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
 import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
-         is_elf, is_vampshifter } from './mondata.js';
+         is_elf, is_vampshifter, mon_hates_silver } from './mondata.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
@@ -242,11 +242,8 @@ export function dogfood(mon, obj) {
         if (obj.otyp === O.AMULET_OF_STRANGULATION
             || obj.otyp === O.RIN_SLOW_DIGESTION)
             return TABU;
-        if (objects[obj.otyp].oc_material === O.SILVER
-            && (is_vampshifter(mon) || is_undead(mptr) || mptr.mlet === M.S_IMP
-                || (mptr.mflags2 & M.M2_DEMON) || (mptr.mflags2 & M.M2_WERE)
-                || mptr === mons[M.PM_SHADE] || mptr.mlet === M.S_VAMPIRE))
-            throw new Error('dogfood(): mon_hates_silver() not ported yet');
+        if (mon_hates_silver(mon) && objects[obj.otyp].oc_material === O.SILVER)
+            return TABU;
         if (mptr === mons[M.PM_GELATINOUS_CUBE])
             throw new Error('dogfood(): is_organic() not ported yet');
         if (metallivorous(mptr))
@@ -327,8 +324,10 @@ export function can_touch_safely(mtmp, otmp) {
         return false;
     if (otyp === O.CORPSE && is_rider(mons[otmp.corpsenm]))
         return false;
-    if (objects[otyp].oc_material === O.SILVER)
-        throw new Error('can_touch_safely(): mon_hates_silver() not ported yet');
+    if (objects[otyp].oc_material === O.SILVER && mon_hates_silver(mtmp)
+        && (otyp !== O.BELL_OF_OPENING
+            || (mtmp.data.mflags3 & M.M3_COVETOUS) === 0 /* !is_covetous() */))
+        return false;
     if (otmp.oartifact)
         throw new Error('can_touch_safely(): touch_artifact() not ported yet');
     return true;

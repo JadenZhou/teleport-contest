@@ -97,6 +97,32 @@ export function is_vampshifter(mon) {
         || mon.cham === PM_VLAD_THE_IMPALER;
 }
 
+// C ref: mondata.c mon_hates_silver()
+/* True if specific monster is especially affected by silver weapons */
+export function mon_hates_silver(mon) {
+    return (is_vampshifter(mon) || hates_silver(mon.data));
+}
+
+// C ref: mondata.c hates_silver()
+/* True if monster-type is especially affected by silver weapons */
+export function hates_silver(ptr) {
+    return (is_were(ptr) || ptr.mlet === M.S_VAMPIRE || is_demon(ptr)
+            || ptr === M.mons[M.PM_SHADE]
+            || (ptr.mlet === M.S_IMP && ptr !== M.mons[M.PM_TENGU]));
+}
+
+// C ref: mondata.c mon_hates_blessings()
+/* True if specific monster is especially affected by blessed objects */
+export function mon_hates_blessings(mon) {
+    return (is_vampshifter(mon) || hates_blessings(mon.data));
+}
+
+// C ref: mondata.c hates_blessings()
+/* True if monster-type is especially affected by blessed objects */
+export function hates_blessings(ptr) {
+    return (is_undead(ptr) || is_demon(ptr));
+}
+
 // C ref: mondata.c set_mon_data()
 export function set_mon_data(mon, ptr) {
     const g = game;
