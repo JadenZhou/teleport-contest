@@ -10,7 +10,14 @@ import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path } from './vision.js';
-import { newsym } from './display.js';
+import { newsym, pline } from './display.js';
+import { splitobj, obj_extract_self } from './mkobj.js';
+import { distant_name, doname } from './objnam.js';
+import { Monnam } from './mhitm.js';
+import { mpickobj } from './steal.js';
+import { find_defensive, find_offensive, find_misc } from './muse.js';
+import { mattacku } from './mhitu.js';
+import { visible_region_at, create_gas_cloud } from './region.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -39,7 +46,7 @@ import {
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
-    COLNO, ROWNO, IS_OBSTRUCTED, MFAST,
+    COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR } from './artilist.js';
@@ -360,7 +367,7 @@ function distfleeck(mtmp, out) {
 }
 
 // C ref: priest.c in_your_sanctuary()
-function in_your_sanctuary(mon, x, y) {
+export function in_your_sanctuary(mon, x, y) {
     if (!game.level.flags?.has_temple) return false;
     throw new Error('in_your_sanctuary(): temples not ported yet');
 }
@@ -451,43 +458,6 @@ function can_fog(mtmp) {
     return false;
 }
 
-// ── C ref: muse.c find_defensive() (the early-outs) ──
-function find_defensive(mtmp, tryescape) {
-    game.m_defensive = null;
-    game.m_has_defense = 0;
-    if (is_animal(mtmp.data) || mindless(mtmp.data))
-        return false;
-    if (!tryescape && dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > 25)
-        return false;
-    throw new Error('find_defensive() not ported yet');
-}
-// ── C ref: muse.c find_misc() (the early-outs) ──
-function find_misc(mtmp) {
-    const u = game.u;
-    game.m_misc = null;
-    game.m_has_misc = 0;
-    if (is_animal(mtmp.data) || mindless(mtmp.data))
-        return false;
-    if (u.uswallow && mtmp === u.ustuck)
-        return false;
-    if (dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > 36)
-        return false;
-    throw new Error('find_misc() not ported yet');
-}
-// ── C ref: muse.c find_offensive() (the early-outs) ──
-function find_offensive(mtmp) {
-    const u = game.u;
-    game.m_offensive = null;
-    game.m_has_offense = 0;
-    if (mtmp.mpeaceful || is_animal(mtmp.data) || mindless(mtmp.data)
-        || nohands(mtmp.data))
-        return false;
-    if (u.uswallow)
-        return false;
-    if (in_your_sanctuary(mtmp, 0, 0))
-        return false;
-    throw new Error('find_offensive() not ported yet');
-}
 // ── C ref: mhitu.c ranged_attk_available() ──
 function ranged_attk_available(mtmp) {
     for (const a of mtmp.data.mattk) {
@@ -509,6 +479,13 @@ function m_respond(mtmp) {
         throw new Error('aggravate() not ported yet');
 }
 
+// C ref: monmove.c m_arrival()
+function m_arrival(mon) {
+    mon.mstrategy &= ~STRAT_ARRIVE; /* always reset */
+
+    return -1;
+}
+
 // ── C ref: monmove.c dochug() ──
 export async function dochug(mtmp) {
     const u = game.u;
@@ -523,8 +500,11 @@ export async function dochug(mtmp) {
 
     mdat = mtmp.data;
 
-    if (mtmp.mstrategy & STRAT_ARRIVE)
-        throw new Error('dochug(): m_arrival() not ported yet');
+    if (mtmp.mstrategy & STRAT_ARRIVE) {
+        const res = m_arrival(mtmp);
+        if (res >= 0)
+            return res;
+    }
     /* check for waitmask status change */
     if ((mtmp.mstrategy & STRAT_WAITFORU)
         && (m_canseeu(mtmp) || mtmp.mhp < mtmp.mhpmax))
@@ -685,7 +665,7 @@ export async function dochug(mtmp) {
              * same time -dlc
              */
             if (u.uswallow && mtmp === u.ustuck) /* engulfing_u(mtmp) */
-                throw new Error('dochug(): mattacku() not ported yet');
+                return await mattacku(mtmp);
             return 0;
         case MMOVE_DIED: /* monster died */
             return 1;
@@ -701,8 +681,10 @@ export async function dochug(mtmp) {
                                   || (Conflict() && resist_conflict_nyi()))) {
         if (((d.inrange && !d.scared) || panicattk) && !noattacks(mdat)
             /* [is this hp check really needed?] */
-            && (Upolyd() ? u.mh : u.uhp) > 0)
-            throw new Error('dochug(): mattacku() not ported yet');
+            && (Upolyd() ? u.mh : u.uhp) > 0) {
+            if (await mattacku(mtmp))
+                return 1; /* monster died (e.g. exploded) */
+        }
         if (mtmp.wormno)
             throw new Error('dochug(): wormhitu() not ported yet');
     }
@@ -833,7 +815,7 @@ function blocking_terrain(x, y) {
 }
 
 // ── C ref: mthrowu.c m_lined_up() / lined_up() ──
-function lined_up(mtmp) {
+export function lined_up(mtmp) {
     const u = game.u;
     const tx = mtmp.mux, ty = mtmp.muy;
     const ignore_boulders = (throws_rocks(mtmp.data)
@@ -1402,12 +1384,21 @@ function m_postmove_effect(mtmp) {
 }
 // C ref: monmove.c m_everyturn_effect()
 export function m_everyturn_effect(mtmp) {
-    if (mtmp.data === mons[M.PM_FOG_CLOUD])
-        throw new Error('m_everyturn_effect(): create_gas_cloud() not ported yet');
+    const is_u = (mtmp === game.youmonst);
+    const x = is_u ? game.u.ux : mtmp.mx,
+          y = is_u ? game.u.uy : mtmp.my;
+
+    if (mtmp.data === mons[M.PM_FOG_CLOUD]) {
+        /* don't leave a vapor cloud if some other gas cloud is already
+           present, or when flowing under closed doors so that visibility
+           changes aren't mixed with messages about doing such */
+        if (!closed_door(x, y) && !visible_region_at(x, y))
+            create_gas_cloud(x, y, 1, 0); /* harmless vapor */
+    }
 }
 
 // ── C ref: monmove.c postmov() ──
-function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
+async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
                  can_tunnel, can_unlock, can_open) {
     /* notice_mon(mtmp): a11y.mon_notices is off by default */
 
@@ -1461,7 +1452,7 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             if (corpse_eater(ptr))
                 throw new Error('postmov(): meatcorpse() not ported yet');
 
-            if (mpickstuff(mtmp))
+            if (await mpickstuff(mtmp))
                 mmoved = MMOVE_DONE;
 
             if (mtmp.minvis)
@@ -1480,7 +1471,7 @@ function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
     return mmoved;
 }
 // ── C ref: mon.c mpickstuff() ──
-function mpickstuff(mtmp) {
+async function mpickstuff(mtmp) {
     /* prevent shopkeepers from leaving the door of their shop */
     if (mtmp.isshk)
         throw new Error('mpickstuff(): inhishop() not ported yet');
@@ -1511,10 +1502,35 @@ function mpickstuff(mtmp) {
             const carryamt = can_carry(mtmp, otmp);
             if (carryamt === 0)
                 continue;
-            throw new Error('mpickstuff(): splitobj()/mpickobj() not ported yet');
+            /* handle cases where the critter can only get some */
+            let otmp3 = otmp;
+            if (carryamt !== otmp.quan) {
+                otmp3 = splitobj(otmp, carryamt);
+            }
+            if (cansee(mtmp.mx, mtmp.my)) {
+                /* call distant_name() for its possible side-effects even
+                   if the result won't be printed; do it before the extract
+                   from floor and subsequent pickup by mtmp */
+                const otmpname = distant_name(otmp, doname);
+
+                if (game.flags?.verbose)
+                    await pline(`${Monnam(mtmp)} picks up ${otmpname}.`); /* pline_mon() */
+            }
+            obj_extract_self(otmp3); /* remove from floor */
+            mpickobj(mtmp, otmp3); /* may merge and free otmp3 */
+            /* let them try to equip it on the next turn */
+            check_gear_next_turn(mtmp);
+            newsym(mtmp.mx, mtmp.my);
+            return true; /* pick only one object */
         }
     }
     return false;
+}
+
+// C ref: mon.c check_gear_next_turn()
+/* monster has acquired an item; let it try to equip it on its next move */
+function check_gear_next_turn(mon) {
+    mon.misc_worn_check = (mon.misc_worn_check || 0) | I_SPECIAL;
 }
 
 function webmaker(ptr) {

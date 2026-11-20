@@ -3,7 +3,8 @@
 // invent.c carry_obj_effects(); worn.c extract_from_minvent()
 
 import { game } from './gstate.js';
-import { add_to_minv, obj_extract_self, place_object } from './mkobj.js';
+import { add_to_minv, obj_extract_self, place_object, unknow_object } from './mkobj.js';
+import { canseemon } from './monmove.js';
 import * as O from './objects.js';
 import { cansee } from './vision.js';
 import { newsym, pline } from './display.js';
@@ -12,6 +13,7 @@ import { Monnam } from './mhitm.js';
 import { stackobj } from './invent.js';
 import { flooreffects, obj_no_longer_held } from './do.js';
 import { droppables } from './dogmove.js';
+import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN } from './const.js';
 
 // C ref: invent.c carry_obj_effects()
 function carry_obj_effects(obj) {
@@ -44,8 +46,22 @@ export function mpickobj(mtmp, otmp) {
        and if it's eventually dropped in a shop, shk will claim it */
     otmp.no_charge = 0;
     /* some object handling is only done if mtmp isn't a pet */
-    if (!mtmp.mtame)
-        throw new Error('mpickobj(): non-pet pickup (unknow_object()) not ported yet');
+    if (!mtmp.mtame) {
+        /* if monst is unseen, some info hero knows about this object becomes
+           lost; continual pickup and drop by pets makes this too annoying if
+           it is applied to them; when engulfed (where monster can't be seen
+           because vision is disabled), or when held (or poly'd and holding)
+           while blind, behave as if the monster can be 'seen' by touch */
+        if (!canseemon(mtmp) && mtmp !== game.u.ustuck)
+            unknow_object(otmp);
+        /* if otmp has flags set for how it left hero's inventory, change
+           those flags; if thrown, now stolen; if previously dropped, now
+           forgotten */
+        if (otmp.how_lost === LOST_THROWN)
+            otmp.how_lost = LOST_STOLEN;
+        else if (otmp.how_lost === LOST_DROPPED)
+            otmp.how_lost = LOST_NONE;
+    }
     /* Must do carrying effects on object prior to add_to_minv() */
     carry_obj_effects(otmp);
     /* add_to_minv() might free otmp [if merged with something else],
