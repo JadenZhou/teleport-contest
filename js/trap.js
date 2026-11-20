@@ -828,8 +828,8 @@ async function trapeffect_pit(mtmp, trap, trflags) {
         }
         await mselftouch(mtmp, "Falling, ", false);
         if (wearing_iron_shoes(mtmp)) relevant_spikes = false;
-        if (mtmp.mhp < 1 || await thitm(0, mtmp, null,
-                                        rnd(relevant_spikes ? 10 : 6), false))
+        if (mtmp.mhp < 1 /* DEADMONSTER(mtmp) */
+            || await thitm(0, mtmp, null, rnd(relevant_spikes ? 10 : 6), false))
             trapkilled = true;
 
         return trapkilled ? Trap_Killed_Mon : mtmp.mtrapped
