@@ -20,10 +20,7 @@ import { mons, PM_LONG_WORM, PM_KNIGHT, M1_HUMANOID, MZ_SMALL, MZ_LARGE,
          PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { is_swimmer, is_flyer, is_floater } from './mondata.js';
 
-/* C ref: func_tab.h ECMD_OK, ECMD_TIME, ECMD_CANCEL */
-const ECMD_OK = 0x00;
-const ECMD_TIME = 0x01;
-const ECMD_CANCEL = 0x04;
+import { ECMD_OK, ECMD_TIME, ECMD_CANCEL } from './const.js';
 
 function uhave(prop) {
     const p = game.u.uprops[prop];
