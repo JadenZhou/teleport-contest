@@ -494,6 +494,20 @@ export function mergable(otmp, /* potential 'into' stack */
     return true;
 }
 
+// C ref: invent.c stackobj()
+/* try to merge obj with another object on the floor at its spot; the
+   pile (level.objects[x][y] via nexthere) is read top first from the
+   floor chain game.level.objects */
+export function stackobj(obj) {
+    for (const otmp of (game.level.objects || []).slice()) {
+        if (otmp.ox !== obj.ox || otmp.oy !== obj.oy
+            || otmp.where !== 'OBJ_FLOOR')
+            continue;
+        if (otmp !== obj && merged({ otmp: obj, obj: otmp }))
+            break;
+    }
+}
+
 // C ref: invent.c merged() -- 'r' is { otmp, obj } (C: potmp, pobj);
 // returns 1 when obj was merged into otmp
 export function merged(r) {

@@ -12,7 +12,11 @@ import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
     In_hell, builds_up, at_dgn_entrance, level_difficulty,
 } from './dungeon.js';
-import { In_endgame, Is_waterlevel, Is_airlevel } from './const.js';
+import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR } from './const.js';
+import * as O from './objects.js';
+import { is_pool, is_lava, u_at } from './makemon.js';
+import { t_at, is_pit, is_hole } from './trap.js';
+import { cansee } from './vision.js';
 import { PM_TOURIST } from './monsters.js';
 import { more_experienced, newexplevel } from './exper.js';
 import { check_special_room } from './hack.js';
@@ -384,6 +388,74 @@ function record_achievement(achidx) {
     if (u.uachieved.includes(achidx))
         return;
     u.uachieved.push(achidx);
+}
+
+// C ref: do.c flooreffects() -- only the plain case, where nothing
+// happens to the object, is ported; boulders filling pits or pools, lava
+// and water damage, objects tumbling into the hero's pit, globs, altars
+// and potions on hot ground stop with a not-ported error
+/* returns TRUE if obj is gone (or out of play), FALSE if the caller
+   should place it on the floor */
+export async function flooreffects(obj, /* the object landing on the floor */
+                                   x, y, /* map coordinates for spot where it is landing */
+                                   verb) { /* "fall", "drop", "land", &c */
+    const g = game;
+    let t;
+    const res = false;
+
+    void verb;
+    if (obj.where !== 'OBJ_FREE')
+        throw new Error('flooreffects: obj not free');
+
+    /* make sure things like water_damage() have no pointers to follow:
+       obj->nobj = obj->nexthere = 0 -- JS floor objects aren't chained */
+    /* erode_obj() (called from water_damage() or lava_damage()) needs
+       bhitpos, but that was screwing up wand zapping that called us from
+       rloco(), so we now restore bhitpos before we return */
+    const save_bhitpos = g.bhitpos;
+    g.bhitpos = { x, y };
+
+    if (obj.otyp === O.BOULDER && (is_pool(x, y) || is_lava(x, y))) {
+        throw new Error('flooreffects(): boulder_hits_pool() not ported yet');
+    } else if (obj.otyp === O.BOULDER && (t = t_at(x, y)) !== null && t
+               && (is_pit(t.ttyp) || is_hole(t.ttyp))) {
+        throw new Error('flooreffects(): boulder filling a pit not ported yet');
+    } else if (is_lava(x, y)) {
+        throw new Error('flooreffects(): lava_damage() not ported yet');
+    } else if (is_pool(x, y)) {
+        throw new Error('flooreffects(): water_damage() not ported yet');
+    } else if (u_at(x, y) && (t = t_at(x, y))
+               && (is_pit(t.ttyp) || is_hole(t.ttyp))) {
+        /* uteetering_at_seen_pit(t) || uescaped_shaft(t) */
+        throw new Error('flooreffects(): objects tumbling into a pit not ported yet');
+    } else if (obj.globby) {
+        throw new Error('flooreffects(): obj_meld() not ported yet');
+    } else if (g.context?.mon_moving && IS_ALTAR(g.level.at(x, y).typ)
+               && cansee(x, y)) {
+        throw new Error('flooreffects(): doaltarobj() not ported yet');
+    } else if (obj.oclass === O.POTION_CLASS && (g.level.flags?.temperature || 0) > 0
+               && (g.level.at(x, y).typ === ROOM || g.level.at(x, y).typ === CORR)) {
+        throw new Error('flooreffects(): potions on hot ground not ported yet');
+    }
+
+    g.bhitpos = save_bhitpos;
+    return res;
+}
+
+// C ref: do.c obj_no_longer_held()
+export function obj_no_longer_held(obj) {
+    if (!obj) {
+        return;
+    } else if (obj.cobj && obj.cobj.length) { /* Has_contents(obj) */
+        for (const contents of obj.cobj)
+            obj_no_longer_held(contents);
+    }
+    switch (obj.otyp) {
+    case O.CRYSKNIFE:
+        /* Normal crysknife reverts to worm tooth when not held by hero
+         * or monster; fixed crysknife has only 10% chance of reverting. */
+        throw new Error('obj_no_longer_held(): crysknife reverting not ported yet');
+    }
 }
 
 // C ref: dungeon.c u_on_rndspot()

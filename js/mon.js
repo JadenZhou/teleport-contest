@@ -188,7 +188,10 @@ function mon_leaving_level(mon) {
     }
 }
 
-// C ref: steal.c relobj() -- only an empty inventory is ported
+// C ref: steal.c relobj() -- only an empty inventory is handled here:
+// m_detach() is synchronous, while the full port (steal.js relobj(), whose
+// mdrop_obj() can give a message) is async; switch to it once m_detach()
+// is made async for mondead()
 function relobj(mtmp, show, is_pet) {
     const omx = mtmp.mx, omy = mtmp.my;
 

@@ -34,6 +34,7 @@ import {
     PM_PESTILENCE,
 } from './monsters.js';
 import { merged } from './invent.js';
+import { obj_no_longer_held } from './do.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -654,7 +655,8 @@ export function mksobj_at(otyp, x, y, init, artif) {
 // C ref: mkobj.c place_object() -- the level's floor object chain (fobj)
 // is game.level.objects, newest first; per-square piles are read from it
 // in the same order (boulder-first pile ordering isn't ported yet).
-function place_object(otmp, x, y) {
+export function place_object(otmp, x, y) {
+    obj_no_longer_held(otmp);
     otmp.ox = x;
     otmp.oy = y;
     otmp.where = 'OBJ_FLOOR';
