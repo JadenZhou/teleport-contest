@@ -53,6 +53,7 @@ import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
          LOCK_PICK, EGG, CORPSE } from './objects.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
+import { relobj } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect, canseemon,
          mon_track_clear } from './monmove.js';
 
@@ -191,24 +192,11 @@ function mon_leaving_level(mon) {
     }
 }
 
-// C ref: steal.c relobj() -- only an empty inventory is handled here:
-// m_detach() is synchronous, while the full port (steal.js relobj(), whose
-// mdrop_obj() can give a message) is async; switch to it once m_detach()
-// is made async for mondead()
-function relobj(mtmp, show, is_pet) {
-    const omx = mtmp.mx, omy = mtmp.my;
-
-    void is_pet;
-    if (mtmp.isgd)
-        throw new Error('relobj(): vault guard gold not ported yet');
-    if (mtmp.minvent && mtmp.minvent.length)
-        throw new Error('relobj(): mdrop_obj() not ported yet');
-
-    if (show && cansee(omx, omy))
-        newsym(omx, omy);
-}
-
 // C ref: mon.c m_detach()
+// The inventory drop for a death (steal.c relobj(), whose mdrop_obj() can
+// give a message) is async: with due_to_death this returns a promise that
+// mondead() awaits; mongone() (due_to_death FALSE, called from level
+// creation) runs synchronously.
 function m_detach(mtmp, mptr, due_to_death) {
     if (mtmp.mleashed)
         throw new Error('m_detach(): m_unleash() not ported yet');
@@ -222,28 +210,34 @@ function m_detach(mtmp, mptr, due_to_death) {
     mtmp.mhp = 0; /* simplify some tests: force mhp to 0 */
     if (mtmp.iswiz)
         throw new Error('m_detach(): wizdeadorgone() not ported yet');
+
+    const after_relobj = () => {
+        if (game.stealmid && mtmp.m_id === game.stealmid)
+            throw new Error('m_detach(): thiefdead() not ported yet');
+        if (mtmp.isshk)
+            throw new Error('m_detach(): shkgone() not ported yet');
+        if (mtmp.wormno)
+            throw new Error('m_detach(): wormgone() not ported yet');
+        /* In_endgame(&u.uz): MON_ENDGAME_FREE -- the endgame isn't reached */
+
+        mtmp.mstate = (mtmp.mstate || 0) | MON_DETACH;
+        game.purge_monsters = (game.purge_monsters || 0) + 1;
+
+        if (mtmp === game.u.usteed)
+            throw new Error('m_detach(): dismount_steed() not ported yet');
+    };
+
     if (due_to_death) {
         if (mtmp.data.msound === MS_NEMESIS)
             throw new Error('m_detach(): nemdead() not ported yet');
         if (mtmp.data.msound === MS_LEADER)
             throw new Error('m_detach(): leaddead() not ported yet');
         /* release (drop onto map) all objects carried by mtmp */
-        relobj(mtmp, 1, false); /* drop mtmp->minvent, issue newsym(mx,my) */
+        return relobj(mtmp, 1, false) /* drop mtmp->minvent, issue newsym(mx,my) */
+            .then(after_relobj);
     }
-
-    if (game.stealmid && mtmp.m_id === game.stealmid)
-        throw new Error('m_detach(): thiefdead() not ported yet');
-    if (mtmp.isshk)
-        throw new Error('m_detach(): shkgone() not ported yet');
-    if (mtmp.wormno)
-        throw new Error('m_detach(): wormgone() not ported yet');
-    /* In_endgame(&u.uz): MON_ENDGAME_FREE -- the endgame isn't reached */
-
-    mtmp.mstate = (mtmp.mstate || 0) | MON_DETACH;
-    game.purge_monsters = (game.purge_monsters || 0) + 1;
-
-    if (mtmp === game.u.usteed)
-        throw new Error('m_detach(): dismount_steed() not ported yet');
+    after_relobj();
+    return undefined;
 }
 
 // C ref: mon.c mlifesaver()
@@ -320,7 +314,7 @@ export async function mondead(mtmp) {
 
     /* remove 'mtmp' from play; it will stay on the fmon list until end of
        current move, then dmonsfree() will get rid of it */
-    m_detach(mtmp, mptr, true);
+    await m_detach(mtmp, mptr, true);
 }
 
 // C ref: mon.c corpse_chance()
