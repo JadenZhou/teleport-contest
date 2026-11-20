@@ -3,7 +3,9 @@
 //        xprname()
 
 import { game } from './gstate.js';
-import { pline } from './display.js';
+import { pline, newsym } from './display.js';
+import { obj_resists } from './dogmove.js';
+import { maybe_unhide_at } from './mon.js';
 import { doname } from './objnam.js';
 import * as O from './objects.js';
 import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
@@ -570,4 +572,36 @@ export function merged(r) {
         return 1;
     }
     return 0;
+}
+
+// C ref: invent.c delobj()
+/* destroy object in fobj chain (if unpaid, it remains on the bill) */
+export function delobj(obj) {
+    delobj_core(obj, false);
+}
+
+// C ref: invent.c delobj_core()
+/* destroy object; caller has control over whether to destroy something
+   that ordinarily shouldn't be destroyed */
+export function delobj_core(obj, force) {
+    /* obj_resists(obj,0,0) protects the Amulet, the invocation tools,
+       and Rider corpses */
+    if (!force && obj_resists(obj, 0, 0)) {
+        /* player might be doing something stupid, but we
+         * can't guarantee that.  assume special artifacts
+         * are indestructible via drawbridges, and exploding
+         * chests, and golem creation, and ...
+         */
+        obj.in_use = 0; /* in case caller has set this to 1 */
+        return;
+    }
+    const update_map = (obj.where === 'OBJ_FLOOR');
+    if (obj.where === 'OBJ_INVENT' || obj.unpaid || obj.cobj?.length)
+        throw new Error('delobj_core(): obfree() of carried/unpaid/container objects not ported yet');
+    obj_extract_self(obj);
+    if (update_map) { /* floor object's coordinates are always up to date */
+        maybe_unhide_at(obj.ox, obj.oy);
+        newsym(obj.ox, obj.oy);
+    }
+    /* obfree(obj, (struct obj *) 0): garbage collected */
 }

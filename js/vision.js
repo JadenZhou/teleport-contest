@@ -57,8 +57,17 @@ const cs_rmax0 = new Int16Array(ROWNO).fill(0);
 const cs_rmin1 = new Int16Array(ROWNO).fill(COLNO);
 const cs_rmax1 = new Int16Array(ROWNO).fill(0);
 
+// C ref: vision.c static vis_func/varg -- view_from()'s "func" callback
+let vis_func = null;
+let varg = null;
+
 function mark_visible_range(row, left, right) {
     if (left > right) return;
+    if (vis_func) {
+        for (let i = left; i <= right; i++)
+            vis_func(i, row, varg);
+        return;
+    }
     const rowp = game.cs_rows?.[row];
     if (!rowp) return;
     for (let i = left; i <= right; i++) rowp[i] = COULD_SEE;
@@ -365,12 +374,15 @@ function left_side(row, left_mark, right, limitsIdx) {
 }
 
 // C ref: vision.c view_from()
-function view_from(srow, scol, cs_rows, cs_left, cs_right, range = 0) {
+function view_from(srow, scol, cs_rows, cs_left, cs_right, range = 0,
+                   func = null, arg = null) {
     game.vis_start_col = scol;
     game.vis_start_row = srow;
     game.cs_rows = cs_rows;
     game.cs_left = cs_left;
     game.cs_right = cs_right;
+    vis_func = func;
+    varg = arg;
 
     let left, right;
     if (viz_clear[srow][scol]) {
@@ -403,6 +415,52 @@ function view_from(srow, scol, cs_rows, cs_left, cs_right, range = 0) {
         game.vis_step = -1;
         if (scol < COLNO - 1) right_side(nrow_up, scol, right, limitsIdx);
         if (scol) left_side(nrow_up, left, scol, limitsIdx);
+    }
+}
+
+// C ref: vision.c do_clear_area()
+/*
+ * Calculate all possible visible locations as viewed from the given location
+ * (srow,scol) within the range specified. Perform "func" with (x, y) args and
+ * additional argument "arg" for each square.
+ *
+ * If not centered on the hero, just forward arguments to view_from(); it
+ * will call "func" when necessary.  If the hero is the center, use the
+ * vision matrix and reduce extra work.
+ */
+export function do_clear_area(scol, srow, range, func, arg) {
+    /* If not centered on hero, do the hard work of figuring the area */
+    if (scol !== game.u.ux || srow !== game.u.uy) {
+        view_from(srow, scol, null, null, null, range, func, arg);
+        /* vis_func is only consulted by view_from()'s callees; clear it
+           so a later vision_recalc() marks could_see rows again */
+        vis_func = null;
+        varg = null;
+    } else {
+        let x, y, min_x, max_x, max_y, offset;
+        /* vision doesn't pass through water or clouds, detection should;
+           detecting(func) is False for every caller ported so far */
+        const override_vision = false;
+
+        if (range > 15 /* MAX_RADIUS */ || range < 1)
+            throw new Error(`do_clear_area:  illegal range ${range}`);
+        if (game.vision_full_recalc)
+            vision_recalc(0); /* recalc vision if dirty */
+        const limits = circle_start[range]; /* circle_ptr(range) */
+        if ((max_y = (srow + range)) >= ROWNO)
+            max_y = ROWNO - 1;
+        if ((y = (srow - range)) < 0)
+            y = 0;
+        for (; y <= max_y; y++) {
+            offset = circle_data[limits + Math.abs(y - srow)];
+            if ((min_x = (scol - offset)) < 1)
+                min_x = 1;
+            if ((max_x = (scol + offset)) >= COLNO)
+                max_x = COLNO - 1;
+            for (x = min_x; x <= max_x; x++)
+                if (couldsee(x, y) || override_vision)
+                    func(x, y, arg);
+        }
     }
 }
 

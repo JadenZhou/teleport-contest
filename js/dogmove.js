@@ -8,12 +8,13 @@
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
-import { cansee, couldsee, clear_path } from './vision.js';
+import { cansee, couldsee, clear_path, do_clear_area } from './vision.js';
 import { m_at, MON_AT, place_monster, is_pool, is_lava, sobj_at, u_at,
          may_passwall } from './makemon.js';
 import { t_at } from './trap.js';
 import { mattackm, max_passive_dmg } from './mhitm.js';
-import { mfndpos, monnear, mon_allowflags, check_gear_next_turn } from './mon.js';
+import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
+         m_consume_obj, mondied } from './mon.js';
 import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add,
          canseemon } from './monmove.js';
@@ -26,7 +27,7 @@ import { objects } from './objects.js';
 import { splitobj, obj_extract_self } from './mkobj.js';
 import { mpickobj, relobj } from './steal.js';
 import { distant_name, doname } from './objnam.js';
-import { newsym, pline } from './display.js';
+import { newsym, pline, mon_visible, canspotmon } from './display.js';
 import { Monnam } from './mhitm.js';
 import {
     MMOVE_NOTHING, MMOVE_MOVED, MMOVE_DIED, MMOVE_DONE, MTSZ,
@@ -519,14 +520,208 @@ function cursed_object_at(x, y) {
     return false;
 }
 
+// ── C ref: dogmove.c dog_nutrition() ──
+export function dog_nutrition(mtmp, obj) {
+    let nutrit;
+
+    /*
+     * It is arbitrary that the pet takes the same length of time to eat
+     * as a human, but gets more nutritional value.
+     */
+    if (obj.oclass === O.FOOD_CLASS) {
+        if (obj.otyp === O.CORPSE) {
+            mtmp.meating = 3 + (mons[obj.corpsenm].cwt >> 6);
+            nutrit = mons[obj.corpsenm].cnutrit;
+        } else {
+            mtmp.meating = objects[obj.otyp].oc_delay;
+            nutrit = objects[obj.otyp].oc_nutrition;
+        }
+        switch (mtmp.data.msize) {
+        case M.MZ_TINY:
+            nutrit *= 8;
+            break;
+        case M.MZ_SMALL:
+            nutrit *= 6;
+            break;
+        default:
+        case M.MZ_MEDIUM:
+            nutrit *= 5;
+            break;
+        case M.MZ_LARGE:
+            nutrit *= 4;
+            break;
+        case M.MZ_HUGE:
+            nutrit *= 3;
+            break;
+        case M.MZ_GIGANTIC:
+            nutrit *= 2;
+            break;
+        }
+        if (obj.oeaten)
+            throw new Error('dog_nutrition(): eaten_stat() not ported yet');
+    } else if (obj.oclass === O.COIN_CLASS) {
+        mtmp.meating = Math.trunc(obj.quan / 2000) + 1;
+        if (mtmp.meating < 0)
+            mtmp.meating = 1;
+        nutrit = Math.trunc(obj.quan / 20);
+        if (nutrit < 0)
+            nutrit = 0;
+    } else {
+        /* Unusual pet such as gelatinous cube eating odd stuff.
+         * meating made consistent with wild monsters in mon.c.
+         * nutrit made consistent with polymorphed player nutrit in
+         * eat.c.  (This also applies to pets eating gold.)
+         */
+        mtmp.meating = Math.trunc(obj.owt / 20) + 1;
+        nutrit = 5 * objects[obj.otyp].oc_nutrition;
+    }
+    return nutrit;
+}
+
+/* C ref: do_name.c noit_Monnam() -- Monnam() without "it" for an unseen
+   monster; x_monnam() with SUPPRESS_IT */
+function noit_Monnam(mtmp) {
+    if (!canspotmon(mtmp) && mtmp !== game.u.usteed)
+        throw new Error('noit_Monnam(): SUPPRESS_IT naming not ported yet');
+    return Monnam(mtmp);
+}
+
+// ── C ref: dogmove.c dog_eat() ──
+/* returns 2 if pet dies, otherwise 1 */
+export async function dog_eat(mtmp,
+                              obj, /* if unpaid, then thrown or kicked by hero */
+                              x,   /* dog's starting location, */
+                              y,   /* might be different from current */
+                              devour) {
+    const edog = mtmp.edog;
+    let nutrit;
+    let obj_name;
+
+    if (edog.hungrytime < game.moves)
+        edog.hungrytime = game.moves;
+    nutrit = dog_nutrition(mtmp, obj);
+
+    if (devour) {
+        if (mtmp.meating > 1)
+            mtmp.meating = Math.trunc(mtmp.meating / 2);
+        if (nutrit > 1)
+            nutrit = Math.trunc((nutrit * 3) / 4);
+    }
+    edog.hungrytime += nutrit;
+    mtmp.mconf = 0;
+    if (edog.mhpmax_penalty) {
+        /* no longer starving */
+        mtmp.mhpmax += edog.mhpmax_penalty;
+        edog.mhpmax_penalty = 0;
+    }
+    if (mtmp.mflee && mtmp.mfleetim > 1)
+        mtmp.mfleetim = Math.trunc(mtmp.mfleetim / 2);
+    if (mtmp.mtame < 20)
+        mtmp.mtame++;
+    if (x !== mtmp.mx || y !== mtmp.my) { /* moved & ate on same turn */
+        newsym(x, y);
+        newsym(mtmp.mx, mtmp.my);
+    }
+    if (mtmp.data === mons[M.PM_KILLER_BEE]
+        && obj.otyp === O.LUMP_OF_ROYAL_JELLY)
+        throw new Error('dog_eat(): bee_eat_jelly() not ported yet');
+
+    /* food items are eaten one at a time; entire stack for other stuff */
+    if (obj.quan > 1 && obj.oclass === O.FOOD_CLASS)
+        obj = splitobj(obj, 1);
+    if (obj.unpaid)
+        throw new Error('dog_eat(): unpaid food not ported yet');
+    if (is_pool(mtmp.mx, mtmp.my) && !game.u.uinwater /* !Underwater */) {
+        /* Don't print obj */
+        /* TODO: Reveal presence of sea monster (especially sharks) */
+    } else {
+        /* food is at monster's current location, <mx,my>;
+           <x,y> was monster's location at start of this turn;
+           they might be the same but will be different when
+           the monster is moving+eating on same turn */
+        const seeobj = cansee(mtmp.mx, mtmp.my),
+              sawpet = cansee(x, y) && mon_visible(mtmp);
+
+        /* Observe the action if either the food location or the pet
+           itself is in view.  When pet which was in view moves to an
+           unseen spot to eat the food there, avoid referring to that
+           pet as "it".  However, we want "it" if invisible/unsensed
+           pet eats visible food. */
+        if (sawpet || (seeobj && canspotmon(mtmp))) {
+            /* call distant_name() for possible side-effects even if the
+               result won't be printed */
+            obj_name = distant_name(obj, doname);
+            if (tunnels(mtmp.data))
+                await pline(`${noit_Monnam(mtmp)} digs in.`);
+            else
+                await pline(`${noit_Monnam(mtmp)} ${
+                    devour ? "devours" : "eats"} ${obj_name}.`);
+        } else if (seeobj) {
+            obj_name = distant_name(obj, doname);
+            await pline(`It ${devour ? "devours" : "eats"} ${obj_name}.`);
+        }
+    }
+    if (mtmp.data === mons[M.PM_RUST_MONSTER] && obj.oerodeproof) {
+        throw new Error('dog_eat(): rust monster spitting out rustproofing not ported yet');
+    } else {
+        /* It's a reward if it's DOGFOOD and the player dropped/threw it.
+           We know the player had it if invlet is set. -dlc */
+        if (dogfood(mtmp, obj) === DOGFOOD && obj.invlet) {
+            edog.apport += Math.trunc(200 / (edog.dropdist + game.moves
+                                             - edog.droptime));
+            if (edog.apport <= 0) {
+                /* impossible("dog_eat: pet apport <= 0 ...") */
+                edog.apport = 1;
+            }
+        }
+        await m_consume_obj(mtmp, obj);
+    }
+
+    return (mtmp.mhp < 1) ? 2 : 1; /* DEADMONSTER(mtmp) */
+}
+
+// ── C ref: dogmove.c dog_starve() ──
+async function dog_starve(mtmp) {
+    if (mtmp.mleashed && mtmp !== game.u.usteed)
+        throw new Error('dog_starve(): leashes not ported yet');
+    else if (cansee(mtmp.mx, mtmp.my))
+        await pline(`${Monnam(mtmp)} starves.`);
+    else
+        throw new Error('dog_starve(): You_feel() not ported yet');
+    await mondied(mtmp);
+}
+
 // ── C ref: dogmove.c dog_hunger() ──
-function dog_hunger(mtmp, edog) {
+/* hunger effects -- returns TRUE on starvation */
+async function dog_hunger(mtmp, edog) {
     if (game.moves > edog.hungrytime + DOG_WEAK) {
         if (!carnivorous(mtmp.data) && !herbivorous(mtmp.data)) {
             edog.hungrytime = game.moves + DOG_WEAK;
             /* but not too high; it might polymorph */
-        } else
-            throw new Error('dog_hunger(): hungry pets not ported yet');
+        } else if (!edog.mhpmax_penalty) {
+            /* starving pets are limited in healing */
+            const newmhpmax = Math.trunc(mtmp.mhpmax / 3);
+            mtmp.mconf = 1;
+            edog.mhpmax_penalty = mtmp.mhpmax - newmhpmax;
+            mtmp.mhpmax = newmhpmax;
+            if (mtmp.mhp > mtmp.mhpmax)
+                mtmp.mhp = mtmp.mhpmax;
+            if (mtmp.mhp < 1) { /* DEADMONSTER(mtmp) */
+                await dog_starve(mtmp);
+                return true;
+            }
+            if (cansee(mtmp.mx, mtmp.my))
+                await pline(`${Monnam(mtmp)} is confused from hunger.`);
+            else if (couldsee(mtmp.mx, mtmp.my))
+                throw new Error('dog_hunger(): beg() not ported yet');
+            else
+                throw new Error('dog_hunger(): You_feel() not ported yet');
+            /* stop_occupation(): occupations aren't ported yet */
+        } else if (game.moves > edog.hungrytime + DOG_STARVE
+                   || mtmp.mhp < 1) {
+            await dog_starve(mtmp);
+            return true;
+        }
     }
     return false;
 }
@@ -565,7 +760,7 @@ async function dog_invent(mtmp, edog, udist) {
                  /* starving pet is more aggressive about eating */
                  || (edog.mhpmax_penalty && edible === ACCFOOD))
                 && could_reach_item(mtmp, obj.ox, obj.oy))
-                throw new Error('dog_invent(): dog_eat() not ported yet');
+                return await dog_eat(mtmp, obj, omx, omy, false);
 
             const carryamt = can_carry(mtmp, obj);
             if (carryamt > 0 && !obj.cursed
@@ -774,13 +969,37 @@ function dog_goal(mtmp, edog, after, udist, whappr) {
                 gg.gy = edog.ogoal.y;
                 edog.ogoal.x = 0;
             } else {
-                throw new Error('dog_goal(): do_clear_area(wantdoor) not ported yet');
+                const fardist = { v: FARAWAY * FARAWAY };
+                gg.gx = gg.gy = FARAWAY; /* random */
+                do_clear_area(omx, omy, 9, wantdoor, fardist);
+
+                /* here gx == FARAWAY e.g. when dog is in a vault */
+                if (gg.gx === FARAWAY || (gg.gx === omx && gg.gy === omy)) {
+                    gg.gx = game.u.ux;
+                    gg.gy = game.u.uy;
+                } else if (edog) {
+                    edog.ogoal.x = gg.gx;
+                    edog.ogoal.y = gg.gy;
+                }
             }
         }
     } else if (edog) {
         edog.ogoal.x = 0;
     }
     return appr;
+}
+
+// C ref: dogmove.c wantdoor()
+/* do_clear_area client */
+function wantdoor(x, y, distance) {
+    let ndist;
+    const dist_ptr = distance;
+
+    if (dist_ptr.v > (ndist = distu(x, y))) {
+        game.gg.gx = x;
+        game.gg.gy = y;
+        dist_ptr.v = ndist;
+    }
 }
 
 // ── C ref: dogmove.c find_targ() ──
@@ -1055,6 +1274,7 @@ export async function dog_move(mtmp, after) {
     let i, j, k;
     const edog = (mtmp.mtame && mtmp.edog) ? mtmp.edog : null;
     const cursemsg = [];
+    let do_eat = false, eatobj = null;
     let nix, niy;      /* position mtmp is (considering) moving to */
     let nx, ny; /* temporary coordinates */
     let cnt, uncursedcnt, chcnt;
@@ -1067,7 +1287,7 @@ export async function dog_move(mtmp, after) {
 
     omx = mtmp.mx;
     omy = mtmp.my;
-    if (edog && dog_hunger(mtmp, edog))
+    if (edog && await dog_hunger(mtmp, edog))
         return MMOVE_DIED; /* starved */
 
     udist = distu(omx, omy);
@@ -1087,10 +1307,15 @@ export async function dog_move(mtmp, after) {
 
     if (edog) {
         j = await dog_invent(mtmp, edog, udist);
-        if (j === 2)
-            return helpless(mtmp) && mtmp.mhp < 1 ? MMOVE_DIED : MMOVE_DONE;
-        else if (j === 1)
-            throw new Error('dog_move(): eating pets not ported yet');
+        if (j === 2 /* || mon_offmap(mtmp) */)
+            return (mtmp.mhp < 1) ? MMOVE_DIED : MMOVE_DONE;
+        else if (j === 1) {
+            /* goto newdogpos; eating something: nix,niy == omx,omy, so
+               only newdogpos's leashed-pet branch could apply */
+            if (mtmp.mleashed && distu(omx, omy) > 4)
+                throw new Error('dog_move(): leashed pet kludge not ported yet');
+            return MMOVE_MOVED;
+        }
 
         whappr = (game.moves - edog.whistletime < 5);
     } else
@@ -1230,10 +1455,18 @@ export async function dog_move(mtmp, after) {
                         /* Note: our dog likes the food so much that he
                          * might eat it even when it conceals a cursed
                          * object */
-                        throw new Error('dog_move(): dog_eat() not ported yet');
+                        nix = nx;
+                        niy = ny;
+                        chi = i;
+                        do_eat = true;
+                        eatobj = obj;
+                        cursemsg[i] = false; /* not reluctant */
+                        break; /* goto newdogpos */
                     }
                 }
             }
+            if (do_eat)
+                break; /* goto newdogpos */
         }
         /* didn't find something to eat; if we saw a cursed item and
            aren't being forced to walk on it, usually keep looking */
@@ -1278,7 +1511,7 @@ export async function dog_move(mtmp, after) {
      * now's the time for ranged attacks. Note that the pet can move
      * after it performs its ranged attack. Should this be changed?
      */
-    if ((i = await pet_ranged_attk(mtmp, false)) !== MMOVE_NOTHING)
+    if (!do_eat && (i = await pet_ranged_attk(mtmp, false)) !== MMOVE_NOTHING)
         return i;
 
     /* newdogpos: */
@@ -1299,6 +1532,14 @@ export async function dog_move(mtmp, after) {
         if (cursemsg[chi] && canseemon(mtmp))
             throw new Error('dog_move(): reluctant step message not ported yet');
         mon_track_add(mtmp, omx, omy);
+        /* We have to know if the pet's going to do a combined eat and
+         * move before moving it, but it can't eat until after being
+         * moved.  Thus the do_eat flag.
+         */
+        if (do_eat) {
+            if (await dog_eat(mtmp, eatobj, omx, omy, false) === 2)
+                return MMOVE_DIED;
+        }
     } else if (mtmp.mleashed && distu(omx, omy) > 4) {
         throw new Error('dog_move(): leashed pet kludge not ported yet');
     }
