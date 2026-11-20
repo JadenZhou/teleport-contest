@@ -7,8 +7,11 @@ import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline, You_cant } from './display.js';
 import { vision_recalc } from './vision.js';
-import { tty_clear_nhwindow, tty_get_ext_cmd, tty_yn_function } from './wintty.js';
+import { tty_clear_nhwindow, tty_get_ext_cmd, tty_yn_function, tty_create_nhwindow,
+         tty_putstr, tty_display_nhwindow, tty_destroy_nhwindow } from './wintty.js';
 import { doride } from './steed.js';
+import { dopray } from './pray.js';
+import { dotalk } from './sounds.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
          MOVEMENTCMD } from './func_tab.js';
@@ -20,7 +23,7 @@ import { ddoinv } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
 export { domove };
-import { IS_DOOR, IS_FURNITURE, ECMD_OK, ECMD_TIME, ECMD_CANCEL,
+import { IS_DOOR, IS_FURNITURE, NHW_TEXT, ECMD_OK, ECMD_TIME, ECMD_CANCEL,
          ECMD_FAIL } from './const.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -61,6 +64,8 @@ export function extcmds_match(findstr, ecmflags) {
 const cmd_funcs = {
     doextcmd: () => doextcmd(),
     dosearch: () => dosearch(),
+    dopray: () => dopray(),
+    dotalk: () => dotalk(),
     donull: () => donull(),
     ddoinv: () => ddoinv(),
     wiz_level_change: () => wiz_level_change(),
@@ -440,8 +445,98 @@ function dxdy_moveok() {
     return true;
 }
 
-// C ref: cmd.c getdir() -- the direction prompt; the command queue,
-// the mouse ('_') and the cmdassist help window aren't ported yet
+// C ref: cmd.c cmd_from_func() -- a key bound to the command
+function cmd_from_func(fn) {
+    if (!cmd_bindings)
+        cmd_bindings = commands_init();
+    for (const [key, ec] of cmd_bindings)
+        if (ec.ef_funct === fn)
+            return key;
+    return 0;
+}
+
+// C ref: cmd.c show_direction_keys()
+function show_direction_keys(win, centerchar, nodiag) {
+    let buf;
+    const k = (fn) => visctrl(cmd_from_func(fn));
+
+    if (!centerchar)
+        centerchar = ' ';
+
+    if (nodiag) {
+        buf = `             ${k("do_move_north")}   `;
+        tty_putstr(win, 0, buf);
+        tty_putstr(win, 0, "             |   ");
+        buf = `          ${k("do_move_west")}- ${centerchar} -${k("do_move_east")}`;
+        tty_putstr(win, 0, buf);
+        tty_putstr(win, 0, "             |   ");
+        buf = `             ${k("do_move_south")}   `;
+        tty_putstr(win, 0, buf);
+    } else {
+        buf = `          ${k("do_move_northwest")}  ${k("do_move_north")}  ${k("do_move_northeast")}`;
+        tty_putstr(win, 0, buf);
+        tty_putstr(win, 0, "           \\ | / ");
+        buf = `          ${k("do_move_west")}- ${centerchar} -${k("do_move_east")}`;
+        tty_putstr(win, 0, buf);
+        tty_putstr(win, 0, "           / | \\ ");
+        buf = `          ${k("do_move_southwest")}  ${k("do_move_south")}  ${k("do_move_southeast")}`;
+        tty_putstr(win, 0, buf);
+    }
+}
+
+// C ref: cmd.c help_dir() -- explain choices if player has asked for
+// getdir() help or has given an invalid direction; spkey is always ESC
+// here (the prefix-key handling is #if 0 in C too)
+async function help_dir(sym, spkey, msg) {
+    const wiz_only_list = "EFGIVW";
+    const prefixhandling = (spkey !== 0x1b);
+    const dothat = "do that";
+    const nodiag = (game.u.umonnum === PM_GRID_BUG); /* NODIAG(u.umonnum) */
+    let buf = '';
+
+    const win = tty_create_nhwindow(NHW_TEXT);
+
+    if (msg) {
+        buf = `cmdassist: ${msg}`;
+        tty_putstr(win, 0, buf);
+        tty_putstr(win, 0, "");
+    }
+
+    if (!prefixhandling && sym && (/[@A-Za-z]/.test(String.fromCharCode(sym))
+                                   || sym === '['.charCodeAt(0))) {
+        /* '[': old 'cmdhelp' showed ESC as ^[ */
+        /* dowhatdoes_core(): key2extcmddesc() needs the command
+           descriptions, which aren't in func_tab.js yet */
+        void wiz_only_list;
+        throw new Error('help_dir(): dowhatdoes_core() not ported yet');
+    }
+
+    buf = `Valid direction keys${prefixhandling ? " to " : ""}${prefixhandling ? dothat : ""}${nodiag ? " in your current form" : ""} are:`;
+    tty_putstr(win, 0, buf);
+    show_direction_keys(win, !prefixhandling ? '.' : ' ', nodiag);
+
+    if (!prefixhandling) {
+        tty_putstr(win, 0, "");
+        tty_putstr(win, 0, "          <  up");
+        tty_putstr(win, 0, "          >  down");
+        /* NHKF_GETDIR_SELF is '.' with number_pad off */
+        buf = `       ${visctrl('.'.charCodeAt(0)).padStart(4)}  direct at yourself`;
+        tty_putstr(win, 0, buf);
+    }
+
+    if (msg) {
+        /* non-null msg means that this wasn't an explicit user request */
+        tty_putstr(win, 0, "");
+        tty_putstr(win, 0,
+                   "(Suppress this message with !cmdassist in config file.)");
+    }
+    await tty_display_nhwindow(win, false);
+    tty_destroy_nhwindow(win);
+    return true;
+}
+
+// C ref: cmd.c getdir() -- the direction prompt; the command queue and
+// the mouse ('_') aren't ported yet
 export async function getdir(s) {
     const u = game.u;
     let dirsym, is_mov;
@@ -464,10 +559,20 @@ export async function getdir(s) {
     } else if (ch === '_') { /* NHKF_GETDIR_MOUSE */
         throw new Error('getdir(): getpos() not ported yet');
     } else if (!(is_mov = movecmd(dirsym)) && !u.dz) {
+        let did_help = false, help_requested;
+
         if (!quitchars.includes(ch)) {
-            /* help_dir() for '?' or iflags.cmdassist (default on):
-               "Invalid direction key!" */
-            throw new Error('getdir(): help_dir() not ported yet');
+            help_requested = (ch === '?'); /* NHKF_GETDIR_HELP */
+            if (help_requested || game.iflags.cmdassist !== false) {
+                did_help = await help_dir((s && s[0] === '^') ? dirsym : 0,
+                                          0x1b, /* Cmd.spkeys[NHKF_ESC] */
+                                          help_requested ? null
+                                          : "Invalid direction key!");
+                if (help_requested)
+                    return await getdir(s); /* goto retry */
+            }
+            if (!did_help)
+                await pline("What a strange direction!");
         }
         return 0;
     } else if (is_mov && !dxdy_moveok()) {

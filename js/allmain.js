@@ -103,7 +103,7 @@ export async function newgame() {
         mnexto(m_at(g.u.ux, g.u.uy), RLOC_NOMSG);
     makedog();
 
-    u_init_inventory_attrs();
+    await u_init_inventory_attrs();
     /* the status line's gold: botl.c shows money_cnt(invent) */
     g._goldCount = money_cnt(g.invent);
     vision_recalc(0);
@@ -265,12 +265,31 @@ function is_pool_or_lava_at_u() {
 }
 
 // C ref: hack.c unmul()
-function unmul() {
+async function unmul(msg_override) {
     const g = game;
+    g.disp_botl = true;
     g.multi = 0; /* caller will usually have done this already */
-    /* nomovemsg / afternmv / Norep("You can move again."): not ported yet */
-    g.multi_reason = null;
+    if (msg_override)
+        g.nomovemsg = msg_override;
+    else if (!g.nomovemsg)
+        g.nomovemsg = "You can move again."; /* You_can_move_again */
+    if (g.nomovemsg) {
+        await pline(g.nomovemsg);
+        /* "You survived that attempt on your life" while Upolyd: not
+           reached */
+    }
     g.nomovemsg = null;
+    g.u.usleep = 0;
+    g.multi_reason = null;
+
+    if (g.afternmv) {
+        const f = g.afternmv;
+
+        /* clear afternmv before calling it (to override the
+           encumbrance hack for levitation--see weight_cap()) */
+        g.afternmv = null;
+        await f();
+    }
 }
 
 // C ref: allmain.c regen_pw()
@@ -527,9 +546,7 @@ export async function moveloop_core() {
                 if (g.multi < 0) {
                     /* runmode_delay_output(): display timing only */
                     if (++g.multi === 0) { /* finished yet? */
-                        /* unmul((char *) 0): the nomovemsg message and
-                           afternmv callback aren't ported yet */
-                        unmul();
+                        await unmul(null);
                     }
                 }
             }

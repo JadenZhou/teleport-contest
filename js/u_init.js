@@ -1314,12 +1314,12 @@ function hidden_gold(even_if_unknown) {
 
 // C ref: u_init.c u_init_carry_attr_boost()
 /* boost STR and CON until hero can carry inventory */
-function u_init_carry_attr_boost() {
+async function u_init_carry_attr_boost() {
     /* make sure you can carry all you have - especially for Tourists */
     while (inv_weight() > 0) {
-        if (adjattrib(A_STR, 1, true))
+        if (await adjattrib(A_STR, 1, true))
             continue;
-        if (adjattrib(A_CON, 1, true))
+        if (await adjattrib(A_CON, 1, true))
             continue;
         /* only get here when didn't boost strength or constitution */
         break;
@@ -1331,7 +1331,7 @@ function u_init_carry_attr_boost() {
 
    this function can be run multiple times and will overwrite the effects of
    previous runs */
-export function u_init_inventory_attrs() {
+export async function u_init_inventory_attrs() {
     const g = game;
     const u = g.u;
 
@@ -1351,8 +1351,8 @@ export function u_init_inventory_attrs() {
     u.umoney0 += hidden_gold(true); /* in case sack has gold in it */
 
     init_attr(75);    /* init attribute values */
-    vary_init_attr(); /* minor variation to attrs */
-    u_init_carry_attr_boost();
+    await vary_init_attr(); /* minor variation to attrs */
+    await u_init_carry_attr_boost();
 }
 
 // C ref: invent.c money_cnt()

@@ -24,6 +24,7 @@ import {
     TELEPORT_BANNER_C, PL_NSIZ, ROWNO, COLNO,
 } from './const.js';
 import { genl_player_setup } from './role.js';
+import { lowc } from './hacklib.js';
 import { row_refresh, bot, flush_screen, pline } from './display.js';
 import { extcmds_match } from './cmd.js';
 import { extcmdlist, ECM_NOFLAGS, ECM_IGNOREAC, ECM_EXACTMATCH } from './func_tab.js';
@@ -688,7 +689,54 @@ export async function tty_yn_function(query, resp, def) {
     t.toplin = TOPLINE_SPECIAL_PROMPT;
     t.inread++;
     if (resp) {
-        throw new Error('tty_yn_function: restricted responses not ported yet');
+        let preserve_case = false;
+        const allow_num = resp.includes('#');
+        let respbuf = resp;
+        /* normally we force lowercase, but if any uppercase letters
+           are present in the allowed response, preserve case;
+           check this before stripping the hidden choices */
+        if (/[A-Z]/.test(respbuf))
+            preserve_case = true;
+        /* any acceptable responses that follow <esc> aren't displayed */
+        const rb = respbuf.indexOf('\x1b');
+        if (rb >= 0)
+            respbuf = respbuf.slice(0, rb);
+        prompt = `${query.slice(0, 255)} [${respbuf}]`;
+        if (def)
+            prompt += ` (${def})`;
+        /* not pline("%s ", prompt);
+           trailing space is wanted here in case of reprompt */
+        prompt += ' ';
+        await update_topl(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
+
+        do { /* loop until we get valid input */
+            q = await readchar();
+            if (!preserve_case)
+                q = lowc(q);
+            if (q === '\x10') /* ctrl-P */
+                throw new Error('tty_yn_function: ^P message history not ported yet');
+            const digit_ok = allow_num && q >= '0' && q <= '9';
+            if (q === '\x1b') {
+                if (resp.includes('q'))
+                    q = 'q';
+                else if (resp.includes('n'))
+                    q = 'n';
+                else
+                    q = def;
+                break;
+            } else if (quitchars.includes(q)) {
+                q = def;
+                break;
+            }
+            if (!resp.includes(q) && !digit_ok) {
+                /* tty_nhbell(); */
+                q = '\0';
+            } else if (q === '#' || digit_ok) {
+                throw new Error('tty_yn_function: # count responses not ported yet');
+            }
+        } while (q === '\0');
+        /* clean_up: gt.toplines is rewritten to prompt + key2txt(q) */
+        game.toplines = prompt + q;
     } else {
         /* no restriction on allowed response, so always preserve case */
         prompt = `${query} `;
@@ -698,6 +746,8 @@ export async function tty_yn_function(query, resp, def) {
     /* clean_up: */
     t.inread--;
     t.toplin = TOPLINE_NON_EMPTY;
+    if (wins()[game.WIN_MESSAGE].cury)
+        tty_clear_nhwindow(game.WIN_MESSAGE);
     return q;
 }
 

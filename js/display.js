@@ -772,7 +772,7 @@ function covers_objects(x, y) {
 // C ref: display.h vobj_at() -> level.objects[x][y], the top of the pile.
 // game.level.objects is fobj (newest first); place_object() puts a
 // non-boulder under any boulders, so a boulder is on top when there is one.
-function vobj_at(x, y) {
+export function vobj_at(x, y) {
     let top = null;
     for (const o of game.level?.objects || []) {
         if (o.ox !== x || o.oy !== y || o.where !== 'OBJ_FLOOR') continue;
