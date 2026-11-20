@@ -9,13 +9,18 @@
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
-import { cansee, couldsee, clear_path } from './vision.js';
-import { newsym, pline } from './display.js';
+import { cansee, couldsee, clear_path, vision_recalc,
+         recalc_block_point } from './vision.js';
+import { newsym, pline, canseemon, canspotmon } from './display.js';
+import { Monnam } from './do_name.js';
+import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
+         Trap_Moved_Mon } from './trap.js';
 import { splitobj, obj_extract_self } from './mkobj.js';
 import { distant_name, doname } from './objnam.js';
-import { Monnam } from './mhitm.js';
 import { mpickobj } from './steal.js';
-import { find_defensive, find_offensive, find_misc } from './muse.js';
+import { You_hear } from './sounds.js';
+import { find_defensive, find_offensive, find_misc,
+         cures_stoning } from './muse.js';
 import { mattacku } from './mhitu.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
@@ -28,8 +33,8 @@ import {
 } from './makemon.js';
 import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls, haseyes,
          perceives, can_teleport, is_undead, is_human, is_vampshifter,
-         dmgtype } from './mondata.js';
-import { mfndpos, monnear, mon_allowflags } from './mon.js';
+         dmgtype, Resists_Elem } from './mondata.js';
+import { mfndpos, monnear, mon_allowflags, check_gear_next_turn } from './mon.js';
 import { gettrack } from './track.js';
 import { dog_move, can_carry, can_touch_safely, curr_mon_load,
          max_mon_load } from './dogmove.js';
@@ -48,8 +53,11 @@ import {
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
-    COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL, NEED_WEAPON,
-    NEED_HTH_WEAPON, P_PICK_AXE, P_POLEARMS, P_LANCE, MON_POLE_DIST,
+    COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL,
+    NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF, W_ARMG, STONE_RES,
+    MON_OFFMAP, MON_DETACH, MON_MIGRATING, MON_LIMBO,
+    NEED_WEAPON, NEED_HTH_WEAPON, P_PICK_AXE, P_POLEARMS, P_LANCE,
+    MON_POLE_DIST,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR, ART_SNICKERSNEE } from './artilist.js';
@@ -78,6 +86,21 @@ function Displaced() { return uhave(DISPLACED); }
 function Underwater() { return !!game.u.uinwater; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 function Hallucination() { return uhave(HALLUC); }
+/* C ref: youprop.h Deaf */
+function Deaf() {
+    const p = game.u.uprops[DEAF];
+    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
+}
+/* C ref: monst.h mon_offmap() */
+function mon_offmap(mon) {
+    return ((mon.mstate || 0)
+            & (MON_DETACH | MON_MIGRATING | MON_LIMBO | MON_OFFMAP)) !== 0;
+}
+/* C ref: pline.c You_see() -- the dreaming (Unaware) and Blind variants
+   aren't ported yet */
+async function You_see(msg) {
+    await pline(`You see ${msg}`);
+}
 
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
@@ -168,15 +191,6 @@ function is_lminion(mon) {
         /* mon_aligntyp(mon) == A_LAWFUL */
         && mon.data.maligntyp > 0;
 }
-/* C ref: display.h canseemon() -- infravision and worm tails aren't
-   ported yet; this is the plain line-of-sight case */
-export function canseemon(mon) {
-    const See_invisible = uhave(SEE_INVIS);
-    return cansee(mon.mx, mon.my) && (!mon.minvis || See_invisible)
-           && !mon.mundetected;
-}
-/* C ref: display.h canspotmon() -- telepathy/warning not ported yet */
-function canspotmon(mon) { return canseemon(mon); }
 /* C ref: monmove.h m_canseeu() */
 function m_canseeu(m) {
     return ((!Invis() || perceives(m.data))
@@ -186,7 +200,7 @@ function m_canseeu(m) {
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 /* C ref: mon.c m_in_air() */
-function m_in_air(mtmp) {
+export function m_in_air(mtmp) {
     return is_flyer(mtmp.data) || is_floater(mtmp.data)
         || ((mtmp.data.mflags1 & M.M1_CLING) !== 0
             && false /* has_ceiling() && mundetected: not ported yet */
@@ -340,12 +354,54 @@ function disturb(mtmp) {
 }
 
 // ── C ref: monmove.c monflee() ──
-function monflee(mtmp, fleetime, first, fleemsg) {
-    throw new Error('monflee() not ported yet');
+/* monster begins fleeing for the specified time, 0 means untimed flee
+ * if first, only adds fleetime if monster isn't already fleeing
+ * if fleemsg, prints a message about new flight, otherwise, caller should */
+export async function monflee(mtmp, fleetime, first, fleemsg) {
+    /* shouldn't happen; maybe warrants impossible()? */
+    if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+        return;
+
+    if (mtmp === game.u.ustuck)
+        throw new Error('monflee(): release_hero() not ported yet');
+
+    if (!first || !mtmp.mflee) {
+        /* don't lose untimed scare */
+        if (!fleetime)
+            mtmp.mfleetim = 0;
+        else if (!mtmp.mflee || mtmp.mfleetim) {
+            fleetime += (mtmp.mfleetim | 0);
+            /* ensure monster flees long enough to visibly stop fighting */
+            if (fleetime === 1)
+                fleetime++;
+            mtmp.mfleetim = Math.min(fleetime, 127);
+        }
+        if (!mtmp.mflee && fleemsg && canseemon(mtmp)
+            && mtmp.m_ap_type !== M_AP_FURNITURE
+            && mtmp.m_ap_type !== M_AP_OBJECT) {
+            /* unfortunately we can't distinguish between temporary
+               sleep and temporary paralysis, so both conditions
+               receive the same alternate message */
+            if (!mtmp.mcanmove || !mtmp.data.mmove) {
+                throw new Error('monflee(): Adjmonnam() not ported yet');
+            } else if (flees_light(mtmp)) {
+                throw new Error('monflee(): flees_light() messages not ported yet');
+            } else {
+                await pline(`${Monnam(mtmp)} turns to flee.`); /* pline_mon() */
+            }
+        }
+
+        if (mtmp.data === mons[M.PM_VROCK] && !mtmp.mspec_used)
+            throw new Error('monflee(): vrock create_gas_cloud() not ported yet');
+
+        mtmp.mflee = 1;
+    }
+    /* ignore recently-stepped spaces when made to flee */
+    mon_track_clear(mtmp);
 }
 
 // ── C ref: monmove.c distfleeck() ──
-function distfleeck(mtmp, out) {
+async function distfleeck(mtmp, out) {
     const u = game.u;
     let seescaryx, seescaryy;
     let sawscary = false;
@@ -375,7 +431,7 @@ function distfleeck(mtmp, out) {
                        || (flees_light(mtmp) && !bravegremlin)
                        || (!mtmp.mpeaceful && in_your_sanctuary(mtmp, 0, 0)))) {
         out.scared = 1;
-        monflee(mtmp, rnd(rn2(7) ? 10 : 100), true, true);
+        await monflee(mtmp, rnd(rn2(7) ? 10 : 100), true, true);
     } else
         out.scared = 0;
 }
@@ -494,6 +550,8 @@ function m_respond(mtmp) {
 }
 
 // C ref: monmove.c m_arrival()
+/* perform a special one-time action for a monster; returns -1 if nothing
+   special happened, 0 if monster uses up its turn, 1 if monster is killed */
 function m_arrival(mon) {
     mon.mstrategy &= ~STRAT_ARRIVE; /* always reset */
 
@@ -584,7 +642,7 @@ export async function dochug(mtmp) {
         throw new Error('dochug(): tactics() not ported yet');
 
     /* check distance and scariness of attacks */
-    distfleeck(mtmp, d);
+    await distfleeck(mtmp, d);
 
     /* search for and potentially use defensive or miscellaneous items. */
     if (find_defensive(mtmp, false)) {
@@ -658,7 +716,7 @@ export async function dochug(mtmp) {
             status = await m_move(mtmp, 0);
         /* if (mon_offmap(mtmp)) return 1: migration isn't ported yet */
         if (status !== MMOVE_DIED)
-            distfleeck(mtmp, d); /* recalc */
+            await distfleeck(mtmp, d); /* recalc */
 
         switch (status) { /* for pets, cases 0 and 3 are equivalent */
         case MMOVE_NOMOVES:
@@ -1023,8 +1081,14 @@ function searches_for_item(mon, obj) {
             return (obj.spe > 0);
         break;
     case O.FOOD_CLASS:
-        if (typ === O.CORPSE || typ === O.TIN)
-            throw new Error('searches_for_item(): cures_stoning() not ported yet');
+        if (typ === O.CORPSE)
+            return (((mon.misc_worn_check || 0) & W_ARMG) !== 0
+                    && (obj.corpsenm === M.PM_COCKATRICE
+                        || obj.corpsenm === M.PM_CHICKATRICE)) /* touch_petrifies */
+                || (!Resists_Elem(mon, STONE_RES) /* resists_ston() */
+                    && cures_stoning(mon, obj, false));
+        if (typ === O.TIN)
+            throw new Error('searches_for_item(): mcould_eat_tin() not ported yet');
         if (typ === O.EGG && obj.corpsenm >= 0)
             return (obj.corpsenm === M.PM_COCKATRICE
                     || obj.corpsenm === M.PM_CHICKATRICE); /* touch_petrifies */
@@ -1169,8 +1233,16 @@ export async function m_move(mtmp, after) {
 
     if (!mtmp.mtrack) mon_track_clear(mtmp);
 
-    if (mtmp.mtrapped)
-        throw new Error('m_move(): mintrap() not ported yet');
+    if (mtmp.mtrapped) {
+        const i = await mintrap(mtmp, NO_TRAP_FLAGS);
+
+        if (i === Trap_Killed_Mon) {
+            newsym(mtmp.mx, mtmp.my);
+            return MMOVE_DIED;
+        } /* it died */
+        if (i === Trap_Caught_Mon)
+            return MMOVE_NOTHING; /* still in trap, so didn't move */
+    }
     ptr = mtmp.data; /* mintrap() can change mtmp->data -dlc */
 
     if (mtmp.meating) {
@@ -1198,7 +1270,7 @@ export async function m_move(mtmp, after) {
         throw new Error('m_move(): long worms not ported yet');
     /* my dog gets special treatment */
     if (mtmp.mtame) {
-        return postmov(mtmp, ptr, omx, omy, await dog_move(mtmp, after),
+        return await postmov(mtmp, ptr, omx, omy, await dog_move(mtmp, after),
                        seenflgs, can_tunnel, can_unlock, can_open);
     }
 
@@ -1277,7 +1349,7 @@ export async function m_move(mtmp, after) {
         const found = m_search_items(mtmp, st);
         ggx = st.ggx; ggy = st.ggy; mmoved = st.mmoved; appr = st.appr;
         if (found)
-            return postmov(mtmp, ptr, omx, omy, mmoved,
+            return await postmov(mtmp, ptr, omx, omy, mmoved,
                            seenflgs, can_tunnel, can_unlock, can_open);
     }
 
@@ -1410,7 +1482,7 @@ export async function m_move(mtmp, after) {
     } else {
         /* (is_unicorn handled above); long worms aren't ported yet */
     }
-    return postmov(mtmp, ptr, omx, omy, mmoved,
+    return await postmov(mtmp, ptr, omx, omy, mmoved,
                    seenflgs, can_tunnel, can_unlock, can_open);
 }
 
@@ -1445,7 +1517,11 @@ export function m_everyturn_effect(mtmp) {
 
 // ── C ref: monmove.c postmov() ──
 async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
-                 can_tunnel, can_unlock, can_open) {
+                       can_tunnel, can_unlock, can_open) {
+    let trapret;
+    let canseeit = cansee(mtmp.mx, mtmp.my);
+    const didseeit = canseeit;
+
     /* notice_mon(mtmp): a11y.mon_notices is off by default */
 
     if (mmoved === MMOVE_MOVED) {
@@ -1458,9 +1534,14 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             throw new Error('postmov(): vamp_shift() not ported yet');
 
         newsym(omx, omy); /* update the old position */
-        /* trapret = mintrap(mtmp, NO_TRAP_FLAGS) */
-        if (game.level.traps?.some?.(t => t.tx === mtmp.mx && t.ty === mtmp.my))
-            throw new Error('postmov(): mintrap() not ported yet');
+        trapret = await mintrap(mtmp, NO_TRAP_FLAGS);
+        if (trapret === Trap_Killed_Mon || trapret === Trap_Moved_Mon) {
+            if (mtmp.mx)
+                newsym(mtmp.mx, mtmp.my);
+            return MMOVE_DIED; /* it died */
+        } else if (mon_offmap(mtmp)) {
+            return MMOVE_DONE;
+        }
         ptr = mtmp.data; /* in case mintrap() caused polymorph */
 
         /* open a door, or crash through it, if 'mtmp' can */
@@ -1468,8 +1549,79 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             && !passes_walls(ptr) /* doesn't need to open doors */
             && !can_tunnel) {     /* taken care of below */
             const here = lev.at(mtmp.mx, mtmp.my);
-            if ((here.doormask & (D_LOCKED | D_CLOSED | D_TRAPPED)) !== 0)
-                throw new Error('postmov(): door opening not ported yet');
+            const btrapped = (here.doormask & D_TRAPPED) !== 0;
+
+            /* used after monster 'who' has been moved to closed door spot
+               'where' which will now be changed to door state 'what' with
+               map update */
+            const UnblockDoor = (where, who, what) => {
+                where.doormask = what;
+                newsym(who.mx, who.my);
+                recalc_block_point(who.mx, who.my);
+                vision_recalc(0);
+                /* update cached value since it might change */
+                canseeit = didseeit || cansee(who.mx, who.my);
+            };
+
+            /* if mon has MKoT, disarm door trap; no message given */
+            if (btrapped /* && has_magic_key(mtmp) */)
+                throw new Error('postmov(): has_magic_key()/mb_trapped() not ported yet');
+            if ((here.doormask & (D_LOCKED | D_CLOSED)) !== 0
+                && amorphous(ptr)) {
+                if (game.flags.verbose && canseemon(mtmp))
+                    throw new Error('postmov(): oozing under a door message not ported yet');
+            } else if ((here.doormask & D_LOCKED) !== 0 && can_unlock) {
+                /* like the vampshift hack, there are sequencing
+                   issues when the monster is moved to the door's spot
+                   first then door handling plus feedback comes after */
+
+                UnblockDoor(here, mtmp, !btrapped ? D_ISOPEN : D_NODOOR);
+                /* btrapped: mb_trapped() -- not reached, see above */
+                /* Soundeffect(se_door_unlock_and_open, 50) */
+                if (game.flags.verbose) {
+                    if (canseeit && canspotmon(mtmp)) {
+                        await pline(`${Monnam(mtmp)} unlocks and opens a door.`);
+                    } else if (canseeit) {
+                        await You_see("a door unlock and open.");
+                    } else if (!Deaf()) {
+                        await You_hear("a door unlock and open.");
+                    }
+                }
+            } else if (here.doormask === D_CLOSED && can_open) {
+                UnblockDoor(here, mtmp, !btrapped ? D_ISOPEN : D_NODOOR);
+                /* btrapped: mb_trapped() -- not reached, see above */
+                /* Soundeffect(se_door_open, 100) */
+                if (game.flags.verbose) {
+                    if (canseeit && canspotmon(mtmp)) {
+                        await pline(`${Monnam(mtmp)} opens a door.`);
+                    } else if (canseeit) {
+                        await You_see("a door open.");
+                    } else if (!Deaf()) {
+                        await You_hear("a door open.");
+                    }
+                }
+            } else if ((here.doormask & (D_LOCKED | D_CLOSED)) !== 0) {
+                /* mfndpos guarantees this must be a doorbuster */
+                const mask = ((btrapped
+                               || ((here.doormask & D_LOCKED) !== 0 && !rn2(2)))
+                              ? D_NODOOR
+                              : D_BROKEN);
+                UnblockDoor(here, mtmp, mask);
+                /* btrapped: mb_trapped() -- not reached, see above */
+                /* Soundeffect(se_door_crash_open, 50) */
+                if (game.flags.verbose) {
+                    if (canseeit && canspotmon(mtmp)) {
+                        await pline(`${Monnam(mtmp)} smashes down a door.`);
+                    } else if (canseeit) {
+                        await You_see("a door crash open.");
+                    } else if (!Deaf()) {
+                        await You_hear("a door crash open.");
+                    }
+                }
+                /* if it's a shop door, schedule repair */
+                if (in_shop(mtmp.mx, mtmp.my))
+                    throw new Error('postmov(): add_damage() not ported yet');
+            }
         } else if (lev.at(mtmp.mx, mtmp.my).typ === IRONBARS) {
             throw new Error('postmov(): iron bars not ported yet');
         } /* doors and bars */
@@ -1573,11 +1725,6 @@ async function mpickstuff(mtmp) {
     return false;
 }
 
-// C ref: mon.c check_gear_next_turn()
-/* monster has acquired an item; let it try to equip it on its next move */
-function check_gear_next_turn(mon) {
-    mon.misc_worn_check = (mon.misc_worn_check || 0) | I_SPECIAL;
-}
 
 function webmaker(ptr) {
     return ptr === mons[M.PM_CAVE_SPIDER] || ptr === mons[M.PM_GIANT_SPIDER];

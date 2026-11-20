@@ -7,24 +7,38 @@
 // recalc_block_point(), Sokoban bookkeeping.
 
 import { game } from './gstate.js';
-import { rn2 } from './rng.js';
+import { rn2, rnl } from './rng.js';
 import { dunlev, dunlevs_in_dungeon, In_hell } from './dungeon.js';
 import {
     ROOM, CORR, DOOR, STONE, SCORR, SDOOR, DRAWBRIDGE_UP, STAIRS, LADDER,
     IS_FURNITURE, IS_WALL, IS_POOL, IS_ROOM, LAVAPOOL, In_quest,
     CORPSTAT_NONE, MM_NOCOUNTBIRTH, MM_NOMSG,
     TOOKPLUNGE, VIASITTING, HURTLING, isok,
+    DEAF, BOLT_LIM, FORCETRAP, FORCEBUNGLE,
 } from './const.js';
 import { mons, S_UNICORN, M2_JEWELS, S_VORTEX, M1_AMORPHOUS, M1_UNSOLID,
          M1_CLING, MZ_SMALL, PM_AIR_ELEMENTAL, PM_CAVE_SPIDER,
          PM_GIANT_SPIDER, PM_IRON_GOLEM, AD_SLEE, AD_FIRE, AD_MAGM,
+         M1_MINDLESS, M1_METALLIVORE, MZ_HUGE, PM_PIT_FIEND,
        } from './monsters.js';
 import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
-         resists_magm } from './mondata.js';
-import { STATUE } from './objects.js';
+         resists_magm, mon_knows_traps, mon_learns_traps,
+         mons_see_trap } from './mondata.js';
+import { STATUE, BOULDER } from './objects.js';
 import { rndmonnum_adj, mkcorpstat, add_to_container, weight } from './mkobj.js';
-import { makemon } from './makemon.js';
-import { mongone } from './mon.js';
+import { makemon, sobj_at } from './makemon.js';
+import { mongone, wake_nearto } from './mon.js';
+import { newsym, pline } from './display.js';
+import { cansee, couldsee } from './vision.js';
+import { m_in_air } from './monmove.js';
+import { canseemon } from './display.js';
+import { mon_nam, Monnam } from './do_name.js';
+import { You_hear } from './sounds.js';
+import { just_an } from './objnam.js';
+import { dist2 } from './hacklib.js';
+
+/* C ref: hack.h mdistu() */
+function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: mondata.h likes_gems(), is_unicorn()
 function likes_gems(ptr) { return (ptr.mflags2 & M2_JEWELS) !== 0; }
@@ -154,6 +168,205 @@ export function check_in_air(mtmp, trflags) {
 // C ref: trap.h fixed_tele_trap()
 export function fixed_tele_trap(t) {
     return (t.ttyp === TELEP_TRAP && isok(t.launch.x, t.launch.y));
+}
+
+// C ref: trap.h enum trap_result
+export const Trap_Effect_Finished = 0;
+export const Trap_Is_Gone = 0;
+export const Trap_Caught_Mon = 1;
+export const Trap_Killed_Mon = 2;
+export const Trap_Moved_Mon = 3; /* new location, or new level */
+
+/* C ref: youprop.h Deaf */
+function Deaf() {
+    const P = game.u.uprops;
+    return !!(P[DEAF].intrinsic || P[DEAF].extrinsic
+              || game.u.uroleplay?.deaf);
+}
+/* mondata.h */
+function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
+function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
+
+// C ref: trap.c trapeffect_sqky_board()
+async function trapeffect_sqky_board(mtmp, trap, trflags) {
+    /* tsnds[] / Soundeffect(): sound effects aren't ported */
+    if (mtmp === game.youmonst) {
+        throw new Error('trapeffect_sqky_board(): hero branch not ported yet');
+    } else {
+        const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
+
+        if (m_in_air(mtmp))
+            return Trap_Effect_Finished;
+        /* stepped on a squeaky board */
+        if (in_sight) {
+            if (!Deaf()) {
+                await pline(`A board beneath ${mon_nam(mtmp)} squeaks ${
+                    trapnote(trap, false)} loudly.`);
+                seetrap(trap);
+            } else if (!mindless(mtmp.data)) {
+                await pline(`${Monnam(mtmp)} stops momentarily and appears to cringe.`);
+            }
+        } else {
+            /* same near/far threshold as mzapmsg() */
+            const range = couldsee(mtmp.mx, mtmp.my) /* 9 or 5 */
+                ? (BOLT_LIM + 1) : (BOLT_LIM - 3);
+
+            await You_hear(`${trapnote(trap, false)} squeak ${
+                (mdistu(mtmp) <= range * range)
+                    ? "nearby" : "in the distance"}.`);
+        }
+        /* wake up nearby monsters */
+        await wake_nearto(mtmp.mx, mtmp.my, 40);
+    }
+    return Trap_Effect_Finished;
+}
+
+// C ref: trap.c trapeffect_selector()
+async function trapeffect_selector(mtmp, trap, trflags) {
+    switch (trap.ttyp) {
+    case SQKY_BOARD:
+        return trapeffect_sqky_board(mtmp, trap, trflags);
+    case ARROW_TRAP:
+    case DART_TRAP:
+    case ROCKTRAP:
+    case BEAR_TRAP:
+    case SLP_GAS_TRAP:
+    case RUST_TRAP:
+    case FIRE_TRAP:
+    case PIT:
+    case SPIKED_PIT:
+    case HOLE:
+    case TRAPDOOR:
+    case LEVEL_TELEP:
+    case MAGIC_PORTAL:
+    case TELEP_TRAP:
+    case WEB:
+    case STATUE_TRAP:
+    case MAGIC_TRAP:
+    case ANTI_MAGIC:
+    case LANDMINE:
+    case POLY_TRAP:
+    case ROLLING_BOULDER_TRAP:
+    case VIBRATING_SQUARE:
+        throw new Error(`trapeffect_selector(): trap type ${trap.ttyp} not ported yet`);
+    default:
+        /* impossible("%s encountered a strange trap of type %d.") */
+        break;
+    }
+    return Trap_Effect_Finished;
+}
+
+// C ref: trap.c trapnote()
+function trapnote(trap, noprefix) {
+    const tnnames = [
+        "C note",  "D flat", "D note",  "E flat",
+        "E note",  "F note", "F sharp", "G note",
+        "G sharp", "A note", "B flat",  "B note",
+    ];
+    const tn = tnnames[trap.tnote];
+    return (!noprefix ? just_an(tn) : '') + tn;
+}
+
+// C ref: trap.c seetrap()
+export function seetrap(trap) {
+    if (!trap.tseen) {
+        trap.tseen = 1;
+        newsym(trap.tx, trap.ty);
+    }
+}
+
+// C ref: trap.c m_easy_escape_pit()
+/* can monster escape from a pit easily */
+function m_easy_escape_pit(mtmp) {
+    return (mtmp.data === mons[PM_PIT_FIEND]
+            || mtmp.data.msize >= MZ_HUGE);
+}
+
+// C ref: trap.c mintrap()
+export async function mintrap(mtmp, mintrapflags) {
+    const trap = t_at(mtmp.mx, mtmp.my);
+    const mptr = mtmp.data;
+    let trap_result = Trap_Effect_Finished;
+
+    if (!trap) {
+        mtmp.mtrapped = 0;      /* perhaps teleported? */
+    } else if (mtmp.mtrapped) { /* is currently in the trap */
+        if (!trap.tseen && cansee(mtmp.mx, mtmp.my) && canseemon(mtmp)
+            && (is_pit(trap.ttyp) || trap.ttyp === BEAR_TRAP
+                || trap.ttyp === HOLE
+                || trap.ttyp === WEB)) {
+            /* If you come upon an obviously trapped monster, then
+               you must be able to see the trap it's in too. */
+            seetrap(trap);
+        }
+
+        if (!rn2(40) || (is_pit(trap.ttyp) && m_easy_escape_pit(mtmp))) {
+            if (sobj_at(BOULDER, mtmp.mx, mtmp.my)
+                && is_pit(trap.ttyp)) {
+                if (!rn2(2)) {
+                    throw new Error('mintrap(): fill_pit() not ported yet');
+                }
+            } else {
+                if (canseemon(mtmp)) {
+                    /* set_msg_xy(mtmp->mx, mtmp->my) */
+                    if (is_pit(trap.ttyp))
+                        await pline(`${Monnam(mtmp)} climbs ${
+                            m_easy_escape_pit(mtmp) ? "easily " : ""}out of the pit.`);
+                    else if (trap.ttyp === BEAR_TRAP || trap.ttyp === WEB)
+                        throw new Error('mintrap(): trapname() not ported yet');
+                }
+                mtmp.mtrapped = 0;
+            }
+        } else if (metallivorous(mptr)) {
+            if (trap.ttyp === BEAR_TRAP || trap.ttyp === SPIKED_PIT)
+                throw new Error('mintrap(): metallivore eating a trap not ported yet');
+        }
+        trap_result = mtmp.mtrapped ? Trap_Caught_Mon : Trap_Effect_Finished;
+    } else {
+        const tt = trap.ttyp;
+        let forcetrap = ((mintrapflags & FORCETRAP) !== 0);
+        const forcebungle = (mintrapflags & FORCEBUNGLE) !== 0;
+        /* monster has seen such a trap before */
+        const already_seen = (mon_knows_traps(mtmp, tt)
+                              || (tt === HOLE && !mindless(mptr)));
+
+        if (fixed_tele_trap(trap)) {
+            mintrapflags |= FORCETRAP;
+            forcetrap = true;
+        }
+
+        if (mtmp === game.u.usteed) {
+            ; /* true when called from dotrap, inescapable is not an option */
+        } else if (game.level.flags.sokoban_rules && (is_pit(tt) || is_hole(tt))
+                   && !trap.madeby_u) {
+            ; /* nothing here, the trap effects will handle messaging */
+        } else if (!forcetrap) {
+            if (floor_trigger(tt) && check_in_air(mtmp, mintrapflags)) {
+                return Trap_Effect_Finished;
+            }
+            if (already_seen && rn2(4) && !forcebungle)
+                return Trap_Effect_Finished;
+        }
+
+        mon_learns_traps(mtmp, tt);
+        mons_see_trap(trap);
+
+        /* Monster is aggravated by being trapped by you.
+           Recognizing who made the trap isn't completely
+           unreasonable; everybody has their own style. */
+        if (trap.madeby_u && rnl(5))
+            throw new Error('mintrap(): setmangry() not ported yet');
+
+        trap_result = await trapeffect_selector(mtmp, trap, mintrapflags);
+
+        /* mtmp can't stay hiding under an object if trapped in non-pit
+           (mtmp hiding under object at armed bear trap location, hero
+           zaps wand of locking or spell of wizard lock at spot triggering
+           the trap and trapping mtmp there) */
+        if (!(mtmp.mhp < 1) && mtmp.mtrapped)
+            throw new Error('mintrap(): maybe_unhide_at() not ported yet');
+    }
+    return trap_result;
 }
 
 /* mondata.h */

@@ -4,6 +4,7 @@
 // Contestants should port the full vision.c for complete parity.
 
 import { game } from './gstate.js';
+import { BLINDED } from './const.js';
 import {
     COLNO, ROWNO, DOOR, SDOOR, POOL,
     D_CLOSED, D_LOCKED, D_TRAPPED,
@@ -119,6 +120,20 @@ export function vision_reset() {
     }
     game._viz_rmin = null;
     game._viz_rmax = null;
+}
+
+// C ref: vision.c recalc_block_point() -- recalc if point should be
+// blocked or unblocked.  This port's viz_clear[] and row pointers come
+// from vision_reset()'s _blocks() scan, so redo that scan instead of C's
+// incremental block_point()/unblock_point() (fill_point()/dig_point());
+// the "could see it, so do a full recalc" rule is the same.
+export function recalc_block_point(x, y) {
+    const rmin = game._viz_rmin, rmax = game._viz_rmax;
+    vision_reset();
+    game._viz_rmin = rmin;
+    game._viz_rmax = rmax;
+    if (game.viz_array?.[y]?.[x])
+        game.vision_full_recalc = 1;
 }
 
 // Bresenham quadrant path functions (C ref: vision.c q1-q4_path)
@@ -414,6 +429,34 @@ export function vision_recalc(control = 0) {
         view_from(u.uy, u.ux, next, next_rmin, next_rmax);
     }
 
+    /* C ref: vision.c vision_recalc() -- the Blind case: calculate the
+       could_see array even when blind so that monsters can see you, even
+       if you can't see them; only update positions we used to be able to
+       see, then skip the normal update loop */
+    const bp = u.uprops?.[BLINDED];
+    if (control !== 2 && !u.uswallow && bp && (bp.intrinsic || bp.extrinsic)
+        && !bp.blocked) {
+        const temp_array = game.viz_array; /* set viz_array so newsym() will work */
+        game.viz_array = next;
+        game.active_buf = game.active_buf === 0 ? 1 : 0;
+        const old_rmin = game._viz_rmin, old_rmax = game._viz_rmax;
+        if (temp_array) {
+            for (let row = 0; row < ROWNO; row++) {
+                const old_row = temp_array[row];
+                const start = old_rmin ? Math.min(old_rmin[row], next_rmin[row]) : next_rmin[row];
+                const stop = old_rmax ? Math.max(old_rmax[row], next_rmax[row]) : next_rmax[row];
+                for (let col = start; col <= stop; col++)
+                    if (old_row[col] & IN_SIGHT)
+                        newsym(col, row);
+            }
+        }
+        /* skip: */
+        newsym(u.ux, u.uy); /* Make sure the hero shows up! */
+        game._viz_rmin = next_rmin;
+        game._viz_rmax = next_rmax;
+        return;
+    }
+
     // Compute IN_SIGHT from COULD_SEE + lighting
     const level = game.level;
     const ux = u.ux, uy = u.uy;
@@ -564,3 +607,4 @@ export function clear_path(col1, row1, col2, row2) {
     }
     return !!result;
 }
+

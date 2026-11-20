@@ -22,11 +22,13 @@ import { BOULDER, BUGLE, UNICORN_HORN, CORPSE, TIN, POT_FULL_HEALING,
          POT_CONFUSION, POT_SLEEPING, POT_ACID, SCR_EARTH,
          EXPENSIVE_CAMERA, POT_GAIN_LEVEL, BULLWHIP, WAN_MAKE_INVISIBLE,
          POT_INVISIBILITY, WAN_SPEED_MONSTER, POT_SPEED, WAN_POLYMORPH,
-         POT_POLYMORPH, BAG_OF_TRICKS } from './objects.js';
+         POT_POLYMORPH, BAG_OF_TRICKS, LARGE_BOX,
+         GLOB_OF_GREEN_SLIME } from './objects.js';
 import { Is_container } from './mkobj.js';
 import { STAIRS, LADDER, TELEP_TRAP, WEB, BEAR_TRAP, is_hole, is_pit,
          M_SEEN_REFL, M_SEEN_MAGR, M_SEEN_SLEEP, M_SEEN_FIRE, M_SEEN_COLD,
-         M_SEEN_ELEC, M_SEEN_ACID, POLY_TRAP, MFAST, NON_PM } from './const.js';
+         M_SEEN_ELEC, M_SEEN_ACID, POLY_TRAP, MFAST, NON_PM,
+         SEE_INVIS } from './const.js';
 
 /* C ref: muse.c MUSE_* (defensive) */
 const MUSE_SCR_TELEPORTATION = 1;
@@ -88,6 +90,15 @@ function touch_petrifies(ptr) {
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
+/* C ref: youprop.h See_invisible -- (HSee_invisible || ESee_invisible) */
+function See_invisible() {
+    const p = game.u.uprops[SEE_INVIS];
+    return !!(p.intrinsic || p.extrinsic);
+}
+/* C ref: mondata.c attacktype() */
+function attacktype(ptr, atyp) {
+    return ptr.mattk.some(a => a.aatyp === atyp);
+}
 /* C ref: monst.h m_seenres() */
 function m_seenres(mon, mask) { return (mon.seen_resistance || 0) & mask; }
 /* C ref: hack.h m_next2u() */
@@ -147,6 +158,21 @@ function m_sees_sleepy_soldier(mtmp) {
                 return true;
         }
     return false;
+}
+
+// C ref: muse.c cures_stoning()
+export function cures_stoning(mon, obj, tinok) {
+    if (obj.otyp === POT_ACID)
+        return true;
+    if (obj.otyp === GLOB_OF_GREEN_SLIME)
+        throw new Error('cures_stoning(): slimeproof() not ported yet');
+    if (obj.otyp !== CORPSE && (obj.otyp !== TIN || !tinok))
+        return false;
+    /* corpse, or tin that mon can open */
+    if (obj.corpsenm === NON_PM) /* empty/special tin */
+        return false;
+    return (obj.corpsenm === M.PM_LIZARD
+            || (mons[obj.corpsenm].mflags1 & M.M1_ACID) !== 0); /* acidic() */
 }
 
 // C ref: muse.c find_defensive()
@@ -586,19 +612,34 @@ export function find_misc(mtmp) {
             game.m_has_misc = MUSE_POT_GAIN_LEVEL;
         }
         if (game.m_has_misc === MUSE_BULLWHIP) continue;
-        if (obj.otyp === BULLWHIP && !mtmp.mpeaceful && game.uwep)
-            throw new Error('find_misc(): bullwhip disarm not ported yet');
+        if (obj.otyp === BULLWHIP && !mtmp.mpeaceful
+            /* the random test prevents whip-wielding
+               monster from attempting disarm every turn */
+            && game.uwep && !rn2(5) && obj === mtmp.mw /* MON_WEP() */
+            /* hero's location must be known and adjacent */
+            && u_at(mtmp.mux, mtmp.muy)
+            && m_next2u(mtmp)
+            /* don't bother if it can't work (this doesn't
+               prevent cursed weapons from being targeted) */
+            && !u.uswallow)
+            throw new Error('find_misc(): canletgo() for MUSE_BULLWHIP not ported yet');
         /* Note: peaceful/tame monsters won't make themselves
          * invisible unless you can see them.  Not really right, but...
          */
         if (game.m_has_misc === MUSE_WAN_MAKE_INVISIBLE) continue;
         if (obj.otyp === WAN_MAKE_INVISIBLE && obj.spe > 0 && !mtmp.minvis
-            && !mtmp.invis_blkd)
-            throw new Error('find_misc(): wand of make invisible not ported yet');
+            && !mtmp.invis_blkd && (!mtmp.mpeaceful || See_invisible())
+            && (!attacktype(mtmp.data, M.AT_GAZE) || mtmp.mcan)) {
+            game.m_misc = obj;
+            game.m_has_misc = MUSE_WAN_MAKE_INVISIBLE;
+        }
         if (game.m_has_misc === MUSE_POT_INVISIBILITY) continue;
         if (obj.otyp === POT_INVISIBILITY && !mtmp.minvis
-            && !mtmp.invis_blkd)
-            throw new Error('find_misc(): potion of invisibility not ported yet');
+            && !mtmp.invis_blkd && (!mtmp.mpeaceful || See_invisible())
+            && (!attacktype(mtmp.data, M.AT_GAZE) || mtmp.mcan)) {
+            game.m_misc = obj;
+            game.m_has_misc = MUSE_POT_INVISIBILITY;
+        }
         if (game.m_has_misc === MUSE_WAN_SPEED_MONSTER) continue;
         if (obj.otyp === WAN_SPEED_MONSTER && obj.spe > 0
             && mtmp.mspeed !== MFAST && !mtmp.isgd) {
@@ -623,8 +664,13 @@ export function find_misc(mtmp) {
             game.m_has_misc = MUSE_POT_POLYMORPH;
         }
         if (game.m_has_misc === MUSE_BAG) continue;
-        if (Is_container(obj) && obj.otyp !== BAG_OF_TRICKS)
-            throw new Error('find_misc(): MUSE_BAG (rn2(5), SchroedingersBox()) not ported yet');
+        if (Is_container(obj) && obj.otyp !== BAG_OF_TRICKS && !rn2(5)
+            && !(obj.otyp === LARGE_BOX && obj.spe === 1) /* SchroedingersBox() */
+            && !game.m_has_misc && obj.cobj?.length /* Has_contents() */
+            && !obj.olocked && !obj.otrapped) {
+            game.m_misc = obj;
+            game.m_has_misc = MUSE_BAG;
+        }
     }
     return !!game.m_has_misc;
 }

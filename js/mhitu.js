@@ -9,9 +9,9 @@ import { rn2, rnd, d, AC_VALUE } from './rng.js';
 import { cansee } from './vision.js';
 import { pline, bot, mon_visible } from './display.js';
 import { nomul } from './hack.js';
-import { Monnam } from './mhitm.js';
+import { Monnam, pronoun_gender, PRONOUN_HALLU } from './do_name.js';
 import { monnear } from './mon.js';
-import { canseemon } from './monmove.js';
+import { canseemon } from './display.js';
 import { find_offensive, use_offensive } from './muse.js';
 import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer,
@@ -111,23 +111,8 @@ function is_pole(otmp) {
 }
 /* C ref: obj.h is_wet_towel() */
 function is_wet_towel(o) { return o.otyp === TOWEL && (o.spe || 0) > 0; }
-// C ref: mondata.c pronoun_gender()
-function pronoun_gender(mtmp, pg_flags) {
-    const override_vis = (pg_flags & 1 /* PRONOUN_NO_IT */) !== 0,
-          hallu_rand = (pg_flags & 2 /* PRONOUN_HALLU */) !== 0;
-
-    if (hallu_rand && game.u.uprops[HALLUC].intrinsic)
-        return rn2(4); /* 0..3 */
-    if (!override_vis && !canspotmon(mtmp))
-        return 2;
-    if (is_neuter(mtmp.data))
-        return 2;
-    return ((mtmp.data.mflags1 & M.M1_HUMANOID) !== 0
-            || (mtmp.data.geno & M.G_UNIQ)
-            || (mtmp.data.mflags2 & M.M2_PNAME) !== 0) ? (mtmp.female ? 1 : 0) : 2;
-}
 /* C ref: you.h mhis() */
-export function mhis(mtmp) { return genders[pronoun_gender(mtmp, 2 /* PRONOUN_HALLU */)].his; }
+export function mhis(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].his; }
 
 // C ref: mhitu.c mswings_verb()
 /* strike types P|S|B: Pierce (pointed: stab) => "thrusts",

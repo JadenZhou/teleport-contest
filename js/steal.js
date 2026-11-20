@@ -4,12 +4,12 @@
 
 import { game } from './gstate.js';
 import { add_to_minv, obj_extract_self, place_object, unknow_object } from './mkobj.js';
-import { canseemon } from './monmove.js';
+import { canseemon } from './display.js';
 import * as O from './objects.js';
 import { cansee } from './vision.js';
 import { newsym, pline } from './display.js';
 import { distant_name, doname } from './objnam.js';
-import { Monnam } from './mhitm.js';
+import { Monnam } from './do_name.js';
 import { stackobj } from './invent.js';
 import { flooreffects, obj_no_longer_held } from './do.js';
 import { droppables } from './dogmove.js';
@@ -55,8 +55,11 @@ export function mpickobj(mtmp, otmp) {
         if (!canseemon(mtmp) && mtmp !== game.u.ustuck)
             unknow_object(otmp);
         /* if otmp has flags set for how it left hero's inventory, change
-           those flags; if thrown, now stolen; if previously dropped, now
-           forgotten */
+           those flags; if thrown, now stolen and autopickup might override
+           pickup_types and autopickup exceptions based on 'pickup_stolen'
+           rather than 'pickup_thrown'; if previously stolen, stays stolen;
+           if previously dropped, now forgotten and autopickup will operate
+           normally regardless of the setting for 'dropped_nopick' */
         if (otmp.how_lost === LOST_THROWN)
             otmp.how_lost = LOST_STOLEN;
         else if (otmp.how_lost === LOST_DROPPED)

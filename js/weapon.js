@@ -22,6 +22,7 @@ import * as O from './objects.js';
 import * as M from './monsters.js';
 import { spell_skilltype, skill_based_spellbook_id } from './spell.js';
 import { ART_SUNSWORD, ART_SNICKERSNEE } from './artilist.js';
+import { touch_artifact } from './artifact.js';
 import { is_weptool } from './mkobj.js';
 import { is_pool } from './makemon.js';
 import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
@@ -29,8 +30,8 @@ import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
 import { dist2 } from './hacklib.js';
 import { couldsee } from './vision.js';
 import { pline } from './display.js';
-import { canseemon } from './monmove.js';
-import { Monnam } from './mhitm.js';
+import { canseemon } from './display.js';
+import { Monnam } from './do_name.js';
 import { doname } from './objnam.js';
 import { which_armor } from './worn.js';
 
@@ -263,13 +264,6 @@ function artifact_light(obj) {
         && ((obj.owornmask || 0) & W_ARM) !== 0)
         return true;
     return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
-}
-// C ref: artifact.c touch_artifact() -- monsters touching non-artifacts
-function touch_artifact(obj, mon) {
-    if (!obj.oartifact) /* get_artifact(obj) == &artilist[ART_NONARTIFACT] */
-        return 1;
-    void mon;
-    throw new Error('touch_artifact(): artifacts not ported yet');
 }
 // C ref: artifact.c shade_glare()
 function shade_glare(obj) {

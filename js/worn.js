@@ -24,8 +24,8 @@ import { FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
 import { ART_SUNSWORD, ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { newsym, pline } from './display.js';
 import { cansee } from './vision.js';
-import { canseemon } from './monmove.js';
-import { Monnam, mon_nam } from './mhitm.js';
+import { canseemon } from './display.js';
+import { Monnam, mon_nam } from './do_name.js';
 import { distant_name, doname } from './objnam.js';
 import { curse } from './mkobj.js';
 import { strncmpi, strcmpi } from './hacklib.js';
