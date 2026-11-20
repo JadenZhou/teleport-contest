@@ -9,6 +9,15 @@ import { rn2 } from './rng.js';
 import { ing_suffix } from './hacklib.js';
 import { body_part } from './insight.js';
 import { welded } from './wield.js';
+import { stairway_at } from './display.js';
+import { an, vtense } from './objnam.js';
+import { t_at } from './trap.js';
+import { visible_region_at } from './region.js';
+import { is_pool, is_lava } from './makemon.js';
+import { engr_at } from './engrave.js';
+import { IS_DOOR, IS_FOUNTAIN, IS_THRONE, IS_SINK, IS_ALTAR, IS_GRAVE,
+         D_NODOOR, D_ISOPEN, D_BROKEN, ICE, DRAWBRIDGE_DOWN, DBWALL, TREE,
+         IRONBARS, ECMD_OK } from './const.js';
 import * as O from './objects.js';
 import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
 import {
@@ -28,7 +37,8 @@ import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj } from '
 import { itemactions } from './iactions.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
-    tty_select_menu, tty_message_menu, tty_yn_function,
+    tty_select_menu, tty_message_menu, tty_yn_function, tty_display_nhwindow,
+    tty_putstr, tty_destroy_nhwindow,
 } from './wintty.js';
 
 const invlet_basic = 52;
@@ -827,6 +837,204 @@ export async function silly_thing(word, otmp) {
 export function is_worn(otmp) {
     return (otmp.owornmask & (W_ARMOR | W_ACCESSORY | W_SADDLE | W_WEAPONS))
         ? true : false;
+}
+
+// C ref: stairs.c stairs_description()
+function stairs_description(sway, stcase) {
+    const tolev = sway.tolev;
+    const stairs = sway.isladder ? "ladder" : stcase ? "staircase" : "stairs";
+    const updown = sway.up ? "up" : "down";
+    let outbuf;
+
+    /* known_branch_stairs(): hero knows where the stairs go */
+    if (!(tolev.dnum !== game.u.uz.dnum && sway.u_traversed)) {
+        /* ordinary stairs or branch stairs to not-yet-visited branch */
+        outbuf = `${stairs} ${updown}`;
+        if (sway.u_traversed)
+            throw new Error('stairs_description(): " to level %d" not ported yet');
+    } else if (game.u.uz.dnum === 0 && game.u.uz.dlevel === 1 && sway.up) {
+        /* stairs up from level one are a special case */
+        if (game.u.uhave?.amulet)
+            throw new Error('stairs_description(): stairs up with the Amulet not ported yet');
+        outbuf = `${stairs} ${updown} out of the dungeon`;
+    } else {
+        throw new Error('stairs_description(): known branch stairs not ported yet');
+    }
+    return outbuf;
+}
+
+/* C ref: drawing.c defsyms[].explanation for the dungeon features that
+   dfeature_at() names */
+const dfeature_expl = {
+    S_ndoor: "doorway", S_vodoor: "open door", S_vcdoor: "closed door",
+    S_fountain: "fountain", S_throne: "opulent throne", S_lava: "molten lava",
+    S_sink: "sink", S_vodbridge: "lowered drawbridge",
+    S_vcdbridge: "raised drawbridge", S_grave: "grave", S_tree: "tree",
+};
+
+// C ref: invent.c dfeature_at()
+function dfeature_at(x, y) {
+    const lev = game.level.at(x, y);
+    const ltyp = lev.typ;
+    let cmap = null;
+    let dfeature = null;
+    const stway = stairway_at(x, y);
+
+    if (IS_DOOR(ltyp)) {
+        switch (lev.doormask) {
+        case D_NODOOR:
+            cmap = 'S_ndoor';
+            break; /* "doorway" */
+        case D_ISOPEN:
+            cmap = 'S_vodoor';
+            break; /* "open door" */
+        case D_BROKEN:
+            dfeature = "broken door";
+            break;
+        default:
+            cmap = 'S_vcdoor';
+            break; /* "closed door" */
+        }
+        /* is_drawbridge_wall(): drawbridges aren't ported */
+    } else if (IS_FOUNTAIN(ltyp))
+        cmap = 'S_fountain'; /* "fountain" */
+    else if (IS_THRONE(ltyp))
+        cmap = 'S_throne'; /* "opulent throne" */
+    else if (is_lava(x, y))
+        cmap = 'S_lava'; /* "molten lava" */
+    else if (ltyp === ICE)
+        throw new Error('dfeature_at(): ice_descr() not ported yet');
+    else if (is_pool(x, y))
+        dfeature = "pool of water";
+    else if (IS_SINK(ltyp))
+        cmap = 'S_sink'; /* "sink" */
+    else if (IS_ALTAR(ltyp))
+        throw new Error('dfeature_at(): altar description (a_gname()) not ported yet');
+    else if (stway)
+        dfeature = stairs_description(stway, true);
+    else if (ltyp === DRAWBRIDGE_DOWN)
+        cmap = 'S_vodbridge'; /* "lowered drawbridge" */
+    else if (ltyp === DBWALL)
+        cmap = 'S_vcdbridge'; /* "raised drawbridge" */
+    else if (IS_GRAVE(ltyp))
+        cmap = 'S_grave'; /* "grave" */
+    else if (ltyp === TREE)
+        cmap = 'S_tree'; /* "tree" */
+    else if (ltyp === IRONBARS)
+        dfeature = "set of iron bars";
+
+    if (cmap)
+        dfeature = dfeature_expl[cmap];
+    return dfeature;
+}
+
+// C ref: invent.c look_here() -- the hero's own (unswallowed, sighted)
+// look at what is here
+export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup is in progress */
+                                lookhere_flags) {
+    const u = game.u;
+    const bl = u.uprops?.[BLINDED];
+    const Blind = !!((bl?.intrinsic || bl?.extrinsic) && !bl?.blocked);
+    const verb = Blind ? "feel" : "see";
+    let dfeature = null;
+    let fbuf = '';
+    const picked_some = (lookhere_flags & 1) !== 0; /* LOOKHERE_PICKED_SOME */
+    let skip_dfeature = (lookhere_flags & 2) !== 0; /* LOOKHERE_SKIP_DFEATURE */
+
+    /* default pile_limit is 5; a value of 0 means "never skip" */
+    const pile_limit = game.flags?.pile_limit ?? 5;
+    const skip_objects = (pile_limit > 0 && obj_cnt >= pile_limit);
+    if (u.uswallow)
+        throw new Error('look_here(): looking inside an engulfer not ported yet');
+    if (!skip_objects) {
+        const reg = visible_region_at(u.ux, u.uy);
+        let trap = t_at(u.ux, u.uy);
+        if (trap && !trap.tseen)
+            trap = null;
+        if (reg || trap)
+            throw new Error('look_here(): "There is <region/trap> here." not ported yet');
+    }
+
+    const here = (game.level.objects || []).filter(
+        o => o.ox === u.ux && o.oy === u.uy && o.where === 'OBJ_FLOOR');
+    dfeature = dfeature_at(u.ux, u.uy);
+    if (dfeature && dfeature === "pool of water" && u.uinwater)
+        dfeature = null;
+
+    if (Blind)
+        throw new Error('look_here(): feeling what is here while blind not ported yet');
+
+    if (dfeature && !skip_dfeature) {
+        let article = 1; /* 0 => none, 1 => a/an */
+        const sp = dfeature.indexOf(' ');
+        if (dfeature === "molten lava" || dfeature === "iron bars"
+            || dfeature === "ice" || dfeature.startsWith("frozen ")
+            || (sp >= 0 && dfeature.slice(sp).toLowerCase() === " ice"))
+            article = 0;
+        if (article === 1)
+            dfeature = an(dfeature);
+        fbuf = `There ${vtense(dfeature, "are")} ${dfeature} here.`;
+    }
+
+    if (!here.length || is_lava(u.ux, u.uy)
+        || (is_pool(u.ux, u.uy) && !u.uinwater)) {
+        if (dfeature && !skip_dfeature)
+            await pline(fbuf);
+        read_engr_at(u.ux, u.uy); /* Eric Backus */
+        if (!skip_objects && (Blind || !dfeature))
+            await You(`${verb} no objects here.`);
+        return ECMD_OK;
+    }
+    /* we know there is something here */
+
+    if (skip_objects) {
+        throw new Error('look_here(): pile_limit summary not ported yet');
+    } else if (here.length === 1) {
+        /* only one object */
+        if (dfeature && !skip_dfeature)
+            await pline(fbuf);
+        read_engr_at(u.ux, u.uy); /* Eric Backus */
+        const otmp = here[0];
+        if (otmp.unpaid || game.level.flags?.has_shop)
+            throw new Error('look_here(): doname_with_price() not ported yet');
+        await You(`${verb} here ${doname(otmp)}.`);
+        game.iflags.last_msg = 'PLNMSG_ONE_ITEM_HERE';
+        if (otmp.otyp === O.CORPSE)
+            throw new Error('look_here(): feel_cockatrice() not ported yet');
+    } else {
+        await tty_display_nhwindow(game.WIN_MESSAGE, false);
+        const tmpwin = tty_create_nhwindow(NHW_MENU);
+        if (dfeature && !skip_dfeature) {
+            await tty_putstr(tmpwin, 0, fbuf);
+            await tty_putstr(tmpwin, 0, "");
+        }
+        await tty_putstr(tmpwin, 0, `${picked_some ? "Other things" : "Things"} that ${Blind ? "you feel" : "are"} here:`);
+        for (const otmp of here) {
+            if (otmp.otyp === O.CORPSE)
+                throw new Error('look_here(): will_feel_cockatrice() not ported yet');
+            if (otmp.unpaid || game.level.flags?.has_shop)
+                throw new Error('look_here(): doname_with_price() not ported yet');
+            await tty_putstr(tmpwin, 0, doname(otmp));
+        }
+        await tty_display_nhwindow(tmpwin, true);
+        await tty_destroy_nhwindow(tmpwin);
+        read_engr_at(u.ux, u.uy); /* Eric Backus */
+    }
+    return ECMD_OK;
+}
+
+// C ref: invent.c dolook() -- the ':' command; the MSGTYPE hiding has
+// nothing to hide while message types aren't configurable
+export async function dolook() {
+    return await look_here(0, 0);
+}
+
+/* C ref: engrave.c read_engr_at() -- only the nothing-to-read case is
+   ported yet */
+function read_engr_at(x, y) {
+    const ep = engr_at(x, y);
+    if (ep && ep.engr_txt?.actual_text?.[0])
+        throw new Error('read_engr_at(): reading an engraving not ported yet');
 }
 
 // C ref: invent.c dispinv_with_action()
