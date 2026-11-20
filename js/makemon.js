@@ -62,6 +62,7 @@ import { set_apparxy } from './monmove.js';
 import { newcham } from './mon.js';
 import { mpickobj } from './steal.js';
 import { add_to_minv } from './mkobj.js';
+import { m_dowear, which_armor } from './worn.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -686,12 +687,8 @@ export function goodpos(x, y, mtmp, gpflags) {
 }
 
 // ---- inventory helpers ----
-// C ref: worn.c which_armor()
-export function which_armor(mon, flag) {
-    for (const o of mon.minvent || [])
-        if (o.owornmask & flag) return o;
-    return null;
-}
+/* C ref: worn.c which_armor() lives in worn.js */
+export { which_armor };
 // C ref: invent.c findgold()
 function findgold(chain) {
     for (const o of chain || [])
@@ -1653,6 +1650,7 @@ export function makemon(ptr, x, y, mmflags) {
         ispriest: 0, isshk: 0, isgd: 0, mstrategy: 0, malign: 0,
         wormno: 0, mtrapseen: 0, mwandexp: 0, minvent: null, nmon: null,
         mundetected: 0, mavenge: 0, movement: 0, mspeed: 0,
+        misc_worn_check: 0, mw: null, weapon_check: 0 /* NO_WEAPON_WANTED */,
     };
 
     if (mmflags & MM_EGD) mtmp.egd = {};    /* newegd() */
@@ -1835,7 +1833,7 @@ export function makemon(ptr, x, y, mmflags) {
         if (is_armed(ptr))
             m_initweap(mtmp); /* equip with weapons / armor */
         m_initinv(mtmp); /* add on a few special items incl. more armor */
-        m_dowear(mtmp, true);
+        m_dowear(mtmp, true); /* creation: synchronous, see worn.js */
 
         if (!rn2(100) && is_domestic(ptr)
             && can_saddle(mtmp) && !which_armor(mtmp, W_SADDLE)) {
@@ -1934,7 +1932,8 @@ function makemon_sensemon(mtmp) {
    not saddled, not hallucinating) is ported here */
 function makemon_Amonnam(mtmp) {
     if (mtmp.mgivenname || mtmp.isshk || mtmp.ispriest || mtmp.isminion
-        || mtmp.minvis || (mtmp.data.geno & G_UNIQ) || mtmp.misc_worn_check)
+        || mtmp.minvis || (mtmp.data.geno & G_UNIQ)
+        || ((mtmp.misc_worn_check || 0) & W_SADDLE))
         throw new Error('makemon(): x_monnam() for named/special monsters not ported yet');
     const hal = game.u.uprops?.[HALLUC];
     if (hal && hal.intrinsic)
@@ -2153,8 +2152,6 @@ function get_wormno() {
 function initworm(worm, wseg_count) {
     game.wheads[worm.wormno] = worm;
 }
-// C ref: worn.c m_dowear() -- wearing state only, no rolls; not ported yet
-function m_dowear(mon, creation) { }
 // C ref: steed.c put_saddle_on_mon()
 export function put_saddle_on_mon(saddle, mtmp) {
     if (!can_saddle(mtmp) || which_armor(mtmp, W_SADDLE)) {

@@ -22,6 +22,8 @@ import { You_hear } from './sounds.js';
 import { find_defensive, find_offensive, find_misc,
          cures_stoning } from './muse.js';
 import { mattacku } from './mhitu.js';
+import { mon_wield_item, select_rwep, autoreturn_weapon,
+         m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud } from './region.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
@@ -54,9 +56,11 @@ import {
     COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL,
     NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF, W_ARMG, STONE_RES,
     MON_OFFMAP, MON_DETACH, MON_MIGRATING, MON_LIMBO,
+    NEED_WEAPON, NEED_HTH_WEAPON, P_PICK_AXE, P_POLEARMS, P_LANCE,
+    MON_POLE_DIST,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
-import { ART_EXCALIBUR } from './artilist.js';
+import { ART_EXCALIBUR, ART_SNICKERSNEE } from './artilist.js';
 import { In_hell } from './dungeon.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -126,6 +130,17 @@ function likes_lava(ptr) {
 }
 function metallivorous(ptr) { return (ptr.mflags1 & M.M1_METALLIVORE) !== 0; }
 function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
+/* C ref: obj.h is_pick(), is_pole() */
+function is_pick(otmp) {
+    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
+           && objects[otmp.otyp].oc_skill === P_PICK_AXE;
+}
+function is_pole(otmp) {
+    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
+           && (objects[otmp.otyp].oc_skill === P_POLEARMS
+               || objects[otmp.otyp].oc_skill === P_LANCE
+               || otmp.oartifact === ART_SNICKERSNEE);
+}
 function unique_corpstat(ptr) { return (ptr.geno & M.G_UNIQ) !== 0; }
 function corpse_eater(ptr) {
     const n = monsndx(ptr);
@@ -649,11 +664,28 @@ export async function dochug(mtmp) {
         throw new Error('mind_blast() not ported yet');
     }
 
-    /* If monster is nearby you, and has to wield a weapon, do so. */
+    /* If monster is nearby you, and has to wield a weapon, do so.  This
+     * costs the monster a move, of course.
+     */
     if ((!mtmp.mpeaceful || Conflict()) && d.inrange
         && dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) <= 8
-        && attacktype(mdat, M.AT_WEAP))
-        throw new Error('dochug(): mon_wield_item() not ported yet');
+        && attacktype(mdat, M.AT_WEAP)) {
+        /* The scared check is necessary.  Otherwise a monster that is
+         * one square near the player but fleeing into a wall would keep
+         * switching between pick-axe and weapon.  If monster is stuck
+         * in a trap, prefer ranged weapon (wielding is done in thrwmu).
+         * This may cost the monster an attack, but keeps the monster
+         * from switching back and forth if carrying both.
+         */
+        const mw_tmp = mtmp.mw || null; /* MON_WEP(mtmp) */
+        if (!(d.scared && mw_tmp && is_pick(mw_tmp))
+            && mtmp.weapon_check === NEED_WEAPON
+            && !(mtmp.mtrapped && !d.nearby && select_rwep(mtmp))) {
+            mtmp.weapon_check = NEED_HTH_WEAPON;
+            if (await mon_wield_item(mtmp) !== 0)
+                return 0;
+        }
+    }
 
     /*
      * PHASE THREE: Now the actual movement phase
@@ -890,8 +922,10 @@ export function lined_up(mtmp) {
 
 // ── C ref: monmove.c m_balks_at_approaching() ──
 function m_balks_at_approaching(oldappr, mtmp, pr) {
+    const mwep = mtmp.mw || null; /* MON_WEP(mtmp) */
     const x = mtmp.mx, y = mtmp.my, ux = mtmp.mux, uy = mtmp.muy;
     const edist = dist2(x, y, ux, uy);
+    let arw;
 
     pr.min = 0;
     pr.max = 0;
@@ -901,8 +935,21 @@ function m_balks_at_approaching(oldappr, mtmp, pr) {
         return oldappr;
 
     /* has ammo+launcher */
-    if (minv(mtmp).length)
-        throw new Error('m_balks_at_approaching(): m_has_launcher_and_ammo() not ported yet');
+    if (m_has_launcher_and_ammo(mtmp))
+        return -1;
+
+    /* is using a polearm and in range */
+    if (mtmp.mw && is_pole(mtmp.mw)
+        && edist <= MON_POLE_DIST)
+        return -1;
+
+    /* is using a throw-and-return weapon; provide min and max preferred range
+     */
+    if (mwep && (arw = autoreturn_weapon(mwep)) != null) {
+        pr.min = 2 * 2;
+        pr.max = arw.range;
+        return -2;
+    }
 
     /* can attack from distance, and hp loss or attack not used */
     if (ranged_attk_available(mtmp)
