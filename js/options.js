@@ -293,6 +293,10 @@ export function parseNethackrc(rc) {
                 else if (lname === 'showexp') result.flags.showexp = value;
                 else if (lname === 'time') result.flags.time = value;
                 else if (lname === 'verbose') result.flags.verbose = value;
+                /* C ref: optlist.h safe_pet -> flags.safe_dog */
+                else if (lname === 'safe_pet') result.flags.safe_dog = value;
+                else if (lname === 'autoopen') result.flags.autoopen = value;
+                else if (lname === 'mention_walls') result.flags.mention_walls = value;
                 // C ref: options.c boolean option case opt_female ("female",
                 // alias "male"); go.opt_initial is TRUE while reading the rc
                 else if (lname.length >= 3 && !strncmpi(lname, "female", Math.max(lname.length, 3)))

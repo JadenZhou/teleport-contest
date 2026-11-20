@@ -6,23 +6,20 @@
 
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
-import { pline } from './display.js';
-import { canspotmon } from './display.js';
-import { IS_OBSTRUCTED, CONFUSION, STUNNED, HALLUC } from './const.js';
+import { pline, canspotmon, You } from './display.js';
+import { IS_OBSTRUCTED } from './const.js';
 import { mons, PM_LONG_WORM, PM_LONG_WORM_TAIL } from './monsters.js';
 import { passes_walls } from './mondata.js';
 import { ART_STORMBRINGER } from './artilist.js';
 import { Monnam, y_monnam } from './do_name.js';
 import { highc } from './hacklib.js';
 import { monflee } from './monmove.js';
+import { is_safemon, end_running, in_rooms } from './hack.js';
+import { SHOPBASE, ROOMOFFSET } from './const.js';
 
-function uhave(prop) {
-    const p = game.u?.uprops?.[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 /* C ref: youprop.h Punished */
 function Punished() { return !!game.uball; }
-/* C ref: obj.h u_wield_art(), is_art() */
+/* C ref: obj.h u_wield_art() */
 function u_wield_art(art) { return !!(game.uwep && game.uwep.oartifact === art); }
 /* C ref: mondata.h is_longworm() */
 function is_longworm(ptr) {
@@ -31,25 +28,12 @@ function is_longworm(ptr) {
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
-// C ref: display.h is_safemon() (_is_safemon)
-export function is_safemon(mon) {
-    return !!(game.flags.safe_dog && mon && mon.mpeaceful && canspotmon(mon)
-              && !uhave(CONFUSION) && !uhave(HALLUC) && !uhave(STUNNED));
-}
-
-/* C ref: pline.c You() -- pline() with "You " prepended */
-async function You(line) {
-    await pline(`You ${line}`);
-}
-
-// C ref: hack.c end_running() -- the run/travel/multi-turn state it
-// clears isn't ported yet (context.run is never set)
-function end_running(and_travel) {
-    const ctx = game.context;
-    ctx.run = 0;
-    if (and_travel) { ctx.travel = ctx.travel1 = 0; ctx.mv = false; }
-    if (game.multi > 0)
-        game.multi = 0;
+// C ref: shk.c tended_shop() -- shopkeepers aren't created by the JS
+// port yet
+function tended_shop(sroom) {
+    if (sroom.resident)
+        throw new Error('tended_shop(): inhishop() not ported yet');
+    return false;
 }
 
 // C ref: uhitm.c do_attack()
@@ -61,9 +45,12 @@ export async function do_attack(mtmp) {
 
     /* This section of code provides protection against accidentally
      * hitting peaceful (like '@') and tame (like 'd') monsters.
-     * ... if its tame and safepet, (and protected 07/92) then we assume
-     * that you're not trying to attack. Instead, you'll usually just
-     * swap places if this is a movement command
+     * Protection is provided as long as player is not: blind, confused,
+     * hallucinating or stunned.
+     * changes by wwp 5/16/85
+     * More changes 12/90, -dkh-. if its tame and safepet, (and protected
+     * 07/92) then we assume that you're not trying to attack. Instead,
+     * you'll usually just swap places if this is a movement command
      */
     /* Intelligent chaotic weapons (Stormbringer) want blood */
     if (is_safemon(mtmp) && !ctx.forcefight) {
@@ -74,6 +61,9 @@ export async function do_attack(mtmp) {
              * if your pet is a long worm with a tail.
              * There's also a chance of displacing a "frozen" monster:
              * sleeping monsters might magically walk in their sleep.
+             * This block of code used to only be called for pets; now
+             * that it also applies to peacefuls, non-pets mustn't be
+             * forced to flee.
              */
             const foo = (Punished() || !rn2(7)
                          || (is_longworm(mtmp.data) && mtmp.wormno)
@@ -83,10 +73,11 @@ export async function do_attack(mtmp) {
 
             /* only check for in-shop if don't already have reason to stop */
             if (!foo) {
-                /* in_rooms(mtmp->mx, mtmp->my, SHOPBASE) and
-                   tended_shop(): shops aren't ported yet */
-                if (game.level.flags?.has_shop)
-                    throw new Error('do_attack(): in_rooms(SHOPBASE) not ported yet');
+                for (const p of in_rooms(mtmp.mx, mtmp.my, SHOPBASE))
+                    if (tended_shop(game.level.rooms[p - ROOMOFFSET])) {
+                        inshop = true;
+                        break;
+                    }
             }
             if (inshop || foo) {
                 if (!ctx.travel && !ctx.run)
@@ -94,7 +85,7 @@ export async function do_attack(mtmp) {
                         throw new Error('do_attack(): dopay() not ported yet');
 
                 if (mtmp.mtame) /* see 'additional considerations' above */
-                    monflee(mtmp, rnd(6), false, false);
+                    await monflee(mtmp, rnd(6), false, false);
                 let buf = y_monnam(mtmp);
                 buf = highc(buf[0]) + buf.slice(1);
                 await You(`stop.  ${buf} is in the way!`);

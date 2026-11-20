@@ -17,7 +17,9 @@ import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
 import { ddoinv } from './invent.js';
-import { cmd_safety_prevention, nomul } from './hack.js';
+import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
+         DOMOVE_RUSH } from './hack.js';
+export { domove };
 import { IS_DOOR, IS_FURNITURE } from './const.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -92,8 +94,7 @@ async function donull() {
         return 0; /* ECMD_OK */
     return 1; /* ECMD_TIME: Do nothing, but let other things happen */
 }
-import { COLNO, ROWNO, STONE, DOOR, D_CLOSED, D_LOCKED,
-         IS_WALL, IS_OBSTRUCTED } from './const.js';
+import { COLNO, ROWNO } from './const.js';
 
 // Direction deltas: y u k
 //                   h . l
@@ -103,16 +104,6 @@ const DIR_DY = { h: 0, l: 0, j: 1, k: -1, y: -1, u: -1, b: 1, n: 1 };
 
 function isMovementKey(ch) {
     return 'hjklyubn'.includes(ch);
-}
-
-// C ref: hack.c — check if a cell blocks movement
-function blocksMove(x, y) {
-    const loc = game.level?.at(x, y);
-    if (!loc) return true;
-    if (loc.typ === STONE) return true;
-    if (IS_WALL(loc.typ)) return true;
-    if (loc.typ === DOOR && (loc.doormask & (D_CLOSED | D_LOCKED))) return true;
-    return false;
 }
 
 // C ref: cmd.c rhack — main command dispatcher
@@ -219,45 +210,8 @@ function set_move_cmd(dir, run) {
     if (game.iflags.menu_requested)
         game.context.nopick = 1;
     game.context.travel = game.context.travel1 = 0;
-    /* if (!gd.domove_attempting && !u.dz): prefixes aren't ported yet */
-    game.context.run = run;
-}
-
-// C ref: hack.c domove() / domove_core() -- execute a movement in
-// direction u.dx, u.dy
-export async function domove() {
-    const u = game.u;
-    const newx = u.ux + u.dx;
-    const newy = u.uy + u.dy;
-
-    if (blocksMove(newx, newy)) {
-        // Can't move there: test_move() failed
-        game.context.move = 0;
-        nomul(0);
-        return;
+    if (!game.domove_attempting && !u.dz) {
+        game.context.run = run;
+        game.domove_attempting |= (!run ? DOMOVE_WALK : DOMOVE_RUSH);
     }
-
-    // Move the hero
-    const oldx = u.ux, oldy = u.uy;
-    u.ux0 = oldx;
-    u.uy0 = oldy;
-    u.ux = newx;
-    u.uy = newy;
-
-    const tmpr = game.level.at(u.ux, u.uy);
-    if (game.context.run) {
-        if (game.context.run < 8)
-            if (IS_DOOR(tmpr.typ) || IS_OBSTRUCTED(tmpr.typ)
-                || IS_FURNITURE(tmpr.typ))
-                nomul(0);
-    }
-
-    if (u.ux0 !== u.ux || u.uy0 !== u.uy) {
-        u.umoved = 1;
-        // Update display
-        newsym(oldx, oldy);
-        vision_recalc(1);
-        newsym(newx, newy);
-    }
-    /* runmode_delay_output(): display timing only */
 }

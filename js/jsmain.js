@@ -100,7 +100,8 @@ export class NethackGame {
            game without OPTIONS=name asks "Who are you?" */
         g.plname = opts.name || '';
         /* boolean options that default to on (optlist.h) */
-        g.flags = { verbose: true, legacy: true, acoustics: true, tutorial: true, ...opts.flags };
+        g.flags = { verbose: true, legacy: true, acoustics: true, tutorial: true,
+                    safe_dog: true, autoopen: true, ...opts.flags };
         g.iflags = { ...opts.iflags };
         g.pl_character = opts.pl_character || '';
         /* the fixed clock calendar.c getlt() reads */
