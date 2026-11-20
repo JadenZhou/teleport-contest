@@ -75,7 +75,7 @@ function terrain_glyph(loc, x, y) {
 }
 
 // C ref: stairs.c stairway_at()
-function stairway_at(x, y) {
+export function stairway_at(x, y) {
     for (let s = game.stairs; s; s = s.next)
         if (s.sx === x && s.sy === y) return s;
     return null;

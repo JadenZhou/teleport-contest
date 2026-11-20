@@ -8,6 +8,8 @@
 import { game } from './gstate.js';
 import { is_pool, is_lava } from './makemon.js';
 import { engr_at } from './engrave.js';
+import { near_capacity } from './hack.js';
+import { You, Your } from './display.js';
 
 // C ref: display.h OBJ_AT() -> level.objects[x][y] != 0
 function OBJ_AT(x, y) {
@@ -56,4 +58,45 @@ export async function pickup(what) /* should be a long */ {
         }
     }
     throw new Error('pickup(): picking up objects not ported yet');
+}
+
+// C ref: pickup.c encumber_msg()
+export async function encumber_msg() {
+    const newcap = near_capacity();
+    const oldcap = game.oldcap || 0;
+
+    if (oldcap < newcap) {
+        switch (newcap) {
+        case 1:
+            await Your("movements are slowed slightly because of your load.");
+            break;
+        case 2:
+            await You("rebalance your load.  Movement is difficult.");
+            break;
+        case 3:
+            throw new Error('encumber_msg(): stagger() not ported yet');
+        default:
+            await You(`${newcap === 4 ? "can barely" : "can't even"} move a handspan with this load!`);
+            break;
+        }
+        game.disp_botl = true;
+    } else if (oldcap > newcap) {
+        switch (newcap) {
+        case 0:
+            await Your("movements are now unencumbered.");
+            break;
+        case 1:
+            await Your("movements are only slowed slightly by your load.");
+            break;
+        case 2:
+            await You("rebalance your load.  Movement is still difficult.");
+            break;
+        case 3:
+            throw new Error('encumber_msg(): stagger() not ported yet');
+        }
+        game.disp_botl = true;
+    }
+
+    game.oldcap = newcap;
+    return newcap;
 }

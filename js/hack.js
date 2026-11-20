@@ -144,6 +144,18 @@ export function near_capacity() {
     return calc_capacity(0);
 }
 
+// C ref: hack.c check_capacity()
+export async function check_capacity(str) {
+    if (near_capacity() >= 4 /* EXT_ENCUMBER */) {
+        if (str)
+            await pline(str);
+        else
+            await You_cant("do that while carrying so much stuff.");
+        return 1;
+    }
+    return 0;
+}
+
 // C ref: mondata.c noattacks()
 function noattacks(ptr) {
     for (const mattk of ptr.mattk || []) {

@@ -29,6 +29,8 @@ import { dovspell, docast } from './spell.js';
 import { dodiscovered } from './o_init.js';
 import { doattributes } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
+import { dodrop } from './do.js';
+import { dozap } from './zap.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -81,6 +83,8 @@ const cmd_funcs = {
     doattributes: () => doattributes(),
     docast: () => docast(),
     wiz_genesis: () => wiz_genesis(),
+    dodrop: () => dodrop(),
+    dozap: () => dozap(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",

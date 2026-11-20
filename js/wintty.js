@@ -1068,6 +1068,36 @@ export async function tty_select_menu(window, how) {
     return { n, selected };
 }
 
+// C ref: wintty.c tty_message_menu()
+export async function tty_message_menu(let_, how, mesg) {
+    const t = tty();
+    /* "menu" without selection; use ordinary pline, no more() */
+    if (how === PICK_NONE) {
+        await pline(mesg);
+        return '\0';
+    }
+
+    t.dismiss_more = let_;
+    game.morc = '\0';
+    /* barebones pline(); since we're only supposed to be called after
+       response to a prompt, we'll assume that the display is up to date */
+    await tty_putstr(game.WIN_MESSAGE, 0, mesg);
+    /* if `mesg' didn't wrap (triggering --More--), force --More-- now */
+    if (t.toplin === TOPLINE_NEED_MORE) {
+        await more();
+        t.toplin = TOPLINE_NEED_MORE; /* more resets this */
+        tty_clear_nhwindow(game.WIN_MESSAGE);
+    }
+    /* normally <ESC> means skip further messages, but in this case
+       it means cancel the current prompt; any other messages should
+       continue to be output normally */
+    wins()[game.WIN_MESSAGE].flags &= ~WIN_CANCELLED;
+    t.dismiss_more = 0;
+
+    return ((how === PICK_ONE && game.morc === let_) || game.morc === '\x1b')
+        ? game.morc : '\0';
+}
+
 // C ref: wintty.c tty_display_nhwindow() (NHW_TEXT and NHW_MENU)
 export async function tty_display_nhwindow(window, blocking) {
     const cw = wins()[window];

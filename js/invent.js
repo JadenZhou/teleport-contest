@@ -3,8 +3,12 @@
 //        xprname()
 
 import { game } from './gstate.js';
-import { pline } from './display.js';
-import { doname } from './objnam.js';
+import { pline, You, pline_The } from './display.js';
+import { doname, makeplural } from './objnam.js';
+import { rn2 } from './rng.js';
+import { ing_suffix } from './hacklib.js';
+import { body_part } from './insight.js';
+import { welded } from './wield.js';
 import * as O from './objects.js';
 import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
 import {
@@ -12,15 +16,19 @@ import {
     MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SKIPMENUCOLORS,
     LOST_NONE, LOST_THROWN, LOST_EXPLODING, BLINDED, HALLUC,
     ONAME, has_oname,
+    GETOBJ_EXCLUDE, GETOBJ_DOWNPLAY, GETOBJ_SUGGEST, GETOBJ_EXCLUDE_INACCESS,
+    GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_EXCLUDE_NONINVENT, GETOBJ_ALLOWCNT,
+    GETOBJ_PROMPT, Never_mind, FINGERTIP, HAND, W_ARMOR, W_ACCESSORY,
+    W_SADDLE, W_WEAPONS,
 } from './const.js';
 import { objects } from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
-import { weight, erosion_matters, Is_candle, obj_extract_self } from './mkobj.js';
+import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj } from './mkobj.js';
 import { itemactions } from './iactions.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
-    tty_select_menu,
+    tty_select_menu, tty_message_menu, tty_yn_function,
 } from './wintty.js';
 
 const invlet_basic = 52;
@@ -28,6 +36,8 @@ const GOLD_SYM = '$';
 const NOINVSYM = '#';
 const CONTAINED_SYM = '>';
 const HANDS_SYM = '-';
+/* C ref: cmd.c quitchars[] */
+const quitchars = " \r\n\x1b";
 
 // C ref: flag.h flags.invlet_constant (default on; options are not
 // parsed for it yet)
@@ -244,19 +254,29 @@ function sortloot_invent(sortpack) {
     return list;
 }
 
-// C ref: invent.c display_pickinv() -- the full-inventory listing (no
-// lets, no xtra_choice, no wizard identify, no perm_invent)
-async function display_pickinv(lets, xtra_choice, query, allowxtra,
-                               want_reply, out_cnt) {
+// C ref: invent.c display_pickinv() -- internal function used by
+// display_inventory and getobj that can display inventory and return a
+// count as well as a letter (no wizard identify, no perm_invent, no
+// in-use-only listing)
+async function display_pickinv(lets, /* non-compacted list of invlet values */
+                               xtra_choice, /* non-object "bare hands" or "fingers" */
+                               query, /* optional; prompt string for menu */
+                               allowxtra, /* hands are allowed (maybe alternate) choice */
+                               want_reply, /* True: select an item, False: just display */
+                               out_cnt) /* optional; count player entered when selecting an item */ {
     let n, classcount;
     let ret;
     const clr = NO_COLOR;
     const sortpack = game.flags?.sortpack ?? true;
+    const usextra = !!(xtra_choice && allowxtra);
 
-    if (lets || xtra_choice || game.iflags?.override_ID
+    if (lets && !lets.length)
+        lets = null; /* simplify tests: (lets) instead of (lets && *lets) */
+
+    if (game.iflags?.override_ID
         || (game.flags?.sortloot && game.flags.sortloot !== 'n'
             && game.flags.sortloot !== 'l'))
-        throw new Error('display_pickinv(): lets/xtra_choice/wizid/sortloot are not ported yet');
+        throw new Error('display_pickinv(): wizid/sortloot are not ported yet');
 
     /* partial inventory in perm_invent setting; don't operate on
        full inventory window, use an alternate one instead; create
@@ -265,24 +285,62 @@ async function display_pickinv(lets, xtra_choice, query, allowxtra,
         game.cached_pickinv_win = tty_create_nhwindow(NHW_MENU);
     const win = game.cached_pickinv_win;
 
-    n = !game.invent ? 0 : !game.invent.nobj ? 1 : 2;
-    /* for !lets, skip message_menu handling of single item even if
-       item count was 1 */
-    if (n === 1)
+    n = lets ? lets.length
+             : !game.invent ? 0 : !game.invent.nobj ? 1 : 2;
+    /* for xtra_choice, there's another 'item' not included in initial 'n';
+       for !lets (full invent), skip message_menu handling of single item
+       even if item count was 1 */
+    if (usextra || (n === 1 && !lets))
         ++n;
-    if (n === 0)
-        throw new Error('display_pickinv(): empty inventory message is not ported yet');
+    if (n === 0) {
+        await pline("Not carrying anything.");
+        return '\0';
+    }
     if (!invlet_constant())
         throw new Error('display_pickinv(): reassign() is not ported yet');
 
+    if (n === 1 && !game.iflags?.force_invmenu && !game.iflags?.menu_requested) {
+        /* when only one item of interest, use pline instead of menus;
+           we actually use a fake message-line menu in order to allow
+           the user to perform selection at the --More-- prompt for tty */
+        ret = '\0';
+        if (usextra) {
+            ret = await tty_message_menu(HANDS_SYM, PICK_ONE,
+                                         xprname(null, xtra_choice,
+                                                 HANDS_SYM, true, 0, 0));
+        } else {
+            let otmp;
+            for (otmp = game.invent; otmp; otmp = otmp.nobj)
+                if (!lets || otmp.invlet === lets[0])
+                    break;
+            if (otmp)
+                ret = await tty_message_menu(otmp.invlet,
+                                             want_reply ? PICK_ONE : PICK_NONE,
+                                             xprname(otmp, null, lets[0],
+                                                     true, 0, 0));
+        }
+        if (out_cnt)
+            out_cnt.v = -1; /* select all */
+        return ret;
+    }
+
     const sortedinvent = sortloot_invent(sortpack);
     tty_start_menu(win, MENU_BEHAVE_STANDARD);
+    if (usextra) {
+        if (sortpack)
+            add_menu_heading(win, "Miscellaneous");
+        tty_add_menu(win, null, HANDS_SYM, HANDS_SYM, '', ATR_NONE, clr,
+                     xtra_choice, MENU_ITEMFLAGS_NONE);
+    }
 
     let invlet = 0;
     for (;;) { /* nextclass: */
         classcount = 0;
         for (const srtinv of sortedinvent) {
             const otmp = srtinv.obj;
+            /* for showing a set of specific letters, skip ones not in the set */
+            if (lets && !lets.includes(otmp.invlet))
+                continue;
             if (!sortpack || otmp.oclass === def_inv_order[invlet]) {
                 /* maybe insert a class header */
                 if (sortpack && !classcount) {
@@ -325,6 +383,450 @@ async function display_pickinv(lets, xtra_choice, query, allowxtra,
 // C ref: invent.c display_inventory() -- the command queue is not ported
 export async function display_inventory(lets, want_reply) {
     return await display_pickinv(lets, null, null, false, want_reply, null);
+}
+
+// C ref: invent.c freeinv_core()
+function freeinv_core(obj) {
+    if (obj.oclass === O.COIN_CLASS) {
+        game.disp_botl = true;
+        return;
+    } else if (obj.otyp === O.AMULET_OF_YENDOR
+               || obj.otyp === O.CANDELABRUM_OF_INVOCATION
+               || obj.otyp === O.BELL_OF_OPENING
+               || obj.otyp === O.SPE_BOOK_OF_THE_DEAD || obj.oartifact) {
+        throw new Error('freeinv_core(): invocation items/artifacts not ported yet');
+    }
+
+    if (obj.otyp === O.LOADSTONE) {
+        throw new Error('freeinv_core(): loadstone curse() not ported yet');
+    } else if (obj.otyp === O.LUCKSTONE /* confers_luck() */) {
+        throw new Error('freeinv_core(): set_moreluck() not ported yet');
+    } else if (obj.otyp === O.FIGURINE && obj.timed) {
+        throw new Error('freeinv_core(): figurine stop_timer() not ported yet');
+    }
+
+    if (game.context?.tin?.tin === obj) {
+        game.context.tin.tin = null;
+        game.context.tin.o_id = 0;
+    }
+}
+
+// C ref: invent.c freeinv() -- remove an object from the hero's inventory
+export function freeinv(obj) {
+    /* extract_nobj(obj, &gi.invent) */
+    let prev = null;
+    for (let o = game.invent; o; prev = o, o = o.nobj) {
+        if (o === obj) {
+            if (prev) prev.nobj = o.nobj;
+            else game.invent = o.nobj;
+            break;
+        }
+    }
+    obj.nobj = null;
+    obj.where = 'OBJ_FREE';
+    obj.pickup_prev = 0;
+    freeinv_core(obj);
+    /* update_inventory(): no perm_invent */
+}
+
+// C ref: invent.c compactify() -- compact a string of inventory letters
+// by dashing runs of letters
+function compactify(buf) {
+    const b = buf.split('');
+    b.push('\0', '\0');
+    let i1 = 1, i2 = 1;
+    let ilet, ilet1, ilet2;
+
+    ilet2 = b[0];
+    ilet1 = b[1];
+    b[++i2] = b[++i1];
+    ilet = b[i1];
+    while (ilet && ilet !== '\0') {
+        if (ilet.charCodeAt(0) === ilet1.charCodeAt(0) + 1) {
+            if (ilet1.charCodeAt(0) === ilet2.charCodeAt(0) + 1)
+                b[i2 - 1] = ilet1 = '-';
+            else if (ilet2 === '-') {
+                b[i2 - 1] = ilet1 = String.fromCharCode(ilet1.charCodeAt(0) + 1);
+                b[i2] = b[++i1];
+                ilet = b[i1];
+                continue;
+            }
+        } else if (ilet === NOINVSYM) {
+            /* compact three or more consecutive '#'
+               characters into "#-#" */
+            if (i2 >= 2 && b[i2 - 2] === NOINVSYM && b[i2 - 1] === NOINVSYM)
+                b[i2 - 1] = '-';
+            else if (i2 >= 3 && b[i2 - 3] === NOINVSYM && b[i2 - 2] === '-'
+                     && b[i2 - 1] === NOINVSYM)
+                --i2;
+        }
+        ilet2 = ilet1;
+        ilet1 = ilet;
+        b[++i2] = b[++i1];
+        ilet = b[i1];
+    }
+    const end = b.indexOf('\0');
+    return b.slice(0, end < 0 ? b.length : end).join('');
+}
+
+// C ref: invent.c splittable() -- some objects shouldn't be split when
+// count given to getobj or askchain
+export function splittable(obj) {
+    return !((obj.otyp === O.LOADSTONE && obj.cursed)
+             || (obj === game.uwep && welded(game.uwep)));
+}
+
+// C ref: invent.c mime_action()
+async function mime_action(word) {
+    let buf = word;
+    let bp, pfx = null, sfx = null;
+
+    if ((bp = buf.indexOf(" on the ")) >= 0) {
+        /* rub on the stone[s] */
+        sfx = buf.slice(bp + 1); /* "something <sfx>" */
+        buf = buf.slice(0, bp);
+    }
+    if ((buf.startsWith("rub the ") && buf.slice(8).includes(" on"))
+        || (buf.startsWith("dip ") && buf.slice(4).includes(" into"))) {
+        /* "rub the royal jelly on" -> "rubbing the royal jelly on", or
+           "dip <foo> into" => "dipping <foo> into" */
+        pfx = buf.slice(3 + 1); /* "<pfx> something" */
+        buf = buf.slice(0, 3);
+    }
+    if ((bp = buf.indexOf(" or ")) >= 0) {
+        const first = buf.slice(0, bp);
+        buf = (rn2(2) ? first : buf.slice(bp + 4));
+    }
+
+    await You(`mime ${ing_suffix(buf)}${pfx ? " " : ""}${pfx ? pfx : ""}`
+              + ` something${sfx ? " " : ""}${sfx ? sfx : ""}.`);
+}
+
+// C ref: invent.c any_obj_ok() -- getobj callback that allows any object
+// - but not hands
+export function any_obj_ok(obj) {
+    if (obj)
+        return GETOBJ_SUGGEST;
+    return GETOBJ_EXCLUDE;
+}
+
+// C ref: invent.c getobj_hands_txt() -- return string describing your
+// hands based on action
+function getobj_hands_txt(action) {
+    if (action === "grease") {
+        throw new Error('getobj_hands_txt(): fingers_or_gloves() not ported yet');
+    } else if (action === "write with") {
+        return `your ${body_part(FINGERTIP)}`;
+    } else if (action === "wield") {
+        return `your ${game.uarmg ? "gloved" : "bare"} ${makeplural(body_part(HAND))}`
+            + `${!game.uwep ? " (wielded)" : ""}`;
+    } else if (action === "ready") {
+        return `empty quiver${!game.uquiver ? " (nothing readied)" : ""}`;
+    } else {
+        return `your ${makeplural(body_part(HAND))}`;
+    }
+}
+
+/* C ref: invent.c hands_obj -- the explicit "no object" result */
+export const hands_obj = { hands_obj: true, otyp: 0, oclass: 0, quan: 0 };
+
+// C ref: invent.c getobj()
+/*
+ * getobj returns:
+ *      struct obj *xxx:        object to do something with.
+ *      (struct obj *) 0        error return: no object.
+ *      &hands_obj              explicitly no object (as in w-).
+ */
+export async function getobj(word, /* usually a direct verb such as "drop" */
+                             obj_ok, /* callback to classify an object's suitability */
+                             ctrlflags) /* some control to fine-tune the behavior */ {
+    let otmp;
+    let ilet = '\0';
+    let buf = '';
+    let altlets = '';
+    let lets;
+    let suggested = 0;
+    const allowcnt = !!(ctrlflags & GETOBJ_ALLOWCNT);
+    let forceprompt = !!(ctrlflags & GETOBJ_PROMPT);
+    let allownone = false;
+    let inaccess = 0; /* counts GETOBJ_EXCLUDE_INACCESS items to decide
+                       * between "you don't have anything to <foo>"
+                       * versus "you don't have anything _else_ to <foo>"
+                       * (also used for GETOBJ_EXCLUDE_NONINVENT) */
+    let cnt = 0;
+    let cntgiven = false;
+    let msggiven = false;
+    let oneloop = false;
+    let qbuf;
+
+    /* need_more_cq: */
+    if (game.cmdq?.length) {
+        const cq = game.cmdq.shift();
+        /* user-input means pick something interactively now, with more
+           in the command queue for after that; if not user-input, it
+           has to be a key here */
+        otmp = null; /* in case of non-key or lookup failure */
+        if (cq.typ === 'key') {
+            let v;
+
+            if (cq.key === HANDS_SYM) {
+                /* check whether the hands/self choice is suitable */
+                v = obj_ok(null);
+                if (v === GETOBJ_SUGGEST || v === GETOBJ_DOWNPLAY)
+                    otmp = hands_obj;
+            } else {
+                /* there could be more than one match if key is '#';
+                   take first one which passes the obj_ok callback */
+                for (otmp = game.invent; otmp; otmp = otmp.nobj)
+                    if (otmp.invlet === cq.key) {
+                        v = obj_ok(otmp);
+                        if (v === GETOBJ_SUGGEST || v === GETOBJ_DOWNPLAY)
+                            break;
+                    }
+            }
+        } else {
+            throw new Error('getobj(): a queued count/user-input is not ported yet');
+        }
+        if (!otmp) /* didn't find what we were looking for, */
+            game.cmdq = []; /* so discard any other queued cmnds */
+        return otmp;
+    }
+
+    /* is "hands"/"self" a valid thing to do this action on? */
+    switch (obj_ok(null)) {
+    case GETOBJ_SUGGEST: /* treat as likely candidate */
+        allownone = true;
+        buf += HANDS_SYM;
+        buf += ' '; /* put a space after the '-' in the prompt */
+        break;
+    case GETOBJ_DOWNPLAY: /* acceptable but not shown as likely choice */
+    case GETOBJ_EXCLUDE_INACCESS:
+    case GETOBJ_EXCLUDE_SELECTABLE:
+        allownone = true;
+        altlets += HANDS_SYM;
+        break;
+    case GETOBJ_EXCLUDE_NONINVENT: /* player skipped some alternative that's
+                                    * not in inventory, now the hands/self
+                                    * possibility is telling us so */
+        forceprompt = false;
+        inaccess++;
+        break;
+    default:
+        break;
+    }
+    const bpstart = buf.length; /* bp = buf + bpstart */
+
+    if (!invlet_constant())
+        throw new Error('getobj(): reassign() is not ported yet');
+
+    /* force invent to be in invlet order before collecting candidate
+       inventory letters */
+    const sortedinvent = sortloot_invent(false);
+    let bp = '';
+    for (const srtinv of sortedinvent) {
+        otmp = srtinv.obj;
+        switch (obj_ok(otmp)) {
+        case GETOBJ_EXCLUDE_INACCESS:
+            /* remove inaccessible things */
+            inaccess++;
+            break;
+        case GETOBJ_EXCLUDE:
+        case GETOBJ_EXCLUDE_SELECTABLE:
+            /* remove more inappropriate things, but unlike the first it won't
+               trigger an "else" in "you don't have anything else to ___" */
+            break;
+        case GETOBJ_DOWNPLAY:
+            /* acceptable but not listed as likely candidates in the prompt
+               or in the inventory subset if player responds with '?' - thus,
+               don't add it to lets with bp, but add it to altlets with ap */
+            forceprompt = true;
+            altlets += otmp.invlet;
+            break;
+        case GETOBJ_SUGGEST:
+            bp += otmp.invlet; /* adding otmp->invlet is all that's needed */
+            suggested++;
+            break;
+        case GETOBJ_EXCLUDE_NONINVENT: /* not applicable for invent items */
+        default:
+            throw new Error('getobj(): bad return from getobj callback');
+        }
+    }
+
+    /* If no objects were suggested but we added '- ' at the beginning for
+     * hands, destroy the trailing space */
+    if (suggested === 0 && bpstart > 0 && buf[bpstart - 1] === ' ')
+        buf = buf.slice(0, bpstart - 1);
+    lets = bp; /* necessary since we destroy buf */
+    if (suggested > 5) /* compactify string */
+        bp = compactify(bp);
+    buf = buf.slice(0, suggested === 0 ? buf.length : bpstart) + bp;
+
+    if (suggested === 0 && !forceprompt && !allownone) {
+        await You(`don't have anything ${inaccess ? "else " : ""}to ${word}.`);
+        return null;
+    }
+    for (;;) {
+        cnt = 0;
+        cntgiven = false;
+        qbuf = `What do you want to ${word}?`;
+        if (game.iflags?.force_invmenu) {
+            throw new Error('getobj(): force_invmenu is not ported yet');
+        } else {
+            if (!buf.length)
+                qbuf += " [*]";
+            else
+                qbuf += ` [${buf} or ?*]`;
+            ilet = await tty_yn_function(qbuf, null, '\0');
+        }
+        if (ilet >= '0' && ilet <= '9') {
+            if (!allowcnt) {
+                await pline("No count allowed with this command.");
+                continue;
+            }
+            throw new Error('getobj(): get_count() is not ported yet');
+        }
+        if (quitchars.includes(ilet)) {
+            if (game.flags?.verbose ?? true)
+                await pline(Never_mind);
+            return null;
+        }
+        if (ilet === HANDS_SYM) { /* '-' */
+            if (!allownone)
+                await mime_action(word);
+            return (allownone ? hands_obj : null);
+        }
+        let redo;
+        do { /* redo_menu: */
+            redo = false;
+            /* since gold is now kept in inventory, we need to do processing
+               for select-from-invent before checking whether gold has been
+               picked */
+            if (ilet === '?' || ilet === '*') {
+                let allowed_choices = (ilet === '?') ? lets : null;
+                const ctmp = { v: 0 };
+                let handsbuf = null;
+
+                if (ilet === '?' && !lets.length && altlets.length)
+                    allowed_choices = altlets;
+
+                if (!allowed_choices || allowed_choices[0] === HANDS_SYM
+                    || buf[0] === HANDS_SYM)
+                    handsbuf = getobj_hands_txt(word);
+                ilet = await display_pickinv(allowed_choices, handsbuf,
+                                             '', allownone, true,
+                                             allowcnt ? ctmp : null);
+                if (!ilet || ilet === '\0') {
+                    if (oneloop)
+                        return null;
+                    ilet = null; /* continue */
+                    break;
+                }
+                if (ilet === HANDS_SYM)
+                    return hands_obj;
+                if (ilet === '\x1b') {
+                    if (game.flags?.verbose ?? true)
+                        await pline(Never_mind);
+                    return null;
+                }
+                if (ilet === '*' || ilet === '?') {
+                    redo = true;
+                    continue;
+                }
+                if (allowcnt && ctmp.v >= 0) {
+                    cnt = ctmp.v;
+                    cntgiven = true;
+                }
+                /* they typed a letter (not a space) at the prompt */
+            }
+        } while (redo);
+        if (ilet === null)
+            continue;
+        /* find the item which was picked */
+        for (otmp = game.invent; otmp; otmp = otmp.nobj)
+            if (otmp.invlet === ilet)
+                break;
+        /* some items have restrictions */
+        if (ilet === GOLD_SYM
+            /* guard against the [hypothetical] chance of having more
+               than one invent slot of gold and picking the non-'$' one */
+            || (otmp && otmp.oclass === O.COIN_CLASS)) {
+            if (otmp && obj_ok(otmp) <= GETOBJ_EXCLUDE) {
+                await You(`cannot ${word} gold.`);
+                return null;
+            }
+            if (cntgiven && cnt <= 0) {
+                if (cnt < 0)
+                    await pline_The("LRS would be very interested to know"
+                                    + " you have that much.");
+                return null;
+            }
+        }
+        if (cntgiven && word === "throw") {
+            const only_one = "can only throw one at a time";
+
+            /* permit counts for throwing gold, but don't accept counts
+               for other things since the throw code will split off a
+               single item anyway */
+            if (cnt === 0 || !otmp)
+                return null;
+            const coins = (otmp.oclass === O.COIN_CLASS);
+            if (cnt > 1 && (!coins || cnt > otmp.quan)) {
+                if (cnt > otmp.quan)
+                    await You(`only have ${otmp.quan}${(!coins && otmp.quan > 1) ? " and " : ""}`
+                              + `${(!coins && otmp.quan > 1) ? only_one : ""}.`);
+                else
+                    await You(`${only_one}.`);
+                continue;
+            }
+        }
+        game.disp_botl = true; /* May have changed the amount of money */
+        /* cmdq_add_key(CQ_REPEAT, ilet): the ^A repeat queue isn't kept */
+        /* verify the chosen object */
+        if (!otmp) {
+            await You("don't have that object.");
+            continue;
+        } else if (cnt < 0 || otmp.quan < cnt) {
+            await You(`don't have that many!  You have only ${otmp.quan}.`);
+            continue;
+        }
+        break;
+    }
+    if (obj_ok(otmp) === GETOBJ_EXCLUDE) {
+        await silly_thing(word, otmp);
+        return null;
+    }
+    /* split_otmp: */
+    if (cntgiven) {
+        if (cnt === 0)
+            return null;
+        if (cnt !== otmp.quan) {
+            /* don't split a stack of cursed loadstones */
+            if (splittable(otmp))
+                otmp = splitobj(otmp, cnt);
+            else if (otmp.otyp === O.LOADSTONE && otmp.cursed)
+                /* kludge for canletgo()'s can't-drop-this message */
+                otmp.corpsenm = cnt;
+        }
+    }
+    return otmp;
+}
+
+// C ref: invent.c silly_thing()
+export async function silly_thing(word, otmp) {
+    /* see comment about Amulet of Yendor in objtyp_is_callable(do_name.c);
+       known fakes yield the silly thing feedback */
+    if (word === "call"
+        && (otmp.otyp === O.AMULET_OF_YENDOR
+            || (otmp.otyp === O.FAKE_AMULET_OF_YENDOR && !otmp.known)))
+        await pline_The("Amulet doesn't like being called names.");
+    else
+        await pline(`That is a silly thing to ${word}.`);
+}
+
+// C ref: invent.c is_worn()
+export function is_worn(otmp) {
+    return (otmp.owornmask & (W_ARMOR | W_ACCESSORY | W_SADDLE | W_WEAPONS))
+        ? true : false;
 }
 
 // C ref: invent.c dispinv_with_action()
