@@ -564,3 +564,13 @@ export function clear_path(col1, row1, col2, row2) {
     }
     return !!result;
 }
+
+// C ref: vision.c recalc_block_point() -- recalc if point should be
+// blocked or unblocked.  block_point()/unblock_point() (fill_point(),
+// dig_point()) aren't ported; rebuilding the clear map from the level
+// (vision_reset()) gives the same viz_clear[] and left/right pointers.
+export function recalc_block_point(x, y) {
+    vision_reset();
+    if (game.viz_array?.[y]?.[x])
+        game.vision_full_recalc = 1;
+}

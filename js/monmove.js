@@ -10,7 +10,8 @@ import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path } from './vision.js';
-import { newsym } from './display.js';
+import { newsym, pline, canseemon, canspotmon } from './display.js';
+import { Monnam } from './do_name.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -147,15 +148,6 @@ function is_lminion(mon) {
         /* mon_aligntyp(mon) == A_LAWFUL */
         && mon.data.maligntyp > 0;
 }
-/* C ref: display.h canseemon() -- infravision and worm tails aren't
-   ported yet; this is the plain line-of-sight case */
-export function canseemon(mon) {
-    const See_invisible = uhave(SEE_INVIS);
-    return cansee(mon.mx, mon.my) && (!mon.minvis || See_invisible)
-           && !mon.mundetected;
-}
-/* C ref: display.h canspotmon() -- telepathy/warning not ported yet */
-function canspotmon(mon) { return canseemon(mon); }
 /* C ref: monmove.h m_canseeu() */
 function m_canseeu(m) {
     return ((!Invis() || perceives(m.data))
@@ -319,12 +311,54 @@ function disturb(mtmp) {
 }
 
 // ── C ref: monmove.c monflee() ──
-function monflee(mtmp, fleetime, first, fleemsg) {
-    throw new Error('monflee() not ported yet');
+/* monster begins fleeing for the specified time, 0 means untimed flee
+ * if first, only adds fleetime if monster isn't already fleeing
+ * if fleemsg, prints a message about new flight, otherwise, caller should */
+export async function monflee(mtmp, fleetime, first, fleemsg) {
+    /* shouldn't happen; maybe warrants impossible()? */
+    if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+        return;
+
+    if (mtmp === game.u.ustuck)
+        throw new Error('monflee(): release_hero() not ported yet');
+
+    if (!first || !mtmp.mflee) {
+        /* don't lose untimed scare */
+        if (!fleetime)
+            mtmp.mfleetim = 0;
+        else if (!mtmp.mflee || mtmp.mfleetim) {
+            fleetime += (mtmp.mfleetim | 0);
+            /* ensure monster flees long enough to visibly stop fighting */
+            if (fleetime === 1)
+                fleetime++;
+            mtmp.mfleetim = Math.min(fleetime, 127);
+        }
+        if (!mtmp.mflee && fleemsg && canseemon(mtmp)
+            && mtmp.m_ap_type !== M_AP_FURNITURE
+            && mtmp.m_ap_type !== M_AP_OBJECT) {
+            /* unfortunately we can't distinguish between temporary
+               sleep and temporary paralysis, so both conditions
+               receive the same alternate message */
+            if (!mtmp.mcanmove || !mtmp.data.mmove) {
+                throw new Error('monflee(): Adjmonnam() not ported yet');
+            } else if (flees_light(mtmp)) {
+                throw new Error('monflee(): flees_light() messages not ported yet');
+            } else {
+                await pline(`${Monnam(mtmp)} turns to flee.`); /* pline_mon() */
+            }
+        }
+
+        if (mtmp.data === mons[M.PM_VROCK] && !mtmp.mspec_used)
+            throw new Error('monflee(): vrock create_gas_cloud() not ported yet');
+
+        mtmp.mflee = 1;
+    }
+    /* ignore recently-stepped spaces when made to flee */
+    mon_track_clear(mtmp);
 }
 
 // ── C ref: monmove.c distfleeck() ──
-function distfleeck(mtmp, out) {
+async function distfleeck(mtmp, out) {
     const u = game.u;
     let seescaryx, seescaryy;
     let sawscary = false;
@@ -354,7 +388,7 @@ function distfleeck(mtmp, out) {
                        || (flees_light(mtmp) && !bravegremlin)
                        || (!mtmp.mpeaceful && in_your_sanctuary(mtmp, 0, 0)))) {
         out.scared = 1;
-        monflee(mtmp, rnd(rn2(7) ? 10 : 100), true, true);
+        await monflee(mtmp, rnd(rn2(7) ? 10 : 100), true, true);
     } else
         out.scared = 0;
 }
@@ -590,7 +624,7 @@ export async function dochug(mtmp) {
         throw new Error('dochug(): tactics() not ported yet');
 
     /* check distance and scariness of attacks */
-    distfleeck(mtmp, d);
+    await distfleeck(mtmp, d);
 
     /* search for and potentially use defensive or miscellaneous items. */
     if (find_defensive(mtmp, false)) {
@@ -647,7 +681,7 @@ export async function dochug(mtmp) {
             status = await m_move(mtmp, 0);
         /* if (mon_offmap(mtmp)) return 1: migration isn't ported yet */
         if (status !== MMOVE_DIED)
-            distfleeck(mtmp, d); /* recalc */
+            await distfleeck(mtmp, d); /* recalc */
 
         switch (status) { /* for pets, cases 0 and 3 are equivalent */
         case MMOVE_NOMOVES:

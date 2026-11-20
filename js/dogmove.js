@@ -15,8 +15,7 @@ import { t_at } from './trap.js';
 import { mattackm, max_passive_dmg } from './mhitm.js';
 import { mfndpos, monnear, mon_allowflags } from './mon.js';
 import { gettrack } from './track.js';
-import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add,
-         canseemon } from './monmove.js';
+import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter } from './mondata.js';
 import * as M from './monsters.js';
@@ -26,8 +25,8 @@ import { objects } from './objects.js';
 import { splitobj, obj_extract_self } from './mkobj.js';
 import { mpickobj, relobj } from './steal.js';
 import { distant_name, doname } from './objnam.js';
-import { newsym, pline } from './display.js';
-import { Monnam } from './mhitm.js';
+import { newsym, pline, canseemon } from './display.js';
+import { Monnam } from './do_name.js';
 import {
     MMOVE_NOTHING, MMOVE_MOVED, MMOVE_DIED, MMOVE_DONE, MTSZ,
     M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED,

@@ -56,8 +56,8 @@ import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS } from './const.js';
 import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
-import { newsym, pline } from './display.js';
-import { canseemon, set_apparxy } from './monmove.js';
+import { newsym, pline, canseemon } from './display.js';
+import { set_apparxy } from './monmove.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -497,7 +497,7 @@ function quest_mon_represents_role(mptr, role_pm) {
             && (mptr.msound === M.MS_LEADER || mptr.msound === M.MS_NEMESIS));
 }
 // C ref: steed.c can_saddle()
-function can_saddle(mtmp) {
+export function can_saddle(mtmp) {
     const ptr = mtmp.data;
     const steeds = [M.S_QUADRUPED, M.S_UNICORN, M.S_ANGEL, M.S_CENTAUR,
                     M.S_DRAGON, M.S_JABBERWOCK];
@@ -693,7 +693,7 @@ function mpickobj(mtmp, otmp) {
 // C ref: mkobj.c add_to_minv()
 function add_to_minv(mtmp, otmp) { return mpickobj(mtmp, otmp); }
 // C ref: worn.c which_armor()
-function which_armor(mon, flag) {
+export function which_armor(mon, flag) {
     for (const o of mon.minvent || [])
         if (o.owornmask & flag) return o;
     return null;

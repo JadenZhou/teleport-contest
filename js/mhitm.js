@@ -11,6 +11,7 @@ import { cansee } from './vision.js';
 import { m_at, grow_up } from './makemon.js';
 import { monkilled, zombie_maker } from './mon.js';
 import { canspotmon, newsym, pline } from './display.js';
+import { Monnam, mon_nam_too } from './do_name.js';
 import { is_elf, is_orc } from './mondata.js';
 import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC } from './const.js';
@@ -48,36 +49,6 @@ function sticks(ptr) {
         || ptr.mattk.some((a) => a.adtyp === AD_STCK);
 }
 
-// ── monster naming subset (C ref: do_name.c x_monnam()) ──
-function pmname(ptr, gender) {
-    return ptr.pmnames[gender] || ptr.pmnames[2];
-}
-// C ref: do_name.c x_monnam(), ARTICLE_THE subset
-function x_monnam_the(mtmp) {
-    if (mtmp === game.youmonst)
-        return 'you';
-    if (!canspotmon(mtmp) && mtmp !== game.u.usteed)
-        return 'it';
-    if (mtmp.mgivenname || mtmp.isshk || mtmp.ispriest || mtmp.isminion
-        || mtmp.minvis || (mtmp.data.geno & G_UNIQ) || mtmp.misc_worn_check)
-        throw new Error('x_monnam(): named/special monsters not ported yet');
-    if (game.u.uprops[HALLUC].intrinsic)
-        throw new Error('x_monnam(): hallucination not ported yet');
-    return `the ${pmname(mtmp.data, mtmp.female ? 1 : 0)}`;
-}
-// C ref: do_name.c mon_nam()
-function mon_nam(mtmp) { return x_monnam_the(mtmp); }
-// C ref: do_name.c Monnam()
-export function Monnam(mtmp) {
-    const s = mon_nam(mtmp);
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
-// C ref: do_name.c mon_nam_too()
-function mon_nam_too(mon, other_mon) {
-    if (mon !== other_mon)
-        return mon_nam(mon);
-    throw new Error('mon_nam_too(): reflexive pronoun not ported yet');
-}
 
 // C ref: worn.c find_mac()
 export function find_mac(mon) {
