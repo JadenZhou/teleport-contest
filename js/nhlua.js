@@ -201,6 +201,35 @@ export function splev_chr2typ(c) {
     return C.INVALID_TYPE;
 }
 
+// C ref: nhlua.c check_mapchr()
+export function check_mapchr(s) {
+    if (s && s.length === 1)
+        return splev_chr2typ(s[0]);
+    return C.INVALID_TYPE;
+}
+
+// C ref: nhlua.c get_table_mapchr()
+export function get_table_mapchr(tbl, name) {
+    const ter = get_table_str(tbl, name);
+    const typ = check_mapchr(ter);
+    if (typ === C.INVALID_TYPE)
+        nhl_error(null, 'Erroneous map char');
+    return typ;
+}
+
+// C ref: nhlua.c get_table_mapchr_opt()
+export function get_table_mapchr_opt(tbl, name, defval) {
+    const ter = get_table_str_opt(tbl, name, '');
+    let typ;
+    if (ter) {
+        typ = check_mapchr(ter);
+        if (typ === C.INVALID_TYPE)
+            nhl_error(null, 'Erroneous map char');
+    } else
+        typ = defval;
+    return typ;
+}
+
 // C ref: nhlua.c get_table_int()
 /* get mandatory integer value from table */
 export function get_table_int(tbl, name) {
