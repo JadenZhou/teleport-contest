@@ -60,6 +60,8 @@ import { an, vtense } from './objnam.js';
 import { newsym, pline } from './display.js';
 import { canseemon, set_apparxy } from './monmove.js';
 import { newcham } from './mon.js';
+import { mpickobj } from './steal.js';
+import { add_to_minv } from './mkobj.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -684,16 +686,6 @@ export function goodpos(x, y, mtmp, gpflags) {
 }
 
 // ---- inventory helpers ----
-// C ref: steal.c mpickobj() -- merging not ported; never merges
-function mpickobj(mtmp, otmp) {
-    otmp.where = 'OBJ_MINVENT';
-    otmp.ocarry = mtmp;
-    if (!mtmp.minvent) mtmp.minvent = [];
-    mtmp.minvent.push(otmp);
-    return false;
-}
-// C ref: mkobj.c add_to_minv()
-function add_to_minv(mtmp, otmp) { return mpickobj(mtmp, otmp); }
 // C ref: worn.c which_armor()
 function which_armor(mon, flag) {
     for (const o of mon.minvent || [])
