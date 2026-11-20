@@ -273,7 +273,7 @@ async function unmul(msg_override) {
     g.multi = 0; /* caller will usually have done this already */
     if (msg_override)
         g.nomovemsg = msg_override;
-    else if (!g.nomovemsg)
+    else if (g.nomovemsg == null) /* a Null pointer; "" means no message */
         g.nomovemsg = "You can move again."; /* You_can_move_again */
     if (g.nomovemsg) {
         await pline(g.nomovemsg);

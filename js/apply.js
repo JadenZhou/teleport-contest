@@ -20,7 +20,11 @@ import { objects, TOOL_CLASS, WAND_CLASS, SPBOOK_CLASS, COIN_CLASS,
          DWARVISH_MATTOCK, OIL_LAMP, MAGIC_LAMP, BRASS_LANTERN } from './objects.js';
 import { M1_NOHANDS, M1_NOLIMBS, M1_SLITHY, M2_ROCKTHROW } from './monsters.js';
 import { pline, You_cant, There } from './display.js';
-import { near_capacity } from './hack.js';
+import { near_capacity, nomul } from './hack.js';
+import { teleds } from './teleport.js';
+import { morehungry } from './eat.js';
+import { rnd } from './rng.js';
+import { TELEDS_NO_FLAGS } from './const.js';
 import { getpos, getpos_sethilite } from './getpos.js';
 import { walk_path, hurtle_jump } from './dothrow.js';
 import { known_spell, spe_Fresh } from './spell.js';
@@ -455,6 +459,11 @@ export async function jump(magic) {
          * and usually moves the ball if punished, but does not handle all
          * the effects of landing on the final position.
          */
-        throw new Error('jump(): teleds() not ported yet');
+        await teleds(cc.x, cc.y, TELEDS_NO_FLAGS);
+        nomul(-1);
+        game.multi_reason = "jumping around";
+        game.nomovemsg = "";
+        await morehungry(rnd(25));
+        return ECMD_TIME;
     }
 }

@@ -19,7 +19,17 @@ import {
 } from './const.js';
 import { mons } from './monsters.js';
 import { set_mon_data } from './mondata.js';
-import { goodpos, m_at, place_monster } from './makemon.js';
+import { goodpos, m_at, place_monster, sobj_at } from './makemon.js';
+import { newsym, see_monsters } from './display.js';
+import { vision_recalc } from './vision.js';
+import { u_on_newpos } from './mklev.js';
+import { nomul } from './hack.js';
+import { set_ustuck } from './uhitm.js';
+import { t_at, is_pit } from './trap.js';
+import { is_hole, ROOMOFFSET, VAULT, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL,
+         TT_BURIEDBALL, LEVITATION, FLYING, TELEDS_TELEPORT } from './const.js';
+import { S_MIMIC } from './monsters.js';
+import { BOULDER } from './objects.js';
 
 // C ref: teleport.c enexto()
 /*
@@ -224,6 +234,94 @@ function rloc_to_flag(mtmp, x, y, rlocflags) {
     mtmp.mx = x;
     mtmp.my = y;
     place_monster(mtmp, x, y); /* put monster down */
+}
+
+// C ref: teleport.c teleds() -- put the hero at <nux,nuy> on this level
+export async function teleds(nux, nuy, teleds_flags) {
+    const u = game.u;
+    const is_teleport = (teleds_flags & TELEDS_TELEPORT) !== 0;
+
+    /* vault_occupied(u.urooms) ? findgd() : 0 */
+    if (u.urooms && in_rooms_vault(u.urooms))
+        throw new Error('teleds(): vault guard not ported yet');
+    if (u.utraptype === TT_BURIEDBALL || game.uball)
+        throw new Error('teleds(): ball and chain not ported yet');
+    /* ball_active = (Punished && uball->where != OBJ_FREE): no ball */
+    /* reset_utrap(FALSE): set_utrap(0, 0) */
+    u.utrap = 0;
+    u.utraptype = 0;
+    const was_swallowed = u.uswallow; /* set_ustuck(Null) clears uswallow */
+    set_ustuck(null);
+    u.ux0 = u.ux;
+    u.uy0 = u.uy;
+
+    /* !hideunder(&youmonst) && youmonst.data->mlet == S_MIMIC: mimics stop
+       being unnoticed */
+    if (game.youmonst.data.mlet === S_MIMIC)
+        throw new Error('teleds(): hideunder() for a mimic hero not ported yet');
+
+    if (was_swallowed)
+        throw new Error('teleds(): leaving an engulfer not ported yet');
+
+    /* must set u.ux, u.uy after drag_ball(), which may need to know
+       the old position if allow_drag is true... */
+    u_on_newpos(nux, nuy); /* set u.<x,y>, usteed-><mx,my>; cliparound() */
+    /* fill_pit(u.ux0, u.uy0): a pit/hole with a boulder at the old spot */
+    {
+        const t = t_at(u.ux0, u.uy0);
+        if (t && (is_pit(t.ttyp) || is_hole(t.ttyp)) && sobj_at(BOULDER, u.ux0, u.uy0))
+            throw new Error('teleds(): fill_pit() not ported yet');
+    }
+    /* update_player_regions(): regions aren't ported yet */
+    if (game.regions && game.regions.length)
+        throw new Error('teleds(): update_player_regions() not ported yet');
+    /*
+     *  Make sure the hero disappears from the old location.  This will
+     *  not happen if she is teleported within sight of her previous
+     *  location.  Force a full vision recalculation because the hero
+     *  is now in a new location.
+     */
+    newsym(u.ux0, u.uy0);
+    see_monsters();
+    game.vision_full_recalc = 1;
+    nomul(0);
+    /* notice_mon_off(): a11y mon_notices is off by default */
+    vision_recalc(0); /* vision before effects */
+
+    /* this used to take place sooner, but if a --More-- prompt was issued
+       then the old map display was shown instead of the new one */
+    if (is_teleport && game.flags.verbose !== false)
+        await pline(`You materialize in ${(nux === u.ux0 && nuy === u.uy0)
+                                          ? "the same" : "a different"} location!`);
+    /* if terrain type changes, levitation or flying might become blocked
+       or unblocked; switch_terrain() might issue a message */
+    if (game.level.at(u.ux, u.uy).typ !== game.level.at(u.ux0, u.uy0).typ
+        && (game.u.uprops?.[LEVITATION]?.extrinsic || game.u.uprops?.[FLYING]?.extrinsic
+            || game.u.uprops?.[LEVITATION]?.intrinsic || game.u.uprops?.[FLYING]?.intrinsic))
+        throw new Error('teleds(): switch_terrain() not ported yet');
+    /* spoteffects(TRUE): not ported yet (as in hack.c domove_core());
+       stop where it would matter */
+    if (t_at(u.ux, u.uy) || is_pool_or_lava_at(u.ux, u.uy))
+        throw new Error('teleds(): spoteffects() not ported yet');
+    /* invocation_message(): only on the vibrating square level */
+    /* notice_mon_on(); notice_all_mons(TRUE): a11y mon_notices is off */
+}
+
+function in_rooms_vault(urooms) {
+    /* C ref: vault.c vault_occupied() */
+    for (const r of urooms) {
+        const rno = (typeof r === 'number') ? r : r.charCodeAt(0);
+        const room = game.level.rooms?.[rno - ROOMOFFSET];
+        if (room && room.rtype === VAULT)
+            return true;
+    }
+    return false;
+}
+
+function is_pool_or_lava_at(x, y) {
+    const typ = game.level.at(x, y).typ;
+    return typ === POOL || typ === MOAT || typ === WATER || typ === LAVAPOOL
+           || typ === LAVAWALL;
 }
 
 // C ref: teleport.c level_tele() -- the prompt for the destination; the
