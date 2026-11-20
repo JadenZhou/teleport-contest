@@ -17,6 +17,7 @@ import { Monnam } from './mhitm.js';
 import { mpickobj } from './steal.js';
 import { find_defensive, find_offensive, find_misc } from './muse.js';
 import { mattacku } from './mhitu.js';
+import { visible_region_at, create_gas_cloud } from './region.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -1383,8 +1384,17 @@ function m_postmove_effect(mtmp) {
 }
 // C ref: monmove.c m_everyturn_effect()
 export function m_everyturn_effect(mtmp) {
-    if (mtmp.data === mons[M.PM_FOG_CLOUD])
-        throw new Error('m_everyturn_effect(): create_gas_cloud() not ported yet');
+    const is_u = (mtmp === game.youmonst);
+    const x = is_u ? game.u.ux : mtmp.mx,
+          y = is_u ? game.u.uy : mtmp.my;
+
+    if (mtmp.data === mons[M.PM_FOG_CLOUD]) {
+        /* don't leave a vapor cloud if some other gas cloud is already
+           present, or when flowing under closed doors so that visibility
+           changes aren't mixed with messages about doing such */
+        if (!closed_door(x, y) && !visible_region_at(x, y))
+            create_gas_cloud(x, y, 1, 0); /* harmless vapor */
+    }
 }
 
 // ── C ref: monmove.c postmov() ──
