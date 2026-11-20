@@ -24,8 +24,11 @@ import { mons } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
 import { is_pool } from './makemon.js';
+import { t_at } from './trap.js';
+import { engr_at } from './engrave.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
-         CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, DEC_TO_UNICODE } from './terminal.js';
+         CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
+         CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE } from './terminal.js';
 
 // ── ANSI color codes ──
 // Maps CLR_* constants (0-15) to ANSI SGR color codes.
@@ -318,20 +321,110 @@ function map_background(x, y, show) {
         show_glyph_cell(x, y, tg.ch, tg.color, tg.dec);
 }
 
-// C ref: display.c _map_location() -- traps and engravings are not
-// ported yet
+// C ref: defsym.h trap PCHAR()s, S_arrow_trap .. S_trapped_chest: the
+// default symbol and color, indexed by trap_to_defsym(ttyp) - S_arrow_trap
+// (rm.h: S_arrow_trap + ttyp - 1); the DECgraphics symset doesn't change
+// them.  HI_METAL is CLR_CYAN, HI_ZAP is CLR_BRIGHT_BLUE.
+const TRAP_DEFSYMS = [
+    ['^', CLR_CYAN],           /* S_arrow_trap */
+    ['^', CLR_CYAN],           /* S_dart_trap */
+    ['^', CLR_GRAY],           /* S_falling_rock_trap */
+    ['^', CLR_BROWN],          /* S_squeaky_board */
+    ['^', CLR_CYAN],           /* S_bear_trap */
+    ['^', CLR_RED],            /* S_land_mine */
+    ['^', CLR_GRAY],           /* S_rolling_boulder_trap */
+    ['^', CLR_BRIGHT_BLUE],    /* S_sleeping_gas_trap */
+    ['^', CLR_BLUE],           /* S_rust_trap */
+    ['^', CLR_ORANGE],         /* S_fire_trap */
+    ['^', CLR_BLACK],          /* S_pit */
+    ['^', CLR_BLACK],          /* S_spiked_pit */
+    ['^', CLR_BROWN],          /* S_hole */
+    ['^', CLR_BROWN],          /* S_trap_door */
+    ['^', CLR_MAGENTA],        /* S_teleportation_trap */
+    ['^', CLR_MAGENTA],        /* S_level_teleporter */
+    ['^', CLR_BRIGHT_MAGENTA], /* S_magic_portal */
+    ['"', CLR_GRAY],           /* S_web */
+    ['^', CLR_GRAY],           /* S_statue_trap */
+    ['^', CLR_BRIGHT_BLUE],    /* S_magic_trap */
+    ['^', CLR_BRIGHT_BLUE],    /* S_anti_magic_trap */
+    ['^', CLR_BRIGHT_GREEN],   /* S_polymorph_trap */
+    ['~', CLR_MAGENTA],        /* S_vibrating_square */
+    ['^', CLR_ORANGE],         /* S_trapped_door */
+    ['^', CLR_ORANGE],         /* S_trapped_chest */
+];
+
+// C ref: display.c map_trap()
+/*
+ * Map the trap and print it out if directed.  This routine assumes that the
+ * hero can physically see the location.
+ */
+function map_trap(trap, show) {
+    const x = trap.tx, y = trap.ty;
+    const [ch, color] = TRAP_DEFSYMS[trap.ttyp - 1]; /* trap_to_glyph(trap) */
+    const glyph = { ch, color, decgfx: false };
+
+    if (game.level.flags?.hero_memory)
+        game.level.at(x, y).remembered_glyph = glyph;
+    if (show)
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+}
+
+// C ref: engrave.h spot_shows_engravings()
+function spot_shows_engravings(x, y) {
+    const typ = game.level.at(x, y).typ;
+    return typ === CORR || typ === ICE || typ === ROOM;
+}
+
+// C ref: display.c map_engraving()
+/*
+ * Map the engraving and print it out if directed.
+ */
+function map_engraving(ep, show) {
+    const x = ep.engr_x, y = ep.engr_y;
+    /* engraving_to_glyph(ep): engrave.h engraving_to_defsym() is
+       S_engrcorr on a corridor, else S_engroom; DECgraphics doesn't
+       change either */
+    const glyph = (game.level.at(x, y).typ === CORR)
+        ? { ch: '#', color: CLR_BRIGHT_BLUE, decgfx: false }  /* S_engrcorr */
+        : { ch: '`', color: CLR_BRIGHT_BLUE, decgfx: false }; /* S_engroom */
+
+    if (game.level.flags?.hero_memory)
+        game.level.at(x, y).remembered_glyph = glyph;
+    if (show)
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+}
+
+// C ref: display.c _map_location() -- update_lastseentyp() and gas
+// regions (show_region()) are not ported yet
 function _map_location(x, y, show) {
-    let obj;
-    if ((obj = vobj_at(x, y)) && !covers_objects(x, y))
+    let obj, trap, ml_ep;
+    if ((obj = vobj_at(x, y)) && !covers_objects(x, y)) {
         map_object(obj, show);
-    else
+    } else if ((trap = t_at(x, y))
+               && trap.tseen && !covers_objects(x, y) /* covers_traps() */) {
+        map_trap(trap, show);
+    } else if (spot_shows_engravings(x, y)
+               && (ml_ep = engr_at(x, y)) !== null
+               && ml_ep.erevealed
+               && !covers_objects(x, y) /* covers_traps() */) {
+        map_engraving(ml_ep, show);
+    } else {
         map_background(x, y, show);
+    }
 }
 
 // ── newsym ──
 export function newsym(x, y) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
+
+    /* C ref: display.c newsym(): when the spot can be seen, an engraving
+       there is revealed, even when covered by objects or a monster */
+    if (cansee(x, y)) {
+        const ep = engr_at(x, y);
+        if (ep)
+            ep.erevealed = 1;
+    }
 
     if (game.u?.ux === x && game.u?.uy === y) {
         // Hero: update the remembered spot under the hero, then show self
