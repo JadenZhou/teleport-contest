@@ -1,10 +1,10 @@
 {
- "when": "2026-11-20T05:14:02.390Z",
+ "when": "2026-11-20T09:05:40.819Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
    "total": 5449,
-   "jsTotal": 3795,
+   "jsTotal": 4134,
    "totalScreens": 595,
    "valuePrefix": 3130,
    "rulePrefix": 3130,
@@ -28,7 +28,7 @@
      "rn2(100)=89 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": "Error: canspotmon(): see_with_infrared()/sensemon() not ported yet |     at canspotmon (file:///Users/JadenZ/code/teleport-contest/js/display.js:689:11) |     at pre_mm_attack (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:187:14) |     at missmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:196:5)"
   },
   {
    "session": "dev81041-feeding-pony.session.json",
@@ -57,7 +57,7 @@
      "rn2(100)=66 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dog_move(): dog_eat() not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1237:31) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
+   "error": "Error: dog_move(): dog_eat() not ported yet |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1237:31) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1155:45) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:22)"
   },
   {
    "session": "dev81082-wizard-water-demon.session.json",
@@ -86,12 +86,12 @@
      "rn2(12)=5 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1417:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1367:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:28)"
   },
   {
    "session": "dev81123-rogue-snake-swamp.session.json",
    "total": 8070,
-   "jsTotal": 3700,
+   "jsTotal": 3828,
    "totalScreens": 302,
    "valuePrefix": 3294,
    "rulePrefix": 3294,
@@ -115,7 +115,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": "Error: mondied(): make_corpse() not ported yet |     at mondied (file:///Users/JadenZ/code/teleport-contest/js/mon.js:367:15) |     at async monkilled (file:///Users/JadenZ/code/teleport-contest/js/mon.js:390:9) |     at async mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:494:9)"
   },
   {
    "session": "dev81164-swimmer-mforce.session.json",
@@ -173,7 +173,7 @@
      "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1367:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:28)"
   },
   {
    "session": "dev81246-friday13-save-then-fullmoon-restore.session.json",
@@ -236,7 +236,7 @@
   {
    "session": "dev81328-dequa-fountain-explore.session.json",
    "total": 5852,
-   "jsTotal": 6300,
+   "jsTotal": 6365,
    "totalScreens": 714,
    "valuePrefix": 2537,
    "rulePrefix": 2537,
@@ -260,7 +260,7 @@
      "rn2(12)=7 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: mpickstuff(): splitobj()/mpickobj() not ported yet |     at mpickstuff (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1514:19) |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1464:17) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12)"
+   "error": "Error: x_monnam(): named/special monsters not ported yet |     at x_monnam_the (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:63:15) |     at mon_nam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:69:33) |     at Monnam (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:72:15)"
   },
   {
    "session": "dev81369-valk-level2-pit-dog-wait.session.json",
@@ -289,7 +289,7 @@
      "rn2(100)=10 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:781:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1103:12) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:781:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1103:12) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1155:45)"
   },
   {
    "session": "dev81410-healer-newmoon-eat-zap.session.json",
@@ -323,36 +323,36 @@
   {
    "session": "dev81451-samurai-altar-pray.session.json",
    "total": 4034,
-   "jsTotal": 2832,
+   "jsTotal": 2867,
    "totalScreens": 67,
-   "valuePrefix": 2832,
-   "rulePrefix": 2832,
-   "screens": 10,
-   "honestScreens": 10,
-   "firstScreenMiss": 10,
+   "valuePrefix": 2867,
+   "rulePrefix": 2867,
+   "screens": 11,
+   "honestScreens": 11,
+   "firstScreenMiss": 11,
    "first": {
-    "index": 2832,
-    "step": 10,
-    "c": "rn2(5)=2 @ distfleeck(monmove.c:538)",
+    "index": 2867,
+    "step": 11,
+    "c": "rn2(5)=3 @ distfleeck(monmove.c:538)",
     "js": "(none: JS log ended)",
     "kind": "value",
     "cCaller": "distfleeck",
     "jsCaller": null,
     "context": [
-     "rn2(52)=0 @ dog_move(dogmove.c:1238)",
-     "rn2(5)=4 @ distfleeck(monmove.c:538)",
-     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(12)=11 @ dog_move(dogmove.c:1257)",
+     "rn2(12)=3 @ dog_move(dogmove.c:1257)",
      "rn2(5)=2 @ distfleeck(monmove.c:538)",
-     "rn2(12)=6 @ mcalcmove(mon.c:1164)",
-     "rn2(12)=11 @ mcalcmove(mon.c:1164)"
+     "rn2(5)=3 @ distfleeck(monmove.c:538)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)",
+     "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: mpickstuff(): splitobj()/mpickobj() not ported yet |     at mpickstuff (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1514:19) |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1464:17) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1252:20)"
+   "error": "Error: m_dowear(): m_dowear_type() not ported yet |     at m_dowear (file:///Users/JadenZ/code/teleport-contest/js/mon.js:560:11) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:476:13) |     at movemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:504:19)"
   },
   {
    "session": "dev81492-ten-diverse-deaths.session.json",
    "total": 3118,
-   "jsTotal": 2726,
+   "jsTotal": 4615,
    "totalScreens": 79,
    "valuePrefix": 2709,
    "rulePrefix": 2709,
@@ -376,7 +376,7 @@
      "rnd(20)=20 @ hitum(uhitm.c:780)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": null
   },
   {
    "session": "dev81533-orc-rogue-kick-search.session.json",
@@ -434,7 +434,7 @@
      "rn2(12)=6 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): mintrap() not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1417:19) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1367:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:28)"
   },
   {
    "session": "dev81615-ranger-quiver-throw-travel-engrave.session.json",
@@ -505,7 +505,7 @@
    "honestScreens": 3,
    "firstScreenMiss": 1,
    "first": null,
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1367:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:28)"
   },
   {
    "session": "dev81738-knight-ride-combat.session.json",
@@ -621,7 +621,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:781:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1103:12) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:781:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1103:12) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1155:45)"
   },
   {
    "session": "dev81902-wizard-extcmd-wishlist.session.json",
@@ -650,7 +650,7 @@
      "rn2(2)=1 @ blessorcurse(mkobj.c:1846)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1385:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1367:12) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:28)"
   },
   {
    "session": "dev81943-wizard-wear-shop.session.json",
@@ -679,7 +679,7 @@
      "rn2(1)=0 @ rnd_rect(rect.c:106)"
     ]
    },
-   "error": "Error: m_move(): shk_move()/gd_move()/pri_move() not ported yet |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1183:15) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:28) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
+   "error": "Error: m_move(): shk_move()/gd_move()/pri_move() not ported yet |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1165:15) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:28) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:212:29)"
   },
   {
    "session": "dev81984-monk-north-search.session.json",
@@ -708,7 +708,7 @@
      "rn2(5)=0 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: find_defensive() not ported yet |     at find_defensive (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:462:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:596:9) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
+   "error": "Error: dochug(): mon_wield_item() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:599:15) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:212:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
   },
   {
    "session": "dev82025-wizard-world-tour.session.json",
@@ -771,7 +771,7 @@
   {
    "session": "dev82107-priest-quest-tour.session.json",
    "total": 63213,
-   "jsTotal": 3229,
+   "jsTotal": 3243,
    "totalScreens": 324,
    "valuePrefix": 3166,
    "rulePrefix": 3166,
@@ -795,7 +795,7 @@
      "rn2(11)=8 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": "Error: mm_2way_aggression(): zombie_form() not ported yet |     at mm_2way_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:743:15) |     at mm_aggression (file:///Users/JadenZ/code/teleport-contest/js/mon.js:759:46) |     at mfndpos (file:///Users/JadenZ/code/teleport-contest/js/mon.js:912:49)"
   },
   {
    "session": "dev82148-barbarian-quest-tour.session.json",
@@ -882,7 +882,7 @@
      "rnd(20)=19 @ mattacku(mhitu.c:806)"
     ]
    },
-   "error": "Error: searches_for_item(): cures_stoning() not ported yet |     at searches_for_item (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:999:19) |     at mon_would_take_item (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:903:12) |     at m_search_items (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1094:27)"
+   "error": "Error: searches_for_item(): cures_stoning() not ported yet |     at searches_for_item (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:981:19) |     at mon_would_take_item (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:885:12) |     at m_search_items (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1076:27)"
   },
   {
    "session": "dev82271-wizard-hallu-actions.session.json",
@@ -911,7 +911,7 @@
      "rn2(6)=0 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1435:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:647:22)"
+   "error": "Error: postmov(): door opening not ported yet |     at postmov (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1426:23) |     at m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1155:16) |     at async dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:627:22)"
   },
   {
    "session": "dev82312-priest-cast-read-turn.session.json",
@@ -1056,16 +1056,16 @@
      "rn2(5)=0 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:781:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1103:12) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1173:45)"
+   "error": "Error: dog_goal(): do_clear_area(wantdoor) not ported yet |     at dog_goal (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:781:23) |     at dog_move (file:///Users/JadenZ/code/teleport-contest/js/dogmove.js:1103:12) |     at async m_move (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:1155:45)"
   },
   {
    "session": "dev82517-tourist-eat-throw.session.json",
    "total": 3105,
-   "jsTotal": 3091,
+   "jsTotal": 3117,
    "totalScreens": 26,
    "valuePrefix": 3032,
    "rulePrefix": 3032,
-   "screens": 1,
+   "screens": 2,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
@@ -1085,12 +1085,12 @@
      "rn2(100)=41 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": null
   },
   {
    "session": "dev82558-wizard-quaff-zap-read.session.json",
    "total": 3320,
-   "jsTotal": 3246,
+   "jsTotal": 3349,
    "totalScreens": 230,
    "valuePrefix": 3170,
    "rulePrefix": 3170,
@@ -1114,7 +1114,7 @@
      "rn2(8)=3 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: dochug(): mattacku() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:705:19) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": "Error: mhitm_adtyping(): damage type 6 not ported yet |     at mhitm_adtyping (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:397:15) |     at mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:465:5) |     at hitmm (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:370:18)"
   },
   {
    "session": "dev82599-wizard-custom-binds.session.json",
@@ -1148,7 +1148,7 @@
   {
    "session": "dev82640-knight-coverage.session.json",
    "total": 71392,
-   "jsTotal": 6575,
+   "jsTotal": 14330,
    "totalScreens": 1112,
    "valuePrefix": 2967,
    "rulePrefix": 2967,
@@ -1172,41 +1172,41 @@
      "rnd(7)=2 @ drain_en(trap.c:5222)"
     ]
    },
-   "error": "Error: find_defensive() not ported yet |     at find_defensive (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:462:11) |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:596:9) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29)"
+   "error": "Error: level_tele(): find_hell() not ported yet |     at level_tele (file:///Users/JadenZ/code/teleport-contest/js/teleport.js:320:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:181:9) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/js/allmain.js:610:9)"
   },
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
    "total": 4743,
-   "jsTotal": 4632,
+   "jsTotal": 4967,
    "totalScreens": 124,
-   "valuePrefix": 4632,
-   "rulePrefix": 4632,
+   "valuePrefix": 4634,
+   "rulePrefix": 4634,
    "screens": 86,
    "honestScreens": 86,
    "firstScreenMiss": 86,
    "first": {
-    "index": 4632,
+    "index": 4634,
     "step": 91,
     "c": "rn2(5)=4 @ distfleeck(monmove.c:538)",
-    "js": "(none: JS log ended)",
+    "js": "rn2(1)=0 @ dog_move",
     "kind": "value",
     "cCaller": "distfleeck",
-    "jsCaller": null,
+    "jsCaller": "dog_move",
     "context": [
-     "rn2(200)=6 @ dosounds(sounds.c:238)",
-     "rn2(20)=17 @ gethungry(eat.c:3191)",
      "rn2(82)=6 @ moveloop_core(allmain.c:360)",
      "rn2(5)=4 @ distfleeck(monmove.c:538)",
      "rn2(4)=1 @ dog_goal(dogmove.c:575)",
-     "rn2(5)=4 @ distfleeck(monmove.c:538)"
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(5)=0 @ distfleeck(monmove.c:538)",
+     "rn2(4)=2 @ dochug(monmove.c:886)"
     ]
    },
-   "error": "Error: dochug(): m_arrival() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:527:15) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": null
   },
   {
    "session": "dev82722-tourist-stress-disaster.session.json",
    "total": 7545,
-   "jsTotal": 7375,
+   "jsTotal": 7384,
    "totalScreens": 194,
    "valuePrefix": 7366,
    "rulePrefix": 7366,
@@ -1230,7 +1230,7 @@
      "rn2(100)=65 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: dochug(): m_arrival() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:527:15) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
+   "error": "Error: mondied(): make_corpse() not ported yet |     at mondied (file:///Users/JadenZ/code/teleport-contest/js/mon.js:367:15) |     at async monkilled (file:///Users/JadenZ/code/teleport-contest/js/mon.js:390:9) |     at async mdamagem (file:///Users/JadenZ/code/teleport-contest/js/mhitm.js:494:9)"
   },
   {
    "session": "dev82763-tourist-starter.session.json",
@@ -1264,11 +1264,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 126609,
-  "value": 126609,
+  "rule": 126646,
+  "value": 126646,
   "rolls": 504996,
-  "honestScreens": 428,
-  "screens": 452,
+  "honestScreens": 429,
+  "screens": 454,
   "totalScreens": 8438
  },
  "todo": [
@@ -1293,10 +1293,10 @@
   {
    "fn": "distfleeck",
    "sessions": 6,
-   "blockedRolls": 5658,
+   "blockedRolls": 5621,
    "examples": [
     "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
-    "dev81451-samurai-altar-pray @2832: C \"rn2(5)=2 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
+    "dev81451-samurai-altar-pray @2867: C \"rn2(5)=3 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
