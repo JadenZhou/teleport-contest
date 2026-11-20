@@ -268,7 +268,7 @@ export function simpleonames(obj) {
 }
 
 /* C ref: objnam.c the() -- names that don't start with a capital letter */
-function the(str) {
+export function the(str) {
     if (!str)
         return "the []";
     if (str.toLowerCase().startsWith("the ")) {

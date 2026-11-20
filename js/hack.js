@@ -44,7 +44,13 @@ import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
 import { curr_mon_load } from './dogmove.js';
 import { bad_rock } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
-import { an } from './objnam.js';
+import { an, xname } from './objnam.js';
+import { the } from './iactions.js';
+import { obj_extract_self, place_object } from './mkobj.js';
+import { a_monnam, y_monnam } from './do_name.js';
+import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
+         LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
+import { CORPSE } from './objects.js';
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -987,12 +993,243 @@ export async function test_move(ux, uy, dx, dy, mode) {
         if (game.context.run >= 2
             && !(Blind() || uhave(HALLUC)) /* && !could_move_onto_boulder() */)
             throw new Error('test_move(): could_move_onto_boulder() not ported yet');
-        if (mode === DO_MOVE)
-            throw new Error('test_move(): moverock() not ported yet');
+        if (mode === DO_MOVE) {
+            /* tunneling monsters will chew before pushing */
+            if (tunnels(game.youmonst.data) && !needspick(game.youmonst.data)
+                && !Sokoban()) {
+                throw new Error('test_move(): still_chewing() not ported yet');
+            } else if ((await moverock()) < 0)
+                return false;
+        }
     }
 
     /* OK, it is a legal place to move. */
     return true;
+}
+
+/* C ref: hacklib.c upstart() */
+function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+
+// C ref: hack.c movobj()
+function movobj(obj, ox, oy) {
+    /* optimize by leaving on the fobj chain? */
+    obj_extract_self(obj); /* remove_object() */
+    const mtmp = m_at(obj.ox, obj.oy);
+    if (mtmp && mtmp.mundetected)
+        throw new Error('movobj(): maybe_unhide_at() not ported yet');
+    newsym(obj.ox, obj.oy);
+    place_object(obj, ox, oy);
+    newsym(ox, oy);
+}
+
+// C ref: hack.c cannot_push_msg()
+async function cannot_push_msg(otmp, sx, sy) {
+    const what = the(xname(otmp));
+    if (game.u.usteed)
+        throw new Error('cannot_push_msg(): steed message not ported yet');
+    else
+        await You(`try to move ${what}, but in vain.`);
+    if (Blind())
+        throw new Error('cannot_push_msg(): feel_location() not ported yet');
+    void sx, sy;
+}
+
+// C ref: hack.c cannot_push()
+async function cannot_push(otmp, sx, sy) {
+    void otmp;
+    if (throws_rocks(game.youmonst.data))
+        throw new Error('cannot_push(): giant stepping over a boulder not ported yet');
+    if (could_move_onto_boulder(sx, sy))
+        throw new Error('cannot_push(): squeezing onto a boulder not ported yet');
+    return -1;
+}
+
+// C ref: hack.c could_move_onto_boulder() -- the cases a starting hero
+// can reach
+function could_move_onto_boulder(sx, sy) {
+    void sx, sy;
+    /* can if able to phaze through rock (must be poly'd, so not riding) */
+    if (Passes_walls())
+        return true;
+    /* can't when riding */
+    if (game.u.usteed)
+        return false;
+    if (throws_rocks(game.youmonst.data) || verysmall(game.youmonst.data))
+        throw new Error('could_move_onto_boulder(): giant/tiny hero not ported yet');
+    /* can squeeze to spot if carrying extremely little, otherwise can't */
+    /* squeezeablylightinvent() */
+    return (!game.invent || inv_weight() <= (WT_SQUEEZABLE_INV * -1));
+}
+
+// C ref: hack.c dopush()
+async function dopush(sx, sy, rx, ry, otmp, costly) {
+    {
+        let what;
+        let givemesg, easypush;
+        /* give boulder pushing feedback if this is a different
+           boulder than the last one pushed or if it's been at
+           least 2 turns since we last pushed this boulder;
+           unlike with Norep(), intervening messages don't cause
+           it to repeat, only doing something else in the meantime */
+        if (otmp.o_id !== game.bldrpush_oid) {
+            game.bldrpushtime = game.moves + 1;
+            game.bldrpush_oid = otmp.o_id;
+        }
+        givemesg = (game.moves > game.bldrpushtime + 2
+                    || game.moves < game.bldrpushtime);
+        what = givemesg ? the(xname(otmp)) : null;
+        if (!game.u.usteed) {
+            easypush = throws_rocks(game.youmonst.data);
+            if (givemesg)
+                await pline(`With ${easypush ? "little" : "great"} effort you move ${what}.`);
+            if (!easypush)
+                exercise(A_STR, true);
+        } else {
+            throw new Error('dopush(): steed pushing not ported yet');
+        }
+        game.bldrpushtime = game.moves;
+    }
+
+    /* Move the boulder *after* the message. */
+    /* glyph_is_invisible(levl[rx][ry].glyph): unmap_object() */
+    if (game.level.at(rx, ry).glyph_invisible)
+        throw new Error('dopush(): unmap_object() not ported yet');
+    otmp.next_boulder = 0;
+    movobj(otmp, rx, ry); /* does newsym(rx,ry) */
+    if (Blind()) {
+        throw new Error('dopush(): feel_location() not ported yet');
+    } else {
+        newsym(sx, sy);
+    }
+    if (costly || otmp.unpaid)
+        throw new Error('dopush(): shop billing not ported yet');
+}
+
+// C ref: hack.c moverock()
+async function moverock() {
+    const sx = game.u.ux + game.u.dx, sy = game.u.uy + game.u.dy; /* boulder starting position */
+    const ret = await moverock_core(sx, sy);
+    /* moverock_done(sx, sy) */
+    for (const otmp of game.level.objects || [])
+        if (otmp.ox === sx && otmp.oy === sy && otmp.where === 'OBJ_FLOOR'
+            && otmp.otyp === BOULDER)
+            otmp.next_boulder = 0; /* resume normal xname() for this obj */
+    return ret;
+}
+
+// C ref: hack.c moverock_core() -- pushing into traps, pools, Sokoban
+// and the m-prefix cases are not ported yet
+async function moverock_core(sx, sy) {
+    let rx, ry;
+    let otmp, ttmp, mtmp;
+    let costly, firstboulder = true;
+
+    while ((otmp = sobj_at(BOULDER, sx, sy)) !== null && otmp) {
+        if (Blind())
+            throw new Error('moverock_core(): feeling a boulder while blind not ported yet');
+
+        /* when otmp->next_boulder is 1, xname() will format it as
+           "next boulder" instead of just "boulder" */
+        otmp.next_boulder = firstboulder ? 0 : 1;
+        firstboulder = false;
+
+        /* make sure that this boulder is visible as the top object */
+        const top = (game.level.objects || []).find(
+            o => o.ox === sx && o.oy === sy && o.where === 'OBJ_FLOOR');
+        if (otmp !== top)
+            movobj(otmp, sx, sy);
+
+        rx = game.u.ux + 2 * game.u.dx; /* boulder destination position */
+        ry = game.u.uy + 2 * game.u.dy;
+        nomul(0);
+
+        if (game.context.nopick)
+            throw new Error('moverock_core(): m-prefix move onto a boulder not ported yet');
+        if (Levitation() || Is_airlevel(game.u.uz))
+            throw new Error('moverock_core(): no leverage while levitating not ported yet');
+        if (verysmall(game.youmonst.data) && !game.u.usteed)
+            throw new Error('moverock_core(): too small to push not ported yet');
+        if (isok(rx, ry) && !IS_OBSTRUCTED(game.level.at(rx, ry).typ)
+            && game.level.at(rx, ry).typ !== IRONBARS
+            && (!IS_DOOR(game.level.at(rx, ry).typ) || !(game.u.dx && game.u.dy)
+                || doorless_door(rx, ry)) && !sobj_at(BOULDER, rx, ry)) {
+            ttmp = t_at(rx, ry);
+            mtmp = m_at(rx, ry);
+            costly = false; /* costly_spot(sx, sy) && shop_keeper(): below */
+            if (game.level.flags?.has_shop)
+                throw new Error('moverock_core(): costly_spot() not ported yet');
+
+            /* KMH -- Sokoban doesn't let you push boulders diagonally */
+            if (Sokoban() && game.u.dx && game.u.dy)
+                throw new Error('moverock_core(): Sokoban diagonal push not ported yet');
+
+            /* revive_nasty(rx, ry, "You sense movement on the other side.") */
+            if ((game.level.objects || []).some(
+                o => o.ox === rx && o.oy === ry && o.where === 'OBJ_FLOOR'
+                     && o.otyp === CORPSE))
+                throw new Error('moverock_core(): revive_nasty() not ported yet');
+
+            if (mtmp && !noncorporeal(mtmp.data)
+                && (!mtmp.mtrapped || !(ttmp && is_pit(ttmp.ttyp)))) {
+                let deliver_part1 = false;
+
+                if (canspotmon(mtmp)) {
+                    await pline(`There's ${a_monnam(mtmp)} on the other side.`);
+                    deliver_part1 = true;
+                } else {
+                    throw new Error('moverock_core(): You_hear() a monster behind a boulder not ported yet');
+                }
+                if (game.flags?.verbose ?? true) {
+                    const you_or_steed = game.u.usteed ? y_monnam(game.u.usteed) : "you";
+                    await pline(`${deliver_part1 ? "Perhaps that's why " : ""}`
+                                + `${deliver_part1 ? you_or_steed : upstart(you_or_steed)}`
+                                + ` cannot move ${deliver_part1 ? "it" : the(xname(otmp))}.`);
+                }
+                return await cannot_push(otmp, sx, sy);
+            }
+
+            if (closed_door(rx, ry)) {
+                await cannot_push_msg(otmp, sx, sy);
+                return await cannot_push(otmp, sx, sy);
+            }
+
+            /* at this point the boulder should be able to move (though
+               potentially into something like a trap, pool, or lava) */
+
+            /* rumbling disturbs buried zombies */
+            if (game.level.buriedobjlist?.some(o => o.otyp === CORPSE && o.timed))
+                throw new Error('moverock_core(): disturb_buried_zombies() not ported yet');
+
+            if (ttmp) {
+                switch (ttmp.ttyp) {
+                case LANDMINE: case SPIKED_PIT: case PIT: case HOLE:
+                case TRAPDOOR: case LEVEL_TELEP: case TELEP_TRAP:
+                case ROLLING_BOULDER_TRAP:
+                    throw new Error('moverock_core(): pushing a boulder into a trap not ported yet');
+                default:
+                    break; /* boulder not affected by this trap */
+                }
+            }
+
+            /* boulder_hits_pool(otmp, rx, ry, TRUE) */
+            if (is_pool(rx, ry) || is_lava(rx, ry))
+                throw new Error('moverock_core(): boulder_hits_pool() not ported yet');
+
+            /*
+             * Re-link at top of fobj chain so that pile order is preserved
+             * when level is restored.
+             */
+            if (otmp !== game.level.objects[0]) {
+                obj_extract_self(otmp); /* remove_object() */
+                place_object(otmp, otmp.ox, otmp.oy);
+            }
+            await dopush(sx, sy, rx, ry, otmp, costly);
+        } else {
+            await cannot_push_msg(otmp, sx, sy);
+            return await cannot_push(otmp, sx, sy);
+        }
+    }
+    return 0;
 }
 
 /* C ref: hack.c carrying_too_much() */

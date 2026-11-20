@@ -17,7 +17,17 @@ import { Is_container } from './mkobj.js';
 import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME } from './const.js';
 import { m_at } from './makemon.js';
 import { mon_nam } from './do_name.js';
-import { M1_NOHANDS } from './monsters.js';
+import { M1_NOHANDS, M1_NOLIMBS } from './monsters.js';
+import { BLINDED, HAND } from './const.js';
+import { CORPSE, BAG_OF_TRICKS } from './objects.js';
+import { t_at, is_pit } from './trap.js';
+import { can_reach_floor } from './engrave.js';
+import { freehand } from './wield.js';
+import { body_part } from './insight.js';
+import { the } from './iactions.js';
+import { xname } from './objnam.js';
+import { autokey, AUTOUNLOCK_APPLY_KEY, AUTOUNLOCK_UNTRAP,
+         AUTOUNLOCK_FORCE } from './lock.js';
 
 // C ref: display.h OBJ_AT() -> level.objects[x][y] != 0
 function OBJ_AT(x, y) {
@@ -147,6 +157,63 @@ function u_prop(p) {
     return !!(up?.intrinsic || up?.extrinsic);
 }
 
+// C ref: pickup.c able_to_loot()
+async function able_to_loot(x, y, looting) { /* loot vs tip */
+    const verb = looting ? "loot" : "tip";
+    const t = t_at(x, y);
+
+    if (!can_reach_floor(!!(t && is_pit(t.ttyp)))) {
+        throw new Error('able_to_loot(): cant_reach_floor() not ported yet');
+    } else if ((is_pool(x, y) && (looting || !game.u.uinwater)) || is_lava(x, y)) {
+        throw new Error('able_to_loot(): looting in water/lava not ported yet');
+    } else if ((game.youmonst.data.mflags1 & M1_NOLIMBS) === M1_NOLIMBS) {
+        await pline(`Without limbs, you cannot ${verb} anything.`);
+        return false;
+    } else if (looting && !freehand()) {
+        await pline(`Without a free ${body_part(HAND)}, you cannot loot anything.`);
+        return false;
+    }
+    return true;
+}
+
+// C ref: pickup.c do_loot_cont() -- a locked container so far;
+// use_container() is not ported yet
+async function do_loot_cont(cobj, cindex, ccount) {
+    void cindex;
+    if (!cobj)
+        return ECMD_OK;
+    if (cobj.olocked) {
+        const res = ECMD_OK;
+
+        if (cobj.lknown)
+            throw new Error('do_loot_cont(): The() not ported yet');
+        else
+            await pline(`Hmmm, ${the(xname(cobj))} turns out to be locked.`);
+        cobj.lknown = 1;
+
+        const autounlock = game.flags.autounlock ?? AUTOUNLOCK_APPLY_KEY;
+        if (autounlock) {
+            let unlocktool = null;
+
+            game.u.dz = 0; /* might be non-zero from previous command since
+                            * #loot isn't a move command; pick_lock() cares */
+            if (((autounlock & AUTOUNLOCK_APPLY_KEY) !== 0
+                 && (unlocktool = autokey(true)) !== null)
+                || (autounlock & AUTOUNLOCK_UNTRAP) !== 0) {
+                throw new Error('do_loot_cont(): pick_lock() not ported yet');
+            }
+            if ((autounlock & AUTOUNLOCK_FORCE) !== 0 && ccount === 1)
+                throw new Error('do_loot_cont(): u_have_forceable_weapon() not ported yet');
+        }
+        return res;
+    }
+    cobj.lknown = 1; /* floor container, so no need for update_inventory() */
+
+    if (cobj.otyp === BAG_OF_TRICKS)
+        throw new Error('do_loot_cont(): bag of tricks not ported yet');
+    throw new Error('do_loot_cont(): use_container() not ported yet');
+}
+
 // C ref: pickup.c doloot() -- the #loot command
 export async function doloot() {
     let res;
@@ -161,7 +228,7 @@ export async function doloot() {
 // saddle from mon; looting containers (able_to_loot(), do_loot_cont())
 // and monsters (loot_mon()) are not ported yet
 async function doloot_core() {
-    const c = -1;
+    let c = -1;
     let timepassed = 0;
     const cc = { x: 0, y: 0 };
     let underfoot = true;
@@ -197,7 +264,30 @@ async function doloot_core() {
         if (!goto_lootmon) {
             /* lootcont: */
             if ((num_conts = container_at(cc.x, cc.y, true)) > 0) {
-                throw new Error('doloot_core(): able_to_loot()/do_loot_cont() not ported yet');
+                let anyfound = false;
+
+                if (!(await able_to_loot(cc.x, cc.y, true)))
+                    return ECMD_OK;
+
+                if (u_prop(BLINDED) && !game.uarmg
+                    && objects_at(cc.x, cc.y).some(o => o.otyp === CORPSE))
+                    throw new Error('doloot_core(): will_feel_cockatrice() not ported yet');
+
+                if (num_conts > 1) {
+                    throw new Error('doloot_core(): "Loot which containers?" menu not ported yet');
+                } else {
+                    for (const cobj of objects_at(cc.x, cc.y)) {
+                        if (Is_container(cobj)) {
+                            anyfound = true;
+                            timepassed |= await do_loot_cont(cobj, 1, 1);
+                            if (game.abort_looting)
+                                /* chest trap or magic bag explosion or <esc> */
+                                return (timepassed ? ECMD_TIME : ECMD_OK);
+                        }
+                    }
+                    if (anyfound)
+                        c = 'y';
+                }
             } else if (IS_GRAVE(game.level.at(cc.x, cc.y).typ)) {
                 await You("need to dig up the grave to effectively loot it...");
             }
