@@ -24,6 +24,7 @@ import { litstate_rnd } from './mkmap.js';
 import { make_engr_at, wipe_engr_at, make_grave, random_engraving } from './engrave.js';
 import { create_des_coder, reset_xystart_size, fill_special_room, inside_room } from './sp_lev.js';
 import { getbones } from './bones.js';
+import { set_wall_state } from './display.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
@@ -2710,7 +2711,7 @@ function bound_digging() {
         }
 }
 
-function set_wall_state() { /* no-op for contest */ }
+/* set_wall_state(): display.c, in display.js */
 
 function level_finalize_topology() {
     bound_digging();
