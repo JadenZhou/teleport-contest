@@ -9,7 +9,8 @@ import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline } from './display.js';
 import { vision_recalc } from './vision.js';
-import { tty_clear_nhwindow, tty_get_ext_cmd } from './wintty.js';
+import { tty_clear_nhwindow, tty_get_ext_cmd, tty_yn_function } from './wintty.js';
+import { doride } from './steed.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD } from './func_tab.js';
 import { strcmpi, strncmpi } from './hacklib.js';
@@ -18,7 +19,7 @@ import { level_tele } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
 import { ddoinv } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
-         DOMOVE_RUSH } from './hack.js';
+         DOMOVE_RUSH, confdir } from './hack.js';
 export { domove };
 import { IS_DOOR, IS_FURNITURE } from './const.js';
 
@@ -61,6 +62,7 @@ const ext_funcs = {
     donull: () => donull(),
     wiz_level_change: () => wiz_level_change(),
     wiz_wish: () => wiz_wish(),
+    doride: () => doride(),
 };
 
 // C ref: cmd.c doextcmd() -- here is the main command dispatcher for
@@ -94,7 +96,8 @@ async function donull() {
         return 0; /* ECMD_OK */
     return 1; /* ECMD_TIME: Do nothing, but let other things happen */
 }
-import { COLNO, ROWNO } from './const.js';
+import { COLNO, ROWNO, xdir, ydir, zdir } from './const.js';
+import { PM_GRID_BUG } from './monsters.js';
 
 // Direction deltas: y u k
 //                   h . l
@@ -214,4 +217,83 @@ function set_move_cmd(dir, run) {
         game.context.run = run;
         game.domove_attempting |= (!run ? DOMOVE_WALK : DOMOVE_RUSH);
     }
+}
+
+/* C ref: cmd.c quitchars[] */
+const quitchars = " \r\n\x1b";
+/* C ref: cmd.c Cmd.dirchars[] (number_pad off): DIR_W .. DIR_SW, then
+   DIR_DOWN '>' and DIR_UP '<' */
+const dirchars = "hykulnjb><";
+
+// C ref: cmd.c movecmd() -- mode MV_ANY: a walk, run or rush key
+// (move_funcs[][]) sets u.dx, u.dy, u.dz; returns !u.dz for a move
+function movecmd(sym) {
+    const u = game.u;
+    let d = -1; /* DIR_ERR */
+    const c = String.fromCharCode(sym);
+    const lc = c.toLowerCase();
+
+    if (dirchars.includes(c))
+        d = dirchars.indexOf(c);                 /* MV_WALK, '>' and '<' */
+    else if ('hykulnjb'.includes(lc))
+        d = dirchars.indexOf(lc);                /* MV_RUN: shifted */
+    else if (sym >= 1 && sym <= 26
+             && 'hykulnjb'.includes(String.fromCharCode(sym + 96)))
+        d = dirchars.indexOf(String.fromCharCode(sym + 96)); /* MV_RUSH: ^dir */
+
+    if (d !== -1) {
+        u.dx = xdir[d];
+        u.dy = ydir[d];
+        u.dz = zdir[d];
+        return !u.dz;
+    }
+    u.dz = 0;
+    return 0;
+}
+
+// C ref: cmd.c dxdy_moveok()
+function dxdy_moveok() {
+    const u = game.u;
+    if (u.dx && u.dy && u.umonnum === PM_GRID_BUG) /* NODIAG(u.umonnum) */
+        return false;
+    return true;
+}
+
+// C ref: cmd.c getdir() -- the direction prompt; the command queue,
+// the mouse ('_') and the cmdassist help window aren't ported yet
+export async function getdir(s) {
+    const u = game.u;
+    let dirsym, is_mov;
+
+    /* cmdq_pop(): queued directions aren't ported */
+    dirsym = await tty_yn_function((s && s[0] !== '^') ? s : "In what direction?",
+                                   null, '\0');
+    if (typeof dirsym === 'string')
+        dirsym = dirsym.charCodeAt(0);
+    /* remove the prompt string so caller won't have to */
+    tty_clear_nhwindow(game.WIN_MESSAGE);
+
+    if (dirsym === 0x12) /* redraw_cmd(): ^R */
+        throw new Error('getdir(): ^R redraw not ported yet');
+    /* cmdq_add_key(CQ_REPEAT, dirsym): ^A repeat isn't ported */
+
+    const ch = String.fromCharCode(dirsym);
+    if (ch === '.' || ch === 's') { /* NHKF_GETDIR_SELF, NHKF_GETDIR_SELF2 */
+        u.dx = u.dy = u.dz = 0;
+    } else if (ch === '_') { /* NHKF_GETDIR_MOUSE */
+        throw new Error('getdir(): getpos() not ported yet');
+    } else if (!(is_mov = movecmd(dirsym)) && !u.dz) {
+        if (!quitchars.includes(ch)) {
+            /* help_dir() for '?' or iflags.cmdassist (default on):
+               "Invalid direction key!" */
+            throw new Error('getdir(): help_dir() not ported yet');
+        }
+        return 0;
+    } else if (is_mov && !dxdy_moveok()) {
+        await pline("You can't orient yourself that direction."); /* You_cant() */
+        return 0;
+    }
+    if (!u.dz)
+        confdir(false);
+    return 1;
 }
