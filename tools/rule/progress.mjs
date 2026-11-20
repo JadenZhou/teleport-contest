@@ -178,7 +178,12 @@ function report(results, violations) {
 
     const { countByCheck } = checksModule;
     const counts = countByCheck(violations);
+    // Real crashes (any JS error other than an explicit "not ported yet" stop,
+    // plus timeouts) count as a check: the gate fails if their number grows.
+    const crashed = results.filter(r => r.error && !/not ported yet/.test(r.error));
+    if (crashed.length) counts.crash = crashed.length;
     console.log(`STATIC ${JSON.stringify(counts)}`);
+    for (const r of crashed) console.log(`  CRASH ${r.session.replace('.session.json', '')}: ${r.error.slice(0, 140)}`);
 
     const todo = new Map();
     for (const r of results) {

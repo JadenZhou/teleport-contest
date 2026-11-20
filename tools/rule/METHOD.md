@@ -126,12 +126,21 @@ Label such gate runs `approved-regression: tutorial …` so the ledger shows the
 from the 11-19 midday run is in branch history (`worktree-agent-af985312d5014c71f`
 dd5e936, and stream B's reverted commits).
 
-**B. Match C's bugs: the pet starting square.** C's `enexto_core` (NEW_ENEXTO) reads an
-uninitialized `cc`, so the pet's start square depends on leftover stack contents. Recordings
-reproduce exactly, so the value is deterministic for the recorder binary. Find what it is
-with `lldb` on `nethack-c/recorder/src/nethack` (break in `enexto_core`, print `cc`, across
-several seeds), then reproduce that behavior in JS with a comment citing the C line and the
-evidence. **Mac-only task**, since it needs the local recorder build.
+**B. Pet starting square: CLOSED (2026-11-19).** The premise was false. With NEW_ENEXTO,
+`enexto_core` sets `*cc` before every `goodpos()` call, and makemon.c reads `cc` only after a
+TRUE return. lldb on the recorder (seed 2: hero (51,12) → pet (51,13); seed 4: (69,8) →
+(68,9)) matches JS. Pet-code stalls come from unported hero commands, not from this.
+
+**C. Crash fixes may merge without a gate gain (2026-11-19).** A crash in a secret session
+cuts off every screen after it. A faithful port that removes a crash or panic may merge when
+it causes **no regression on public or dev**, even if neither improves. The coordinator must
+verify that the crash is gone and that no private session regresses. Label these gate runs
+`crash-fix: …`. Agents get the task only as the C/Lua function to port (e.g. "port
+`des.gas_cloud`/`lspo_gas_cloud` and region.c `create_gas_cloud_selection`"), never details
+of a private session.
+
+**Gate: crash count.** `progress.mjs` counts real crashes (any error other than an explicit
+"not ported yet" stop, plus timeouts) in `STATIC` as `crash`, and the gate fails if it grows.
 
 **Crashes.** `runSegment` stops cleanly on any error and keeps the output so far (it can only
 truncate). `progress.mjs` still reports the error, so a panic shows up as an `ERROR`/`[JS
