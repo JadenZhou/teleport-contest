@@ -33,6 +33,8 @@ import { u_at } from './makemon.js';
 import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
          PIERCE } from './objects.js';
 import { mon_wield_item, hitval } from './weapon.js';
+import { thrwmu } from './mthrowu.js';
+import { Is_rogue_level } from './const.js';
 import { ART_SNICKERSNEE } from './artilist.js';
 import { genders } from './role.js';
 import { xname } from './objnam.js';
@@ -504,8 +506,8 @@ export async function mattacku(mtmp) {
             break;
         case AT_WEAP:
             if (v.range2) {
-                /* if (!Is_rogue_level(&u.uz)) */
-                throw new Error('mattacku(): thrwmu() not ported yet');
+                if (!Is_rogue_level(u.uz))
+                    await thrwmu(mtmp);
             } else {
                 let hittmp = 0;
 
