@@ -16,6 +16,7 @@ import { distant_name, doname } from './objnam.js';
 import { Monnam } from './mhitm.js';
 import { mpickobj } from './steal.js';
 import { find_defensive, find_offensive, find_misc } from './muse.js';
+import { mattacku } from './mhitu.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -663,7 +664,7 @@ export async function dochug(mtmp) {
              * same time -dlc
              */
             if (u.uswallow && mtmp === u.ustuck) /* engulfing_u(mtmp) */
-                throw new Error('dochug(): mattacku() not ported yet');
+                return await mattacku(mtmp);
             return 0;
         case MMOVE_DIED: /* monster died */
             return 1;
@@ -679,8 +680,10 @@ export async function dochug(mtmp) {
                                   || (Conflict() && resist_conflict_nyi()))) {
         if (((d.inrange && !d.scared) || panicattk) && !noattacks(mdat)
             /* [is this hp check really needed?] */
-            && (Upolyd() ? u.mh : u.uhp) > 0)
-            throw new Error('dochug(): mattacku() not ported yet');
+            && (Upolyd() ? u.mh : u.uhp) > 0) {
+            if (await mattacku(mtmp))
+                return 1; /* monster died (e.g. exploded) */
+        }
         if (mtmp.wormno)
             throw new Error('dochug(): wormhitu() not ported yet');
     }
