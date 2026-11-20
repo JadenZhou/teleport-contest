@@ -267,72 +267,11 @@ async function is_valid_jump_pos(x, y, magic, showmsg) {
     return true;
 }
 
-// C ref: apply.c get_valid_jump_position() -- getpos callback; C's
-// is_valid_jump_pos() with showmsg FALSE prints nothing, so this check
-// runs synchronously
-function get_valid_jump_position(x, y) {
-    if (!(isok(x, y)
-          && (ACCESSIBLE(game.level.at(x, y).typ) || Passes_walls())))
-        return false;
-    /* is_valid_jump_pos(x, y, gj.jumping_is_magic, FALSE) */
-    const u = game.u;
-    const magic = game.jumping_is_magic;
-    const HJumping = uprop(JUMPING).intrinsic || 0;
-    const EJumping = uprop(JUMPING).extrinsic || 0;
-
-    if (!magic && !(HJumping & ~INTRINSIC) && !EJumping && distu(x, y) !== 5)
-        return false;
-    else if (distu(x, y) > (magic ? 6 + magic * 3 : 9))
-        return false;
-    else if (!cansee(x, y))
-        return false;
-    const lev = game.level.at(u.ux, u.uy);
-    const dx = x - u.ux, dy = y - u.uy;
-    let ax = Math.abs(dx), ay = Math.abs(dy);
-    const diag = (magic || Passes_walls() || (!dx && !dy)) ? jAny
-                 : !dy ? jHorz : !dx ? jVert : jDiag;
-    if (ax >= 2 * ay)
-        ay = 0;
-    else if (ay >= 2 * ax)
-        ax = 0;
-    const traj = (magic || Passes_walls() || (!ax && !ay)) ? jAny
-                 : !ay ? jHorz : !ax ? jVert : jDiag;
-    if (diag === jDiag && IS_DOOR(lev.typ)
-        && (lev.doormask & D_ISOPEN) !== 0
-        && (traj === jDiag
-            || ((traj & jHorz) !== 0) === (!!lev.horizontal)))
-        return false;
-    /* walk_path(&uc, &tc, check_jump, &traj): check_jump() is synchronous */
-    let px = u.ux, py = u.uy, err = 0, i = 0;
-    let wdx = x - u.ux, wdy = y - u.uy;
-    const xc = wdx < 0 ? -1 : 1, yc = wdy < 0 ? -1 : 1;
-    wdx = Math.abs(wdx);
-    wdy = Math.abs(wdy);
-    const arg = { traj };
-    if (wdx < wdy) {
-        while (i++ < wdy) {
-            py += yc;
-            err += wdx << 1;
-            if (err > wdy) {
-                px += xc;
-                err -= wdy << 1;
-            }
-            if (!check_jump(arg, px, py))
-                return false;
-        }
-    } else {
-        while (i++ < wdx) {
-            px += xc;
-            err += wdy << 1;
-            if (err > wdx) {
-                py += yc;
-                err -= wdx << 1;
-            }
-            if (!check_jump(arg, px, py))
-                return false;
-        }
-    }
-    return true;
+// C ref: apply.c get_valid_jump_position() -- getpos callback
+async function get_valid_jump_position(x, y) {
+    return (isok(x, y)
+            && (ACCESSIBLE(game.level.at(x, y).typ) || Passes_walls())
+            && await is_valid_jump_pos(x, y, game.jumping_is_magic, false));
 }
 
 // C ref: apply.c display_jump_positions()
@@ -403,7 +342,7 @@ export async function jump(magic) {
     cc.x = u.ux;
     cc.y = u.uy;
     game.jumping_is_magic = magic;
-    getpos_sethilite(display_jump_positions, get_valid_jump_position);
+    await getpos_sethilite(display_jump_positions, get_valid_jump_position);
     if (await getpos(cc, true, "the desired position") < 0)
         return ECMD_CANCEL; /* user pressed ESC */
     if (!(await is_valid_jump_pos(cc.x, cc.y, magic, true))) {

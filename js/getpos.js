@@ -48,17 +48,18 @@ function curs_map(x, y) {
 }
 
 // C ref: getpos.c getpos_getvalids_selection() -- the spots validf accepts
-function getpos_getvalids_selection(sel, validf) {
+// (the callbacks are async functions here)
+async function getpos_getvalids_selection(sel, validf) {
     if (!validf)
         return;
     for (let x = 1; x < COLNO; x++)
         for (let y = 0; y < ROWNO; y++)
-            if (validf(x, y))
+            if (await validf(x, y))
                 sel.add(x + y * COLNO);
 }
 
 // C ref: getpos.c getpos_sethilite()
-export function getpos_sethilite(gp_hilitef, gp_getvalidf) {
+export async function getpos_sethilite(gp_hilitef, gp_getvalidf) {
     const st = gp();
     const old_getvalid = st.getvalid;
     const old_map_frame_color = st.map_frame_color;
@@ -70,10 +71,10 @@ export function getpos_sethilite(gp_hilitef, gp_getvalidf) {
     if (gp_getvalidf !== old_getvalid)
         st.hilite_state = st.defaultHiliteState;
 
-    getpos_getvalids_selection(sel, st.getvalid);
+    await getpos_getvalids_selection(sel, st.getvalid);
     st.hilitefunc = gp_hilitef;
     st.getvalid = gp_getvalidf;
-    getpos_getvalids_selection(sel, st.getvalid);
+    await getpos_getvalids_selection(sel, st.getvalid);
     /* HI_ZAP framecolor: the tty background color of valid spots isn't
        drawn by the JS map renderer (nor captured in recorded screens) */
     st.map_frame_color = (st.hilite_state === HiliteBackground) ? 'HI_ZAP' : null;
@@ -87,10 +88,10 @@ export function getpos_sethilite(gp_hilitef, gp_getvalidf) {
 }
 
 // C ref: getpos.c mapxy_valid()
-export function mapxy_valid(x, y) {
+export async function mapxy_valid(x, y) {
     const st = gp();
     if (st.getvalid)
-        return st.getvalid(x, y);
+        return await st.getvalid(x, y);
     return false;
 }
 
@@ -112,7 +113,7 @@ export async function auto_describe(cx, cy) {
         const tmpbuf = coord_desc(cx, cy, game.iflags?.getpos_coords);
         const autodescribe = game.iflags?.autodescribe !== false;
         const msg = `${firstmatch}${tmpbuf ? " " : ""}${tmpbuf}`
-            + `${(autodescribe && st.getvalid && !st.getvalid(cx, cy))
+            + `${(autodescribe && st.getvalid && !(await st.getvalid(cx, cy)))
                  ? " (invalid target)" : ""}`;
         /* iflags.getloc_travelmode: " (no travel path)" -- travel isn't
            ported */
@@ -256,7 +257,7 @@ export async function getpos(ccp, force, goal) {
     ccp.x = cx;
     ccp.y = cy;
     game.getposx = game.getposy = 0;
-    getpos_sethilite(null, null);
+    await getpos_sethilite(null, null);
     u.dx = udx; u.dy = udy; u.dz = udz;
     return result;
 }
