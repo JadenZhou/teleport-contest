@@ -1,5 +1,5 @@
 {
- "when": "2026-11-20T04:45:16.630Z",
+ "when": "2026-11-20T05:14:02.390Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -211,7 +211,7 @@
    "totalScreens": 59,
    "valuePrefix": 3012,
    "rulePrefix": 3012,
-   "screens": 9,
+   "screens": 11,
    "honestScreens": 4,
    "firstScreenMiss": 4,
    "first": {
@@ -298,7 +298,7 @@
    "totalScreens": 36,
    "valuePrefix": 2919,
    "rulePrefix": 2919,
-   "screens": 6,
+   "screens": 8,
    "honestScreens": 3,
    "firstScreenMiss": 3,
    "first": {
@@ -385,7 +385,7 @@
    "totalScreens": 41,
    "valuePrefix": 2285,
    "rulePrefix": 2285,
-   "screens": 2,
+   "screens": 4,
    "honestScreens": 2,
    "firstScreenMiss": 2,
    "first": {
@@ -572,7 +572,7 @@
    "totalScreens": 267,
    "valuePrefix": 1881,
    "rulePrefix": 1881,
-   "screens": 3,
+   "screens": 4,
    "honestScreens": 3,
    "firstScreenMiss": 1,
    "first": {
@@ -737,7 +737,7 @@
      "rn2(8)=6 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2073:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:122:16)"
+   "error": "Error: readobjnam: readobjnam() monster types for corpses/tins/eggs/figurines/statues is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2261:9) |     at makewish (file:///Users/JadenZ/code/teleport-contest/js/wizcmds.js:123:16)"
   },
   {
    "session": "dev82066-archeologist-tour.session.json",
@@ -766,7 +766,7 @@
      "rn2(10)=7 @ newpw(exper.c:64)"
     ]
    },
-   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1795:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1867:22)"
+   "error": "Error: readobjnam: artifact_name() is not ported yet |     at not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:53:11) |     at readobjnam_postparse3 (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:1983:9) |     at readobjnam (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2055:22)"
   },
   {
    "session": "dev82107-priest-quest-tour.session.json",
@@ -916,7 +916,7 @@
   {
    "session": "dev82312-priest-cast-read-turn.session.json",
    "total": 2806,
-   "jsTotal": 2871,
+   "jsTotal": 2769,
    "totalScreens": 28,
    "valuePrefix": 2761,
    "rulePrefix": 2761,
@@ -940,7 +940,7 @@
      "rnd(2)=2 @ next_ident(mkobj.c:521)"
     ]
    },
-   "error": null
+   "error": "Error: spelleffects() not ported yet |     at spelleffects (file:///Users/JadenZ/code/teleport-contest/js/spell.js:237:11) |     at docast (file:///Users/JadenZ/code/teleport-contest/js/spell.js:157:22) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:198:31)"
   },
   {
    "session": "dev82353-samurai-explore-descend.session.json",
@@ -978,7 +978,7 @@
    "totalScreens": 84,
    "valuePrefix": 2956,
    "rulePrefix": 2956,
-   "screens": 9,
+   "screens": 10,
    "honestScreens": 9,
    "firstScreenMiss": 6,
    "first": {
@@ -998,7 +998,7 @@
      "rn2(100)=4 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": null
+   "error": "Error: enlightenment(): attributes_enlightenment() not ported yet |     at enlightenment (file:///Users/JadenZ/code/teleport-contest/js/insight.js:614:15) |     at doattributes (file:///Users/JadenZ/code/teleport-contest/js/insight.js:1308:11) |     at rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:198:37)"
   },
   {
    "session": "dev82435-caveman-explore-move.session.json",
@@ -1123,7 +1123,7 @@
    "totalScreens": 38,
    "valuePrefix": 2868,
    "rulePrefix": 2868,
-   "screens": 1,
+   "screens": 2,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
@@ -1143,7 +1143,7 @@
      "rn2(5)=0 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": null
+   "error": "Error: enlightenment(): attributes_enlightenment() not ported yet |     at enlightenment (file:///Users/JadenZ/code/teleport-contest/js/insight.js:614:15) |     at doattributes (file:///Users/JadenZ/code/teleport-contest/js/insight.js:1308:11) |     at rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:198:37)"
   },
   {
    "session": "dev82640-knight-coverage.session.json",
@@ -1177,28 +1177,28 @@
   {
    "session": "dev82681-wizard-coverage-pair.session.json",
    "total": 4743,
-   "jsTotal": 4581,
+   "jsTotal": 4632,
    "totalScreens": 124,
-   "valuePrefix": 4575,
-   "rulePrefix": 4575,
-   "screens": 75,
-   "honestScreens": 75,
-   "firstScreenMiss": 75,
+   "valuePrefix": 4632,
+   "rulePrefix": 4632,
+   "screens": 86,
+   "honestScreens": 86,
+   "firstScreenMiss": 86,
    "first": {
-    "index": 4575,
-    "step": 85,
-    "c": "rn2(8)=7 @ collect_coords(teleport.c:700)",
-    "js": "rn2(12)=7 @ mcalcmove",
+    "index": 4632,
+    "step": 91,
+    "c": "rn2(5)=4 @ distfleeck(monmove.c:538)",
+    "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "collect_coords",
-    "jsCaller": "mcalcmove",
+    "cCaller": "distfleeck",
+    "jsCaller": null,
     "context": [
-     "rn2(5)=1 @ mksobj_init(mkobj.c:1124)",
-     "rn2(17)=16 @ blessorcurse(mkobj.c:1846)",
-     "rn2(100)=28 @ makewish(zap.c:6421)",
-     "rn2(8)=7 @ collect_coords(teleport.c:700)",
-     "rn2(7)=6 @ collect_coords(teleport.c:700)",
-     "rn2(6)=1 @ collect_coords(teleport.c:700)"
+     "rn2(200)=6 @ dosounds(sounds.c:238)",
+     "rn2(20)=17 @ gethungry(eat.c:3191)",
+     "rn2(82)=6 @ moveloop_core(allmain.c:360)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)",
+     "rn2(4)=1 @ dog_goal(dogmove.c:575)",
+     "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
    "error": "Error: dochug(): m_arrival() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:527:15) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
@@ -1239,8 +1239,8 @@
    "totalScreens": 23,
    "valuePrefix": 2906,
    "rulePrefix": 2906,
-   "screens": 3,
-   "honestScreens": 2,
+   "screens": 5,
+   "honestScreens": 4,
    "firstScreenMiss": 2,
    "first": {
     "index": 2906,
@@ -1264,11 +1264,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 126552,
-  "value": 126552,
+  "rule": 126609,
+  "value": 126609,
   "rolls": 504996,
-  "honestScreens": 415,
-  "screens": 430,
+  "honestScreens": 428,
+  "screens": 452,
   "totalScreens": 8438
  },
  "todo": [
@@ -1292,8 +1292,8 @@
   },
   {
    "fn": "distfleeck",
-   "sessions": 5,
-   "blockedRolls": 5547,
+   "sessions": 6,
+   "blockedRolls": 5658,
    "examples": [
     "dev81041-feeding-pony @2696: C \"rn2(5)=1 @ distfleeck(monmove.c:538)\" / JS \"rn2(1)=0 @ dog_move\"",
     "dev81451-samurai-altar-pray @2832: C \"rn2(5)=2 @ distfleeck(monmove.c:538)\" / JS \"(none: JS log ended)\""
@@ -1397,14 +1397,6 @@
    "blockedRolls": 201,
    "examples": [
     "dev81246-friday13-save-then-fullmoon-restore @2752: C \"rn2(2)=1 @ corpse_chance(mon.c:3248)\" / JS \"(none: JS log ended)\""
-   ]
-  },
-  {
-   "fn": "collect_coords",
-   "sessions": 1,
-   "blockedRolls": 168,
-   "examples": [
-    "dev82681-wizard-coverage-pair @4575: C \"rn2(8)=7 @ collect_coords(teleport.c:700)\" / JS \"rn2(12)=7 @ mcalcmove\""
    ]
   },
   {

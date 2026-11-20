@@ -1,5 +1,5 @@
 {
- "when": "2026-11-20T04:45:03.410Z",
+ "when": "2026-11-20T05:13:48.997Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -298,7 +298,7 @@
    "totalScreens": 36,
    "valuePrefix": 2493,
    "rulePrefix": 2493,
-   "screens": 3,
+   "screens": 5,
    "honestScreens": 3,
    "firstScreenMiss": 3,
    "first": {
@@ -347,7 +347,7 @@
      "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2209:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2301:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2285:12)"
+   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2397:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2489:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2473:12)"
   },
   {
    "session": "seed0030-ten-diverse-deaths.session.json",
@@ -385,7 +385,7 @@
    "totalScreens": 41,
    "valuePrefix": 2747,
    "rulePrefix": 2747,
-   "screens": 9,
+   "screens": 11,
    "honestScreens": 9,
    "firstScreenMiss": 9,
    "first": {
@@ -414,7 +414,7 @@
    "totalScreens": 33,
    "valuePrefix": 3195,
    "rulePrefix": 3195,
-   "screens": 15,
+   "screens": 17,
    "honestScreens": 15,
    "firstScreenMiss": 12,
    "first": {
@@ -443,7 +443,7 @@
    "totalScreens": 27,
    "valuePrefix": 2293,
    "rulePrefix": 2293,
-   "screens": 1,
+   "screens": 3,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
@@ -932,7 +932,7 @@
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
    "total": 2238,
-   "jsTotal": 2312,
+   "jsTotal": 2211,
    "totalScreens": 28,
    "valuePrefix": 2205,
    "rulePrefix": 2205,
@@ -956,7 +956,7 @@
      "rnd(2)=1 @ next_ident(mkobj.c:521)"
     ]
    },
-   "error": null
+   "error": "Error: spelleffects() not ported yet |     at spelleffects (file:///Users/JadenZ/code/teleport-contest/js/spell.js:237:11) |     at docast (file:///Users/JadenZ/code/teleport-contest/js/spell.js:157:22) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:198:31)"
   },
   {
    "session": "seed0700-samurai-explore-descend.session.json",
@@ -985,7 +985,7 @@
      "rn2(100)=37 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2209:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2301:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2285:12)"
+   "error": "Error: xname/doname: Japanese_item_name() is not ported yet |     at xn_not_ported (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2397:11) |     at xname_flags (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2489:9) |     at xname (file:///Users/JadenZ/code/teleport-contest/js/objnam.js:2473:12)"
   },
   {
    "session": "seed0900-tourist-explore-actions.session.json",
@@ -1023,7 +1023,7 @@
    "totalScreens": 51,
    "valuePrefix": 2426,
    "rulePrefix": 2426,
-   "screens": 2,
+   "screens": 3,
    "honestScreens": 2,
    "firstScreenMiss": 2,
    "first": {
@@ -1043,7 +1043,7 @@
      "rn2(100)=68 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": null
+   "error": "Error: enlightenment(): attributes_enlightenment() not ported yet |     at enlightenment (file:///Users/JadenZ/code/teleport-contest/js/insight.js:614:15) |     at doattributes (file:///Users/JadenZ/code/teleport-contest/js/insight.js:1308:11) |     at rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:198:37)"
   },
   {
    "session": "seed1500-rogue-explore-move.session.json",
@@ -1052,7 +1052,7 @@
    "totalScreens": 40,
    "valuePrefix": 2313,
    "rulePrefix": 2313,
-   "screens": 1,
+   "screens": 3,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
@@ -1110,7 +1110,7 @@
    "totalScreens": 230,
    "valuePrefix": 2724,
    "rulePrefix": 2724,
-   "screens": 1,
+   "screens": 3,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
@@ -1139,7 +1139,7 @@
    "totalScreens": 38,
    "valuePrefix": 2830,
    "rulePrefix": 2830,
-   "screens": 1,
+   "screens": 2,
    "honestScreens": 1,
    "firstScreenMiss": 1,
    "first": {
@@ -1159,7 +1159,7 @@
      "rn2(12)=8 @ mcalcmove(mon.c:1164)"
     ]
    },
-   "error": null
+   "error": "Error: enlightenment(): attributes_enlightenment() not ported yet |     at enlightenment (file:///Users/JadenZ/code/teleport-contest/js/insight.js:614:15) |     at doattributes (file:///Users/JadenZ/code/teleport-contest/js/insight.js:1308:11) |     at rhack (file:///Users/JadenZ/code/teleport-contest/js/cmd.js:198:37)"
   },
   {
    "session": "seed4500-knight-coverage.session.json",
@@ -1193,28 +1193,28 @@
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
    "total": 12167,
-   "jsTotal": 11482,
+   "jsTotal": 11535,
    "totalScreens": 410,
-   "valuePrefix": 5833,
-   "rulePrefix": 5833,
-   "screens": 75,
-   "honestScreens": 75,
-   "firstScreenMiss": 75,
+   "valuePrefix": 5883,
+   "rulePrefix": 5883,
+   "screens": 86,
+   "honestScreens": 86,
+   "firstScreenMiss": 86,
    "first": {
-    "index": 5833,
-    "step": 85,
-    "c": "rn2(8)=1 @ collect_coords(teleport.c:700)",
-    "js": "rn2(12)=9 @ mcalcmove",
+    "index": 5883,
+    "step": 88,
+    "c": "rn2(19)=2 @ exercise(attrib.c:509)",
+    "js": "rn2(12)=1 @ mcalcmove",
     "kind": "value",
-    "cCaller": "collect_coords",
+    "cCaller": "exercise",
     "jsCaller": "mcalcmove",
     "context": [
-     "rn2(17)=0 @ blessorcurse(mkobj.c:1846)",
-     "rn2(2)=1 @ blessorcurse(mkobj.c:1847)",
-     "rn2(100)=98 @ makewish(zap.c:6421)",
-     "rn2(8)=1 @ collect_coords(teleport.c:700)",
-     "rn2(7)=4 @ collect_coords(teleport.c:700)",
-     "rn2(6)=3 @ collect_coords(teleport.c:700)"
+     "rn2(50)=2 @ m_initinv(makemon.c:826)",
+     "rn2(100)=57 @ m_initinv(makemon.c:828)",
+     "rn2(100)=97 @ makemon(makemon.c:1447)",
+     "rn2(19)=2 @ exercise(attrib.c:509)",
+     "rn2(7)=5 @ dobuzz(zap.c:4823)",
+     "rn2(20)=2 @ zap_hit(zap.c:4709)"
     ]
    },
    "error": "Error: dochug(): m_arrival() not ported yet |     at dochug (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:527:15) |     at dochugw (file:///Users/JadenZ/code/teleport-contest/js/monmove.js:205:29) |     at movemon_singlemon (file:///Users/JadenZ/code/teleport-contest/js/mon.js:491:11)"
@@ -1255,9 +1255,9 @@
    "totalScreens": 23,
    "valuePrefix": 3102,
    "rulePrefix": 3102,
-   "screens": 16,
-   "honestScreens": 16,
-   "firstScreenMiss": 13,
+   "screens": 20,
+   "honestScreens": 20,
+   "firstScreenMiss": 20,
    "first": {
     "index": 3102,
     "step": 20,
@@ -1280,11 +1280,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 135639,
-  "value": 135641,
+  "rule": 135689,
+  "value": 135691,
   "rolls": 792838,
-  "honestScreens": 428,
-  "screens": 478,
+  "honestScreens": 443,
+  "screens": 507,
   "totalScreens": 11405
  },
  "todo": [
@@ -1352,6 +1352,15 @@
    ]
   },
   {
+   "fn": "exercise",
+   "sessions": 2,
+   "blockedRolls": 6578,
+   "examples": [
+    "seed2200-wizard-quaff-zap-read @2724: C \"rn2(2)=1 @ exercise(attrib.c:509)\" / JS \"rn2(12)=11 @ mcalcmove\"",
+    "seed5002-wizard-coverage-pair @5883: C \"rn2(19)=2 @ exercise(attrib.c:509)\" / JS \"rn2(12)=1 @ mcalcmove\""
+   ]
+  },
+  {
    "fn": "next_ident",
    "sessions": 2,
    "blockedRolls": 1241,
@@ -1386,14 +1395,6 @@
    ]
   },
   {
-   "fn": "collect_coords",
-   "sessions": 1,
-   "blockedRolls": 6334,
-   "examples": [
-    "seed5002-wizard-coverage-pair @5833: C \"rn2(8)=1 @ collect_coords(teleport.c:700)\" / JS \"rn2(12)=9 @ mcalcmove\""
-   ]
-  },
-  {
    "fn": "gethungry",
    "sessions": 1,
    "blockedRolls": 4213,
@@ -1407,14 +1408,6 @@
    "blockedRolls": 711,
    "examples": [
     "seed1150-caveman-explore-move @2426: C \"rn2(20)=3 @ dog_invent(dogmove.c:446)\" / JS \"rn2(100)=43 @ obj_resists\""
-   ]
-  },
-  {
-   "fn": "exercise",
-   "sessions": 1,
-   "blockedRolls": 294,
-   "examples": [
-    "seed2200-wizard-quaff-zap-read @2724: C \"rn2(2)=1 @ exercise(attrib.c:509)\" / JS \"rn2(12)=11 @ mcalcmove\""
    ]
   },
   {
