@@ -21,7 +21,8 @@ import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
 import { newsym, pline } from './display.js';
 import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
-         nonliving, is_golem, is_mplayer } from './makemon.js';
+         nonliving, is_golem, is_mplayer,
+         decide_to_shapeshift } from './makemon.js';
 import { set_mon_data } from './mondata.js';
 import { Monnam } from './mhitm.js';
 import {
@@ -128,7 +129,7 @@ function m_calcdistress(mtmp) {
 
     /* possibly polymorph shapechangers and lycanthropes */
     if (mtmp.cham !== undefined && mtmp.cham >= LOW_PM) /* ismnum() */
-        throw new Error('m_calcdistress(): decide_to_shapeshift() not ported yet');
+        decide_to_shapeshift(mtmp);
     if (is_were(mtmp.data))
         throw new Error('m_calcdistress(): were_change() not ported yet');
 

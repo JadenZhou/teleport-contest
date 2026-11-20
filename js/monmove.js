@@ -12,7 +12,7 @@ import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc } from './vision.js';
 import { newsym, pline } from './display.js';
 import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
-         Trap_Moved_Mon } from './trap.js';
+         Trap_Moved_Mon, t_at, POLY_TRAP } from './trap.js';
 import { Monnam } from './mhitm.js';
 import { You_hear } from './sounds.js';
 import { recalc_block_point } from './vision.js';
@@ -24,7 +24,7 @@ import {
 } from './makemon.js';
 import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls, haseyes,
          perceives, can_teleport, is_undead, is_human, is_vampshifter,
-         dmgtype } from './mondata.js';
+         dmgtype, Resists_Elem } from './mondata.js';
 import { mfndpos, monnear, mon_allowflags } from './mon.js';
 import { gettrack } from './track.js';
 import { dog_move, can_carry, can_touch_safely, curr_mon_load,
@@ -45,7 +45,7 @@ import {
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
     DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
     COLNO, ROWNO, IS_OBSTRUCTED, MFAST,
-    NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF,
+    NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF, W_ARMG, STONE_RES,
     MON_OFFMAP, MON_DETACH, MON_MIGRATING, MON_LIMBO,
 } from './const.js';
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
@@ -473,28 +473,229 @@ function can_fog(mtmp) {
     return false;
 }
 
-// ── C ref: muse.c find_defensive() (the early-outs) ──
+// ── C ref: muse.c find_defensive() ──
+/* Select a defensive item/action for a monster.  Returns TRUE iff one is
+   found.  Ported up to the "do we try to heal?" test; a wounded monster
+   (or one trying to escape) stops with 'not ported yet' where C looks at
+   stairs, traps and its inventory. */
 function find_defensive(mtmp, tryescape) {
+    const u = game.u;
+    let obj;
+    const x = mtmp.mx, y = mtmp.my;
+    const stuck = (mtmp === u.ustuck);
+
     game.m_defensive = null;
     game.m_has_defense = 0;
+
     if (is_animal(mtmp.data) || mindless(mtmp.data))
         return false;
-    if (!tryescape && dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > 25)
+    if (!tryescape && dist2(x, y, mtmp.mux, mtmp.muy) > 25)
         return false;
-    throw new Error('find_defensive() not ported yet');
+    const knox = game.dungeon_topology?.d_knox_level;
+    if (tryescape && knox?.dlevel && u.uz.dnum === knox.dnum
+        && u.uz.dlevel === knox.dlevel /* Is_knox(&u.uz) */)
+        throw new Error('find_defensive(): m_next2m() not ported yet');
+    if (u.uswallow && stuck)
+        return false;
+
+    /*
+     * Since unicorn horns don't get used up, the monster would look
+     * silly trying to use the same cursed horn round after round,
+     * so skip cursed unicorn horns.
+     *
+     * Unicorns use their own horns; they're excluded from inventory
+     * scanning by nohands().  Ki-rin is depicted in the AD&D Monster
+     * Manual with same horn as a unicorn, so let it use its horn too.
+     * is_unicorn() doesn't include it; the class differs and it has
+     * no interest in gems.
+     */
+    if (mtmp.mconf || mtmp.mstun || !mtmp.mcansee) {
+        obj = null;
+        if (!nohands(mtmp.data)) {
+            for (const o of minv(mtmp))
+                if (o.otyp === OBJ.UNICORN_HORN && !o.cursed) {
+                    obj = o;
+                    break;
+                }
+        }
+        if (obj || is_unicorn(mtmp.data) || mtmp.data === mons[M.PM_KI_RIN]) {
+            game.m_defensive = obj;
+            game.m_has_defense = 'MUSE_UNICORN_HORN';
+            return true;
+        }
+    }
+
+    if (mtmp.mconf || mtmp.mstun) {
+        for (const o of minv(mtmp)) {
+            if ((o.otyp === CORPSE || o.otyp === OBJ.TIN)
+                && o.corpsenm === M.PM_LIZARD)
+                throw new Error('find_defensive(): lizard corpse/tin not ported yet');
+        }
+    }
+
+    /* It so happens there are two unrelated cases when we might want to
+     * check specifically for healing alone.  The first is when the monster
+     * is blind (healing cures blindness).  The second is when the monster
+     * is peaceful; then we don't want to flee the player, and by
+     * coincidence healing is all there is that doesn't involve fleeing.
+     * These would be hard to combine because of the control flow.
+     * Pestilence won't use healing even when blind.
+     */
+    if (!mtmp.mcansee && !nohands(mtmp.data)
+        && mtmp.data !== mons[M.PM_PESTILENCE])
+        throw new Error('find_defensive(): m_use_healing() not ported yet');
+
+    /* monsters aren't given wands of undead turning but if they
+       happen to have picked one up, use it against corpse wielder;
+       when applicable, use it now even if 'mtmp' isn't wounded */
+    if (!mtmp.mpeaceful && !nohands(mtmp.data)
+        && game.uwep && game.uwep.otyp === CORPSE
+        && (game.uwep.corpsenm === M.PM_COCKATRICE
+            || game.uwep.corpsenm === M.PM_CHICKATRICE))
+        throw new Error('find_defensive(): wand of undead turning not ported yet');
+
+    if (!tryescape) {
+        /* do we try to heal? */
+        const fraction = u.ulevel < 10 ? 5 : u.ulevel < 14 ? 4 : 3;
+        if (mtmp.mhp >= mtmp.mhpmax
+            || (mtmp.mhp >= 10 && mtmp.mhp * fraction >= mtmp.mhpmax))
+            return false;
+
+        if (mtmp.mpeaceful) {
+            if (!nohands(mtmp.data))
+                throw new Error('find_defensive(): m_use_healing() not ported yet');
+            return false;
+        }
+    }
+
+    throw new Error('find_defensive(): stairs/traps/defensive items not ported yet');
 }
-// ── C ref: muse.c find_misc() (the early-outs) ──
+// ── C ref: muse.c find_misc() ──
+/* the MUSE_* item choices are kept as their C names */
 function find_misc(mtmp) {
     const u = game.u;
+    const mdat = mtmp.data;
+    const x = mtmp.mx, y = mtmp.my;
+    let t;
+    let pmidx = NON_PM;
+    const immobile = (mdat.mmove === 0);
+    const stuck = (mtmp === u.ustuck);
+
     game.m_misc = null;
     game.m_has_misc = 0;
-    if (is_animal(mtmp.data) || mindless(mtmp.data))
+    if (is_animal(mdat) || mindless(mdat))
         return false;
-    if (u.uswallow && mtmp === u.ustuck)
+    if (u.uswallow && stuck)
         return false;
-    if (dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > 36)
+
+    /* We arbitrarily limit to times when a player is nearby for the
+     * same reason as Junior Pac-Man doesn't have energizers eaten until
+     * you can see them...
+     */
+    if (dist2(x, y, mtmp.mux, mtmp.muy) > 36)
         return false;
-    throw new Error('find_misc() not ported yet');
+
+    if (!stuck && !immobile && !mtmp.mtrapped && (mtmp.cham === NON_PM)
+        && mons[(pmidx = monsndx(mdat))].difficulty < 6) {
+        const ignore_boulders = (verysmall(mdat) || throws_rocks(mdat)
+                                 || passes_walls(mdat)),
+            diag_ok = !(pmidx === M.PM_GRID_BUG); /* !NODIAG(pmidx) */
+
+        for (let xx = x - 1; xx <= x + 1; xx++)
+            for (let yy = y - 1; yy <= y + 1; yy++)
+                if (isok(xx, yy) && !u_at(xx, yy)
+                    && (diag_ok || xx === x || yy === y)
+                    && ((xx === x && yy === y) || !m_at(xx, yy)))
+                    if ((t = t_at(xx, yy)) !== null
+                        && (ignore_boulders || !sobj_at(BOULDER, xx, yy))
+                        && !onscary(xx, yy, mtmp)) {
+                        /* use trap if it's the correct type and will
+                           polymorph the monster */
+                        if (t.ttyp === POLY_TRAP
+                            /* && !wearing_iron_shoes(mtmp) */)
+                            throw new Error('find_misc(): MUSE_POLY_TRAP not ported yet');
+                    }
+    }
+    if (nohands(mdat))
+        return false;
+
+    /*
+     * [bug?]  Choice of item is not prioritized; the last viable one
+     * in the monster's inventory will be chosen.
+     * 'nomore()' is nearly worthless because it only screens checking
+     * of duplicates when there is no alternate type in between them.
+     */
+    const See_invisible = uhave(SEE_INVIS);
+    for (const obj of minv(mtmp)) {
+        /* Monsters shouldn't recognize cursed items; this kludge is
+           necessary to prevent serious problems though... */
+        if (obj.otyp === OBJ.POT_GAIN_LEVEL
+            && (!obj.cursed
+                || (!mtmp.isgd && !mtmp.isshk && !mtmp.ispriest))) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_POT_GAIN_LEVEL';
+        }
+        if (game.m_has_misc === 'MUSE_BULLWHIP') continue; /* nomore() */
+        if (obj.otyp === OBJ.BULLWHIP && !mtmp.mpeaceful
+            /* the random test prevents whip-wielding
+               monster from attempting disarm every turn */
+            && game.uwep && !rn2(5) && obj === mtmp.mw
+            /* hero's location must be known and adjacent */
+            && u_at(mtmp.mux, mtmp.muy)
+            && mdistu(mtmp) <= 2 /* m_next2u(mtmp) */
+            && !u.uswallow)
+            throw new Error('find_misc(): canletgo() for MUSE_BULLWHIP not ported yet');
+        /* Note: peaceful/tame monsters won't make themselves
+         * invisible unless you can see them.  Not really right, but...
+         */
+        if (game.m_has_misc === 'MUSE_WAN_MAKE_INVISIBLE') continue;
+        if (obj.otyp === OBJ.WAN_MAKE_INVISIBLE && obj.spe > 0 && !mtmp.minvis
+            && !mtmp.invis_blkd && (!mtmp.mpeaceful || See_invisible)
+            && (!attacktype(mtmp.data, M.AT_GAZE) || mtmp.mcan)) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_WAN_MAKE_INVISIBLE';
+        }
+        if (game.m_has_misc === 'MUSE_POT_INVISIBILITY') continue;
+        if (obj.otyp === OBJ.POT_INVISIBILITY && !mtmp.minvis
+            && !mtmp.invis_blkd && (!mtmp.mpeaceful || See_invisible)
+            && (!attacktype(mtmp.data, M.AT_GAZE) || mtmp.mcan)) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_POT_INVISIBILITY';
+        }
+        if (game.m_has_misc === 'MUSE_WAN_SPEED_MONSTER') continue;
+        if (obj.otyp === OBJ.WAN_SPEED_MONSTER && obj.spe > 0
+            && mtmp.mspeed !== MFAST && !mtmp.isgd) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_WAN_SPEED_MONSTER';
+        }
+        if (game.m_has_misc === 'MUSE_POT_SPEED') continue;
+        if (obj.otyp === OBJ.POT_SPEED && mtmp.mspeed !== MFAST && !mtmp.isgd) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_POT_SPEED';
+        }
+        if (game.m_has_misc === 'MUSE_WAN_POLYMORPH') continue;
+        if (obj.otyp === OBJ.WAN_POLYMORPH && obj.spe > 0
+            && (mtmp.cham === NON_PM) && mons[monsndx(mdat)].difficulty < 6) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_WAN_POLYMORPH';
+        }
+        if (game.m_has_misc === 'MUSE_POT_POLYMORPH') continue;
+        if (obj.otyp === OBJ.POT_POLYMORPH && (mtmp.cham === NON_PM)
+            && mons[monsndx(mdat)].difficulty < 6) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_POT_POLYMORPH';
+        }
+        if (game.m_has_misc === 'MUSE_BAG') continue;
+        if (obj.otyp >= OBJ.LARGE_BOX && obj.otyp <= OBJ.BAG_OF_TRICKS /* Is_container */
+            && obj.otyp !== OBJ.BAG_OF_TRICKS && !rn2(5)
+            && !(obj.otyp === OBJ.LARGE_BOX && obj.spe === 1) /* SchroedingersBox */
+            && !game.m_has_misc && obj.cobj?.length /* Has_contents */
+            && !obj.olocked && !obj.otrapped) {
+            game.m_misc = obj;
+            game.m_has_misc = 'MUSE_BAG';
+        }
+    }
+    return !!game.m_has_misc;
 }
 // ── C ref: muse.c find_offensive() (the early-outs) ──
 function find_offensive(mtmp) {
@@ -531,6 +732,30 @@ function m_respond(mtmp) {
         throw new Error('aggravate() not ported yet');
 }
 
+// C ref: monmove.c m_arrival()
+/* perform a special one-time action for a monster; returns -1 if nothing
+   special happened, 0 if monster uses up its turn, 1 if monster is killed */
+function m_arrival(mon) {
+    mon.mstrategy &= ~STRAT_ARRIVE; /* always reset */
+
+    return -1;
+}
+
+// C ref: muse.c cures_stoning()
+function cures_stoning(mon, obj, tinok) {
+    if (obj.otyp === OBJ.POT_ACID)
+        return true;
+    if (obj.otyp === OBJ.GLOB_OF_GREEN_SLIME)
+        throw new Error('cures_stoning(): slimeproof() not ported yet');
+    if (obj.otyp !== CORPSE && (obj.otyp !== OBJ.TIN || !tinok))
+        return false;
+    /* corpse, or tin that mon can open */
+    if (obj.corpsenm === NON_PM) /* empty/special tin */
+        return false;
+    return (obj.corpsenm === M.PM_LIZARD
+            || (mons[obj.corpsenm].mflags1 & M.M1_ACID) !== 0); /* acidic() */
+}
+
 // ── C ref: monmove.c dochug() ──
 export async function dochug(mtmp) {
     const u = game.u;
@@ -545,8 +770,11 @@ export async function dochug(mtmp) {
 
     mdat = mtmp.data;
 
-    if (mtmp.mstrategy & STRAT_ARRIVE)
-        throw new Error('dochug(): m_arrival() not ported yet');
+    if (mtmp.mstrategy & STRAT_ARRIVE) {
+        const res = m_arrival(mtmp);
+        if (res >= 0)
+            return res;
+    }
     /* check for waitmask status change */
     if ((mtmp.mstrategy & STRAT_WAITFORU)
         && (m_canseeu(mtmp) || mtmp.mhp < mtmp.mhpmax))
@@ -1017,8 +1245,14 @@ function searches_for_item(mon, obj) {
             return (obj.spe > 0);
         break;
     case O.FOOD_CLASS:
-        if (typ === O.CORPSE || typ === O.TIN)
-            throw new Error('searches_for_item(): cures_stoning() not ported yet');
+        if (typ === O.CORPSE)
+            return (((mon.misc_worn_check || 0) & W_ARMG) !== 0
+                    && (obj.corpsenm === M.PM_COCKATRICE
+                        || obj.corpsenm === M.PM_CHICKATRICE)) /* touch_petrifies */
+                || (!Resists_Elem(mon, STONE_RES) /* resists_ston() */
+                    && cures_stoning(mon, obj, false));
+        if (typ === O.TIN)
+            throw new Error('searches_for_item(): mcould_eat_tin() not ported yet');
         if (typ === O.EGG && obj.corpsenm >= 0)
             return (obj.corpsenm === M.PM_COCKATRICE
                     || obj.corpsenm === M.PM_CHICKATRICE); /* touch_petrifies */

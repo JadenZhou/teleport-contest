@@ -31,6 +31,7 @@ import {
     A_LAWFUL, POOL, MOAT, WATER, DRAWBRIDGE_UP, LAVAPOOL, LAVAWALL,
     W_NONPASSWALL, D_CLOSED, D_LOCKED, P_POLEARMS, P_SHORT_SWORD, P_SABER,
     ALTAR, COLNO, ROWNO, isok, ACCESSIBLE, IS_STWALL, IS_DOOR,
+    W_ARM, I_SPECIAL,
 } from './const.js';
 import {
     ROOMOFFSET, OBJ_AT, IS_WALL, SDOOR, SCORR, HWALL, TLCORNER, TRWALL, BLCORNER,
@@ -47,7 +48,7 @@ import { mksobj, mkobj_at, curse, bless, next_ident, set_corpsenm } from './mkob
 import {
     monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
     is_neuter, is_undead, is_swimmer, is_floater, passes_walls, haseyes,
-    is_bat, little_to_big,
+    is_bat, little_to_big, pm_invisible,
 } from './mondata.js';
 import { engr_at } from './engrave.js';
 import { enexto_core } from './teleport.js';
@@ -2139,10 +2140,389 @@ export function set_mimic_sym(mtmp) {
         || (ap_type === M_AP_OBJECT && appear === O.BOULDER))
         game.vision_full_recalc = 1;
 }
-// C ref: mon.c newcham() -- not ported yet
-function newcham(mtmp, mdat, ncflags) {
-    impossible('newcham not ported');
-    return false;
+/* mondata.h */
+function polyok(ptr) { return (ptr.mflags2 & M.M2_NOPOLY) === 0; }
+function is_shapeshifter(ptr) { return (ptr.mflags2 & M.M2_SHAPESHIFTER) !== 0; }
+function notake(ptr) { return (ptr.mflags1 & M.M1_NOTAKE) !== 0; }
+function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
+function is_vampire(ptr) { return ptr.mlet === M.S_VAMPIRE; }
+/* C ref: mondata.h is_vampshifter() */
+function is_vampshifter(mon) {
+    return (mon.cham === M.PM_VAMPIRE || mon.cham === M.PM_VAMPIRE_LEADER
+            || mon.cham === M.PM_VLAD_THE_IMPALER);
+}
+/* C ref: mondata.h ismnum() */
+function ismnum(mndx) { return mndx >= LOW_PM && mndx < NUMMONS; }
+/* C ref: ncflags for newcham() (monst.h) */
+const NC_SHOW_MSG = 0x01;
+const NC_VIA_WAND_OR_SPELL = 0x02;
+
+// C ref: mon.c pickvampshape()
+function pickvampshape(mon) {
+    let mndx = mon.cham, wolfchance = 10;
+    /* avoid picking monsters with lowercase display symbols ('d' for wolf
+       and 'v' for fog cloud) on rogue level*/
+    const uppercase_only = Is_rogue_level(game.u.uz);
+
+    switch (mndx) {
+    case M.PM_VLAD_THE_IMPALER:
+        /* ensure Vlad can keep carrying the Candelabrum */
+        /* if (mon_has_special(mon)) break; */
+        throw new Error('pickvampshape(): mon_has_special() not ported yet');
+    case M.PM_VAMPIRE_LEADER: /* vampire lord or Vlad can become wolf */
+        if (!rn2(wolfchance) && !uppercase_only
+            /* don't pick a walking form if that would lead to immediate
+               drowning or immolation and reversion to vampire form */
+            && !(is_pool(mon.mx, mon.my) || is_lava(mon.mx, mon.my))) {
+            mndx = M.PM_WOLF;
+            break;
+        }
+        /*FALLTHRU*/
+    case M.PM_VAMPIRE: /* any vampire can become fog or bat */
+        mndx = (!rn2(4) && !uppercase_only) ? M.PM_FOG_CLOUD : M.PM_VAMPIRE_BAT;
+        break;
+    }
+
+    /* return to base form if chosen poly target has been genocided
+       or randomly if already in an alternate form (to prevent always
+       switching back and forth between bat and fog) */
+    if ((game.mvitals[mndx].mvflags & G_GENOD) !== 0
+        || (mon.data !== mons[mon.cham] && !rn2(4)))
+        return mon.cham;
+
+    return mndx;
+}
+
+// C ref: mon.c isspecmon()
+/* nonshapechangers who warrant special polymorph handling */
+function isspecmon(mon) {
+    return !!(mon.isshk || mon.ispriest || mon.isgd
+              || (game.quest_status?.leader_m_id
+                  && mon.m_id === game.quest_status.leader_m_id));
+}
+
+// C ref: mon.c validspecmon()
+/* restrict certain special monsters (shopkeepers, aligned priests,
+   vault guards) to forms that allow them to behave sensibly (catching
+   gold, speaking?) so that they don't need too much extra code */
+function validspecmon(mon, mndx) {
+    if (mndx === NON_PM)
+        return true; /* caller wants random */
+
+    if (!accept_newcham_form(mon, mndx))
+        return false; /* geno'd or !polyok */
+
+    if (isspecmon(mon)) {
+        const ptr = mons[mndx];
+
+        /* reject notake because object manipulation is expected
+           and nohead because speech capability is expected */
+        if (notake(ptr) || !has_head(ptr))
+            return false;
+        /* [should we check ptr->msound here too?] */
+    }
+    return true; /* potential new form is ok */
+}
+
+// C ref: mon.c select_newcham_form()
+export function select_newcham_form(mon) {
+    let mndx = NON_PM, tryct;
+
+    switch (mon.cham) {
+    case M.PM_SANDESTIN:
+        if (rn2(7))
+            throw new Error('select_newcham_form(): pick_nasty() not ported yet');
+        break;
+    case M.PM_DOPPELGANGER:
+        throw new Error('select_newcham_form(): doppelganger forms not ported yet');
+    case M.PM_CHAMELEON:
+        if (!rn2(3))
+            throw new Error('select_newcham_form(): pick_animal() not ported yet');
+        break;
+    case M.PM_VLAD_THE_IMPALER:
+    case M.PM_VAMPIRE_LEADER:
+    case M.PM_VAMPIRE:
+        mndx = pickvampshape(mon);
+        break;
+    case NON_PM: /* ordinary */
+        /* m_armr = which_armor(mon, W_ARM); dragon scales/mail pick the
+           matching dragon */
+        if (mon.misc_worn_check & W_ARM)
+            throw new Error('select_newcham_form(): which_armor() not ported yet');
+        break;
+    }
+
+    /* for debugging: allow control of polymorphed monster */
+    if (game.flags.debug && game.iflags.mon_polycontrol)
+        throw new Error('select_newcham_form(): wiz_force_cham_form() not ported yet');
+
+    /* if no form was specified above, pick one at random now */
+    if (mndx === NON_PM) {
+        tryct = 50;
+        do {
+            mndx = rn1(SPECIAL_PM - LOW_PM, LOW_PM);
+            /* assert(ismnum(mndx); */
+        } while (--tryct > 0 && !validspecmon(mon, mndx)
+                 /* try harder to select uppercase monster on rogue level */
+                 && (tryct > 40 && Is_rogue_level(game.u.uz)
+                     && !isupper_monsym(mons[mndx])));
+    }
+    return mndx;
+}
+/* C ref: isupper(monsym(ptr)) -- monsym() is def_monsyms[mlet].sym */
+function isupper_monsym(ptr) {
+    /* defsym.h MONSYMS, indexed by mlet (S_ANT = 1) */
+    const ch = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@ '&;:~]"[ptr.mlet] ?? '';
+    return ch >= 'A' && ch <= 'Z';
+}
+
+// C ref: mon.c accept_newcham_form()
+/* this used to be inline within newcham() but monpolycontrol needs it too */
+function accept_newcham_form(mon, mndx) {
+    if (mndx === NON_PM)
+        return null;
+    const mdat = mons[mndx];
+    if ((game.mvitals[mndx].mvflags & G_GENOD) !== 0)
+        return null;
+    if (is_placeholder(mdat))
+        return null;
+    /* select_newcham_form() might deliberately pick a player
+       character type (random selection never does) which
+       polyok() rejects, so we need a special case here */
+    if (is_mplayer(mdat))
+        return mdat;
+    /* shapeshifters are rejected by polyok() but allow a shapeshifter
+       to take on its 'natural' form */
+    if (is_shapeshifter(mdat)
+        && ismnum(mon.cham) && mdat === mons[mon.cham])
+        return mdat;
+    /* polyok() rules out M2_PNAME, M2_WERE, and all humans except Kops */
+    return polyok(mdat) ? mdat : null;
+}
+
+// C ref: mon.c mgender_from_permonst()
+/* shapechanger might take on a shape that forces gender change */
+export function mgender_from_permonst(mtmp, mdat) {
+    if (is_male(mdat)) {
+        mtmp.female = false;
+    } else if (is_female(mdat)) {
+        mtmp.female = true;
+    } else if (!is_neuter(mdat)) {
+        /* usually leave as-is; same chance to change as polymorphing hero;
+           vampires use controlled shapechange (from their perspective, even
+           if it is random from the player's perspective) and don't undergo
+           gender change */
+        if (!rn2(10) && !(is_vampire(mdat) || is_vampshifter(mtmp)))
+            mtmp.female = !mtmp.female;
+    }
+}
+
+// C ref: mon.c decide_to_shapeshift()
+export function decide_to_shapeshift(mon) {
+    let ptr = null;
+    let mndx;
+    const was_female = mon.female;
+    let dochng = false;
+
+    if (!is_vampshifter(mon)) {
+        /* regular shapeshifter; 'ptr' is Null */
+        if (!mon.mspec_used && !rn2(6)) {
+            dochng = true;
+            mon.mspec_used = 3 + rn2(10);
+        }
+    } else if (!(mon.mstrategy & STRAT_WAITFORU)) {
+        /* The vampire has to be in good health (mhp) to maintain
+         * its shifted form.
+         *
+         * If we're shifted and getting low on hp, maybe shift back, or
+         * if we're a fog cloud at full hp, maybe pick a different shape.
+         * If we're not already shifted and in good health, maybe shift.
+         */
+        if (mon.data.mlet !== M.S_VAMPIRE) {
+            if ((mon.mhp <= Math.trunc((mon.mhpmax + 5) / 6)) && rn2(4)
+                && ismnum(mon.cham)) {
+                ptr = mons[mon.cham];
+                dochng = true;
+            } else if (mon.data === mons[M.PM_FOG_CLOUD]
+                       && mon.mhp === mon.mhpmax && !rn2(4)
+                       && (!canseemon(mon)
+                           || dist2(mon.mx, mon.my, game.u.ux, game.u.uy)
+                              > BOLT_LIM * BOLT_LIM)) {
+                /* if a fog cloud, maybe change to wolf or vampire bat;
+                   those are more likely to take damage--at least when
+                   tame--and then switch back to vampire; they'll also
+                   switch to fog cloud if they encounter a closed door */
+                mndx = pickvampshape(mon);
+                if (ismnum(mndx)) {
+                    ptr = mons[mndx];
+                    dochng = (ptr !== mon.data);
+                }
+            }
+            if (dochng && (mon.data.mflags1 & M.M1_AMORPHOUS) /* amorphous */
+                && closed_door(mon.mx, mon.my))
+                throw new Error('decide_to_shapeshift(): enexto()/rloc_to() not ported yet');
+        } else {
+            if (mon.mhp >= Math.trunc(9 * mon.mhpmax / 10) && !rn2(6)
+                && (!canseemon(mon)
+                    || dist2(mon.mx, mon.my, game.u.ux, game.u.uy)
+                       > BOLT_LIM * BOLT_LIM))
+                dochng = true; /* 'ptr' stays Null */
+        }
+    }
+    if (dochng) {
+        if (newcham(mon, ptr, NC_SHOW_MSG)) {
+            /* for vampshift, override the 10% chance for sex change
+               (by forcing original gender in case that occurred) */
+            if (is_vampshifter(mon)) {
+                ptr = mon.data;
+                if (!is_male(ptr) && !is_female(ptr) && !is_neuter(ptr))
+                    mon.female = was_female;
+            }
+        }
+    }
+}
+
+// C ref: mon.c newcham()
+/* make a chameleon take on another shape, or a polymorph target
+   (possibly self-inflicted) become a different monster;
+   returns 1 if it actually changes form */
+export function newcham(mtmp, mdat, ncflags) {
+    const polyspot = ((ncflags & NC_VIA_WAND_OR_SPELL) !== 0);
+    /* "The oldmon turns into a newmon!" */
+    const msg = ((ncflags & NC_SHOW_MSG) !== 0);
+    let hpn, hpd, mndx, tryct;
+    const olddata = mtmp.data;
+
+    /* seenorsensed = canspotmon(mtmp), oldname and l_oldname are only
+       used by the messages below, which aren't ported yet */
+    if (msg)
+        throw new Error('newcham(): NC_SHOW_MSG messages not ported yet');
+
+    /* Riders are immune to polymorph and green slime
+       (but apparent Rider might actually be a doppelganger) */
+    if (mtmp.cham === NON_PM) { /* not a shapechanger */
+        if (is_rider(olddata))
+            return 0;
+        /* make Nazgul and erinyes immune too, to reduce chance of
+           anomalous extinction feedback during final disclosure */
+        if (mbirth_limit(monsndx(olddata)) < 120 /* MAXMONNO */)
+            return 0;
+        /* cancelled shapechangers become uncancelled prior
+           to being given a new shape */
+        if (mtmp.mcan /* && !Protection_from_shape_changers */) {
+            mtmp.cham = pm_to_cham(monsndx(mtmp.data));
+            if (mtmp.cham !== NON_PM)
+                mtmp.mcan = 0;
+        }
+    }
+
+    /* mdat = 0 -> caller wants a random monster shape */
+    if (!mdat) {
+        /* select_newcham_form() loops when resorting to random but
+           it doesn't always pick that so we still retry here too */
+        tryct = 20;
+        do {
+            mndx = select_newcham_form(mtmp);
+            mdat = accept_newcham_form(mtmp, mndx);
+            /* for the first several tries we require upper-case on
+               the rogue level (after that, we take whatever we get) */
+            if (tryct > 15 && Is_rogue_level(game.u.uz)
+                && mdat && !isupper_monsym(mdat))
+                mdat = null;
+            if (mdat)
+                break;
+        } while (--tryct > 0);
+        if (!tryct)
+            return 0;
+    } else if (game.mvitals[monsndx(mdat)].mvflags & G_GENOD)
+        return 0; /* passed in mdat is genocided */
+
+    if (mdat === olddata)
+        return 0; /* still the same monster */
+
+    mgender_from_permonst(mtmp, mdat);
+    /* Endgame mplayers start out as "Foo the Bar", but some of the
+     * titles are inappropriate when polymorphed, particularly into
+     * the opposite sex.  Player characters don't use ranks when
+     * polymorphed, so dropping rank for mplayers seems reasonable.
+     */
+    if (In_endgame(game.u.uz) && is_mplayer(olddata) && mtmp.mgivenname)
+        throw new Error('newcham(): endgame mplayer names not ported yet');
+
+    if (mtmp.wormno) /* throw tail away */
+        throw new Error('newcham(): wormgone() not ported yet');
+    if ((mtmp.m_ap_type || 0) && mdat.mlet !== M.S_MIMIC)
+        throw new Error('newcham(): seemimic() not ported yet');
+
+    /* (this code used to try to adjust the monster's health based on
+       a normal one of its type but there are too many special cases
+       which need to be handled in order to do that correctly, so just
+       give the new form the same proportion of HP as its old one had) */
+    hpn = mtmp.mhp;
+    hpd = mtmp.mhpmax;
+    /* set level and hit points */
+    newmonhp(mtmp, monsndx(mdat));
+    /* new hp: same fraction of max as before */
+    mtmp.mhp = Math.trunc((hpn * mtmp.mhp) / hpd);
+    /* sanity check (potential overflow) */
+    if (mtmp.mhp < 0 || mtmp.mhp > mtmp.mhpmax)
+        mtmp.mhp = mtmp.mhpmax;
+    /* unlikely but not impossible; a 1HD creature with 1HP that changes
+       into a 0HD creature will require this statement */
+    if (!mtmp.mhp)
+        mtmp.mhp = 1;
+
+    /* take on the new form... */
+    set_mon_data(mtmp, mdat);
+
+    if (mtmp.mleashed)
+        throw new Error('newcham(): leashed monsters not ported yet');
+
+    /* emits_light(olddata) != emits_light(mtmp->data): light sources
+       aren't ported yet */
+    if (!mtmp.perminvis || pm_invisible(olddata))
+        mtmp.perminvis = pm_invisible(mdat);
+    mtmp.minvis = mtmp.invis_blkd ? 0 : mtmp.perminvis;
+    if (mtmp.mundetected)
+        hideunder(mtmp);
+    if (game.u.ustuck === mtmp)
+        throw new Error('newcham(): engulfing/sticky hero not ported yet');
+
+    if (mdat === mons[M.PM_LONG_WORM])
+        throw new Error('newcham(): get_wormno()/initworm() not ported yet');
+
+    mtmp.meverseen = 0; /* never seen mon in present shape; newsym() ->
+                         * display_monster() may change it right back */
+    if (!game.in_mklev)
+        throw new Error('newcham(): newsym() outside level creation not ported yet');
+    /* newsym(mtmp->mx, mtmp->my): nothing is displayed during mklev */
+
+    /* when polymorph trap/wand/potion produces a vampire, turn in into
+       a full-fledged vampshifter unless shape-changing is blocked */
+    if (mtmp.cham === NON_PM && mdat.mlet === M.S_VAMPIRE
+        /* && !Protection_from_shape_changers */)
+        mtmp.cham = pm_to_cham(monsndx(mdat));
+
+    /* possibly_unwield(mtmp, polyspot), mon_break_armor(mtmp, polyspot),
+       mselftouch(): only matter for a monster with a wielded weapon or
+       worn armor */
+    if (mtmp.mw || ((mtmp.misc_worn_check || 0) & ~I_SPECIAL))
+        throw new Error('newcham(): possibly_unwield()/mon_break_armor() not ported yet');
+    /* check_gear_next_turn(mtmp) */
+    mtmp.misc_worn_check |= I_SPECIAL;
+
+    /* former giants can't continue carrying boulders */
+    if (mtmp.minvent?.length && !throws_rocks(mdat))
+        throw new Error('newcham(): dropping boulders not ported yet');
+    if (mtmp === game.u.usteed)
+        throw new Error('newcham(): poly_steed() not ported yet');
+
+    /* old form might not have been affected by Elbereth but perhaps the
+       new form is */
+    if (game.context?.mon_moving)
+        throw new Error('newcham(): set_apparxy()/monflee() for a moving monster not ported yet');
+
+    return 1;
 }
 // C ref: mon.c hideunder() -- concealment state only (no rolls); floor
 // objects aren't kept in a list yet, so there is nothing to hide under
