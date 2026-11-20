@@ -29,6 +29,7 @@ import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
 import { is_male, is_female, is_neuter, pm_invisible } from './mondata.js';
 import { set_mon_data } from './mondata.js';
 import { Monnam, noit_mon_nam } from './do_name.js';
+import { m_dowear, which_armor } from './worn.js';
 import {
     MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
     PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
@@ -54,7 +55,9 @@ import {
     PM_FLESH_GOLEM, G_UNIQ,
 } from './monsters.js';
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
-         LOCK_PICK, EGG, CORPSE, TIN, GLOB_OF_GREEN_SLIME, CARROT,
+         LOCK_PICK, EGG, CORPSE, AMULET_OF_LIFE_SAVING, GRAY_DRAGON_SCALES,
+         YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
+         YELLOW_DRAGON_SCALE_MAIL, TIN, GLOB_OF_GREEN_SLIME, CARROT,
          objects } from './objects.js';
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES } from './const.js';
@@ -255,8 +258,10 @@ function m_detach(mtmp, mptr, due_to_death) {
 /* find the worn amulet of life saving which will save a monster */
 function mlifesaver(mon) {
     if (!nonliving(mon.data) || is_vampshifter(mon)) {
-        if (mon.misc_worn_check & W_AMUL)
-            throw new Error('mlifesaver(): which_armor() not ported yet');
+        const otmp = which_armor(mon, W_AMUL);
+
+        if (otmp && otmp.otyp === AMULET_OF_LIFE_SAVING)
+            return otmp;
     }
     return null;
 }
@@ -481,7 +486,7 @@ async function movemon_singlemon(mtmp) {
             || dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > (3 * 3)) {
             mtmp.misc_worn_check &= ~I_SPECIAL;
             const oldworn = mtmp.misc_worn_check;
-            m_dowear(mtmp, false);
+            await m_dowear(mtmp, false);
             if (mtmp.misc_worn_check !== oldworn || !mtmp.mcanmove)
                 return false; /* is spending this turn equipping */
         }
@@ -638,10 +643,16 @@ export function select_newcham_form(mon) {
         mndx = pickvampshape(mon);
         break;
     case NON_PM: /* ordinary */
-        /* m_armr = which_armor(mon, W_ARM); dragon scales/mail pick the
-           matching dragon */
-        if (mon.misc_worn_check & W_ARM)
-            throw new Error('select_newcham_form(): which_armor() not ported yet');
+      {
+        const m_armr = which_armor(mon, W_ARM);
+
+        if (m_armr && m_armr.otyp >= GRAY_DRAGON_SCALES
+            && m_armr.otyp <= YELLOW_DRAGON_SCALES) /* Is_dragon_scales() */
+            mndx = MM.PM_GRAY_DRAGON + m_armr.otyp - GRAY_DRAGON_SCALES;
+        else if (m_armr && m_armr.otyp >= GRAY_DRAGON_SCALE_MAIL
+                 && m_armr.otyp <= YELLOW_DRAGON_SCALE_MAIL) /* Is_dragon_mail() */
+            mndx = MM.PM_GRAY_DRAGON + m_armr.otyp - GRAY_DRAGON_SCALE_MAIL;
+      }
         break;
     }
 
@@ -985,21 +996,6 @@ function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 /* mondata.h */
 function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 
-// C ref: worn.c m_dowear() -- only the early returns are ported
-function m_dowear(mon, creation) {
-    /* Note the restrictions here are the same as in dowear in do_wear.c
-     * except for the additional restriction on intelligence. */
-    if (verysmall(mon.data) || (mon.data.mflags1 & M1_NOHANDS) !== 0
-        || (mon.data.mflags1 & M1_ANIMAL) !== 0)
-        return;
-    /* give mummies a chance to wear their wrappings
-     * and let skeletons wear their initial armor */
-    if ((mon.data.mflags1 & M1_MINDLESS) !== 0
-        && (!creation || (mon.data.mlet !== S_MUMMY
-                          && mon.data !== mons[PM_SKELETON])))
-        return;
-    throw new Error('m_dowear(): m_dowear_type() not ported yet');
-}
 function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
 function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
 function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }

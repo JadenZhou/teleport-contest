@@ -40,11 +40,10 @@ import { AD_RBRE, AD_PHYS, AT_MAGC, AT_BREA, M1_BREATHLESS, M1_ACID,
 import { passes_walls, monsndx, Resists_Elem } from './mondata.js';
 import { mksobj, place_object } from './mkobj.js';
 import { stackobj } from './invent.js';
-import { find_mac } from './mhitm.js';
 import { dmgval } from './weapon.js';
 import { doname } from './objnam.js';
 import { monkilled } from './mon.js';
-import { which_armor } from './makemon.js';
+import { find_mac, which_armor } from './worn.js';
 import { mtele_trap, mlevel_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
 import { bimanual } from './wield.js';
