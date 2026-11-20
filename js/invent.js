@@ -173,7 +173,7 @@ const oth_names = ["Bagged/Boxed items"];
 
 // C ref: options.c def_inv_order[] (flags.inv_order defaults to it;
 // the inv_order option is not parsed yet)
-const def_inv_order = [
+export const def_inv_order = [
     O.COIN_CLASS, O.AMULET_CLASS, O.WEAPON_CLASS, O.ARMOR_CLASS,
     O.FOOD_CLASS, O.SCROLL_CLASS, O.SPBOOK_CLASS, O.POTION_CLASS,
     O.RING_CLASS, O.WAND_CLASS, O.TOOL_CLASS, O.GEM_CLASS, O.ROCK_CLASS,
@@ -200,7 +200,7 @@ export function let_to_name(let_, unpaid, showsym) {
 }
 
 // C ref: windows.c add_menu_heading()
-function add_menu_heading(tmpwin, buf) {
+export function add_menu_heading(tmpwin, buf) {
     let attr = game.iflags?.menu_headings?.attr ?? ATR_INVERSE,
         color = game.iflags?.menu_headings?.color ?? NO_COLOR;
 
