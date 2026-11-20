@@ -66,7 +66,7 @@ function x_monnam_the(mtmp) {
     return `the ${pmname(mtmp.data, mtmp.female ? 1 : 0)}`;
 }
 // C ref: do_name.c mon_nam()
-function mon_nam(mtmp) { return x_monnam_the(mtmp); }
+export function mon_nam(mtmp) { return x_monnam_the(mtmp); }
 // C ref: do_name.c Monnam()
 export function Monnam(mtmp) {
     const s = mon_nam(mtmp);
