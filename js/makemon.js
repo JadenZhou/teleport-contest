@@ -2493,9 +2493,7 @@ export function newcham(mtmp, mdat, ncflags) {
 
     mtmp.meverseen = 0; /* never seen mon in present shape; newsym() ->
                          * display_monster() may change it right back */
-    if (!game.in_mklev)
-        throw new Error('newcham(): newsym() outside level creation not ported yet');
-    /* newsym(mtmp->mx, mtmp->my): nothing is displayed during mklev */
+    newsym(mtmp.mx, mtmp.my);
 
     /* when polymorph trap/wand/potion produces a vampire, turn in into
        a full-fledged vampshifter unless shape-changing is blocked */
