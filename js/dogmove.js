@@ -16,8 +16,7 @@ import { mattackm, max_passive_dmg } from './mhitm.js';
 import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
          m_consume_obj, mondied } from './mon.js';
 import { gettrack } from './track.js';
-import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add,
-         canseemon } from './monmove.js';
+import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter } from './mondata.js';
 import * as M from './monsters.js';
@@ -27,8 +26,8 @@ import { objects } from './objects.js';
 import { splitobj, obj_extract_self } from './mkobj.js';
 import { mpickobj, relobj } from './steal.js';
 import { distant_name, doname } from './objnam.js';
-import { newsym, pline, mon_visible, canspotmon } from './display.js';
-import { Monnam } from './mhitm.js';
+import { newsym, pline, canseemon, mon_visible, canspotmon } from './display.js';
+import { Monnam, noit_Monnam } from './do_name.js';
 import {
     MMOVE_NOTHING, MMOVE_MOVED, MMOVE_DIED, MMOVE_DONE, MTSZ,
     M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED,
@@ -576,14 +575,6 @@ export function dog_nutrition(mtmp, obj) {
         nutrit = 5 * objects[obj.otyp].oc_nutrition;
     }
     return nutrit;
-}
-
-/* C ref: do_name.c noit_Monnam() -- Monnam() without "it" for an unseen
-   monster; x_monnam() with SUPPRESS_IT */
-function noit_Monnam(mtmp) {
-    if (!canspotmon(mtmp) && mtmp !== game.u.usteed)
-        throw new Error('noit_Monnam(): SUPPRESS_IT naming not ported yet');
-    return Monnam(mtmp);
 }
 
 // ── C ref: dogmove.c dog_eat() ──

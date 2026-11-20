@@ -28,7 +28,7 @@ import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
          pm_to_cham } from './makemon.js';
 import { is_male, is_female, is_neuter, pm_invisible } from './mondata.js';
 import { set_mon_data } from './mondata.js';
-import { Monnam } from './mhitm.js';
+import { Monnam, noit_mon_nam } from './do_name.js';
 import {
     MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
     PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
@@ -64,8 +64,9 @@ import { grow_up } from './makemon.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
 import { relobj } from './steal.js';
-import { dochugw, onscary, mon_regen, m_everyturn_effect, canseemon,
+import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear } from './monmove.js';
+import { canseemon } from './display.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -405,7 +406,7 @@ export async function monkilled(mdef, fltxt, how) {
                       : (how === AD_DCAY && completelyrots(mptr)) ? 'rot'
                         : null;
         if (rxt)
-            throw new Error('monkilled(): noit_mon_nam() not ported yet');
+            await pline(`May ${noit_mon_nam(mdef)} ${rxt} in peace.`);
     }
 }
 /* C ref: mondata.h completelyburns(), completelyrusts(), completelyrots() */
@@ -1132,7 +1133,7 @@ function may_dig(x, y) {
              && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
 }
 /* C ref: hack.c bad_rock() */
-function bad_rock(mdat, x, y) {
+export function bad_rock(mdat, x, y) {
     return (/* (Sokoban && sobj_at(BOULDER, x, y)) || */
             (IS_OBSTRUCTED(game.level.at(x, y).typ)
              && (!tunnels(mdat) || needspick(mdat) || !may_dig(x, y))

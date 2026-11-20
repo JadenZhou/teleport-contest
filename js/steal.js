@@ -4,12 +4,12 @@
 
 import { game } from './gstate.js';
 import { add_to_minv, obj_extract_self, place_object, unknow_object } from './mkobj.js';
-import { canseemon } from './monmove.js';
+import { canseemon } from './display.js';
 import * as O from './objects.js';
 import { cansee } from './vision.js';
 import { newsym, pline } from './display.js';
 import { distant_name, doname } from './objnam.js';
-import { Monnam } from './mhitm.js';
+import { Monnam } from './do_name.js';
 import { stackobj } from './invent.js';
 import { flooreffects, obj_no_longer_held } from './do.js';
 import { droppables } from './dogmove.js';
