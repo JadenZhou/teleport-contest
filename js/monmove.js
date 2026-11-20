@@ -15,6 +15,7 @@ import { splitobj, obj_extract_self } from './mkobj.js';
 import { distant_name, doname } from './objnam.js';
 import { Monnam } from './mhitm.js';
 import { mpickobj } from './steal.js';
+import { find_defensive, find_offensive, find_misc } from './muse.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -364,7 +365,7 @@ function distfleeck(mtmp, out) {
 }
 
 // C ref: priest.c in_your_sanctuary()
-function in_your_sanctuary(mon, x, y) {
+export function in_your_sanctuary(mon, x, y) {
     if (!game.level.flags?.has_temple) return false;
     throw new Error('in_your_sanctuary(): temples not ported yet');
 }
@@ -455,43 +456,6 @@ function can_fog(mtmp) {
     return false;
 }
 
-// ── C ref: muse.c find_defensive() (the early-outs) ──
-function find_defensive(mtmp, tryescape) {
-    game.m_defensive = null;
-    game.m_has_defense = 0;
-    if (is_animal(mtmp.data) || mindless(mtmp.data))
-        return false;
-    if (!tryescape && dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > 25)
-        return false;
-    throw new Error('find_defensive() not ported yet');
-}
-// ── C ref: muse.c find_misc() (the early-outs) ──
-function find_misc(mtmp) {
-    const u = game.u;
-    game.m_misc = null;
-    game.m_has_misc = 0;
-    if (is_animal(mtmp.data) || mindless(mtmp.data))
-        return false;
-    if (u.uswallow && mtmp === u.ustuck)
-        return false;
-    if (dist2(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy) > 36)
-        return false;
-    throw new Error('find_misc() not ported yet');
-}
-// ── C ref: muse.c find_offensive() (the early-outs) ──
-function find_offensive(mtmp) {
-    const u = game.u;
-    game.m_offensive = null;
-    game.m_has_offense = 0;
-    if (mtmp.mpeaceful || is_animal(mtmp.data) || mindless(mtmp.data)
-        || nohands(mtmp.data))
-        return false;
-    if (u.uswallow)
-        return false;
-    if (in_your_sanctuary(mtmp, 0, 0))
-        return false;
-    throw new Error('find_offensive() not ported yet');
-}
 // ── C ref: mhitu.c ranged_attk_available() ──
 function ranged_attk_available(mtmp) {
     for (const a of mtmp.data.mattk) {
@@ -847,7 +811,7 @@ function blocking_terrain(x, y) {
 }
 
 // ── C ref: mthrowu.c m_lined_up() / lined_up() ──
-function lined_up(mtmp) {
+export function lined_up(mtmp) {
     const u = game.u;
     const tx = mtmp.mux, ty = mtmp.muy;
     const ignore_boulders = (throws_rocks(mtmp.data)
