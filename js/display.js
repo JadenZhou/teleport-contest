@@ -15,7 +15,7 @@ import {
     CROSSWALL, TUWALL, TDWALL, TLWALL, TRWALL,
     D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS,
 } from './const.js';
-import { HALLUC } from './const.js';
+import { HALLUC, Is_waterlevel } from './const.js';
 import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL,
@@ -363,20 +363,81 @@ export function newsym(x, y) {
     }
 }
 
-// ── docrt ──
+// C ref: display.h enum docrt_flags_bits
+export const docrtRecalc = 0;  /* full docrt(), recalculate what the map should show */
+export const docrtRefresh = 1; /* redraw_map(), draw what we think the map shows */
+export const docrtMapOnly = 2; /* ORed with Recalc or Refresh; draw the map but not
+                                * status or perminv */
+export const docrtNocls = 4;
+
+// C ref: display.c docrt()
+/* the main refresh-the-screen routine */
 export async function docrt() {
-    if (!game.level) return;
-    for (let y = 0; y < ROWNO; y++)
-        for (let x = 1; x < COLNO; x++) {
-            const loc = game.level.at(x, y);
-            if (loc?.remembered_glyph) {
-                show_glyph_cell(x, y, loc.remembered_glyph.ch,
-                    loc.remembered_glyph.color, loc.remembered_glyph.decgfx);
+    await docrt_flags(docrtRecalc);
+}
+
+// C ref: display.c docrt_flags()
+/* docrt() with finer control */
+export async function docrt_flags(refresh_flags) {
+    const u = game.u;
+    const maponly = (refresh_flags & docrtMapOnly) !== 0,
+        redrawonly = (refresh_flags & docrtRefresh) !== 0,
+        nocls = (refresh_flags & docrtNocls) !== 0;
+
+    if (!game.program_state) game.program_state = {};
+    if (!u?.ux || !game.level || game.program_state.in_docrt)
+        return; /* display isn't ready yet */
+
+    game.program_state.in_docrt = true;
+
+    if (redrawonly) {
+        throw new Error('docrt_flags(): redraw_map() not ported yet');
+    } else if (u.uswallow) {
+        throw new Error('docrt_flags(): swallowed() not ported yet');
+    } else if (u.uinwater && !Is_waterlevel(u.uz)) { /* Underwater */
+        throw new Error('docrt_flags(): under_water() not ported yet');
+    } else if (u.uburied) { /* [not implemented] */
+        throw new Error('docrt_flags(): under_ground() not ported yet');
+    } else {
+        /* shut down vision */
+        vision_recalc(2);
+
+        /*
+         * This routine assumes that cls() does the following:
+         *      + fills the physical screen with the symbol for rock
+         *      + clears the glyph buffer
+         */
+        if (!nocls)
+            await cls();
+
+        /* display memory: show_glyph(x, y, lev->glyph); a spot never
+           seen has the unexplored glyph (shown as blank) */
+        for (let x = 1; x < COLNO; x++)
+            for (let y = 0; y < ROWNO; y++) {
+                const lev = game.level.at(x, y);
+                if (!lev) continue;
+                const gl = lev.remembered_glyph;
+                if (gl)
+                    show_glyph_cell(x, y, gl.ch, gl.color, gl.decgfx);
+                else
+                    show_glyph_cell(x, y, ' ', NO_COLOR, false);
             }
-        }
-    if (game.u?.ux > 0) show_glyph_cell(game.u.ux, game.u.uy, '@', CLR_WHITE, false);
-    /* overlay with monsters */
-    see_monsters();
+
+        /* see what is to be seen */
+        vision_recalc(0);
+
+        /* overlay with monsters */
+        see_monsters();
+    }
+
+    /* post_map: */
+    if (!maponly) {
+        /* perm_invent: update_inventory() -- no perm_invent window */
+        /* status */
+        game.disp_botlx = true; /* force a redraw of the bottom lines */
+        /* note: caller needs to call bot() to actually redraw status */
+    }
+    game.program_state.in_docrt = false;
 }
 
 // C ref: display.c see_monsters() -- the newsym() of each monster's spot;
@@ -596,7 +657,16 @@ function _buildScreenOutput(cursor_on_u) {
 
 // ── flush_screen ──
 // C ref: display.c flush_screen()
+/*
+ * Synch the third screen with the display.
+ */
 export async function flush_screen(cursor_on_u) {
+    /* C's static delay_flushing is kept in game, which is per game */
+    if (cursor_on_u === -1)
+        game.delay_flushing = !game.delay_flushing;
+    if (game.delay_flushing)
+        return;
+    /* get this done now, before we place the cursor on the hero */
     if (game.disp_botl || game.disp_botlx)
         bot();
     _buildScreenOutput(cursor_on_u);

@@ -1,18 +1,22 @@
 // do.js — level changes.
 // C ref: do.c
 //
-// Ported so far: schedule_goto(), deferred_goto(), and goto_level() up to
-// making the new level (mklev()).  The arrival half of goto_level()
-// (u_on_rndspot()/u_on_newpos()/stairs placement, losedogs(), docrt(),
-// the arrival messages) and returning to a saved level are not ported yet.
+// Ported so far: schedule_goto(), deferred_goto(), and goto_level() for a
+// new level reached by level teleport, through docrt() and the arrival
+// messages.  Stairs/portal/falling arrival and returning to a saved level
+// are not ported yet.
 
 import { game } from './gstate.js';
-import { pline } from './display.js';
+import { pline, docrt, flush_screen } from './display.js';
 import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
-    In_hell, builds_up,
+    In_hell, builds_up, at_dgn_entrance, level_difficulty,
 } from './dungeon.js';
 import { In_endgame, Is_waterlevel, Is_airlevel } from './const.js';
+import { PM_TOURIST } from './monsters.js';
+import { more_experienced, newexplevel } from './exper.js';
+import { check_special_room } from './hack.js';
+import { pickup } from './pickup.js';
 import { keepdogs, losedogs } from './dog.js';
 import { kill_genocided_monsters } from './mon.js';
 import { m_at } from './makemon.js';
@@ -73,8 +77,10 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     let up = (depth(newlevel) < depth(u.uz));
     const newdungeon = (u.uz.dnum !== newlevel.dnum);
     let leaving_tutorial = false;
-    /* familiar, new, dist, do_fall_dmg, prev_temperature: used by the
-       rest of the arrival half, not ported yet */
+    /* familiar, new: a level is always new here (returning to a saved
+       level isn't ported) and never familiar (no bones files);
+       dist, do_fall_dmg: falling isn't ported */
+    const prev_temperature = g.level.flags?.temperature || 0;
     /* was_in_W_tower = In_W_tower(u.ux, u.uy, &u.uz): the Wizard's Tower
        levels are only in Gehennom, which isn't ported yet */
     if (In_hell(u.uz))
@@ -129,9 +135,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (falling) /* assuming this is only trap door or hole */
         throw new Error('goto_level(): impact_drop() not ported yet');
 
-    /* check_special_room(TRUE) */
-    if (u.ushops && u.ushops.length)
-        throw new Error('goto_level(): check_special_room() not ported yet');
+    check_special_room(true); /* probably was a trap door */
     /* if (Punished) unplacebc(): punishment not ported */
     /* reset_utrap(FALSE) */
     u.utrap = 0;
@@ -202,13 +206,14 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         /* returning to previously visited level; reload it */
         throw new Error('goto_level(): returning to a saved level not ported yet');
     }
-    /* reglyph_darkroom(): display only */
+    /* reglyph_darkroom(): only changes remembered dark corridor glyphs,
+       and a new level has none yet */
     /* set_uinwater(0) */
     u.uinwater = 0;
     /* do this prior to level-change pline messages */
     vision_reset();             /* clear old level's line-of-sight */
     g.vision_full_recalc = 0;   /* don't let that reenable vision yet */
-    /* flush_screen(-1): ensure all map flushes are postponed */
+    await flush_screen(-1);     /* ensure all map flushes are postponed */
 
     if (portal && !In_endgame(u.uz)) {
         /* find the portal on the new level */
@@ -247,8 +252,138 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
 
     /* Reset the screen. */
     vision_reset(); /* reset the blockages */
-    /* reset_glyphmap(gm_levelchange); notice_mon_off() */
-    throw new Error('goto_level(): docrt() not ported yet');
+    /* reset_glyphmap(gm_levelchange): glyphs are mapped as they are shown */
+    /* notice_mon_off(): a11y mon_notices isn't ported (off by default) */
+    await docrt(); /* does a full vision recalc */
+    await flush_screen(-1);
+
+    /*
+     *  Move all plines beyond the screen reset.
+     */
+
+    /* deferred arrival message for level teleport looks odd if given
+       after the various messages below, so give it before them;
+       [it might have already been delivered via docrt() -> see_monsters()
+       -> Sting_effects() -> maybe_lvltport_feedback(), in which case
+       'dfr_post_msg' has already been reset to Null];
+       if 'dfr_post_msg' is "you materialize on a different level" then
+       maybe_lvltport_feedback() will deliver it now and then free it */
+    if (g.dfr_post_msg)
+        await maybe_lvltport_feedback(); /* potentially called by Sting_effects() */
+
+    /* special levels can have a custom arrival message */
+    deliver_splev_message();
+
+    /* Check whether we just entered Gehennom. */
+    if (!In_hell(u.uz0) && In_hell(u.uz))
+        throw new Error('goto_level(): entering Gehennom not ported yet');
+    /* in case we've managed to bypass the Valley's stairway down:
+       if (Inhell && !Is_valley(&u.uz)) u.uevent.gehennom_entered = 1;
+       -- unreachable, In_hell() throws above */
+
+    /* familiar is bones_include_name(plname): bones files aren't ported,
+       so a new level is never familiar */
+
+    /* special location arrival messages/events */
+    const topo = g.dungeon_topology;
+    if (In_endgame(u.uz)) {
+        throw new Error('goto_level(): endgame arrival not ported yet');
+    } else if (u.uz.dnum === topo.d_quest_dnum) { /* In_quest() */
+        throw new Error('goto_level(): onquest() not ported yet');
+    } else if (topo.d_knox_level?.dlevel && on_level(u.uz, topo.d_knox_level)) {
+        /* Is_knox() */
+        throw new Error('goto_level(): Fort Ludios arrival not ported yet');
+    } else if (u.uz.dnum === topo.d_mines_dnum) { /* In_mines() */
+        if (newdungeon)
+            record_achievement('ACH_MINE');
+    } else if (u.uz.dnum === topo.d_sokoban_dnum) { /* In_sokoban() */
+        if (newdungeon)
+            record_achievement('ACH_SOKO');
+    } else {
+        if (topo.d_rogue_level?.dlevel
+            && on_level(u.uz, topo.d_rogue_level)) { /* new && Is_rogue_level() */
+            throw new Error('goto_level(): the rogue level not ported yet');
+        } else if (topo.d_bigroom_level?.dlevel
+                   && on_level(u.uz, topo.d_bigroom_level)) { /* Is_bigroom() */
+            record_achievement('ACH_BGRM');
+        }
+        /* main dungeon message from your quest leader */
+        if (u.uz0.dnum !== topo.d_quest_dnum && at_dgn_entrance("The Quest")
+            && !(u.uevent?.qcompleted || u.uevent?.qexpelled
+                 || g.quest_status?.leader_is_dead))
+            throw new Error('goto_level(): quest portal message not ported yet');
+    }
+
+    temperature_change_msg(prev_temperature);
+
+    /* this was originally done earlier; moved here to be logged after
+       any achievement related to entering a dungeon branch */
+    {   /* if (new): always, since returning to a level isn't ported */
+        /* describe_level(dloc, 2); livelog_printf(...): no livelog */
+        if (g.urole.mnum === PM_TOURIST) {
+            more_experienced(level_difficulty(), 0);
+            newexplevel();
+        }
+    }
+
+    assign_level(u.uz0, u.uz); /* reset u.uz0 */
+    /* save_currentstate(): INSURANCE, no files */
+    /* notice_mon_on(); notice_all_mons(TRUE): a11y mon_notices is off */
+
+    /* print_level_annotation(): a new level has no annotation */
+    /* give room entrance message, if any */
+    check_special_room(false);
+    /* deliver objects traveling with player */
+    /* obj_delivery(TRUE) */
+    if (g.migrating_objs)
+        throw new Error('goto_level(): obj_delivery() not ported yet');
+
+    /* assume this will always return TRUE when changing level */
+    /* (void) in_out_region(u.ux, u.uy): regions aren't ported yet */
+    if (g.regions && g.regions.length)
+        throw new Error('goto_level(): in_out_region() not ported yet');
+    /* if (!new) fix_shop_damage(): the level is always new */
+
+    /* fall damage? do_fall_dmg is set only when falling, which
+       throws above */
+
+    await pickup(1);
+}
+
+// C ref: do.c maybe_lvltport_feedback()
+/* usually called from goto_level(); might be called from Sting_effects() */
+export async function maybe_lvltport_feedback() {
+    const g = game;
+    if (g.dfr_post_msg
+        && g.dfr_post_msg.slice(0, 15).toLowerCase() === "you materialize") {
+        /* "You materialize on a different level." */
+        await pline(g.dfr_post_msg);
+        g.dfr_post_msg = null;
+    }
+}
+
+// C ref: questpgr.c deliver_splev_message()
+function deliver_splev_message() {
+    /* there's no provision for delivering via window instead of pline */
+    if (game.lev_message)
+        throw new Error('deliver_splev_message(): deliver_by_pline() not ported yet');
+}
+
+// C ref: do.c temperature_change_msg()
+function temperature_change_msg(prev_temperature) {
+    if (prev_temperature !== (game.level.flags?.temperature || 0))
+        throw new Error('temperature_change_msg(): hot/cold level messages not ported yet');
+}
+
+// C ref: insight.c record_achievement() -- the achievement list is only
+// shown by #achievements and the dumplog, neither ported; C's livelog
+// message isn't shown on the tty
+function record_achievement(achidx) {
+    const u = game.u;
+    if (!u.uachieved) u.uachieved = [];
+    if (u.uachieved.includes(achidx))
+        return;
+    u.uachieved.push(achidx);
 }
 
 // C ref: dungeon.c u_on_rndspot()
