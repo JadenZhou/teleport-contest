@@ -269,7 +269,7 @@ function get_table_boolean_opt(tbl, name, defval) {
 }
 
 // C ref: sp_lev.c get_coord()
-function get_coord(v) {
+export function get_coord(v) {
     if (lua_type(v) === LUA_TNIL || typeof v !== 'object')
         return null;
     if (Array.isArray(v) && v.length === 2)
@@ -2973,6 +2973,19 @@ export function lspo_exclusion(tbl) {
     ez.next = game.exclusion_zones || null;
     game.exclusion_zones = ez;
     return 0;
+}
+
+// C ref: sp_lev.c cvt_to_abscoord()
+/* turn a coordinate relative to the current map or room into an absolute
+   svl.level.locations coordinate */
+export function cvt_to_abscoord(c) {
+    if (game.coder && game.coder.croom) {
+        c.x += game.coder.croom.lx;
+        c.y += game.coder.croom.ly;
+    } else {
+        c.x += game.xstart;
+        c.y += game.ystart;
+    }
 }
 
 // C ref: sp_lev.c cvt_to_relcoord()

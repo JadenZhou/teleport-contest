@@ -231,8 +231,13 @@ export function themerms_lua(L) {
                 des.terrain(ice, 'I');
                 if (percent(25)) {
                     const mintime = 1000 - (nh.level_difficulty() * 100);
+                    // ice:iterate() calls ice_melter from C, so Lua cannot
+                    // name its frame (the recorder falls back to "nh.rn2")
+                    // and the parent frame is the C method "iterate".
                     const ice_melter = function(x, y) {
-                        nh.start_timer_at(x, y, 'melt-ice', mintime + nh.rn2(1000));
+                        nh.start_timer_at(x, y, 'melt-ice', mintime + withRngCaller(
+                            'nh.rn2 src=themerms.lua:54 parent=iterate([C]:-1)',
+                            () => nh.rn2(1000)));
                     };
                     ice.iterate(ice_melter);
                 }
