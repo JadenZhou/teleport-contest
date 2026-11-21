@@ -65,6 +65,9 @@ import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
 import { grow_up } from './makemon.js';
+import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
+         TOOL_CLASS } from './objects.js';
+import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE } from './const.js';
 import { can_hide_under_obj, set_mimic_sym } from './makemon.js';
 import { vobj_at } from './display.js';
 import { ceiling_hider } from './engrave.js';
@@ -1717,6 +1720,16 @@ function monlineu(mon, nx, ny) {
     return online2(nx, ny, mon.mux, mon.muy);
 }
 
+/* C ref: obj.h is_pick() */
+function is_pick(otmp) {
+    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
+            && objects[otmp.otyp].oc_skill === P_PICK_AXE);
+}
+/* C ref: obj.h is_axe() */
+function is_axe(otmp) {
+    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
+            && objects[otmp.otyp].oc_skill === P_AXE);
+}
 /* C ref: hack.c may_dig() */
 function may_dig(x, y) {
     const lev = game.level.at(x, y);
@@ -1869,7 +1882,7 @@ export function mfndpos(mon, data, flag) {
     const lev = game.level;
     const mdat = mon.data;
     let cnt = 0;
-    const rockok = false, treeok = false;
+    let rockok = false, treeok = false;
 
     const x = mon.mx;
     const y = mon.my;
@@ -1887,13 +1900,31 @@ export function mfndpos(mon, data, flag) {
                   || mdat === mons[PM_SALAMANDER]); /* likes_lava() */
     if (mdat === mons[PM_FLOATING_EYE]) /* prefers to avoid heat */
         lavaok = false;
-    const thrudoor = ((flag & (ALLOW_WALL | BUSTDOOR)) !== 0);
+    let thrudoor = ((flag & (ALLOW_WALL | BUSTDOOR)) !== 0);
     /* poison gas regions: visible_region_at() is not ported yet; the
        only regions so far are harmless clouds (S_cloud), which mfndpos()
        does not avoid */
 
-    if (flag & ALLOW_DIG)
-        throw new Error('mfndpos(): ALLOW_DIG not ported yet');
+    if (flag & ALLOW_DIG) {
+        let mw_tmp;
+
+        /* need to be specific about what can currently be dug */
+        if (!needspick(mdat)) {
+            rockok = treeok = true;
+        } else if ((mw_tmp = mon.mw) /* MON_WEP(mon) */ && mw_tmp.cursed
+                   && mon.weapon_check === NO_WEAPON_WANTED) {
+            rockok = is_pick(mw_tmp);
+            treeok = is_axe(mw_tmp);
+        } else {
+            rockok = !!(m_carrying(mon, PICK_AXE)
+                        || (m_carrying(mon, DWARVISH_MATTOCK)
+                            && !which_armor(mon, W_ARMS)));
+            treeok = !!(m_carrying(mon, AXE) || (m_carrying(mon, BATTLE_AXE)
+                                                 && !which_armor(mon, W_ARMS)));
+        }
+        if (rockok || treeok)
+            thrudoor = true;
+    }
 
     for (;;) { /* nexttry: eels prefer the water, but if there is no water
                   nearby, they will crawl over land */
@@ -1915,8 +1946,15 @@ export function mfndpos(mon, data, flag) {
                     && !((flag & ALLOW_WALL) && may_passwall(nx, ny))
                     && !((IS_TREE(ntyp) ? treeok : rockok) && may_dig(nx, ny)))
                     continue;
-                /* intelligent peacefuls avoid digging shop/temple walls:
-                   only reachable with rockok (ALLOW_DIG, above) */
+                /* intelligent peacefuls avoid digging shop/temple walls */
+                if (IS_OBSTRUCTED(ntyp) && rockok
+                    && !((mdat.mflags1 & M1_MINDLESS) !== 0) /* mindless() */
+                    && (mon.mpeaceful || mon.mtame)
+                    && (in_rooms(nx, ny, TEMPLE).length
+                        || in_rooms(nx, ny, SHOPBASE).length)
+                    && !(in_rooms(x, y, TEMPLE).length
+                         || in_rooms(x, y, SHOPBASE).length))
+                    continue;
                 if (IS_WATERWALL(ntyp) && !is_swimmer(mdat))
                     continue;
                 /* KMH -- Added iron bars */

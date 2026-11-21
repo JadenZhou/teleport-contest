@@ -3,7 +3,15 @@
 // Only the parts reached during level creation are ported so far.
 
 import { game } from './gstate.js';
-import { rnd } from './rng.js';
+import { rnd, rn2 } from './rng.js';
+import { cvt_sdoor_to_door } from './detect.js';
+import { canseemon, newsym, pline, Hallucination } from './display.js';
+import { You_hear } from './sounds.js';
+import { mksobj_at } from './mkobj.js';
+import { acurr } from './attrib.js';
+import { Unaware } from './eat.js';
+import { D_TRAPPED, D_BROKEN, SCORR, A_STR, A_INT, A_WIS, A_DEX, A_CON,
+         A_CHA } from './const.js';
 import { ICE, DRAWBRIDGE_UP, DB_UNDER, DB_ICE, isok } from './const.js';
 import {
     ROCK, BOULDER, CORPSE, LEASH, POT_OIL, POTION_CLASS, is_organic,
@@ -190,7 +198,7 @@ export function holetime() {
 }
 
 /* C ref: hack.c may_dig() */
-function may_dig(x, y) {
+export function may_dig(x, y) {
     const lev = game.level.at(x, y);
     return !((IS_STWALL(lev.typ) || IS_TREE(lev.typ))
              && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
@@ -214,6 +222,136 @@ function watch_dig(mtmp, x, y, zap) {
         && (closed_door(x, y) || lev.typ === SDOOR || IS_WALL(lev.typ)
             || lev.typ === FOUNTAIN || IS_TREE(lev.typ)))
         throw new Error('watch_dig(): town watch reaction not ported yet');
+}
+
+// C ref: dig.c mdig_tunnel()
+/* digging by monster.  No digging into hero's location.
+   Returns TRUE if monster died, FALSE otherwise. */
+export async function mdig_tunnel(mtmp) {
+    const g = game;
+    let sawit, seeit, trapped;
+    const pile = rnd(12);
+
+    const here = g.level.at(mtmp.mx, mtmp.my);
+    if (here.typ === SDOOR)
+        cvt_sdoor_to_door(here); /* ->typ = DOOR */
+
+    /* Eats away door if present & closed or locked */
+    if (closed_door(mtmp.mx, mtmp.my)) {
+        if (in_rooms(mtmp.mx, mtmp.my, SHOPBASE).length)
+            throw new Error('mdig_tunnel(): add_damage() not ported yet');
+        /* sawit: closed door location is more visible than an open one */
+        sawit = canseemon(mtmp); /* before door state change and unblock_pt */
+        trapped = ((here.doormask ?? 0) & D_TRAPPED) ? true : false;
+        here.doormask = trapped ? D_NODOOR : D_BROKEN;
+        recalc_block_point(mtmp.mx, mtmp.my); /* vision */
+        newsym(mtmp.mx, mtmp.my);
+        if (trapped) {
+            seeit = canseemon(mtmp);
+            void sawit; void seeit;
+            throw new Error('mdig_tunnel(): mb_trapped() not ported yet');
+        } else {
+            if (g.flags.verbose) {
+                if (!Unaware() && !rn2(3)) /* not too often.. */
+                    await draft_message(true); /* "You feel an unexpected draft." */
+            }
+        }
+        return false;
+    } else if (here.typ === SCORR) {
+        here.typ = CORR; here.flags = 0;
+        unblock_point(mtmp.mx, mtmp.my);
+        newsym(mtmp.mx, mtmp.my);
+        await draft_message(false); /* "You feel a draft." */
+        return false;
+    } else if (!IS_OBSTRUCTED(here.typ) && !IS_TREE(here.typ)) { /* no dig */
+        return false;
+    }
+
+    /* Only rock, trees, and walls fall through to this point. */
+    if (((here.wall_info ?? 0) & W_NONDIGGABLE) !== 0) {
+        /* impossible("mdig_tunnel:  %s at (%d,%d) is undiggable", ...) */
+        return false; /* still alive */
+    }
+
+    if (IS_WALL(here.typ)) {
+        /* KMH -- Okay on arboreal levels (room walls are still stone) */
+        if (g.flags.verbose && !rn2(5)) {
+            /* Soundeffect(se_crashing_rock, 75) */
+            await You_hear("crashing rock.");
+        }
+        if (in_rooms(mtmp.mx, mtmp.my, SHOPBASE).length)
+            throw new Error('mdig_tunnel(): add_damage() not ported yet');
+        if (g.level.flags.is_maze_lev) {
+            here.typ = ROOM; here.flags = 0;
+        } else if (g.level.flags.is_cavernous_lev
+                   && !in_town(mtmp.mx, mtmp.my)) {
+            here.typ = CORR; here.flags = 0;
+        } else {
+            here.typ = DOOR; here.doormask = D_NODOOR;
+        }
+    } else if (IS_TREE(here.typ)) {
+        here.typ = ROOM; here.flags = 0;
+        if (pile && pile < 5)
+            throw new Error('mdig_tunnel(): rnd_treefruit_at() not ported yet');
+    } else {
+        here.typ = CORR; here.flags = 0;
+        if (pile && pile < 5)
+            mksobj_at((pile === 1) ? BOULDER : ROCK, mtmp.mx, mtmp.my,
+                      true, false);
+    }
+    newsym(mtmp.mx, mtmp.my);
+    if (!sobj_at(BOULDER, mtmp.mx, mtmp.my))
+        unblock_point(mtmp.mx, mtmp.my); /* vision */
+
+    return false;
+}
+
+const STRIDENT = 4; /* from pray.c */
+
+// C ref: dig.c draft_message()
+/* draft refers to air currents, but can be a pun on "draft" as conscription
+   for military service (probably not a good pun if it has to be explained) */
+async function draft_message(unexpected) {
+    const u = game.u;
+    /*
+     * [Bug or TODO?  Have caller pass coordinates and use the travel
+     * mechanism to determine whether there is a path between
+     * destroyed door (or exposed secret corridor) and hero's location.
+     * When there is no such path, no draft should be felt.]
+     */
+
+    if (unexpected) {
+        if (!Hallucination())
+            await pline("You feel an unexpected draft.");
+        else
+            /* U.S. classification system uses 1-A for eligible to serve
+               and 4-F for ineligible due to physical or mental defect;
+               some intermediate values exist but are rarely seen */
+            await pline("You feel like you are "
+                        + ((acurr(A_STR) < 6 || acurr(A_DEX) < 6
+                            || acurr(A_CON) < 6 || acurr(A_CHA) < 6
+                            || acurr(A_INT) < 6 || acurr(A_WIS) < 6) ? "4-F"
+                                                                     : "1-A")
+                        + ".");
+    } else {
+        if (!Hallucination()) {
+            await pline("You feel a draft.");
+        } else {
+            /* "marching" is deliberately ambiguous; it might mean drills
+                after entering military service or mean engaging in protests */
+            const draft_reaction = [
+                "enlisting", "marching", "protesting", "fleeing",
+            ];
+            const sgn = (n) => (n > 0) - (n < 0);
+
+            /* Lawful: 0..1, Neutral: 1..2, Chaotic: 2..3 */
+            let dridx = rn1(2, 1 - sgn(u.ualign.type));
+            if (u.ualign.record < STRIDENT)
+                /* L: +(0..2), N: +(-1..1), C: +(-2..0); all: 0..3 */
+                dridx += rn1(3, sgn(u.ualign.type) - 1);
+            await pline("You feel like " + draft_reaction[dridx] + ".");
+        }
+    }
 }
 
 // C ref: dig.c zap_dig() -- digging via wand zap or spell cast

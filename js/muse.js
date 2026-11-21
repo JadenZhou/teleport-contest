@@ -24,6 +24,9 @@ import { BOULDER, BUGLE, UNICORN_HORN, CORPSE, TIN, POT_FULL_HEALING,
          POT_INVISIBILITY, WAN_SPEED_MONSTER, POT_SPEED, WAN_POLYMORPH,
          POT_POLYMORPH, BAG_OF_TRICKS, LARGE_BOX,
          GLOB_OF_GREEN_SLIME } from './objects.js';
+import { TIN_OPENER, WEAPON_CLASS, objects } from './objects.js';
+import { P_DAGGER, P_KNIFE } from './const.js';
+import { mwelded } from './weapon.js';
 import { Is_container } from './mkobj.js';
 import { STAIRS, LADDER, TELEP_TRAP, WEB, BEAR_TRAP, is_hole, is_pit,
          M_SEEN_REFL, M_SEEN_MAGR, M_SEEN_SLEEP, M_SEEN_FIRE, M_SEEN_COLD,
@@ -175,6 +178,33 @@ export function cures_stoning(mon, obj, tinok) {
             || (mons[obj.corpsenm].mflags1 & M.M1_ACID) !== 0); /* acidic() */
 }
 
+
+// C ref: muse.c mcould_eat_tin()
+/* can monster open a tin? */
+export function mcould_eat_tin(mon) {
+    /* monkeys who manage to steal tins can't open and eat them
+       even if they happen to also have the appropriate tool */
+    if (is_animal(mon.data))
+        return false;
+
+    const mwep = mon.mw; /* MON_WEP(mon) */
+    const welded_wep = mwep && mwelded(mwep);
+    /* this is different from the player; tin opener or dagger doesn't
+       have to be wielded, and knife can be used instead of dagger */
+    for (const obj of minv(mon)) {
+        /* if stuck with a cursed weapon, don't check rest of inventory */
+        if (welded_wep && obj !== mwep)
+            continue;
+
+        if (obj.otyp === TIN_OPENER
+            || (obj.oclass === WEAPON_CLASS
+                && (objects[obj.otyp].oc_skill === P_DAGGER
+                    || objects[obj.otyp].oc_skill === P_KNIFE)))
+            return true;
+    }
+    return false;
+}
+
 // C ref: muse.c find_defensive()
 /* Select a defensive item/action for a monster.  Returns TRUE iff one is
    found. */
@@ -227,8 +257,12 @@ export function find_defensive(mtmp, tryescape) {
             }
         }
         /* confused or stunned monster might not be able to open tin */
-        if (liztin)
-            throw new Error('find_defensive(): mcould_eat_tin() not ported yet');
+        if (liztin && mcould_eat_tin(mtmp) && rn2(3)) {
+            game.m_defensive = liztin;
+            /* tin and corpse ultimately end up being handled the same */
+            game.m_has_defense = MUSE_LIZARD_CORPSE;
+            return true;
+        }
     }
 
     /* check specifically for healing alone when blind (healing cures

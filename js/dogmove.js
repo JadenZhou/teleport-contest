@@ -17,7 +17,8 @@ import { mattackm, max_passive_dmg } from './mhitm.js';
 import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
          m_consume_obj, mondied } from './mon.js';
 import { gettrack } from './track.js';
-import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add } from './monmove.js';
+import { onscary, should_displace, m_avoid_kicked_loc, mon_track_add,
+         m_digweapon_check } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater } from './mondata.js';
 import * as M from './monsters.js';
@@ -1517,9 +1518,8 @@ export async function dog_move(mtmp, after) {
         }
         /* if (!m_in_out_region(mtmp, nix, niy)) return MMOVE_MOVED:
            regions aren't ported yet (none exist) */
-        /* m_digweapon_check(): only for tunnelling pets */
-        if (tunnels(mtmp.data))
-            throw new Error('dog_move(): m_digweapon_check() not ported yet');
+        if (await m_digweapon_check(mtmp, nix, niy))
+            return MMOVE_NOTHING;
 
         /* insert a worm_move() if worms ever begin to eat things */
         const wasseen = canseemon(mtmp);
