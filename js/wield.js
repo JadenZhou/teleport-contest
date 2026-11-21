@@ -13,7 +13,13 @@ import { ECMD_OK, ECMD_TIME, ECMD_FAIL, W_ARMOR, W_ACCESSORY,
          W_SADDLE, W_RINGL, W_RINGR, W_TOOL } from './const.js';
 import { M1_NOHANDS, M2_DEMON, M2_WERE, S_IMP, S_VAMPIRE, MZ_SMALL, mons,
          PM_SHADE, PM_TENGU } from './monsters.js';
-import { pline, You } from './display.js';
+import { pline, You, You_cant } from './display.js';
+import { rnd } from './rng.js';
+import { AT_WEAP } from './monsters.js';
+import { HAND, GLIB, A_DEX } from './const.js';
+import { makeplural } from './objnam.js';
+import { body_part } from './insight.js';
+import { ACURR } from './attrib.js';
 import { prinv, getobj, hands_obj, splittable, freeinv } from './invent.js';
 import { addinv } from './u_init.js';
 import { splitobj } from './mkobj.js';
@@ -98,6 +104,93 @@ export function setuqwep(obj) {
 // C ref: wield.c setuswapwep()
 export function setuswapwep(obj) {
     setworn(obj, W_SWAPWEP);
+}
+
+/* C ref: mondata.h could_twoweap() */
+function could_twoweap(ptr) {
+    let n = 0;
+    for (let i = 0; i < 3; i++)
+        if (ptr.mattk[i] && ptr.mattk[i].aatyp === AT_WEAP)
+            n++;
+    return n > 1;
+}
+/* C ref: wield.c TWOWEAPOK() */
+function TWOWEAPOK(obj) {
+    return (obj.oclass === WEAPON_CLASS)
+        ? !(is_launcher(obj) || is_ammo(obj) || is_missile(obj))
+        : is_weptool(obj);
+}
+
+// C ref: wield.c can_twoweapon()
+async function can_twoweapon() {
+    const g = game;
+    let otmp;
+
+    if (!could_twoweap(g.youmonst.data)) {
+        if (g.u.umonnum !== g.u.umonster) /* Upolyd */
+            await You_cant("use two weapons in your current form.");
+        else
+            await pline(`${makeplural((g.flags.female && g.urole.name.f)
+                                      ? g.urole.name.f : g.urole.name.m)
+                          } aren't able to use two weapons at once.`);
+    } else if (!g.uwep || !g.uswapwep) {
+        let hand_s = body_part(HAND);
+
+        if (!g.uwep && !g.uswapwep)
+            hand_s = makeplural(hand_s);
+        /* "your hands are empty" or "your {left|right} hand is empty" */
+        await pline(`Your ${g.uwep ? "left " : g.uswapwep ? "right " : ""}${
+            hand_s} ${vtense(hand_s, "are")} empty.`);
+    } else if (!TWOWEAPOK(g.uwep) || !TWOWEAPOK(g.uswapwep)) {
+        otmp = !TWOWEAPOK(g.uwep) ? g.uwep : g.uswapwep;
+        throw new Error('can_twoweapon(): unsuitable weapon (Yname2()) message not ported yet');
+    } else if (bimanual(g.uwep) || bimanual(g.uswapwep)) {
+        otmp = bimanual(g.uwep) ? g.uwep : g.uswapwep;
+        throw new Error('can_twoweapon(): two-handed weapon (Yname2()) message not ported yet');
+    } else if (g.uarms) {
+        await You_cant("use two weapons while wearing a shield.");
+    } else if (g.uswapwep.oartifact) {
+        throw new Error('can_twoweapon(): artifact resists (Yobjnam2()) message not ported yet');
+    } else if (g.uswapwep.otyp === CORPSE /* && cant_wield_corpse(uswapwep) */) {
+        throw new Error('can_twoweapon(): cant_wield_corpse() not ported yet');
+    } else if (game.u.uprops[GLIB]?.intrinsic || game.u.uprops[GLIB]?.extrinsic
+               || g.uswapwep.cursed) {
+        throw new Error('can_twoweapon(): drop_uswapwep() not ported yet');
+    } else
+        return true;
+    void otmp;
+    return false;
+}
+
+// C ref: wield.c set_twoweap()
+export function set_twoweap(on_off) {
+    if (on_off !== !!game.u.twoweap) {
+        game.u.twoweap = on_off;
+        if (game.flags.weaponstatus)
+            game.disp_botl = true;
+    }
+}
+
+// C ref: wield.c dotwoweapon()
+/* the #twoweapon command */
+export async function dotwoweapon() {
+    /* You can always toggle it off */
+    if (game.u.twoweap) {
+        await You("switch to your primary weapon.");
+        set_twoweap(false); /* u.twoweap = FALSE */
+        /* update_inventory(): no perm_invent */
+        return ECMD_OK;
+    }
+
+    /* May we use two weapons? */
+    if (await can_twoweapon()) {
+        /* Success! */
+        await You("begin two-weapon combat.");
+        set_twoweap(true); /* u.twoweap = TRUE */
+        /* update_inventory(): no perm_invent */
+        return (rnd(20) > ACURR(A_DEX)) ? ECMD_TIME : ECMD_OK;
+    }
+    return ECMD_OK;
 }
 
 // C ref: wield.c uwepgone()

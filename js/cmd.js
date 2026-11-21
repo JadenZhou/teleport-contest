@@ -36,7 +36,7 @@ import { doloot } from './pickup.js';
 import { dopickup } from './hack.js';
 import { Never_mind, isok } from './const.js';
 import { dofire, dothrow } from './dothrow.js';
-import { doswapweapon, dowieldquiver, dowield } from './wield.js';
+import { doswapweapon, dowieldquiver, dowield, dotwoweapon } from './wield.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
@@ -118,6 +118,7 @@ const cmd_funcs = {
     dolook: () => dolook(),
     doread: () => doread(),
     dowield: () => dowield(),
+    dotwoweapon: () => dotwoweapon(),
     dohelp: () => dohelp(),
     doopen: () => doopen(),
     dojump: () => dojump(),
