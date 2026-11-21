@@ -107,7 +107,11 @@ import { del_engr } from './engrave.js';
 import { vision_reset } from './vision.js';
 import { load_lua, get_table_int } from './nhlua.js';
 import { PM_MINOTAUR } from './monsters.js';
-import { GEM_CLASS } from './objects.js';
+import { GEM_CLASS, SADDLE } from './objects.js';
+import { mdrop_special_objs, discard_minvent, mpickobj } from './steal.js';
+import { m_dowear } from './worn.js';
+import { can_saddle } from './makemon.js';
+import { in_rooms } from './hack.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -1887,8 +1891,12 @@ function create_altar(a, croom) {
         if (croom.rtype !== TEMPLE)
             croom_is_temple = FALSE;
     } else {
-        /* get_location_coord() + in_rooms(x, y, TEMPLE): not ported yet */
-        nhl_error(null, 'create_altar: altars outside rooms are not ported yet');
+        let sproom;
+        get_location_coord(c, DRY, croom, a.coord);
+        if ((sproom = in_rooms(c.x, c.y, TEMPLE).charCodeAt(0) || 0) !== 0)
+            croom = game.level.rooms[sproom - ROOMOFFSET];
+        else
+            croom_is_temple = FALSE;
     }
 
     /* check for existing features */
@@ -2211,8 +2219,13 @@ function create_monster(m, croom) {
             else
                 mtmp.m_lev += m.m_lev_adj;
         }
-        if (!(m.has_invent & DEFAULT_INVENT))
-            nhl_error(null, 'create_monster: mdrop_special_objs()/discard_minvent() are not ported yet');
+        if (!(m.has_invent & DEFAULT_INVENT)) {
+            /* guard against someone accidentally specifying e.g. quest nemesis
+             * with custom inventory that lacks Bell or quest artifact but
+             * forgetting to flag them as receiving their default inventory */
+            mdrop_special_objs(mtmp);
+            discard_minvent(mtmp, TRUE);
+        }
         if (m.has_invent & CUSTOM_INVENT) {
             invent_carrying_monster = mtmp;
         }
@@ -2431,10 +2444,19 @@ export function lspo_monster(...args) {
 
     if ((tmpmons.has_invent & CUSTOM_INVENT)
         && lua_type(invfn) === LUA_TFUNCTION) {
-        nhl_error(null, 'lspo_monster: custom monster inventory (spo_end_moninvent) is not ported yet');
+        /* nhl_pcall_handle(L, 0, 0, "lspo_monster", NHLpa_panic) */
+        invfn();
+        spo_end_moninvent();
     }
 
     return 0;
+}
+
+// C ref: sp_lev.c spo_end_moninvent()
+function spo_end_moninvent() {
+    if (invent_carrying_monster)
+        m_dowear(invent_carrying_monster, TRUE);
+    invent_carrying_monster = null;
 }
 
 // C ref: sp_lev.c create_trap()
@@ -2821,12 +2843,16 @@ function create_object(o, croom) {
                 /* don't complain, the monster may be gone legally */
                 ; /* ['otmp' remains on floor] */
             } else {
-                nhl_error(null, 'create_object: monster inventory (mpickobj) is not ported yet');
+                obj_extract_self(otmp); /* remove_object(otmp) */
+                if (otmp.otyp === SADDLE && can_saddle(invent_carrying_monster))
+                    throw new Error('create_object(): put_saddle_on_mon() not ported yet');
+                else
+                    mpickobj(invent_carrying_monster, otmp);
             }
         } else {
             const cobj = container_obj[container_idx - 1];
 
-            otmp.where = 'OBJ_FREE'; /* remove_object(): no floor chains yet */
+            obj_extract_self(otmp); /* remove_object(otmp) */
             if (cobj) {
                 otmp = add_to_container(cobj, otmp);
                 cobj.owt = weight(cobj);

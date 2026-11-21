@@ -43,6 +43,7 @@ import { tty_create_nhwindow, tty_start_menu, add_menu_str, tty_end_menu,
 import { quest_lua } from './quest_lua.js';
 import { oracle_lua } from './oracle_lua.js';
 import { bigrm_lua_files } from './bigrm_lua.js';
+import { quest_level_lua_files } from './questlev_lua.js';
 import { l_register_des, get_coord, cvt_to_abscoord } from './sp_lev.js';
 import { l_selection_register } from './selvar.js';
 import { l_obj_register, nhl_get_timertype } from './nhlobj.js';
@@ -476,6 +477,8 @@ function nhl_lua_file(fname) {
         return nhl_lua_files[fname];
     if (Object.hasOwn(bigrm_lua_files, fname))
         return bigrm_lua_files[fname];
+    if (Object.hasOwn(quest_level_lua_files, fname))
+        return quest_level_lua_files[fname];
     return null;
 }
 

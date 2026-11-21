@@ -14,7 +14,7 @@ import { Is_branchlev, In_hell, level_difficulty, on_level, dungeon_branch,
          dunlev, dunlevs_in_dungeon, Is_special,
          at_dgn_entrance, insert_branch, is_wizard_mode,
          induced_align, find_level } from './dungeon.js';
-import { makemaz, mazexy } from './mkmaze.js';
+import { makemaz, mazexy, mkportal } from './mkmaze.js';
 import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE, S_HUMAN,
          PM_ELF, PM_DWARF, PM_ORC, PM_GNOME, PM_HUMAN, PM_ARCHEOLOGIST,
          PM_WIZARD, PM_GIANT_SPIDER, mons } from './monsters.js';
@@ -46,6 +46,7 @@ import {
     BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST, DUST, MARK,
     TAINT_AGE, MM_NOGRP, NO_MM_FLAGS, MKTRAP_NOFLAGS, MKTRAP_SEEN,
     MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_NOVICTIM, LA_UP, LA_DOWN,
+    BR_PORTAL, BR_NO_END1, BR_NO_END2,
 } from './const.js';
 
 // Object classes and object numbers: objects.js
@@ -207,8 +208,9 @@ export function place_lregion(lx, ly, hx, hy, nlx, nly, nhx, nhy, rtype, lev) {
          * if there are rooms and this a branch, let place_branch choose
          * the branch location (to avoid putting branches in corridors).
          */
-        if (rtype === LR_BRANCH && game.level.nroom)
-            throw new Error('place_lregion(): LR_BRANCH not ported yet');
+        if (rtype === LR_BRANCH && game.level.nroom) {
+            place_branch(Is_branchlev(game.u.uz), 0, 0);
+        }
 
         lx = 1; /* column 0 is not used */
         hx = COLNO - 1;
@@ -282,13 +284,15 @@ function put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, oneshot, lev) {
         u_on_newpos(x, y);
         break;
     case LR_PORTAL:
-        throw new Error('put_lregion_here(): mkportal() not ported yet');
+        mkportal(x, y, lev.dnum, lev.dlevel);
+        break;
     case LR_DOWNSTAIR:
     case LR_UPSTAIR:
-        mkstairs(x, y, (rtype === LR_UPSTAIR) ? 1 : 0, null, false);
+        mkstairs(x, y, rtype, null, false); /* (char) rtype: LR_UPSTAIR is 1 */
         break;
     case LR_BRANCH:
-        throw new Error('put_lregion_here(): place_branch() not ported yet');
+        place_branch(Is_branchlev(game.u.uz), x, y);
+        break;
     }
     return true;
 }
@@ -558,7 +562,7 @@ async function makelevel() {
         const prevstairs = game.stairs; /* used to test for place_branch() success */
         /* Place multi-dungeon branch. */
         if (branchp) {
-            place_branch(branchp);
+            place_branch(branchp, 0, 0);
         }
 
         /* for main dungeon level 1, the stairs up where the hero starts
@@ -2406,30 +2410,86 @@ function is_branchlev() {
     return Is_branchlev(game.u.uz);
 }
 
+// C ref: mklev.c find_branch_room()
 function find_branch_room(mp) {
-    const croom = generate_stairs_find_room();
-    if (croom) somexyspace(croom, mp);
+    let croom = null;
+
+    if (game.level.nroom === 0) {
+        mazexy(mp); /* already verifies location */
+    } else {
+        croom = generate_stairs_find_room();
+        if (!somexyspace(croom, mp))
+            console.error('impossible: Can\'t place branch!');
+    }
     return croom;
 }
 
-function place_branch(branchp) {
-    const g = game;
-    const mp = { x: 0, y: 0 };
-    const croom = find_branch_room(mp);
-    if (croom && mp.x > 0) {
-        const on_end1 = (branchp.end1?.dnum === g.u?.uz?.dnum
-            && branchp.end1?.dlevel === g.u?.uz?.dlevel);
-        const dest = on_end1 ? branchp.end2 : branchp.end1;
-        const goes_up = on_end1 ? !!branchp.end1_up : !branchp.end1_up;
-        const loc = g.level?.at(mp.x, mp.y);
-        if (loc) {
-            loc.typ = STAIRS;
-            loc.ladder = goes_up ? 1 : 2;
-        }
-        stairway_add(mp.x, mp.y, goes_up, false, dest || { dnum: 0, dlevel: 0 });
-        if (goes_up) g.level.upstair = { x: mp.x, y: mp.y };
-        else g.level.dnstair = { x: mp.x, y: mp.y };
+// C ref: mklev.c pos_to_room()
+/* Find the room for (x,y).  Return null if not in a room. */
+function pos_to_room(x, y) {
+    for (let i = 0; i < game.level.nroom; i++) {
+        const curr = game.level.rooms[i];
+        if (inside_room(curr, x, y))
+            return curr;
     }
+    return null;
+}
+
+// C ref: mklev.c place_branch()
+/* If given a branch, randomly place a special stair or portal. */
+export function place_branch(br, x, y) {
+    const g = game;
+    const m = { x: 0, y: 0 };
+    let dest;
+    let make_stairs;
+
+    /*
+     * Return immediately if there is no branch to make or we have
+     * already made one.  This routine can be called twice when
+     * a special level is loaded that specifies an SSTAIR location
+     * as a favored spot for a branch.
+     */
+    if (!br || g.made_branch)
+        return;
+
+    if (!x) { /* find random coordinates for branch */
+        /* br_room = find_branch_room(&m); */
+        find_branch_room(m); /* sets m via mazexy() or somexy() */
+        x = m.x;
+        y = m.y;
+    } else {
+        pos_to_room(x, y);
+    }
+
+    if (on_level(br.end1, g.u.uz)) {
+        /* we're on end1 */
+        make_stairs = br.type !== BR_NO_END1;
+        dest = br.end2;
+    } else {
+        /* we're on end2 */
+        make_stairs = br.type !== BR_NO_END2;
+        dest = br.end1;
+    }
+
+    if (br.type === BR_PORTAL) {
+        /* iflags.debug_fuzzer && u.ucamefrom: no fuzzer here */
+        mkportal(x, y, dest.dnum, dest.dlevel);
+    } else if (make_stairs) {
+        const goes_up = on_level(br.end1, g.u.uz) ? !!br.end1_up
+                                                  : !br.end1_up;
+
+        stairway_add(x, y, goes_up, false, dest);
+        set_levltyp(x, y, STAIRS);
+        g.level.at(x, y).ladder = goes_up ? LA_UP : LA_DOWN;
+        if (goes_up) g.level.upstair = { x, y };
+        else g.level.dnstair = { x, y };
+    }
+    /*
+     * Set made_branch to TRUE even if we didn't make a stairwell (i.e.
+     * make_stairs is false) since there is currently only one branch
+     * per level, if we failed once, we're going to fail again on the
+     * next call.
+     */
     g.made_branch = true;
 }
 

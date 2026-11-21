@@ -14,11 +14,15 @@ import {
     HWALL, ROOM, CORR, IS_DOOR, ACCESSIBLE, LR_BRANCH, LR_PORTAL, LR_UPSTAIR,
     LR_DOWNSTAIR, LR_TELE, LR_UPTELE, LR_DOWNTELE, NO_MM_FLAGS,
     MKTRAP_MAZEFLAG, Is_waterlevel, Is_airlevel, Is_stronghold, In_quest,
+    MAGIC_PORTAL,
 } from './const.js';
 import { Is_special, dunlevs_in_dungeon, dunlev, Is_branchlev, on_level,
          find_level } from './dungeon.js';
 import { load_special } from './sp_lev.js';
-import { place_lregion, mkstairs, wallification, mktrap, Invocation_lev } from './mklev.js';
+import {
+    place_lregion, mkstairs, wallification, mktrap, Invocation_lev, place_branch,
+} from './mklev.js';
+import { maketrap } from './trap.js';
 import { mkobj_at, mksobj_at, mkgold } from './mkobj.js';
 import { makemon } from './makemon.js';
 import { mons, PM_MINOTAUR, PM_CLERIC } from './monsters.js';
@@ -394,10 +398,23 @@ export function makemaz(s) {
     }
 
     /* place branch stair or portal */
-    if (Is_branchlev(game.u.uz))
-        throw new Error('makemaz(): place_branch() on a maze level not ported yet');
+    place_branch(Is_branchlev(game.u.uz), 0, 0);
 
     populate_maze();
+}
+
+// C ref: mkmaze.c mkportal()
+export function mkportal(x, y, todnum, todlevel) {
+    /* a portal "trap" must be matched by a
+       portal in the destination dungeon/dlevel */
+    const ttmp = maketrap(x, y, MAGIC_PORTAL);
+
+    if (!ttmp) {
+        console.error('impossible: portal on top of portal?');
+        return;
+    }
+    ttmp.dst = { dnum: todnum, dlevel: todlevel };
+    return;
 }
 
 // C ref: mkmaze.c walkfrom() (the recursive, !MICRO version)

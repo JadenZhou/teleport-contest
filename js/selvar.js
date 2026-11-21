@@ -25,7 +25,7 @@
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
 import {
-    lua_error, lua_type, LUA_TFUNCTION, luaL_checkinteger, luaL_checkstring,
+    lua_error, lua_type, LUA_TFUNCTION, LUA_TNUMBER, luaL_checkinteger, luaL_checkstring,
     luaL_checkoption, splev_chr2typ, nhl_pcall_handle, NHLpa_impossible,
     LuaUserdata,
 } from './nhlua.js';
@@ -425,6 +425,120 @@ export function selection_do_line(x1, y1, x2, y2, ov) {
     }
 }
 
+// C ref: selvar.c selection_do_randline()
+export function selection_do_randline(x1, y1, x2, y2, rough, rec, ov) {
+    let mx, my;
+    let dx, dy;
+
+    if (rec < 1 || (x2 === x1 && y2 === y1))
+        return;
+
+    if (rough > Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)))
+        rough = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
+
+    if (rough < 2) {
+        mx = Math.trunc((x1 + x2) / 2);
+        my = Math.trunc((y1 + y2) / 2);
+    } else {
+        do {
+            dx = rn2(rough) - Math.trunc(rough / 2);
+            dy = rn2(rough) - Math.trunc(rough / 2);
+            mx = Math.trunc((x1 + x2) / 2) + dx;
+            my = Math.trunc((y1 + y2) / 2) + dy;
+        } while ((mx > COLNO - 1 || mx < 0 || my < 0 || my > ROWNO - 1));
+    }
+
+    if (!selection_getpoint(mx, my, ov)) {
+        selection_setpoint(mx, my, ov, 1);
+    }
+
+    rough = Math.trunc((rough * 2) / 3);
+
+    rec--;
+
+    selection_do_randline(x1, y1, mx, my, rough, rec, ov);
+    selection_do_randline(mx, my, x2, y2, rough, rec, ov);
+
+    selection_setpoint(x2, y2, ov, 1);
+}
+
+// C ref: selvar.c set_selection_floodfillchk()
+let selection_flood_check_func = null;
+export function set_selection_floodfillchk(f) {
+    selection_flood_check_func = f;
+}
+
+// C ref: selvar.c sel_flood_havepoint()
+/* check whethere <x,y> is already in xs[],ys[] */
+function sel_flood_havepoint(x, y, xs, ys, n) {
+    while (n > 0) {
+        --n;
+        if (xs[n] === x && ys[n] === y)
+            return true;
+    }
+    return false;
+}
+
+// C ref: selvar.c selection_floodfill()
+export function selection_floodfill(ov, x, y, diagonals) {
+    const tmp = selection_new();
+    const SEL_FLOOD_STACK = (COLNO * ROWNO);
+    let idx = 0;
+    const dx = new Array(SEL_FLOOD_STACK);
+    const dy = new Array(SEL_FLOOD_STACK);
+    const SEL_FLOOD = (nx, ny) => {
+        if (idx < SEL_FLOOD_STACK) {
+            dx[idx] = nx;
+            dy[idx] = ny;
+            idx++;
+        } else
+            throw new Error('panic: floodfill stack overrun');
+    };
+    const SEL_FLOOD_CHKDIR = (mx, my, sel) => {
+        if (isok(mx, my)
+            && selection_flood_check_func(mx, my)
+            && !selection_getpoint(mx, my, sel)
+            && !sel_flood_havepoint(mx, my, dx, dy, idx))
+            SEL_FLOOD(mx, my);
+    };
+
+    if (!selection_flood_check_func) {
+        selection_free(tmp, true);
+        return;
+    }
+    SEL_FLOOD(x, y);
+    do {
+        idx--;
+        x = dx[idx];
+        y = dy[idx];
+        if (isok(x, y)) {
+            selection_setpoint(x, y, ov, 1);
+            selection_setpoint(x, y, tmp, 1);
+        }
+        SEL_FLOOD_CHKDIR((x + 1), y, tmp);
+        SEL_FLOOD_CHKDIR((x - 1), y, tmp);
+        SEL_FLOOD_CHKDIR(x, (y + 1), tmp);
+        SEL_FLOOD_CHKDIR(x, (y - 1), tmp);
+        if (diagonals) {
+            SEL_FLOOD_CHKDIR((x + 1), (y + 1), tmp);
+            SEL_FLOOD_CHKDIR((x - 1), (y - 1), tmp);
+            SEL_FLOOD_CHKDIR((x - 1), (y + 1), tmp);
+            SEL_FLOOD_CHKDIR((x + 1), (y - 1), tmp);
+        }
+    } while (idx > 0);
+    selection_free(tmp, true);
+}
+
+// C ref: sp_lev.c floodfillchk_match_under(), set_floodfillchk_match_under()
+let floodfillchk_match_under_typ = 0;
+function floodfillchk_match_under(x, y) {
+    return (floodfillchk_match_under_typ === game.level.at(x, y).typ);
+}
+export function set_floodfillchk_match_under(typ) {
+    floodfillchk_match_under_typ = typ;
+    set_selection_floodfillchk(floodfillchk_match_under);
+}
+
 // C ref: selvar.c selection_iterate()
 export function selection_iterate(ov, func, arg) {
     const rect = { lx: 0, ly: 0, hx: 0, hy: 0 };
@@ -686,6 +800,68 @@ function l_selection_fillrect(...args) {
     return sel;
 }
 
+// C ref: nhlsel.c l_selection_randline()
+/* local s = selection.randline(sel, x1,y1, x2,y2, roughness); */
+/* local s = selection.randline(x1,y1, x2,y2, roughness); */
+function l_selection_randline(...args) {
+    const argc = args.length;
+    let sel = null;
+    let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    let roughness = 7;
+
+    if (argc === 6) {
+        sel = l_selection_check(args[0]);
+        x1 = luaL_checkinteger(args[1]);
+        y1 = luaL_checkinteger(args[2]);
+        x2 = luaL_checkinteger(args[3]);
+        y2 = luaL_checkinteger(args[4]);
+        roughness = luaL_checkinteger(args[5]);
+    } else if (argc === 5 && lua_type(args[0]) === LUA_TNUMBER) {
+        x1 = luaL_checkinteger(args[0]);
+        y1 = luaL_checkinteger(args[1]);
+        x2 = luaL_checkinteger(args[2]);
+        y2 = luaL_checkinteger(args[3]);
+        roughness = luaL_checkinteger(args[4]);
+        sel = l_selection_new();
+    }
+
+    const c = sel_2coords_abs({ x1, y1, x2, y2 });
+    sel = selection_clone(sel); /* l_selection_clone() */
+    selection_do_randline(c.x1, c.y1, c.x2, c.y2, roughness, 12, sel);
+    return sel;
+}
+
+// C ref: nhlsel.c l_selection_flood()
+/* local s = selection.floodfill(x,y); */
+/* local s = selection.floodfill(x,y, diagonals); */
+function l_selection_flood(...args) {
+    const argc = args.length;
+    let sel = null;
+    let x = 0, y = 0;
+    let diagonals = false;
+
+    if (argc === 2 || argc === 3) {
+        x = luaL_checkinteger(args[0]);
+        y = luaL_checkinteger(args[1]);
+        if (argc === 3)
+            diagonals = !!args[2] && args[2] !== undefined; /* lua_toboolean() */
+        sel = l_selection_new();
+    } else {
+        lua_error('wrong parameters'); /* nhl_error() */
+        /*NOTREACHED*/
+    }
+
+    const c = { x, y };
+    get_location_coord(c, ANY_LOC, game.coder ? game.coder.croom : null,
+                       SP_COORD_PACK(x, y));
+
+    if (isok(c.x, c.y)) {
+        set_floodfillchk_match_under(game.level.at(c.x, c.y).typ);
+        selection_floodfill(sel, c.x, c.y, diagonals);
+    }
+    return sel;
+}
+
 // C ref: nhlsel.c l_selection_match()
 /* local s = selection.match([[...]]); */
 function l_selection_match(...args) {
@@ -901,6 +1077,8 @@ export function l_selection_register(L) {
     selection.fillrect = l_selection_fillrect;
     selection.area = l_selection_fillrect;
     selection.match = l_selection_match;
+    selection.randline = l_selection_randline;
+    selection.floodfill = l_selection_flood;
     selection.numpoints = l_selection_numpoints;
     selection.negate = l_selection_not;
     selection.percentage = l_selection_filter_percent;
