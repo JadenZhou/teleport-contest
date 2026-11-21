@@ -3,11 +3,12 @@
 // rndmonst_adj, mk_gen_ok, cmp_init_mongen_order, init_mongen_order,
 // mkclass, mkclass_aligned, adj_lev, makemon, newmonhp, m_initweap,
 // m_initinv, m_initthrow, mongets, mkmonmoney, golemhp, propagate,
-// peace_minded, set_malign, m_initgrp; muse.c
-// rnd_{defensive,offensive,misc}_item; teleport.c goodpos.
+// peace_minded, set_malign, m_initgrp, wrong_elem_type; muse.c
+// rnd_{defensive,offensive,misc}_item; teleport.c goodpos; questpgr.c
+// qt_montype; minion.c ndemon.
 //
 // Not ported yet: newcham (shapechangers),
-// set_mimic_sym, rndghostname, worm segments, qt_montype() for the quest.
+// set_mimic_sym, rndghostname, worm tail segments.
 
 import { christen_monst, rndghostname, Amonnam } from './do_name.js';
 import { game } from './gstate.js';
@@ -186,7 +187,7 @@ function wrong_elem_type(ptr) {
     return false;
 }
 
-// C ref: quest.c qt_montype()
+// C ref: questpgr.c qt_montype()
 export function qt_montype() {
     let qpm;
 
