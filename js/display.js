@@ -1306,6 +1306,61 @@ export function newsym_force(x, y) {
         loc.gnew = 1;
 }
 
+/* C ref: display.h tmp_at() styles */
+export const DISP_BEAM = -1, DISP_ALL = -2, DISP_TETHER = -3, DISP_FLASH = -4,
+    DISP_ALWAYS = -5, DISP_CHANGE = -6, DISP_END = -7, DISP_FREEMEM = -8;
+const TMP_AT_MAX_GLYPHS = 80 * 2; /* COLNO * 2 */
+let tmp_at_glyph = null; /* static struct tmp_glyph *tglyph */
+
+// C ref: display.c tmp_at() -- DISP_BEAM and DISP_ALL only: the transient
+// beam glyphs aren't drawn (no screen is captured while they show), but
+// the spots the beam covered are remembered and newsym()'d by DISP_END,
+// which redraws terrain the beam changed (e.g. a wall dug by a zap)
+export function tmp_at(x, y) {
+    switch (x) {
+    case DISP_BEAM:
+    case DISP_ALL:
+        tmp_at_glyph = { prev: tmp_at_glyph, saved: [], style: x, glyph: y };
+        /* flush_screen(0): buffered glyphs are flushed at the next input */
+        return;
+    case DISP_TETHER:
+    case DISP_FLASH:
+    case DISP_ALWAYS:
+        throw new Error('tmp_at(): flash/tether styles not ported yet');
+    case DISP_FREEMEM:
+        tmp_at_glyph = null;
+        return;
+    default:
+        break;
+    }
+
+    const tglyph = tmp_at_glyph;
+    if (!tglyph)
+        throw new Error('tmp_at: tglyph not initialized'); /* panic() */
+    switch (x) {
+    case DISP_CHANGE:
+        tglyph.glyph = y;
+        break;
+    case DISP_END:
+        /* Erase (reset) from source to end */
+        for (const p of tglyph.saved)
+            newsym(p.x, p.y);
+        tmp_at_glyph = tglyph.prev;
+        break;
+    default: /* do it */
+        if (!isok(x, y))
+            break;
+        if (tglyph.style !== DISP_ALL && !cansee(x, y))
+            break;
+        if (tglyph.saved.length >= TMP_AT_MAX_GLYPHS)
+            break; /* too many locations */
+        /* save pos for later erasing */
+        tglyph.saved.push({ x, y });
+        /* show_glyph(x, y, tglyph->glyph): transient, not drawn */
+        break;
+    }
+}
+
 // ── newsym ──
 export function newsym(x, y) {
     /* don't try to produce map output when level is in a state of flux
