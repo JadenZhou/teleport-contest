@@ -15,6 +15,13 @@ export function pushKeys(keys) {
     for (const k of keys) pushKey(k);
 }
 
+/* C ref: sys/unix/unixtty.c setftty() turns off canonical input and echo
+   but leaves the terminal driver's ICRNL input mode on, so the game reads
+   a typed carriage return as a newline (^J) */
+function icrnl(c) {
+    return c === 13 ? 10 : c;
+}
+
 // C ref: tty_nhgetch — read one key.
 // In replay mode, reads from the input queue.
 // In browser mode, waits for a real keypress.
@@ -30,13 +37,13 @@ export async function nhgetch() {
         msgwin.flags &= ~WIN_STOP;
 
     if (_inputQueue.length > 0) {
-        return _inputQueue.shift();
+        return icrnl(_inputQueue.shift());
     }
 
     // Browser mode: wait for keypress from the display
     const display = game?.nhDisplay;
     if (display?.readKey) {
-        return await display.readKey({ bindings: KEY_BINDINGS.VI_KEYS });
+        return icrnl(await display.readKey({ bindings: KEY_BINDINGS.VI_KEYS }));
     }
 
     throw new Error('Input queue empty - test may be missing keystrokes');
