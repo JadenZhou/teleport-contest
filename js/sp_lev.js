@@ -16,7 +16,7 @@
 import { game } from './gstate.js';
 import { does_block, block_point } from './vision.js';
 import { rn2, rn1, rnd, ROLL_FROM } from './rng.js';
-import { depth, In_hell } from './dungeon.js';
+import { depth, In_hell, on_level } from './dungeon.js';
 import {
     COLNO, ROWNO, OROOM, THEMEROOM, COURT, SWAMP, VAULT, BEEHIVE, MORGUE,
     BARRACKS, ZOO, DELPHI, TEMPLE, ANTHOLE, COCKNEST, LEPREHALL, SHOPBASE,
@@ -110,8 +110,9 @@ import { PM_MINOTAUR } from './monsters.js';
 import { GEM_CLASS, SADDLE } from './objects.js';
 import { mdrop_special_objs, discard_minvent, mpickobj } from './steal.js';
 import { m_dowear } from './worn.js';
-import { can_saddle } from './makemon.js';
+import { can_saddle, put_saddle_on_mon } from './makemon.js';
 import { in_rooms } from './hack.js';
+import { premap_detect } from './detect.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -2845,7 +2846,7 @@ function create_object(o, croom) {
             } else {
                 obj_extract_self(otmp); /* remove_object(otmp) */
                 if (otmp.otyp === SADDLE && can_saddle(invent_carrying_monster))
-                    throw new Error('create_object(): put_saddle_on_mon() not ported yet');
+                    put_saddle_on_mon(otmp, invent_carrying_monster);
                 else
                     mpickobj(invent_carrying_monster, otmp);
             }
@@ -2875,8 +2876,38 @@ function create_object(o, croom) {
     if (o.id === STATUE && Is_medusa_level(game.u.uz) && o.corpsenm === NON_PM)
         nhl_error(null, 'create_object: Medusa statues are not ported yet');
 
-    if (o.achievement)
-        nhl_error(null, 'create_object: achievement prizes are not ported yet');
+    if (o.achievement) {
+        const prize_warning = 'multiple prizes on %s level';
+        const topo = game.dungeon_topology;
+
+        if (!game.context) game.context = {};
+        if (!game.context.achieveo)
+            game.context.achieveo = { mines_prize_oid: 0, mines_prize_otyp: 0,
+                                      soko_prize_oid: 0, soko_prize_otyp: 0 };
+        const achieveo = game.context.achieveo;
+        if (on_level(game.u.uz, topo.d_mineend_level)) { /* Is_mineend_level() */
+            if (!achieveo.mines_prize_oid) {
+                achieveo.mines_prize_oid = otmp.o_id;
+                achieveo.mines_prize_otyp = otmp.otyp;
+                /* prevent stacking; cleared when achievement is recorded;
+                   will be reset in addinv_core1() */
+                otmp.nomerge = 1;
+            } else {
+                impossible(prize_warning.replace('%s', 'mines end'));
+            }
+        } else if (on_level(game.u.uz, topo.d_sokoend_level)) { /* Is_sokoend_level() */
+            if (!achieveo.soko_prize_oid) {
+                achieveo.soko_prize_oid = otmp.o_id;
+                achieveo.soko_prize_otyp = otmp.otyp;
+                otmp.nomerge = 1; /* redundant; Sokoban prizes don't stack;
+                                   * will be reset in addinv_core1() */
+            } else {
+                impossible(prize_warning.replace('%s', 'sokoban end'));
+            }
+        } else {
+            impossible('create_object: unknown achievement');
+        }
+    }
 
     if (!(o.containment & SP_OBJ_CONTENT)) {
         /* stackobj(otmp): floor object chains are not ported yet, so
@@ -4509,7 +4540,7 @@ export function load_special(name) {
         fixup_special();
 
         if (game.coder.premapped)
-            throw new Error('load_special(): premap_detect() not ported yet');
+            premap_detect();
 
         result = TRUE;
     }
