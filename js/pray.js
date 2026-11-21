@@ -8,17 +8,18 @@
 import { game } from './gstate.js';
 import { rn2, rn1, rnl, rnz, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { roles, randrole } from './role.js';
-import { HALLUC_RES } from './const.js';
+import { HALLUC_RES, LEVITATION, FLYING } from './const.js';
 import { A_NONE, A_LAWFUL, A_NEUTRAL, A_CHAOTIC, IS_ALTAR, Amask2align,
          AM_MASK, AM_SHRINE, PASSES_WALLS, STONED, SLIMED, STRANGLED, SICK,
          BLINDED, DEAF, STUNNED, CONFUSION, HALLUC, WOUNDED_LEGS, UNCHANGING,
          TT_LAVA, TT_BURIEDBALL, WEAK, HUNGRY, EXT_ENCUMBER, HVY_ENCUMBER,
          A_STR, A_WIS, A_MAX, W_SADDLE, LOW_PM, SDOOR, SCORR, TIMEOUT,
          IS_OBSTRUCTED, isok, ECMD_OK, ECMD_TIME } from './const.js';
-import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN } from './monsters.js';
+import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT } from './monsters.js';
+import { known_spell, spelleffects } from './spell.js';
 import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          RIN_LEVITATION, GAUNTLETS_OF_FUMBLING, FUMBLE_BOOTS, SADDLE,
-         POT_WATER } from './objects.js';
+         POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
 import { pline } from './display.js';
 import { In_hell } from './dungeon.js';
 import { is_demon, is_undead } from './mondata.js';
@@ -807,4 +808,39 @@ async function prayer_done() {
 // C ref: pline.c verbalize()
 async function verbalize(line) {
     await pline(`"${line}"`);
+}
+
+// C ref: pray.c dosacrifice() -- the #offer command (M-o), sacrifice
+// something to the gods; offering an object (floorfood() and the rest)
+// isn't ported
+export async function dosacrifice() {
+    const u = game.u;
+    /* C ref: youprop.h Levitation, Flying (BFlying isn't ported),
+       Confusion, Stunned */
+    const lev = u.uprops[LEVITATION] || {};
+    const Levitation = !!((lev.intrinsic || lev.extrinsic) && !lev.blocked);
+    const Flying = uhave(FLYING);
+
+    if (!on_altar() || u.uswallow) {
+        await pline(`You are not ${(Levitation || Flying) ? "over" : "on"} an altar.`); /* You() */
+        return ECMD_OK;
+    } else if (HProp(CONFUSION) || HProp(STUNNED)) {
+        await pline("You are too impaired to perform the rite."); /* You() */
+        return ECMD_OK;
+    }
+    throw new Error('dosacrifice(): floorfood("sacrifice") and the offering not ported yet');
+}
+
+// C ref: pray.c doturn() -- #turn command (M-t); the Knight and
+// Priest(ess) turn undead itself isn't ported
+export async function doturn() {
+    /* Knights & Priest(esse)s only please */
+    if (game.urole.mnum !== PM_CLERIC && game.urole.mnum !== PM_KNIGHT) { /* Role_if() */
+        /* Try to use the "turn undead" spell. */
+        if (known_spell(SPE_TURN_UNDEAD))
+            return await spelleffects(SPE_TURN_UNDEAD, false, false);
+        await pline("You don't know how to turn undead!"); /* You() */
+        return ECMD_OK;
+    }
+    throw new Error('doturn(): turning undead (u.uconduct.gnostic, can_chant()) not ported yet');
 }

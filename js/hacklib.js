@@ -29,6 +29,23 @@ export function lowc(c) {
     return ('A' <= c && c <= 'Z') ? String.fromCharCode(c.charCodeAt(0) | 0o40) : c;
 }
 
+// C ref: hacklib.c visctrl()
+/* make a displayable string from a character; c is the key code
+   (0..255): a meta key (8th bit set) shows as "M-" plus the rest */
+export function visctrl(c) {
+    let ccc = '';
+    if (c & 0o200)
+        ccc += 'M-';
+    c &= 0o177;
+    if (c < 0o40)
+        ccc += '^' + String.fromCharCode(c | 0o100); /* letter */
+    else if (c === 0o177)
+        ccc += '^' + String.fromCharCode(c & ~0o100); /* '?' */
+    else
+        ccc += String.fromCharCode(c); /* printable character */
+    return ccc;
+}
+
 // C ref: hacklib.c strncmpi()
 /* case-insensitive counted string comparison */
 export function strncmpi(s1, s2, n) {

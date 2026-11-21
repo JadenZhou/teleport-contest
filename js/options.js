@@ -353,6 +353,43 @@ function optfn_msg_window(result, negated, op) {
 }
 
 // C ref: options.c optfn_runmode() (do_set)
+// C ref: options.c optfn_number_pad() -- do_set from the config file
+// (go.opt_initial); only number_pad:0 (off, the default) is ported:
+// num_pad, swap_yz (-1), MSDOS and phone layouts need reset_commands(FALSE)
+// to rebind the movement keys (digits, M-digit run keys, M-0), so parse()
+// stops when they are set
+function optfn_number_pad(result, negated, op) {
+    let num_pad, num_pad_mode;
+
+    if (!op) {
+        num_pad = !negated;
+        num_pad_mode = 0;
+    } else if (negated) {
+        throw new Error('optfn_number_pad(): bad_negation() not ported yet');
+    } else {
+        const mode = parseInt(op, 10) || 0; /* atoi() */
+
+        if (mode < -1 || mode > 4 || (mode === 0 && op[0] !== '0'))
+            throw new Error('optfn_number_pad(): config_error_add() not ported yet');
+        else if (mode <= 0) {
+            num_pad = false;
+            /* German keyboard; y and z keys swapped */
+            num_pad_mode = (mode < 0) ? 1 : 0; /* 0 or 1 */
+        } else { /* number_pad on */
+            num_pad = true;
+            num_pad_mode = 0;
+            if (mode === 3 || mode === 4) /* MSDOS compatible */
+                num_pad_mode |= 1;
+            if (mode === 2 || mode === 4) /* phone keypad layout */
+                num_pad_mode |= 2;
+        }
+    }
+    result.iflags.num_pad = num_pad;
+    result.iflags.num_pad_mode = num_pad_mode;
+    /* reset_commands(FALSE); number_pad(iflags.num_pad ? 1 : 0): the
+       rebinding isn't ported; parse() stops on the first command */
+}
+
 function optfn_runmode(result, negated, op) {
     const str_start_is = (full, part) =>
         part.length > 0 && full.toLowerCase().startsWith(part.toLowerCase());
@@ -446,6 +483,7 @@ export function parseNethackrc(rc) {
                 else if (key === 'suppress_alert') optfn_suppress_alert(result, negated, val);
                 else if (key === 'msg_window') optfn_msg_window(result, negated, val);
                 else if (key === 'runmode') optfn_runmode(result, negated, val);
+                else if (key === 'number_pad') optfn_number_pad(result, negated, val);
                 else if (key === 'horsename') result.horsename = val; /* petname_optfn() */
                 else result.flags[key] = val;
             } else {
@@ -466,6 +504,7 @@ export function parseNethackrc(rc) {
                 else if (lname === 'autoopen') result.flags.autoopen = value;
                 else if (lname === 'mention_walls') result.flags.mention_walls = value;
                 else if (lname === 'autounlock') optfn_autounlock(result, negated, '');
+                else if (lname === 'number_pad') optfn_number_pad(result, negated, '');
                 // C ref: options.c boolean option case opt_female ("female",
                 // alias "male"); go.opt_initial is TRUE while reading the rc
                 else if (lname.length >= 3 && !strncmpi(lname, "female", Math.max(lname.length, 3)))
@@ -492,6 +531,78 @@ export function parseNethackrc(rc) {
     return result;
 }
 
+// C ref: options.c escapes() -- the result string (C fills 'tp'); a
+// result char is a key code 0..255 (\mX sets the meta bit)
+function escapes(cp) {
+    const oct = "01234567", dec = "0123456789";
+    const hexdd = "00112233445566778899aAbBcCdDeEfF"; /* decl.c hexdd[] */
+    let tp = '';
+    let i = 0, cval, meta, dcount, dp;
+    const at = (k) => (k < cp.length ? cp[k] : '');
+
+    while (i < cp.length) {
+        /* \M has to be followed by something to do meta conversion,
+           otherwise it will just be \M which ultimately yields 'M' */
+        meta = (at(i) === '\\' && (at(i + 1) === 'm' || at(i + 1) === 'M') && at(i + 2) !== '');
+        if (meta)
+            i += 2;
+
+        cval = dcount = 0; /* for decimal, octal, hexadecimal cases */
+        if ((at(i) !== '\\' && at(i) !== '^') || at(i + 1) === '') {
+            /* simple character, or nothing left for \ or ^ to escape */
+            cval = cp.charCodeAt(i++);
+        } else if (at(i) === '^') { /* expand control-character syntax */
+            cval = (cp.charCodeAt(++i) & 0x1f);
+            ++i;
+
+        /* remaining cases are all for backslash; we know cp[1] is not \0 */
+        } else if (dec.includes(at(i + 1))) {
+            ++i; /* move past backslash to first digit */
+            do {
+                cval = (cval * 10) + (cp.charCodeAt(i) - 0x30);
+            } while (at(++i) !== '' && dec.includes(at(i)) && ++dcount < 3);
+        } else if ((at(i + 1) === 'o' || at(i + 1) === 'O') && at(i + 2) !== ''
+                   && oct.includes(at(i + 2))) {
+            i += 2; /* move past backslash and 'O' */
+            do {
+                cval = (cval * 8) + (cp.charCodeAt(i) - 0x30);
+            } while (at(++i) !== '' && oct.includes(at(i)) && ++dcount < 3);
+        } else if ((at(i + 1) === 'x' || at(i + 1) === 'X') && at(i + 2) !== ''
+                   && (dp = hexdd.indexOf(at(i + 2))) >= 0) {
+            i += 2; /* move past backslash and 'X' */
+            do {
+                cval = (cval * 16) + Math.trunc(dp / 2);
+            } while (at(++i) !== '' && (dp = hexdd.indexOf(at(i))) >= 0 && ++dcount < 2);
+        } else { /* C-style character escapes */
+            switch (at(++i)) {
+            case '\\':
+                cval = 0x5c;
+                break;
+            case 'n':
+                cval = 0x0a;
+                break;
+            case 't':
+                cval = 0x09;
+                break;
+            case 'b':
+                cval = 0x08;
+                break;
+            case 'r':
+                cval = 0x0d;
+                break;
+            default:
+                cval = cp.charCodeAt(i);
+            }
+            ++i;
+        }
+
+        if (meta)
+            cval |= 0x80;
+        tp += String.fromCharCode(cval & 0xff); /* (char) cval */
+    }
+    return tp;
+}
+
 // C ref: options.c txt2key()
 function txt2key(txt) {
     let uc;
@@ -516,8 +627,12 @@ function txt2key(txt) {
         return 0x1b;
 
     /* handle things like \b and \7 and \mX */
-    if (txt[0] === '\\')
-        throw new Error('txt2key(): escapes() not ported yet');
+    if (txt[0] === '\\') {
+        if (txt.length >= 256) /* QBUFSZ */
+            txt = txt.slice(0, 256 - 1);
+        const tbuf = escapes(txt);
+        return tbuf.length ? (tbuf.charCodeAt(0) & 0xff) : 0;
+    }
 
     /* control and meta keys */
     if (txt[0].toUpperCase() === 'M') { /* highc() */
