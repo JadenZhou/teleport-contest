@@ -336,11 +336,11 @@ function reset_eat() {
 }
 
 // C ref: hack.c unmul()
-async function unmul(msg_override) {
+export async function unmul(msg_override) {
     const g = game;
     g.disp_botl = true;
     g.multi = 0; /* caller will usually have done this already */
-    if (msg_override)
+    if (msg_override != null) /* C: non-Null pointer, "" included */
         g.nomovemsg = msg_override;
     else if (g.nomovemsg == null) /* a Null pointer; "" means no message */
         g.nomovemsg = "You can move again."; /* You_can_move_again */

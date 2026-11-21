@@ -21,14 +21,15 @@ import { check_gear_next_turn } from './mon.js';
 import { W_ARMOR, W_AMUL, W_RING, W_TOOL, W_WEAPONS, W_BALL,
          W_CHAIN } from './const.js';
 import { uwepgone, uswapwepgone, uqwepgone } from './wield.js';
+import { donning, cancel_don } from './do_wear.js';
 
 // C ref: steal.c remove_worn_item() -- wielded and quivered items; armor,
 // accessories, the ball and chain and setnotworn() aren't ported yet
 export async function remove_worn_item(obj,
                                        unchain_ball) /* whether to unpunish or just unwield */ {
     const g = game;
-    /* if (donning(obj)) cancel_don(): no delayed X_on() routine is ported,
-       so nothing is being donned */
+    if (donning(obj))
+        cancel_don();
     if (!obj.owornmask)
         return;
 
