@@ -5,6 +5,7 @@
 // monnear(), mon_allowflags().
 
 import { game } from './gstate.js';
+import { clear_bypasses, bypass_obj } from './worn.js';
 import { rn2, rn1 } from './rng.js';
 import * as MM from './monsters.js';
 import { SPECIAL_PM, NUMMONS } from './monsters.js';
@@ -536,7 +537,7 @@ function make_corpse(mtmp, corpseflags) {
     /* if polymorph or undead turning has killed this monster,
        prevent the same attack beam from hitting its corpse */
     if (game.context?.bypasses)
-        throw new Error('make_corpse(): bypass_obj() not ported yet');
+        bypass_obj(obj);
 
     if (mtmp.mgivenname) /* has_mgivenname() */
         obj = oname(obj, mtmp.mgivenname, ONAME_NO_FLAGS);
@@ -1042,8 +1043,10 @@ async function movemon_singlemon(mtmp) {
     if (game.vision_full_recalc)
         vision_recalc(0); /* vision! */
 
-    /* reset obj bypasses before next monster moves: clear_bypasses() and
-       clear_splitobjs() -- object bypass bits aren't ported yet */
+    /* reset obj bypasses before next monster moves */
+    if (game.context.bypasses)
+        clear_bypasses();
+    /* clear_splitobjs(): not ported yet */
     if (minliquid(mtmp))
         return false;
 
@@ -1091,7 +1094,10 @@ export async function movemon() {
 
     /* if (any_light_source()) vision_full_recalc = 1: light sources
        aren't ported yet */
-    /* clear_bypasses(), clear_splitobjs(): not ported yet */
+    /* reset obj bypasses after last monster has moved */
+    if (game.context.bypasses)
+        clear_bypasses();
+    /* clear_splitobjs(): not ported yet */
     /* remove dead monsters */
     dmonsfree();
 

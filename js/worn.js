@@ -1020,7 +1020,7 @@ export function bypass_objlist(objchain, on) { /* TRUE => set, FALSE => clear */
 
 // C ref: worn.c bypass_obj()
 /* set an object's bypass bit so that it will be skipped by later calls */
-function bypass_obj(obj) {
+export function bypass_obj(obj) {
     obj.bypass = 1;
     game.context.bypasses = true;
 }
