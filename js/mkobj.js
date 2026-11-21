@@ -40,6 +40,9 @@ import { block_point, recalc_block_point } from './vision.js';
 import { vobj_at } from './display.js';
 import { attach_egg_hatch_timeout } from './timeout.js';
 import { tt_oname } from './topten.js';
+import { zombie_form } from './mon.js';
+import { forget_temple_entry } from './priest.js';
+import { MON_DETACH } from './const.js';
 import { confers_luck } from './timeout.js';
 import { set_moreluck } from './attrib.js';
 
@@ -176,9 +179,10 @@ export function start_corpse_timeout(body) {
                 when = age;
                 break;
             }
-    } else if (game.zombify) {
-        /* zombie_form() and ZOMBIFY_MON are not ported yet */
-        impossible('start_corpse_timeout: zombify is not ported yet');
+    } else if (game.zombify && zombie_form(mons[body.corpsenm]) !== NON_PM
+               && !body.norevive) {
+        action = 'ZOMBIFY_MON';
+        when = rn1(15, 5); /* 5..19 */
     }
 
     /* (void) start_timer(when, TIMER_OBJECT, action, obj_to_any(body)):
@@ -236,6 +240,59 @@ export function set_corpsenm(obj, id) {
     }
 }
 
+// C ref: mkobj.c save_mtraits()
+/* stash a copy of a monster's traits in an object's oextra (corpse or
+   statue), for revival */
+export function save_mtraits(obj, mtmp) {
+    if (mtmp.ispriest)
+        forget_temple_entry(mtmp); /* EPRI() */
+    if (!obj.oextra || !obj.oextra.omonst) { /* !has_omonst(obj) */
+        if (!obj.oextra)
+            obj.oextra = {};
+        obj.oextra.omonst = {}; /* newomonst(obj) */
+    }
+    if (obj.oextra.omonst) { /* has_omonst(obj) */
+        const baselevel = mtmp.data.mlevel; /* mtmp->data is valid ptr */
+        const mtmp2 = { ...mtmp }; /* *mtmp2 = *mtmp */
+
+        obj.oextra.omonst = mtmp2;
+        mtmp2.mnum = monsndx(mtmp.data);
+        /* invalidate pointers */
+        /* m_id is needed to know if this is a revived quest leader */
+        /* but m_id must be cleared when loading bones */
+        mtmp2.nmon = null;
+        mtmp2.data = null;
+        mtmp2.minvent = null;
+        mtmp2.mw = null; /* MON_NOWEP(mtmp2) */
+        /* mtmp2->mextra = 0; if (mtmp->mextra) copy_mextra(mtmp2, mtmp):
+           the port keeps the extension structs on the monster (or in
+           mtmp.mextra); give the copy its own */
+        if (mtmp.mextra) {
+            mtmp2.mextra = {};
+            for (const [k, v] of Object.entries(mtmp.mextra))
+                mtmp2.mextra[k] = (v && typeof v === 'object') ? { ...v } : v;
+        }
+        for (const k of ['edog', 'epri', 'emin', 'eshk', 'egd'])
+            if (mtmp[k])
+                mtmp2[k] = { ...mtmp[k] };
+        /* if mtmp is a long worm with segments, its saved traits will
+           be one without any segments */
+        mtmp2.wormno = 0;
+        /* mtmp might have been killed by repeated life draining; make sure
+           mtmp2 can survive if revived ('baselevel' will be 0 for 1d4 mon) */
+        if (mtmp2.mhpmax <= baselevel)
+            mtmp2.mhpmax = baselevel + 1;
+        /* mtmp is assumed to be dead but we don't kill it or its saved
+           traits, just force those to have a sane value for current HP */
+        if (mtmp2.mhp > mtmp2.mhpmax)
+            mtmp2.mhp = mtmp2.mhpmax;
+        if (mtmp2.mhp < 1)
+            mtmp2.mhp = 0;
+        mtmp2.mstate = (mtmp2.mstate || 0) & ~MON_DETACH;
+    }
+    return obj;
+}
+
 // C ref: mkobj.c mkcorpstat()
 /*
  * make a corpse or statue; the corpse type is ptr if given, else random
@@ -247,8 +304,10 @@ export function mkcorpstat(objtype, mtmp, ptr, x, y, corpstatflags) {
     if (objtype !== O.CORPSE && objtype !== O.STATUE)
         impossible(`making corpstat type ${objtype}`);
     if (x === 0 && y === 0) { /* special case - random placement */
-        impossible('mkcorpstat: rloco() is not ported yet');
         otmp = mksobj(objtype, init, false);
+        /* (void) rloco(otmp): teleport.js rloco() is async and this
+           caller isn't */
+        throw new Error('mkcorpstat(): rloco() for random placement not ported yet');
     } else {
         otmp = mksobj_at(objtype, x, y, init, false);
     }
@@ -256,11 +315,18 @@ export function mkcorpstat(objtype, mtmp, ptr, x, y, corpstatflags) {
     otmp.spe = (corpstatflags & CORPSTAT_SPE_VAL);
     otmp.norevive = game.mkcorpstat_norevive ? 1 : 0;
 
+    /* when 'mtmp' is non-null save the monster's details with the
+       corpse or statue; it will also force the 'ptr' override below */
     if (mtmp) {
-        /* save_mtraits() is not ported yet */
-        impossible('mkcorpstat: save_mtraits() is not ported yet');
+        /* save_mtraits updates otmp->oextra->omonst in place */
+        save_mtraits(otmp, mtmp);
+
         if (!ptr)
             ptr = mtmp.data;
+
+        /* don't give a revive timer to a cancelled troll's corpse */
+        if (mtmp.mcan && !is_rider(ptr))
+            otmp.norevive = 1;
     }
 
     /* when 'ptr' is non-null it comes from our caller or from 'mtmp';
@@ -269,7 +335,7 @@ export function mkcorpstat(objtype, mtmp, ptr, x, y, corpstatflags) {
         const old_corpsenm = otmp.corpsenm;
 
         otmp.corpsenm = monsndx(ptr);
-        otmp.owt = objects[otmp.otyp].oc_weight; /* weight(otmp) */
+        otmp.owt = weight(otmp);
         if (otmp.otyp === O.CORPSE
             && (game.zombify || special_corpse(old_corpsenm)
                 || special_corpse(otmp.corpsenm))) {

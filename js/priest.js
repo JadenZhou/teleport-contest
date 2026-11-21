@@ -100,6 +100,20 @@ export async function priestini(
     }
 }
 
+// C ref: priest.c forget_temple_entry()
+/* reset the move counters used to limit temple entry feedback;
+   leaving the level and then returning yields a fresh start */
+export function forget_temple_entry(priest) {
+    const epri_p = priest.ispriest ? priest.epri : null;
+
+    if (!epri_p) {
+        console.error('impossible: attempting to manipulate shrine data for non-priest?');
+        return;
+    }
+    epri_p.intone_time = epri_p.enter_time = epri_p.peaceful_time
+        = epri_p.hostile_time = 0;
+}
+
 // C ref: priest.c p_coaligned()
 export function p_coaligned(priest) {
     return (game.u.ualign.type === mon_aligntyp(priest));
