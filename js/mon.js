@@ -67,7 +67,8 @@ import { delobj } from './invent.js';
 import { grow_up } from './makemon.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
-import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE } from './const.js';
+import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE, WT_TOOMUCH_DIAGONAL } from './const.js';
+import { curr_mon_load } from './dogmove.js';
 import { can_hide_under_obj, set_mimic_sym } from './makemon.js';
 import { vobj_at } from './display.js';
 import { ceiling_hider } from './engrave.js';
@@ -1773,9 +1774,10 @@ function cant_squeeze_thru(mon) {
              || slithy(ptr) /* || can_fog(mon) */))
         return 1;
 
-    /* lugging too much junk? curr_mon_load() */
-    if (minv(mon).length)
-        throw new Error('cant_squeeze_thru(): curr_mon_load() not ported yet');
+    /* lugging too much junk? */
+    const amt = curr_mon_load(mon);
+    if (amt > WT_TOOMUCH_DIAGONAL)
+        return 2;
 
     /* can squeeze through */
     return 0;
