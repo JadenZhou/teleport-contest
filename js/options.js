@@ -14,7 +14,8 @@ import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSI
 import { strncmpi, strcmpi } from './hacklib.js';
 import { authorize_wizard_mode, authorize_explore_mode } from './sys.js';
 import { bind_key } from './cmd.js';
-import { def_char_to_objclass } from './drawing.js';
+import { def_char_to_objclass, def_oc_syms } from './drawing.js';
+import { pline } from './display.js';
 import { MAXOCLASSES } from './objects.js';
 import {
     str2role, str2race, str2gend, str2align, setrolefilter, clearrolefilter,
@@ -22,6 +23,7 @@ import {
 } from './role.js';
 import {
     NHW_MENU, PICK_ONE, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE,
+    ECMD_OK,
 } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
 import {
@@ -640,4 +642,51 @@ export async function ask_do_tutorial() {
         }
     }
     return dotut;
+}
+
+// C ref: options.c oc_to_str() -- object class numbers to their symbols
+export function oc_to_str(src) {
+    let dest = '';
+    for (const c of src || '')
+        dest += def_oc_syms[c.charCodeAt(0)];
+    return dest;
+}
+
+// C ref: options.c count_apes() -- ga.apelist, the autopickup exceptions
+// (no option ported so far adds any)
+function count_apes() {
+    let numapes = 0;
+    for (let ape = game.apelist; ape; ape = ape.next)
+        numapes++;
+    return numapes;
+}
+
+// C ref: options.c dotogglepickup() -- the '@' command
+export async function dotogglepickup() {
+    let buf;
+    const flags = game.flags;
+
+    flags.pickup = !flags.pickup;
+    if (flags.pickup) {
+        const ocl = oc_to_str(flags.pickup_types);
+        buf = `ON, for ${ocl ? ocl : "all"} objects${(game.apelist)
+                ? ((count_apes() === 1)
+                   ? ", with one exception"
+                   : ", with some exceptions")
+                : ""}`;
+    } else {
+        buf = "OFF";
+    }
+    await pline(`Autopickup: ${buf}.`);
+    return ECMD_OK;
+}
+
+// C ref: options.c doset_simple() -- #options, not ported yet
+export async function doset_simple() {
+    throw new Error('doset_simple(): unported command doset_simple not ported yet');
+}
+
+// C ref: options.c doset() -- #optionsfull, not ported yet
+export async function doset() {
+    throw new Error('doset(): unported command doset not ported yet');
 }

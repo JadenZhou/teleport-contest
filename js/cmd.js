@@ -14,7 +14,7 @@ import { dopray } from './pray.js';
 import { dotalk } from './sounds.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
-         MOVEMENTCMD, CMD_PARAM } from './func_tab.js';
+         MOVEMENTCMD, CMD_PARAM, CMD_M_PREFIX, CMD_gGF_PREFIX } from './func_tab.js';
 import { strcmpi, strncmpi, highc } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
@@ -40,6 +40,7 @@ import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon } from './do_wear.js';
 import { dodrink } from './potion.js';
+import { dotogglepickup, doset_simple, doset } from './options.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -107,6 +108,13 @@ const cmd_funcs = {
     dodrink: () => dodrink(),
     dolook: () => dolook(),
     dojump: () => dojump(),
+    do_reqmenu: () => do_reqmenu(),
+    do_rush: () => do_rush(),
+    do_run: () => do_run(),
+    do_fight: () => do_fight(),
+    dotogglepickup: () => dotogglepickup(),
+    doset_simple: () => doset_simple(),
+    doset: () => doset(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
@@ -139,15 +147,25 @@ async function doextcmd() {
         func = extcmdlist[idx].ef_funct;
         if (!(await can_do_extcmd(extcmdlist[idx])))
             return ECMD_OK;
-        /* iflags.menu_requested: the m prefix isn't ported yet */
-        if (!cmd_funcs[func]) {
-            /* the command itself is not ported yet; no time passes */
-            return ECMD_OK;
+        if (game.iflags.menu_requested
+            && !accept_menu_prefix(extcmdlist[idx])) {
+            await pline(`'${visctrl(cmd_from_func("do_reqmenu"))}' prefix has no effect for the ${extcmdlist[idx].ef_txt} command.`);
+            game.iflags.menu_requested = false;
         }
+        /* tell rhack() what command is actually executing */
+        game.ext_tlist = extcmdlist[idx];
+
+        if (!cmd_funcs[func])
+            throw new Error(`doextcmd(): unported command ${func} not ported yet`);
         retval = await cmd_funcs[func]();
     } while (func === "doextlist");
 
     return retval;
+}
+
+// C ref: cmd.c accept_menu_prefix()
+function accept_menu_prefix(ec) {
+    return (ec && ((ec.flags & CMD_M_PREFIX) !== 0));
 }
 
 // C ref: do.c donull() -- '.' command: do nothing == rest
@@ -370,85 +388,149 @@ function rhack_result(res, func) {
     }
 }
 
-// C ref: cmd.c rhack — main command dispatcher
+// C ref: cmd.c rhack — main command dispatcher; a prefix command (m, F,
+// g, G) loops back to got_prefix_input for the command it modifies
 export async function rhack(key) {
     const firsttime = (key === 0);
-    let cmdq_ec = null;
+    let cmdq_ec = null, prefix_seen = null;
+    let was_m_prefix = false;
+    let func = null; /* dummyfunction */
+    const ctx = game.context;
 
-    if (key === 0 && game.cmdq?.length) {
-        /* C ref: cmd.c rhack() -- a queued (CQ_CANNED) command from
-           itemactions_pushkeys() runs before reading the keyboard */
-        const cmdq = game.cmdq.shift();
-        if (cmdq.typ === 'ec')
-            cmdq_ec = extcmdlist.find(e => e.ef_funct === cmdq.fn) || null;
-        else
-            key = cmdq.key.charCodeAt(0);
-    } else if (key === 0) {
-        key = await parse();
-    }
-
-    if (!cmdq_ec) {
-        /* if there's no command, there's nothing to do except reset */
-        if (!key || key === 0o377 || key === 0x1b) {
-            /* nhbell() for a non-ESC key: no sound */
-            reset_cmd_vars(true);
-            return;
+    game.iflags.menu_requested = false;
+    ctx.nopick = 0;
+    for (;;) { /* got_prefix_input: */
+        if (game.cmdq?.length) {
+            /* doing queued (CQ_CANNED) commands, e.g. from
+               itemactions_pushkeys() */
+            const cq = game.cmdq.shift(); /* cmdq_pop() */
+            if (cq.typ === 'ec'
+                && (cmdq_ec = extcmdlist.find(e => e.ef_funct === cq.fn) || null))
+                ; /* goto do_cmdq_extcmd */
+            else
+                key = (cq.typ === 'key') ? cq.key.charCodeAt(0) : 0;
+        } else if (firsttime) {
+            key = await parse();
+            /* parse() pushed a cmd but didn't return any key */
+            if (!key && game.cmdq?.length)
+                continue; /* goto got_prefix_input */
         }
-    }
 
-    /* handle most movement commands */
-    game.context.travel = game.context.travel1 = 0;
-    const tlist = cmdq_ec || cmdbind_get(key);
+        if (!cmdq_ec) {
+            /* if there's no command, there's nothing to do except reset */
+            if (!key || key === 0o377 || key === 0x1b) {
+                /* nhbell() for a non-ESC key: no sound */
+                reset_cmd_vars(true);
+                return;
+            }
 
-    if (tlist) {
+            /* handle most movement commands */
+            ctx.travel = ctx.travel1 = 0;
+        }
+        /* do_cmdq_extcmd: */
+        let tlist = cmdq_ec || cmdbind_get(key);
+
+        /* current - use key to directly index cmdlist array */
+        if (!tlist)
+            break; /* bad_command */
+
         let res;
-        const func = tlist.ef_funct;
         if (!(await can_do_extcmd(tlist))) {
             /* can_do_extcmd() already gave a message */
             reset_cmd_vars(true);
             res = ECMD_OK;
-        } else if (tlist.flags & PREFIXCMD) {
-            /* the F, m, g and G prefixes (and their next command) are
-               not ported yet: nothing happens */
-            game.context.move = 0;
-            return;
+        } else if (prefix_seen && !(tlist.flags & PREFIXCMD)
+                   && !(tlist.flags & (was_m_prefix ? CMD_M_PREFIX
+                                                    : CMD_gGF_PREFIX))) {
+            const pfxidx = cmd_from_func(prefix_seen.ef_funct);
+            const which = (pfxidx !== 0) ? visctrl(pfxidx)
+                          : (prefix_seen.ef_funct === "do_reqmenu")
+                            ? "move-no-pickup or request-menu"
+                            : prefix_seen.ef_txt;
+
+            /*
+             * We got a prefix previously and looped for another
+             * command instead of returning, but the command we got
+             * doesn't accept a prefix.  The feedback here supersedes
+             * the former call to help_dir() (for 'bad_command' below).
+             */
+            if (was_m_prefix) {
+                /* custompline(SUPPRESS_HISTORY, ...) */
+                await pline(`The ${tlist.ef_txt} command does not accept '${which}' prefix.`);
+            } else {
+                const ch = tlist.key;
+                const up = (ch === 0x3c || tlist.ef_funct === "doup"),
+                    down = (ch === 0x3e || tlist.ef_funct === "dodown");
+
+                await pline(`The '${which}' prefix should be followed by a movement command${(up || down) ? " other than up or down" : ""}.`);
+            }
+            res = ECMD_FAIL;
+            prefix_seen = null;
         } else {
+            func = tlist.ef_funct;
             const fn = cmd_funcs[func];
             if (!fn) {
-                /* the command itself is not ported yet: nothing happens,
-                   and any keys queued for it go with it */
-                if (cmdq_ec)
-                    game.cmdq = [];
-                game.context.move = 0;
-                return;
+                throw new Error(tlist.flags & PREFIXCMD
+                    ? `rhack(): unported command prefix ${func} not ported yet`
+                    : `rhack(): unported command ${func} not ported yet`);
             }
-            res = await fn();
-            if ((tlist.flags & MOVEMENTCMD) && game.domove_attempting) {
-                if (((game.domove_attempting & (DOMOVE_RUSH | DOMOVE_WALK)) !== 0)
-                    && !game.context.travel && !dxdy_moveok()) {
-                    /* trying to move diagonally as a grid bug */
-                    await You_cant("get there from here...");
+            /* tlist->f_text && !occupation && multi: set_occupation()
+               isn't used by any command ported so far */
+            game.ext_tlist = null;
+            /* cmdq_add_ec(CQ_REPEAT, ...): the ^A repeat isn't ported */
+
+            res = await fn(); /* perform the command */
+            /* if 'func' is doextcmd(), 'tlist' is for Cmd.commands['#']
+               rather than for the command that doextcmd() just ran;
+               doextcmd() notifies us what that was via ext_tlist;
+               other commands leave it Null */
+            if (game.ext_tlist) {
+                tlist = game.ext_tlist;
+                game.ext_tlist = null;
+            }
+
+            if ((tlist.flags & PREFIXCMD) !== 0) {
+                /* it was a prefix command, mark and get another cmd */
+                if ((res & ECMD_CANCEL) !== 0) {
+                    /* prefix commands cancel if pressed twice */
                     reset_cmd_vars(true);
                     return;
-                } else if ((game.domove_attempting & DOMOVE_WALK) !== 0) {
-                    if (game.multi)
-                        game.context.mv = 1;
-                    await domove();
-                    game.context.forcefight = 0;
-                    game.iflags.menu_requested = false;
-                    return;
-                } else if ((game.domove_attempting & DOMOVE_RUSH) !== 0) {
-                    if (firsttime) {
-                        if (!game.multi)
-                            game.multi = Math.max(COLNO, ROWNO);
-                        game.u.last_str_turn = 0;
-                    }
-                    game.context.mv = 1;
-                    await domove();
-                    game.iflags.menu_requested = false;
-                    return;
                 }
+                prefix_seen = tlist;
+                cmdq_ec = null;
+                if (func === "do_reqmenu")
+                    was_m_prefix = true;
+                continue; /* goto got_prefix_input */
+            } else if (!(tlist.flags & MOVEMENTCMD)
+                       && game.domove_attempting) {
+                /* not a movement command, but a move prefix earlier? */
+                ; /* just do nothing */
+            } else if (((game.domove_attempting
+                         & (DOMOVE_RUSH | DOMOVE_WALK)) !== 0)
+                       && !ctx.travel && !dxdy_moveok()) {
+                /* trying to move diagonally as a grid bug */
+                await You_cant("get there from here...");
+                reset_cmd_vars(true);
+                return;
+            } else if ((game.domove_attempting & DOMOVE_WALK) !== 0) {
+                if (game.multi)
+                    ctx.mv = 1;
+                await domove();
+                ctx.forcefight = 0;
+                game.iflags.menu_requested = false;
+                return;
+            } else if ((game.domove_attempting & DOMOVE_RUSH) !== 0) {
+                if (firsttime) {
+                    if (!game.multi)
+                        game.multi = Math.max(COLNO, ROWNO);
+                    game.u.last_str_turn = 0;
+                }
+                ctx.mv = 1;
+                await domove();
+                game.iflags.menu_requested = false;
+                return;
             }
+            prefix_seen = null;
         }
         rhack_result(res, func);
         return;
@@ -458,8 +540,64 @@ export async function rhack(key) {
     await pline(`Unknown command '${visctrl(key)}'.`); /* custompline(SUPPRESS_HISTORY) */
     game.cmdq = []; /* cmdq_clear(CQ_CANNED); cmdq_clear(CQ_REPEAT) */
     /* didn't move */
-    game.context.move = 0;
+    ctx.move = 0;
     game.multi = 0;
+}
+
+// C ref: cmd.c do_reqmenu() -- #reqmenu, prefix command to modify some
+// others
+async function do_reqmenu() {
+    if (game.iflags.menu_requested) {
+        /* Norep() */
+        await pline(`Double ${visctrl(cmd_from_func("do_reqmenu"))} prefix, canceled.`);
+        game.iflags.menu_requested = false;
+        return ECMD_CANCEL;
+    }
+
+    game.iflags.menu_requested = true;
+    return ECMD_OK;
+}
+
+// C ref: cmd.c do_rush() -- #rush
+async function do_rush() {
+    if ((game.domove_attempting & DOMOVE_RUSH)) {
+        await pline("Double rush prefix, canceled."); /* Norep() */
+        game.context.run = 0;
+        game.domove_attempting = 0;
+        return ECMD_CANCEL;
+    }
+
+    game.context.run = 2;
+    game.domove_attempting |= DOMOVE_RUSH;
+    return ECMD_OK;
+}
+
+// C ref: cmd.c do_run() -- #run
+async function do_run() {
+    if ((game.domove_attempting & DOMOVE_RUSH)) {
+        await pline("Double run prefix, canceled."); /* Norep() */
+        game.context.run = 0;
+        game.domove_attempting = 0;
+        return ECMD_CANCEL;
+    }
+
+    game.context.run = 3;
+    game.domove_attempting |= DOMOVE_RUSH;
+    return ECMD_OK;
+}
+
+// C ref: cmd.c do_fight() -- #fight
+async function do_fight() {
+    if (game.context.forcefight) {
+        await pline("Double fight prefix, canceled."); /* Norep() */
+        game.context.forcefight = 0;
+        game.domove_attempting = 0;
+        return ECMD_CANCEL;
+    }
+
+    game.context.forcefight = 1;
+    game.domove_attempting |= DOMOVE_WALK;
+    return ECMD_OK;
 }
 
 /* C ref: hack.h GC_* get_count() flags */

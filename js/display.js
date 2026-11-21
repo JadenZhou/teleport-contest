@@ -937,6 +937,36 @@ function map_engraving(ep, show) {
         show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
 }
 
+// C ref: display.c unmap_object() -- remove the remembered object (or
+// remembered 'I') at <x,y>, putting back what is known to be underneath
+export function unmap_object(x, y) {
+    let trap, ep;
+
+    if (!game.level.flags?.hero_memory)
+        return;
+
+    const lev = game.level.at(x, y);
+    if ((trap = t_at(x, y)) && trap.tseen && !covers_objects(x, y) /* covers_traps() */) {
+        map_trap(trap, false);
+    } else if (lev.seenv) {
+        if (spot_shows_engravings(x, y)
+            && (ep = engr_at(x, y)) !== null && !covers_objects(x, y) /* covers_traps() */) {
+            if (cansee(x, y))
+                ep.erevealed = 1;
+            map_engraving(ep, false);
+        } else {
+            map_background(x, y, false);
+        }
+
+        /* turn remembered dark room squares dark; map_background() of a
+           ROOM always remembers cmap_to_glyph(S_room) */
+        if (!lev.waslit && lev.typ === ROOM)
+            lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false }; /* S_stone */
+    } else {
+        lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false }; /* S_stone */
+    }
+}
+
 // C ref: display.c _map_location() -- update_lastseentyp() and gas
 // regions (show_region()) are not ported yet
 function _map_location(x, y, show) {

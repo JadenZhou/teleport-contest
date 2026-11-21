@@ -42,7 +42,7 @@ const S_stone = 0, S_ndoor = 12, S_vodoor = 13, S_hodoor = 14,
     S_grave = 34, S_throne = 35, S_sink = 36, S_fountain = 37, S_pool = 38,
     S_ice = 39, S_lava = 40, S_lavawall = 41, S_vodbridge = 42,
     S_vcdbridge = 44, S_air = 46, S_cloud = 47, S_water = 48;
-const defsyms_explanation = [
+export const defsyms_explanation = [
     "stone", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall",
     "wall", "wall", "wall", "doorway", "open door", "open door",
     "closed door", "closed door", "iron bars", "tree", "floor of a room",
@@ -62,7 +62,7 @@ function uhave(prop) {
 
 // C ref: display.c back_to_glyph() -- the cmap index of the background
 // at <x,y> (walls are all "wall", so wall_angle() isn't needed here)
-function back_to_cmap(x, y) {
+export function back_to_cmap(x, y) {
     const ptr = game.level.at(x, y);
 
     switch (ptr.typ) {
