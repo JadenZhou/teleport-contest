@@ -14,6 +14,8 @@ import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSI
 import { strncmpi, strcmpi } from './hacklib.js';
 import { authorize_wizard_mode, authorize_explore_mode } from './sys.js';
 import { bind_key } from './cmd.js';
+import { def_char_to_objclass } from './drawing.js';
+import { MAXOCLASSES } from './objects.js';
 import {
     str2role, str2race, str2gend, str2align, setrolefilter, clearrolefilter,
     RS_filter,
@@ -170,6 +172,45 @@ function optfn_alignment(result, negated, val) {
         if ((result.flags.initalign = str2align(op)) === ROLE_NONE) {
             return false;
         }
+    }
+    return true;
+}
+
+// C ref: options.c optfn_pickup_types() (req == do_set while reading the
+// config file, go.opt_initial); flags.pickup_types holds object class
+// numbers, one character each, like C
+function optfn_pickup_types(result, negated, op) {
+    let oc_sym;
+    let num;
+    let badopt = false;
+
+    /* types of objects to pick up automatically */
+    result.flags.pickup_types = ''; /* all */
+    if (op === null || op === undefined || op === '') { /* empty_optstr */
+        /* for backwards compatibility, "pickup" without a value is a
+           synonym for autopickup of all types (and during
+           initialization, we can't prompt yet) */
+        result.flags.pickup = !negated;
+        return true;
+    }
+    if (negated)
+        throw new Error('optfn_pickup_types(): bad_negation() not ported yet');
+    while (op[0] === ' ')
+        op = op.slice(1);
+    if (op[0] !== 'a' && op[0] !== 'A') {
+        num = 0;
+        for (const ch of op) {
+            oc_sym = def_char_to_objclass(ch);
+            /* make sure all are valid obj symbols occurring once */
+            if (oc_sym !== MAXOCLASSES
+                && !result.flags.pickup_types.includes(String.fromCharCode(oc_sym))) {
+                result.flags.pickup_types += String.fromCharCode(oc_sym);
+                ++num;
+            } else
+                badopt = true;
+        }
+        if (badopt)
+            throw new Error('optfn_pickup_types(): config_error_add() not ported yet');
     }
     return true;
 }
@@ -334,6 +375,7 @@ export function parseNethackrc(rc) {
                 }
                 else if (key === 'symset') result.symset = val;
                 else if (key === 'autounlock') optfn_autounlock(result, negated, val);
+                else if (key === 'pickup_types') optfn_pickup_types(result, negated, val);
                 else if (key === 'suppress_alert') result.flags.suppress_alert = val;
                 else if (key === 'msg_window') result.iflags.prevmsg_window = val;
                 else result.flags[key] = val;
