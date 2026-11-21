@@ -33,7 +33,7 @@ import { decl_globals_init } from './decl.js';
 import { sys_early_init } from './sys.js';
 import { role_init, genders, Hello } from './role.js';
 import { u_init_misc, u_init_inventory_attrs, u_init_skills_discoveries,
-         money_cnt } from './u_init.js';
+         money_cnt, find_ac } from './u_init.js';
 import { align_str } from './insight.js';
 import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED, NO_MM_FLAGS,
          FAST, INTRINSIC, UNENCUMBERED, SLT_ENCUMBER, MOD_ENCUMBER, HVY_ENCUMBER,
@@ -660,6 +660,7 @@ export async function moveloop_core() {
 
     /* once-per-player-input things go here */
 
+    find_ac();
     // Vision + display
     if (g.vision_full_recalc) {
         vision_recalc(0);

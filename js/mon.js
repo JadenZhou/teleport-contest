@@ -1150,6 +1150,12 @@ export async function wake_nearto(x, y, distance) {
     await wake_nearto_core(x, y, distance, false);
 }
 
+// C ref: mon.c wake_nearby()
+/* Wake up nearby monsters without angering them. */
+export async function wake_nearby(petcall) {
+    await wake_nearto_core(game.u.ux, game.u.uy, game.u.ulevel * 20, petcall);
+}
+
 // C ref: hack.c disturb_buried_zombies()
 function disturb_buried_zombies(x, y) {
     for (const otmp of game.level.buriedobjlist || []) {

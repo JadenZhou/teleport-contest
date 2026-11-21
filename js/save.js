@@ -35,7 +35,7 @@ import { monsndx } from './mondata.js';
 import { objects, NUM_OBJECTS } from './objects.js';
 import { getlev } from './restore.js';
 import { GameMap } from './game.js';
-import { setworn } from './wield.js';
+import { setworn } from './worn.js';
 import { ECMD_OK, WRITING, FREEING, COUNTING, FULL_MOON, VISITED, LFILE_EXISTS,
          REST_GSTATE, W_BALL, W_CHAIN, Has_contents } from './const.js';
 

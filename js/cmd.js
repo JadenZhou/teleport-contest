@@ -35,17 +35,18 @@ import { dovspell, docast } from './spell.js';
 import { dodiscovered } from './o_init.js';
 import { doattributes } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
-import { dodrop } from './do.js';
+import { dodrop, dodown, doup } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
 import { doloot } from './pickup.js';
 import { dopickup } from './hack.js';
 import { Never_mind, isok } from './const.js';
-import { dofire } from './dothrow.js';
-import { doswapweapon, dowieldquiver, dowield } from './wield.js';
+import { dofire, dothrow } from './dothrow.js';
+import { dokick } from './dokick.js';
+import { doswapweapon, dowieldquiver, dowield, dotwoweapon } from './wield.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
-import { dowear, doputon } from './do_wear.js';
+import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
 import { dodrink } from './potion.js';
 import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
@@ -105,10 +106,14 @@ const cmd_funcs = {
     docast: () => docast(),
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),
+    dodown: () => dodown(),
+    doup: () => doup(),
     dozap: () => dozap(),
     docallcmd: () => docallcmd(),
     doloot: () => doloot(),
     dofire: () => dofire(),
+    dothrow: () => dothrow(),
+    dokick: () => dokick(),
     doswapweapon: () => doswapweapon(),
     dowieldquiver: () => dowieldquiver(),
     doapply: () => doapply(),
@@ -116,10 +121,13 @@ const cmd_funcs = {
     doeat: () => doeat(),
     dowear: () => dowear(),
     doputon: () => doputon(),
+    dotakeoff: () => dotakeoff(),
+    ia_dotakeoff: () => ia_dotakeoff(),
     dodrink: () => dodrink(),
     dolook: () => dolook(),
     doread: () => doread(),
     dowield: () => dowield(),
+    dotwoweapon: () => dotwoweapon(),
     dohelp: () => dohelp(),
     doopen: () => doopen(),
     dojump: () => dojump(),
@@ -870,7 +878,7 @@ async function parse() {
 }
 
 // C ref: cmd.c set_move_cmd()
-function set_move_cmd(dir, run) {
+export function set_move_cmd(dir, run) {
     const u = game.u;
     u.dz = zdir[dir];
     u.dx = xdir[dir];

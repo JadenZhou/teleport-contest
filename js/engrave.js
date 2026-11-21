@@ -355,19 +355,19 @@ function attacktype(ptr, atyp) {
         if (ptr.mattk[i].aatyp === atyp) return true;
     return false;
 }
-function sticks(ptr) {
+export function sticks(ptr) {
     return dmgtype(ptr, AD_STCK)
            || (dmgtype(ptr, AD_WRAP) && !attacktype(ptr, AT_ENGL))
            || attacktype(ptr, AT_HUGS);
 }
-function ceiling_hider(ptr) {
+export function ceiling_hider(ptr) {
     return (ptr.mflags1 & M1_HIDE) !== 0
            && ((((ptr.mflags1 & M1_CLING) !== 0) && ptr.mlet !== S_MIMIC)
                || is_flyer(ptr)); /* lurker above */
 }
 
 // C ref: trap.c uteetering_at_seen_pit()
-function uteetering_at_seen_pit(trap) {
+export function uteetering_at_seen_pit(trap) {
     const u = game.u;
     return (trap && is_pit(trap.ttyp) && trap.tseen
             && u.ux === trap.tx && u.uy === trap.ty
@@ -375,7 +375,7 @@ function uteetering_at_seen_pit(trap) {
 }
 
 // C ref: trap.c uescaped_shaft()
-function uescaped_shaft(trap) {
+export function uescaped_shaft(trap) {
     const u = game.u;
     return (trap && is_hole(trap.ttyp) && trap.tseen
             && u.ux === trap.tx && u.uy === trap.ty);

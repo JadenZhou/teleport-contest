@@ -16,7 +16,13 @@ import { w_blocks } from './worn.js';
 import { PM_MONK } from './monsters.js';
 import { M1_NOHANDS, M2_DEMON, M2_WERE, S_IMP, S_VAMPIRE, MZ_SMALL, mons,
          PM_SHADE, PM_TENGU } from './monsters.js';
-import { pline, You } from './display.js';
+import { pline, You, You_cant } from './display.js';
+import { rnd } from './rng.js';
+import { AT_WEAP } from './monsters.js';
+import { HAND, GLIB, A_DEX } from './const.js';
+import { makeplural } from './objnam.js';
+import { body_part } from './insight.js';
+import { ACURR } from './attrib.js';
 import { prinv, getobj, hands_obj, splittable, freeinv } from './invent.js';
 import { addinv } from './u_init.js';
 import { splitobj } from './mkobj.js';
@@ -71,94 +77,9 @@ export function is_pole(otmp) {
 }
 export function is_wet_towel(o) { return o.otyp === TOWEL && o.spe > 0; }
 
-// C ref: worn.c worn[] -- the hero's equipment slots
-const worn = [
-    { w_mask: W_ARM, w_obj: 'uarm' },
-    { w_mask: W_ARMC, w_obj: 'uarmc' },
-    { w_mask: W_ARMH, w_obj: 'uarmh' },
-    { w_mask: W_ARMS, w_obj: 'uarms' },
-    { w_mask: W_ARMG, w_obj: 'uarmg' },
-    { w_mask: W_ARMF, w_obj: 'uarmf' },
-    { w_mask: W_ARMU, w_obj: 'uarmu' },
-    { w_mask: W_RINGL, w_obj: 'uleft' },
-    { w_mask: W_RINGR, w_obj: 'uright' },
-    { w_mask: W_WEP, w_obj: 'uwep' },
-    { w_mask: W_SWAPWEP, w_obj: 'uswapwep' },
-    { w_mask: W_QUIVER, w_obj: 'uquiver' },
-    { w_mask: W_AMUL, w_obj: 'uamul' },
-    { w_mask: W_TOOL, w_obj: 'ublindf' }, /* blindfold|towel|lenses */
-    { w_mask: W_BALL, w_obj: 'uball' },
-    { w_mask: W_CHAIN, w_obj: 'uchain' },
-];
-
-// C ref: worn.c setworn()
-export function setworn(obj, mask) {
-    const u = game.u;
-    let p;
-
-    if ((mask & (W_ARM | I_SPECIAL)) === (W_ARM | I_SPECIAL)) {
-        /* restoring saved game; no properties are conferred via skin */
-        game.uskin = obj;
-        /* assert( !uarm ); */
-    } else {
-        for (const wp of worn) {
-            if (wp.w_mask & mask) {
-                const oobj = game[wp.w_obj];
-                if (oobj && !(oobj.owornmask & wp.w_mask))
-                    console.error(`impossible: Setworn: mask=0x${wp.w_mask.toString(16)}.`);
-                if (oobj) {
-                    if (u.twoweap && (oobj.owornmask & (W_WEP | W_SWAPWEP)))
-                        u.twoweap = false; /* set_twoweap(FALSE) */
-                    oobj.owornmask &= ~wp.w_mask;
-                    if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
-                        p = objects[oobj.otyp].oc_oprop;
-                        if (p)
-                            throw new Error('setworn(): removing an extrinsic-granting item (monstunseesu_prop()) not ported yet');
-                        u.uprops[p].extrinsic = u.uprops[p].extrinsic & ~wp.w_mask;
-                        if ((p = w_blocks(oobj, mask)) !== 0)
-                            u.uprops[p].blocked &= ~wp.w_mask;
-                        if (oobj.oartifact)
-                            throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
-                    }
-                    /* in case wearing or removal is in progress or removal
-                       is pending (via 'A' command for multiple items):
-                       cancel_doff() -- no multi-turn armor removal yet */
-                }
-                game[wp.w_obj] = obj;
-                if (obj) {
-                    obj.owornmask = (obj.owornmask || 0) | wp.w_mask;
-                    /* Prevent getting/blocking intrinsics from wielding
-                     * potions, through the quiver, etc.
-                     * Allow weapon-tools, too.
-                     * wp_mask should be same as mask at this point.
-                     */
-                    if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
-                        if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
-                            || mask !== W_WEP) {
-                            p = objects[obj.otyp].oc_oprop;
-                            const up = u.uprops[p];
-                            up.extrinsic = (up.extrinsic || 0) | wp.w_mask;
-                            if ((p = w_blocks(obj, mask)) !== 0)
-                                u.uprops[p].blocked |= wp.w_mask;
-                        }
-                        if (obj.oartifact)
-                            throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
-                    }
-                }
-            }
-        }
-        if (obj && (obj.owornmask & W_ARMOR) !== 0)
-            u.uroleplay.nudist = false;
-        /* tux -> tuxedo -> "monkey suit" -> monk's suit */
-        game.iflags.tux_penalty = !!(game.uarm && game.urole.mnum === PM_MONK
-                                     && game.urole.spelarmr);
-    }
-    if ((game.flags.weaponstatus && (mask & W_WEP) !== 0)
-        || (game.flags.armorstatus && (mask & W_ARMOR) !== 0))
-        game.disp_botl = true;
-    /* update_inventory(): no perm_invent; recalc_telepat_range(): no
-       telepathy range yet */
-}
+// C ref: worn.c setworn() -- in worn.js
+import { setworn } from './worn.js';
+export { setworn };
 
 // C ref: wield.c setuwep()
 export function setuwep(obj) {
@@ -186,6 +107,121 @@ export function setuqwep(obj) {
 // C ref: wield.c setuswapwep()
 export function setuswapwep(obj) {
     setworn(obj, W_SWAPWEP);
+}
+
+/* C ref: mondata.h could_twoweap() */
+function could_twoweap(ptr) {
+    let n = 0;
+    for (let i = 0; i < 3; i++)
+        if (ptr.mattk[i] && ptr.mattk[i].aatyp === AT_WEAP)
+            n++;
+    return n > 1;
+}
+/* C ref: wield.c TWOWEAPOK() */
+function TWOWEAPOK(obj) {
+    return (obj.oclass === WEAPON_CLASS)
+        ? !(is_launcher(obj) || is_ammo(obj) || is_missile(obj))
+        : is_weptool(obj);
+}
+
+// C ref: wield.c can_twoweapon()
+async function can_twoweapon() {
+    const g = game;
+    let otmp;
+
+    if (!could_twoweap(g.youmonst.data)) {
+        if (g.u.umonnum !== g.u.umonster) /* Upolyd */
+            await You_cant("use two weapons in your current form.");
+        else
+            await pline(`${makeplural((g.flags.female && g.urole.name.f)
+                                      ? g.urole.name.f : g.urole.name.m)
+                          } aren't able to use two weapons at once.`);
+    } else if (!g.uwep || !g.uswapwep) {
+        let hand_s = body_part(HAND);
+
+        if (!g.uwep && !g.uswapwep)
+            hand_s = makeplural(hand_s);
+        /* "your hands are empty" or "your {left|right} hand is empty" */
+        await pline(`Your ${g.uwep ? "left " : g.uswapwep ? "right " : ""}${
+            hand_s} ${vtense(hand_s, "are")} empty.`);
+    } else if (!TWOWEAPOK(g.uwep) || !TWOWEAPOK(g.uswapwep)) {
+        otmp = !TWOWEAPOK(g.uwep) ? g.uwep : g.uswapwep;
+        throw new Error('can_twoweapon(): unsuitable weapon (Yname2()) message not ported yet');
+    } else if (bimanual(g.uwep) || bimanual(g.uswapwep)) {
+        otmp = bimanual(g.uwep) ? g.uwep : g.uswapwep;
+        throw new Error('can_twoweapon(): two-handed weapon (Yname2()) message not ported yet');
+    } else if (g.uarms) {
+        await You_cant("use two weapons while wearing a shield.");
+    } else if (g.uswapwep.oartifact) {
+        throw new Error('can_twoweapon(): artifact resists (Yobjnam2()) message not ported yet');
+    } else if (g.uswapwep.otyp === CORPSE /* && cant_wield_corpse(uswapwep) */) {
+        throw new Error('can_twoweapon(): cant_wield_corpse() not ported yet');
+    } else if (game.u.uprops[GLIB]?.intrinsic || game.u.uprops[GLIB]?.extrinsic
+               || g.uswapwep.cursed) {
+        throw new Error('can_twoweapon(): drop_uswapwep() not ported yet');
+    } else
+        return true;
+    void otmp;
+    return false;
+}
+
+// C ref: wield.c set_twoweap()
+export function set_twoweap(on_off) {
+    if (on_off !== !!game.u.twoweap) {
+        game.u.twoweap = on_off;
+        if (game.flags.weaponstatus)
+            game.disp_botl = true;
+    }
+}
+
+// C ref: wield.c dotwoweapon()
+/* the #twoweapon command */
+export async function dotwoweapon() {
+    /* You can always toggle it off */
+    if (game.u.twoweap) {
+        await You("switch to your primary weapon.");
+        set_twoweap(false); /* u.twoweap = FALSE */
+        /* update_inventory(): no perm_invent */
+        return ECMD_OK;
+    }
+
+    /* May we use two weapons? */
+    if (await can_twoweapon()) {
+        /* Success! */
+        await You("begin two-weapon combat.");
+        set_twoweap(true); /* u.twoweap = TRUE */
+        /* update_inventory(): no perm_invent */
+        return (rnd(20) > ACURR(A_DEX)) ? ECMD_TIME : ECMD_OK;
+    }
+    return ECMD_OK;
+}
+
+// C ref: wield.c uwepgone()
+export function uwepgone() {
+    const uwep = game.uwep;
+    if (uwep) {
+        if (uwep.lamplit) /* artifact_light(uwep) && uwep->lamplit */
+            throw new Error('uwepgone(): end_burn() of a shining weapon not ported yet');
+        setworn(null, W_WEP);
+        game.unweapon = true;
+        /* update_inventory(): no perm_invent */
+    }
+}
+
+// C ref: wield.c uswapwepgone()
+export function uswapwepgone() {
+    if (game.uswapwep) {
+        setworn(null, W_SWAPWEP);
+        /* update_inventory(): no perm_invent */
+    }
+}
+
+// C ref: wield.c uqwepgone()
+export function uqwepgone() {
+    if (game.uquiver) {
+        setworn(null, W_QUIVER);
+        /* update_inventory(): no perm_invent */
+    }
 }
 
 /* C ref: mondata.h cantwield() */

@@ -502,7 +502,7 @@ const shudder_for_moment = "shudder for a moment.";
 
 // C ref: apply.c next_to_u()
 /* is hero able to teleport/level-change with all leashed pets? */
-async function next_to_u() {
+export async function next_to_u() {
     /* get_iter_mons(mleashed_next2u) */
     for (const mtmp of game.level.monsters || []) {
         if (mtmp.dead || mtmp.mhp <= 0)

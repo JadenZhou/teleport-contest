@@ -180,6 +180,18 @@ export function calc_capacity(xtra_wt) {
     return Math.min(cap, OVERLOADED);
 }
 
+// C ref: hack.c u_rooted()
+export async function u_rooted() {
+    if (!game.youmonst.data.mmove) {
+        await You(`are rooted ${Levitation() || Is_airlevel(game.u.uz)
+                                || Is_waterlevel(game.u.uz)
+                                ? "in place" : "to the ground"}.`);
+        nomul(0);
+        return true;
+    }
+    return false;
+}
+
 // C ref: hack.c near_capacity()
 export function near_capacity() {
     return calc_capacity(0);
@@ -2141,14 +2153,8 @@ async function domove_core() {
         if ((u.dx || u.dy) && u.usteed)
             throw new Error('domove_core(): stucksteed() not ported yet');
 
-        /* u_rooted() */
-        if (!game.youmonst.data.mmove) {
-            await You(`are rooted ${Levitation() || Is_airlevel(u.uz)
-                                          || Is_waterlevel(u.uz)
-                                          ? "in place" : "to the ground"}.`);
-            nomul(0);
+        if (await u_rooted())
             return;
-        }
 
         /* handling for paranoid_confirm:Trap which doubles as
            paranoid_confirm:Region */
