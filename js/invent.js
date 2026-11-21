@@ -505,7 +505,7 @@ export function addinv_core2(obj) {
  * Add obj to the hero's inventory.  Make sure the object is "free".
  * Adjust hero attributes as necessary.
  */
-function addinv_core0(obj, other_obj, update_perm_invent) {
+async function addinv_core0(obj, other_obj, update_perm_invent) {
     let otmp, prev;
 
     if (obj.where !== 'OBJ_FREE')
@@ -549,6 +549,8 @@ function addinv_core0(obj, other_obj, update_perm_invent) {
         if (game.uquiver) {
             const r = { otmp: game.uquiver, obj };
             if (merged(r)) {
+                if (r.learned) /* merged()'s message */
+                    await pline("You learn more about your items by comparing them.");
                 game.uquiver = r.otmp;
                 obj = game.uquiver;
                 break added;
@@ -558,6 +560,8 @@ function addinv_core0(obj, other_obj, update_perm_invent) {
         for (prev = null, otmp = game.invent; otmp; prev = otmp, otmp = otmp.nobj) {
             const r = { otmp, obj };
             if (merged(r)) {
+                if (r.learned) /* merged()'s message */
+                    await pline("You learn more about your items by comparing them.");
                 obj = r.otmp;
                 break added;
             }
@@ -593,8 +597,8 @@ function addinv_core0(obj, other_obj, update_perm_invent) {
 
 // C ref: invent.c addinv() -- add obj to the hero's inventory in the
 // default fashion
-export function addinv(obj) {
-    return addinv_core0(obj, null, true);
+export async function addinv(obj) {
+    return await addinv_core0(obj, null, true);
 }
 
 // C ref: shk.c picked_container()
@@ -1178,7 +1182,7 @@ function touch_petrifies(ptr) {
 }
 
 // C ref: invent.c will_feel_cockatrice()
-function will_feel_cockatrice(otmp, force_touch) {
+export function will_feel_cockatrice(otmp, force_touch) {
     const bl = game.u.uprops?.[BLINDED];
     const Blind = !!((bl?.intrinsic || bl?.extrinsic) && !bl?.blocked);
     const sr = game.u.uprops?.[STONE_RES];
@@ -1548,10 +1552,17 @@ export function merged(r) {
         /* handle puddings a bit differently */
         if (obj.globby)
             throw new Error('merged(): obj_absorb() is not ported yet');
+        /* Print a message if item comparison discovers more
+           information about the items (with the exception of thrown
+           items, where this would be too spammy as such items get
+           unidentified by monsters very frequently).  pline() is async
+           in JS, so the caller (addinv_core0(), the only one merging into
+           the hero's inventory) prints it right after merged() returns;
+           nothing else in merged() or obfree() gives a message */
         if (discovered && otmp.where === 'OBJ_INVENT'
             && (obj.how_lost || 0) !== LOST_THROWN
             && (otmp.how_lost || 0) !== LOST_THROWN)
-            throw new Error('merged(): "You learn more about your items" is not ported yet');
+            r.learned = true;
         obj.where = 'OBJ_DELETED'; /* obfree(obj, otmp): free(obj), bill->otmp */
         return 1;
     }

@@ -37,7 +37,24 @@ import { max_capacity, calc_capacity, inv_cnt } from './hack.js';
 import { weight, splitobj, obj_extract_self } from './mkobj.js';
 import { doname, otense } from './objnam.js';
 import { There, newsym, newsym_force } from './display.js';
-import { carrying, merge_choice, addinv, prinv, reset_justpicked } from './invent.js';
+import { carrying, merge_choice, addinv, prinv, reset_justpicked,
+         will_feel_cockatrice, def_inv_order, let_to_name,
+         add_menu_heading } from './invent.js';
+import { doname_with_price } from './objnam.js';
+import { def_oc_syms } from './drawing.js';
+import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
+         tty_select_menu, tty_destroy_nhwindow } from './wintty.js';
+import { objects, AMULET_CLASS, RING_CLASS, WAND_CLASS, POTION_CLASS,
+         SCROLL_CLASS, SPBOOK_CLASS, GEM_CLASS, FOOD_CLASS, TOOL_CLASS,
+         WEAPON_CLASS, ARMOR_CLASS, ROCK_CLASS, BALL_CLASS, CHAIN_CLASS,
+         VENOM_CLASS } from './objects.js';
+import { BY_NEXTHERE, AUTOSELECT_SINGLE, INVORDER_SORT, FEEL_COCKATRICE,
+         USE_INVLET, SIGNAL_NOMENU, SIGNAL_ESCAPE, INCLUDE_HERO,
+         INCLUDE_VENOM, PICK_ANY, PICK_NONE, NHW_MENU, MENU_BEHAVE_STANDARD,
+         MENU_ITEMFLAGS_NONE, MENU_TRADITIONAL, MENU_FULL, SORTLOOT_PACK,
+         SORTLOOT_INVLET, SORTLOOT_LOOT, SORTLOOT_INUSE,
+         SORTLOOT_PETRIFY } from './const.js';
+import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { observe_object } from './o_init.js';
 import { touch_artifact } from './artifact.js';
 import { tty_yn_function, tty_clear_nhwindow } from './wintty.js';
@@ -132,10 +149,34 @@ export async function pickup(what) /* should be a long */ {
      * Automatic pickup has been split into its own menu-style routine
      * to make things less confusing.
      */
-    if (autopickup) {
-        const pick_list = [];
-        const n = autopick(objchain, pick_list);
+    const count = (what < 0) ? -what /* pick N of something */
+                             : 0; /* pick anything */
+    let traverse_how = !u.uswallow ? BY_NEXTHERE : 0;
+    const pick_list = [];
+    let n;
+    let menu_pickup = false;
 
+    if (autopickup) {
+        n = autopick(objchain, pick_list);
+        menu_pickup = true;
+    } else if ((game.flags.menu_style ?? MENU_FULL) !== MENU_TRADITIONAL
+               || game.iflags?.menu_requested) {
+        /* use menus exclusively */
+        traverse_how |= AUTOSELECT_SINGLE
+                        | ((game.flags.sortpack ?? true) ? INVORDER_SORT : 0);
+        if (count) { /* looking for N of something */
+            throw new Error('pickup(): "Pick %d of what?" (n_or_more) not ported yet');
+        } else {
+            n = await query_objlist("Pick up what?", objchain,
+                                    (traverse_how | FEEL_COCKATRICE),
+                                    pick_list, PICK_ANY, all_but_uchain);
+        }
+        menu_pickup = true;
+    } else {
+        throw new Error('pickup(): menustyle:traditional pickup not ported yet');
+    }
+
+    if (menu_pickup) {
         /* menu_pickup: */
         if (n > 0)
             reset_justpicked(game.invent);
@@ -147,8 +188,6 @@ export async function pickup(what) /* should be a long */ {
                 break; /* can't continue */
             n_picked += res;
         }
-    } else {
-        throw new Error('pickup(): picking up objects not ported yet');
     }
 
     if (!u.uswallow) {
@@ -257,6 +296,202 @@ function autopick(olist, /* the object list */
                 n++;
             }
         }
+    }
+    return n;
+}
+
+// C ref: pickup.c all_but_uchain()
+/* query_objlist callback: return TRUE if not uchain */
+function all_but_uchain(obj) {
+    return (obj !== game.uchain);
+}
+
+// C ref: invent.c sortloot() with sortloot_cmp()/loot_classify() -- the
+// class ordering; ordering objects within one class (subclass, discovery
+// state, loot_xname(), BUCX, ...) is not ported yet
+function sortloot(olist, mode, by_nexthere, filterfunc) {
+    void by_nexthere; /* olist is already the pile (nexthere) or minvent */
+    /* the 'keep cockatrice corpses' flag is overloaded with sort mode */
+    const augment_filter = (mode & SORTLOOT_PETRIFY) !== 0;
+    mode &= ~SORTLOOT_PETRIFY; /* remove flag, leaving mode */
+    const sliarray = [];
+    for (const o of olist) {
+        if (filterfunc && !filterfunc(o)
+            /* caller may be asking us to override filterfunc (in order
+               to do a cockatrice corpse touch check during pickup even
+               if/when the filter rejects food class) */
+            && (!augment_filter || o.otyp !== CORPSE
+                || !touch_petrifies(mons[o.corpsenm])))
+            continue;
+        sliarray.push({ obj: o, indx: sliarray.length, orderclass: 0 });
+    }
+
+    /* do the sort; if no sorting is requested, we'll just return
+       a sortloot_item array reflecting the current ordering */
+    if (mode && sliarray.length > 1) {
+        if ((mode & SORTLOOT_INUSE) !== 0
+            || (mode & (SORTLOOT_PACK | SORTLOOT_INVLET)) === SORTLOOT_INVLET)
+            throw new Error('sortloot(): in-use/invlet-only ordering not ported yet');
+        const seen = new Set();
+        for (const sli of sliarray) {
+            if (seen.has(sli.obj.oclass))
+                throw new Error('sortloot(): ordering objects of one class (loot_classify subclass, loot_xname) not ported yet');
+            seen.add(sli.obj.oclass);
+        }
+        /* loot_classify(): every item takes part in some comparison */
+        const classorder = (game.flags.sortpack ?? true) ? def_inv_order
+                                                         : def_srt_order;
+        for (const sli of sliarray) {
+            if (!pk_Blind())
+                observe_object(sli.obj, u_prop(HALLUC)); /* xname(obj) does this; we want it sooner */
+            const k = classorder.indexOf(sli.obj.oclass);
+            sli.orderclass = (k >= 0) ? 1 + k
+                : 1 + classorder.length + (sli.obj.oclass !== VENOM_CLASS ? 1 : 0);
+        }
+        /* distinct classes: orderclass decides, indx is the tiebreak */
+        sliarray.sort((a, b) => (a.orderclass - b.orderclass) || (a.indx - b.indx));
+    }
+    return sliarray;
+}
+/* C ref: invent.c loot_classify() def_srt_order[] */
+const def_srt_order = [
+    COIN_CLASS, AMULET_CLASS, RING_CLASS, WAND_CLASS, POTION_CLASS,
+    SCROLL_CLASS, SPBOOK_CLASS, GEM_CLASS, FOOD_CLASS, TOOL_CLASS,
+    WEAPON_CLASS, ARMOR_CLASS, ROCK_CLASS, BALL_CLASS, CHAIN_CLASS,
+];
+
+// C ref: pickup.c query_objlist()
+/*
+ * Put up a menu using the given object list.  Only those objects on the
+ * list that meet the approval of the allow function are displayed.  Return
+ * a count of the number of items selected, filling pick_list with the
+ * objects selected and counts.  The returned counts are guaranteed to be
+ * in bounds and non-zero.
+ */
+export async function query_objlist(qstr, /* query string */
+                                    olist, /* the list to pick from */
+                                    qflags, /* options to control the query */
+                                    pick_list, /* return list of items picked */
+                                    how, /* type of query */
+                                    allow) { /* allow function */
+    let n, last = null;
+    const sorted = (qflags & INVORDER_SORT) !== 0,
+        engulfer = (qflags & INCLUDE_HERO) !== 0;
+
+    pick_list.length = 0;
+    if (!olist.length && !engulfer)
+        return 0;
+
+    /* count the number of items allowed */
+    n = 0;
+    for (const curr of olist)
+        if (allow(curr)) {
+            last = curr;
+            n++;
+        }
+    /* can't depend upon 'engulfer' because that's used to indicate whether
+       hero should be shown as an extra, fake item */
+    const engulfer_minvent = (olist.length > 0 && olist[0].where === 'OBJ_MINVENT'
+                              && game.u.uswallow && olist[0].ocarry === game.u.ustuck);
+    if (engulfer_minvent && n === 1 && olist[0].owornmask)
+        qflags &= ~AUTOSELECT_SINGLE;
+    if (engulfer)
+        throw new Error('query_objlist(): the engulfed hero as a menu entry not ported yet');
+
+    if (n === 0) /* nothing to pick here */
+        return (qflags & SIGNAL_NOMENU) ? -1 : 0;
+
+    if (n === 1 && (qflags & AUTOSELECT_SINGLE)) {
+        pick_list.push({ obj: last, count: last.quan });
+        return 1;
+    }
+
+    const sortloot_opt = game.flags.sortloot ?? 'l';
+    const sortflags = (((sortloot_opt === 'f'
+                         || (sortloot_opt === 'l' && !(qflags & USE_INVLET)))
+                        ? SORTLOOT_LOOT
+                        : ((qflags & USE_INVLET) ? SORTLOOT_INVLET : 0))
+                       | ((game.flags.sortpack ?? true) ? SORTLOOT_PACK : 0)
+                       | ((qflags & FEEL_COCKATRICE) ? SORTLOOT_PETRIFY : 0));
+    const sortedolist = sortloot(olist, sortflags,
+                                 (qflags & BY_NEXTHERE) !== 0, allow);
+
+    const win = tty_create_nhwindow(NHW_MENU);
+    tty_start_menu(win, MENU_BEHAVE_STANDARD);
+    if (game.this_title)
+        throw new Error('query_objlist(): this_title (dotypeinv) not ported yet');
+    /*
+     * Run through the list and add the objects to the menu.  If
+     * INVORDER_SORT is set, we'll run through the list once for
+     * each type so we can group them.  The allow function was
+     * called by sortloot() and will be called once per item here.
+     */
+    const pack = def_inv_order.slice(); /* flags.inv_order */
+    if (qflags & INCLUDE_VENOM)
+        pack.push(VENOM_CLASS); /* venom is not in inv_order */
+    let first = true;
+    let pi = 0;
+    do {
+        let printed_type_name = false;
+        for (const srtoli of sortedolist) {
+            const curr = srtoli.obj;
+            if (sorted && curr.oclass !== pack[pi])
+                continue;
+            if ((qflags & FEEL_COCKATRICE) && curr.otyp === CORPSE
+                && will_feel_cockatrice(curr, false)) {
+                tty_destroy_nhwindow(win); /* stop the menu and revert */
+                await look_here(0, 0);
+                return 0;
+            }
+            if (allow(curr)) {
+                /* if sorting, print type name (once only) */
+                if (sorted && !printed_type_name) {
+                    const with_oc_sym = (how !== PICK_NONE
+                                         && !!game.iflags?.menu_head_objsym);
+
+                    add_menu_heading(win, let_to_name(pack[pi], false, with_oc_sym));
+                    printed_type_name = true;
+                }
+
+                /* obj_to_glyph(curr, rn2_on_display_rng) and
+                   map_glyphinfo(): the display RNG, and tty menus don't
+                   show the glyph */
+                tty_add_menu(win, null, curr,
+                             (qflags & USE_INVLET) ? curr.invlet
+                               : (first && curr.oclass === COIN_CLASS) ? '$' : 0,
+                             def_oc_syms[objects[curr.otyp].oc_class],
+                             ATR_NONE, NO_COLOR, doname_with_price(curr),
+                             MENU_ITEMFLAGS_NONE);
+                first = false;
+            }
+        }
+        pi++;
+    } while (sorted && pi < pack.length);
+
+    tty_end_menu(win, qstr);
+    const res = await tty_select_menu(win, how);
+    n = res.n;
+    tty_destroy_nhwindow(win);
+
+    if (n > 0) {
+        let k = 0;
+
+        /* fix up counts:  -1 means no count used => pick all */
+        for (const mi of res.selected) {
+            const curr = mi.item;
+            if (engulfer_minvent && curr.owornmask)
+                throw new Error('query_objlist(): You_cant("pick %s up.", ysimple_name()) not ported yet');
+            let cnt = mi.count;
+            if (cnt === -1 || cnt > curr.quan)
+                cnt = curr.quan;
+            pick_list.push({ obj: curr, count: cnt });
+            ++k;
+        }
+        n = k;
+    } else if (n < 0) {
+        /* -1 is used for SIGNAL_NOMENU, so callers don't expect it
+           to indicate that the player declined to make a choice */
+        n = (qflags & SIGNAL_ESCAPE) ? -2 : 0;
     }
     return n;
 }
@@ -567,7 +802,7 @@ export async function pickup_object(obj,
     if (obj.quan !== count && obj.otyp !== LOADSTONE)
         obj = splitobj(obj, count);
 
-    obj = pick_obj(obj);
+    obj = await pick_obj(obj);
 
     if (game.uwep && game.uwep === obj)
         game.mrg_to_wielded = true;
@@ -585,7 +820,7 @@ export async function pickup_object(obj,
  * pointer to the object where otmp ends up.  This may be different
  * from otmp because of merging.
  */
-export function pick_obj(otmp) {
+export async function pick_obj(otmp) {
     const u = game.u;
     const fromfloor = otmp.where === 'OBJ_FLOOR';
 
@@ -606,7 +841,7 @@ export function pick_obj(otmp) {
     if (robshop)
         throw new Error('pick_obj(): addtobill() for a shop item not ported yet');
 
-    const result = addinv(otmp);
+    const result = await addinv(otmp);
     return result;
 }
 

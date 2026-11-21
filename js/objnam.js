@@ -3354,6 +3354,12 @@ export function doname(obj) {
     return doname_base(obj, 0);
 }
 
+// C ref: objnam.c doname_with_price()
+/* Name of object including price. */
+export function doname_with_price(obj) {
+    return doname_base(obj, 1 /* DONAME_WITH_PRICE */);
+}
+
 // C ref: objnam.c doname_base()
 function doname_base(obj, doname_flags) {
     let ispoisoned = false;
@@ -3576,8 +3582,20 @@ function doname_base(obj, doname_flags) {
         || ((obj.owornmask & (W_RINGL | W_RINGR)) && obj.oclass !== O.RING_CLASS))
         xn_not_ported('meat ring/tool/leash worn suffixes');
 
-    if (with_price)
-        xn_not_ported('shop prices');
+    if (with_price && obj.unpaid) {
+        xn_not_ported('unpaid prices (unpaid_cost)');
+    } else if (with_price) { /* on floor or in container on floor */
+        /* get_cost_of_shop_item() is 0 unless the object is in a shop */
+        if (game.level.flags?.has_shop)
+            xn_not_ported('shop prices (get_cost_of_shop_item)');
+        /* iflags.pricequotes: append_price_quote() adds nothing until a
+           price has been seen in a shop */
+        const ocl = objects[obj.otyp];
+        if (!ocl.oc_name_known
+            && (ocl.oc_sell_minseen <= ocl.oc_sell_maxseen
+                || ocl.oc_buy_minseen <= ocl.oc_buy_maxseen))
+            xn_not_ported('price quotes (append_price_quote)');
+    }
 
     if (prefix.startsWith("a ")) {
         const tmpbuf = prefix.slice(2);

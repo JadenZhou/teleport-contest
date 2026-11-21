@@ -315,13 +315,13 @@ function Shk_Your(obj) {
 }
 
 // C ref: wield.c finish_splitting()
-function finish_splitting(obj) {
+async function finish_splitting(obj) {
     /* obj was split off from something; give it its own invlet */
     freeinv(obj);
     /* addinv_nomerge(obj) */
     const save_nomerge = obj.nomerge;
     obj.nomerge = 1;
-    addinv(obj);
+    await addinv(obj);
     obj.nomerge = save_nomerge;
 }
 
@@ -415,7 +415,7 @@ export async function doquiver_core(verb) { /* "ready" or "fire" */
             case 'y':
                 /* leave 1 alt-wielded, split rest off and put into quiver */
                 newquiver = splitobj(uswapwep, uswapwep.quan - 1);
-                finish_splitting(newquiver);
+                await finish_splitting(newquiver);
                 return await quivering(verb, newquiver);
             default:
                 break;

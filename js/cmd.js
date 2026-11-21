@@ -33,6 +33,7 @@ import { dodrop } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
 import { doloot } from './pickup.js';
+import { dopickup } from './hack.js';
 import { Never_mind, isok } from './const.js';
 import { dofire } from './dothrow.js';
 import { doswapweapon, dowieldquiver } from './wield.js';
@@ -107,6 +108,7 @@ const cmd_funcs = {
     dodrink: () => dodrink(),
     dolook: () => dolook(),
     dojump: () => dojump(),
+    dopickup: () => dopickup(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",

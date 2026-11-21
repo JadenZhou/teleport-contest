@@ -57,6 +57,8 @@ import { CORPSE } from './objects.js';
 import { is_flyer, is_floater } from './mondata.js';
 import { float_vs_flight } from './polyself.js';
 import { pickup } from './pickup.js';
+import { IS_THRONE, IS_GRAVE, IS_FOUNTAIN, IS_ALTAR, D_ISOPEN, STAIRS,
+         ECMD_TIME, ECMD_OK } from './const.js';
 import { dotrap } from './trap.js';
 import { immune_to_trap, into_vs_onto, u_locomotion, trapname,
          TRAPNUM } from './trap.js';
@@ -171,6 +173,63 @@ export function calc_capacity(xtra_wt) {
 // C ref: hack.c near_capacity()
 export function near_capacity() {
     return calc_capacity(0);
+}
+
+// C ref: hack.c pickup_checks()
+/* return 1 if a pickup was attempted (time passes), 0 if not, -1 if the
+   normal pickup can proceed, -2 to loot an engulfer's inventory */
+async function pickup_checks() {
+    const u = game.u;
+
+    /* uswallow case added by GAN 01/29/87 */
+    if (u.uswallow)
+        throw new Error('pickup_checks(): picking up while engulfed not ported yet');
+    if (is_pool(u.ux, u.uy))
+        throw new Error('pickup_checks(): picking things up in water not ported yet');
+    if (is_lava(u.ux, u.uy))
+        throw new Error('pickup_checks(): picking things up in lava not ported yet');
+    if (!(game.level.objects || []).some(o => o.ox === u.ux && o.oy === u.uy
+                                         && o.where === 'OBJ_FLOOR')) { /* !OBJ_AT() */
+        const lev = game.level.at(u.ux, u.uy);
+
+        if (IS_THRONE(lev.typ))
+            await pline(`It must weigh${lev.looted ? " almost" : ""} a ton!`);
+        else if (IS_SINK(lev.typ))
+            await pline_The("plumbing connects it to the floor.");
+        else if (IS_GRAVE(lev.typ))
+            await You("don't need a gravestone.  Yet.");
+        else if (IS_FOUNTAIN(lev.typ))
+            await You(`could drink the ${uhave(HALLUC) ? (() => { throw new Error('pickup_checks(): hliquid() while hallucinating not ported yet'); })() : "water"}...`);
+        else if (IS_DOOR(lev.typ) && (lev.doormask & D_ISOPEN))
+            await pline("It won't come off the hinges.");
+        else if (IS_ALTAR(lev.typ))
+            await pline("Moving the altar would be a very bad idea.");
+        else if (lev.typ === STAIRS)
+            await pline_The("stairs are solidly affixed.");
+        else
+            await pline("There is nothing here to pick up."); /* There() */
+        return 0;
+    }
+    const traphere = t_at(u.ux, u.uy);
+    if (!can_reach_floor(traphere && is_pit(traphere.ttyp)))
+        throw new Error('pickup_checks(): "You cannot reach the <surface>." not ported yet');
+    return -1; /* can do normal pickup */
+}
+
+// C ref: hack.c dopickup() -- the #pickup command
+export async function dopickup() {
+    const count = game.command_count || 0;
+    let ret;
+
+    game.multi = 0; /* always reset */
+
+    if ((ret = await pickup_checks()) >= 0) {
+        return ret ? ECMD_TIME : ECMD_OK;
+    } else if (ret === -2) {
+        throw new Error('dopickup(): loot_mon() not ported yet');
+    } /* else ret == -1 */
+
+    return (await pickup(-count)) ? ECMD_TIME : ECMD_OK;
 }
 
 // C ref: hack.c max_capacity()
