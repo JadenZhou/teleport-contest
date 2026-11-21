@@ -139,6 +139,26 @@ verify that the crash is gone and that no private session regresses. Label these
 `des.gas_cloud`/`lspo_gas_cloud` and region.c `create_gas_cloud_selection`"), never details
 of a private session.
 
+**D. Unported commands stop explicitly (2026-11-20).** `rhack` must not treat an unported
+command (e.g. `O`/doset) as a silent no-op. If it does, the following keys are read as other
+commands and earn coincidental credit. An unported command throws a "not ported yet" stop,
+the same way the rest of the port does. Merges that lose credit this way follow decision A's
+rule: per-session proof that the lost credit came after the step where JS's key flow first
+differed from C's. Label them `approved-regression: unported-command …`. Then port the
+commands sessions actually use, starting with `O` (doset/options menu).
+
+**Run hygiene (learned 2026-11-20).**
+- Each agent task uses about 0.3–0.5M tokens. Budget about 3M per 5-hour usage window.
+- If a usage limit hits, resume stopped agents with SendMessage (no work is lost), and run
+  at most 2 agents at a time after that.
+- Commit the ledger and write the summary **before the last hour** of the window, not at
+  the end.
+- Generalization checks beyond dev: the coordinator's probe sets
+  (`~/code/teleport-research/probe-sessions` (320 short) and `probe-sessions-full` (120))
+  and tools (`~/code/teleport-research/tools/coordinator/`: `proof.mjs` for the decision-A/D
+  proofs, `sessdetail.mjs`, `scorecheck.sh`). Agents may be given probe sessions; never
+  private ones.
+
 **Gate: crash count.** `progress.mjs` counts real crashes (any error other than an explicit
 "not ported yet" stop, plus timeouts) in `STATIC` as `crash`, and the gate fails if it grows.
 
