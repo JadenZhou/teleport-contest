@@ -39,6 +39,7 @@ import { confers_luck } from './timeout.js';
 import { carrying } from './invent.js';
 import { aligns } from './role.js';
 import { add_weapon_skill, lose_weapon_skill } from './weapon.js';
+import { losehp } from './trap.js';
 
 // C ref: attrib.h ABASE(), ABON(), AMAX(), ATEMP()
 export function ABASE(x) { return game.u.acurr.a[x]; }
@@ -556,6 +557,41 @@ function strongmonst(ptr) { return (ptr.mflags2 & M2_STRONG) !== 0; }
 function Fixed_abil() {
     const p = game.u.uprops[FIXED_ABIL];
     return !!(p && (p.intrinsic || p.extrinsic));
+}
+
+// C ref: attrib.c losestr()
+/* strength loss, possibly with damage when going below minimum */
+export async function losestr(num, knam, k_format) {
+    const u = game.u;
+    let ustr = ABASE(A_STR) - num, amt, dmg;
+    const waspolyd = (u.umonnum !== u.umonster);
+
+    if (num <= 0 || ABASE(A_STR) < ATTRMIN(A_STR)) {
+        /* impossible("losestr: %d - %d", ABASE(A_STR), num) */
+        return;
+    }
+    dmg = 0;
+    while (ustr < ATTRMIN(A_STR)) {
+        ++ustr;
+        --num;
+        amt = rn1(4, 3); /* (0..(4-1))+3 => 3..6; used to use flat 6 here */
+        dmg += amt;
+    }
+    if (dmg) {
+        void knam; void k_format;
+        throw new Error('losestr(): damage from strength below minimum (losehp()/setuhpmax()) not ported yet');
+    }
+    /* 'num' could have been reduced to 0 in the minimum strength loop;
+       '(Upolyd || !waspolyd)' is True unless damage caused rehumanization */
+    if (num > 0 && ((u.umonnum !== u.umonster) || !waspolyd))
+        await adjattrib(A_STR, -num, 1);
+}
+
+// C ref: attrib.c poison_strdmg()
+/* combined strength loss and damage from some poisons */
+export async function poison_strdmg(strloss, dmg, knam, k_format) {
+    await losestr(strloss, knam, k_format);
+    await losehp(dmg, knam, k_format);
 }
 
 // C ref: attrib.c plusattr[], minusattr[], attrname[]
