@@ -1119,6 +1119,45 @@ export async function use_skill(skill, degree) {
     }
 }
 
+// C ref: weapon.c add_weapon_skill()
+export async function add_weapon_skill(n) /* number of slots to gain; normally one */ {
+    const u = game.u;
+    let i, before, after;
+
+    for (i = 0, before = 0; i < P_NUM_SKILLS; i++)
+        if (can_advance(i, false))
+            before++;
+    u.weapon_slots = (u.weapon_slots || 0) + n;
+    for (i = 0, after = 0; i < P_NUM_SKILLS; i++)
+        if (can_advance(i, false))
+            after++;
+    if (before < after)
+        await give_may_advance_msg(P_NONE);
+}
+
+// C ref: weapon.c lose_weapon_skill()
+export function lose_weapon_skill(n) /* number of slots to lose; normally one */ {
+    const u = game.u;
+    let skill;
+
+    while (--n >= 0) {
+        /* deduct first from unused slots then from last placed one, if any */
+        if (u.weapon_slots) {
+            u.weapon_slots--;
+        } else if (u.skills_advanced) {
+            skill = u.skill_record[--u.skills_advanced];
+            if (P_SKILL(skill) <= P_UNSKILLED)
+                throw new Error(`lose_weapon_skill (${skill})`); /* panic() */
+            set_P_SKILL(skill, P_SKILL(skill) - 1); /* drop skill one level */
+            /* Lost skill might have taken more than one slot; refund rest. */
+            u.weapon_slots = slots_required(skill) - 1;
+            /* It might now be possible to advance some other pending
+               skill by using the refunded slots, but giving a message
+               to that effect would seem pretty confusing.... */
+        }
+    }
+}
+
 // C ref: weapon.c could_advance()
 /* return true if this skill could be advanced if more slots were available */
 function could_advance(skill) {

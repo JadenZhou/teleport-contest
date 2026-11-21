@@ -38,6 +38,7 @@ import { LUCKADD } from './const.js';
 import { confers_luck } from './timeout.js';
 import { carrying } from './invent.js';
 import { aligns } from './role.js';
+import { add_weapon_skill, lose_weapon_skill } from './weapon.js';
 
 // C ref: attrib.h ABASE(), ABON(), AMAX(), ATEMP()
 export function ABASE(x) { return game.u.acurr.a[x]; }
@@ -355,7 +356,10 @@ export function from_what(propidx) /* special cases can have negative values */ 
 }
 
 // C ref: attrib.c adjabil()
-export function adjabil(oldlevel, newlevel) {
+// async for its "You feel ..." messages and add_weapon_skill(); hero
+// initialization's adjabil(0, 1) reaches neither, so it completes before
+// returning there
+export async function adjabil(oldlevel, newlevel) {
     const u = game.u;
     let abil, rabil;
     let ai = 0; /* index into abil[], standing in for the C pointer */
@@ -405,13 +409,15 @@ export function adjabil(oldlevel, newlevel) {
                 prop.intrinsic |= mask;
             if (!(prop.intrinsic & INTRINSIC & ~mask)) {
                 if (a.gainstr)
-                    throw new Error('adjabil(): You_feel() not ported yet');
+                    await pline(`You feel ${a.gainstr}!`);
             }
         } else if (oldlevel >= a.ulevel && newlevel < a.ulevel) {
             prop.intrinsic &= ~mask;
             if (!(prop.intrinsic & INTRINSIC)) {
-                if (a.losestr || a.gainstr)
-                    throw new Error('adjabil(): You_feel() not ported yet');
+                if (a.losestr)
+                    await pline(`You feel ${a.losestr}!`);
+                else if (a.gainstr)
+                    await pline(`You feel less ${a.gainstr}!`);
             }
         }
         if (prevabil !== prop.intrinsic) /* it changed */
@@ -420,7 +426,10 @@ export function adjabil(oldlevel, newlevel) {
     }
 
     if (oldlevel > 0) {
-        throw new Error('adjabil(): add_weapon_skill()/lose_weapon_skill() not ported yet');
+        if (newlevel > oldlevel)
+            await add_weapon_skill(newlevel - oldlevel);
+        else
+            lose_weapon_skill(oldlevel - newlevel);
     }
 }
 

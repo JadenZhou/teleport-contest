@@ -648,7 +648,7 @@ async function hitmu(mtmp, mattk) {
 
     await mhitm_adtyping(mtmp, mattk, game.youmonst, mhm);
 
-    mhitm_knockback(mtmp, game.youmonst, mattk, mhm, !!mtmp.mw);
+    await mhitm_knockback(mtmp, game.youmonst, mattk, mhm, !!mtmp.mw);
 
     if (mhm.done)
         return mhm.hitflags;

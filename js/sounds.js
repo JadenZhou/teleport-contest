@@ -477,6 +477,48 @@ export async function growl(mtmp) {
     }
 }
 
+// C ref: sounds.c yelp()
+/* the sounds of mistreated pets */
+export async function yelp(mtmp) {
+    let yelp_verb = null;
+
+    if (helpless(mtmp) || !mtmp.data.msound)
+        return;
+
+    /* presumably nearness and soundok checks have already been made */
+    if (Hallucination())
+        yelp_verb = ROLL_FROM(h_sounds);
+    else
+        switch (mtmp.data.msound) {
+        case MS_MEW:
+            yelp_verb = (!Deaf()) ? "yowl" : "arch";
+            break;
+        case MS_BARK:
+        case MS_GROWL:
+            yelp_verb = (!Deaf()) ? "yelp" : "recoil";
+            break;
+        case MS_ROAR:
+            yelp_verb = (!Deaf()) ? "snarl" : "bluff";
+            break;
+        case MS_SQEEK:
+            yelp_verb = (!Deaf()) ? "squeal" : "quiver";
+            break;
+        case MS_SQAWK:
+            yelp_verb = (!Deaf()) ? "screak" : "thrash";
+            break;
+        case MS_WAIL:
+            yelp_verb = (!Deaf()) ? "wail" : "cringe";
+            break;
+        }
+    if (yelp_verb) {
+        /* Soundeffect(se, 70): no sound interface */
+        await pline(`${Monnam(mtmp)} ${vtense(null, yelp_verb)}!`);
+        if (game.context.run)
+            nomul(0);
+        await wake_nearto(mtmp.mx, mtmp.my, mtmp.data.mlevel * 12);
+    }
+}
+
 // C ref: sounds.c domonnoise()
 async function domonnoise(mtmp) {
     let pline_msg = null, /* Monnam(mtmp) will be prepended */

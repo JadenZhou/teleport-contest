@@ -1,8 +1,9 @@
 // exper.js — experience levels, and energy gained per level.
 // C ref: exper.c
 //
-// Only what hero initialization needs so far: newuexp(), enermod(), newpw();
-// and more_experienced(), newexplevel() (pluslvl() is not ported yet).
+// Ported so far: newuexp(), enermod(), newpw(), experience(),
+// more_experienced(), newexplevel(), pluslvl() (not for a polymorphed
+// hero) and losexp().
 
 import { game } from './gstate.js';
 import { rnd, rn1 } from './rng.js';
@@ -13,7 +14,9 @@ import { find_mac } from './worn.js';
 import {
     PM_CLERIC, PM_WIZARD, PM_HEALER, PM_KNIGHT, PM_BARBARIAN, PM_VALKYRIE,
 } from './monsters.js';
-import { ACURR, adjabil } from './attrib.js';
+import { ACURR, adjabil, newhp } from './attrib.js';
+import { xlev_to_rank } from './botl.js';
+import { record_achievement } from './do.js';
 import { pline } from './display.js';
 import { Goodbye } from './role.js';
 import { resists_drli } from './mondata.js';
@@ -205,10 +208,74 @@ export function more_experienced(exper, rexp) {
 }
 
 // C ref: exper.c newexplevel()
-export function newexplevel() {
+/*
+ * Make experience gaining similar to AD&D(tm), whereby you can at most go
+ * up by one level at a time, extra expr possibly helping you along.
+ * After all, how much real experience does one get shooting a wand of death
+ * at a dragon created with a wand of polymorph??
+ */
+export async function newexplevel() {
     const u = game.u;
     if (u.ulevel < MAXULEV && u.uexp >= newuexp(u.ulevel))
-        throw new Error('newexplevel(): pluslvl() not ported yet');
+        await pluslvl(true);
+}
+
+// C ref: exper.c pluslvl()
+export async function pluslvl(
+    incr) /* True: incremental experience growth;
+           * False: potion of gain level or wraith corpse
+           *        or wizard mode #levelchange */ {
+    const u = game.u;
+    let hpinc, eninc;
+
+    if (!incr)
+        await pline("You feel more experienced.");
+
+    /* increase hit points (when polymorphed, do monster form first
+       in order to retain normal human/whatever increase for later) */
+    if (u.umonnum !== u.umonster) /* Upolyd */
+        throw new Error('pluslvl(): monhp_per_lvl() for a polymorphed hero not ported yet');
+    hpinc = newhp();
+    u.uhp += hpinc;
+    setuhpmax(u.uhpmax + hpinc, true); /* will lower u.uhp if it exceeds
+                                        * u.uhpmax */
+
+    /* increase spell power/energy points */
+    eninc = newpw();
+    u.uenmax += eninc;
+    if (u.uenmax > u.uenpeak)
+        u.uenpeak = u.uenmax;
+    u.uen += eninc;
+
+    /* increase level (unless already maxxed) */
+    if (u.ulevel < MAXULEV) {
+        const oldrank = xlev_to_rank(u.ulevel);
+
+        /* increase experience points to reflect new level */
+        if (incr) {
+            const tmp = newuexp(u.ulevel + 1);
+
+            if (u.uexp >= tmp)
+                u.uexp = tmp - 1;
+        } else {
+            u.uexp = newuexp(u.ulevel);
+        }
+        ++u.ulevel;
+        await pline(`Welcome ${(u.ulevelmax < u.ulevel) ? "" : "back "
+                    }to experience level ${u.ulevel}.`);
+        if (u.ulevelmax < u.ulevel)
+            u.ulevelmax = u.ulevel;
+        await adjabil(u.ulevel - 1, u.ulevel); /* give new intrinsics */
+        /* SoundAchievement(0, sa2_xplevelup, 0): no sound interface */
+        const newrank = xlev_to_rank(u.ulevel);
+        if (newrank > oldrank)
+            record_achievement(`ACH_RNK${newrank}`); /* achieve_rank(newrank) */
+        /* livelog_printf(LL_MINORAC, "...gained experience level %d"): the
+           livelog isn't shown on the tty */
+        if (u.ulevel > (u.ulevelpeak || 0))
+            u.ulevelpeak = u.ulevel;
+    }
+    game.disp_botl = true;
 }
 
 // C ref: attrib.c minuhpmax()

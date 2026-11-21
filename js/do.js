@@ -672,7 +672,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         /* describe_level(dloc, 2); livelog_printf(...): no livelog */
         if (g.urole.mnum === PM_TOURIST) {
             more_experienced(level_difficulty(), 0);
-            newexplevel();
+            await newexplevel();
         }
     }
 
@@ -728,7 +728,7 @@ function temperature_change_msg(prev_temperature) {
 // C ref: insight.c record_achievement() -- the achievement list is only
 // shown by #achievements and the dumplog, neither ported; C's livelog
 // message isn't shown on the tty
-function record_achievement(achidx) {
+export function record_achievement(achidx) {
     const u = game.u;
     if (!u.uachieved) u.uachieved = [];
     if (u.uachieved.includes(achidx))

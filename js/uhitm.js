@@ -53,7 +53,8 @@ import { STRAT_WAITMASK, MMOVE_DIED, HAND, A_DEX, A_WIS, A_LAWFUL, CONFUSION,
          isok, IS_DOOR, D_NODOOR, D_BROKEN, Is_rogue_level, Is_airlevel,
          Is_waterlevel, W_RINGL, W_RINGR, W_ARM, W_ARMS, W_WEP, W_AMUL,
          P_BARE_HANDED_COMBAT, P_BASIC, P_SKILLED, P_NONE, P_LANCE, P_KNIFE,
-         P_DAGGER, P_SABER, P_AXE, P_WHIP, P_SHURIKEN, P_BOW } from './const.js';
+         P_DAGGER, P_SABER, P_AXE, P_WHIP, P_SHURIKEN, P_BOW,
+         TEST_MOVE } from './const.js';
 import { AT_NONE, AD_FIRE, AD_RUST, AD_CORR, AD_ACID, AD_STON, AD_MAGM,
          AD_ENCH, AD_PLYS, AD_COLD, AD_STUN } from './monsters.js';
 import { WEAPON_CLASS, TOOL_CLASS, ARMOR_CLASS, GEM_CLASS, POTION_CLASS,
@@ -69,7 +70,7 @@ import { abon, dbon, hitval, weapon_hit_bonus, weapon_dam_bonus, use_skill,
          m_carrying } from './weapon.js';
 import { find_mac } from './worn.js';
 import { noattacks, check_capacity, overexertion, near_capacity,
-         nomul } from './hack.js';
+         nomul, test_move } from './hack.js';
 import { can_twoweapon, untwoweapon, bimanual, is_launcher, is_missile,
          is_ammo, is_pole, is_wet_towel, ammo_and_launcher } from './wield.js';
 import { yname, makeplural, an, doname, xname, vtense } from './objnam.js';
@@ -89,6 +90,7 @@ import { bare_artifactname } from './iactions.js';
 import { exclam } from './zap.js';
 import { could_seduce } from './mhitu.js';
 import { carrying } from './invent.js';
+import { abuse_dog } from './dog.js';
 import { discover_object } from './o_init.js';
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
@@ -338,17 +340,27 @@ export async function mhitm_adtyping(magr, mattk, mdef, mhm) {
     }
 }
 
-// C ref: uhitm.c mhitm_knockback() -- the hero-as-defender case
-export function mhitm_knockback(magr, mdef, mattk, mhm, weapon_used) {
+// C ref: uhitm.c mhitm_knockback() -- the hero-attacker and hero-defender
+// cases (monster-vs-monster is in mhitm.js); hf.hitflags is C's *hitflags
+/* monster hits another monster hard enough to knock it back? */
+export async function mhitm_knockback(
+    magr,   /* attacker; might be hero */
+    mdef,   /* defender; might be hero (only if magr isn't)  */
+    mattk,  /* attack type and damage info */
+    hf,     /* hf.hitflags: modified if magr or mdef dies */
+    weapon_used) /* True: via weapon hit */ {
+    const u = game.u;
     const knockdistance = rn2(3) ? 1 : 2; /* 67%: 1 step, 33%: 2 steps */
     let chance = 6; /* 1/6 chance of attack knocking back a monster */
     const u_agr = (magr === game.youmonst);
     const u_def = (mdef === game.youmonst);
-    const wep = weapon_used ? (u_agr ? game.uwep : magr.mw) : null;
+    const wep = weapon_used ? (u_agr ? game.uwep : (magr.mw || null)) : null;
 
-    if (wep && wep.oartifact)
-        throw new Error('mhitm_knockback(): artifact weapons not ported yet');
-    void chance;
+    if (!u_agr && !u_def)
+        throw new Error('mhitm_knockback(): monster-vs-monster is in mhitm.js');
+
+    if (wep && is_art(wep, ART_OGRESMASHER))
+        chance = 2;
 
     if (rn2(chance))
         return false;
@@ -367,13 +379,71 @@ export function mhitm_knockback(magr, mdef, mattk, mhm, weapon_used) {
         || sticks(magr.data))
         return false;
 
-    if (!u_def || u_agr)
-        throw new Error('mhitm_knockback(): non-hero defender is in mhitm.js');
-    const dx = sgn(game.u.ux - magr.mx);
-    const dy = sgn(game.u.uy - magr.my);
-    void dx; void dy; void knockdistance; void mhm; void m_next2u;
+    /* decide where the first step will place the target; not accurate
+       for being knocked out of saddle but doesn't need to be; used for
+       test_move() and for message before actual hurtle */
+    const defx = u_def ? u.ux : mdef.mx;
+    const defy = u_def ? u.uy : mdef.my;
+    const dx = sgn(defx - (u_agr ? u.ux : magr.mx));
+    const dy = sgn(defy - (u_agr ? u.uy : magr.my));
+
     /* can't move most targets into or out of a doorway diagonally */
-    throw new Error('mhitm_knockback(): test_move() for hero not ported yet');
+    if (u_def) {
+        if (!await test_move(defx, defy, dx, dy, TEST_MOVE))
+            return false;
+    } else {
+        /* subset of test_move() */
+        if (!isok(defx + dx, defy + dy))
+            return false;
+        if (IS_DOOR(game.level.at(defx, defy).typ)
+            && (defx - magr.mx && defy - magr.my)
+            && !doorless_door(defx, defy))
+            return false;
+    }
+
+    /* if hero is stuck to a cursed saddle, knock the steed back */
+    if (u_def && u.usteed)
+        throw new Error('mhitm_knockback(): knocking back a mounted hero not ported yet');
+
+    /* monsters must be alive */
+    if ((!u_agr && DEADMONSTER(magr))
+        || (!u_def && DEADMONSTER(mdef)))
+        return false;
+
+    /* attacker must be much larger than defender */
+    if (!(magr.data.msize > (mdef.data.msize + 1)))
+        return false;
+
+    /* no knockback with a flimsy or non-blunt weapon */
+    if (wep && (is_flimsy(wep) || !is_blunt_weapon(wep)))
+        return false;
+
+    /* needs a solid physical hit */
+    if (unsolid(magr.data))
+        return false;
+
+    /* the attack must have hit */
+    /* mon-vs-mon code path doesn't set up hitflags */
+    if ((u_agr || u_def) && !(hf.hitflags & M_ATTK_HIT))
+        return false;
+
+    /* steadfast defender cannot be pushed around */
+    if (m_is_steadfast(mdef)) {
+        if (u_def || (u.usteed && mdef === u.usteed)) {
+            let mdefbuf = "";
+            if (u.usteed)
+                mdefbuf = `and ${y_monnam(u.usteed)} `;
+            await You(`${mdefbuf}don't budge.`);
+        } else if (canseemon(mdef)) {
+            await pline(`${Monnam(mdef)} doesn't budge.`);
+        }
+        return false;
+    }
+
+    /* subtly vary the message text if monster won't actually move;
+       give the message; do the actual knockback effect */
+    void knockdistance;
+    throw new Error('mhitm_knockback(): knockback (will_hurtle()/hurtle()/mhurtle()) not ported yet');
 }
 
 /* C ref: youprop.h Punished */
@@ -1398,8 +1468,14 @@ async function hmon_hitmon_stagger(hmd, mon, obj) {
 // C ref: uhitm.c hmon_hitmon_pet()
 async function hmon_hitmon_pet(hmd, mon, obj) {
     void obj;
-    if (mon.mtame && hmd.dmg > 0)
-        throw new Error('hmon_hitmon_pet(): abuse_dog() not ported yet');
+    if (mon.mtame && hmd.dmg > 0) {
+        /* do this even if the pet is being killed or migrating (affects revival) */
+        await abuse_dog(mon); /* reduces tameness */
+        /* flee if still alive and still tame; if already suffering from
+           untimed fleeing, no effect, otherwise increases timed fleeing */
+        if (mon.mtame && !hmd.destroyed)
+            await monflee(mon, 10 * rnd(hmd.dmg), false, false);
+    }
 }
 
 // C ref: uhitm.c hmon_hitmon_splitmon()
@@ -1501,7 +1577,7 @@ async function hmon_hitmon(
     const hmd = {
         dmg: 0,
         thrown,
-        twohits: thrown ? 0 : game.twohits,
+        twohits: thrown ? 0 : (game.twohits || 0),
         dieroll,
         mdat: mon.data,
         use_weapon_skill: false,
@@ -1643,14 +1719,13 @@ async function hmon_hitmon(
         await Your(`${hmd.saved_oname} ${vtense(hmd.saved_oname, "are")} no longer poisoned.`);
 
     if (!hmd.destroyed && !hmd.offmap) {
-        const hitflags = { val: M_ATTK_HIT };
+        const hf = { hitflags: M_ATTK_HIT };
 
         await wakeup(mon, true);
         if (maybe_knockback
-            && await mhitm_knockback_uhitm(game.youmonst, mon,
-                                           game.youmonst.data.mattk[0],
-                                           hitflags, true)) {
-            if ((hitflags.val & M_ATTK_DEF_DIED) !== 0)
+            && await mhitm_knockback(game.youmonst, mon,
+                                     game.youmonst.data.mattk[0], hf, true)) {
+            if ((hf.hitflags & M_ATTK_DEF_DIED) !== 0)
                 hmd.destroyed = true;
         }
     }
@@ -1736,81 +1811,6 @@ function m_is_steadfast(mtmp) {
         return true;
 
     return false;
-}
-
-// C ref: uhitm.c mhitm_knockback() -- the hero-as-attacker case
-/* hero hits a monster hard enough to knock it back? */
-async function mhitm_knockback_uhitm(magr, mdef, mattk, hitflags, weapon_used) {
-    const u = game.u;
-    const knockdistance = rn2(3) ? 1 : 2; /* 67%: 1 step, 33%: 2 steps */
-    let chance = 6; /* 1/6 chance of attack knocking back a monster */
-    const wep = weapon_used ? game.uwep : null;
-
-    if (wep && is_art(wep, ART_OGRESMASHER))
-        chance = 2;
-
-    if (rn2(chance))
-        return false;
-
-    /* only certain attacks qualify for knockback */
-    if (!((mattk.adtyp === AD_PHYS)
-          && (mattk.aatyp === AT_CLAW
-              || mattk.aatyp === AT_KICK
-              || mattk.aatyp === AT_BUTT
-              || mattk.aatyp === AT_WEAP)))
-        return false;
-
-    /* don't knockback if attacker also wants to grab or engulf */
-    if (attacktype(magr.data, AT_ENGL)
-        || attacktype(magr.data, AT_HUGS)
-        || sticks(magr.data))
-        return false;
-
-    /* decide where the first step will place the target; not accurate
-       for being knocked out of saddle but doesn't need to be; used for
-       test_move() and for message before actual hurtle */
-    const defx = mdef.mx;
-    const defy = mdef.my;
-    const dx = sgn(defx - u.ux);
-    const dy = sgn(defy - u.uy);
-
-    /* subset of test_move() */
-    if (!isok(defx + dx, defy + dy))
-        return false;
-    if (IS_DOOR(game.level.at(defx, defy).typ)
-        && (defx - u.ux && defy - u.uy)
-        && !doorless_door(defx, defy))
-        return false;
-
-    /* monsters must be alive */
-    if (DEADMONSTER(mdef))
-        return false;
-
-    /* attacker must be much larger than defender */
-    if (!(magr.data.msize > (mdef.data.msize + 1)))
-        return false;
-
-    /* no knockback with a flimsy or non-blunt weapon */
-    if (wep && (is_flimsy(wep) || !is_blunt_weapon(wep)))
-        return false;
-
-    /* needs a solid physical hit */
-    if (unsolid(magr.data))
-        return false;
-
-    /* the attack must have hit */
-    if (!(hitflags.val & M_ATTK_HIT))
-        return false;
-
-    /* steadfast defender cannot be pushed around */
-    if (m_is_steadfast(mdef)) {
-        if (canseemon(mdef))
-            await pline(`${Monnam(mdef)} doesn't budge.`);
-        return false;
-    }
-
-    void knockdistance;
-    throw new Error('mhitm_knockback(): knocking a monster back (will_hurtle()/mhurtle()) not ported yet');
 }
 
 /* C ref: hack.c doorless_door() */
