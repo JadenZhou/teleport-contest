@@ -7,7 +7,7 @@
 import { game } from './gstate.js';
 import { rn2, rnd, d, AC_VALUE } from './rng.js';
 import { cansee } from './vision.js';
-import { pline, bot, mon_visible } from './display.js';
+import { pline, bot, mon_visible, sensemon, You_feel } from './display.js';
 import { nomul } from './hack.js';
 import { Monnam, pronoun_gender, PRONOUN_HALLU } from './do_name.js';
 import { monnear } from './mon.js';
@@ -410,8 +410,18 @@ export async function mattacku(mtmp) {
         && (is_demon(mdat) || is_were(mdat)))
         throw new Error('mattacku(): summonmu() not ported yet');
 
-    if (u.uinvulnerable) /* in the midst of successful prayer */
-        throw new Error('mattacku(): invulnerable hero not ported yet');
+    if (u.uinvulnerable) { /* in the midst of successful prayer */
+        /* monsters won't attack you */
+        if (mtmp === u.ustuck) {
+            await pline(`${Monnam(mtmp)} loosens its grip slightly.`); /* pline_mon() */
+        } else if (!v.range2) {
+            if (v.youseeit || sensemon(mtmp))
+                await pline(`${Monnam(mtmp)} starts to attack you, but pulls back.`);
+            else
+                await You_feel("something move nearby."); /* something */
+        }
+        return 0;
+    }
 
     /* Unlike defensive stuff, don't let them use item _and_ attack. */
     if (find_offensive(mtmp)) {

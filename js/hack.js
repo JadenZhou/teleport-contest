@@ -22,7 +22,8 @@ import {
     D_BROKEN, D_NODOOR, NO_ROOM, SHARED, SHARED_PLUS, ROOMOFFSET, COLNO,
     ROWNO, xdir, ydir, DO_MOVE, TEST_MOVE, WT_TOOMUCH_DIAGONAL, IS_DOOR,
     IS_FURNITURE, SCORR, SDOOR, TREE, OROOM, P_AXE, ACCESSIBLE, IS_STWALL,
-    TEMPLE,
+    TEMPLE, ZOO, SWAMP, COURT, LEPREHALL, MORGUE, BEEHIVE, COCKNEST, ANTHOLE,
+    BARRACKS, DELPHI, THRONE, STEALTH,
 } from './const.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_GRID_BUG, mons, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, MZ_SMALL,
@@ -80,7 +81,12 @@ import { visible_region_at } from './region.js';
 import { paranoid_query } from './cmd.js';
 import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
          IS_SINK } from './const.js';
-import { M1_CLING } from './monsters.js';
+import { M1_CLING, PM_SOLDIER, PM_SERGEANT, PM_LIEUTENANT, PM_CAPTAIN } from './monsters.js';
+import { midnight } from './calendar.js';
+import { Hello } from './role.js';
+import { search_special } from './sounds.js';
+import { wake_msg } from './mon.js';
+import { inside_room } from './sp_lev.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
@@ -904,18 +910,147 @@ export async function check_special_room(newlev) {
         let msg_given = true;
 
         /* Did we just enter some other special room? */
-        if (rt !== OROOM && rt !== TEMPLE && rt < SHOPBASE)
-            throw new Error('check_special_room(): special room entry not ported yet');
-        if (rt === TEMPLE)
+        /* vault.c insists that a vault remain a VAULT,
+         * and temples should remain TEMPLEs,
+         * but everything else gives a message only the first time */
+        switch (rt) {
+        case ZOO:
+            await pline("Welcome to David's treasure zoo!");
+            break;
+        case SWAMP:
+            await pline(`It ${Blind() ? "feels" : "looks"} rather ${
+                Blind() ? "humid" : "muddy"} down here.`);
+            break;
+        case COURT:
+            await You(`enter an opulent${
+                /* the throne room in Sam quest home level lacks a throne */
+                !furniture_present(THRONE, roomno) ? "" : " throne"} room!`);
+            break;
+        case LEPREHALL:
+            await You("enter a leprechaun hall!");
+            break;
+        case MORGUE:
+            if (midnight()) {
+                const run = u_locomotion("Run");
+
+                await pline(`${run} away!  ${run} away!`);
+            } else
+                await You("have an uncanny feeling...");
+            break;
+        case BEEHIVE:
+            await You("enter a giant beehive!");
+            break;
+        case COCKNEST:
+            await You("enter a disgusting nest!");
+            break;
+        case ANTHOLE:
+            await You("enter an anthole!");
+            break;
+        case BARRACKS:
+            if (monstinroom(mons[PM_SOLDIER], roomno)
+                || monstinroom(mons[PM_SERGEANT], roomno)
+                || monstinroom(mons[PM_LIEUTENANT], roomno)
+                || monstinroom(mons[PM_CAPTAIN], roomno))
+                await You("enter a military barracks!");
+            else
+                await You("enter an abandoned barracks.");
+            break;
+        case DELPHI: {
+            const oracle = monstinroom(mons[PM_ORACLE], roomno);
+
+            if (oracle) {
+                /* SetVoice(oracle, 0, 80, 0): no voices */
+                if (!oracle.mpeaceful)
+                    await pline(`"You're in Delphi, ${game.plname}."`); /* verbalize() */
+                else
+                    await pline(`"${Hello(null)}, ${game.plname}, welcome to Delphi!"`); /* verbalize() */
+            } else
+                msg_given = false;
+            break;
+        }
+        case TEMPLE:
             await intemple(roomno + ROOMOFFSET);
-        /* default: */
-        msg_given = (rt === TEMPLE || rt >= SHOPBASE);
-        rt = 0;
+            /* FALLTHRU */
+        default:
+            msg_given = (rt === TEMPLE || rt >= SHOPBASE);
+            rt = 0;
+            break;
+        }
         if (msg_given) {
             /* room_discovered(roomno): the dungeon overview (mapseen)
                isn't ported */
         }
+
+        if (rt !== 0) {
+            rooms[roomno].rtype = OROOM;
+            if (!search_special(rt)) {
+                /* No more room of that type */
+                switch (rt) {
+                case COURT:
+                    game.level.flags.has_court = 0;
+                    break;
+                case SWAMP:
+                    game.level.flags.has_swamp = 0;
+                    break;
+                case MORGUE:
+                    game.level.flags.has_morgue = 0;
+                    break;
+                case ZOO:
+                    game.level.flags.has_zoo = 0;
+                    break;
+                case BARRACKS:
+                    game.level.flags.has_barracks = 0;
+                    break;
+                case TEMPLE:
+                    game.level.flags.has_temple = 0;
+                    break;
+                case BEEHIVE:
+                    game.level.flags.has_beehive = 0;
+                    break;
+                }
+            }
+            if (rt === COURT || rt === SWAMP || rt === MORGUE || rt === ZOO)
+                for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+                    if (mtmp.mhp <= 0) /* DEADMONSTER() */
+                        continue;
+                    if (!isok(mtmp.mx, mtmp.my)
+                        || roomno !== game.level.at(mtmp.mx, mtmp.my).roomno)
+                        continue;
+                    if (!uhave(STEALTH) && !rn2(3)) { /* Stealth */
+                        await wake_msg(mtmp, false);
+                        mtmp.msleeping = 0;
+                    }
+                }
+        }
     }
+}
+
+// C ref: hack.c monstinroom()
+function monstinroom(mdat, roomno) {
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (mtmp.mhp <= 0) /* DEADMONSTER() */
+            continue;
+        if (mtmp.data === mdat
+            && in_rooms(mtmp.mx, mtmp.my, 0).includes(String.fromCharCode(roomno + ROOMOFFSET)))
+            return mtmp;
+    }
+    return null;
+}
+
+// C ref: hack.c furniture_present()
+/* check whether room contains a particular type of furniture */
+function furniture_present(furniture, roomno) {
+    let x, y;
+    const sroom = game.level.rooms[roomno];
+
+    const ly = sroom.ly, hy = sroom.hy;
+    const lx = sroom.lx, hx = sroom.hx;
+    /* the inside_room() check handles irregularly shaped rooms */
+    for (y = ly; y <= hy; ++y)
+        for (x = lx; x <= hx; ++x)
+            if (game.level.at(x, y).typ === furniture && inside_room(sroom, x, y))
+                return true;
+    return false;
 }
 
 /* C ref: youprop.h Levitation, Flying -- with the BLevitation/BFlying

@@ -24,7 +24,7 @@ import { maketrap } from './trap.js';
 import { y_monnam } from './do_name.js';
 import { stairway_at } from './display.js';
 import { stairway_find_dir } from './mklev.js';
-import { hideunder } from './makemon.js';
+import { hideunder_async } from './makemon.js';
 import { Is_candle, Is_container } from './mkobj.js';
 import { STAIRS, LADDER, WEB, IS_WATERWALL, LAVAWALL } from './const.js';
 import { IS_TREE, IS_STWALL, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE,
@@ -48,7 +48,8 @@ import {
 import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls, haseyes,
          perceives, can_teleport, is_undead, is_human, is_vampshifter,
          dmgtype, Resists_Elem } from './mondata.js';
-import { mfndpos, monnear, mon_allowflags, check_gear_next_turn } from './mon.js';
+import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
+         maybe_unhide_at } from './mon.js';
 import { gettrack } from './track.js';
 import { dog_move, can_carry, can_touch_safely, curr_mon_load,
          max_mon_load } from './dogmove.js';
@@ -1694,10 +1695,7 @@ export async function m_move(mtmp, after) {
         place_monster(mtmp, nix, niy);
         /* msg_mon_movement(): a11y.mon_movement is off by default */
 
-        /* maybe_unhide_at(mtmp->mx, mtmp->my): no hidden monsters yet */
-        if (mtmp.mundetected || game.level.monsters?.some?.(m => m !== mtmp
-                                     && m.mx === nix && m.my === niy && m.mundetected))
-            throw new Error('m_move(): maybe_unhide_at() not ported yet');
+        maybe_unhide_at(mtmp.mx, mtmp.my);
 
         mon_track_add(mtmp, omx, omy);
     } else {
@@ -1886,7 +1884,7 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
                (just in case the object it was hiding under went away);
                usually set mundetected unless monster can't move. */
             if (mtmp.mundetected || (!helpless(mtmp) && rn2(5)))
-                hideunder(mtmp);
+                await hideunder_async(mtmp);
             newsym(mtmp.mx, mtmp.my);
         }
         if (mtmp.isshk) {

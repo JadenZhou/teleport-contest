@@ -742,8 +742,29 @@ export async function dopray() {
     if (!(await can_pray(true)))
         return ECMD_OK;
 
-    if (g.flags.debug && g.p_type >= 0)
-        throw new Error('dopray(): wizard-mode "Force the gods to be pleased?" not ported yet');
+    if (g.flags.debug && g.p_type >= 0) {
+        const forcesuccess = "Force the gods to be pleased?";
+
+        /* if we asked "are you sure?" above we suppressed the response
+           from the do-again buffer, so need to suppress this response too;
+           otherwise subsequent ^A would use this answer for "are you sure?"
+           and bypass confirmation (gi.in_doagain: ^A isn't ported) */
+        if (g.flags.paranoia_pray !== false) {
+            ok = (await tty_yn_function(forcesuccess, "yn", 'n') === 'y'); /* YN() */
+        } else {
+            ok = (await tty_yn_function(forcesuccess, "yn", 'n') === 'y'); /* y_n() */
+        }
+        if (ok) {
+            u.ublesscnt = 0;
+            if (u.uluck < 0)
+                u.uluck = 0;
+            if (u.ualign.record <= 0)
+                u.ualign.record = 1;
+            u.ugangr = 0;
+            if (g.p_type < 2)
+                g.p_type = 3;
+        }
+    }
     nomul(-3);
     g.multi_reason = "praying";
     g.nomovemsg = "You finish your prayer.";
