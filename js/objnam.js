@@ -434,12 +434,15 @@ export function obj_typename(otyp) {
     let buf;
     const ocl = objects[otyp];
     let actualn = OBJ_NAME(ocl);
-    const dn = OBJ_DESCR(ocl);
+    let dn = OBJ_DESCR(ocl);
     const un = ocl.oc_uname;
     let nn = ocl.oc_name_known;
 
-    if (Role_if_x(M.PM_SAMURAI))
-        throw new Error('obj_typename(): Japanese_item_name() is not ported yet');
+    if (Role_if_x(M.PM_SAMURAI)) {
+        actualn = Japanese_item_name(otyp, actualn);
+        if (otyp === O.WOODEN_HARP || otyp === O.MAGIC_HARP)
+            dn = "koto";
+    }
     /* generic items don't have an actual-name; we shouldn't ever be called
        for those; pacify static analyzer without resorting to impossible() */
     if (!actualn)
