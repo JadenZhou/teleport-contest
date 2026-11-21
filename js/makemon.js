@@ -1829,7 +1829,9 @@ export function makemon(ptr, x, y, mmflags) {
             mon_adjust_speed_sync(mtmp, 2, null);
         break;
     }
-    /* emits_light() -> new_light_source(): light sources not ported yet */
+    /* if ((ct = emits_light(mtmp->data)) > 0) new_light_source(...):
+       light.c isn't ported and vision.js has no light sources (no dice
+       are rolled; only what the hero can see is affected) */
     mitem = O.STRANGE_OBJECT; /* extra inventory item for this monster */
 
     if (mndx === M.PM_VLAD_THE_IMPALER)
@@ -1940,7 +1942,8 @@ export function makemon(ptr, x, y, mmflags) {
             mtmp.mstrategy |= STRAT_APPEARMSG;
     }
 
-    /* deliver_obj_to_mon(): migrating objects not ported yet */
+    if (allow_minvent && game.migrating_objs) /* in case of waiting items */
+        throw new Error('makemon(): deliver_obj_to_mon() not ported yet');
 
     if (!game.in_mklev) {
         newsym(mtmp.mx, mtmp.my); /* make sure the mon shows up */
