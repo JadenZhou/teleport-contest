@@ -38,7 +38,24 @@ import { PIT, SPIKED_PIT, STATUE_TRAP, HEADSTONE, DOOR, DBWALL,
          DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST, DB_WEST, IS_DRAWBRIDGE,
          isok } from './const.js';
 import { t_at } from './trap.js';
-import { sobj_at } from './makemon.js';
+import { sobj_at, is_pool, is_lava } from './makemon.js';
+import { delobj } from './invent.js';
+import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
+         is_rustprone, is_crackable, is_corrodeable, is_rottable,
+         is_damageable, is_poisonable } from './mkobj.js';
+import { obj_resists } from './dogmove.js';
+import { cansee, does_block, block_point, unblock_point } from './vision.js';
+import { newsym } from './display.js';
+import { costly_spot } from './shk.js';
+import { LARGEST_INT, MAX_SPELL_STUDY, Has_contents } from './const.js';
+import { STRANGE_OBJECT, WAN_POLYMORPH, SPE_POLYMORPH, POT_POLYMORPH,
+         AMULET_OF_UNCHANGING, LARGE_BOX, CHEST, WAN_SLOW_MONSTER,
+         SPE_SLOW_MONSTER, WAN_SPEED_MONSTER, SPE_HEALING, SPE_EXTRA_HEALING,
+         WEAPON_CLASS, ARMOR_CLASS, TOOL_CLASS, POTION_CLASS, GEM_CLASS,
+         UNICORN_HORN, EGG, CORPSE, LOW_BOOTS, LEASH, MAGIC_LAMP, OIL_LAMP,
+         MAGIC_MARKER, POT_GAIN_ABILITY, POT_WATER, POT_OIL, SPE_BLANK_PAPER,
+         SPE_NOVEL, ROCK, MINERAL } from './objects.js';
+import { PM_CROCODILE } from './monsters.js';
 import { engr_at } from './engrave.js';
 import { M1_NOHANDS, M1_CONCEAL, AD_COLD, AD_FIRE, AD_ELEC, AD_ACID,
          AD_DISN } from './monsters.js';
@@ -93,10 +110,382 @@ export async function bhitm(mtmp, otmp) {
 }
 
 // C ref: zap.c bhito() -- object obj was hit by the effect of the wand
-// or spell otmp
+// or spell otmp; returns nonzero if obj was affected
 export async function bhito(obj, otmp) {
-    void obj;
-    throw new Error(`bhito(): wand/spell ${otmp.otyp} hitting an object not ported yet`);
+    const g = game;
+    const u = g.u;
+    let res = 1; /* affected object by default */
+    let learn_it = false;
+
+    /* fundamental: a wand effect hitting itself doesn't do anything;
+       otherwise we need to guard against accessing otmp after something
+       strange has happened to it (along the lines of polymorph or
+       stone-to-flesh [which aren't good examples since polymorph wands
+       aren't affected by polymorph zaps and stone-to-flesh isn't
+       available in wand form, but the concept still applies...]) */
+    if (obj === otmp)
+        return 0;
+
+    if (obj.bypass) {
+        /* The bypass bit is currently only used as follows: (see C) */
+        if (g.context.bypasses) {
+            return 0;
+        } else {
+            /* debugpline1("%s for a moment.", Tobjnam(obj, "pulsate")) */
+            obj.bypass = 0;
+        }
+    }
+
+    /*
+     * Some parts of this function expect the object to be on the floor
+     * obj->{ox,oy} to be valid.  The exception to this (so far) is
+     * for the STONE_TO_FLESH spell.
+     */
+    if (obj === g.uball) {
+        res = 0;
+    } else if (obj === g.uchain) {
+        throw new Error('bhito(): zapping the iron chain (unpunish()) not ported yet');
+    } else
+        switch (otmp.otyp) {
+        case WAN_POLYMORPH:
+        case SPE_POLYMORPH:
+            if (obj_unpolyable(obj)) {
+                res = 0;
+                break;
+            }
+            /* KMH, conduct */
+            u.uconduct.polypiles = (u.uconduct.polypiles || 0) + 1;
+            /* livelog_printf(LL_CONDUCT, ...) on the first: no livelog */
+
+            /* any saved lock context will be dangerously obsolete */
+            if (Is_box(obj))
+                throw new Error('bhito(): boxlock() on a polymorphed box not ported yet');
+
+            if (obj_shudders(obj)) {
+                const top = (g.level.objects || []).find(o => o.ox === u.ux
+                                                         && o.oy === u.uy);
+                const cover = ((obj === top) && u.uundetected
+                               && (g.youmonst.data.mflags1 & M1_CONCEAL) !== 0);
+
+                if (cansee(obj.ox, obj.oy))
+                    learn_it = true;
+                do_osshock(obj);
+                /* eek - your cover might have been blown */
+                if (cover)
+                    throw new Error('bhito(): hideunder() after do_osshock() not ported yet');
+                break;
+            }
+            obj = await poly_obj(obj, STRANGE_OBJECT);
+            newsym(obj.ox, obj.oy);
+            break;
+        case WAN_SLOW_MONSTER: /* no effect on objects */
+        case SPE_SLOW_MONSTER:
+        case WAN_SPEED_MONSTER:
+        case WAN_NOTHING:
+        case SPE_HEALING:
+        case SPE_EXTRA_HEALING:
+            res = 0;
+            break;
+        default:
+            throw new Error(`bhito(): wand/spell ${otmp.otyp} hitting an object not ported yet`);
+        }
+    /* if effect was observable then discover the wand type provided
+       that the wand itself has been seen */
+    if (learn_it)
+        learnwand(otmp);
+    return res;
+}
+
+/* C ref: obj.h Is_box() */
+function Is_box(otmp) { return otmp.otyp === LARGE_BOX || otmp.otyp === CHEST; }
+
+/* C ref: obj.h unpolyable() */
+function unpolyable(o) {
+    return o.otyp === WAN_POLYMORPH || o.otyp === SPE_POLYMORPH
+        || o.otyp === POT_POLYMORPH || o.otyp === AMULET_OF_UNCHANGING;
+}
+
+// C ref: zap.c obj_shudders()
+export function obj_shudders(obj) {
+    let zap_odds;
+
+    if (game.context.bypasses && obj.bypass)
+        return false;
+
+    if (obj.oclass === WAND_CLASS)
+        zap_odds = 3; /* half-life = 2 zaps */
+    else if (obj.cursed)
+        zap_odds = 3; /* half-life = 2 zaps */
+    else if (obj.blessed)
+        zap_odds = 12; /* half-life = 8 zaps */
+    else
+        zap_odds = 8; /* half-life = 6 zaps */
+
+    /* adjust for "large" quantities of identical things */
+    if (obj.quan > 4)
+        zap_odds = Math.trunc(zap_odds / 2);
+
+    return !rn2(zap_odds);
+}
+
+/* C ref: you.h Luck */
+function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
+
+// C ref: zap.c do_osshock() -- assumes obj is on the floor
+export function do_osshock(obj) {
+    const g = game;
+
+    /* MAIL_STRUCTURES: SCR_MAIL isn't in this build */
+    g.obj_zapped = true;
+
+    if (g.poly_zapped < 0) {
+        /* some may metamorphose */
+        for (let i = obj.quan; i; i--)
+            if (!rn2(Luck() + 45)) {
+                g.poly_zapped = objects[obj.otyp].oc_material;
+                break;
+            }
+    }
+
+    /* if quan > 1 then some will survive intact */
+    if (obj.quan > 1) {
+        if (obj.quan > LARGEST_INT)
+            obj = splitobj(obj, rnd(30000));
+        else
+            obj = splitobj(obj, rnd(obj.quan - 1));
+    }
+
+    /* appropriately add damage to bill */
+    if (costly_spot(obj.ox, obj.oy))
+        throw new Error('do_osshock(): billing for shop goods not ported yet');
+
+    /* zap the object */
+    delobj(obj);
+}
+
+// C ref: zap.c obj_unpolyable() -- returns TRUE if obj resists polymorphing
+export function obj_unpolyable(obj) {
+    return (unpolyable(obj)
+            || obj === game.uball || obj === game.uskin
+            || obj_resists(obj, 5, 95));
+}
+
+/* classes of items whose current charge count carries over across polymorph
+ */
+const charged_objs = [WAND_CLASS, WEAPON_CLASS, ARMOR_CLASS];
+
+// C ref: mkobj.c replace_object() -- the floor and free cases
+function replace_object(obj, otmp) {
+    otmp.where = obj.where;
+    switch (obj.where) {
+    case 'OBJ_FREE':
+        /* do nothing */
+        break;
+    case 'OBJ_FLOOR': {
+        /* otmp takes obj's place in fobj and in the pile at <ox,oy> */
+        const fobj = game.level.objects;
+        otmp.ox = obj.ox;
+        otmp.oy = obj.oy;
+        const i = fobj.indexOf(otmp);
+        if (i >= 0)
+            fobj.splice(i, 1);
+        fobj.splice(fobj.indexOf(obj), 1, otmp);
+        break;
+    }
+    default:
+        throw new Error(`replace_object(): where=${obj.where} not ported yet`);
+    }
+}
+
+// C ref: zap.c poly_obj()
+/*
+ * Polymorph the object to the given object ID.  If the ID is STRANGE_OBJECT
+ * then pick random object from the source's class (this is the standard
+ * "polymorph" case).  If ID is set to a specific object, inhibit fusing
+ * n objects into 1.  This could have been added as a flag, but currently
+ * it is tied to not being the standard polymorph case. The new polymorphed
+ * object replaces obj in its link chains.  Return value is a pointer to
+ * the new object.
+ */
+export async function poly_obj(obj, id) {
+    const g = game;
+    let otmp;
+    let ox = 0, oy = 0;
+    const can_merge = (id === STRANGE_OBJECT);
+    const obj_location = obj.where;
+
+    if (obj.otyp === BOULDER && g.level.flags.sokoban_rules)
+        throw new Error('poly_obj(): sokoban_guilt() not ported yet');
+    if (id === STRANGE_OBJECT) { /* preserve symbol */
+        let try_limit = 3;
+        let magic_obj = !!objects[obj.otyp].oc_magic;
+
+        if (obj.otyp === UNICORN_HORN && obj.degraded_horn)
+            magic_obj = false;
+        /* Try up to 3 times to make the magic-or-not status of
+           the new item the same as the old item. */
+        otmp = null;
+        do {
+            if (otmp)
+                delobj(otmp);
+            otmp = mkobj(obj.oclass, false);
+        } while (--try_limit > 0
+                 && !!objects[otmp.otyp].oc_magic !== magic_obj);
+    } else {
+        throw new Error('poly_obj(): polymorph into a specific object not ported yet');
+    }
+
+    /* preserve quantity */
+    otmp.quan = obj.quan;
+    /* preserve the shopkeeper's (lack of) interest */
+    otmp.no_charge = obj.no_charge;
+    /* preserve inventory letter if in inventory */
+    if (obj_location === 'OBJ_INVENT')
+        otmp.invlet = obj.invlet;
+    /* MAIL_STRUCTURES: SCR_MAIL isn't in this build */
+
+    /* avoid abusing eggs laid by you */
+    if (obj.otyp === EGG && obj.spe)
+        throw new Error('poly_obj(): hero-laid egg not ported yet');
+
+    /* keep special fields (including charges on wands) */
+    if (charged_objs.includes(otmp.oclass))
+        otmp.spe = obj.spe;
+    otmp.recharged = obj.recharged;
+
+    otmp.cursed = obj.cursed;
+    otmp.blessed = obj.blessed;
+
+    if (erosion_matters(otmp)) {
+        if (is_flammable(otmp) || is_rustprone(otmp) || is_crackable(otmp))
+            otmp.oeroded = obj.oeroded;
+        if (is_corrodeable(otmp) || is_rottable(otmp))
+            otmp.oeroded2 = obj.oeroded2;
+        if (is_damageable(otmp))
+            otmp.oerodeproof = obj.oerodeproof;
+    }
+
+    /* Keep chest/box traps and poisoned ammo if we may */
+    if (obj.otrapped && Is_box(otmp))
+        otmp.otrapped = 1;
+    if (obj.opoisoned && is_poisonable(otmp))
+        otmp.opoisoned = 1;
+
+    if (id === STRANGE_OBJECT && obj.otyp === CORPSE) {
+        /* turn crocodile corpses into shoes */
+        if (obj.corpsenm === PM_CROCODILE) {
+            otmp.otyp = LOW_BOOTS;
+            otmp.oclass = ARMOR_CLASS;
+            otmp.spe = 0;
+            otmp.oeroded = 0;
+            otmp.oerodeproof = 1;
+            otmp.quan = 1;
+            otmp.cursed = 0;
+        }
+    }
+    if (obj.otyp === LEASH && obj.leashmon)
+        throw new Error('poly_obj(): polymorphing a leash in use not ported yet');
+
+    /* no box contents --KAA */
+    if (Has_contents(otmp) && otmp.cobj.length)
+        throw new Error('poly_obj(): delete_contents() not ported yet');
+
+    /* 'n' merged objects may be fused into 1 object */
+    if (otmp.quan > 1 && (!objects[otmp.otyp].oc_merge
+                          || (can_merge && otmp.quan > rn2(1000))))
+        otmp.quan = 1;
+
+    switch (otmp.oclass) {
+    case TOOL_CLASS:
+        if (otmp.otyp === MAGIC_LAMP) {
+            otmp.otyp = OIL_LAMP;
+            otmp.age = 1500; /* "best" oil lamp possible */
+        } else if (otmp.otyp === MAGIC_MARKER) {
+            otmp.recharged = 1; /* degraded quality */
+        }
+        /* don't care about the recharge count of other tools */
+        break;
+
+    case WAND_CLASS:
+        while (otmp.otyp === WAN_WISHING || otmp.otyp === WAN_POLYMORPH)
+            otmp.otyp = rnd_class(WAN_LIGHT, WAN_LIGHTNING);
+        /* altering the object tends to degrade its quality
+           (analogous to spellbook `read count' handling) */
+        if ((otmp.recharged || 0) < rn2(7)) /* recharge_limit */
+            otmp.recharged = (otmp.recharged || 0) + 1;
+        break;
+
+    case POTION_CLASS:
+        while (otmp.otyp === POT_POLYMORPH)
+            otmp.otyp = rnd_class(POT_GAIN_ABILITY, POT_WATER);
+        /* potions of oil use obj->age field differently from other potions */
+        if (otmp.otyp === POT_OIL || obj.otyp === POT_OIL)
+            throw new Error('poly_obj(): fixup_oil() not ported yet');
+        break;
+
+    case SPBOOK_CLASS:
+        while (otmp.otyp === SPE_POLYMORPH)
+            otmp.otyp = rnd_class(g.bases[SPBOOK_CLASS], SPE_BLANK_PAPER);
+        /* reduce spellbook abuse; non-blank books degrade;
+           5.0: novels don't use spestudied so shouldn't degrade to blank
+           (but don't force spestudied to zero for them since a non-zero
+           value could get passed along to a future polymorph) */
+        if (otmp.otyp !== SPE_BLANK_PAPER && otmp.otyp !== SPE_NOVEL) {
+            otmp.spestudied = (obj.spestudied || 0) + 1;
+            if (otmp.spestudied > MAX_SPELL_STUDY) {
+                otmp.otyp = SPE_BLANK_PAPER;
+                /* writing a new book over it will yield an unstudied
+                   one; re-polymorphing this one as-is may or may not
+                   get something non-blank */
+                otmp.spestudied = rn2(otmp.spestudied);
+            }
+        }
+        break;
+
+    case GEM_CLASS:
+        if (otmp.quan > rnd(4)
+            && objects[obj.otyp].oc_material === MINERAL
+            && objects[otmp.otyp].oc_material !== MINERAL) {
+            otmp.otyp = ROCK; /* transmutation backfired */
+            otmp.quan = Math.trunc(otmp.quan / 2); /* some material has been lost */
+        }
+        break;
+    }
+
+    /* update the weight */
+    otmp.owt = weight(otmp);
+
+    /*
+     * ** we are now done adjusting the object (except possibly wearing it) **
+     */
+
+    /* get_obj_location(obj, &ox, &oy, BURIED_TOO | CONTAINED_TOO) */
+    if (obj_location === 'OBJ_FLOOR') {
+        ox = obj.ox, oy = obj.oy;
+    } else {
+        throw new Error(`poly_obj(): object at where=${obj_location} not ported yet`);
+    }
+    /* swap otmp for obj */
+    replace_object(obj, otmp);
+    if (obj_location === 'OBJ_FLOOR') {
+        if (obj.otyp === BOULDER && otmp.otyp !== BOULDER) {
+            if (!does_block(ox, oy, g.level.at(ox, oy)))
+                unblock_point(ox, oy);
+        } else if (obj.otyp !== BOULDER && otmp.otyp === BOULDER) {
+            /* leaving boulder in liquid would trigger sanity_check warning */
+            if (is_pool(ox, oy) || is_lava(ox, oy)) /* is_pool_or_lava() */
+                throw new Error('poly_obj(): fracture_rock() not ported yet');
+            if (does_block(ox, oy, g.level.at(ox, oy)))
+                block_point(ox, oy);
+        }
+    }
+
+    /* note: if otmp is gone, billing for it was handled by useup() */
+    if (((otmp && otmp.where !== 'OBJ_INVENT') || obj.unpaid)
+        && costly_spot(ox, oy))
+        throw new Error('poly_obj(): shopkeeper reaction not ported yet');
+    delobj(obj);
+    return otmp;
 }
 
 // C ref: zap.c bhitpile()
