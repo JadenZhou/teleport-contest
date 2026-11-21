@@ -149,7 +149,7 @@ export function set_ustuck(mtmp) {
 
 // C ref: mondata.c monstseesu()
 /* Monsters in line of sight learn hero resistance to M_SEEN_foo */
-function monstseesu(seenres) {
+export function monstseesu(seenres) {
     if (!seenres || game.u.uswallow)
         return;
     for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon)

@@ -213,9 +213,19 @@ function is_fainted() {
 
 // C ref: youprop.h Unaware -- (multi < 0 && (unconscious() || is_fainted()))
 function Unaware() {
-    /* unconscious() (asleep etc.) isn't ported yet; only fainting from
-       hunger is tracked here */
-    return game.multi < 0 && is_fainted();
+    return game.multi < 0 && (unconscious() || is_fainted());
+}
+
+// C ref: trap.c unconscious()
+function unconscious() {
+    const g = game;
+    if (g.multi >= 0)
+        return false;
+    return !!(g.u.usleep
+              || (g.nomovemsg
+                  && (g.nomovemsg.startsWith("You awake")
+                      || g.nomovemsg.startsWith("You regain con")
+                      || g.nomovemsg.startsWith("You are consci"))));
 }
 
 // C ref: eat.c gethungry()
