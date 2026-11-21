@@ -18,6 +18,13 @@
 // background (back_to_glyph()).
 
 import { game } from './gstate.js';
+import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
+         tty_select_menu, tty_destroy_nhwindow } from './wintty.js';
+import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
+         ECMD_OK } from './const.js';
+import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { extcmdlist } from './func_tab.js';
+import { cmd_from_func } from './cmd.js';
 import { canspotmon, vobj_at } from './display.js';
 import { cansee } from './vision.js';
 import { m_at, closed_door, is_pool, is_lava } from './makemon.js';
@@ -336,4 +343,133 @@ export function lookat(x, y) {
 export function do_screen_description(cc) {
     const firstmatch = lookat(cc.x, cc.y);
     return { found: 1, firstmatch };
+}
+
+/* help menu choices that aren't ported yet */
+function hmenu_not_ported(fn) {
+    return () => { throw new Error(`dohelp(): ${fn}() not ported yet`); };
+}
+
+// C ref: pager.c help_menu_items[] -- data for dohelp(); the PORT_HELP
+// entry isn't compiled into the unix build
+const help_menu_items = [
+    { f: 'hmenu_doextversion', text: "About NetHack (version information)." },
+    { f: 'dispfile_help', text: "Long description of the game and commands." },
+    { f: 'dispfile_shelp', text: "List of game commands." },
+    { f: 'hmenu_dohistory', text: "Concise history of NetHack." },
+    { f: 'hmenu_dowhatis', text: "Info on a character in the game display." },
+    { f: 'hmenu_dowhatdoes', text: "Info on what a given key does." },
+    { f: 'option_help', text: "List of game options." },
+    { f: 'dispfile_optionfile', text: "Longer explanation of game options." },
+    { f: 'dispfile_optmenu', text: "Using the %s command to set options." },
+    { f: 'dokeylist', text: "Full list of keyboard commands." },
+    { f: 'hmenu_doextlist', text: "List of extended commands." },
+    { f: 'domenucontrols', text: "List menu control keys." },
+    { f: 'dispfile_usagehelp', text: "Description of NetHack's command line." },
+    { f: 'dispfile_license', text: "The NetHack license." },
+    { f: 'docontact', text: "Support information." },
+    { f: 'dispfile_debughelp', text: "List of wizard-mode commands." },
+];
+
+// C ref: hacklib.c visctrl()
+function visctrl(c) {
+    let ccc = '';
+    if (c & 0o200)
+        ccc += 'M-';
+    c &= 0o177;
+    if (c < 0o40)
+        ccc += '^' + String.fromCharCode(c | 0o100);
+    else if (c === 0o177)
+        ccc += '^?';
+    else
+        ccc += String.fromCharCode(c);
+    return ccc;
+}
+
+// C ref: cmd.c cmdname_from_func() -- the fullname case
+function cmdname_from_func(fn) {
+    const extcmd = extcmdlist.find(e => e.ef_funct === fn);
+    return extcmd ? extcmd.ef_txt : null;
+}
+
+// C ref: pager.c setopt_cmd() -- how to run the full options menu
+function setopt_cmd() {
+    let outbuf = "'";
+    let cmdnm;
+    let key;
+
+    /* #optionsfull */
+    key = cmd_from_func("doset");
+    if (key) {
+        outbuf += visctrl(key);
+    } else {
+        /* extended command name, with leading "#" */
+        cmdnm = cmdname_from_func("doset");
+        if (!cmdnm) /* paranoia */
+            cmdnm = "optionsfull";
+        outbuf += `${(cmdnm[0] !== '#') ? "#" : ""}${cmdnm.slice(0, 31)}`;
+
+        /* since there's no key bound to #optionsfull, include 'm O' */
+        outbuf += "' or '";
+        /* m prefix plus #options */
+        key = cmd_from_func("do_reqmenu");
+        if (key) {
+            /* key for 'm' prefix */
+            outbuf += visctrl(key);
+        } else {
+            /* extended command name for 'm' prefix */
+            cmdnm = cmdname_from_func("do_reqmenu");
+            if (!cmdnm)
+                cmdnm = "reqmenu";
+            outbuf += `${(cmdnm[0] !== '#') ? "#" : ""}${cmdnm.slice(0, 31)}`;
+        }
+        /* this is slightly iffy because the user shouldn't type <space> to
+           get the command we're describing, but it improves readability */
+        outbuf += " ";
+        /* now #options, normally 'O' */
+        key = cmd_from_func("doset_simple");
+        if (key) {
+            outbuf += visctrl(key);
+        } else {
+            /* extended command name */
+            cmdnm = cmdname_from_func("doset_simple");
+            if (!cmdnm) /* paranoia */
+                cmdnm = "options";
+            outbuf += `${(cmdnm[0] !== '#') ? "#" : ""}${cmdnm.slice(0, 31)}`;
+        }
+    }
+    outbuf += "'";
+    return outbuf;
+}
+
+// C ref: pager.c dohelp() -- the #help command; the menu is ported, the
+// help texts it leads to are not yet
+export async function dohelp() {
+    const tmpwin = tty_create_nhwindow(NHW_MENU);
+    let helpbuf;
+    const clr = NO_COLOR;
+
+    tty_start_menu(tmpwin, MENU_BEHAVE_STANDARD);
+
+    for (let i = 0; i < help_menu_items.length; i++) {
+        if (!game.flags?.debug && help_menu_items[i].f === 'dispfile_debughelp')
+            continue;
+        /* sysopt.hideusage is off */
+
+        if (help_menu_items[i].f === 'dispfile_optmenu')
+            helpbuf = help_menu_items[i].text.replace('%s', setopt_cmd());
+        else
+            helpbuf = help_menu_items[i].text;
+        /* any.a_int = i + 1 */
+        tty_add_menu(tmpwin, null, i + 1, 0, 0, ATR_NONE, clr,
+                     helpbuf, MENU_ITEMFLAGS_NONE);
+    }
+    tty_end_menu(tmpwin, "Select one item:");
+    const res = await tty_select_menu(tmpwin, PICK_ONE);
+    await tty_destroy_nhwindow(tmpwin);
+    if (res.n > 0) {
+        const sel = res.selected[0].item - 1;
+        hmenu_not_ported(help_menu_items[sel].f)();
+    }
+    return ECMD_OK;
 }

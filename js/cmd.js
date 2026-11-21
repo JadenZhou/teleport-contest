@@ -36,12 +36,14 @@ import { doloot } from './pickup.js';
 import { dopickup } from './hack.js';
 import { Never_mind, isok } from './const.js';
 import { dofire } from './dothrow.js';
-import { doswapweapon, dowieldquiver } from './wield.js';
+import { doswapweapon, dowieldquiver, dowield } from './wield.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon } from './do_wear.js';
 import { dodrink } from './potion.js';
 import { doread } from './read.js';
+import { dohelp } from './pager.js';
+import { doopen } from './lock.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -100,6 +102,9 @@ const cmd_funcs = {
     doloot: () => doloot(),
     dofire: () => dofire(),
     doswapweapon: () => doswapweapon(),
+    dowield: () => dowield(),
+    dohelp: () => dohelp(),
+    doopen: () => doopen(),
     dowieldquiver: () => dowieldquiver(),
     doapply: () => doapply(),
     dorub: () => dorub(),

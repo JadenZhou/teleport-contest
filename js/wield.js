@@ -24,7 +24,7 @@ import { highc } from './hacklib.js';
 import { tty_yn_function } from './wintty.js';
 import { LENSES, ARMOR_CLASS, ARM_GLOVES, ARM_BOOTS } from './objects.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_PROMPT, GETOBJ_ALLOWCNT,
-         ECMD_CANCEL } from './const.js';
+         ECMD_CANCEL, GETOBJ_EXCLUDE } from './const.js';
 import { COIN_CLASS } from './objects.js';
 
 // C ref: obj.h is_weptool()
@@ -262,6 +262,128 @@ export async function doswapweapon() {
 }
 
 const invlet_basic = 52;
+
+// C ref: wield.c wield_ok() -- getobj callback for weapons and weapon-tools
+function wield_ok(obj) {
+    if (!obj)
+        return GETOBJ_SUGGEST;
+
+    if (obj.oclass === COIN_CLASS)
+        return GETOBJ_EXCLUDE;
+
+    if (obj.oclass === WEAPON_CLASS || is_weptool(obj))
+        return GETOBJ_SUGGEST;
+
+    return GETOBJ_DOWNPLAY;
+}
+
+// C ref: wield.c dowield() -- the #wield command
+export async function dowield() {
+    let qbuf;
+    let wep;
+
+    /* May we attempt this? */
+    game.multi = 0;
+    if (cantwield(game.youmonst.data)) {
+        await pline("Don't be ridiculous!");
+        return ECMD_FAIL;
+    }
+    /* Keep going even if inventory is completely empty, since wielding '-'
+       to wield nothing can be construed as a positive act even when done
+       so redundantly. */
+
+    /* Prompt for a new weapon */
+    if (game.context?.objsplit) { /* clear_splitobjs() */
+        game.context.objsplit.parent_oid = 0;
+        game.context.objsplit.child_oid = 0;
+    }
+    if (!(wep = await getobj("wield", wield_ok, GETOBJ_PROMPT | GETOBJ_ALLOWCNT))) {
+        /* Cancelled */
+        return ECMD_CANCEL;
+    } else if (wep === game.uwep) {
+        return await already_wielded(wep);
+    } else if (welded(game.uwep)) {
+        throw new Error('dowield(): weldmsg() not ported yet');
+    } else if (wep.o_id && wep.o_id === game.context?.objsplit?.child_oid) {
+        /* if wep is the result of supplying a count to getobj()
+           we don't want to split something already wielded; for
+           any other item, we need to give it its own inventory slot */
+        if (game.uwep && game.uwep.o_id === game.context.objsplit.parent_oid)
+            throw new Error('dowield(): unsplitobj() not ported yet');
+        await finish_splitting(wep);
+        return await wielding(wep);
+    }
+
+    /* Handle no object, or object in other slot */
+    if (wep === hands_obj) {
+        wep = null;
+    } else if (wep === game.uswapwep) {
+        return await doswapweapon();
+    } else if (wep === game.uquiver) {
+        const uquiver = game.uquiver;
+        /* offer to split stack if multiple are quivered */
+        if (uquiver.quan > 1 && inv_cnt(false) < invlet_basic
+            && splittable(uquiver)) {
+            qbuf = `You have ${uquiver.quan} ${simpleonames(uquiver)} readied.  Wield one?`;
+            switch (await ynq(qbuf)) {
+            case 'q':
+                return ECMD_OK;
+            case 'y':
+                /* leave N-1 quivered, split off 1 to wield */
+                wep = splitobj(uquiver, 1);
+                await finish_splitting(wep);
+                return await wielding(wep);
+            default:
+                break;
+            }
+            qbuf = "Wield all of them instead?";
+        } else {
+            const use_plural = (is_plural(uquiver) || pair_of(uquiver));
+
+            qbuf = `You have ${!use_plural ? "that" : "those"} readied.  Wield ${
+                !use_plural ? "it" : "them"} instead?`;
+        }
+        /* require confirmation to wield the quivered weapon */
+        if ((await ynq(qbuf)) !== 'y') {
+            qbuf = Shk_Your(uquiver); /* replace qbuf[] contents */
+            await pline(`${qbuf}${simpleonames(uquiver)} ${otense(uquiver, "remain")} readied.`);
+            return ECMD_OK;
+        }
+        /* wielding whole readied stack, so no longer quivered */
+        setuqwep(null);
+    } else if (wep.owornmask & (W_ARMOR | W_ACCESSORY | W_SADDLE)) {
+        await You("cannot wield that!");
+        return ECMD_FAIL;
+    }
+
+    return await wielding(wep);
+}
+
+/* C ref: wield.c dowield() -- its already_wielded: label */
+async function already_wielded(wep) {
+    await You("are already wielding that!");
+    if (is_weptool(wep) || is_wet_towel(wep))
+        game.unweapon = false; /* [see setuwep()] */
+    return ECMD_FAIL;
+}
+
+/* C ref: wield.c dowield() -- its wielding: label */
+async function wielding(wep) {
+    /* Set your new primary weapon */
+    const oldwep = game.uwep;
+    const result = await ready_weapon(wep);
+    if (game.flags.pushweapon && oldwep && game.uwep !== oldwep)
+        setuswapwep(oldwep);
+    await untwoweapon();
+
+    return result;
+}
+
+// C ref: wield.c untwoweapon()
+async function untwoweapon() {
+    if (game.u.twoweap)
+        throw new Error('untwoweapon(): set_twoweap() not ported yet');
+}
 
 /* C ref: hack.h ynq() */
 async function ynq(query) {
