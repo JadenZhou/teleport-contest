@@ -17,7 +17,7 @@ import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SEL
 import { tty_clear_nhwindow, tty_get_ext_cmd, tty_yn_function, tty_create_nhwindow,
          tty_putstr, tty_display_nhwindow, tty_destroy_nhwindow } from './wintty.js';
 import { doride } from './steed.js';
-import { dopray } from './pray.js';
+import { dopray, doturn, dosacrifice } from './pray.js';
 import { dotalk } from './sounds.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
@@ -35,15 +35,17 @@ export { domove };
 import { IS_DOOR, IS_FURNITURE, NHW_TEXT, ECMD_OK, ECMD_TIME, ECMD_CANCEL,
          ECMD_FAIL } from './const.js';
 import { dovspell, docast } from './spell.js';
+import { dosit } from './sit.js';
+import { authorize_explore_mode } from './sys.js';
 import { dodiscovered } from './o_init.js';
-import { doattributes } from './insight.js';
+import { doattributes, dogenocided } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
 import { dodrop, doddrop, dodown, doup } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
 import { doloot } from './pickup.js';
 import { dopickup } from './hack.js';
-import { Never_mind, isok } from './const.js';
+import { Never_mind, isok, PARANOID_QUIT } from './const.js';
 import { dofire, dothrow } from './dothrow.js';
 import { dokick } from './dokick.js';
 import { doswapweapon, dowieldquiver, dowield, dotwoweapon } from './wield.js';
@@ -161,6 +163,11 @@ const cmd_funcs = {
     doterrain: () => doterrain(),
     dowhatis: () => dowhatis(),
     dowhatdoes: () => dowhatdoes(),
+    dosit: () => dosit(),
+    dogenocided: () => dogenocided(),
+    doturn: () => doturn(),
+    dosacrifice: () => dosacrifice(),
+    enter_explore_mode: () => enter_explore_mode(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
@@ -207,6 +214,39 @@ async function doextcmd() {
     } while (func === "doextlist");
 
     return retval;
+}
+
+// C ref: cmd.c enter_explore_mode() -- #exploremode (M-X)
+export async function enter_explore_mode() {
+    const flags = game.flags;
+
+    if (flags.explore) {
+        await You("are already in explore mode.");
+    } else {
+        const oldmode = !flags.debug ? "normal game" : "debug mode";
+
+        if (!authorize_explore_mode()) {
+            if (!flags.debug) {
+                await You("cannot access explore mode.");
+                return ECMD_OK;
+            } else {
+                await pline("Note: normally you wouldn't be allowed into explore mode.");
+                /* keep going */
+            }
+        }
+        await pline(`Beware!  From explore mode there will be no return to ${oldmode},`);
+        if (await paranoid_query((flags.paranoia_bits & PARANOID_QUIT) !== 0, /* ParanoidQuit */
+                                 "Do you want to enter explore mode?")) {
+            flags.explore = true;
+            flags.debug = false;
+            tty_clear_nhwindow(game.WIN_MESSAGE);
+            await You("are now in non-scoring explore mode.");
+        } else {
+            tty_clear_nhwindow(game.WIN_MESSAGE);
+            await pline(`Continuing with ${oldmode}.`);
+        }
+    }
+    return ECMD_OK;
 }
 
 // C ref: cmd.c doc_extcmd_flagstr() -- format extended command flags for
