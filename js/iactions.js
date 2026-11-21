@@ -296,6 +296,12 @@ export function simpleonames(obj) {
     return simpleoname;
 }
 
+/* C ref: objnam.c thesimpleoname() */
+/* "the scroll" or "the scrolls" */
+export function thesimpleoname(obj) {
+    return the(simpleonames(obj));
+}
+
 /* C ref: objnam.c suit_simple_name() */
 export function suit_simple_name(suit) {
     let suitnm;

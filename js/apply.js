@@ -13,7 +13,10 @@ import { check_capacity } from './hack.js';
 import { is_pole, retouch_object } from './wield.js';
 import { pick_lock } from './lock.js';
 import * as O from './objects.js';
-import { is_graystone } from './iactions.js';
+import { is_graystone, thesimpleoname } from './iactions.js';
+import { Blind } from './display.js';
+import { discover_object } from './o_init.js';
+import { MAX_SPELL_STUDY } from './const.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
          HALLUC, P_AXE } from './const.js';
@@ -55,6 +58,46 @@ function is_axe(otmp) {
 function Hallucination() {
     const p = game.u?.uprops?.[HALLUC];
     return !!(p?.intrinsic || p?.extrinsic);
+}
+
+// C ref: apply.c flip_through_book()
+async function flip_through_book(obj) {
+    if (game.u.uinwater) { /* Underwater */
+        await You("don't want to get the pages even more soggy, do you?");
+        return ECMD_OK;
+    }
+
+    await You(`flip through the pages of ${thesimpleoname(obj)}.`);
+
+    if (obj.otyp === O.SPE_BOOK_OF_THE_DEAD) {
+        throw new Error('flip_through_book(): the Book of the Dead not ported yet');
+    } else if (Blind()) {
+        await pline(`The pages feel ${Hallucination() ? "freshly picked"
+                                                      : "rough and dry"}.`);
+    } else if (obj.otyp === O.SPE_BLANK_PAPER) {
+        await pline(`This spellbook ${Hallucination()
+                                       ? "doesn't have much of a plot"
+                                       : "has nothing written in it"}.`);
+        discover_object(obj.otyp, true, true, true); /* makeknown() */
+    } else if (Hallucination()) {
+        await You("enjoy the animated initials.");
+    } else if (obj.otyp === O.SPE_NOVEL) {
+        await pline("This looks like it might be interesting to read.");
+    } else {
+        const fadeness = [
+            "fresh",
+            "slightly faded",
+            "very faded",
+            "extremely faded",
+            "barely visible"
+        ];
+        const findx = Math.min(obj.spestudied || 0, MAX_SPELL_STUDY);
+
+        await pline(`The${objects[obj.otyp].oc_magic ? " magical" : ""}`
+                    + ` ink in this spellbook is ${fadeness[findx]}.`);
+    }
+
+    return ECMD_TIME;
 }
 
 // C ref: apply.c rub_ok() -- getobj callback for object to rub
@@ -165,7 +208,7 @@ export async function doapply() {
         throw new Error('doapply(): do_break_wand() not ported yet');
 
     if (obj.oclass === SPBOOK_CLASS)
-        throw new Error('doapply(): flip_through_book() not ported yet');
+        return await flip_through_book(obj);
 
     if (obj.oclass === COIN_CLASS)
         throw new Error('doapply(): flip_coin() not ported yet');
