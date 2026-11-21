@@ -14,7 +14,7 @@ import { dopray } from './pray.js';
 import { dotalk } from './sounds.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
-         MOVEMENTCMD } from './func_tab.js';
+         MOVEMENTCMD, CMD_PARAM } from './func_tab.js';
 import { strcmpi, strncmpi, highc } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
@@ -169,10 +169,10 @@ const N_DIRS = 8;
 const move_dirnames = ["west", "northwest", "north", "northeast", "east",
                        "southeast", "south", "southwest"];
 
-/* C ref: cmd.c Cmd.commands[] (struct Cmd_bind list) -- key -> extcmdlist
-   entry; built like commands_init() then reset_commands(TRUE) with
-   number_pad off; a BIND= option isn't applied yet */
-let cmd_bindings = null;
+/* C ref: cmd.c gc.Cmd.cmdbinds (struct Cmd_bind list) -- key -> extcmdlist
+   entry, kept per game as game.Cmd.cmdbinds (a Map); built by
+   reset_commands(TRUE) (commands_init(), then the !number_pad movement
+   keys), then BIND= options add to it via bind_key() */
 
 function bind_key_txt(map, key, txt) {
     const ec = extcmdlist.find(e => e.ef_txt === txt);
@@ -186,7 +186,70 @@ function bind_key_fn(map, key, fn) {
         map.set(key & 0xff, ec);
 }
 
-// C ref: cmd.c commands_init() + reset_commands(TRUE)
+// C ref: cmd.c cmdbind_add()
+function cmdbind_add(key, extcmd, user) {
+    void user; /* bind->userbind: only used when saving options */
+    key &= 0xff;
+    if (!key)
+        return;
+    if (!extcmd) {
+        game.Cmd.cmdbinds.delete(key); /* cmdbind_remove(key) */
+        return;
+    }
+    game.Cmd.cmdbinds.set(key, extcmd);
+}
+
+// C ref: cmd.c bind_key()
+export function bind_key(key, command, user) {
+    let buf, p = null, lastp;
+
+    /* special case: "nothing" is reserved for unbinding */
+    if (!strcmpi(command, "nothing")) {
+        game.Cmd.cmdbinds.delete(key & 0xff); /* cmdbind_remove(key) */
+        return true;
+    }
+
+    /* copy command to buf for modification */
+    buf = command;
+
+    /* does buf have a parameter in parenthesis? */
+    if ((p = buf.indexOf('(')) >= 0
+        && (lastp = buf.lastIndexOf(')')) >= 0
+        && (lastp > p)) {
+        const param = buf.slice(p + 1, lastp);
+        buf = buf.slice(0, p);
+        /* p points to the parameter */
+        p = param;
+    } else {
+        p = null;
+    }
+
+    for (const extcmd of extcmdlist) {
+        if (strcmpi(buf, extcmd.ef_txt))
+            continue;
+        if ((extcmd.flags & INTERNALCMD) !== 0)
+            continue;
+        cmdbind_add(key, extcmd, user);
+
+        if ((extcmd.flags & CMD_PARAM) !== 0)
+            throw new Error('bind_key(): commands with a parameter not ported yet');
+        else if (p && p.length > 0)
+            throw new Error('bind_key(): config_error_add() not ported yet');
+        return true;
+    }
+
+    return false;
+}
+
+// C ref: cmd.c reset_commands() -- the initial call (initial == TRUE)
+// from initoptions_init(), with number_pad off
+export function reset_commands(initial) {
+    if (!initial)
+        throw new Error('reset_commands(): changing number_pad not ported yet');
+    game.Cmd = { cmdbinds: commands_init() };
+}
+
+// C ref: cmd.c commands_init() + the rest of reset_commands(TRUE)
 function commands_init() {
     const map = new Map();
     const C = (c) => (0x1f & c.charCodeAt(0));
@@ -232,9 +295,9 @@ function commands_init() {
 
 // C ref: cmd.c cmdbind_get()
 function cmdbind_get(key) {
-    if (!cmd_bindings)
-        cmd_bindings = commands_init();
-    return cmd_bindings.get(key & 0xff) || null;
+    if (!game.Cmd)
+        reset_commands(true); /* initoptions_init() */
+    return game.Cmd.cmdbinds.get(key & 0xff) || null;
 }
 
 // C ref: hacklib.c visctrl()
@@ -399,21 +462,128 @@ export async function rhack(key) {
     game.multi = 0;
 }
 
-// C ref: cmd.c parse() -- read the command key; with number_pad off a
-// count prefix (get_count()) isn't ported yet, so digits are commands
+/* C ref: hack.h GC_* get_count() flags */
+const GC_NOFLAGS = 0, GC_SAVEHIST = 1, GC_CONDHIST = 2, GC_ECHOFIRST = 4;
+/* C ref: global.h LARGEST_INT; integer.h AppendLongDigit() overflow
+   limit -- the recorder's 64-bit LONG_MAX is beyond what a JS number
+   holds exactly, but counts are capped by maxcount (LARGEST_INT) long
+   before that matters */
+const LARGEST_INT = 32767;
+const LONG_MAX = Number.MAX_SAFE_INTEGER;
+
+// C ref: cmd.c get_count()
+/* read a count (digits) and return the next non-digit key; the count
+   goes into game[countfield] (C's 'count' output pointer) */
+export async function get_count(allowchars, /* what comes after digits; if Null, anything */
+                                inkey,      /* if caller already got first digit, this is it */
+                                maxcount,   /* if user tries to enter a bigger count, use this */
+                                countfield, /* primary output: game[countfield] */
+                                gc_flags) { /* control flags: GC_SAVEHIST, GC_ECHOFIRST */
+    let qbuf;
+    let key;
+    let cnt = 0;
+    const first = inkey ? (inkey - 0x30) : 0;
+    let backspaced = false, showzero = true;
+    /* should "Count: 123" go into message history? */
+    const historicmsg = (gc_flags & GC_SAVEHIST) !== 0,
+        /* put "Count: N" into mesg hist unless N is the same as the
+           [first digit] value passed in via 'inkey' */
+        conditionalmsg = (gc_flags & GC_CONDHIST) !== 0,
+        /* normally "Count: 12" isn't echoed until the second digit */
+        echoalways = (gc_flags & GC_ECHOFIRST) !== 0;
+    /* this should be done in port code so that we have erase_char
+       and kill_char available; we can at least fake erase_char */
+    const STANDBY_erase_char = 0o177;
+
+    game[countfield] = 0;
+    for (;;) {
+        if (inkey) {
+            key = inkey;
+            inkey = 0;
+        } else {
+            key = await nhgetch(); /* readchar() */
+        }
+
+        if (key >= 0x30 && key <= 0x39) { /* digit(key) */
+            const dgt = key - 0x30;
+
+            /* cnt = (10 * cnt) + (key - '0'); */
+            cnt = (cnt < Math.trunc(LONG_MAX / 10)
+                   || (cnt === Math.trunc(LONG_MAX / 10) && dgt <= LONG_MAX % 10))
+                  ? cnt * 10 + dgt : -1; /* AppendLongDigit() */
+            if (cnt < 0)
+                cnt = 0;
+            else if (maxcount > 0 && cnt > maxcount)
+                cnt = maxcount;
+            /* if we've backed up to nothing, then typed 0, show that 0 */
+            showzero = (key === 0x30);
+        } else if (key === 0x08 || key === STANDBY_erase_char) {
+            if (!cnt && !echoalways)
+                break;
+            showzero = false;
+            cnt = Math.trunc(cnt / 10);
+            backspaced = true;
+        } else if (key === 0x1b) { /* gc.Cmd.spkeys[NHKF_ESC] */
+            break;
+        } else if (!allowchars || allowchars.includes(String.fromCharCode(key))) {
+            game[countfield] = cnt;
+            break;
+        }
+
+        if (cnt > 9 || backspaced || echoalways) {
+            tty_clear_nhwindow(game.WIN_MESSAGE);
+            if (backspaced && !cnt && !showzero) {
+                qbuf = "Count: ";
+            } else {
+                qbuf = `Count: ${cnt}`;
+                backspaced = false;
+            }
+            await pline(qbuf); /* custompline(SUPPRESS_HISTORY, "%s", qbuf) */
+            /* mark_synch(): output flush only */
+        }
+    }
+
+    if (historicmsg || (conditionalmsg && game[countfield] !== first))
+        throw new Error('get_count(): putmsghistory() not ported yet');
+
+    return key;
+}
+
+// C ref: cmd.c parse() -- main command input routine when not repeating
+// and not executing canned commands; input comes via get_count() which
+// collects repeat count if one is present and returns next non-digit to us
 async function parse() {
+    let foo;
+    let bind;
+
     game.iflags.in_parse = true;
     game.command_count = 0;
     game.context.move = 1; /* assume next command will take game time */
     await flush_screen(1); /* Flush screen buffer. Put the cursor on the hero. */
 
-    const foo = await nhgetch();
+    /* program_state.input_state = commandInp: 'altmeta' isn't ported */
+
+    /* !gc.Cmd.num_pad: number_pad is off */
+    foo = await get_count(null, 0, LARGEST_INT, 'command_count', GC_NOFLAGS);
     game.last_command_count = game.command_count;
+
     if (foo === 0x1b) { /* esc cancels count (TH) */
         tty_clear_nhwindow(game.WIN_MESSAGE);
         game.command_count = 0;
         game.last_command_count = 0;
+    /* gi.in_doagain: the ^A do-again command isn't ported */
+    } else if (foo && (bind = cmdbind_get(foo & 0xff)) !== null
+               /* these shouldn't go into the do-again buffer */
+               && (bind.ef_funct === "do_repeat"
+                   || bind.ef_funct === "doprev_message"
+                   /* this one might get put into the do-again buffer but
+                      only if the interface code tells the core to do it */
+                   || bind.ef_funct === "doextcmd")) {
+        /* gc.command_count will be set again when we
+           re-enter with gi.in_doagain set true */
+        game.command_count = game.last_command_count;
     }
+
     game.multi = game.command_count;
     if (game.multi)
         game.multi--;
@@ -517,14 +687,38 @@ function dxdy_moveok() {
     return true;
 }
 
-// C ref: cmd.c cmd_from_func() -- a key bound to the command
+// C ref: cmd.c cmd_from_func() -- a key bound to the command; C's
+// cmdbinds list has the newest binding first, which is the reverse of
+// the Map's insertion order
 export function cmd_from_func(fn) {
-    if (!cmd_bindings)
-        cmd_bindings = commands_init();
-    for (const [key, ec] of cmd_bindings)
-        if (ec.ef_funct === fn)
-            return key;
-    return 0;
+    let ret = 0;
+
+    if (!game.Cmd)
+        reset_commands(true); /* initoptions_init() */
+    const binds = [...game.Cmd.cmdbinds].reverse();
+    for (const [i, cmd] of binds) {
+        /* skip space; we'll use it below as last resort if no other
+           keystroke invokes space's command */
+        if (i === 0x20)
+            continue;
+        /* skip digits if number_pad is Off; also skip '-' unless it has
+           been bound to something other than what number_pad assigns */
+        if (((i >= 0x30 && i <= 0x39) || (i === 0x2d && fn === "do_fight"))
+            /* && !gc.Cmd.num_pad */)
+            continue;
+
+        if (cmd && cmd.ef_funct === fn) {
+            if (i >= 0x20 && i <= 0x7e)
+                return i;
+            else {
+                ret = i;
+            }
+        }
+    }
+    const bind = game.Cmd.cmdbinds.get(0x20);
+    if (bind && bind.ef_funct === fn)
+        return 0x20;
+    return ret;
 }
 
 // C ref: cmd.c show_direction_keys()

@@ -13,7 +13,8 @@ import { game, resetGame } from './gstate.js';
 import { initRng, enableRngLog, getRngLog } from './rng.js';
 import { pushKey, nhgetch } from './input.js';
 import { early_init, newgame, moveloop_preamble, moveloop_core, maybe_do_tutorial } from './allmain.js';
-import { parseNethackrc, set_playmode } from './options.js';
+import { parseNethackrc, set_playmode, parsebindings } from './options.js';
+import { reset_commands } from './cmd.js';
 import { wd_message } from './sys.js';
 import { plnamesuffix } from './role.js';
 import { tty_init_nhwindows, tty_player_selection } from './wintty.js';
@@ -112,6 +113,11 @@ export class NethackGame {
         g.pl_race = opts.pl_race || '';
         if (opts.preferred_pet) g.preferred_pet = opts.preferred_pet;
         if (opts.tutorial_set) g.tutorial_set_in_config = true;
+        /* C ref: options.c initoptions_init() -- set up the command
+           parsing; then the config file's BIND= lines (parsebindings()) */
+        reset_commands(true); /* init */
+        for (const b of opts.bindings || [])
+            parsebindings(b);
         /* C ref: files.c configfile -- the unix default ".nethackrc"
            in the home directory */
         g.configfile = '.nethackrc';

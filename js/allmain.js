@@ -663,9 +663,9 @@ export async function moveloop_core() {
                 end_running(true);
             await domove();
         } else {
-            /* --gm.multi; rhack(gc.cmd_key): command counts aren't
-               ported yet */
-            throw new Error('moveloop_core(): repeat count rhack() not ported yet');
+            --g.multi;
+            /* nhassert(gc.command_count != 0) */
+            await rhack(g.cmd_key);
         }
     } else if (g.multi === 0) {
         /* ckmailstatus(): MAIL isn't ported */
