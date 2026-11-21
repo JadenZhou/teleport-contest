@@ -20,7 +20,8 @@ import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
     tty_select_menu, tty_destroy_nhwindow,
 } from './wintty.js';
-import { xname, makeplural, makesingular, fruit_from_name } from './objnam.js';
+import { xname, makeplural, makesingular, fruit_from_name, an,
+         armor_simple_name } from './objnam.js';
 import { data_base_keys } from './data_base_keys.js';
 import { is_weptool, Is_container } from './mkobj.js';
 import * as M from './monsters.js';
@@ -1109,7 +1110,7 @@ export async function itemactions(otmp) {
             if (!o)
                 buf = "Wear this armor";
             else
-                ia_not_ported('armor_simple_name()');
+                buf = `[already wearing ${an(armor_simple_name(o))}]`;
 
             ia_addmenu(win, IA_WEAR_OBJ, 'W', buf);
         }

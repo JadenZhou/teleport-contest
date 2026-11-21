@@ -68,7 +68,8 @@ import { newuexp } from './exper.js';
 import { night, midnight } from './calendar.js';
 import { depth, dunlev, on_level } from './dungeon.js';
 import { find_ac, money_cnt } from './u_init.js';
-import { near_capacity, inv_weight } from './hack.js';
+import { near_capacity, inv_weight, in_rooms } from './hack.js';
+import { SHOPBASE, NO_ROOM, ROOMOFFSET } from './const.js';
 import { ACURR, ABASE, AMAX, ATTRMAX, from_what } from './attrib.js';
 import { P_SKILL, P_MAX_SKILL, P_ADVANCE, P_RESTRICTED, weapon_type,
          practice_needed_to_advance } from './weapon.js';
@@ -78,7 +79,8 @@ import { ART_OGRESMASHER } from './artilist.js';
 import { hates_silver, defended } from './mondata.js';
 import { pmname } from './do_name.js';
 import { magic_negation } from './mhitu.js';
-import { carrying, stone_luck } from './timeout.js';
+import { stone_luck } from './attrib.js';
+import { carrying } from './invent.js';
 import { u_adtyp_resistance_obj, item_what } from './zap.js';
 import { shield_simple_name } from './iactions.js';
 
@@ -419,11 +421,54 @@ function currency(amount) {
 }
 
 // C ref: shk.c costly_spot()
-function costly_spot(x, y) {
+/* is <x,y> a spot inside a tended shop where items cost money? */
+export function costly_spot(x, y) {
     if (!game.level.flags?.has_shop)
         return false;
-    void x, y;
-    throw new Error('costly_spot(): shops not ported yet');
+    const shkrooms = in_rooms(x, y, SHOPBASE);
+    const shkp = shop_keeper(shkrooms.length ? shkrooms.charCodeAt(0) : 0);
+    if (!shkp || !inhishop(shkp))
+        return false;
+    const eshkp = shkp.mextra.eshk;
+    return (inside_shop(x, y) !== NO_ROOM
+            && !(x === eshkp.shk.x && y === eshkp.shk.y));
+}
+
+// C ref: shk.c shop_keeper()
+/* return the shopkeeper for rooms[rmno-2]; returns Null if there isn't one */
+export function shop_keeper(rmno) {
+    const shkp = (rmno >= ROOMOFFSET)
+        ? (game.level.rooms?.[rmno - ROOMOFFSET]?.resident || null) : null;
+    if (shkp) {
+        if (shkp.mextra?.eshk) {
+            /* ANGRY(shkp): !mpeaceful */
+            if (!shkp.mpeaceful && !shkp.mextra.eshk.surcharge)
+                throw new Error('shop_keeper(): rile_shk() not ported yet');
+        } else {
+            throw new Error('shop_keeper(): shop resident not shopkeeper');
+        }
+    }
+    return shkp;
+}
+
+// C ref: shk.c inhishop()
+export function inhishop(shkp) {
+    const eshkp = shkp.mextra.eshk;
+
+    if (!on_level(eshkp.shoplevel, game.u.uz))
+        return false;
+    const shkrooms = in_rooms(shkp.mx, shkp.my, SHOPBASE);
+    return shkrooms.includes(String.fromCharCode(eshkp.shoproom));
+}
+
+// C ref: shk.c inside_shop()
+export function inside_shop(x, y) {
+    const loc = game.level.at(x, y);
+    let rno = loc.roomno;
+    if ((rno < ROOMOFFSET) || loc.edge
+        || !((game.level.rooms?.[rno - ROOMOFFSET]?.rtype ?? 0) >= SHOPBASE))
+        rno = NO_ROOM;
+    return rno;
 }
 
 // C ref: wield.c empty_handed()

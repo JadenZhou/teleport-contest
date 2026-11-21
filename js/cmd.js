@@ -33,6 +33,7 @@ import { dodrop } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
 import { doloot } from './pickup.js';
+import { dopickup } from './hack.js';
 import { Never_mind, isok } from './const.js';
 import { dofire } from './dothrow.js';
 import { doswapweapon, dowieldquiver } from './wield.js';
@@ -115,6 +116,7 @@ const cmd_funcs = {
     dotogglepickup: () => dotogglepickup(),
     doset_simple: () => doset_simple(),
     doset: () => doset(),
+    dopickup: () => dopickup(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
@@ -987,6 +989,31 @@ export async function get_adjacent_loc(prompt, emsg, x, y, cc) {
         return 0;
     }
     return 1;
+}
+
+// C ref: cmd.c paranoid_ynq() -- the !be_paranoid cases (plain y/n or
+// y/n/q queries); the "yes"/"no" getlin() query isn't ported
+export async function paranoid_ynq(be_paranoid, prompt, accept_q) {
+    let c = 'n'; /* default result */
+
+    if (be_paranoid)
+        throw new Error('paranoid_ynq(): paranoid_confirm "yes" query not ported yet');
+    else if (accept_q)
+        /* 'y', 'n', or 'q' */
+        c = await tty_yn_function(prompt, "ynq", 'n'); /* ynqchars */
+    else
+        /* 'y' or 'n' */
+        c = await tty_yn_function(prompt, "yn", 'n'); /* ynchars */
+    if (c !== 'y' && (c !== 'q' || !accept_q))
+        c = 'n';
+    return c;
+}
+
+// C ref: cmd.c paranoid_query()
+/* for paranoid_confirm:quit,die,attack,&c prompting; allows yes or n|no;
+   result is True for yes; n|no and ESC yield False */
+export async function paranoid_query(be_paranoid, prompt) {
+    return (await paranoid_ynq(be_paranoid, prompt, false)) === 'y';
 }
 
 export async function getdir(s) {

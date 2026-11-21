@@ -10,7 +10,7 @@ import { cansee } from './vision.js';
 import { newsym, pline } from './display.js';
 import { distant_name, doname } from './objnam.js';
 import { Monnam } from './do_name.js';
-import { stackobj } from './invent.js';
+import { stackobj, carry_obj_effects } from './invent.js';
 import { flooreffects, obj_no_longer_held } from './do.js';
 import { droppables } from './dogmove.js';
 import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN, W_ARM, W_WEP,
@@ -18,15 +18,6 @@ import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN, W_ARM, W_WEP,
 import { update_mon_extrinsics, update_mon_extrinsics_sync } from './worn.js';
 import { mwepgone } from './weapon.js';
 import { check_gear_next_turn } from './mon.js';
-
-// C ref: invent.c carry_obj_effects()
-function carry_obj_effects(obj) {
-    /* Cursed figurines can spontaneously transform when carried. */
-    if (obj.otyp === O.FIGURINE) {
-        if (obj.cursed && obj.corpsenm !== -1 /* NON_PM */)
-            throw new Error('carry_obj_effects(): attach_fig_transform_timeout() not ported yet');
-    }
-}
 
 // C ref: steal.c mpickobj()
 /* Returns 1 if otmp is free'd, 0 otherwise. */

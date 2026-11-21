@@ -26,7 +26,12 @@ import { rnd, rn1 } from './rng.js';
 import { newsym, canseemon, canspotmon, sensemon, see_monsters } from './display.js';
 import { couldsee, vision_recalc } from './vision.js';
 import { u_on_newpos } from './mklev.js';
-import { nomul } from './hack.js';
+import { nomul, spoteffects, switch_terrain } from './hack.js';
+import { VIBRATING_SQUARE, deltrap } from './trap.js';
+import { PASSES_WALLS, ANTIMAGIC } from './const.js';
+import { M1_FLY } from './monsters.js';
+import { resists_magm } from './mondata.js';
+import { settrack } from './track.js';
 import { set_ustuck } from './uhitm.js';
 import { Monnam, mon_nam, Amonnam } from './do_name.js';
 import { maybe_unhide_at } from './mon.js';
@@ -309,17 +314,260 @@ export async function teleds(nux, nuy, teleds_flags) {
         await pline(`You materialize in ${(nux === u.ux0 && nuy === u.uy0)
                                           ? "the same" : "a different"} location!`);
     /* if terrain type changes, levitation or flying might become blocked
-       or unblocked; switch_terrain() might issue a message */
-    if (game.level.at(u.ux, u.uy).typ !== game.level.at(u.ux0, u.uy0).typ
-        && (game.u.uprops?.[LEVITATION]?.extrinsic || game.u.uprops?.[FLYING]?.extrinsic
-            || game.u.uprops?.[LEVITATION]?.intrinsic || game.u.uprops?.[FLYING]?.intrinsic))
-        throw new Error('teleds(): switch_terrain() not ported yet');
-    /* spoteffects(TRUE): not ported yet (as in hack.c domove_core());
-       stop where it would matter */
-    if (t_at(u.ux, u.uy) || is_pool_or_lava_at(u.ux, u.uy))
-        throw new Error('teleds(): spoteffects() not ported yet');
+       or unblocked; might issue message, so do this after map+vision has
+       been updated for new location instead of right after u_on_newpos() */
+    if (game.level.at(u.ux, u.uy).typ !== game.level.at(u.ux0, u.uy0).typ)
+        await switch_terrain();
+    /* (vault guard: stopped above) */
+    /* possible shop entry message comes after guard's shrill whistle */
+    await spoteffects(true);
     /* invocation_message(): only on the vibrating square level */
+    if (game.level.flags?.is_invocation_lev)
+        throw new Error('teleds(): invocation_message() not ported yet');
     /* notice_mon_on(); notice_all_mons(TRUE): a11y mon_notices is off */
+}
+
+// C ref: teleport.c teleok()
+function teleok(x, y, trapok) {
+    if (!trapok) {
+        /* allow teleportation onto vibrating square, it's not a real trap;
+           also allow pits and holes if levitating or flying */
+        const trap = t_at(x, y);
+
+        if (!trap)
+            trapok = true;
+        else if (trap.ttyp === VIBRATING_SQUARE)
+            trapok = true;
+        else if ((is_pit(trap.ttyp) || is_hole(trap.ttyp))
+                 && (tp_Levitation() || tp_Flying()))
+            trapok = true;
+
+        if (!trapok)
+            return false;
+    }
+    if (!goodpos(x, y, game.youmonst, 0))
+        return false;
+    if (!tele_jump_ok(game.u.ux, game.u.uy, x, y))
+        return false;
+    /* in_out_region(x, y): regions aren't ported */
+    if (game.regions && game.regions.length)
+        throw new Error('teleok(): in_out_region() not ported yet');
+    return true;
+}
+
+/* C ref: youprop.h Levitation, Flying, Teleport_control, Antimagic,
+   Stunned, Blinded */
+function tp_prop(p) {
+    return game.u.uprops?.[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
+}
+function tp_Levitation() {
+    const p = tp_prop(LEVITATION);
+    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
+}
+function tp_Flying() {
+    const p = tp_prop(FLYING);
+    return !!((p.intrinsic || p.extrinsic
+               || (game.u.usteed && (game.u.usteed.data.mflags1 & M1_FLY)))
+              && !p.blocked);
+}
+
+// C ref: teleport.c safe_teleds()
+/* [try to] teleport hero to a safe spot */
+export async function safe_teleds(teleds_flags) {
+    let nux, nuy;
+    let cc_flags;
+    const candy = [];
+    const backupspot = { x: 0, y: 0 };
+    let tcnt, candycount;
+
+    /*
+     * Now it tries completely randomly only 40 times, all disallowing
+     * traps, then resorts to checking the entire map, near hero's spot
+     * first then expanding out from there.  If no non-trap spot is found,
+     * first trap spot is used.
+     */
+    for (tcnt = 0; tcnt < 40; ++tcnt) {
+        nux = rnd(COLNO - 1);
+        nuy = rn2(ROWNO);
+        if (teleok(nux, nuy, false)) {
+            await teleds(nux, nuy, teleds_flags);
+            return true;
+        }
+    }
+
+    /* get a shuffled list of candidate locations, starting with spots
+       1 or 2 steps from hero, then 3 or 4 steps, then 5 or 6, on up */
+    cc_flags = CC_RING_PAIRS | CC_SKIP_MONS;
+    if (!tp_Passes_walls())
+        cc_flags |= CC_SKIP_INACCS;
+    candycount = collect_coords(candy, game.u.ux, game.u.uy, 0, cc_flags, null);
+    backupspot.x = backupspot.y = 0;
+    /* skip trap locations via teleok(,,FALSE) but remember first
+       encountered trap spot that is acceptable to teleok(,,TRUE) */
+    for (tcnt = 0; tcnt < candycount; ++tcnt) {
+        nux = candy[tcnt].x, nuy = candy[tcnt].y;
+        if (teleok(nux, nuy, false)) {
+            await teleds(nux, nuy, teleds_flags);
+            return true;
+        }
+        if (!backupspot.x && t_at(nux, nuy) && teleok(nux, nuy, true))
+            backupspot.x = nux, backupspot.y = nuy;
+    }
+    /* no non-trap spot found; if we skipped a viable trap spot, use it */
+    if (backupspot.x) {
+        await teleds(backupspot.x, backupspot.y, teleds_flags);
+        return true;
+    }
+    return false;
+}
+function tp_Passes_walls() {
+    const p = tp_prop(PASSES_WALLS);
+    return !!(p.intrinsic || p.extrinsic);
+}
+
+// C ref: teleport.c vault_tele()
+async function vault_tele() {
+    const croom = search_special_vault();
+    const c = { x: 0, y: 0 };
+
+    if (croom)
+        throw new Error('vault_tele(): somexyspace() into a vault not ported yet');
+    void c;
+    await tele();
+}
+
+/* C ref: mkroom.c search_special(VAULT) -- the main rooms[] list; JS
+   doesn't keep subrooms in a global list */
+function search_special_vault() {
+    const rooms = game.level.rooms || [];
+    for (let i = 0; rooms[i] && rooms[i].hx >= 0; i++)
+        if (rooms[i].rtype === VAULT)
+            return rooms[i];
+    return null;
+}
+
+// C ref: teleport.c tele()
+/* teleport the hero via some method other than scroll of teleport */
+export async function tele() {
+    await scrolltele(null);
+}
+
+// C ref: teleport.c scrolltele()
+/* teleport the hero; usually discover scroll of teleportation if via
+   scroll */
+export async function scrolltele(scroll) {
+    const u = game.u;
+
+    /* Disable teleportation in stronghold && Vlad's Tower */
+    if (noteleport_level(game.youmonst) && !game.flags?.debug) {
+        await pline("A mysterious force prevents you from teleporting!");
+        if (scroll)
+            throw new Error('scrolltele(): learnscroll() not ported yet');
+        return;
+    }
+
+    /* don't show trap if "Sorry..." */
+    /* if (!Blinded) make_blinded(0L, FALSE): with Blinded already 0 this
+       changes nothing (no timeout to clear, no blindness toggle) */
+    if (tp_prop(BLINDED).intrinsic)
+        throw new Error('scrolltele(): make_blinded() not ported yet');
+
+    if ((u.uhave?.amulet || On_W_tower_level(u.uz)) && !rn2(3))
+        throw new Error('scrolltele(): "You feel disoriented for a moment." not ported yet');
+    if (((tp_prop(TELEPORT_CONTROL).intrinsic || tp_prop(TELEPORT_CONTROL).extrinsic
+          || (scroll && scroll.blessed)) && !tp_prop(STUNNED).intrinsic
+         && !tp_prop(STUNNED).extrinsic)
+        || game.flags?.debug)
+        throw new Error('scrolltele(): controlled teleport (getpos) not ported yet');
+
+    /* we used to suppress discovery if hero teleported to a nearby
+       spot which was already within view, but now there is always a
+       "materialize" message regardless of how far you teleported so
+       discovery of scroll type is unconditional */
+    if (scroll)
+        throw new Error('scrolltele(): learnscroll() not ported yet');
+
+    await safe_teleds(TELEDS_TELEPORT);
+}
+
+/* C ref: dungeon.h On_W_tower_level() -- Vlad's Tower isn't reachable
+   in the JS port yet */
+function On_W_tower_level(lev) {
+    void lev;
+    return false;
+}
+
+/* C ref: decl.c You_feel/You1 message strings */
+const shudder_for_moment = "shudder for a moment.";
+
+// C ref: apply.c next_to_u()
+/* is hero able to teleport/level-change with all leashed pets? */
+async function next_to_u() {
+    /* get_iter_mons(mleashed_next2u) */
+    for (const mtmp of game.level.monsters || []) {
+        if (mtmp.dead || mtmp.mhp <= 0)
+            continue;
+        if (mtmp.mleashed)
+            throw new Error('next_to_u(): mleashed_next2u() for a leashed pet not ported yet');
+    }
+
+    /* no pack mules for the Amulet */
+    if (game.u.usteed && (game.u.usteed.minvent || []).some(
+            o => o.otyp === AMULET_OF_YENDOR)) /* mon_has_amulet() */
+        return false;
+    return true;
+}
+
+/* C ref: teleport.c tele_trap() 'static boolean in_tele_trap' */
+let in_tele_trap = false;
+
+// C ref: teleport.c tele_trap()
+export async function tele_trap(trap) {
+    const u = game.u;
+
+    /* a fixed-destination teleport trap could theoretically place hero onto
+     * a second teleport trap; prevent the recursive call from spoteffects()
+     * from triggering the trap at the destination */
+    if (in_tele_trap)
+        return;
+
+    in_tele_trap = true;
+    try {
+        const Antimagic = !!(tp_prop(ANTIMAGIC).intrinsic || tp_prop(ANTIMAGIC).extrinsic
+                             || (game.u.umonnum !== game.u.umonster
+                                 && resists_magm(game.youmonst)));
+        if (In_endgame(u.uz) || Antimagic || noteleport_level(game.youmonst)) {
+            if (Antimagic)
+                throw new Error('tele_trap(): shieldeff() not ported yet');
+            await pline("You feel a wrenching sensation."); /* You_feel() */
+        } else if (!await next_to_u()) {
+            await pline(`You ${shudder_for_moment}`); /* You1() */
+        } else if (trap.once) {
+            deltrap(trap);
+            newsym(u.ux, u.uy); /* get rid of trap symbol */
+            await vault_tele();
+        } else if (isok(trap.launch?.x, trap.launch?.y)) { /* teledest */
+            const cc = { x: 0, y: 0 };
+            let mtmp = m_at(trap.launch.x, trap.launch.y);
+
+            settrack();
+            if (mtmp) {
+                if (!enexto(cc, mtmp.mx, mtmp.my, mtmp.data)) {
+                    /* could not find some other place to put mtmp; the level
+                     * must be nearly or completely full */
+                    await pline(`You ${shudder_for_moment}`); /* You1() */
+                } else {
+                    await rloc_to(mtmp, cc.x, cc.y);
+                    mtmp = null; /* no longer a monster at dest */
+                }
+            }
+            if (!mtmp)
+                await teleds(trap.launch.x, trap.launch.y, TELEDS_TELEPORT);
+        } else
+            await tele();
+    } finally {
+        in_tele_trap = false;
+    }
 }
 
 function in_rooms_vault(urooms) {

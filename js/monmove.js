@@ -12,7 +12,7 @@ import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc,
          recalc_block_point } from './vision.js';
 import { newsym, pline, canseemon, canspotmon } from './display.js';
-import { Monnam } from './do_name.js';
+import { Monnam, Adjmonnam } from './do_name.js';
 import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon } from './trap.js';
 import { splitobj, obj_extract_self } from './mkobj.js';
@@ -401,7 +401,7 @@ export async function monflee(mtmp, fleetime, first, fleemsg) {
                sleep and temporary paralysis, so both conditions
                receive the same alternate message */
             if (!mtmp.mcanmove || !mtmp.data.mmove) {
-                throw new Error('monflee(): Adjmonnam() not ported yet');
+                await pline(`${Adjmonnam(mtmp, "immobile")} seems to flinch.`); /* pline_mon() */
             } else if (flees_light(mtmp)) {
                 throw new Error('monflee(): flees_light() messages not ported yet');
             } else {
