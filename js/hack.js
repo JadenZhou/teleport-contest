@@ -58,6 +58,11 @@ import { is_flyer, is_floater } from './mondata.js';
 import { float_vs_flight } from './polyself.js';
 import { pickup } from './pickup.js';
 import { dotrap } from './trap.js';
+import { immune_to_trap, into_vs_onto, u_locomotion, trapname,
+         TRAPNUM } from './trap.js';
+import { TRAP_CLEARLY_IMMUNE } from './const.js';
+import { visible_region_at } from './region.js';
+import { paranoid_query } from './cmd.js';
 import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
          IS_SINK } from './const.js';
 import { M1_CLING } from './monsters.js';
@@ -166,6 +171,26 @@ export function calc_capacity(xtra_wt) {
 // C ref: hack.c near_capacity()
 export function near_capacity() {
     return calc_capacity(0);
+}
+
+// C ref: hack.c max_capacity()
+export function max_capacity() {
+    const wt = inv_weight();
+
+    return (wt - (2 * game.wc));
+}
+
+// C ref: hack.c inv_cnt()
+export function inv_cnt(incl_gold) {
+    let otmp = game.invent;
+    let ct = 0;
+
+    while (otmp) {
+        if (incl_gold || otmp.invlet !== '$') /* GOLD_SYM */
+            ct++;
+        otmp = otmp.nobj;
+    }
+    return ct;
 }
 
 // C ref: hack.c check_capacity()
@@ -1636,6 +1661,70 @@ function avoid_running_into_trap_or_liquid(x, y) {
     return false;
 }
 
+/* C ref: flag.h ParanoidTrap, ParanoidConfirm -- flags.paranoia_bits is
+   PARANOID_PRAY | PARANOID_SWIM | PARANOID_TRAP by default (options.c
+   initoptions_init()); parsing the paranoid_confirmation option isn't
+   ported */
+function paranoia_default() {
+    if (game.flags.paranoid_confirmation !== undefined
+        || game.flags.paranoid_confirm !== undefined)
+        throw new Error('paranoia_bits: the paranoid_confirmation option is not ported yet');
+    return true;
+}
+function ParanoidTrap() { return paranoia_default(); }
+function ParanoidConfirm() { return !paranoia_default(); }
+
+// C ref: hack.c avoid_trap_andor_region()
+/* if paranoid_confirm:Trap is enabled, check whether the next step forward
+   needs player confirmation due to visible region or discovered trap;
+   result: True => stop moving, False => proceed */
+async function avoid_trap_andor_region(x, y) {
+    const u = game.u;
+    const ctx = game.context;
+    let trap = null;
+    const Hallucination = uhave(HALLUC);
+
+    /* treat entering a visible gas cloud region like entering a trap */
+    if (ParanoidTrap() && !Blind() && !Stunned() && !Confusion() && !Hallucination
+        /* skip if player used 'm' prefix or is moving recklessly */
+        && (!ctx.nopick || ctx.run)
+        /* check for region(s) */
+        && visible_region_at(x, y))
+        throw new Error('avoid_trap_andor_region(): entering a visible region (reg_damg) not ported yet');
+
+    /* maybe ask player for confirmation before walking into known trap */
+    if (ParanoidTrap() && !Stunned() && !Confusion()
+        /* skip if player used 'm' prefix or is moving recklessly */
+        && (!ctx.nopick || ctx.run)
+        /* check for discovered trap */
+        && (trap = t_at(x, y)) && trap.tseen
+        /* check whether attempted move will be viable */
+        && await test_move(u.ux, u.uy, u.dx, u.dy, TEST_MOVE)
+        /* override confirmation if the trap is harmless to the hero */
+        && (immune_to_trap(game.youmonst, trap.ttyp) !== TRAP_CLEARLY_IMMUNE
+            /* Hallucination: all traps still show as ^, but the
+               hero can't tell what they are, so treat as dangerous */
+            || Hallucination)) {
+        const traptype = (Hallucination ? rnd(TRAPNUM - 1) : trap.ttyp);
+        const into = into_vs_onto(traptype);
+
+        /* defsyms[trap_to_defsym(traptype)].explanation, which is what
+           trapname(traptype, TRUE) returns */
+        const qbuf = `Really ${u_locomotion("step")} ${into ? "into" : "onto"} that ${
+            trapname(traptype, true)}?`;
+        /* handled like paranoid_confirm:pray; when paranoid_confirm:trap
+           isn't set, don't ask at all but if it is set (checked above),
+           ask via y/n if parnoid_confirm:confirm isn't also set or via
+           yes/no if it is */
+        if (!await paranoid_query(ParanoidConfirm(), qbuf)) {
+            nomul(0);
+            ctx.move = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
 /* C ref: hack.c domove_bump_mon() -- the 'm' prefix */
 async function domove_bump_mon(mtmp, glyph) {
     /* If they used a 'm' command, trying to move onto a monster
@@ -1894,7 +1983,12 @@ async function domove_core() {
             return;
         }
 
-        /* ParanoidTrap (paranoid_confirm:trap): the option isn't ported */
+        /* handling for paranoid_confirm:Trap which doubles as
+           paranoid_confirm:Region */
+        if (ParanoidTrap()) {
+            if (await avoid_trap_andor_region(x, y))
+                return;
+        }
 
         if (u.utrap)
             throw new Error('domove_core(): trapmove() not ported yet');

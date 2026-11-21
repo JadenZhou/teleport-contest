@@ -106,8 +106,6 @@ export async function newgame() {
     makedog();
 
     await u_init_inventory_attrs();
-    /* the status line's gold: botl.c shows money_cnt(invent) */
-    g._goldCount = money_cnt(g.invent);
     vision_recalc(0);
     await cls();
     await docrt();

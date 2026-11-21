@@ -2,6 +2,7 @@
 // C ref: display.c — newsym, show_glyph, docrt, cls, flush_screen.
 
 import { game } from './gstate.js';
+import { money_cnt } from './u_init.js';
 import { cansee, couldsee, vision_recalc } from './vision.js';
 import { tty_putstr, tty_display_nhwindow } from './wintty.js';
 import { rank } from './botl.js';
@@ -944,6 +945,15 @@ function _map_location(x, y, show) {
     }
 }
 
+// C ref: display.c newsym_force() -- newsym() plus marking the spot as
+// needing to be redrawn (gbuf[y][x].gnew)
+export function newsym_force(x, y) {
+    newsym(x, y);
+    const loc = game.level?.at(x, y);
+    if (loc)
+        loc.gnew = 1;
+}
+
 // ── newsym ──
 export function newsym(x, y) {
     const loc = game.level?.at(x, y);
@@ -1192,7 +1202,7 @@ function _statusLine2() {
     const expr = game.flags?.showexp ? `Xp:${u.ulevel || 1}/${u.uexp || 0}`
                                      : `Xp:${u.ulevel || 1}`;
     const tmmv = game.flags?.time ? ` T:${game.moves}` : '';
-    return `Dlvl:${u.uz?.dlevel || 1} $:${game._goldCount || 0} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}`;
+    return `Dlvl:${u.uz?.dlevel || 1} $:${Math.min(money_cnt(game.invent), 999999)} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}`;
 }
 
 // ── Serialize terminal grid for screen comparison ──

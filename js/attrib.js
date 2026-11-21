@@ -26,8 +26,11 @@ import {
     PM_VALKYRIE, PM_WIZARD, PM_ELF, PM_ORC, PM_HUMAN, PM_DWARF, PM_GNOME,
     PM_AMOROUS_DEMON, S_NYMPH, M2_STRONG,
 } from './monsters.js';
-import { GAUNTLETS_OF_POWER, DUNCE_CAP } from './objects.js';
+import { GAUNTLETS_OF_POWER, DUNCE_CAP, LUCKSTONE } from './objects.js';
 import { ART_OGRESMASHER } from './artilist.js';
+import { LUCKADD } from './const.js';
+import { confers_luck } from './timeout.js';
+import { carrying } from './invent.js';
 import { aligns } from './role.js';
 
 // C ref: attrib.h ABASE(), ABON(), AMAX(), ATEMP()
@@ -537,6 +540,34 @@ const AVAL = 50; /* tune value for exercise gains */
 
 /* C ref: attrib.h AEXE() */
 function AEXE(x) { return game.u.aexe.a[x]; }
+
+// C ref: attrib.c stone_luck()
+/* there has just been an inventory change affecting a luck-granting item */
+export function stone_luck(include_uncursed) {
+    let bonchance = 0;
+
+    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (confers_luck(otmp)) {
+            if (otmp.cursed)
+                bonchance -= otmp.quan;
+            else if (otmp.blessed || include_uncursed)
+                bonchance += otmp.quan;
+        }
+
+    return Math.sign(bonchance);
+}
+
+// C ref: attrib.c set_moreluck()
+export function set_moreluck() {
+    const luckbon = stone_luck(true);
+
+    if (!luckbon && !carrying(LUCKSTONE))
+        game.u.moreluck = 0;
+    else if (luckbon >= 0)
+        game.u.moreluck = LUCKADD;
+    else
+        game.u.moreluck = -LUCKADD;
+}
 
 // C ref: attrib.c exercise()
 export function exercise(i, inc_or_dec) {

@@ -21,6 +21,8 @@ import {
     NHW_MENU, PICK_ONE, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE,
 } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { def_char_to_objclass } from './drawing.js';
+import { MAXOCLASSES } from './objects.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, add_menu_str,
     tty_end_menu, tty_select_menu, tty_destroy_nhwindow,
@@ -173,6 +175,38 @@ function optfn_alignment(result, negated, val) {
     return true;
 }
 
+// C ref: options.c optfn_pickup_types() (req == do_set, from the config
+// file: go.opt_initial, so no prompting); flags.pickup_types holds object
+// class numbers (as character codes), "" meaning all classes
+function optfn_pickup_types(result, negated, op) {
+
+    result.flags.pickup_types = ''; /* all */
+    if (!op) {
+        /* for backwards compatibility, "pickup" without a value is a
+           synonym for autopickup of all types */
+        result.flags.pickup = !negated;
+        return true;
+    }
+    if (negated)
+        return false; /* bad_negation() */
+    op = op.replace(/^ +/, '');
+    if (op[0] !== 'a' && op[0] !== 'A') {
+        let badopt = false;
+        for (const ch of op) {
+            const oc_sym = def_char_to_objclass(ch);
+            /* make sure all are valid obj symbols occurring once */
+            if (oc_sym !== MAXOCLASSES
+                && !result.flags.pickup_types.includes(String.fromCharCode(oc_sym)))
+                result.flags.pickup_types += String.fromCharCode(oc_sym);
+            else
+                badopt = true;
+        }
+        if (badopt)
+            throw new Error('optfn_pickup_types(): config_error_add() for a bad parameter not ported yet');
+    }
+    return true;
+}
+
 /* C ref: options.c unlocktypes[][2] (names only) */
 const unlocktypes = ["untrap", "apply-key", "kick", "force"];
 
@@ -321,6 +355,7 @@ export function parseNethackrc(rc) {
                 }
                 else if (key === 'symset') result.symset = val;
                 else if (key === 'autounlock') optfn_autounlock(result, negated, val);
+                else if (key === 'pickup_types') optfn_pickup_types(result, negated, val);
                 else if (key === 'suppress_alert') result.flags.suppress_alert = val;
                 else if (key === 'msg_window') result.iflags.prevmsg_window = val;
                 else result.flags[key] = val;

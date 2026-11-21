@@ -75,7 +75,10 @@ import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
          GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, ROBE, MUMMY_WRAPPING, ALCHEMY_SMOCK,
          is_metallic, is_rustprone, OBJ_NAME, OBJ_DESCR } from './objects.js';
-import { Is_container, erosion_matters } from './mkobj.js';
+import { Is_container, erosion_matters, is_flammable } from './mkobj.js';
+import { TRAP_NOT_IMMUNE, TRAP_CLEARLY_IMMUNE, TRAP_HIDDEN_IMMUNE,
+         In_endgame, In_sokoban, Is_earthlevel, FIRE_RES } from './const.js';
+import { AMULET_OF_YENDOR, SCR_FIRE, SPE_FIREBALL } from './objects.js';
 import { vtense } from './objnam.js';
 import { on_level, at_dgn_entrance } from './dungeon.js';
 import { is_neuter } from './mondata.js';
@@ -344,8 +347,195 @@ const trap_explanations = [
     "rust trap", "fire trap", "pit", "spiked pit", "hole", "trap door",
     "teleportation trap", "level teleporter", "magic portal", "web",
     "statue trap", "magic trap", "anti-magic field", "polymorph trap",
-    "vibrating square",
+    "vibrating square", "trapped door", "trapped chest",
 ];
+
+// C ref: trap.c immune_to_trap()
+/*
+ * Returns:
+ *  TRAP_NOT_IMMUNE = not immune at the moment;
+ *  TRAP_CLEARLY_IMMUNE = obviously immune (if player is polymorphed, assume
+ *    they know which traps they are immune to in their current form);
+ *  TRAP_HIDDEN_IMMUNE = immune but in non-obvious way such as an unidentified
+ *    item or hidden intrinsic providing a resistance; the player should still
+ *    be warned of this trap, while monsters implicitly know they're immune.
+ */
+export function immune_to_trap(mon, ttype) {
+    if (!mon)
+        return TRAP_NOT_IMMUNE; /* impossible("immune_to_trap: null monster") */
+    const pm = mon.data;
+    const is_you = (mon === game.youmonst);
+    const u = game.u;
+    /* C ref: wizard.c mon_has_amulet() -- youmonst.minvent is empty */
+    const mon_has_amulet = (m) => !is_you
+        && (m.minvent || []).some(o => o.otyp === AMULET_OF_YENDOR);
+    /* C ref: dungeon.c has_ceiling() */
+    const has_ceiling = (lev) => !(In_endgame(lev) && !Is_earthlevel(lev));
+
+    switch (ttype) {
+    case ARROW_TRAP:
+    case DART_TRAP:
+    case ROCKTRAP:
+        /* can hit anything; even noncorporeal monsters might get a blessed
+           projectile */
+        return TRAP_NOT_IMMUNE;
+    case BEAR_TRAP:
+        if (pm.msize <= MZ_SMALL
+            || amorphous(pm) || is_whirly(pm) || unsolid(pm))
+            return TRAP_CLEARLY_IMMUNE;
+        /*FALLTHRU*/
+    case SQKY_BOARD:
+    case LANDMINE:
+    case ROLLING_BOULDER_TRAP:
+    case HOLE:
+    case TRAPDOOR:
+    case PIT:
+    case SPIKED_PIT:
+        /* ground-based traps, which can be evaded by levitation, flying, or
+           hanging to the ceiling */
+        if (game.level.flags.sokoban_rules && (is_pit(ttype) || is_hole(ttype)))
+            return TRAP_NOT_IMMUNE;
+        if (In_sokoban(u.uz) && ttype === ROLLING_BOULDER_TRAP)
+            return TRAP_CLEARLY_IMMUNE; /* not dangerous in Sokoban */
+        if (is_floater(pm) || is_flyer(pm)
+            || (is_clinger(pm) && has_ceiling(u.uz)))
+            return TRAP_CLEARLY_IMMUNE;
+        else if (is_you && (Levitation() || Flying()))
+            return TRAP_CLEARLY_IMMUNE;
+        return TRAP_NOT_IMMUNE;
+    case SLP_GAS_TRAP:
+        if (breathless(pm))
+            return TRAP_CLEARLY_IMMUNE;
+        else if (!is_you && resists_sleep(mon))
+            return TRAP_CLEARLY_IMMUNE;
+        else if (is_you && Sleep_resistance())
+            return TRAP_HIDDEN_IMMUNE;
+        return TRAP_NOT_IMMUNE;
+    case LEVEL_TELEP:
+    case TELEP_TRAP:
+        /* consider unintended teleporting to be an adverse effect; if in
+           the endgame or carrying the Amulet, the teleport trap won't work
+           anyway, so anything hitting it is immune. */
+        if (In_endgame(u.uz) || mon_has_amulet(mon))
+            return TRAP_CLEARLY_IMMUNE;
+        return TRAP_NOT_IMMUNE;
+    case POLY_TRAP:
+        if (resists_magm(mon))
+            /* covers Antimagic for player */
+            return (is_you ? TRAP_HIDDEN_IMMUNE : TRAP_CLEARLY_IMMUNE);
+        return TRAP_NOT_IMMUNE;
+    case STATUE_TRAP:
+        /* no effect on monsters, only affects players */
+        if (!is_you)
+            return TRAP_CLEARLY_IMMUNE;
+        return TRAP_NOT_IMMUNE;
+    case WEB:
+        /* most of this code is lifted from mu_maybe_destroy_web */
+        if (webmaker(pm) || amorphous(pm) || is_whirly(pm) || flaming(pm)
+            || unsolid(pm) || pm === mons[PM_GELATINOUS_CUBE])
+            return TRAP_CLEARLY_IMMUNE;
+        return TRAP_NOT_IMMUNE;
+    case ANTI_MAGIC:
+        /* doesn't hurt any non-magic-resistant monster with no magic */
+        if (is_you) {
+            if (Antimagic())
+                return TRAP_NOT_IMMUNE;
+            else if (u.uenmax === 0)
+                /* player won't lose HP and can't lose more Pw */
+                return TRAP_HIDDEN_IMMUNE;
+
+        /* following conditional lifted from mintrap ANTI_MAGIC logic */
+        } else if (!resists_magm(mon)
+                   && (mon.mcan || (!attacktype(pm, AT_MAGC)
+                                    && !attacktype(pm, AT_BREA)))) {
+            return TRAP_CLEARLY_IMMUNE;
+        }
+        return TRAP_NOT_IMMUNE;
+    case RUST_TRAP: {
+        /* harmful if wearing anything rustable or if mon is an iron golem */
+        if (pm === mons[PM_IRON_GOLEM])
+            return TRAP_NOT_IMMUNE;
+
+        const objs = [];
+        if (is_you)
+            for (let o = game.invent; o; o = o.nobj) objs.push(o);
+        else
+            objs.push(...(mon.minvent || []).slice().reverse());
+        for (const obj of objs) {
+            /* rust traps can currently hit only worn armor and weapons */
+            if (objects[obj.otyp].oc_material === IRON /* is_rustprone() */
+                && obj.owornmask) {
+                if (is_you && (obj === game.uquiver
+                               || (obj === game.uswapwep && !u.twoweap)))
+                    continue;
+                return TRAP_NOT_IMMUNE;
+            }
+        }
+        return TRAP_CLEARLY_IMMUNE;
+    }
+    case MAGIC_TRAP:
+        /* for player, any number of bad effects;
+           for monsters, only replicates fire trap, so fall through */
+        if (is_you)
+            return TRAP_NOT_IMMUNE;
+        /*FALLTHRU*/
+    case FIRE_TRAP: { /* can always destroy items being carried */
+        /* harmful if not resistant or if carrying anything that could burn */
+        if (is_you ? !(uprop(FIRE_RES).intrinsic || uprop(FIRE_RES).extrinsic)
+                   : !resists_fire(mon))
+            return TRAP_NOT_IMMUNE;
+
+        const objs = [];
+        if (is_you)
+            for (let o = game.invent; o; o = o.nobj) objs.push(o);
+        else
+            objs.push(...(mon.minvent || []).slice().reverse());
+        for (const obj of objs) {
+            if (obj.oclass === SCROLL_CLASS || obj.oclass === POTION_CLASS
+                || obj.oclass === SPBOOK_CLASS
+                || (obj.owornmask && is_flammable(obj))) {
+                if ((obj.otyp === SCR_FIRE || obj.otyp === SPE_FIREBALL)
+                    /* mon knows scroll of fire or spellbook of fireball
+                       won't be affected; hero knows iff this one has been
+                       seen and its type has been discovered */
+                    && (!is_you
+                        || (obj.dknown && objects[obj.otyp].oc_name_known)))
+                    continue;
+                return TRAP_NOT_IMMUNE;
+            }
+        }
+        return (is_you ? TRAP_HIDDEN_IMMUNE : TRAP_CLEARLY_IMMUNE);
+    }
+    case MAGIC_PORTAL:
+        /* never hurts anything, but player is considered non-immune so they
+           can be asked about entering it */
+        if (!is_you)
+            return TRAP_CLEARLY_IMMUNE;
+        return TRAP_NOT_IMMUNE;
+    case VIBRATING_SQUARE:
+        return TRAP_CLEARLY_IMMUNE;
+    default:
+        /* impossible("immune_to_trap: unknown trap type %u", ttype) */
+        return TRAP_NOT_IMMUNE;
+    }
+}
+
+// C ref: trap.c into_vs_onto()
+/* whether moving to a trap location is moving "into" the trap or "onto" it */
+export function into_vs_onto(traptype) {
+    switch (traptype) {
+    case BEAR_TRAP:
+    case PIT:
+    case SPIKED_PIT:
+    case HOLE:
+    case TELEP_TRAP:
+    case LEVEL_TELEP:
+    case MAGIC_PORTAL:
+    case WEB:
+        return true;
+    }
+    return false;
+}
 
 // C ref: trap.c trapname()
 export function trapname(ttyp, override) /* if True, ignore Hallucination */ {
@@ -355,7 +545,7 @@ export function trapname(ttyp, override) /* if True, ignore Hallucination */ {
 }
 
 // C ref: hack.c u_locomotion()
-function u_locomotion(def) {
+export function u_locomotion(def) {
     const capitalize = (def[0] === def[0].toUpperCase());
 
     /* regular locomotion() takes a monster type rather than a specific

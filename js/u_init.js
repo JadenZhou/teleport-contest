@@ -32,7 +32,8 @@ function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
 import { init_uhunger } from './eat.js';
 import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
-import { assigninvlet, reorder_invent, merged } from './invent.js';
+import { assigninvlet, reorder_invent, merged, addinv } from './invent.js';
+export { addinv }; // C ref: invent.c addinv() (ported in invent.js)
 import { Japanese_item_name } from './objnam.js';
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
@@ -721,42 +722,6 @@ function Is_container(o) { return o.otyp >= O.LARGE_BOX && o.otyp <= O.BAG_OF_TR
 function is_graystone(obj) {
     return (obj.otyp === O.LUCKSTONE || obj.otyp === O.LOADSTONE
             || obj.otyp === O.FLINT || obj.otyp === O.TOUCHSTONE);
-}
-
-// C ref: invent.c addinv(), addinv_core0() -- inventory letter and chain
-// insertion and merging with an existing stack (merged()); addinv_core1/2()
-// side effects and update_inventory() are not ported yet
-export function addinv(obj) {
-    /* merge with quiver in preference to any other inventory slot
-       in case quiver and wielded weapon are both eligible; adding
-       extra to quivered stack is more useful than to wielded one */
-    if (game.uquiver) {
-        const r = { otmp: game.uquiver, obj };
-        if (merged(r)) {
-            game.uquiver = r.otmp;
-            return r.otmp; /* goto added */
-        }
-    }
-    /* merge if possible; find end of chain in the process */
-    let prev = null;
-    for (let otmp = game.invent; otmp; prev = otmp, otmp = otmp.nobj) {
-        const r = { otmp, obj };
-        if (merged(r))
-            return r.otmp; /* goto added */
-    }
-    /* didn't merge, so insert into chain */
-    assigninvlet(obj);
-    if ((game.flags?.invlet_constant ?? true) || !prev) {
-        obj.nobj = game.invent; /* insert at beginning */
-        game.invent = obj;
-        if (game.flags?.invlet_constant ?? true)
-            reorder_invent();
-    } else {
-        prev.nobj = obj; /* insert at end */
-        obj.nobj = null;
-    }
-    obj.where = 'OBJ_INVENT';
-    return obj;
 }
 
 // C ref: invent.c useupall() -- inventory removal only

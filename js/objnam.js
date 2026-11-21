@@ -528,12 +528,15 @@ export function obj_typename(otyp) {
     let buf;
     const ocl = objects[otyp];
     let actualn = OBJ_NAME(ocl);
-    const dn = OBJ_DESCR(ocl);
+    let dn = OBJ_DESCR(ocl);
     const un = ocl.oc_uname;
     let nn = ocl.oc_name_known;
 
-    if (Role_if_x(M.PM_SAMURAI))
-        throw new Error('obj_typename(): Japanese_item_name() is not ported yet');
+    if (Role_if_x(M.PM_SAMURAI)) {
+        actualn = Japanese_item_name(otyp, actualn);
+        if (otyp === O.WOODEN_HARP || otyp === O.MAGIC_HARP)
+            dn = "koto";
+    }
     /* generic items don't have an actual-name; we shouldn't ever be called
        for those; pacify static analyzer without resorting to impossible() */
     if (!actualn)
@@ -609,6 +612,22 @@ export function obj_typename(otyp) {
     if (dn)
         buf += ` (${dn})`;
     return buf;
+}
+
+// C ref: objnam.c otense()
+export function otense(otmp, verb) {
+    /*
+     * verb is given in plural (without trailing s).  Return as input
+     * if the result of xname(otmp) would be plural.  Don't bother
+     * recomputing xname(otmp) at this time.
+     */
+    /* is_plural(otmp): obj.h; ART_EYES_OF_THE_OVERWORLD is 26 */
+    if (otmp.oartifact === 26)
+        throw new Error('otense(): is_plural() for the Eyes of the Overworld (undiscovered_artifact) not ported yet');
+    if (otmp.quan === 1)
+        return vtense(null, verb);
+
+    return verb;
 }
 
 // C ref: objnam.c vtense()
@@ -3019,7 +3038,9 @@ function xname_flags(obj, cxn_flags) {
             buf += dn;
 
         if (typ === O.FIGURINE && omndx_ok(omndx)) {
-            xn_not_ported('figurine monster name (obj_pmname)');
+            const pm_name = obj_pmname(obj);
+
+            buf += ` of ${just_an(pm_name)}${pm_name}`;
         } else if (typ === O.TOWEL && obj.spe > 0) {
             if (game.flags?.debug)
                 buf += ` (${obj.spe})`;
@@ -3079,9 +3100,16 @@ function xname_flags(obj, cxn_flags) {
         buf = actualn;
         break;
     case O.ROCK_CLASS:
-        if (typ === O.STATUE && omndx_ok(omndx))
-            xn_not_ported('statue monster name (obj_pmname)');
-        else if (typ === O.BOULDER && obj.next_boulder === 1) {
+        if (typ === O.STATUE && omndx_ok(omndx)) {
+            const statue_pmname = obj_pmname(obj);
+
+            buf = `${(Role_if_x(M.PM_ARCHEOLOGIST)
+                      && (obj.spe & CORPSTAT_HISTORIC) !== 0) ? "historic "
+                     : ""}${actualn} of ${
+                (mons[omndx].mflags2 & M.M2_PNAME) !== 0 /* type_is_pname() */ ? ""
+                : the_unique_pm(mons[omndx]) ? "the "
+                  : just_an(statue_pmname)}${statue_pmname}`;
+        } else if (typ === O.BOULDER && obj.next_boulder === 1) {
             buf = "next " + actualn;
             obj.next_boulder = 0;
         } else
