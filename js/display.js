@@ -1720,6 +1720,15 @@ export async function pline(msg) {
     await tty_putstr(game.WIN_MESSAGE, 0, msg);
 }
 
+// C ref: pline.c Norep() -- pline() with PLINE_NOREPEAT: msgtype_type()
+// gives MSGTYP_NOREP (no MSGTYPE patterns are set), and vpline() skips a
+// line that is the same as gp.prevmsg
+export async function Norep(line) {
+    if (line === game.prevmsg)
+        return;
+    await pline(line);
+}
+
 // C ref: pline.c You(), Your(), You_cant(), pline_The(), There() --
 // pline() with the C prefix prepended
 export async function You(line) { await pline(`You ${line}`); }

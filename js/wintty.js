@@ -666,6 +666,9 @@ export async function more() {
 async function update_topl(bp) {
     const t = tty();
     const cw = wins()[game.WIN_MESSAGE];
+    /* pline.c vpline(): gp.prevmsg is the last line put to the message
+       window (every message line reaches update_topl() via vpline()) */
+    game.prevmsg = bp;
     const CO = t.cols;
     let skip = (cw.flags & (WIN_STOP | WIN_NOSTOP)) === WIN_STOP;
     let notdied = true;
@@ -1404,6 +1407,39 @@ function menuitem_invert_test(mode, itemflags, is_selected) {
     return true;
 }
 
+// C ref: wintty.c set_all_on_page() -- select all on the current page
+function set_all_on_page(window, page_start, page_end) {
+    const cw = wins()[window];
+    let n;
+
+    for (n = 0; page_start + n < page_end; n++) {
+        const curr = cw.mlist[page_start + n];
+        if (!curr.identifier /* not selectable */
+            || curr.selected /* already selected */
+            || !menuitem_invert_test(1, curr.itemflags, false))
+            continue;
+        curr.selected = true;
+        set_item_state(window, n, curr);
+    }
+}
+
+// C ref: wintty.c unset_all_on_page() -- unselect all on the current page
+function unset_all_on_page(window, page_start, page_end) {
+    const cw = wins()[window];
+    let n;
+
+    for (n = 0; page_start + n < page_end; n++) {
+        const curr = cw.mlist[page_start + n];
+        if (!curr.identifier /* skip if not selectable */
+            || !curr.selected /* skip if already de-selected */
+            || !menuitem_invert_test(2, curr.itemflags, true))
+            continue;
+        curr.selected = false;
+        curr.count = -1;
+        set_item_state(window, n, curr);
+    }
+}
+
 // C ref: wintty.c invert_all_on_page()
 function invert_all_on_page(window, page_start, page_end, acc, count) {
     const cw = wins()[window];
@@ -1781,13 +1817,58 @@ async function process_menu_window(window, cw) {
                 }
                 continue;
             }
-            /* MENU_SELECT_PAGE, MENU_INVERT_PAGE, MENU_SELECT_ALL,
-               MENU_INVERT_ALL only act on a PICK_ANY menu; MENU_SEARCH
-               just beeps for PICK_NONE */
-            if (cw.how !== PICK_ANY
-                && (morc === MENU_SELECT_PAGE || morc === MENU_INVERT_PAGE
-                    || morc === MENU_SELECT_ALL || morc === MENU_INVERT_ALL))
+            if (morc === MENU_SELECT_PAGE) {
+                if (cw.how === PICK_ANY)
+                    set_all_on_page(window, page_start, page_end);
                 continue;
+            }
+            if (morc === MENU_UNSELECT_PAGE) {
+                unset_all_on_page(window, page_start, page_end);
+                continue;
+            }
+            if (morc === MENU_INVERT_PAGE) {
+                if (cw.how === PICK_ANY)
+                    invert_all_on_page(window, page_start, page_end, 0, -1);
+                continue;
+            }
+            if (morc === MENU_SELECT_ALL) {
+                if (cw.how === PICK_ANY) {
+                    /* entries on the current page need screen updating */
+                    set_all_on_page(window, page_start, page_end);
+                    /* set the rest; entries on current page will be skipped
+                       because all of those will be 'already selected' now */
+                    for (const curr of cw.mlist) {
+                        if (!curr.identifier /* not selectable */
+                            || curr.selected /* already selected */
+                            /* FALSE: not currently selected */
+                            || !menuitem_invert_test(1, curr.itemflags, false))
+                            continue;
+                        curr.selected = true;
+                    }
+                } /* if PICK_ANY */
+                continue;
+            }
+            if (morc === MENU_UNSELECT_ALL) {
+                /* entries on the current page need screen updating */
+                unset_all_on_page(window, page_start, page_end);
+                /* unset the rest; entries on current page will be skipped
+                   because none of those will still be in 'selected' state */
+                for (const curr of cw.mlist) {
+                    if (!curr.identifier /* not selectable */
+                        || !curr.selected /* already de-selected */
+                        /* TRUE: currently selected */
+                        || !menuitem_invert_test(2, curr.itemflags, true))
+                        continue;
+                    curr.selected = false;
+                    curr.count = -1;
+                }
+                continue;
+            }
+            if (morc === MENU_INVERT_ALL) {
+                if (cw.how === PICK_ANY)
+                    invert_all(window, page_start, page_end, 0, -1);
+                continue;
+            }
             if (cw.how === PICK_NONE && morc === MENU_SEARCH)
                 continue; /* tty_nhbell() */
             if (default_menu_cmds.includes(morc))
