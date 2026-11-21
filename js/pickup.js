@@ -7,11 +7,15 @@
 
 import { game } from './gstate.js';
 import { is_pool, is_lava } from './makemon.js';
-import { engr_at } from './engrave.js';
+import { engr_at, read_engr_at } from './engrave.js';
 import { near_capacity } from './hack.js';
 import { You, Your, You_cant, pline } from './display.js';
 import { rn2 } from './rng.js';
-import { check_capacity } from './hack.js';
+import { check_capacity, nomul } from './hack.js';
+import { flush_screen } from './display.js';
+import { look_here } from './invent.js';
+import { def_oc_syms } from './drawing.js';
+import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
 import { Is_container } from './mkobj.js';
 import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME } from './const.js';
@@ -37,13 +41,6 @@ function OBJ_AT(x, y) {
     return false;
 }
 
-// C ref: engrave.c read_engr_at() -- only the nothing-to-read case is
-// ported yet
-function read_engr_at(x, y) {
-    const ep = engr_at(x, y);
-    if (ep && ep.engr_txt?.actual_text?.[0])
-        throw new Error('read_engr_at(): reading an engraving not ported yet');
-}
 
 // C ref: pickup.c pickup()
 /*
@@ -71,11 +68,109 @@ export async function pickup(what) /* should be a long */ {
                            || is_lava(u.ux, u.uy))) {
             if (game.flags?.mention_decor)
                 throw new Error('pickup(): describe_decor() not ported yet');
-            read_engr_at(u.ux, u.uy);
+            await read_engr_at(u.ux, u.uy);
             return 0;
         }
+        /* no pickup if levitating & not on air or water level */
+        const t = t_at(u.ux, u.uy);
+        if (!can_reach_floor(t && is_pit(t.ttyp)))
+            throw new Error('pickup(): describe_decor() when the floor is out of reach not ported yet');
+        /* multi && !context.run means they are in the middle of some
+         * other action, or possibly paralyzed, sleeping, etc.... and they
+         * just teleported onto the object.  They shouldn't pick it up.
+         */
+        if ((game.multi && !game.context.run)
+            || (autopickup && !game.flags.pickup)
+            || notake(game.youmonst.data)) {
+            await check_here(false);
+            if (notake(game.youmonst.data) && OBJ_AT(u.ux, u.uy)
+                && (autopickup || game.flags.pickup))
+                await You("are physically incapable of picking anything up.");
+            return 0;
+        }
+
+        /* if there's anything here, stop running */
+        if (OBJ_AT(u.ux, u.uy) && game.context.run && game.context.run !== 8
+            && !game.context.nopick)
+            nomul(0);
+    }
+
+    if (autopickup) {
+        const n = autopick(objects_at(u.ux, u.uy));
+        if (n > 0)
+            throw new Error('pickup(): pickup_object() not ported yet');
+        /* menu_pickup: n_tried = 0, n_picked = 0 */
+        if (!u.uswallow) {
+            if (hides_under(game.youmonst.data))
+                throw new Error('pickup(): hideunder() not ported yet');
+            /* check if there's anything else here after auto-pickup is done */
+            await check_here(false);
+        }
+        /* pickupdone: */
+        game.pickup_encumbrance = 0;
+        return 0;
     }
     throw new Error('pickup(): picking up objects not ported yet');
+}
+
+/* C ref: mondata.h notake(), hides_under() */
+function notake(ptr) { return (ptr.mflags1 & M1_NOTAKE) !== 0; }
+function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
+
+// C ref: pickup.c check_here()
+async function check_here(picked_some) {
+    const u = game.u;
+    const lhflags = picked_some ? 1 /* LOOKHERE_PICKED_SOME */ : 0;
+
+    if (game.flags?.mention_decor)
+        throw new Error('check_here(): describe_decor() not ported yet');
+
+    /* count the objects here */
+    const ct = objects_at(u.ux, u.uy).filter(o => o !== game.uchain).length;
+
+    /* If there are objects here, take a look. */
+    if (ct) {
+        if (game.context.run)
+            nomul(0);
+        await flush_screen(1);
+        await look_here(ct, lhflags);
+    } else {
+        await read_engr_at(u.ux, u.uy);
+    }
+}
+
+// C ref: pickup.c autopick_testobj()
+function autopick_testobj(otmp, calc_costly) {
+    const otypes = game.flags.pickup_types || '';
+
+    /* calculate 'costly' just once for a given autopickup operation */
+    if (calc_costly && otmp.where === 'OBJ_FLOOR'
+        && game.level.flags?.has_shop)
+        throw new Error('autopick_testobj(): costly_spot() not ported yet');
+
+    /* pickup_thrown/pickup_stolen/nopick_dropped override pickup_types and
+       exceptions */
+    if (otmp.how_lost)
+        throw new Error('autopick_testobj(): how_lost overrides not ported yet');
+
+    /* check for pickup_types */
+    const pickit = (!otypes || otypes.includes(def_oc_syms[otmp.oclass]));
+
+    /* check for autopickup exceptions: none can be configured yet */
+    return pickit;
+}
+
+// C ref: pickup.c autopick() -- the count of eligible items
+function autopick(olist) {
+    let n = 0, check_costly = true;
+
+    /* first count the number of eligible items */
+    for (const curr of olist) {
+        if (autopick_testobj(curr, check_costly))
+            ++n;
+        check_costly = false; /* only need to check once per autopickup */
+    }
+    return n;
 }
 
 // C ref: pickup.c encumber_msg()

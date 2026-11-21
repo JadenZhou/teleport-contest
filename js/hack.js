@@ -54,6 +54,15 @@ import { AT_ENGL, AT_HUGS, AD_STCK } from './monsters.js';
 import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
          LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
 import { CORPSE } from './objects.js';
+import { is_flyer, is_floater } from './mondata.js';
+import { float_vs_flight } from './polyself.js';
+import { pickup } from './pickup.js';
+import { dotrap } from './trap.js';
+import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
+         IS_SINK } from './const.js';
+import { M1_CLING } from './monsters.js';
+/* C ref: mondata.h is_clinger() */
+function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -728,6 +737,199 @@ export function check_special_room(newlev) {
             throw new Error('check_special_room(): special room entry not ported yet');
         /* default: msg_given = (rt == TEMPLE || rt >= SHOPBASE), so FALSE;
            rt = 0: nothing else changes */
+    }
+}
+
+/* C ref: youprop.h Levitation, Flying -- with the BLevitation/BFlying
+   blocks (uprops[].blocked), as switch_terrain() needs them */
+function sp_prop(p) {
+    return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
+}
+function sp_Levitation() {
+    const p = sp_prop(LEVITATION);
+    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
+}
+function sp_Flying() {
+    const p = sp_prop(FLYING);
+    return !!((p.intrinsic || p.extrinsic
+               || (game.u.usteed && is_flyer(game.u.usteed.data)))
+              && !p.blocked);
+}
+
+// C ref: hack.c switch_terrain()
+/* moving onto different terrain might cause Lev or Fly to toggle */
+async function switch_terrain() {
+    const u = game.u;
+    const lev = game.level.at(u.ux, u.uy);
+    const blocklev = (IS_OBSTRUCTED(lev.typ) || closed_door(u.ux, u.uy)
+                      || IS_WATERWALL(lev.typ)
+                      || lev.typ === LAVAWALL);
+    const was_levitating = sp_Levitation(), was_flying = sp_Flying();
+    const BLev = sp_prop(LEVITATION), BFly = sp_prop(FLYING);
+
+    if (blocklev) {
+        /* called from spoteffects(), stop levitating but skip float_down() */
+        if (sp_Levitation())
+            await You_cant("levitate in here.");
+        BLev.blocked |= FROMOUTSIDE;
+    } else if (BLev.blocked) {
+        BLev.blocked &= ~FROMOUTSIDE;
+        /* we're probably levitating now; if not, we must be chained
+           to a buried iron ball so get float_up() feedback for that */
+        if (sp_Levitation() || BLev.blocked)
+            throw new Error('switch_terrain(): float_up() not ported yet');
+    }
+    /* the same terrain that blocks levitation also blocks flight */
+    if (blocklev) {
+        if (sp_Flying())
+            await You_cant("fly in here.");
+        BFly.blocked |= FROMOUTSIDE;
+    } else if (BFly.blocked) {
+        BFly.blocked &= ~FROMOUTSIDE;
+        float_vs_flight(); /* maybe toggle (BFlying & I_SPECIAL) */
+        if (sp_Flying())
+            await You("start flying.");
+    }
+    if ((sp_Levitation() !== was_levitating) || (sp_Flying() !== was_flying))
+        game.disp_botl = true; /* update Lev/Fly status condition */
+
+    /* if (flags.terrainstatus) classify_terrain(): the option isn't
+       ported */
+}
+
+// C ref: hack.c pooleffects()
+/* extracted from spoteffects; called by spoteffects to check for entering or
+   leaving a pool of water/lava, and by moveloop to check for staying on one;
+   returns true to skip rest of spoteffects */
+export async function pooleffects(newspot) /* true if called by spoteffects */ {
+    const u = game.u;
+
+    /* check for leaving water */
+    if (u.uinwater)
+        throw new Error('pooleffects(): leaving water not ported yet');
+
+    /* check for entering water or lava */
+    if (!u.ustuck && !sp_Levitation() && !sp_Flying()
+        && (is_pool(u.ux, u.uy) || is_lava(u.ux, u.uy))) {
+        if (u.usteed && !(!is_flyer(u.usteed.data) && !is_floater(u.usteed.data)
+                          && !is_clinger(u.usteed.data))) { /* !grounded() */
+            /* floating or clinging steed keeps hero safe (is_flyer() test
+               is redundant; it can't be true since Flying yielded false) */
+            return false;
+        } else if (u.usteed) {
+            /* steed enters pool */
+            throw new Error('pooleffects(): dismount_steed() into a pool not ported yet');
+        }
+        /* not mounted */
+
+        /* if hiding on ceiling then don't automatically enter pool */
+        if (u.umonnum !== u.umonster && is_hider(mons[u.umonnum])
+            && u.uundetected) /* Upolyd && ceiling_hider() */
+            return false;
+
+        /* drown(),lava_effects() return true if hero changes
+           location while surviving the problem */
+        if (is_lava(u.ux, u.uy))
+            throw new Error('pooleffects(): lava_effects() not ported yet');
+        else
+            throw new Error('pooleffects(): drown() not ported yet');
+    }
+    void newspot;
+    return false;
+}
+
+/* C ref: hack.c spoteffects() static locals */
+let inspoteffects = 0;
+let spotloc = { x: 0, y: 0 };
+let spotterrain = STONE;
+let spottrap = null;
+let spottraptyp = NO_TRAP;
+
+// C ref: hack.c spoteffects()
+export async function spoteffects(pick) {
+    const u = game.u;
+    let mtmp;
+    let trap = t_at(u.ux, u.uy);
+    const trapflag = game.iflags?.failing_untrap ? FAILEDUNTRAP : 0;
+
+    /* prevent recursion from affecting the hero all over again
+       [hero poly'd to iron golem enters water here, drown() inflicts
+       damage that triggers rehumanize() which calls spoteffects()...] */
+    if (inspoteffects && u.ux === spotloc.x && u.uy === spotloc.y
+        /* except when reason is transformed terrain (ice -> water) */
+        && spotterrain === game.level.at(u.ux, u.uy).typ
+        /* or transformed trap (land mine -> pit) */
+        && (!spottrap || !trap || trap.ttyp === spottraptyp))
+        return;
+    /* when float_down() puts hero into lava and she teleports out,
+       defer spoteffects() until after "you are back on solid <surface>" */
+    if (game.iflags?.in_lava_effects)
+        return;
+
+    ++inspoteffects;
+    spotterrain = game.level.at(u.ux, u.uy).typ;
+    spotloc = { x: u.ux, y: u.uy };
+
+    /* moving onto different terrain might cause Lev or Fly to toggle;
+      level change sets <ux0,uy0> to <ux,uy>, so this spotterrain
+      check always fails then, but it also sets iflags.terrain_typ */
+    if (spotterrain !== game.level.at(u.ux0, u.uy0).typ
+        || (game.iflags?.terrain_typ ?? MAX_TYPE) === MAX_TYPE)
+        await switch_terrain();
+
+    /* if (pooleffects(TRUE)) goto spotdone; */
+    if (!await pooleffects(true)) {
+        check_special_room(false);
+        if (IS_SINK(game.level.at(u.ux, u.uy).typ) && sp_Levitation())
+            throw new Error('spoteffects(): dosinkfall() not ported yet');
+        if (!game.in_steed_dismounting) { /* if dismounting, check again later */
+            const HLev = sp_prop(LEVITATION);
+
+            /* if levitation is due to time out at the end of this
+               turn, allowing it to do so could give the perception
+               that a trap here is being triggered twice, so adjust
+               the timeout to prevent that */
+            if (trap && (HLev.intrinsic & TIMEOUT) === 1
+                && !(HLev.extrinsic || (HLev.intrinsic & ~(I_SPECIAL | TIMEOUT))))
+                throw new Error('spoteffects(): levitation timing out over a trap not ported yet');
+            /*
+             * If not a pit, pickup before triggering trap.
+             * If pit, trigger trap before pickup.
+             */
+            const pit = (trap && is_pit(trap.ttyp));
+            if (pick && !pit)
+                await pickup(1);
+
+            if (trap) {
+                /*
+                 * dotrap on a fire trap calls melt_ice() which triggers
+                 * spoteffects() (again) which can trigger the same fire
+                 * trap (again).  Use static spottrap to prevent that.
+                 * We track spottraptyp because some traps morph (landmine
+                 * to pit) and any new trap type should get triggered.
+                 */
+                if (!spottrap || spottraptyp !== trap.ttyp) {
+                    spottrap = trap;
+                    spottraptyp = trap.ttyp;
+                    await dotrap(trap, trapflag); /* fall into arrow trap, etc. */
+                    spottrap = null;
+                    spottraptyp = NO_TRAP;
+                }
+            }
+            if (pick && pit)
+                await pickup(1);
+        }
+        /* Warning alerts you to ice danger */
+        if (uhave(WARNING) && game.level.at(u.ux, u.uy).typ === ICE)
+            throw new Error('spoteffects(): ice warnings (spot_time_left()) not ported yet');
+
+        if ((mtmp = m_at(u.ux, u.uy)) != null && !u.uswallow)
+            throw new Error('spoteffects(): monster at the hero\'s spot (falling piercer/surprise) not ported yet');
+    }
+    /* spotdone: */
+    if (!--inspoteffects) {
+        spotterrain = STONE; /* 0 */
+        spotloc = { x: 0, y: 0 };
     }
 }
 
@@ -1743,7 +1945,13 @@ async function domove_core() {
         /* invocation_message(): only on the vibrating square level */
     }
 
-    /* if (u.umoved) spoteffects(TRUE): not ported yet */
+    /* if (Punished) move_bc(...): Punished throws above */
+
+    if (u.umoved)
+        await spoteffects(true);
+
+    /* delay next move because of ball dragging: cause_delay is only set
+       by drag_ball(), which isn't ported */
 
     /* runmode_delay_output(): display timing only */
 }

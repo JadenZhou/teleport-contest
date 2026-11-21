@@ -16,7 +16,7 @@ import { an, vtense } from './objnam.js';
 import { t_at } from './trap.js';
 import { visible_region_at } from './region.js';
 import { is_pool, is_lava } from './makemon.js';
-import { engr_at } from './engrave.js';
+import { engr_at, read_engr_at } from './engrave.js';
 import { IS_DOOR, IS_FOUNTAIN, IS_THRONE, IS_SINK, IS_ALTAR, IS_GRAVE,
          D_NODOOR, D_ISOPEN, D_BROKEN, ICE, DRAWBRIDGE_DOWN, DBWALL, TREE,
          IRONBARS, ECMD_OK } from './const.js';
@@ -34,7 +34,8 @@ import {
 } from './const.js';
 import { objects } from './objects.js';
 import * as M from './monsters.js';
-import { mons } from './monsters.js';
+import { mons, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
+import { STONE_RES } from './const.js';
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj } from './mkobj.js';
 import { itemactions } from './iactions.js';
 import {
@@ -930,6 +931,31 @@ function dfeature_at(x, y) {
     return dfeature;
 }
 
+/* C ref: mondata.h touch_petrifies() */
+function touch_petrifies(ptr) {
+    return ptr === mons[PM_COCKATRICE] || ptr === mons[PM_CHICKATRICE];
+}
+
+// C ref: invent.c will_feel_cockatrice()
+function will_feel_cockatrice(otmp, force_touch) {
+    const bl = game.u.uprops?.[BLINDED];
+    const Blind = !!((bl?.intrinsic || bl?.extrinsic) && !bl?.blocked);
+    const sr = game.u.uprops?.[STONE_RES];
+    const Stone_resistance = !!(sr?.intrinsic || sr?.extrinsic);
+
+    if ((Blind || force_touch) && !game.uarmg && !Stone_resistance
+        && (otmp.otyp === O.CORPSE
+            && touch_petrifies(mons[otmp.corpsenm])))
+        return true;
+    return false;
+}
+
+// C ref: invent.c feel_cockatrice()
+function feel_cockatrice(otmp, force_touch) {
+    if (will_feel_cockatrice(otmp, force_touch))
+        throw new Error('feel_cockatrice(): touching a cockatrice corpse not ported yet');
+}
+
 // C ref: invent.c look_here() -- the hero's own (unswallowed, sighted)
 // look at what is here
 export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup is in progress */
@@ -982,7 +1008,7 @@ export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup 
         || (is_pool(u.ux, u.uy) && !u.uinwater)) {
         if (dfeature && !skip_dfeature)
             await pline(fbuf);
-        read_engr_at(u.ux, u.uy); /* Eric Backus */
+        await read_engr_at(u.ux, u.uy); /* Eric Backus */
         if (!skip_objects && (Blind || !dfeature))
             await You(`${verb} no objects here.`);
         return ECMD_OK;
@@ -995,14 +1021,14 @@ export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup 
         /* only one object */
         if (dfeature && !skip_dfeature)
             await pline(fbuf);
-        read_engr_at(u.ux, u.uy); /* Eric Backus */
+        await read_engr_at(u.ux, u.uy); /* Eric Backus */
         const otmp = here[0];
         if (otmp.unpaid || game.level.flags?.has_shop)
             throw new Error('look_here(): doname_with_price() not ported yet');
         await You(`${verb} here ${doname(otmp)}.`);
         game.iflags.last_msg = 'PLNMSG_ONE_ITEM_HERE';
         if (otmp.otyp === O.CORPSE)
-            throw new Error('look_here(): feel_cockatrice() not ported yet');
+            feel_cockatrice(otmp, false);
     } else {
         await tty_display_nhwindow(game.WIN_MESSAGE, false);
         const tmpwin = tty_create_nhwindow(NHW_MENU);
@@ -1012,15 +1038,15 @@ export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup 
         }
         await tty_putstr(tmpwin, 0, `${picked_some ? "Other things" : "Things"} that ${Blind ? "you feel" : "are"} here:`);
         for (const otmp of here) {
-            if (otmp.otyp === O.CORPSE)
-                throw new Error('look_here(): will_feel_cockatrice() not ported yet');
+            if (will_feel_cockatrice(otmp, false))
+                throw new Error('look_here(): felt_cockatrice not ported yet');
             if (otmp.unpaid || game.level.flags?.has_shop)
                 throw new Error('look_here(): doname_with_price() not ported yet');
             await tty_putstr(tmpwin, 0, doname(otmp));
         }
         await tty_display_nhwindow(tmpwin, true);
         await tty_destroy_nhwindow(tmpwin);
-        read_engr_at(u.ux, u.uy); /* Eric Backus */
+        await read_engr_at(u.ux, u.uy); /* Eric Backus */
     }
     return ECMD_OK;
 }
@@ -1031,13 +1057,6 @@ export async function dolook() {
     return await look_here(0, 0);
 }
 
-/* C ref: engrave.c read_engr_at() -- only the nothing-to-read case is
-   ported yet */
-function read_engr_at(x, y) {
-    const ep = engr_at(x, y);
-    if (ep && ep.engr_txt?.actual_text?.[0])
-        throw new Error('read_engr_at(): reading an engraving not ported yet');
-}
 
 // C ref: invent.c dispinv_with_action()
 async function dispinv_with_action(lets, use_inuse_ordering, alt_label) {

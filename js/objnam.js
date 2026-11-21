@@ -18,7 +18,7 @@
 import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import {
-    lowc, highc, strncmpi, strcmpi, mungspaces, strstri, fuzzymatch, dist2,
+    lowc, highc, strncmpi, strcmpi, mungspaces, strstri, fuzzymatch, dist2, s_suffix,
 } from './hacklib.js';
 import { cansee } from './vision.js';
 import * as O from './objects.js';
@@ -2434,6 +2434,129 @@ function xn_not_ported(what) {
     throw new Error(`xname/doname: ${what} is not ported yet`);
 }
 
+/* C ref: objnam.c CXN_* flags */
+export const CXN_NORMAL = 0, CXN_SINGULAR = 1, CXN_NO_PFX = 2,
+             CXN_PFX_THE = 4, CXN_ARTICLE = 8, CXN_NOCORPSE = 16;
+
+// C ref: objnam.c the_unique_pm()
+export function the_unique_pm(ptr) {
+    /* even though monsters with personal names are unique, we want to
+       describe them as "Name" rather than "the Name" */
+    if ((ptr.mflags2 & M.M2_PNAME) !== 0)
+        return false;
+
+    let uniq = (ptr.geno & M.G_UNIQ) ? true : false;
+    /* high priest is unique if it includes "of <deity>", otherwise not
+       (caller needs to handle the 1st possibility; we assume the 2nd);
+       worm tail should be irrelevant but is included for completeness */
+    if (ptr === mons[M.PM_HIGH_CLERIC] || ptr === mons[M.PM_LONG_WORM_TAIL])
+        uniq = false;
+    /* Wizard no longer needs this; he's flagged as unique these days */
+    if (ptr === mons[M.PM_WIZARD_OF_YENDOR])
+        uniq = true;
+    return uniq;
+}
+
+// C ref: do_name.c obj_pmname()
+export function obj_pmname(obj) {
+    if ((obj.otyp === O.CORPSE || obj.otyp === O.STATUE || obj.otyp === O.FIGURINE)
+        && obj.corpsenm >= LOW_PM && obj.corpsenm < mons.length) {
+        const cgend = (obj.spe & 0x03 /* CORPSTAT_GENDER */),
+              mgend = ((cgend === CORPSTAT_MALE) ? MALE
+                       : (cgend === CORPSTAT_FEMALE) ? FEMALE
+                         : NEUTRAL);
+        let mndx = obj.corpsenm;
+
+        /* mons[].pmnames[] for monster cleric uses "priest" or "priestess"
+           or "aligned cleric"; we want to avoid "aligned cleric [corpse]"
+           unless it has been explicitly flagged as neuter */
+        if (mndx === M.PM_ALIGNED_CLERIC && cgend === 0 /* CORPSTAT_RANDOM */)
+            mndx = M.PM_CLERIC;
+
+        /* mondata.c pmname() */
+        const pm = mons[mndx];
+        if ((mgend >= MALE && mgend <= NEUTRAL) && pm.pmnames[mgend])
+            return pm.pmnames[mgend];
+        return pm.pmnames[NEUTRAL];
+    }
+    return "two-legged glorkum-seeker";
+}
+
+// C ref: objnam.c corpse_xname()
+export function corpse_xname(otmp, adjective, cxn_flags) /* bitmask of CXN_xxx values */ {
+    const omndx = otmp.corpsenm;
+    const ignore_quan = (cxn_flags & CXN_SINGULAR) !== 0,
+          omit_corpse = (cxn_flags & CXN_NOCORPSE) !== 0,
+          glob = (otmp.otyp !== O.CORPSE && otmp.globby);
+    /* suppress "the" from "the unique monster corpse" */
+    let no_prefix = (cxn_flags & CXN_NO_PFX) !== 0,
+        /* include "the" for "the woodchuck corpse */
+        the_prefix = (cxn_flags & CXN_PFX_THE) !== 0,
+        /* include "an" for "an ogre corpse */
+        any_prefix = (cxn_flags & CXN_ARTICLE) !== 0,
+        possessive = false;
+    let mnam;
+
+    if (glob) {
+        mnam = OBJ_NAME(objects[otmp.otyp]); /* "glob of <monster>" */
+    } else if (omndx === NON_PM) { /* paranoia */
+        mnam = "thing";
+    } else {
+        mnam = obj_pmname(otmp);
+        if (the_unique_pm(mons[omndx]) || (mons[omndx].mflags2 & M.M2_PNAME)) {
+            mnam = s_suffix(mnam);
+            possessive = true;
+            /* don't precede personal name like "Medusa" with an article */
+            if (mons[omndx].mflags2 & M.M2_PNAME)
+                no_prefix = true;
+            /* always precede non-personal unique monster name like
+               "Oracle" with "the" unless explicitly overridden */
+            else if (the_unique_pm(mons[omndx]) && !no_prefix)
+                the_prefix = true;
+        }
+    }
+    if (no_prefix)
+        the_prefix = any_prefix = false;
+    else if (the_prefix)
+        any_prefix = false; /* mutually exclusive */
+
+    let nambuf = '';
+    if (the_prefix)
+        nambuf += "the ";
+
+    if (!adjective) {
+        /* normal case:  newt corpse */
+        nambuf += mnam;
+    } else {
+        /* adjective positioning depends upon format of monster name */
+        if (possessive) /* Medusa's cursed partly eaten corpse */
+            nambuf += `${mnam} ${adjective}`;
+        else /* cursed partly eaten troll corpse */
+            nambuf += `${adjective} ${mnam}`;
+        /* in case adjective has a trailing space, squeeze it out */
+        nambuf = mungspaces(nambuf);
+        /* doname() might include a count in the adjective argument;
+           if so, don't prepend an article */
+        if (adjective[0] >= '0' && adjective[0] <= '9')
+            any_prefix = false;
+    }
+
+    if (glob) {
+        ; /* omit_corpse doesn't apply; quantity is always 1 */
+    } else if (!omit_corpse) {
+        nambuf += " corpse";
+        /* makeplural(nambuf) => append "s" to "corpse" */
+        if (otmp.quan > 1 && !ignore_quan) {
+            nambuf += "s";
+            any_prefix = false; /* avoid "a newt corpses" */
+        }
+    }
+
+    if (any_prefix)
+        nambuf = an(nambuf);
+    return nambuf;
+}
+
 // C ref: you.h Blind
 function xn_Blind() {
     const p = game.u?.uprops?.[BLINDED];
@@ -3039,9 +3162,14 @@ function doname_base(obj, doname_flags) {
     case O.FOOD_CLASS:
         if (obj.oeaten)
             prefix += "partly eaten ";
-        if (obj.otyp === O.CORPSE)
-            xn_not_ported('corpse_xname()');
-        else if (obj.otyp === O.EGG && omndx_ok(obj.corpsenm))
+        if (obj.otyp === O.CORPSE) {
+            /* (quan == 1) => want corpse_xname() to supply article,
+               (quan != 1) => already have count or "some" as prefix;
+               "corpse" is already in the buffer returned by xname() */
+            const cxarg = (((obj.quan !== 1) ? 0 : CXN_ARTICLE)
+                           | CXN_NOCORPSE);
+            prefix = `${corpse_xname(obj, prefix, cxarg)} `;
+        } else if (obj.otyp === O.EGG && omndx_ok(obj.corpsenm))
             xn_not_ported('egg monster names');
         else if (obj.otyp === O.MEAT_RING)
             xn_not_ported('meat ring');
