@@ -32,7 +32,7 @@
 
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
-import { TRUE, FALSE, NHL_SB_SAFE } from './const.js';
+import { TRUE, FALSE, NHL_SB_SAFE, NON_PM, G_GENOD } from './const.js';
 import * as C from './const.js';
 import { nhlib_lua } from './nhlib_lua.js';
 import { dungeon_lua } from './dungeon_lua.js';
@@ -45,6 +45,8 @@ import { oracle_lua } from './oracle_lua.js';
 import { bigrm_lua_files } from './bigrm_lua.js';
 import { quest_level_lua_files } from './questlev_lua.js';
 import { soko_lua_files } from './soko_lua.js';
+import { tower_lua_files } from './tower_lua.js';
+import { name_to_mon } from './mondata.js';
 import { l_register_des, get_coord, cvt_to_abscoord } from './sp_lev.js';
 import { l_selection_register } from './selvar.js';
 import { l_obj_register, nhl_get_timertype } from './nhlobj.js';
@@ -448,9 +450,26 @@ async function nhl_text(...args) {
     return 0;
 }
 
+// C ref: nhlua.c nhl_is_genocided()
+/* local is_genocided = nh.is_genocided("vampire"); */
+function nhl_is_genocided(...args) {
+    if (args.length === 1) {
+        const paramstr = luaL_checkstring(args[0]);
+        const mgend = { v: 0 };
+        const i = name_to_mon(paramstr, mgend);
+
+        return ((i !== NON_PM)
+                && (game.mvitals[i].mvflags & G_GENOD)) ? TRUE : FALSE;
+    } else {
+        nhl_error(null, 'Wrong args');
+    }
+    return undefined;
+}
+
 // C ref: nhlua.c nhl_functions[] — the "nh" table. Only some functions
 // are ported so far.
 const nhl_functions = {
+    is_genocided: nhl_is_genocided,
     impossible: nhl_impossible,
     rn2: nhl_rn2,
     random: nhl_random,
@@ -482,6 +501,8 @@ function nhl_lua_file(fname) {
         return quest_level_lua_files[fname];
     if (Object.hasOwn(soko_lua_files, fname))
         return soko_lua_files[fname];
+    if (Object.hasOwn(tower_lua_files, fname))
+        return tower_lua_files[fname];
     return null;
 }
 

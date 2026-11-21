@@ -113,6 +113,8 @@ import { m_dowear } from './worn.js';
 import { can_saddle, put_saddle_on_mon } from './makemon.js';
 import { in_rooms } from './hack.js';
 import { premap_detect } from './detect.js';
+import { christen_monst } from './do_name.js';
+import { newcham } from './mon.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -2108,7 +2110,7 @@ function create_monster(m, croom) {
         m.x = x, m.y = y;
         /* handle specific attributes for some special monsters */
         if (m.name)
-            nhl_error(null, 'create_monster: christen_monst() is not ported yet');
+            mtmp = christen_monst(mtmp, m.name);
 
         /*
          * This doesn't complain if an attempt is made to give a
@@ -2210,7 +2212,7 @@ function create_monster(m, croom) {
                explicitly request that, shift back to vampire */
             if (is_vampshifter(mtmp) && !is_vampire(mtmp.data)
                 && m.appear !== M_AP_MONSTER) /* vampshifted() */
-                nhl_error(null, 'create_monster: newcham() is not ported yet');
+                newcham(mtmp, mons[mtmp.cham], 0 /* NO_NC_FLAGS */);
         }
         if (m.m_lev_adj) {
             if (mtmp.m_lev + m.m_lev_adj > 49)

@@ -1,7 +1,8 @@
 // questlev_lua.js — hand port of the quest level scripts sessions reach:
-// dat/Bar-strt.lua and dat/Pri-strt.lua (the quest home levels).
+// dat/Bar-strt.lua and dat/Pri-strt.lua (the quest home levels),
+// dat/Bar-loca.lua (locate level) and dat/Bar-fila.lua (filler level).
 // makemaz() loads them through load_special() (sp_lev.c).
-// C ref: dat/Bar-strt.lua, dat/Pri-strt.lua
+// C ref: dat/Bar-strt.lua, dat/Pri-strt.lua, dat/Bar-loca.lua, dat/Bar-fila.lua
 //
 // These scripts roll no dice on the Lua side; the selection operator '&'
 // is lua_band() (nhlua.js).
@@ -213,8 +214,156 @@ function Pri_strt_lua(L) {
     }
 }
 
+const MAP_Bar_loca = [
+    '..........PPP.........................................                      ',
+    '...........PP..........................................        .......      ',
+    '..........PP...........-----..........------------------     ..........     ',
+    '...........PP..........+...|..........|....S...........|..  ............    ',
+    '..........PPP..........|...|..........|-----...........|...  .............  ',
+    '...........PPP.........-----..........+....+...........|...  .............  ',
+    '..........PPPPPPPPP...................+....+...........S.................   ',
+    '........PPPPPPPPPPPPP.........-----...|-----...........|................    ',
+    '......PPPPPPPPPPPPPP..P.......+...|...|....S...........|          ...       ',
+    '.....PPPPPPP......P..PPPP.....|...|...------------------..         ...      ',
+    '....PPPPPPP.........PPPPPP....-----........................      ........   ',
+    '...PPPPPPP..........PPPPPPP..................................   ..........  ',
+    '....PPPPPPP........PPPPPPP....................................  ..........  ',
+    '.....PPPPP........PPPPPPP.........-----........................   ........  ',
+    '......PPP..PPPPPPPPPPPP...........+...|.........................    .....   ',
+    '..........PPPPPPPPPPP.............|...|.........................     ....   ',
+    '..........PPPPPPPPP...............-----.........................       .    ',
+    '..............PPP.................................................          ',
+    '...............PP....................................................       ',
+    '................PPP...................................................      ',
+].join('\n') + '\n';
+
+
+// C ref: dat/Bar-loca.lua
+//	The "locate" level for the quest.
+function Bar_loca_lua(L) {
+    const G = L.globals, des = G.des, selection = G.selection;
+
+    des.level_init({ style: 'solidfill', fg: ' ' });
+
+    des.level_flags('mazelevel', 'hardfloor');
+
+    des.map(MAP_Bar_loca);
+    // -- Dungeon Description
+    des.region(selection.area(0, 0, 75, 19), 'lit');
+    des.region(selection.area(24, 3, 26, 4), 'unlit');
+    des.region(selection.area(31, 8, 33, 9), 'unlit');
+    des.region(selection.area(35, 14, 37, 15), 'unlit');
+    des.region(selection.area(39, 3, 54, 8), 'lit');
+    des.region(selection.area(56, 0, 75, 8), 'unlit');
+    des.region(selection.area(64, 9, 75, 16), 'unlit');
+    // -- Doors
+    des.door('open', 23, 3);
+    des.door('open', 30, 8);
+    des.door('open', 34, 14);
+    des.door('locked', 38, 5);
+    des.door('locked', 38, 6);
+    des.door('closed', 43, 3);
+    des.door('closed', 43, 5);
+    des.door('closed', 43, 6);
+    des.door('closed', 43, 8);
+    des.door('locked', 55, 6);
+    // -- Stairs
+    des.stair('up', 5, 2);
+    des.stair('down', 70, 13);
+    // -- Objects
+    des.object({ x: 42, y: 3 });
+    des.object({ x: 42, y: 3 });
+    des.object({ x: 42, y: 3 });
+    des.object({ x: 41, y: 3 });
+    des.object({ x: 41, y: 3 });
+    des.object({ x: 41, y: 3 });
+    des.object({ x: 41, y: 3 });
+    des.object({ x: 41, y: 8 });
+    des.object({ x: 41, y: 8 });
+    des.object({ x: 42, y: 8 });
+    des.object({ x: 42, y: 8 });
+    des.object({ x: 42, y: 8 });
+    des.object({ x: 71, y: 13 });
+    des.object({ x: 71, y: 13 });
+    des.object({ x: 71, y: 13 });
+    // -- Random traps
+    des.trap('spiked pit', 10, 13);
+    des.trap('spiked pit', 21, 7);
+    des.trap('spiked pit', 67, 8);
+    des.trap('spiked pit', 68, 9);
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    // -- Random monsters.
+    des.monster({ id: 'ogre', x: 12, y: 9, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 18, y: 11, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 45, y: 5, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 45, y: 6, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 47, y: 5, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 46, y: 5, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 56, y: 3, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 56, y: 4, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 56, y: 5, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 56, y: 6, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 57, y: 3, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 57, y: 4, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 57, y: 5, peaceful: 0 });
+    des.monster({ id: 'ogre', x: 57, y: 6, peaceful: 0 });
+    des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ class: 'O', peaceful: 0 });
+    des.monster({ class: 'T', peaceful: 0 });
+    des.monster({ id: 'rock troll', x: 46, y: 6, peaceful: 0 });
+    des.monster({ id: 'rock troll', x: 47, y: 6, peaceful: 0 });
+    des.monster({ id: 'rock troll', x: 56, y: 7, peaceful: 0 });
+    des.monster({ id: 'rock troll', x: 57, y: 7, peaceful: 0 });
+    des.monster({ id: 'rock troll', x: 70, y: 13, peaceful: 0 });
+    des.monster({ id: 'rock troll', peaceful: 0 });
+    des.monster({ id: 'rock troll', peaceful: 0 });
+    des.monster({ class: 'T', peaceful: 0 });
+}
+
+// C ref: dat/Bar-fila.lua
+//	The "fill" level for the quest.
+function Bar_fila_lua(L) {
+    const G = L.globals, des = G.des;
+
+    des.level_init({ style: 'solidfill', fg: ' ' });
+
+    des.level_flags('mazelevel', 'noflip');
+
+    des.level_init({ style: 'mines', fg: '.', bg: '.', smoothed: true, joined: true, lit: 0, walled: false });
+
+    //
+    des.stair('up');
+    des.stair('down');
+    //
+    des.object();
+    des.object();
+    des.object();
+    des.object();
+    des.object();
+    des.object();
+    des.object();
+    des.object();
+    //
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    //
+    des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ class: 'O', peaceful: 0 });
+    des.monster({ id: 'rock troll', peaceful: 0 });
+}
+
 // The hand-ported quest level scripts by file name, for nhl_loadlua().
 export const quest_level_lua_files = {
     'Bar-strt.lua': Bar_strt_lua,
+    'Bar-loca.lua': Bar_loca_lua,
+    'Bar-fila.lua': Bar_fila_lua,
     'Pri-strt.lua': Pri_strt_lua,
 };
