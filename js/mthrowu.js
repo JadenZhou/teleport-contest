@@ -24,7 +24,7 @@ import { BOLT_LIM, MON_POLE_DIST, NEED_WEAPON, NEED_RANGED_WEAPON,
          W_NONDIGGABLE, POTHIT_OTHER_THROW, POTHIT_MONST_THROW, M_AP_NOTHING,
          M_AP_MONSTER, IRONBARS, isok, IS_OBSTRUCTED, IS_SINK,
          LOW_PM, ARM, EYE, FACE, HAND, FOOT, W_WEP, XKILL_NOMSG,
-         POISON_RES } from './const.js';
+         POISON_RES, NEUTRAL } from './const.js';
 import * as O from './objects.js';
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, POTION_CLASS,
          VENOM_CLASS, COIN_CLASS, ARMOR_CLASS, ROCK_CLASS, FOOD_CLASS,
@@ -60,7 +60,7 @@ import { genders } from './role.js';
 import { find_mac } from './worn.js';
 import { seemimic, xkilled, mondied, setmangry, monkilled,
          wake_nearto } from './mon.js';
-import { exercise, ACURR } from './attrib.js';
+import { exercise, ACURR, poisoned } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { stop_occupation } from './allmain.js';
 import { nomul, calc_capacity } from './hack.js';
@@ -591,8 +591,7 @@ export async function ohitmon(
         if (vis) {
             if (otmp.otyp === O.EGG) {
                 await pline(`Splat!  ${Monnam(mtmp)} is hit with ${
-                    otmp.known ? an(mons[otmp.corpsenm].pmnames[M.NEUTRAL]
-                                    ?? mons[otmp.corpsenm].mname)
+                    otmp.known ? an(mons[otmp.corpsenm].pmnames[NEUTRAL])
                                : "an"} egg!`);
             } else {
                 let how;
@@ -930,10 +929,12 @@ export async function m_throw(
             }
             singleobj = oref.obj;
             if (hitu && singleobj.opoisoned && is_poisonable(singleobj)) {
-                /* poisoned(xname(singleobj), A_STR,
-                            killer_xname(singleobj), 10 or 0, TRUE) */
-                void oldumort;
-                throw new Error('m_throw(): poisoned() not ported yet');
+                const onmbuf = xname(singleobj);
+                const knmbuf = killer_xname(singleobj);
+                await poisoned(onmbuf, A_STR, knmbuf,
+                               /* if damage triggered life-saving,
+                                  poison is limited to attrib loss */
+                               ((u.umortality || 0) > oldumort) ? 0 : 10, true);
             }
             if (hitu && can_blnd(null, game.youmonst,
                                  (singleobj.otyp === O.BLINDING_VENOM)

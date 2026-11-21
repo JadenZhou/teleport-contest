@@ -9,7 +9,7 @@
 // item_what().
 
 import { game } from './gstate.js';
-import { You, pline, pline_The, Blind, Hallucination } from './display.js';
+import { You, Your, pline, pline_The, Blind, Hallucination } from './display.js';
 import { getobj, useupall } from './invent.js';
 import { check_capacity } from './hack.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -20,6 +20,10 @@ import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
 import { The, xname, Tobjnam, vtense } from './objnam.js';
 import { mon_nam } from './do_name.js';
+import { resists_blnd, resists_blnd_by_arti } from './mondata.js';
+import { make_blinded } from './potion.js';
+import { body_part } from './insight.js';
+import { ARM } from './const.js';
 import { fall_asleep } from './timeout.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { bhit } from './dothrow.js';
@@ -984,6 +988,26 @@ export function exclam(force) {
     return (force < 0) ? "?" : (force <= 4) ? "." : "!";
 }
 
+// C ref: zap.c flashburn()
+/* light blinding: returns True if it blinds */
+export async function flashburn(duration, via_lightning) {
+    if (!resists_blnd(game.youmonst)) {
+        await You("are blinded by the flash!"); /* are_blinded_by_the_flash */
+        await make_blinded(duration, false);
+        if (!Blind())
+            await Your("vision quickly clears."); /* Your1(vision_clears) */
+        return true;
+    }
+    /* if blinding is resisted due to magical equipment (Sunsword), give
+       a sparkle animation (even if also resisted due to being blind)
+       _unless_ this is lightning-induced */
+    if (!via_lightning && resists_blnd_by_arti(game.youmonst)) {
+        /* shieldeff(u.ux, u.uy): transient display only */
+        return true;
+    }
+    return false;
+}
+
 // C ref: zap.c hit()
 export async function hit(
     str,     /* zap text or missile name */
@@ -1224,10 +1248,10 @@ export async function dobuzz(
                 } else if (!Blind()) {
                     await pline(`${The(flash_str(fltyp, false))} whizzes by you!`);
                 } else if (damgtype === ZT_LIGHTNING) {
-                    throw new Error('dobuzz(): blind lightning tingle not ported yet');
+                    await Your(`${body_part(ARM)} tingles.`);
                 }
                 if (damgtype === ZT_LIGHTNING)
-                    throw new Error('dobuzz(): flashburn() not ported yet');
+                    await flashburn(d(nd, 50), true);
                 await stop_occupation();
                 nomul(0);
             }

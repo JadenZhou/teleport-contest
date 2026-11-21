@@ -15,7 +15,7 @@ import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
          FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
          ACID_RES, STONE_RES, DRAIN_RES, ANTIMAGIC, BLND_RES, ALL_TRAPS,
          NO_TRAP, W_ARMOR, W_ACCESSORY, W_WEP, W_SWAPWEP, W_ARMC, W_ARM,
-         W_ARMH,
+         W_ARMH, BLINDED,
        } from './const.js';
 import { objects, ALCHEMY_SMOCK, WEAPON_CLASS, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
@@ -52,9 +52,57 @@ export function passes_walls(ptr) { return (ptr.mflags1 & M1_WALLWALK) !== 0; }
 // C ref: mondata.h haseyes()
 export function haseyes(ptr) { return (ptr.mflags1 & M1_NOEYES) === 0; }
 
+// C ref: mondata.c resists_blnd()
+/* TRUE if monster is resistant to light-induced blindness */
+export function resists_blnd(mon) {
+    const g = game, u = g.u;
+    const ptr = mon.data;
+    const is_you = (mon === g.youmonst);
+
+    if (is_you ? (uBlind() || Unaware())
+               : (mon.mblinded || !mon.mcansee || !haseyes(ptr)
+                  /* BUG: temporary sleep sets mfrozen, but since
+                          paralysis does too, we can't check it */
+                  || mon.msleeping))
+        return true;
+    /* yellow light, Archon; !dust vortex, !cobra, !raven */
+    if (dmgtype_fromattack(ptr, M.AD_BLND, M.AT_EXPL)
+        || dmgtype_fromattack(ptr, M.AD_BLND, M.AT_GAZE))
+        return true;
+    /* Sunsword */
+    if (resists_blnd_by_arti(mon))
+        return true;
+    /* catchall */
+    if (is_you && (u.uprops[BLND_RES].intrinsic || u.uprops[BLND_RES].extrinsic)) {
+        /* impossible("'Blnd_resist' but not resists_blnd()?") */
+        return true;
+    }
+    return false;
+}
+/* C ref: youprop.h Blind */
+function uBlind() {
+    const p = game.u.uprops[BLINDED];
+    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
+}
+
+// C ref: mondata.c resists_blnd_by_arti()
+/* True iff monster is resistant to light-induced blindness due to worn
+   or wielded magical equipment */
+export function resists_blnd_by_arti(mon) {
+    const g = game;
+    const is_you = (mon === g.youmonst);
+
+    let o = is_you ? g.uwep : mon.mw;
+    if (o && o.oartifact)
+        throw new Error('resists_blnd_by_arti(): defends() not ported yet');
+    for (o of invent_chain(mon, is_you))
+        if (o.oartifact) /* defends_when_carried(AD_BLND, o) */
+            throw new Error('resists_blnd_by_arti(): defends_when_carried() not ported yet');
+    return false;
+}
+
 // C ref: mondata.c can_blnd()
-/* returns True if monster can be blinded by the given attack;
-   resists_blnd() isn't ported yet, so the light-based attacks stop */
+/* returns True if monster can be blinded by the given attack */
 export function can_blnd(
     magr, /* NULL == no specific aggressor */
     mdef,
@@ -87,7 +135,7 @@ export function can_blnd(
         /* light-based attacks may be cancelled or resisted */
         if (magr && magr.mcan)
             return false;
-        throw new Error('can_blnd(): resists_blnd() not ported yet');
+        return !resists_blnd(mdef);
 
     case M.AT_WEAP:
     case M.AT_SPIT:
@@ -329,7 +377,7 @@ export function Resists_Elem(mon, propindx) {
     case DRAIN_RES:
         return resists_drli(mon);
     case BLND_RES:
-        throw new Error('Resists_Elem(): resists_blnd() not ported yet');
+        return resists_blnd(mon);
 
     default:
         /* impossible("Resists_Elem(%d), unexpected property type") */
