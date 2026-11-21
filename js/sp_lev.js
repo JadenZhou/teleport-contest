@@ -50,7 +50,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap } from './mklev.js';
+import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap, fill_zoo } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container,
@@ -89,7 +89,7 @@ import { nhl_push_obj } from './nhlobj.js';
 import { bury_an_obj } from './dig.js';
 import { stock_room } from './shknam.js';
 import { make_engr_at, engr_at, del_engr_at } from './engrave.js';
-import { DUST, ENGRAVE, BURN, MARK, ENGR_BLOOD } from './const.js';
+import { DUST, ENGRAVE, BURN, MARK, ENGR_BLOOD, Is_waterlevel } from './const.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -402,8 +402,7 @@ export function fill_special_room(croom) {
         case LEPREHALL:
         case MORGUE:
         case BARRACKS:
-            /* fill_zoo(croom) is not ported yet */
-            impossible('fill_special_room: fill_zoo() is not ported yet');
+            fill_zoo(croom);
             break;
         }
     }
@@ -1566,8 +1565,11 @@ function get_unpacked_coord(loc, defhumidity) {
 function is_ok_location(x, y, humidity) {
     const typ = game.level.at(x, y).typ;
 
-    /* Is_waterlevel(&u.uz) and is_ok_location_func: not used by the
-       themed rooms ported so far */
+    if (Is_waterlevel(game.u.uz))
+        return TRUE; /* accept any spot */
+
+    /* if (is_ok_location_func) return is_ok_location_func(x, y): only
+       set by l_create_stairway() (des.stair), which isn't ported yet */
 
     /* TODO: Should perhaps check if wall is diggable/passwall? */
     if (humidity & ANY_LOC)
@@ -1577,8 +1579,7 @@ function is_ok_location(x, y, humidity) {
         return TRUE;
 
     if ((humidity & (DRY | SPACELOC)) && SPACE_POS(typ)) {
-        /* sobj_at(BOULDER, x, y): floor objects are not tracked yet */
-        const bould = false;
+        const bould = (sobj_at(BOULDER, x, y) !== null);
 
         if (!bould || (bould && (humidity & SOLID)))
             return TRUE;
@@ -1860,6 +1861,11 @@ function m_bad_boulder_spot(x, y) {
         return TRUE;
     /* spot is ok */
     return FALSE;
+}
+
+// C ref: sp_lev.c pm_good_location()
+export function pm_good_location(x, y, pm) {
+    return is_ok_location(x, y, pm_to_humidity(pm));
 }
 
 // C ref: sp_lev.c pm_to_humidity()

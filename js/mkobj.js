@@ -39,6 +39,9 @@ import { obj_no_longer_held } from './do.js';
 import { block_point, recalc_block_point } from './vision.js';
 import { vobj_at } from './display.js';
 import { attach_egg_hatch_timeout } from './timeout.js';
+import { tt_oname } from './topten.js';
+import { confers_luck } from './timeout.js';
+import { set_moreluck } from './attrib.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -775,6 +778,20 @@ export function curse(otmp) {
     otmp.cursed = 1;
 }
 
+// C ref: mkobj.c uncurse()
+export function uncurse(otmp) {
+    if (otmp.lamplit)
+        throw new Error('uncurse(): arti_light_radius() of a lit object not ported yet');
+    otmp.cursed = 0;
+    if (otmp.where === 'OBJ_INVENT' /* carried(otmp) */ && confers_luck(otmp))
+        set_moreluck();
+    else if (otmp.otyp === O.BAG_OF_HOLDING)
+        otmp.owt = weight(otmp);
+    else if (otmp.otyp === O.FIGURINE && otmp.timed)
+        throw new Error('uncurse(): stop_timer(FIG_TRANSFORM) not ported yet');
+    return;
+}
+
 // C ref: mkobj.c blessorcurse()
 export function blessorcurse(otmp, chance) {
     if (otmp.blessed || otmp.cursed)
@@ -1404,6 +1421,29 @@ export function mksobj(otyp, init, artif) {
         otmp = mk_artifact(otmp, A_NONE, 99, false);
     }
     otmp.owt = weight(otmp);
+    return otmp;
+}
+
+// C ref: mkobj.c mk_tt_object()
+/* make an object named after someone listed in the scoreboard file;
+   never returns Null */
+export function mk_tt_object(
+    objtype, /* CORPSE or STATUE */
+    x, y)
+{
+    /* player statues never contain books */
+    const initialize_it = (objtype !== O.STATUE);
+    const otmp = mksobj_at(objtype, x, y, initialize_it, false);
+
+    /* tt_oname() will return null if the scoreboard is empty, which in
+       turn leaves the random corpsenm value; force it to match a player */
+    if (!tt_oname(otmp)) {
+        const pm = rn1(M.PM_WIZARD - M.PM_ARCHEOLOGIST + 1, M.PM_ARCHEOLOGIST);
+
+        /* update weight for either, force timer sanity for corpses */
+        set_corpsenm(otmp, pm);
+    }
+
     return otmp;
 }
 

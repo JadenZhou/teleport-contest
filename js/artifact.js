@@ -672,6 +672,13 @@ export function get_artifact(obj) {
     return arts[ART_NONARTIFACT];
 }
 
+// C ref: artifact.c spec_ability()
+export function spec_ability(otmp, abil) {
+    const arti = get_artifact(otmp);
+
+    return (arti !== artilist()[ART_NONARTIFACT] && (arti.spfx & abil) !== 0);
+}
+
 // C ref: artifact.c spec_applies() -- the SPFX_DBONUS cases (all that
 // bane_applies() can reach); the SPFX_ATTK resistance checks are not
 // ported yet
