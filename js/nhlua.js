@@ -46,6 +46,7 @@ import { bigrm_lua_files } from './bigrm_lua.js';
 import { quest_level_lua_files } from './questlev_lua.js';
 import { soko_lua_files } from './soko_lua.js';
 import { tower_lua_files } from './tower_lua.js';
+import { mines_lua_files } from './mines_lua.js';
 import { name_to_mon } from './mondata.js';
 import { l_register_des, get_coord, cvt_to_abscoord } from './sp_lev.js';
 import { l_selection_register } from './selvar.js';
@@ -503,6 +504,8 @@ function nhl_lua_file(fname) {
         return soko_lua_files[fname];
     if (Object.hasOwn(tower_lua_files, fname))
         return tower_lua_files[fname];
+    if (Object.hasOwn(mines_lua_files, fname))
+        return mines_lua_files[fname];
     return null;
 }
 
