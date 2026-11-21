@@ -968,6 +968,11 @@ export function newsym_force(x, y) {
 
 // ── newsym ──
 export function newsym(x, y) {
+    /* don't try to produce map output when level is in a state of flux
+       (C ref: display.c _suppress_map_output(); saving and restoring
+       aren't flagged in this port) */
+    if (game.in_mklev)
+        return;
     const loc = game.level?.at(x, y);
     if (!loc) return;
 

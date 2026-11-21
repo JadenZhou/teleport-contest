@@ -58,6 +58,7 @@ import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
 import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon } from './display.js';
+import { does_block, block_point } from './vision.js';
 import { set_apparxy } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
@@ -2111,11 +2112,8 @@ export function set_mimic_sym(mtmp) {
         mtmp.mextra.mcorpsenm = NON_PM;
     }
 
-    /* if (does_block(mx, my, &levl[mx][my])) block_point(mx, my);
-       -- the JS vision has no block_point(); recompute vision instead */
-    if ((ap_type === M_AP_FURNITURE && (appear === S_hcdoor || appear === S_vcdoor))
-        || (ap_type === M_AP_OBJECT && appear === O.BOULDER))
-        game.vision_full_recalc = 1;
+    if (does_block(mx, my, game.level.at(mx, my)))
+        block_point(mx, my);
 }
 // C ref: mon.c hideunder() -- concealment state only (no rolls); floor
 // objects aren't kept in a list yet, so there is nothing to hide under
