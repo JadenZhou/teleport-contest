@@ -107,6 +107,8 @@ import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
 import { in_rooms } from './hack.js';
+import { nemdead, leaddead, nemesis_stinks } from './quest.js';
+import { stinky_nemesis } from './questpgr.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -249,6 +251,8 @@ function mon_leaving_level(mon) {
 // mondead() awaits; mongone() (due_to_death FALSE, called from level
 // creation) runs synchronously.
 function m_detach(mtmp, mptr, due_to_death) {
+    const mx = mtmp.mx, my = mtmp.my;
+
     if (mtmp.mleashed)
         throw new Error('m_detach(): m_unleash() not ported yet');
 
@@ -278,14 +282,26 @@ function m_detach(mtmp, mptr, due_to_death) {
             throw new Error('m_detach(): dismount_steed() not ported yet');
     };
 
+    /* foodead() might give quest feedback for foo having died; skip that
+       if we're called for mongone() rather than mondead(); saving bones
+       or wizard mode genocide of "*" can result in special monsters going
+       away without having been killed */
     if (due_to_death) {
-        if (mtmp.data.msound === MS_NEMESIS)
-            throw new Error('m_detach(): nemdead() not ported yet');
-        if (mtmp.data.msound === MS_LEADER)
-            throw new Error('m_detach(): leaddead() not ported yet');
-        /* release (drop onto map) all objects carried by mtmp */
-        return relobj(mtmp, 1, false) /* drop mtmp->minvent, issue newsym(mx,my) */
-            .then(after_relobj);
+        return (async () => {
+            if (mtmp.data.msound === MS_NEMESIS) {
+                await nemdead();
+                /* The Archeologist, Caveman, and Priest quest texts describe
+                   the nemesis's body creating noxious fumes/gas when killed. */
+                if (await stinky_nemesis(mtmp))
+                    nemesis_stinks(mx, my);
+            }
+            if (mtmp.data.msound === MS_LEADER)
+                leaddead();
+            /* release (drop onto map) all objects carried by mtmp; assumes
+               that mtmp->mx,my contains the appropriate location */
+            await relobj(mtmp, 1, false); /* drop mtmp->minvent, issue newsym(mx,my) */
+            after_relobj();
+        })();
     }
     after_relobj();
     return undefined;

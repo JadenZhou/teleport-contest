@@ -80,6 +80,7 @@ import { stop_occupation } from './allmain.js';
 import { shk_move, costly_spot, after_shk_move, inhishop } from './shk.js';
 import { in_rooms } from './hack.js';
 import { pri_move } from './priest.js';
+import { quest_stat_check, quest_talk } from './quest.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -668,15 +669,14 @@ export async function dochug(mtmp) {
         mtmp.mstrategy &= ~STRAT_WAITFORU;
 
     /* update quest status flags */
-    if (mdat.msound === M.MS_NEMESIS)
-        throw new Error('quest_stat_check() not ported yet');
+    quest_stat_check(mtmp);
 
     if (!mtmp.mcanmove || (mtmp.mstrategy & STRAT_WAITMASK)) {
         if (Hallucination())
             newsym(mtmp.mx, mtmp.my);
         if (mtmp.mcanmove && (mtmp.mstrategy & STRAT_CLOSE)
             && !mtmp.msleeping && monnear(mtmp, u.ux, u.uy))
-            throw new Error('quest_talk() not ported yet');
+            await quest_talk(mtmp); /* give the leaders a chance to speak */
         return 0; /* other frozen monsters can't do anything */
     }
 
@@ -863,10 +863,8 @@ export async function dochug(mtmp) {
             throw new Error('dochug(): wormhitu() not ported yet');
     }
     /* special speeches for quest monsters */
-    if (!helpless(mtmp) && d.nearby
-        && (mdat.msound === M.MS_LEADER || mdat.msound === M.MS_NEMESIS
-            || mdat.msound === M.MS_GUARDIAN))
-        throw new Error('quest_talk() not ported yet');
+    if (!helpless(mtmp) && d.nearby)
+        await quest_talk(mtmp);
     /* extra emotional attack for vile monsters */
     if (d.inrange && mtmp.data.msound === M.MS_CUSS && !mtmp.mpeaceful
         && couldsee(mtmp.mx, mtmp.my) && !mtmp.minvis && !rn2(5))
