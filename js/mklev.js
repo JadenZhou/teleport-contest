@@ -25,7 +25,7 @@ import { make_engr_at, wipe_engr_at, make_grave, random_engraving } from './engr
 import { create_des_coder, reset_xystart_size, fill_special_room, inside_room,
          SPLEV_LEFT, SPLEV_CENTER, SPLEV_RIGHT, TOP, BOTTOM } from './sp_lev.js';
 import { getbones } from './bones.js';
-import { set_wall_state } from './display.js';
+import { set_wall_state, see_nearby_objects, Blind, Hallucination } from './display.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
@@ -122,7 +122,10 @@ export function u_on_newpos(x, y) {
            docrt() redraws the map */
         if (game.iflags) game.iflags.terrain_typ = MAX_TYPE; /* "none of the above" value */
     } else {
-        /* see_nearby_objects(): display only */
+        /* still on same level; might have come close enough to
+           generic object(s) to redisplay them as specific objects */
+        if (!Blind() && !Hallucination() && !u.uswallow)
+            see_nearby_objects();
     }
     /* earth_sense(): no rolls; buried-object feedback isn't ported yet */
 }

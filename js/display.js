@@ -696,7 +696,7 @@ function uprop(p) {
     return !!(P && (P.intrinsic || P.extrinsic));
 }
 /* C ref: youprop.h Blind -- ((HBlinded || EBlinded) && !BBlinded) */
-function Blind() {
+export function Blind() {
     const P = game.u?.uprops?.[BLINDED];
     return !!(P && (P.intrinsic || P.extrinsic) && !P.blocked);
 }
@@ -763,7 +763,7 @@ function display_monster(x, y, mon) {
 }
 
 // C ref: you.h Hallucination
-function Hallucination() {
+export function Hallucination() {
     const p = game.u?.uprops?.[HALLUC];
     return !!(p?.intrinsic || p?.extrinsic);
 }
@@ -819,9 +819,11 @@ function obj_to_glyph(obj, rng) {
     if (obj.otyp === CORPSE)
         return { ch: def_oc_syms[objects[CORPSE].oc_class],
                  color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false };
-    const offset = obj_is_generic(obj) ? obj.oclass : obj.otyp;
+    const generic = obj_is_generic(obj);
+    const offset = generic ? obj.oclass : obj.otyp;
+    /* 'generic' marks glyph_is_generic_object() */
     return { ch: def_oc_syms[objects[offset].oc_class],
-             color: objects[offset].oc_color, decgfx: false };
+             color: objects[offset].oc_color, decgfx: false, generic };
 }
 
 // C ref: display.c map_object()
@@ -852,6 +854,38 @@ function map_object(obj, show) {
     }
     if (show)
         show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+}
+
+// C ref: display.c see_nearby_objects()
+/* mark the top object of nearby stacks as having been seen, and if
+   that object was being displayed as generic, redisplay it as specific */
+export function see_nearby_objects() {
+    const u = game.u;
+    let obj;
+    const x = u.ux, y = u.uy;
+    /* these 'r' and 'neardist' calculations match distant_name(objnam.c) */
+    const r = (u.xray_range > 2) ? u.xray_range : 2,
+        /* neardist produces a small square with rounded corners */
+        neardist = (r * r) * 2 - r; /* same as r*r + r*(r-1) */
+
+    for (let iy = y - r; iy <= y + r; ++iy)
+        for (let ix = x - r; ix <= x + r; ++ix) {
+            if (!isok(ix, iy))
+                continue;
+            /* skip if no object or the object has already been marked as
+               having been seen up close */
+            if ((obj = vobj_at(ix, iy)) === null || obj.dknown)
+                continue;
+            /* skip if the spot can't be seen or is too far (diagonal) */
+            if (!cansee(ix, iy)
+                || (ix - u.ux) ** 2 + (iy - u.uy) ** 2 > neardist) /* distu() */
+                continue;
+
+            observe_object(obj, Hallucination());
+            /* operate on remembered glyph rather than current one */
+            if (game.level.at(ix, iy).remembered_glyph?.generic)
+                newsym_force(ix, iy);
+        }
 }
 
 // C ref: display.c map_background()
