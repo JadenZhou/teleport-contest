@@ -1122,6 +1122,12 @@ export function deepest_lev_reached(noquest) {
     return ret;
 }
 
+// C ref: dungeon.c find_hell()
+export function find_hell(lev) {
+    lev.dnum = game.dungeon_topology.d_valley_level.dnum;
+    lev.dlevel = 1;
+}
+
 // C ref: dungeon.c get_level()
 export function get_level(newlevel, levnum) {
     let br;

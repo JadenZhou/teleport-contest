@@ -10,7 +10,7 @@
 // Not ported yet: newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm tail segments.
 
-import { christen_monst, rndghostname, Amonnam } from './do_name.js';
+import { christen_monst, rndghostname, Amonnam, y_monnam } from './do_name.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
@@ -43,7 +43,8 @@ import {
 import { ROLL_FROM } from './rng.js';
 import { depth } from './dungeon.js';
 import { mkobj, rndmonnum, can_be_hatched } from './mkobj.js';
-import { t_at } from './trap.js';
+import { t_at, locomotion } from './trap.js';
+import { ansimpleoname } from './iactions.js';
 import { get_shop_item } from './shknam.js';
 import { mksobj, mkobj_at, curse, bless, next_ident, set_corpsenm } from './mkobj.js';
 import {
@@ -58,10 +59,10 @@ import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS } from './const.js';
 import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
-import { newsym, pline, canseemon } from './display.js';
+import { newsym, pline, canseemon, You_see } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
 import { Resists_Elem } from './mondata.js';
-import { PIT, SPIKED_PIT, STONE_RES } from './const.js';
+import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER } from './const.js';
 import { set_apparxy, dochugw } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
@@ -2296,12 +2297,37 @@ function floor_pile(x, y) {
 }
 
 // C ref: mon.c hideunder()
+// The "You see <mon> <locomo> under <obj>." message makes this async, but
+// it has synchronous callers (makemon() during level creation, newcham(),
+// maybe_unhide_at(), getlev()) where C can't print it: 'seeit' is 0 in
+// mklev, and a monster that is already hidden or is losing its cover
+// doesn't give it.  The body is a generator that yields the message where
+// C calls You_see(): hideunder_async() prints it, hideunder() is the
+// synchronous entry point.
 /* monster/hero tries to hide under something at the current location;
    if used by monster creation, should only happen during level
    creation, otherwise there will be message sequencing issues */
 export function hideunder(mtmp) {
+    const gen = hideunder_core(mtmp);
+    for (let r = gen.next(); ; r = gen.next()) {
+        if (r.done)
+            return r.value;
+        throw new Error(`hideunder(): message in a synchronous caller not ported yet: ${r.value}`);
+    }
+}
+
+export async function hideunder_async(mtmp) {
+    const gen = hideunder_core(mtmp);
+    for (let r = gen.next(); ; r = gen.next()) {
+        if (r.done)
+            return r.value;
+        await You_see(r.value);
+    }
+}
+
+function* hideunder_core(mtmp) {
     let t, otmp;
-    let seenobj = null;
+    let seenmon = null, seenobj = null, locomo = null;
     const seeit = game.in_mklev ? false : canseemon(mtmp);
     let oldundetctd, undetected = false;
     const is_u = (mtmp === game.youmonst);
@@ -2322,8 +2348,10 @@ export function hideunder(mtmp) {
            under water unless some obstacle blocks line-of-sight */
         undetected = (is_pool(x, y) && !Is_waterlevel(game.u.uz)
                       && (!game.u.uinwater || !couldsee(x, y)));
-        if (seeit)
-            seenobj = 'the water';
+        if (seeit) {
+            seenobj = "the water";
+            locomo = "dive";
+        }
     } else if ((mtmp.data.mflags1 & M.M1_CONCEAL) /* hides_under() */
                /* hider-underers only hide under objects */
                && (otmp = floor_pile(x, y)[0] || null) !== null
@@ -2335,8 +2363,8 @@ export function hideunder(mtmp) {
                /* aquatic creatures don't reach here; other swimmers
                   shouldn't hide beneath underwater objects */
                && !(is_pool(x, y) || is_lava(x, y))) {
-        if (seeit)
-            seenobj = otmp;
+        if (seeit) /*&& (!is_pool(x, y) || (Underwater && distu(x, y) <= 2))*/
+            seenobj = ansimpleoname(otmp);
         /* most monsters won't hide under a cockatrice corpse but they
            can hide under a pile containing more than just such corpses */
         if (!Resists_Elem(mtmp, STONE_RES)) {
@@ -2351,12 +2379,21 @@ export function hideunder(mtmp) {
             undetected = true;
     }
 
+    if (seeit)
+        seenmon = y_monnam(mtmp);
     oldundetctd = mtmp.mundetected !== 0;
     mtmp.mundetected = undetected ? 1 : 0;
     /* the "you see" message won't be shown for monster hiding during
-       level creation because 'seeit' will be 0 */
-    if (undetected && seeit && seenobj)
-        throw new Error('hideunder(): "You see <mon> hide under <obj>" not ported yet');
+       level creation because 'seeit' will be 0 so 'seenmon' and 'seenobj'
+       will be Null */
+    if (undetected && seenmon && seenobj) {
+        if (!locomo)
+            locomo = locomotion(mtmp.data, "hide");
+        /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
+        yield `${seenmon} ${locomo} under ${seenobj}.`; /* You_see() */
+        game.iflags.last_msg = PLNMSG_HIDE_UNDER;
+        game.last_hider = mtmp.m_id;
+    }
     if (undetected !== oldundetctd)
         newsym(x, y);
     return undetected;

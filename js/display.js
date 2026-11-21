@@ -11,6 +11,7 @@ import { NOT_HUNGRY, UNENCUMBERED, SICK, SICK_VOMITABLE, SICK_NONVOMITABLE, TT_L
          TT_BURIEDBALL, CONFUSION, DEAF, FLYING, HALLUC_RES, LEVITATION, SLIMED,
          STONED, STRANGLED, STUNNED, GLIB } from './const.js';
 import { ACURR } from './attrib.js';
+import { Unaware } from './eat.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS, LADDER, SDOOR, SCORR,
     IRONBARS, TREE, POOL, MOAT, FOUNTAIN, SINK, ALTAR, GRAVE, THRONE,
@@ -2028,3 +2029,21 @@ export async function Your(line) { await pline(`Your ${line}`); }
 export async function You_cant(line) { await pline(`You can't ${line}`); }
 export async function pline_The(line) { await pline(`The ${line}`); }
 export async function There(line) { await pline(`There ${line}`); }
+
+// C ref: pline.c You_feel()
+export async function You_feel(line) {
+    if (Unaware())
+        await pline(`You dream that you feel ${line}`);
+    else
+        await pline(`You feel ${line}`);
+}
+
+// C ref: pline.c You_see()
+export async function You_see(line) {
+    if (Unaware())
+        await pline(`You dream that you see ${line}`);
+    else if (Blind()) /* caller should have caught this... */
+        await pline(`You sense ${line}`);
+    else
+        await pline(`You see ${line}`);
+}

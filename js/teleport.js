@@ -10,7 +10,7 @@ import { rn2, rnl } from './rng.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { In_endgame, In_quest, In_mines, TELEPORT_CONTROL, STUNNED, CONFUSION } from './const.js';
-import { dunlevs_in_dungeon, In_hell, depth, get_level, on_level,
+import { dunlevs_in_dungeon, In_hell, depth, get_level, on_level, find_hell,
          print_dungeon } from './dungeon.js';
 import { schedule_goto, UTOTYPE_NONE } from './do.js';
 import {
@@ -879,7 +879,7 @@ export async function level_tele() {
     } else if (u.uz.dnum === topo.d_medusa_level.dnum
         && newlev >= g.dungeons[u.uz.dnum].depth_start
                      + dunlevs_in_dungeon(u.uz)) {
-        throw new Error('level_tele(): find_hell() not ported yet');
+        find_hell(newlevel);
     } else {
         /* FIXME: we should avoid using hard-coded knowledge of
            which branches don't connect to anything deeper;

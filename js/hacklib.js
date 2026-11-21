@@ -186,6 +186,30 @@ export function str_start_is(str, chkstr, caseblind) {
     }
 }
 
+// C ref: hacklib.c str_end_is()
+/* determine whether 'str' ends with 'chkstr' (case sensitive) */
+export function str_end_is(str, chkstr) {
+    const clen = chkstr.length;
+
+    if (str.length >= clen)
+        return str.slice(str.length - clen) === chkstr;
+    return false;
+}
+
+// C ref: hacklib.c copynchars()
+/* copies at most n characters, stopping sooner if terminator reached;
+   treats newline as input terminator (C copies into 'dst'; JS returns
+   the copy) */
+export function copynchars(src, n) {
+    let i = 0;
+
+    while (n > 0 && i < src.length && src[i] !== '\n') {
+        i++;
+        --n;
+    }
+    return src.slice(0, i);
+}
+
 // C ref: hacklib.c strstri()
 /* case insensitive substring search; returns the index of the match in
    'str' (C returns a pointer) or -1 (C: NULL) */

@@ -1542,7 +1542,7 @@ export function check_gear_next_turn(mon) {
 }
 
 // C ref: mon.c wake_msg()
-async function wake_msg(mtmp, interesting) {
+export async function wake_msg(mtmp, interesting) {
     if (mtmp.msleeping && canseemon(mtmp)) {
         await pline(`${Monnam(mtmp)} wakes up${interesting ? "!" : "."}${
             mtmp.data === mons[PM_FLESH_GOLEM] ? " It's alive!" : ""}`);

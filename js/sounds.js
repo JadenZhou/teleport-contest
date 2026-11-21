@@ -184,7 +184,7 @@ async function get_iter_mons(bfunc) {
 }
 
 // C ref: mkroom.c search_special()
-function search_special(type) {
+export function search_special(type) {
     const rooms = game.level.rooms;
     let i;
 
