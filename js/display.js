@@ -19,12 +19,13 @@ import {
     NO_TRAP, BEAR_TRAP, PIT, SPIKED_PIT, WEB,
 } from './const.js';
 import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT,
-         M_AP_FURNITURE } from './const.js';
+         M_AP_FURNITURE, WARNCOUNT, def_warnsyms } from './const.js';
+import { rn2_on_display_rng } from './rng.js';
 import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL,
 } from './objects.js';
-import { mons, M3_INFRAVISIBLE, M1_MINDLESS } from './monsters.js';
+import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
 import { is_pool } from './makemon.js';
@@ -880,6 +881,64 @@ function mon_warning(mon) {
            && Math.trunc((mon.m_lev || 0) / 4) >= (game.context.warnlevel || 0);
 }
 
+// C ref: display.c show_mon_or_warn()
+// (the glyph is passed as its ch/color/kind, as show_glyph_cell() takes it)
+function show_mon_or_warn(x, y, ch, color, kind) {
+    let o;
+
+    /* "remembered, unseen monster" is tracked by object layer so if we're
+       putting something on monster layer at same spot, stop remembering
+       that; if an object is in view there, start remembering it instead */
+    if (glyph_is_invisible(game.level.at(x, y).remembered_glyph)) {
+        unmap_object(x, y);
+        if (cansee(x, y) && (o = vobj_at(x, y)) != null)
+            map_object(o, false);
+    }
+
+    show_glyph_cell(x, y, ch, color, false, 0, kind);
+}
+
+// C ref: display.c display_warning()
+/*
+ * This is also *not* a map_XXXX() function!  Monster warnings float
+ * above everything just like monsters do, but only if the monster
+ * is not showing.
+ *
+ * Do not call for worm tails.
+ */
+function display_warning(mon) {
+    const x = mon.mx, y = mon.my;
+
+    if (mon_warning(mon)) {
+        const wl = Hallucination() ? rn2_on_display_rng(WARNCOUNT - 1) + 1
+                                   : warning_of(mon);
+
+        /* glyph = warning_to_glyph(wl) */
+        show_mon_or_warn(x, y, def_warnsyms[wl].ch, def_warnsyms[wl].color,
+                         'warning');
+    } else if (MATCH_WARN_OF_MON(mon)) {
+        /* glyph = mon_to_glyph(mon, rn2_on_display_rng): what_mon() */
+        const ptr = Hallucination() ? mons[rn2_on_display_rng(NUMMONS)]
+                                    : mon.data;
+        show_mon_or_warn(x, y, def_monsyms[ptr.mlet] ?? '?',
+                         ptr.mcolor ?? NO_COLOR, 'mon');
+    } else {
+        console.error('impossible: display_warning did not match warning type?');
+        return;
+    }
+}
+
+// C ref: display.c warning_of()
+export function warning_of(mon) {
+    let wl = 0, tmp = 0;
+
+    if (mon_warning(mon)) {
+        tmp = Math.trunc((mon.m_lev || 0) / 4); /* match display.h */
+        wl = (tmp > WARNCOUNT - 1) ? WARNCOUNT - 1 : tmp;
+    }
+    return wl;
+}
+
 // C ref: display.c display_monster() -- the plain case: the monster's own
 // glyph (mon_to_glyph()), in its mons[] color; mimic appearances,
 // ridden-steed flags and warnings are not ported yet
@@ -1054,9 +1113,7 @@ export function glyph_is_invisible(rg) {
     return !!rg?.invisible || rg?.kind === 'invisible';
 }
 
-// C ref: display.h glyph_is_warning() -- for a glyph_at() glyph; warning
-// glyphs are never shown yet (display_warning() isn't ported; newsym()
-// stops before drawing one)
+// C ref: display.h glyph_is_warning() -- for a glyph_at() glyph
 export function glyph_is_warning(glyph) {
     return glyph?.kind === 'warning';
 }
@@ -1310,7 +1367,7 @@ export function newsym(x, y) {
             /* also gets rid of any invisibility glyph */
             display_monster(x, y, mon);
         } else if (mon && mon_warning(mon) && !worm_tail) {
-            throw new Error('newsym(): display_warning() not ported yet');
+            display_warning(mon);
         } else if (glyph_is_invisible(loc.remembered_glyph)) {
             map_invisible(x, y);
         } else {
@@ -1329,7 +1386,7 @@ export function newsym(x, y) {
         if (!mon.m_ap_type)
             display_monster(x, y, mon);
     } else if (mon && mon_warning(mon) && !is_worm_tail(mon, x, y)) {
-        throw new Error('newsym(): display_warning() not ported yet');
+        display_warning(mon);
     } else if (loc.remembered_glyph) {
         /* C ref: display.c newsym(), can't see the location: a spot
            remembered as both dark (waslit is false) and lit (glyph is a
@@ -1432,14 +1489,48 @@ export async function docrt_flags(refresh_flags) {
     game.program_state.in_docrt = false;
 }
 
-// C ref: display.c see_monsters() -- the newsym() of each monster's spot;
-// warning and sensing updates are not ported yet
+// C ref: display.c see_monsters()
+// see_wsegs() has nothing to draw: initworm() makes no tail segments yet
 export function see_monsters() {
+    const u = game.u;
+    let new_warn_obj_cnt = 0;
+
+    if (game.defer_see_monsters)
+        return;
+
+    /* steed and unseen engulfer/holder/holdee are recognized via touch
+       even if they aren't going to be rendered; other monsters
+       may get flagged as having been seen by display_monster() if it's
+       called by newsym() */
+    if (u.usteed)
+        u.usteed.meverseen = 1;
+    if (u.ustuck)
+        u.ustuck.meverseen = 1;
+
+    /* loop through level.monsters (aka fmon) */
     for (const mon of game.level?.monsters || []) {
-        if (mon.dead) continue;
+        if (mon.dead || mon.mhp < 1) /* DEADMONSTER(mon) */
+            continue;
+        if (((mon.mstate || 0) & MON_STILL_ARRIVING) !== 0)
+            continue;
         newsym(mon.mx, mon.my);
+        /* if (mon->wormno) see_wsegs(mon): no segments (see above) */
+        if (uprop(WARN_OF_MON)
+            && ((game.context.warntype?.obj ?? 0) & mon.data.mflags2) !== 0)
+            new_warn_obj_cnt++;
     }
+
+    /*
+     * Make Sting glow blue or stop glowing if required.
+     */
+    if (new_warn_obj_cnt !== (game.warn_obj_cnt || 0))
+        throw new Error('see_monsters(): Sting_effects() not ported yet');
+
+    /* when mounted, hero's location gets caught by monster loop */
+    if (!u.usteed)
+        newsym(u.ux, u.uy);
 }
+const MON_STILL_ARRIVING = 0x100; /* C ref: monst.h */
 
 // C ref: display.c row_refresh()
 // Redraw map row y, columns start..stop, from the glyph buffer (here the

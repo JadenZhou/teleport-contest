@@ -11,7 +11,7 @@ import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { near_capacity } from './hack.js';
 import { strstri } from './hacklib.js';
-import { pline } from './display.js';
+import { pline, see_monsters } from './display.js';
 import {
     A_STR, A_INT, A_WIS, A_DEX, A_CON, A_CHA, MAXULEV, STR19, FROMEXPER,
     FROMRACE, FROMOUTSIDE, INTRINSIC, SEARCHING, STEALTH, FAST,
@@ -138,7 +138,7 @@ function postadjabil(ability) {
     if (!game.u.ulevel) /* initializing hero; don't attempt screen update yet */
         return;
     if (ability === WARNING || ability === SEE_INVIS)
-        throw new Error('postadjabil(): see_monsters() not ported yet');
+        see_monsters();
 }
 
 // C ref: attrib.c role_abil()

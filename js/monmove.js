@@ -878,7 +878,7 @@ function undesirable_disp(mtmp, x, y) {
 }
 
 // ── C ref: mthrowu.c linedup() ──
-function linedup(ax, ay, bx, by, boulderhandling) {
+export function linedup(ax, ay, bx, by, boulderhandling) {
     const tbx = ax - bx, tby = ay - by;
     game.tbx = tbx;
     game.tby = tby;

@@ -3,10 +3,10 @@
 // rndmonst_adj, mk_gen_ok, cmp_init_mongen_order, init_mongen_order,
 // mkclass, mkclass_aligned, adj_lev, makemon, newmonhp, m_initweap,
 // m_initinv, m_initthrow, mongets, mkmonmoney, golemhp, propagate,
-// peace_minded, set_malign; muse.c rnd_{defensive,offensive,misc}_item;
-// teleport.c goodpos.
+// peace_minded, set_malign, m_initgrp; muse.c
+// rnd_{defensive,offensive,misc}_item; teleport.c goodpos.
 //
-// Not ported yet: m_initgrp (groups), newcham (shapechangers),
+// Not ported yet: newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm segments, qt_montype() for the quest.
 
 import { christen_monst, rndghostname, Amonnam } from './do_name.js';
@@ -51,7 +51,7 @@ import {
     is_bat, little_to_big, pm_invisible,
 } from './mondata.js';
 import { engr_at } from './engrave.js';
-import { enexto_core } from './teleport.js';
+import { enexto_core, enexto_gpflags } from './teleport.js';
 import { newedog } from './dog.js';
 import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS } from './const.js';
@@ -1951,11 +1951,44 @@ const STRAT_APPEARMSG = 0x80000000;
 const STRAT_WAITFORU = 0x20000000;
 const STRAT_CLOSE = 0x10000000;
 
-// C ref: makemon.c m_initgrp(), m_initsgrp(), m_initlgrp() -- not ported
-// yet: makemon()'s only caller so far (fill_ordinary_room) passes MM_NOGRP
+// C ref: makemon.c m_initgrp()
+/* make a group just like mtmp */
 function m_initgrp(mtmp, x, y, n, mmflags) {
-    impossible('m_initgrp not ported');
+    const u = game.u;
+    const mm = { x: 0, y: 0 };
+    let cnt = rnd(n);
+    let mon;
+
+    /* Tuning: cut down on swarming at low character levels [mrs] */
+    cnt = Math.trunc(cnt / ((u.ulevel < 3) ? 4 : (u.ulevel < 5) ? 2 : 1));
+    if (!cnt)
+        cnt++;
+
+    mm.x = x;
+    mm.y = y;
+    while (cnt--) {
+        if (peace_minded(mtmp.data))
+            continue;
+        /* Don't create groups of peaceful monsters since they'll get
+         * in our way.  If the monster has a percentage chance so some
+         * are peaceful and some are not, the result will just be a
+         * smaller group.
+         */
+        if (enexto_gpflags(mm, mm.x, mm.y, mtmp.data, mmflags)) {
+            mon = makemon(mtmp.data, mm.x, mm.y, (mmflags | MM_NOGRP));
+            if (mon) {
+                mon.mpeaceful = false;
+                mon.mavenge = 0;
+                set_malign(mon);
+                /* Undo the second peace_minded() check in makemon(); if the
+                 * monster turned out to be peaceful the first time we
+                 * didn't create it at all; we don't want a second check.
+                 */
+            }
+        }
+    }
 }
+// C ref: makemon.c m_initsgrp(), m_initlgrp() (macros)
 function m_initsgrp(mtmp, x, y, mmflags) { m_initgrp(mtmp, x, y, 3, mmflags); }
 function m_initlgrp(mtmp, x, y, mmflags) { m_initgrp(mtmp, x, y, 10, mmflags); }
 
