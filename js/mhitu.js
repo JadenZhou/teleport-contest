@@ -33,7 +33,7 @@ import { u_at } from './makemon.js';
 import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
          PIERCE } from './objects.js';
 import { mon_wield_item, hitval } from './weapon.js';
-import { thrwmu } from './mthrowu.js';
+import { thrwmu, spitmu, breamu } from './mthrowu.js';
 import { Is_rogue_level } from './const.js';
 import { ART_SNICKERSNEE } from './artilist.js';
 import { genders } from './role.js';
@@ -485,12 +485,12 @@ export async function mattacku(mtmp) {
             break;
         case AT_BREA:
             if (v.range2)
-                throw new Error('mattacku(): breamu() not ported yet');
+                sum[i] = await breamu(mtmp, mattk);
             /* Note: breamu takes care of displacement */
             break;
         case AT_SPIT:
             if (v.range2)
-                throw new Error('mattacku(): spitmu() not ported yet');
+                sum[i] = await spitmu(mtmp, mattk);
             /* Note: spitmu takes care of displacement */
             break;
         case AT_WEAP:

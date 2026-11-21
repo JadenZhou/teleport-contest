@@ -494,8 +494,8 @@ function attacktype(ptr, atyp) {
 function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
 function is_mercenary(ptr) { return (ptr.mflags2 & M.M2_MERC) !== 0; }
 function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
-function is_lord(ptr) { return (ptr.mflags2 & M.M2_LORD) !== 0; }
-function is_prince(ptr) { return (ptr.mflags2 & M.M2_PRINCE) !== 0; }
+export function is_lord(ptr) { return (ptr.mflags2 & M.M2_LORD) !== 0; }
+export function is_prince(ptr) { return (ptr.mflags2 & M.M2_PRINCE) !== 0; }
 function extra_nasty(ptr) { return (ptr.mflags2 & M.M2_NASTY) !== 0; }
 function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
 function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }

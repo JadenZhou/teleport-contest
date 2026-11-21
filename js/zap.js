@@ -18,7 +18,8 @@ import { exercise } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
-import { The, xname, Tobjnam } from './objnam.js';
+import { The, xname, Tobjnam, vtense } from './objnam.js';
+import { mon_nam } from './do_name.js';
 import { fall_asleep } from './timeout.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { bhit } from './dothrow.js';
@@ -583,7 +584,7 @@ export async function bhitpile(
 
 // C ref: dbridge.c find_drawbridge() -- returns the drawbridge location
 // (in *pos) for a drawbridge span or its wall, or null
-function find_drawbridge(x, y) {
+export function find_drawbridge(x, y) {
     const lev = (xx, yy) => game.level.at(xx, yy);
 
     if (IS_DRAWBRIDGE(lev(x, y).typ))
@@ -981,6 +982,31 @@ export function exclam(force) {
     /* note that large force is usual with wands so that !! would
             require information about hand/weapon/wand */
     return (force < 0) ? "?" : (force <= 4) ? "." : "!";
+}
+
+// C ref: zap.c hit()
+export async function hit(
+    str,     /* zap text or missile name */
+    mtmp,    /* target; for missile, might be hero */
+    force) { /* usually either "." or "!" via exclam() */
+    const g = game;
+    const verbosely = (mtmp === g.youmonst
+                       || ((g.flags.verbose ?? true)
+                           && (cansee(g.bhitpos.x, g.bhitpos.y)
+                               || canspotmon(mtmp)
+                               /* engulfing_u(mtmp) */
+                               || (g.u.uswallow && mtmp === g.u.ustuck))));
+
+    await pline(`${The(str)} ${vtense(str, "hit")} ${
+        verbosely ? mon_nam(mtmp) : "it"}${force}`);
+}
+
+// C ref: zap.c miss()
+export async function miss(str, mtmp) {
+    const g = game;
+    await pline(`${The(str)} ${vtense(str, "miss")} ${
+        ((cansee(g.bhitpos.x, g.bhitpos.y) || canspotmon(mtmp))
+         && (g.flags.verbose ?? true)) ? mon_nam(mtmp) : "it"}.`);
 }
 
 /* C ref: zap.c ZT_* -- zap types (AD_foo - 1) */

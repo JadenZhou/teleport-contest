@@ -1005,7 +1005,7 @@ function obj_is_generic(obj) {
 // SYM_BOULDER, which defaults to the rock class symbol. Pile-top glyphs
 // (the *_PILETOP_OFF ranges) are marked 'piletop': they map like the plain
 // ones but with MG_OBJPILE, which tty shows only with hilite_pile.
-function obj_to_glyph(obj, rng) {
+export function obj_to_glyph(obj, rng) {
     if (obj.otyp === STATUE) {
         if (Hallucination()) rng(2);
         return { ch: def_monsyms[mons[obj.corpsenm].mlet] ?? '?',
@@ -1312,21 +1312,24 @@ export const DISP_BEAM = -1, DISP_ALL = -2, DISP_TETHER = -3, DISP_FLASH = -4,
 const TMP_AT_MAX_GLYPHS = 80 * 2; /* COLNO * 2 */
 let tmp_at_glyph = null; /* static struct tmp_glyph *tglyph */
 
-// C ref: display.c tmp_at() -- DISP_BEAM and DISP_ALL only: the transient
-// beam glyphs aren't drawn (no screen is captured while they show), but
-// the spots the beam covered are remembered and newsym()'d by DISP_END,
-// which redraws terrain the beam changed (e.g. a wall dug by a zap)
+// C ref: display.c tmp_at() -- DISP_BEAM, DISP_ALL, DISP_FLASH and
+// DISP_ALWAYS (DISP_TETHER isn't ported yet).  The transient beam glyphs
+// aren't drawn (no screen is captured while they show), but the spots the
+// beam covered are remembered and newsym()'d by DISP_END, which redraws
+// terrain the beam changed (e.g. a wall dug by a zap).  A flashed glyph
+// (a missile in flight) is drawn at its one spot; the next pline()'s
+// flush_screen(1) shows it, as C's flush_screen(0) here would.
 export function tmp_at(x, y) {
     switch (x) {
     case DISP_BEAM:
     case DISP_ALL:
+    case DISP_FLASH:
+    case DISP_ALWAYS:
         tmp_at_glyph = { prev: tmp_at_glyph, saved: [], style: x, glyph: y };
         /* flush_screen(0): buffered glyphs are flushed at the next input */
         return;
     case DISP_TETHER:
-    case DISP_FLASH:
-    case DISP_ALWAYS:
-        throw new Error('tmp_at(): flash/tether styles not ported yet');
+        throw new Error('tmp_at(): tether style not ported yet');
     case DISP_FREEMEM:
         tmp_at_glyph = null;
         return;
@@ -1342,21 +1345,38 @@ export function tmp_at(x, y) {
         tglyph.glyph = y;
         break;
     case DISP_END:
-        /* Erase (reset) from source to end */
-        for (const p of tglyph.saved)
-            newsym(p.x, p.y);
+        if (tglyph.style === DISP_BEAM || tglyph.style === DISP_ALL) {
+            /* Erase (reset) from source to end */
+            for (const p of tglyph.saved)
+                newsym(p.x, p.y);
+        } else { /* DISP_FLASH or DISP_ALWAYS */
+            if (tglyph.saved.length) /* been called at least once */
+                newsym(tglyph.saved[0].x, tglyph.saved[0].y);
+        }
         tmp_at_glyph = tglyph.prev;
         break;
     default: /* do it */
         if (!isok(x, y))
             break;
-        if (tglyph.style !== DISP_ALL && !cansee(x, y))
-            break;
-        if (tglyph.saved.length >= TMP_AT_MAX_GLYPHS)
-            break; /* too many locations */
-        /* save pos for later erasing */
-        tglyph.saved.push({ x, y });
-        /* show_glyph(x, y, tglyph->glyph): transient, not drawn */
+        if (tglyph.style === DISP_BEAM || tglyph.style === DISP_ALL) {
+            if (tglyph.style !== DISP_ALL && !cansee(x, y))
+                break;
+            if (tglyph.saved.length >= TMP_AT_MAX_GLYPHS)
+                break; /* too many locations */
+            /* save pos for later erasing */
+            tglyph.saved.push({ x, y });
+            /* show_glyph(x, y, tglyph->glyph): transient, not drawn */
+        } else { /* DISP_FLASH/ALWAYS */
+            if (tglyph.saved.length) { /* not first call, so reset previous pos */
+                newsym(tglyph.saved[0].x, tglyph.saved[0].y);
+                tglyph.saved = []; /* display is presently up to date */
+            }
+            if (!cansee(x, y) && tglyph.style !== DISP_ALWAYS)
+                break;
+            tglyph.saved = [{ x, y }];
+            show_glyph(x, y, tglyph.glyph); /* show it */
+            /* flush_screen(0): shown by the next flush */
+        }
         break;
     }
 }

@@ -28,7 +28,7 @@ import { permapoisoned } from './mkobj.js';
 import { dmgval } from './weapon.js';
 import { which_armor } from './worn.js';
 import { rustm } from './mhitm.js';
-import { couldsee } from './vision.js';
+import { couldsee, cansee } from './vision.js';
 import { perceives, is_were, is_demon } from './mondata.js';
 import { IS_OBSTRUCTED, SHOPBASE, ROOMOFFSET } from './const.js';
 import { PM_LONG_WORM, PM_LONG_WORM_TAIL } from './monsters.js';
@@ -73,7 +73,7 @@ import { noattacks, check_capacity, overexertion, near_capacity,
          nomul, test_move } from './hack.js';
 import { can_twoweapon, untwoweapon, bimanual, is_launcher, is_missile,
          is_ammo, is_pole, is_wet_towel, ammo_and_launcher } from './wield.js';
-import { yname, makeplural, an, doname, xname, vtense } from './objnam.js';
+import { yname, makeplural, an, doname, xname, vtense, The } from './objnam.js';
 import { ing_suffix, s_suffix } from './hacklib.js';
 import { body_part } from './insight.js';
 import { u_wipe_engr } from './engrave.js';
@@ -1767,6 +1767,101 @@ function shade_aware(obj) {
         || objects[obj.otyp].oc_material === SILVER)
         return true;
     return false;
+}
+
+// C ref: uhitm.c shade_miss()
+/* used for hero vs monster and monster vs monster; also handles
+   monster vs hero but that won't happen because hero can't be a shade */
+export async function shade_miss(magr, mdef, obj, thrown, verbose) {
+    const youagr = (magr === game.youmonst), youdef = (mdef === game.youmonst);
+
+    /* we're using dmgval() for zero/not-zero, not for actual damage amount */
+    if (mdef.data !== mons[M.PM_SHADE] || (obj && dmgval(obj, mdef)))
+        return false;
+
+    if (verbose
+        && ((youdef || cansee(mdef.mx, mdef.my) || sensemon(mdef))
+            || (magr === game.youmonst && m_next2u(mdef)))) {
+        const harmlessly_thru = " harmlessly through ";
+
+        const what = (!obj || shade_aware(obj)) ? "attack" : cxname(obj);
+        const target = youdef ? "you" : mon_nam(mdef);
+        if (!thrown) {
+            const whose = youagr ? "Your" : s_suffix(Monnam(magr));
+            await pline(`${whose} ${what} ${vtense(what, "pass")}${
+                harmlessly_thru}${target}.`);
+        } else {
+            await pline(`${The(what)} ${ /* note: not pline_The() */
+                vtense(what, "pass")}${harmlessly_thru}${target}.`);
+        }
+        if (!youdef && !canspotmon(mdef))
+            map_invisible(mdef.mx, mdef.my);
+    }
+    if (!youdef)
+        mdef.msleeping = 0;
+    return true;
+}
+
+// C ref: uhitm.c passive_obj()
+/*
+ * Special (passive) attacks on an attacking object by monsters done here.
+ * Assumes the attack was successful.
+ */
+export async function passive_obj(
+    mon,
+    obj,     /* null means pick uwep, uswapwep or uarmg */
+    mattk) { /* null means we find one internally */
+    const ptr = mon.data;
+    let i;
+
+    /* [this first bit is obsolete; we're not called with Null anymore] */
+    /* if caller hasn't specified an object, use uwep, uswapwep or uarmg */
+    if (!obj) {
+        obj = (game.u.twoweap && game.uswapwep && !rn2(2)) ? game.uswapwep
+                                                         : game.uwep;
+        if (!obj && mattk.adtyp === AD_ENCH)
+            obj = game.uarmg; /* no weapon? then must be gloves */
+        if (!obj)
+            return; /* no object to affect */
+    }
+
+    /* if caller hasn't specified an attack, find one */
+    if (!mattk) {
+        for (i = 0; ; i++) {
+            if (i >= NATTK)
+                return; /* no passive attacks */
+            if (ptr.mattk[i].aatyp === AT_NONE)
+                break; /* try this one */
+        }
+        mattk = ptr.mattk[i];
+    }
+
+    switch (mattk.adtyp) {
+    case AD_FIRE:
+        if (!rn2(6) && !mon.mcan
+            /* steam vortex: fire resist applies, fire damage doesn't */
+            && mon.data !== mons[M.PM_STEAM_VORTEX])
+            throw new Error('passive_obj(): erode_obj() not ported yet');
+        break;
+    case AD_ACID:
+        if (!rn2(6))
+            throw new Error('passive_obj(): erode_obj() not ported yet');
+        break;
+    case AD_RUST:
+        if (!mon.mcan)
+            throw new Error('passive_obj(): erode_obj() not ported yet');
+        break;
+    case AD_CORR:
+        if (!mon.mcan)
+            throw new Error('passive_obj(): erode_obj() not ported yet');
+        break;
+    case AD_ENCH:
+        if (!mon.mcan)
+            throw new Error('passive_obj(): drain_item() not ported yet');
+        /* FALLTHRU */
+    default:
+        break;
+    }
 }
 
 // C ref: uhitm.c missum()

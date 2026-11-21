@@ -15,10 +15,14 @@ import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
          FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
          ACID_RES, STONE_RES, DRAIN_RES, ANTIMAGIC, BLND_RES, ALL_TRAPS,
          NO_TRAP, W_ARMOR, W_ACCESSORY, W_WEP, W_SWAPWEP, W_ARMC, W_ARM,
+         W_ARMH,
        } from './const.js';
 import { objects, ALCHEMY_SMOCK, WEAPON_CLASS, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
-         YELLOW_DRAGON_SCALE_MAIL } from './objects.js';
+         YELLOW_DRAGON_SCALE_MAIL, LENSES, CREAM_PIE, BLINDING_VENOM,
+         POT_BLINDNESS } from './objects.js';
+import { objdescr_is } from './o_init.js';
+import { Unaware } from './eat.js';
 import { is_weptool } from './mkobj.js';
 import { which_armor } from './worn.js';
 import { title_to_mon } from './botl.js';
@@ -47,6 +51,105 @@ export function is_swimmer(ptr) { return (ptr.mflags1 & M1_SWIM) !== 0; }
 export function passes_walls(ptr) { return (ptr.mflags1 & M1_WALLWALK) !== 0; }
 // C ref: mondata.h haseyes()
 export function haseyes(ptr) { return (ptr.mflags1 & M1_NOEYES) === 0; }
+
+// C ref: mondata.c can_blnd()
+/* returns True if monster can be blinded by the given attack;
+   resists_blnd() isn't ported yet, so the light-based attacks stop */
+export function can_blnd(
+    magr, /* NULL == no specific aggressor */
+    mdef,
+    aatyp,
+    obj) { /* aatyp == AT_WEAP, AT_SPIT */
+    const g = game, u = g.u;
+    const is_you = (mdef === g.youmonst);
+    let check_visor = false;
+    const ublindf = g.ublindf || null;
+    const Blindfolded = !!(ublindf && ublindf.otyp !== LENSES);
+
+    /* no eyes protect against all attacks for now */
+    if (!haseyes(mdef.data))
+        return false;
+
+    /* if monster has been permanently blinded, the deed is already done */
+    if (!is_you && !mdef.mcansee && !mdef.mblinded) /* mon_perma_blind() */
+        return false;
+
+    /* /corvus oculum corvi non eruit/ */
+    if (magr && magr.data === mons[M.PM_RAVEN] && mdef.data === mons[M.PM_RAVEN])
+        return false;
+
+    switch (aatyp) {
+    case M.AT_EXPL:
+    case M.AT_BOOM:
+    case M.AT_GAZE:
+    case M.AT_MAGC:
+    case M.AT_BREA: /* assumed to be lightning */
+        /* light-based attacks may be cancelled or resisted */
+        if (magr && magr.mcan)
+            return false;
+        throw new Error('can_blnd(): resists_blnd() not ported yet');
+
+    case M.AT_WEAP:
+    case M.AT_SPIT:
+    case M.AT_NONE:
+        /* an object is used (thrown/spit/other) */
+        if (obj && (obj.otyp === CREAM_PIE)) {
+            if (is_you && Blindfolded)
+                return false;
+        } else if (obj && (obj.otyp === BLINDING_VENOM)) {
+            /* all ublindf, including LENSES, protect, cream-pies too */
+            if (is_you && (ublindf || u.ucreamed))
+                return false;
+            check_visor = true;
+        } else if (obj && (obj.otyp === POT_BLINDNESS)) {
+            return true; /* no defense */
+        } else
+            return false; /* other objects cannot cause blindness yet */
+        if ((magr === g.youmonst) && u.uswallow)
+            return false; /* can't affect eyes while inside monster */
+        break;
+
+    case M.AT_ENGL:
+        if (is_you && (Blindfolded || Unaware() || u.ucreamed))
+            return false;
+        if (!is_you && mdef.msleeping)
+            return false;
+        break;
+
+    case M.AT_CLAW:
+        /* e.g. raven: all ublindf, including LENSES, protect */
+        if (is_you && ublindf)
+            return false;
+        if ((magr === g.youmonst) && u.uswallow)
+            return false; /* can't affect eyes while inside monster */
+        check_visor = true;
+        break;
+
+    case M.AT_TUCH:
+    case M.AT_STNG:
+        /* some physical, blind-inducing attacks can be cancelled */
+        if (magr && magr.mcan)
+            return false;
+        break;
+
+    default:
+        break;
+    }
+
+    /* check if wearing a visor (only checked if visor might help) */
+    if (check_visor) {
+        const chain = is_you ? (() => {
+            const out = [];
+            for (let o = g.invent; o; o = o.nobj) out.push(o);
+            return out;
+        })() : (mdef.minvent || []).slice().reverse();
+        for (const o of chain)
+            if ((o.owornmask & W_ARMH) && objdescr_is(o, "visored helmet"))
+                return false;
+    }
+
+    return true;
+}
 // C ref: mondata.h regenerates()
 export function regenerates(ptr) { return (ptr.mflags1 & M1_REGEN) !== 0; }
 // C ref: mondata.h perceives()

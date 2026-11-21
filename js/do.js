@@ -1131,7 +1131,7 @@ export function impact_disturbs_zombies(obj, violent) {
 }
 
 // C ref: dokick.c down_gate()
-function down_gate(x, y) {
+export function down_gate(x, y) {
     const stway = stairway_at(x, y);
     let ttmp;
 
