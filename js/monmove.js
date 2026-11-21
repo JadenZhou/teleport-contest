@@ -26,7 +26,7 @@ import { stairway_at } from './display.js';
 import { stairway_find_dir } from './mklev.js';
 import { hideunder } from './makemon.js';
 import { Is_candle, Is_container } from './mkobj.js';
-import { STAIRS, LADDER, WEB } from './const.js';
+import { STAIRS, LADDER, WEB, IS_WATERWALL, LAVAWALL } from './const.js';
 import { IS_TREE, IS_STWALL, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE,
          P_AXE } from './const.js';
 import { splitobj, obj_extract_self } from './mkobj.js';
@@ -977,8 +977,10 @@ export function linedup(ax, ay, bx, by, boulderhandling) {
 }
 // C ref: mthrowu.c blocking_terrain()
 function blocking_terrain(x, y) {
-    const loc = game.level.at(x, y);
-    if (!isok(x, y) || IS_OBSTRUCTED(loc.typ) || closed_door(x, y))
+    if (!isok(x, y) || IS_OBSTRUCTED(game.level.at(x, y).typ)
+        || closed_door(x, y)
+        || IS_WATERWALL(game.level.at(x, y).typ) /* is_waterwall(x, y) */
+        || game.level.at(x, y).typ === LAVAWALL)
         return true;
     return false;
 }

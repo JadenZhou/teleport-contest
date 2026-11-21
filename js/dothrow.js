@@ -16,7 +16,7 @@ import { BULLWHIP, BOOMERANG, AKLYS, WAN_PROBING, WAN_OPENING, WAN_LOCKING,
          WAN_STRIKING } from './objects.js';
 import { zap_map, bhitpile } from './zap.js';
 import { M1_NOHANDS, M1_NOTAKE, S_COCKATRICE, PM_CHICKATRICE, PM_COCKATRICE,
-         PM_MEDUSA, mons } from './monsters.js';
+         PM_MEDUSA, MZ_MEDIUM, mons } from './monsters.js';
 import { pline, newsym, flush_screen, canspotmon, canseemon } from './display.js';
 import { vision_recalc } from './vision.js';
 import { u_on_newpos } from './mklev.js';
@@ -59,7 +59,8 @@ import { u_wipe_engr } from './engrave.js';
 import { splitobj, place_object, is_flammable, weight } from './mkobj.js';
 import { encumber_msg } from './pickup.js';
 import { remove_worn_item } from './steal.js';
-import { weapon_type, P_SKILL } from './weapon.js';
+import { weapon_type, P_SKILL, hitval } from './weapon.js';
+import { is_weptool } from './mkobj.js';
 import { weapon_descr, skill_name, inside_shop, body_part } from './insight.js';
 import { xname, an, singular, The, Tobjnam } from './objnam.js';
 import { the } from './iactions.js';
@@ -665,6 +666,43 @@ async function throwit(obj,
     }
 
     throwit_return(false);
+}
+
+// C ref: dothrow.c omon_adj()
+/* an object may hit a monster; various factors adjust chance of hitting */
+export function omon_adj(mon, obj, mon_notices) {
+    let tmp = 0;
+
+    /* size of target affects the chance of hitting */
+    tmp += (mon.data.msize - MZ_MEDIUM); /* -2..+5 */
+    /* sleeping target is more likely to be hit */
+    if (mon.msleeping) {
+        tmp += 2;
+    }
+    /* ditto for immobilized target */
+    if (!mon.mcanmove || !mon.data.mmove) {
+        tmp += 4;
+        if (mon_notices && mon.data.mmove && !rn2(10)) {
+            mon.mcanmove = 1;
+            mon.mfrozen = 0;
+        }
+    }
+    /* some objects are more likely to hit than others */
+    switch (obj.otyp) {
+    case HEAVY_IRON_BALL:
+        if (obj !== game.uball)
+            tmp += 2;
+        break;
+    case BOULDER:
+        tmp += 6;
+        break;
+    default:
+        if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
+            || obj.oclass === GEM_CLASS)
+            tmp += hitval(obj, mon);
+        break;
+    }
+    return tmp;
 }
 
 // C ref: dothrow.c breaktest()
