@@ -13,7 +13,25 @@ import { getdir } from './cmd.js';
 import { is_ammo, is_pole, ammo_and_launcher, doquiver_core } from './wield.js';
 import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP } from './const.js';
 import { BULLWHIP, BOOMERANG, AKLYS } from './objects.js';
-import { M1_NOHANDS, M1_NOTAKE } from './monsters.js';
+import { M1_NOHANDS, M1_NOTAKE, S_COCKATRICE, PM_CHICKATRICE, PM_COCKATRICE,
+         PM_MEDUSA, mons } from './monsters.js';
+import { pline, newsym, flush_screen, canspotmon, canseemon } from './display.js';
+import { vision_recalc } from './vision.js';
+import { u_on_newpos } from './mklev.js';
+import { check_special_room } from './hack.js';
+import { m_at, may_passwall, closed_door, sobj_at, is_pool, is_lava } from './makemon.js';
+import { bad_rock, wake_nearto } from './mon.js';
+import { t_at, VIBRATING_SQUARE } from './trap.js';
+import { x_monnam, ARTICLE_A, SUPPRESS_SADDLE, AUGMENT_IT } from './do_name.js';
+import { BOULDER } from './objects.js';
+import { isok, IS_DOOR, IS_OBSTRUCTED, D_ISOPEN, IRONBARS, PASSES_WALLS,
+         LEVITATION, FLYING, MAGIC_PORTAL, FIRE_TRAP, STRAT_WAITMASK } from './const.js';
+
+/* C ref: mondata.h touch_petrifies() */
+function touch_petrifies(ptr) {
+    const n = mons.indexOf(ptr);
+    return n === PM_COCKATRICE || n === PM_CHICKATRICE;
+}
 
 /* C ref: mondata.h nohands(), notake() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -179,4 +197,249 @@ export async function dofire() {
     /* fire can take time by filling quiver (if that causes something which
        was wielded to be unwielded) even if the throw itself gets cancelled */
     return (res === ECMD_TIME) ? res : altres;
+}
+
+// C ref: dothrow.c walk_path()
+/*
+ * Walk a path from src_cc to dest_cc, calling a proc for each location
+ * except the starting one.  If the proc returns FALSE, stop walking
+ * and return FALSE.  If stopped early, dest_cc will be the location
+ * before the failed callback.
+ */
+export async function walk_path(src_cc, dest_cc, check_proc, arg) {
+    let err;
+    let x, y, dx, dy, x_change, y_change, i, prev_x, prev_y;
+    let keep_going = true;
+
+    /* Use Bresenham's Line Algorithm to walk from src to dest. */
+    dx = dest_cc.x - src_cc.x;
+    dy = dest_cc.y - src_cc.y;
+    prev_x = x = src_cc.x;
+    prev_y = y = src_cc.y;
+
+    if (dx < 0) {
+        x_change = -1;
+        dx = -dx;
+    } else {
+        x_change = 1;
+    }
+    if (dy < 0) {
+        y_change = -1;
+        dy = -dy;
+    } else {
+        y_change = 1;
+    }
+    i = err = 0;
+    if (dx < dy) {
+        while (i++ < dy) {
+            prev_x = x;
+            prev_y = y;
+            y += y_change;
+            err += dx << 1;
+            if (err > dy) {
+                x += x_change;
+                err -= dy << 1;
+            }
+            /* check for early exit condition */
+            if (!(keep_going = await check_proc(arg, x, y)))
+                break;
+        }
+    } else {
+        while (i++ < dx) {
+            prev_x = x;
+            prev_y = y;
+            x += x_change;
+            err += dy << 1;
+            if (err > dx) {
+                y += y_change;
+                err -= dx << 1;
+            }
+            /* check for early exit condition */
+            if (!(keep_going = await check_proc(arg, x, y)))
+                break;
+        }
+    }
+
+    if (keep_going)
+        return true; /* successful */
+
+    dest_cc.x = prev_x;
+    dest_cc.y = prev_y;
+    return false;
+}
+
+// C ref: dothrow.c hurtle_jump() -- hurtle_step() for jumping, with water
+// walking forced on so a jump over water doesn't land in that water
+export async function hurtle_jump(arg, x, y) {
+    /* EWwalking |= I_SPECIAL: hurtle_step() is told it's a jump */
+    const save_via_jumping = game.hurtle_via_jumping;
+    game.hurtle_via_jumping = true;
+    try {
+        return await hurtle_step(arg, x, y);
+    } finally {
+        game.hurtle_via_jumping = save_via_jumping;
+    }
+}
+
+// C ref: mon.c wake_msg()
+async function wake_msg(mtmp, interesting) {
+    if (mtmp.msleeping && canseemon(mtmp))
+        throw new Error('wake_msg(): "<mon> wakes up" not ported yet');
+}
+
+// C ref: mon.c wakeup() -- wake up a monster, possibly making it angry
+async function wakeup(mtmp, via_attack) {
+    await wake_msg(mtmp, via_attack);
+    mtmp.msleeping = 0;
+    if (mtmp.m_ap_type) /* M_AP_TYPE(mtmp) != M_AP_NOTHING */
+        throw new Error('wakeup(): seemimic() not ported yet');
+    else if (game.context.forcefight && !game.context.mon_moving
+             && mtmp.mundetected) {
+        mtmp.mundetected = 0;
+        newsym(mtmp.mx, mtmp.my);
+    }
+    /* finish_meating(mtmp) */
+    mtmp.meating = 0;
+    if (via_attack)
+        throw new Error('wakeup(): via_attack not ported yet');
+}
+
+// C ref: mon.c setmangry() -- the via_attack FALSE start
+function setmangry(mtmp, via_attack) {
+    mtmp.mstrategy &= ~STRAT_WAITMASK;
+    if (!mtmp.mpeaceful)
+        return;
+    if (mtmp.mtame)
+        return;
+    throw new Error('setmangry(): angering a peaceful monster not ported yet');
+}
+
+// C ref: dothrow.c hurtle_step()
+/*
+ * Single step for the hero flying through the air from jumping, flying,
+ * etc.  Called from hurtle() and jump() via walk_path().  We expect the
+ * argument to be a pointer to an integer -- the range -- which is
+ * used in the calculation of points off if we hit something.
+ *
+ * Bumping into monsters won't cause damage but will wake them and make
+ * them angry.  Auto-pickup isn't done, since you don't have control over
+ * your movements at the time.
+ */
+export async function hurtle_step(arg, x, y) {
+    const u = game.u;
+    let ox, oy;
+    let mon;
+    let may_pass = true;
+    let ttmp;
+
+    if (!isok(x, y)) {
+        await pline("You feel the spirits holding you back."); /* You_feel() */
+        return false;
+    } else if (game.regions && game.regions.length) {
+        throw new Error('hurtle_step(): in_out_region() not ported yet');
+    } else if (arg.range === 0) {
+        return false; /* previous step wants to stop now */
+    }
+    const via_jumping = !!game.hurtle_via_jumping; /* EWwalking & I_SPECIAL */
+    const stopping_short = (via_jumping && arg.range < 2);
+    const lev = game.level.at(x, y);
+    const ltyp = lev.typ;
+
+    const Passes_walls = !!(u.uprops?.[PASSES_WALLS]?.intrinsic
+                            || u.uprops?.[PASSES_WALLS]?.extrinsic);
+    if (!Passes_walls || !(may_pass = may_passwall(x, y))) {
+        let why = null;
+        const diagonal = (u.ux - x) !== 0 && (u.uy - y) !== 0,
+            open_door = IS_DOOR(ltyp) && (lev.doormask & D_ISOPEN) !== 0,
+            odoor_diag = open_door && diagonal;
+
+        if (IS_OBSTRUCTED(lev.typ) || closed_door(x, y) || odoor_diag) {
+            why = "bumping";
+        } else if (ltyp === IRONBARS) {
+            why = "crashing into iron bars";
+        } else if (sobj_at(BOULDER, x, y)) {
+            why = "bumping into a boulder";
+        } else if (!may_pass) {
+            why = "touching the edge of the universe";
+        } else if (diagonal
+                   && bad_rock(game.youmonst.data, u.ux, y)
+                   && bad_rock(game.youmonst.data, x, u.uy)) {
+            throw new Error('hurtle_step(): squeezing diagonally not ported yet');
+        }
+        if (why)
+            throw new Error(`hurtle_step(): ${why} (losehp()) not ported yet`);
+    }
+
+    if ((mon = m_at(x, y)) !== null && mon !== undefined) {
+        const seen = canspotmon(mon); /* glyph_is_monster(glyph_at(x, y)) */
+
+        mon.mundetected = 0; /* wakeup() will handle mimic */
+        if (!seen)
+            throw new Error('hurtle_step(): bumping into an unseen monster not ported yet');
+        /* after unhiding; combination of a_monnam() and some_mon_nam() */
+        const mnam = x_monnam(mon, ARTICLE_A, null,
+                              ((mon.mgivenname ? SUPPRESS_SADDLE : 0)
+                               | AUGMENT_IT), false);
+        await You(`bump into ${mnam}.`);
+        await wakeup(mon, false);
+        /* if (!canspotmon(mon)) map_invisible(mon->mx, mon->my): seen */
+        setmangry(mon, false);
+        if (touch_petrifies(mon.data) && !game.uarmu && !game.uarm && !game.uarmc)
+            throw new Error('hurtle_step(): instapetrify() not ported yet');
+        if (touch_petrifies(game.youmonst.data))
+            throw new Error('hurtle_step(): minstapetrify() not ported yet');
+        await wake_nearto(x, y, 10);
+        return false;
+    }
+
+    if ((u.ux - x) && (u.uy - y)
+        && bad_rock(game.youmonst.data, u.ux, y)
+        && bad_rock(game.youmonst.data, x, u.uy)) {
+        /* Move at a diagonal. */
+        /* Sokoban: "You come to an abrupt halt!" -- Sokoban isn't ported */
+    }
+
+    /* caller has already determined that dragging the ball is allowed */
+    if (game.uball)
+        throw new Error('hurtle_step(): drag_ball() not ported yet');
+
+    ox = u.ux;
+    oy = u.uy;
+    u_on_newpos(x, y); /* set u.<ux,uy>, u.usteed-><mx,my>; cliparound(); */
+    newsym(ox, oy);    /* update old position */
+    vision_recalc(1);  /* update for new position */
+    await flush_screen(1);
+    /* if terrain type changes, levitation or flying might become blocked
+       or unblocked; switch_terrain() might issue a message */
+    if (ltyp !== game.level.at(ox, oy).typ
+        && (u.uprops?.[LEVITATION]?.intrinsic || u.uprops?.[LEVITATION]?.extrinsic
+            || u.uprops?.[FLYING]?.intrinsic || u.uprops?.[FLYING]?.extrinsic))
+        throw new Error('hurtle_step(): switch_terrain() not ported yet');
+
+    /* might be entering a special room (treasure zoo, thrown room, &c) that
+       has a first-time entry message, or leaving shop with unpaid goods */
+    await check_special_room(false);
+
+    if (is_pool(x, y) && !u.uinwater) {
+        throw new Error('hurtle_step(): moving over water not ported yet');
+    } else if (is_lava(x, y) && !stopping_short) {
+        throw new Error('hurtle_step(): moving over lava not ported yet');
+    }
+
+    if ((ttmp = t_at(x, y)) !== null && ttmp !== undefined) {
+        if (stopping_short) {
+            ; /* see the comment above hurtle_jump() */
+        } else if (ttmp.ttyp === MAGIC_PORTAL || ttmp.ttyp === VIBRATING_SQUARE
+                   || ttmp.ttyp === FIRE_TRAP) {
+            throw new Error('hurtle_step(): dotrap() not ported yet');
+        } else {
+            /* (is_pit() || is_hole()) && Sokoban: Sokoban isn't ported */
+            if (ttmp.tseen)
+                throw new Error('hurtle_step(): "You pass right over" trapname() not ported yet');
+        }
+    }
+    if (--arg.range < 0) /* make sure our range never goes negative */
+        arg.range = 0;
+    /* if (*range != 0) nh_delay_output(): display timing only */
+    return true;
 }

@@ -43,7 +43,7 @@ import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMS
 import { rn1 } from './rng.js';
 import { S_EEL, PM_WIZARD } from './monsters.js';
 import { ACURR, exerchk } from './attrib.js';
-import { near_capacity, lookaround, end_running } from './hack.js';
+import { near_capacity, lookaround, end_running, nomul, monster_nearby } from './hack.js';
 import { nh_timeout } from './timeout.js';
 import { dosounds } from './sounds.js';
 import { gethungry } from './eat.js';
@@ -266,6 +266,39 @@ function is_pool_or_lava_at_u() {
            || typ === LAVAWALL || typ === DRAWBRIDGE_UP;
 }
 
+// C ref: cmd.c set_occupation()
+export function set_occupation(fn, txt, xtime) {
+    if (xtime)
+        throw new Error('set_occupation(): timed_occupation() not ported yet');
+    game.occupation = fn;
+    game.occtxt = txt;
+    game.occtime = 0;
+}
+
+// C ref: allmain.c stop_occupation()
+export async function stop_occupation() {
+    const g = game;
+    if (g.occupation) {
+        /* maybe_finished_meal(TRUE): only for the eatfood occupation,
+           which isn't ported */
+        await pline(`You stop ${g.occtxt}.`); /* You() */
+        g.occupation = null;
+        g.disp_botl = true; /* in case u.uhs changed */
+        nomul(0);
+    } else if (g.multi >= 0) {
+        nomul(0);
+    }
+    g.cmdq = []; /* cmdq_clear(CQ_CANNED) */
+}
+
+// C ref: eat.c reset_eat() -- we only set a flag here - the actual reset
+// process is done after the round is spent eating
+function reset_eat() {
+    const v = game.context.victual;
+    if (v && v.eating && !v.doreset)
+        v.doreset = true;
+}
+
 // C ref: hack.c unmul()
 async function unmul(msg_override) {
     const g = game;
@@ -273,7 +306,7 @@ async function unmul(msg_override) {
     g.multi = 0; /* caller will usually have done this already */
     if (msg_override)
         g.nomovemsg = msg_override;
-    else if (!g.nomovemsg)
+    else if (g.nomovemsg == null) /* a Null pointer; "" means no message */
         g.nomovemsg = "You can move again."; /* You_can_move_again */
     if (g.nomovemsg) {
         await pline(g.nomovemsg);
@@ -604,7 +637,16 @@ export async function moveloop_core() {
 
     g.context.move = 1;
 
-    /* if (gm.multi >= 0 && go.occupation): occupations aren't ported yet */
+    if (g.multi >= 0 && g.occupation) {
+        if ((await g.occupation()) === 0)
+            g.occupation = null;
+        if (monster_nearby()) {
+            await stop_occupation();
+            reset_eat();
+        }
+        /* runmode_delay_output(): display timing only */
+        return;
+    }
 
     u.umoved = 0;
 

@@ -1597,6 +1597,15 @@ async function process_menu_window(window, cw) {
                 }
                 continue;
             }
+            /* MENU_SELECT_PAGE, MENU_INVERT_PAGE, MENU_SELECT_ALL,
+               MENU_INVERT_ALL only act on a PICK_ANY menu; MENU_SEARCH
+               just beeps for PICK_NONE */
+            if (cw.how !== PICK_ANY
+                && (morc === MENU_SELECT_PAGE || morc === MENU_INVERT_PAGE
+                    || morc === MENU_SELECT_ALL || morc === MENU_INVERT_ALL))
+                continue;
+            if (cw.how === PICK_NONE && morc === MENU_SEARCH)
+                continue; /* tty_nhbell() */
             if (default_menu_cmds.includes(morc))
                 throw new Error(`process_menu_window: menu command '${morc}' not ported yet`);
         }

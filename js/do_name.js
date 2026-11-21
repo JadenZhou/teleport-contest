@@ -269,7 +269,7 @@ function is_mplayer(ptr) {
     return n >= PM_ARCHEOLOGIST && n <= PM_WIZARD;
 }
 /* C ref: mondata.c pmname(); mondata.h mon_pmname() */
-function pmname(pm, mgender) {
+export function pmname(pm, mgender) {
     if ((mgender >= MALE && mgender < NUM_MGENDERS) && pm.pmnames[mgender])
         return pm.pmnames[mgender];
     return pm.pmnames[NEUTRAL];

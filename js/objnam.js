@@ -2924,6 +2924,21 @@ export function xname(obj) {
     return xname_flags(obj, 0);
 }
 
+// C ref: objnam.c yname() -- xname, with "your"/"the" (shk_your())
+// prepended; shop and monster ownership, corpses and artifacts aren't
+// ported yet
+export function yname(obj) {
+    if (obj.otyp === O.CORPSE)
+        throw new Error('yname(): corpse_xname() not ported yet');
+    if (obj.oartifact)
+        throw new Error('yname(): artifacts not ported yet');
+    const s = xname(obj); /* cxname(obj) */
+    /* shk_your(): !shk_owns() && !mon_owns() */
+    if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
+        throw new Error('yname(): shk_owns()/mon_owns() not ported yet');
+    return `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
+}
+
 // C ref: objnam.c xname_flags()
 function xname_flags(obj, cxn_flags) {
     const typ = obj.otyp;
