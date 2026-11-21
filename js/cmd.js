@@ -39,7 +39,7 @@ import { dofire } from './dothrow.js';
 import { doswapweapon, dowieldquiver, dowield } from './wield.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
-import { dowear, doputon } from './do_wear.js';
+import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
 import { dodrink } from './potion.js';
 import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
@@ -111,6 +111,8 @@ const cmd_funcs = {
     doeat: () => doeat(),
     dowear: () => dowear(),
     doputon: () => doputon(),
+    dotakeoff: () => dotakeoff(),
+    ia_dotakeoff: () => ia_dotakeoff(),
     dodrink: () => dodrink(),
     dolook: () => dolook(),
     doread: () => doread(),

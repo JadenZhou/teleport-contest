@@ -68,58 +68,9 @@ export function is_pole(otmp) {
 }
 export function is_wet_towel(o) { return o.otyp === TOWEL && o.spe > 0; }
 
-// C ref: worn.c setworn() -- the weapon slots (W_WEP, W_SWAPWEP,
-// W_QUIVER); armor and accessories aren't handled here yet
-const weapon_slots = [
-    { w_mask: W_WEP, w_obj: 'uwep' },
-    { w_mask: W_SWAPWEP, w_obj: 'uswapwep' },
-    { w_mask: W_QUIVER, w_obj: 'uquiver' },
-    { w_mask: W_RINGL, w_obj: 'uleft' },
-    { w_mask: W_RINGR, w_obj: 'uright' },
-    { w_mask: W_TOOL, w_obj: 'ublindf' },
-];
-export function setworn(obj, mask) {
-    if (mask & ~(W_WEP | W_SWAPWEP | W_QUIVER | W_RINGL | W_RINGR | W_TOOL))
-        throw new Error('setworn(): armor/amulet/eyewear slots not ported yet');
-    for (const wp of weapon_slots) {
-        if (wp.w_mask & mask) {
-            const oobj = game[wp.w_obj];
-            if (oobj) {
-                if (game.u.twoweap && (oobj.owornmask & (W_WEP | W_SWAPWEP)))
-                    game.u.twoweap = false; /* set_twoweap(FALSE) */
-                oobj.owornmask &= ~wp.w_mask;
-                if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
-                    const p = objects[oobj.otyp].oc_oprop;
-                    if (p)
-                        throw new Error('setworn(): extrinsic-granting weapon not ported yet');
-                    if (oobj.oartifact)
-                        throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
-                }
-                /* cancel_doff(): no armor removal in progress for weapons */
-            }
-            game[wp.w_obj] = obj;
-            if (obj) {
-                obj.owornmask = (obj.owornmask || 0) | wp.w_mask;
-                if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
-                    if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
-                        || mask !== W_WEP) {
-                        const p = objects[obj.otyp].oc_oprop;
-                        if (p && (wp.w_mask & (W_RINGL | W_RINGR | W_TOOL))) {
-                            /* u.uprops[p].extrinsic |= wp->w_mask */
-                            const up = game.u.uprops[p];
-                            up.extrinsic = (up.extrinsic || 0) | wp.w_mask;
-                            /* w_blocks(): rings don't block properties */
-                        } else if (p)
-                            throw new Error('setworn(): extrinsic-granting weapon not ported yet');
-                    }
-                    if (obj.oartifact)
-                        throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
-                }
-            }
-        }
-    }
-    /* update_inventory(): no perm_invent */
-}
+// C ref: worn.c setworn() -- in worn.js
+import { setworn } from './worn.js';
+export { setworn };
 
 // C ref: wield.c setuwep()
 export function setuwep(obj) {
