@@ -189,15 +189,17 @@ function report(results, violations) {
     for (const r of results) {
         if (!r.first || r.total == null) continue;
         const k = r.first.cCaller || '?';
-        const t = todo.get(k) || { fn: k, sessions: 0, blockedRolls: 0, examples: [] };
+        const t = todo.get(k) || { fn: k, sessions: 0, blockedRolls: 0, blockedScreens: 0, examples: [] };
         t.sessions++; t.blockedRolls += r.total - r.rulePrefix;
+        t.blockedScreens += (r.totalScreens || 0) - (r.honestScreens || 0);
         if (t.examples.length < 2) t.examples.push(`${r.session.replace('.session.json', '')} @${r.first.index}: C "${r.first.c}" / JS "${r.first.js}"`);
         todo.set(k, t);
     }
-    const ranked = [...todo.values()].sort((a, b) => b.sessions - a.sessions || b.blockedRolls - a.blockedRolls);
-    console.log('\nTO-DO (advance past the first rule mismatch; C function shown):');
+    // Ranked by screens blocked: screens are the score. (Sessions and rolls shown too.)
+    const ranked = [...todo.values()].sort((a, b) => b.blockedScreens - a.blockedScreens || b.sessions - a.sessions);
+    console.log('\nTO-DO by screens blocked (advance past the first rule mismatch; C function shown):');
     for (const t of ranked.slice(0, 15)) {
-        console.log(`  ${pad(t.fn, 44)} blocks ${pad(t.sessions + ' sessions', 13)} ${t.blockedRolls} rolls`);
+        console.log(`  ${pad(t.fn, 40)} blocks ${pad(t.blockedScreens + ' screens', 14)} ${pad(t.sessions + ' sessions', 12)} ${t.blockedRolls} rolls`);
         for (const e of t.examples) console.log(`      e.g. ${e.slice(0, 160)}`);
     }
     return { totals: { rule: sumR, value: sumV, rolls: sumC, honestScreens: sumH, screens: sumS,

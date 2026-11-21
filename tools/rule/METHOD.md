@@ -66,7 +66,7 @@ either, and no static check count grows (`tools/rule/checks.mjs`).
 ## Loop protocol (coordinator)
 
 Each iteration:
-1. `progress.mjs`: read the to-do list and the first mismatch of the top item.
+1. `progress.mjs`: read the to-do list (ranked by **screens blocked**, since screens are the score) and the first mismatch of the top item. Prefer items that unblock the most screens over items that touch the most sessions.
 2. Give **one task** to a fresh agent in its own git worktree, with the task ("advance past
    roll i in session S; C says `X @ fn`"), these rules, and the relevant C/Lua source files.
    Early on, work is serial because every session shares the same startup path: `o_init.c` →
