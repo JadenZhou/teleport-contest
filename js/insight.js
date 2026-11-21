@@ -632,7 +632,7 @@ function slots_required(skill) {
 
 // C ref: weapon.c can_advance()
 /* return true if this skill can be advanced */
-function can_advance(skill, speedy) {
+export function can_advance(skill, speedy) {
     const u = U();
     if (P_RESTRICTED(skill)
         || P_SKILL(skill) >= P_MAX_SKILL(skill)

@@ -16,6 +16,8 @@ import {
     P_AXE, P_PICK_AXE, NO_WEAPON_WANTED, NEED_WEAPON, NEED_RANGED_WEAPON,
     NEED_HTH_WEAPON, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE, AKLYS_LIM,
     WT_IRON_BALL_INCR, STONE_RES, NON_PM, W_ARM, W_ARMS, W_ARMG, W_WEP,
+    W_ARMC, W_ARMU, W_RINGL, W_RINGR, P_SKILLED, P_LAST_WEAPON, P_LAST_SPELL,
+    P_TWO_WEAPON_COMBAT, A_STR, A_DEX, STR18, TIP_ENHANCE,
 } from './const.js';
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS } from './objects.js';
 import * as O from './objects.js';
@@ -35,6 +37,10 @@ import { Monnam } from './do_name.js';
 import { doname } from './objnam.js';
 import { which_armor } from './worn.js';
 import { mon_hates_silver, mon_hates_blessings } from './mondata.js';
+import { ACURR } from './attrib.js';
+import { adj_lev } from './makemon.js';
+import { handle_tip } from './hack.js';
+import { can_advance } from './insight.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -465,6 +471,81 @@ export function dmgval(otmp, mon) {
     }
 
     return tmp;
+}
+
+// C ref: weapon.c special_dmgval()
+/* check whether blessed and/or silver damage applies for *non-weapon* hit;
+   return value is the amount of the extra damage; silverhit_p.val gets
+   the output flag mask for silver bonus */
+export function special_dmgval(
+    magr, /* attacker */
+    mdef, /* defender */
+    armask, /* armor mask, multiple bits accepted for
+             * W_ARMC|W_ARM|W_ARMU or
+             * W_ARMG|W_RINGL|W_RINGR only */
+    silverhit_p) /* output flag mask for silver bonus */ {
+    let obj;
+    const left_ring = (armask & W_RINGL) ? true : false,
+        right_ring = (armask & W_RINGR) ? true : false;
+    let silverhit = 0;
+    let bonus = 0;
+
+    obj = null;
+    if (armask & (W_ARMC | W_ARM | W_ARMU)) {
+        if ((armask & W_ARMC) !== 0
+            && (obj = which_armor(magr, W_ARMC)) != null)
+            armask = W_ARMC;
+        else if ((armask & W_ARM) !== 0
+                 && (obj = which_armor(magr, W_ARM)) != null)
+            armask = W_ARM;
+        else if ((armask & W_ARMU) !== 0
+                 && (obj = which_armor(magr, W_ARMU)) != null)
+            armask = W_ARMU;
+        else
+            armask = 0;
+    } else if (armask & (W_ARMG | W_RINGL | W_RINGR)) {
+        armask = ((obj = which_armor(magr, W_ARMG)) != null) ? W_ARMG : 0;
+    } else {
+        obj = which_armor(magr, armask);
+    }
+
+    if (obj) {
+        if (obj.blessed && mon_hates_blessings(mdef))
+            bonus += rnd(4);
+        /* the only silver armor is shield of reflection (silver dragon
+           scales refer to color, not material) and the only way to hit
+           with one--aside from throwing--is to wield it and perform a
+           weapon hit, but we include a general check here */
+        if (objects[obj.otyp].oc_material === O.SILVER
+            && mon_hates_silver(mdef)) {
+            bonus += rnd(20);
+            silverhit |= armask;
+        }
+
+    /* when no gloves we check for silver rings (blessed rings ignored) */
+    } else if ((left_ring || right_ring) && magr === game.youmonst) {
+        if (left_ring && game.uleft) {
+            if (objects[game.uleft.otyp].oc_material === O.SILVER
+                && mon_hates_silver(mdef)) {
+                bonus += rnd(20);
+                silverhit |= W_RINGL;
+            }
+        }
+        if (right_ring && game.uright) {
+            if (objects[game.uright.otyp].oc_material === O.SILVER
+                && mon_hates_silver(mdef)) {
+                /* two silver rings don't give double silver damage
+                   but 'silverhit' messages might be adjusted for them */
+                if (!(silverhit & W_RINGL))
+                    bonus += rnd(20);
+                silverhit |= W_RINGR;
+            }
+        }
+    }
+
+    if (silverhit_p)
+        silverhit_p.val = silverhit;
+    return bonus;
 }
 
 // C ref: mon.c can_touch_safely()
@@ -933,6 +1014,296 @@ export function mwepgone(mon) {
         setmnotwielded(mon, mwep);
         mon.weapon_check = NEED_WEAPON;
     }
+}
+
+/* C ref: youprop.h Upolyd; skills.h martial_bonus() */
+function Upolyd() { return game.u.umonnum !== game.u.umonster; }
+function Role_if(pm) { return game.urole.mnum === pm; }
+function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
+
+// C ref: weapon.c abon()
+/* attack bonus for strength & dexterity */
+export function abon() {
+    let sbon;
+    const str = ACURR(A_STR), dex = ACURR(A_DEX);
+
+    if (Upolyd())
+        return (adj_lev(M.mons[game.u.umonnum]) - 3);
+
+    /* this used to be '<= 18/50' for bonus of 1 but got changed to '< 18/50'
+       so that '18/50' gives a bonus of 2; gnome and orc player characters
+       have max Str of 18/50 and giving an extra bonus at that break point
+       provides an incentive for them to max out that characteristic */
+    if (str < 6)
+        sbon = -2;
+    else if (str < 8)
+        sbon = -1;
+    else if (str < 17)
+        sbon = 0;
+    else if (str < STR18(50))
+        sbon = 1; /* up to 18/49 */
+    else if (str < STR18(100))
+        sbon = 2;
+    else
+        sbon = 3;
+
+    /* Game tuning kludge: make it a bit easier for a low level character to
+     * hit */
+    sbon += (game.u.ulevel < 3) ? 1 : 0;
+
+    if (dex < 4)
+        return (sbon - 3);
+    else if (dex < 6)
+        return (sbon - 2);
+    else if (dex < 8)
+        return (sbon - 1);
+    else if (dex < 14)
+        return sbon;
+    else
+        return (sbon + dex - 14);
+}
+
+// C ref: weapon.c dbon()
+/* damage bonus for strength */
+export function dbon() {
+    const str = ACURR(A_STR);
+
+    if (Upolyd())
+        return 0;
+
+    if (str < 6)
+        return -1;
+    else if (str < 16)
+        return 0;
+    else if (str < 18)
+        return 1;
+    else if (str === 18)
+        return 2; /* up to 18 */
+    else if (str <= STR18(75))
+        return 3; /* up to 18/75 */
+    else if (str <= STR18(90))
+        return 4; /* up to 18/90 */
+    else if (str < STR18(100))
+        return 5; /* up to 18/99 */
+    else
+        return 6;
+}
+
+// C ref: weapon.c give_may_advance_msg()
+async function give_may_advance_msg(skill) {
+    await pline(`You feel more confident in your ${
+        (skill === P_NONE) ? ''
+        : (skill <= P_LAST_WEAPON) ? 'weapon '
+          : (skill <= P_LAST_SPELL) ? 'spell casting '
+            : 'fighting '}skills.`);
+    await handle_tip(TIP_ENHANCE);
+}
+
+// C ref: weapon.c use_skill()
+export async function use_skill(skill, degree) {
+    let advance_before;
+
+    if (skill !== P_NONE && !P_RESTRICTED(skill)) {
+        advance_before = can_advance(skill, false);
+        set_P_ADVANCE(skill, P_ADVANCE(skill) + degree);
+        if (!advance_before && can_advance(skill, false))
+            await give_may_advance_msg(skill);
+    }
+}
+
+// C ref: weapon.c uwep_skill_type()
+export function uwep_skill_type() {
+    if (game.u.twoweap)
+        return P_TWO_WEAPON_COMBAT;
+    return weapon_type(game.uwep);
+}
+
+// C ref: weapon.c weapon_hit_bonus()
+/*
+ * Return hit bonus/penalty based on skill of weapon.
+ * weapon can be null, meaning bare-handed combat.
+ * Treat restricted weapons as unskilled.
+ */
+export function weapon_hit_bonus(weapon) {
+    let type, skill, bonus = 0;
+    const u = game.u;
+
+    const wep_type = weapon_type(weapon);
+    /* use two weapon skill only if attacking with one of the wielded weapons
+     */
+    type = (u.twoweap && (weapon === game.uwep || weapon === game.uswapwep))
+               ? P_TWO_WEAPON_COMBAT
+               : wep_type;
+    if (type === P_NONE) {
+        bonus = 0;
+    } else if (type <= P_LAST_WEAPON) {
+        switch (P_SKILL(type)) {
+        default:
+            impossible(`weapon_hit_bonus: bad skill ${P_SKILL(type)}`);
+            /* FALLTHRU */
+        case P_ISRESTRICTED:
+        case P_UNSKILLED:
+            bonus = -4;
+            break;
+        case P_BASIC:
+            bonus = 0;
+            break;
+        case P_SKILLED:
+            bonus = 2;
+            break;
+        case P_EXPERT:
+            bonus = 3;
+            break;
+        }
+    } else if (type === P_TWO_WEAPON_COMBAT) {
+        skill = P_SKILL(P_TWO_WEAPON_COMBAT);
+        if (P_SKILL(wep_type) < skill)
+            skill = P_SKILL(wep_type);
+        switch (skill) {
+        default:
+            impossible(`weapon_hit_bonus: bad skill ${skill}`);
+            /* FALLTHRU */
+        case P_ISRESTRICTED:
+        case P_UNSKILLED:
+            bonus = -9;
+            break;
+        case P_BASIC:
+            bonus = -7;
+            break;
+        case P_SKILLED:
+            bonus = -5;
+            break;
+        case P_EXPERT:
+            bonus = -3;
+            break;
+        }
+    } else if (type === P_BARE_HANDED_COMBAT) {
+        /*
+         *        b.h. m.a.
+         * unskl:  +1  n/a
+         * basic:  +1   +3
+         * skild:  +2   +4
+         * exprt:  +2   +5
+         * mastr:  +3   +6
+         * grand:  +3   +7
+         */
+        bonus = P_SKILL(type);
+        bonus = Math.max(bonus, P_UNSKILLED) - 1; /* unskilled => 0 */
+        bonus = Math.trunc(((bonus + 2) * (martial_bonus() ? 2 : 1)) / 2);
+    }
+
+    /* KMH -- It's harder to hit while you are riding */
+    if (u.usteed) {
+        switch (P_SKILL(P_RIDING)) {
+        case P_ISRESTRICTED:
+        case P_UNSKILLED:
+            bonus -= 2;
+            break;
+        case P_BASIC:
+            bonus -= 1;
+            break;
+        case P_SKILLED:
+            break;
+        case P_EXPERT:
+            break;
+        }
+        if (u.twoweap)
+            bonus -= 2;
+    }
+
+    return bonus;
+}
+
+// C ref: weapon.c weapon_dam_bonus()
+/*
+ * Return damage bonus/penalty based on skill of weapon.
+ * weapon can be null, meaning bare-handed combat.
+ * Treat restricted weapons as unskilled.
+ */
+export function weapon_dam_bonus(weapon) {
+    let type, skill, bonus = 0;
+    const u = game.u;
+
+    const wep_type = weapon_type(weapon);
+    /* use two weapon skill only if attacking with one of the wielded weapons
+     */
+    type = (u.twoweap && (weapon === game.uwep || weapon === game.uswapwep))
+               ? P_TWO_WEAPON_COMBAT
+               : wep_type;
+    if (type === P_NONE) {
+        bonus = 0;
+    } else if (type <= P_LAST_WEAPON) {
+        switch (P_SKILL(type)) {
+        default:
+            impossible(`weapon_dam_bonus: bad skill ${P_SKILL(type)}`);
+            /* FALLTHRU */
+        case P_ISRESTRICTED:
+        case P_UNSKILLED:
+            bonus = -2;
+            break;
+        case P_BASIC:
+            bonus = 0;
+            break;
+        case P_SKILLED:
+            bonus = 1;
+            break;
+        case P_EXPERT:
+            bonus = 2;
+            break;
+        }
+    } else if (type === P_TWO_WEAPON_COMBAT) {
+        skill = P_SKILL(P_TWO_WEAPON_COMBAT);
+        if (P_SKILL(wep_type) < skill)
+            skill = P_SKILL(wep_type);
+        switch (skill) {
+        default:
+        case P_ISRESTRICTED:
+        case P_UNSKILLED:
+            bonus = -3;
+            break;
+        case P_BASIC:
+            bonus = -1;
+            break;
+        case P_SKILLED:
+            bonus = 0;
+            break;
+        case P_EXPERT:
+            bonus = 1;
+            break;
+        }
+    } else if (type === P_BARE_HANDED_COMBAT) {
+        /*
+         *        b.h. m.a.
+         * unskl:   0  n/a
+         * basic:  +1   +3
+         * skild:  +1   +4
+         * exprt:  +2   +6
+         * mastr:  +2   +7
+         * grand:  +3   +9
+         */
+        bonus = P_SKILL(type);
+        bonus = Math.max(bonus, P_UNSKILLED) - 1; /* unskilled => 0 */
+        bonus = Math.trunc(((bonus + 1) * (martial_bonus() ? 3 : 1)) / 2);
+    }
+
+    /* KMH -- Riding gives some thrusting damage */
+    if (u.usteed && type !== P_TWO_WEAPON_COMBAT) {
+        switch (P_SKILL(P_RIDING)) {
+        case P_ISRESTRICTED:
+        case P_UNSKILLED:
+            break;
+        case P_BASIC:
+            break;
+        case P_SKILLED:
+            bonus += 1;
+            break;
+        case P_EXPERT:
+            bonus += 2;
+            break;
+        }
+    }
+
+    return bonus;
 }
 
 // C ref: weapon.c setmnotwielded()

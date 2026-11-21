@@ -726,7 +726,7 @@ export function canseemon(mon) {
 }
 
 // C ref: display.h _tp_sensemon()
-function tp_sensemon(mon) {
+export function tp_sensemon(mon) {
     const u = game.u;
     const P = u.uprops?.[TELEPAT];
     const Blind_telepat = !!(P && (P.intrinsic || P.extrinsic));
@@ -920,6 +920,22 @@ export function see_nearby_objects() {
 // (lev->glyph): the "remembered, unseen monster" 'I'
 export function glyph_is_invisible(rg) {
     return !!rg?.invisible;
+}
+
+// C ref: display.h glyph_at() -- the glyph currently shown at <x,y>
+// (gg.gbuf[y][x].glyph).  The JS display buffer keeps the shown cell
+// (show_glyph_cell()), so this returns a descriptor of it in the form
+// glyph_is_invisible() takes: S_invisible 'I' is the only glyph drawn
+// with that character.  Warning glyphs are never shown here
+// (display_warning() isn't ported; newsym() stops before drawing one).
+export function glyph_at(x, y) {
+    const loc = game.level.at(x, y);
+    return { ch: loc.disp_ch, invisible: loc.disp_ch === 'I', warning: false };
+}
+
+// C ref: display.h glyph_is_warning()
+export function glyph_is_warning(glyph) {
+    return !!glyph?.warning;
 }
 
 // C ref: display.c map_invisible()
