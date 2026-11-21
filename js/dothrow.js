@@ -2,19 +2,25 @@
 // C ref: dothrow.c
 //
 // Ported so far: the #fire command's fireassist (swap to or wield the
-// launcher and requeue #fire) and throw_obj() up to the direction
-// prompt.  Throwing itself (throwit()), autoquiver and doquiver_core()
+// launcher and requeue #fire), the #throw command (dothrow(), throw_ok())
+// and throw_obj() up to the direction prompt.  Throwing itself (throwit()), autoquiver and doquiver_core()
 // are not ported yet.
 
 import { game } from './gstate.js';
 import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
-import { is_ammo, is_pole, ammo_and_launcher, doquiver_core } from './wield.js';
-import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP } from './const.js';
-import { BULLWHIP, BOOMERANG, AKLYS } from './objects.js';
+import { is_ammo, is_pole, ammo_and_launcher, doquiver_core, welded } from './wield.js';
+import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP, P_SLING, A_STR, STR19,
+         GETOBJ_EXCLUDE, GETOBJ_DOWNPLAY, GETOBJ_SUGGEST, GETOBJ_PROMPT,
+         GETOBJ_ALLOWCNT } from './const.js';
+import { BULLWHIP, BOOMERANG, AKLYS, objects, COIN_CLASS, WEAPON_CLASS,
+         GEM_CLASS } from './objects.js';
 import { M1_NOHANDS, M1_NOTAKE, S_COCKATRICE, PM_CHICKATRICE, PM_COCKATRICE,
-         PM_MEDUSA, mons } from './monsters.js';
+         PM_MEDUSA, mons, M2_ROCKTHROW } from './monsters.js';
+import { getobj } from './invent.js';
+import { ACURR } from './attrib.js';
+import { ART_MJOLLNIR } from './artilist.js';
 import { pline, newsym, flush_screen, canspotmon, canseemon } from './display.js';
 import { vision_recalc } from './vision.js';
 import { u_on_newpos } from './mklev.js';
@@ -86,6 +92,71 @@ async function throw_obj(obj, shotlimit) {
         return res;
     }
     throw new Error('throw_obj(): throwing (throwit()) not ported yet');
+}
+
+/* C ref: hack.h uslinging(); mondata.h throws_rocks() */
+function uslinging() {
+    return !!game.uwep && objects[game.uwep.otyp].oc_skill === P_SLING;
+}
+function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
+
+// C ref: dothrow.c throw_ok()
+/* getobj callback for object to be thrown */
+function throw_ok(obj) {
+    if (!obj)
+        return GETOBJ_EXCLUDE;
+
+    if (obj.bknown && welded(obj)) /* not a candidate if known to be stuck */
+        return GETOBJ_DOWNPLAY;
+
+    if (AutoReturn(obj, obj.owornmask)
+        /* to get here, obj is boomerang or is uwep and (alkys or Mjollnir) */
+        && (obj.oartifact !== ART_MJOLLNIR || ACURR(A_STR) >= STR19(25)))
+        return GETOBJ_SUGGEST;
+
+    if (obj.quan === 1 && (obj === game.uwep
+                           || (obj === game.uswapwep && game.u.twoweap)))
+        return GETOBJ_DOWNPLAY;
+
+    if (obj.oclass === COIN_CLASS)
+        return GETOBJ_SUGGEST;
+
+    if (!uslinging() && obj.oclass === WEAPON_CLASS)
+        return GETOBJ_SUGGEST;
+    /* Possible extension: exclude weapons that make no sense to throw,
+       such as whips, bows, slings, rubber hoses. */
+
+    if (uslinging() && obj.oclass === GEM_CLASS)
+        return GETOBJ_SUGGEST;
+
+    if (throws_rocks(game.youmonst.data) && obj.otyp === BOULDER)
+        return GETOBJ_SUGGEST;
+
+    return GETOBJ_DOWNPLAY;
+}
+
+// C ref: dothrow.c dothrow() -- the #throw command
+export async function dothrow() {
+    let obj;
+
+    /*
+     * Since some characters shoot multiple missiles at one time,
+     * allow user to specify a count prefix for 'f' or 't' to limit
+     * number of items thrown (to avoid possibly hitting something
+     * behind target after killing it, or perhaps to conserve ammo).
+     *
+     * [3.6.0:  shot count setup has been moved into ok_to_throw().]
+     */
+    const otr = await ok_to_throw();
+    if (!otr.ok)
+        return ECMD_OK;
+    const shotlimit = otr.shotlimit;
+
+    obj = await getobj("throw", throw_ok, GETOBJ_PROMPT | GETOBJ_ALLOWCNT);
+    /* it is also possible to throw food */
+    /* (or jewels, or iron balls... ) */
+
+    return obj ? await throw_obj(obj, shotlimit) : ECMD_CANCEL;
 }
 
 // C ref: dothrow.c find_launcher()
