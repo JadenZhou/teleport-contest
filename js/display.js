@@ -5,7 +5,11 @@ import { game } from './gstate.js';
 import { money_cnt } from './u_init.js';
 import { cansee, couldsee, vision_recalc } from './vision.js';
 import { tty_putstr, tty_display_nhwindow } from './wintty.js';
-import { rank } from './botl.js';
+import { rank, condtests } from './botl.js';
+import { near_capacity } from './hack.js';
+import { NOT_HUNGRY, UNENCUMBERED, SICK, SICK_VOMITABLE, SICK_NONVOMITABLE, TT_LAVA,
+         TT_BURIEDBALL, CONFUSION, DEAF, FLYING, HALLUC_RES, LEVITATION, SLIMED,
+         STONED, STRANGLED, STUNNED, GLIB } from './const.js';
 import { ACURR } from './attrib.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS, LADDER, SDOOR, SCORR,
@@ -25,12 +29,12 @@ import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL,
 } from './objects.js';
-import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS } from './monsters.js';
+import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS, S_EEL, M1_FLY } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
 import { is_pool } from './makemon.js';
 import { t_at } from './trap.js';
-import { engr_at } from './engrave.js';
+import { engr_at, sticks } from './engrave.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
          CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE, ATR_INVERSE } from './terminal.js';
@@ -1651,7 +1655,115 @@ function _statusLine2() {
     const expr = game.flags?.showexp ? `Xp:${u.ulevel || 1}/${u.uexp || 0}`
                                      : `Xp:${u.ulevel || 1}`;
     const tmmv = game.flags?.time ? ` T:${game.moves}` : '';
-    return `Dlvl:${u.uz?.dlevel || 1} $:${Math.min(money_cnt(game.invent), 999999)} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}`;
+    /* BL_HUNGER and BL_CAP (wintty.c status_fieldfmt " %s", with the
+       hunger text's trailing blanks suppressed), then BL_CONDITION */
+    const hunger = (u.uhs !== undefined && u.uhs !== NOT_HUNGRY)
+        ? ` ${STAT_HU[u.uhs].replace(/ +$/, '')}` : '';
+    const cap = near_capacity();
+    const capstr = (cap > UNENCUMBERED) ? ` ${STAT_ENC[cap]}` : '';
+    const line = `Dlvl:${u.uz?.dlevel || 1} $:${Math.min(money_cnt(game.invent), 999999)} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
+    /* make_things_fit(): shrinking or truncating an overlong line */
+    if (line.length > 79)
+        throw new Error('_statusLine2(): make_things_fit() shrinking not ported yet');
+    return line;
+}
+
+/* C ref: eat.c hu_stat[], botl.c enc_stat[] */
+const STAT_HU = ["Satiated", "        ", "Hungry  ", "Weak    ",
+                 "Fainting", "Fainted ", "Starved "];
+const STAT_ENC = ["", "Burdened", "Stressed", "Strained", "Overtaxed",
+                  "Overloaded"];
+
+/* C ref: botl.c conditions[] -- ranking and full text (txt1), in bl_*
+   order; condtests[] (botl.js) holds the matching enabled flags */
+const STAT_CONDITIONS = [
+    [20, "Bare"], [10, "Blind"], [20, "Busy"], [10, "Conf"], [10, "Deaf"],
+    [15, "Iron"], [10, "Fly"], [6, "FoodPois"], [20, "Glow"], [2, "Grab"],
+    [10, "Hallu"], [20, "Held"], [20, "Icy"], [8, "InLava"], [10, "Lev"],
+    [20, "Parlyz"], [10, "Ride"], [20, "Zzz"], [6, "Slime"], [20, "Slip"],
+    [6, "Stone"], [4, "Strngl"], [10, "Stun"], [15, "Submrg"],
+    [6, "TermIll"], [20, "Teth"], [20, "Trap"], [20, "Out"], [20, "WLegs"],
+    [20, "UHold"],
+];
+const bl_bareh = 0, bl_blind = 1, bl_busy = 2, bl_conf = 3, bl_deaf = 4,
+    bl_elf_iron = 5, bl_fly = 6, bl_foodpois = 7, bl_glowhands = 8,
+    bl_grab = 9, bl_hallu = 10, bl_held = 11, bl_icy = 12, bl_inlava = 13,
+    bl_lev = 14, bl_parlyz = 15, bl_ride = 16, bl_sleeping = 17,
+    bl_slime = 18, bl_slippery = 19, bl_stone = 20, bl_strngl = 21,
+    bl_stun = 22, bl_submerged = 23, bl_termill = 24, bl_tethered = 25,
+    bl_trapped = 26, bl_unconsc = 27, bl_woundedl = 28, bl_holding = 29;
+/* C ref: botl.c condopt(0, NULL, FALSE) cond_idx[] sorted by cond_cmp():
+   ranking, then the condition text (strcmpi) */
+const COND_IDX = STAT_CONDITIONS.map((_, i) => i).sort((a, b) => {
+    const c1 = STAT_CONDITIONS[a][0], c2 = STAT_CONDITIONS[b][0];
+    if (c1 !== c2)
+        return c1 - c2;
+    const t1 = STAT_CONDITIONS[a][1].toLowerCase(), t2 = STAT_CONDITIONS[b][1].toLowerCase();
+    return t1 < t2 ? -1 : t1 > t2 ? 1 : 0;
+});
+
+// C ref: botl.c bot_via_windowport() condition tests, and wintty.c
+// render_status() BL_CONDITION -- " Cond" for each condition in cond_idx
+// order (cond_shrinklvl 0)
+function status_conditions() {
+    const u = game.u;
+    const g = game;
+    const P = p => u.uprops?.[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
+    const has = p => !!((P(p).intrinsic || P(p).extrinsic) && !P(p).blocked);
+    const test = new Array(STAT_CONDITIONS.length).fill(false);
+    const enabled = i => !!condtests[i]?.enabled;
+
+    if (P(SICK).intrinsic || P(SICK).extrinsic) {
+        if (enabled(bl_foodpois)) test[bl_foodpois] = (u.usick_type & SICK_VOMITABLE) !== 0;
+        if (enabled(bl_termill)) test[bl_termill] = (u.usick_type & SICK_NONVOMITABLE) !== 0;
+    }
+    if (u.utrap) {
+        if (enabled(bl_inlava)) test[bl_inlava] = (u.utraptype === TT_LAVA);
+        if (enabled(bl_tethered)) test[bl_tethered] = (u.utraptype === TT_BURIEDBALL);
+        if (enabled(bl_trapped)) test[bl_trapped] = (!test[bl_inlava] && !test[bl_tethered]);
+    }
+    if (u.ustuck) {
+        if (u.uswallow) {
+            if (enabled(bl_held)) test[bl_held] = true;
+        } else if (u.umonnum !== u.umonster
+                   && sticks(g.youmonst.data)) {
+            if (enabled(bl_holding)) test[bl_holding] = true;
+        } else {
+            if (enabled(bl_grab)) test[bl_grab] = (u.ustuck.data.mlet === S_EEL);
+            if (enabled(bl_held)) test[bl_held] = !test[bl_grab];
+        }
+    }
+    test[bl_blind] = Blind();
+    test[bl_conf] = !!(P(CONFUSION).intrinsic || P(CONFUSION).extrinsic);
+    test[bl_deaf] = !!(P(DEAF).intrinsic || P(DEAF).extrinsic);
+    test[bl_fly] = !!((P(FLYING).intrinsic || P(FLYING).extrinsic
+                       || (u.usteed && (u.usteed.data.mflags1 & M1_FLY)))
+                      && !P(FLYING).blocked);
+    test[bl_glowhands] = !!u.umconf;
+    test[bl_hallu] = Hallucination() && !(P(HALLUC_RES).extrinsic);
+    test[bl_lev] = has(LEVITATION);
+    test[bl_ride] = !!u.usteed;
+    test[bl_slime] = !!P(SLIMED).intrinsic;
+    test[bl_stone] = !!P(STONED).intrinsic;
+    test[bl_strngl] = !!P(STRANGLED).intrinsic;
+    test[bl_stun] = !!(P(STUNNED).intrinsic || P(STUNNED).extrinsic);
+    test[bl_submerged] = !!u.uinwater;
+    if (enabled(bl_elf_iron)) test[bl_elf_iron] = false;
+    if (enabled(bl_bareh)) test[bl_bareh] = (!g.uarmg && !g.uwep);
+    if (enabled(bl_icy)) test[bl_icy] = (g.level.at(u.ux, u.uy).typ === ICE);
+    if (enabled(bl_slippery)) test[bl_slippery] = !!P(GLIB).intrinsic;
+    if (enabled(bl_woundedl))
+        throw new Error('status_conditions(): Wounded_legs condition not ported yet');
+    /* multi < 0: unconsc/parlyz/sleeping/busy are all opt_in and off */
+    if (g.multi < 0 && (enabled(bl_unconsc) || enabled(bl_parlyz)
+                        || enabled(bl_sleeping) || enabled(bl_busy)))
+        throw new Error('status_conditions(): unconscious/paralyzed conditions not ported yet');
+
+    let out = '';
+    for (const ci of COND_IDX)
+        if (enabled(ci) && test[ci])
+            out += ` ${STAT_CONDITIONS[ci][1]}`;
+    return out;
 }
 
 // ── Serialize terminal grid for screen comparison ──
