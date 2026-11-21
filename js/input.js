@@ -3,6 +3,7 @@
 
 import { game } from './gstate.js';
 import { KEY_BINDINGS } from './terminal.js';
+import { WIN_STOP } from './wintty.js';
 
 const _inputQueue = [];
 
@@ -21,6 +22,12 @@ export async function nhgetch() {
     // Fire the capture hook before reading the next key
     const hook = game._preNhgetchHook;
     if (hook) await hook();
+
+    /* C ref: wintty.c tty_nhgetch(), tty_nh_poskey() -- reading a key
+       turns off WIN_STOP (set by ESC at --More--) for the message window */
+    const msgwin = game.tty_wins?.[game.WIN_MESSAGE];
+    if (msgwin)
+        msgwin.flags &= ~WIN_STOP;
 
     if (_inputQueue.length > 0) {
         return _inputQueue.shift();
