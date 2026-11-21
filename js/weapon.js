@@ -34,6 +34,7 @@ import { canseemon } from './display.js';
 import { Monnam } from './do_name.js';
 import { doname } from './objnam.js';
 import { which_armor } from './worn.js';
+import { mon_hates_silver, mon_hates_blessings } from './mondata.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -214,20 +215,6 @@ function touch_petrifies(ptr) {
 // C ref: mondata.c attacktype()
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
-}
-// C ref: mondata.c hates_silver()
-function hates_silver(ptr) {
-    return (is_were(ptr) || ptr.mlet === M.S_VAMPIRE || is_demon(ptr)
-            || ptr === M.mons[M.PM_SHADE]
-            || (ptr.mlet === M.S_IMP && ptr !== M.mons[M.PM_TENGU]));
-}
-// C ref: mondata.c mon_hates_silver()
-function mon_hates_silver(mon) {
-    return is_vampshifter(mon) || hates_silver(mon.data);
-}
-// C ref: mondata.c mon_hates_blessings(), hates_blessings()
-function mon_hates_blessings(mon) {
-    return is_vampshifter(mon) || is_undead(mon.data) || is_demon(mon.data);
 }
 /* C ref: monst.h resists_ston() */
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }

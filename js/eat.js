@@ -21,6 +21,10 @@ import { ACURR } from './attrib.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { SPINACH_TIN, ROTTEN_TIN, HOMEMADE_TIN, NON_PM, NEUTRAL } from './const.js';
+import { FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
+         ACID_RES, STONE_RES, TELEPORT, TELEPORT_CONTROL, TELEPAT,
+         LAST_PROP } from './const.js';
+import { can_teleport, control_teleport, telepathic } from './mondata.js';
 import { getobj } from './invent.js';
 import { is_edible } from './iactions.js';
 import { can_reach_floor } from './engrave.js';
@@ -365,6 +369,127 @@ export async function newuhs(incr) {
             return;
         }
     }
+}
+
+/* C ref: mondata.h is_giant() */
+function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
+
+// C ref: eat.c intrinsic_possible()
+/* intrinsic_possible() returns TRUE iff a monster can potentially
+ * convey an intrinsic to the hero (or a pet) when its corpse is eaten */
+function intrinsic_possible(type, ptr) {
+    let res = 0;
+
+    switch (type) {
+    case FIRE_RES:
+        res = (ptr.mconveys & M.MR_FIRE) !== 0;
+        break;
+    case SLEEP_RES:
+        res = (ptr.mconveys & M.MR_SLEEP) !== 0;
+        break;
+    case COLD_RES:
+        res = (ptr.mconveys & M.MR_COLD) !== 0;
+        break;
+    case DISINT_RES:
+        res = (ptr.mconveys & M.MR_DISINT) !== 0;
+        break;
+    case SHOCK_RES: /* shock (electricity) resistance */
+        res = (ptr.mconveys & M.MR_ELEC) !== 0;
+        break;
+    case POISON_RES:
+        res = (ptr.mconveys & M.MR_POISON) !== 0;
+        break;
+    case ACID_RES:
+        res = (ptr.mconveys & M.MR_ACID) !== 0;
+        break;
+    case STONE_RES:
+        res = (ptr.mconveys & M.MR_STONE) !== 0;
+        break;
+    case TELEPORT:
+        res = can_teleport(ptr);
+        break;
+    case TELEPORT_CONTROL:
+        res = control_teleport(ptr);
+        break;
+    case TELEPAT:
+        res = telepathic(ptr);
+        break;
+    default:
+        /* res stays 0 */
+        break;
+    }
+    return res;
+}
+
+// C ref: eat.c should_givit()
+/* The "do we or do we not give the intrinsic" logic from givit(), extracted
+ * into its own function. Depends on the monster's level and the type of
+ * intrinsic it is trying to give you.
+ */
+export function should_givit(type, ptr) {
+    let chance;
+
+    /* some intrinsics are easier to get than others */
+    switch (type) {
+    case POISON_RES:
+        if ((ptr === mons[M.PM_KILLER_BEE] || ptr === mons[M.PM_SCORPION])
+            && !rn2(4))
+            chance = 1;
+        else
+            chance = 15;
+        break;
+    case TELEPORT:
+        chance = 10;
+        break;
+    case TELEPORT_CONTROL:
+        chance = 12;
+        break;
+    case TELEPAT:
+        chance = 1;
+        break;
+    default:
+        chance = 15;
+        break;
+    }
+
+    return (ptr.mlevel > rn2(chance));
+}
+
+// C ref: eat.c corpse_intrinsic()
+/* Choose (one of) the intrinsics granted by a corpse, and return it.
+ * If this corpse gives no intrinsics, return 0.
+ * For the special not-real-prop cases, return a negative value. */
+export function corpse_intrinsic(ptr) {
+    /* Check the monster for all of the intrinsics.  If this
+     * monster can give more than one, pick one to try to give
+     * from among all it can give.
+     */
+    const conveys_STR = is_giant(ptr);
+    let i;
+    let count = 0; /* number of possible intrinsics */
+    let prop = 0;   /* which one we will try to give */
+
+    if (conveys_STR) {
+        count = 1;
+        prop = -1; /* use -1 as fake prop index for STR */
+    }
+    for (i = 1; i <= LAST_PROP; i++) {
+        if (!intrinsic_possible(i, ptr))
+            continue;
+        ++count;
+        /* a 1 in count chance of replacing the old choice
+           with this one, and a count-1 in count chance
+           of keeping the old choice (note that 1 in 1 and
+           0 in 1 are what we want for the first candidate) */
+        if (!rn2(count)) {
+            prop = i;
+        }
+    }
+    /* if strength is the only candidate, give it 50% chance */
+    if (conveys_STR && count === 1 && !rn2(2))
+        prop = 0;
+
+    return prop;
 }
 
 let getobj_else = 0;
