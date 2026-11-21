@@ -23,7 +23,7 @@ import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          MOVEMENTCMD, CMD_PARAM, CMD_M_PREFIX, CMD_gGF_PREFIX } from './func_tab.js';
 import { strcmpi, strncmpi, highc } from './hacklib.js';
 import { dosearch } from './detect.js';
-import { level_tele } from './teleport.js';
+import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
          doprtool } from './invent.js';
@@ -101,6 +101,7 @@ const cmd_funcs = {
     wiz_level_change: () => wiz_level_change(),
     wiz_wish: () => wiz_wish(),
     wiz_level_tele: () => wiz_level_tele(),
+    dotelecmd: () => dotelecmd(),
     doride: () => doride(),
     dovspell: () => dovspell(),
     dodiscovered: () => dodiscovered(),

@@ -40,7 +40,8 @@ const DEFSYM_CHARS = [
 ];
 const S_trwall = 11, S_ndoor = 12, S_vodoor = 13, S_hcdoor = 16,
     S_room = 19, S_darkroom = 20, S_engroom = 21, S_corr = 22, S_litcorr = 23,
-    S_engrcorr = 24, S_arrow_trap = 49, S_trapped_chest = 73;
+    S_engrcorr = 24, S_arrow_trap = 49, S_trapped_chest = 73, S_vbeam = 74,
+    S_poisoncloud = 86;
 
 /* C ref: hacklib.c visctrl() */
 function visctrl(c) {
@@ -278,6 +279,7 @@ export async function getpos(ccp, force, goal) {
         } else {
             /* !strchr(quitchars, c): the quitchars were handled above */
             let k = 0;
+            const matching = new Array(DEFSYM_CHARS.length).fill(0);
 
             for (let sidx = 0; sidx < DEFSYM_CHARS.length; sidx++) {
                 /* don't even try to match some terrain: walls, room... */
@@ -298,10 +300,30 @@ export async function getpos(ccp, force, goal) {
                        match corridor engravings (default '#') too */
                     || (ch === DEFSYM_CHARS[S_engroom]
                         && (sidx === S_engroom || sidx === S_engrcorr)))
-                    ++k;
+                    matching[sidx] = ++k;
             }
             if (k) {
-                throw new Error(`getpos(): dungeon feature search for '${ch}' not ported yet`);
+                /* pass 0: just past current pos to lower right;
+                   pass 1: upper left corner to current pos; at each spot
+                   C checks glyph_at(), the remembered levl[][].glyph and
+                   back_to_glyph() for a matching cmap symbol.  The JS map
+                   keeps those glyphs without their cmap index, so only a
+                   search for symbols none of them can hold is ported: the
+                   transient zap/shield/explosion/swallow and getpos
+                   symbols (S_vbeam .. S_expl_br except S_poisoncloud) are
+                   only ever drawn with tmp_at() and never left in gbuf or
+                   remembered, so such a search always fails */
+                for (let sidx = 0; sidx < DEFSYM_CHARS.length; sidx++)
+                    if (matching[sidx] && (sidx < S_vbeam || sidx === S_poisoncloud))
+                        throw new Error(`getpos(): dungeon feature search for '${ch}' not ported yet`);
+                await pline(`Can't find dungeon feature '${ch}'.`);
+                msg_given = true;
+                /* goto nxtc */
+                game.getposx = cx;
+                game.getposy = cy;
+                curs_map(cx, cy);
+                await flush_screen(0);
+                continue;
             } else {
                 let note;
 
