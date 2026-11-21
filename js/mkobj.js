@@ -795,7 +795,8 @@ export function bcsign(otmp) {
 }
 
 // nartifact_exist(): C ref artifact.c, ported in artifact.js
-import { nartifact_exist } from './artifact.js';
+import { nartifact_exist, mk_artifact } from './artifact.js';
+import { A_NONE } from './const.js';
 
 function not_ported(what) {
     impossible(`mksobj_init: ${what} is not ported yet`);
@@ -1058,7 +1059,7 @@ function mksobj_init(otmp, artif) {
 
         if (artif && !rn2(20 + (10 * nartifact_exist()))) {
             /* mk_artifact() with otmp and A_NONE will never return NULL */
-            not_ported('mk_artifact()');
+            otmp = mk_artifact(otmp, A_NONE, 99, true);
         }
         break;
     case FOOD_CLASS:
@@ -1255,7 +1256,7 @@ function mksobj_init(otmp, artif) {
             blessorcurse(otmp, 10);
         if (artif && !rn2(40 + (10 * nartifact_exist()))) {
             /* mk_artifact() with otmp and A_NONE will never return NULL */
-            not_ported('mk_artifact()');
+            otmp = mk_artifact(otmp, A_NONE, 99, true);
         }
         /* simulate lacquered armor for samurai */
         if (game.urole.mnum === M.PM_SAMURAI /* Role_if(PM_SAMURAI) */
@@ -1329,7 +1330,7 @@ function mksobj_init(otmp, artif) {
 /* mksobj(): create a specific type of object; result is always non-Null */
 export function mksobj(otyp, init, artif) {
     const let_ = objects[otyp].oc_class;
-    const otmp = {
+    let otmp = {
         age: Math.max(game.moves || 0, 1),
         o_id: next_ident(),
         quan: 1,
@@ -1399,7 +1400,8 @@ export function mksobj(otyp, init, artif) {
 
     /* unique objects may have an associated artifact entry */
     if (objects[otyp].oc_unique && !otmp.oartifact) {
-        not_ported('mk_artifact() for unique objects');
+        /* mk_artifact() with otmp and A_NONE will never return NULL */
+        otmp = mk_artifact(otmp, A_NONE, 99, false);
     }
     otmp.owt = weight(otmp);
     return otmp;
