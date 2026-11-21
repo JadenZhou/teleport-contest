@@ -65,6 +65,11 @@ import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
 import { grow_up } from './makemon.js';
+import { can_hide_under_obj, set_mimic_sym } from './makemon.js';
+import { vobj_at } from './display.js';
+import { ceiling_hider } from './engrave.js';
+import { has_ceiling } from './insight.js';
+import { M_AP_FURNITURE, M_AP_OBJECT, ROOM } from './const.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
 import { relobj } from './steal.js';
@@ -1067,7 +1072,14 @@ async function movemon_singlemon(mtmp) {
     }
 
     if ((mtmp.data.mflags1 & M1_HIDE) !== 0) { /* is_hider() */
-        throw new Error('movemon_singlemon(): restrap() not ported yet');
+        /* unwatched mimics and piercers may hide again  [MRS] */
+        if (restrap(mtmp))
+            return false;
+        if (mtmp.m_ap_type === M_AP_FURNITURE
+            || mtmp.m_ap_type === M_AP_OBJECT)
+            return false;
+        if (mtmp.mundetected)
+            return false;
     } else if (mtmp.data.mlet === S_EEL && !mtmp.mundetected) {
         throw new Error('movemon_singlemon(): eel hideunder() not ported yet');
     }
@@ -2282,6 +2294,45 @@ export async function mon_givit(mtmp, ptr) {
     await mon_give_prop(mtmp, prop);
 }
 
+// C ref: mon.c restrap()
+/* unwatched hiders may hide again; if so, returns True */
+function restrap(mtmp) {
+    let t;
+
+    if (mtmp.mcan || mtmp.m_ap_type || cansee(mtmp.mx, mtmp.my)
+        || rn2(3) || mtmp === game.u.ustuck
+        /* can't hide while trapped except in pits */
+        || (mtmp.mtrapped && (t = t_at(mtmp.mx, mtmp.my)) != null
+            && !is_pit(t.ttyp))
+        /* can't hide on ceiling if there isn't one */
+        || (ceiling_hider(mtmp.data) && !has_ceiling(game.u.uz))
+        /* won't hide when adjacent to hero */
+        || (sensemon(mtmp) && m_next2u(mtmp)))
+        return false;
+
+    if (mtmp.data.mlet === MM.S_MIMIC) {
+        if (mtmp.msleeping || mtmp.mfrozen) {
+        /*
+         * The mimic needs to be awake to disguise itself
+         * as something else.
+         */
+            return false;
+        }
+        set_mimic_sym(mtmp);
+        return true;
+    } else if (game.level.at(mtmp.mx, mtmp.my).typ === ROOM) {
+        mtmp.mundetected = 1;
+        return true;
+    }
+
+    return false;
+}
+
+/* C ref: hack.h m_next2u() */
+function m_next2u(mtmp) {
+    return dist2(mtmp.mx, mtmp.my, game.u.ux, game.u.uy) < 3;
+}
+
 // C ref: mon.c maybe_unhide_at()
 /* force a hidden monster or hero out of hiding when its cover goes away */
 export function maybe_unhide_at(x, y) {
@@ -2299,13 +2350,10 @@ export function maybe_unhide_at(x, y) {
         return;
     }
 
-    if (undetected) {
-        const hides_under = (mtmp.data.mflags1 & MM.M1_CONCEAL) !== 0;
-
-        if (hides_under && OBJ_AT(x, y) && !trapped)
-            throw new Error('maybe_unhide_at(): can_hide_under_obj() not ported yet');
-        if ((hides_under && (!OBJ_AT(x, y) || trapped))
-            || (mtmp.data.mlet === S_EEL && !is_pool(x, y)))
-            throw new Error('maybe_unhide_at(): hideunder() not ported yet');
-    }
+    if (undetected
+        && ((((mtmp.data.mflags1 & MM.M1_CONCEAL) !== 0) /* hides_under() */
+             && (!OBJ_AT(x, y) || trapped
+                 || !can_hide_under_obj(vobj_at(x, y)))) /* level.objects[x][y] */
+            || (mtmp.data.mlet === S_EEL && !is_pool(x, y))))
+        hideunder(mtmp);
 }

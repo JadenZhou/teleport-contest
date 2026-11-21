@@ -2249,7 +2249,8 @@ export function set_mimic_sym(mtmp) {
         block_point(mx, my);
 }
 // C ref: monmove.c can_hide_under_obj()
-function can_hide_under_obj(obj) {
+/* returns TRUE if a mon can hide under the obj */
+export function can_hide_under_obj(obj) {
     let t;
 
     if (!obj || obj.where !== 'OBJ_FLOOR')

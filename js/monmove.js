@@ -11,7 +11,8 @@ import { rn2, rnd } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc,
          recalc_block_point } from './vision.js';
-import { newsym, pline, canseemon, canspotmon } from './display.js';
+import { newsym, pline, canseemon, canspotmon, vobj_at } from './display.js';
+import { can_hide_under_obj } from './makemon.js';
 import { Monnam, Adjmonnam } from './do_name.js';
 import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon } from './trap.js';
@@ -1273,8 +1274,10 @@ export async function m_move(mtmp, after) {
             finish_meating(mtmp);
         return MMOVE_DONE; /* still eating */
     }
-    if (hides_under(ptr) && OBJ_AT(mtmp.mx, mtmp.my))
-        throw new Error('m_move(): can_hide_under_obj() not ported yet');
+    if (hides_under(ptr) && OBJ_AT(mtmp.mx, mtmp.my)
+        && can_hide_under_obj(vobj_at(mtmp.mx, mtmp.my)) /* level.objects[x][y] */
+        && rn2(10))
+        return MMOVE_NOTHING; /* do not leave hiding place */
 
     /* set up pre-move visibility flags */
     const seenflgs = (canseemon(mtmp) ? 1 : 0) | (canspotmon(mtmp) ? 2 : 0);
