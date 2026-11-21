@@ -17,6 +17,7 @@ import { objects } from './objects.js';
 import * as O from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
+import { NON_PM } from './const.js';
 import { FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
          ACID_RES, STONE_RES, INVIS, FAST, ANTIMAGIC, REFLECTING, PROTECTION,
          CLAIRVOYANT, STEALTH, TELEPAT, LEVITATION, FLYING, WWALKING,
@@ -938,4 +939,101 @@ export function racial_exception(mon, obj) {
     /*  return -1; */
 
     return 0;
+}
+
+/* an object chain as an array: JS keeps invent and the migrating lists as
+   nobj chains and floor piles, minvent and container contents as arrays */
+function objchain_items(list) {
+    if (Array.isArray(list))
+        return list;
+    const res = [];
+    for (let o = list; o; o = o.nobj)
+        res.push(o);
+    return res;
+}
+
+// C ref: worn.c clear_bypass()
+/* clear bypass bits for an object chain, plus contents if applicable */
+function clear_bypass(objchn) {
+    for (const o of objchain_items(objchn)) {
+        o.bypass = 0;
+        if (o.cobj && o.cobj.length) /* Has_contents() */
+            clear_bypass(o.cobj);
+    }
+}
+
+// C ref: worn.c clear_bypasses()
+/* all objects with their bypass bit set should now be reset to normal;
+   this can be a relatively expensive operation so is only called if
+   svc.context.bypasses is set */
+export function clear_bypasses() {
+    const g = game;
+    /*
+     * 'Object' bypass is also used for one monster function:
+     * polymorph control of long worms.  Activated via setting
+     * svc.context.bypasses even if no specific object has been
+     * bypassed.
+     */
+
+    clear_bypass(g.level?.objects);
+    clear_bypass(g.invent);
+    clear_bypass(g.migrating_objs);
+    clear_bypass(g.level?.buriedobjlist);
+    clear_bypass(g.billobjs);
+    clear_bypass(g.objs_deleted);
+    for (const mtmp of g.level?.monsters || []) {
+        if (mtmp.dead) /* DEADMONSTER() */
+            continue;
+        clear_bypass(mtmp.minvent);
+        /* long worm created by polymorph has mon->mextra->mcorpsenm set
+           to PM_LONG_WORM to flag it as not being subject to further
+           polymorph; clearing mcorpsenm reverts worm to normal */
+        if (mtmp.data === mons[M.PM_LONG_WORM] && mtmp.mextra
+            && mtmp.mextra.mcorpsenm !== undefined
+            && mtmp.mextra.mcorpsenm !== NON_PM) /* has_mcorpsenm() */
+            mtmp.mextra.mcorpsenm = NON_PM;
+    }
+    for (let mtmp = g.migrating_mons; mtmp; mtmp = mtmp.nmon)
+        clear_bypass(mtmp.minvent);
+    /* this is a no-op since mydogs is only non-Null during level change or
+       final ascension and we aren't called at those times, but be thorough */
+    for (let mtmp = g.mydogs; mtmp; mtmp = mtmp.nmon)
+        clear_bypass(mtmp.minvent);
+    /* ball and chain can be "floating", not on any object chain (when
+       hero is swallowed by an engulfing monster, for instance) */
+    if (g.uball)
+        g.uball.bypass = 0;
+    if (g.uchain)
+        g.uchain.bypass = 0;
+
+    g.context.bypasses = false;
+}
+
+// C ref: worn.c bypass_objlist()
+export function bypass_objlist(objchain, on) { /* TRUE => set, FALSE => clear */
+    const list = objchain_items(objchain);
+    if (on && list.length)
+        game.context.bypasses = true;
+    for (const o of list)
+        o.bypass = on ? 1 : 0;
+}
+
+// C ref: worn.c bypass_obj()
+/* set an object's bypass bit so that it will be skipped by later calls */
+function bypass_obj(obj) {
+    obj.bypass = 1;
+    game.context.bypasses = true;
+}
+
+// C ref: worn.c nxt_unbypassed_obj()
+/* return the first object without its bypass bit set; set that bit
+   before returning so that successive calls will find further objects */
+export function nxt_unbypassed_obj(objchain) {
+    for (const o of objchain_items(objchain)) {
+        if (!o.bypass) {
+            bypass_obj(o);
+            return o;
+        }
+    }
+    return null;
 }

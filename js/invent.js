@@ -36,7 +36,8 @@ import {
 import { objects } from './objects.js';
 import * as M from './monsters.js';
 import { mons, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
-import { STONE_RES } from './const.js';
+import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
+         BUC_UNKNOWN } from './const.js';
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj,
          dead_species } from './mkobj.js';
 import { itemactions } from './iactions.js';
@@ -1070,6 +1071,71 @@ export async function getobj(word, /* usually a direct verb such as "drop" */
         }
     }
     return otmp;
+}
+
+// C ref: invent.c count_unpaid()
+/*
+ * Returns the number of unpaid items within the given list.  This includes
+ * contained objects.  The list is an invent-style nobj chain or a
+ * container's cobj array.
+ */
+export function count_unpaid(list) {
+    let count = 0;
+
+    for (const o of objchain_items(list)) {
+        if (o.unpaid)
+            count++;
+        if (o.cobj && o.cobj.length) /* Has_contents() */
+            count += count_unpaid(o.cobj);
+    }
+    return count;
+}
+
+/* an object chain as an array: JS keeps invent as an nobj chain and
+   floor piles, minvent and container contents as arrays */
+function objchain_items(list) {
+    if (Array.isArray(list))
+        return list;
+    const res = [];
+    for (let o = list; o; o = o.nobj)
+        res.push(o);
+    return res;
+}
+
+// C ref: invent.c count_buc()
+/*
+ * Returns the number of items with b/u/c/unknown within the given list.
+ * This does NOT include contained objects.
+ *
+ * Assumes that the hero sees or touches or otherwise senses the objects
+ * at some point:  bknown is forced for priest[ess], like in xname().
+ */
+export function count_buc(list, type, filterfunc) {
+    let count = 0;
+
+    for (const o of objchain_items(list)) {
+        /* priests always know bless/curse state */
+        if (game.urole.mnum === M.PM_CLERIC)
+            o.bknown = (o.oclass !== O.COIN_CLASS) ? 1 : 0;
+        /* some actions exclude some or most items */
+        if (filterfunc && !filterfunc(o))
+            continue;
+
+        /* coins are either uncursed or unknown based upon option setting */
+        if (o.oclass === O.COIN_CLASS) {
+            if (type === (game.flags.goldX ? BUC_UNKNOWN : BUC_UNCURSED))
+                ++count;
+            continue;
+        }
+        /* check whether this object matches the requested type */
+        if (!o.bknown
+                ? (type === BUC_UNKNOWN)
+                : o.blessed ? (type === BUC_BLESSED)
+                            : o.cursed ? (type === BUC_CURSED)
+                                       : (type === BUC_UNCURSED))
+            ++count;
+    }
+    return count;
 }
 
 // C ref: invent.c silly_thing()

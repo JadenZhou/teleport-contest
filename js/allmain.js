@@ -6,13 +6,15 @@
 // once-per-hero-took-time blocks are real.
 
 import { game } from './gstate.js';
+import { clear_bypasses } from './worn.js';
 import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init } from './nhlua.js';
 import { rhack, domove } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline, see_monsters } from './display.js';
 import { read_engr_at } from './engrave.js';
-import { encumber_msg } from './pickup.js';
+import { encumber_msg, pickup } from './pickup.js';
+import { reset_justpicked } from './invent.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { mcalcmove, mcalcdistress, movemon } from './mon.js';
 import { initrack, settrack } from './track.js';
@@ -451,8 +453,13 @@ export async function moveloop_core() {
     const P = u.uprops;
     let monscanmove = false;
 
-    /* get_nh_event(), maybe_shuffle_customizations(), dobjsfree(),
-       clear_bypasses(), sanity_check(), makewish(): not ported yet */
+    /* get_nh_event(), maybe_shuffle_customizations(), dobjsfree():
+       not ported yet */
+
+    if (g.context.bypasses)
+        clear_bypasses();
+
+    /* sanity_check(), makewish(): not ported yet */
 
     if (g.context.move) {
         /* actual time passed */
@@ -741,9 +748,10 @@ export async function moveloop_preamble(resuming) {
     if (!resuming) { /* new game */
         g.program_state.beyond_savefile_load = 1; /* for TTY_PERM_INVENT */
         g.context.rndencode = rnd(9000);
-        /* set_wear((struct obj *) 0): side-effects of starting gear;
-           reset_justpicked(gi.invent); (void) pickup(1): autopickup at
-           initial location -- not ported yet */
+        /* set_wear((struct obj *) 0): side-effects of starting gear --
+           not ported yet */
+        reset_justpicked(g.invent);
+        await pickup(1); /* autopickup at initial location */
         /* only matters if someday a character is able to start with
            clairvoyance (wizard with cornuthaum perhaps?); without this,
            first "random" occurrence would always kick in on turn 1 */

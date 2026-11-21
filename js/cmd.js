@@ -35,7 +35,7 @@ import { dovspell, docast } from './spell.js';
 import { dodiscovered } from './o_init.js';
 import { doattributes } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
-import { dodrop, dodown, doup } from './do.js';
+import { dodrop, doddrop, dodown, doup } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
 import { doloot } from './pickup.js';
@@ -106,6 +106,7 @@ const cmd_funcs = {
     docast: () => docast(),
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),
+    doddrop: () => doddrop(),
     dodown: () => dodown(),
     doup: () => doup(),
     dozap: () => dozap(),
