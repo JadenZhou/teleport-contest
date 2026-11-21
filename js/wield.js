@@ -10,7 +10,10 @@ import { P_NONE, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, P_POLEARMS, P_LANCE,
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, TIN_OPENER,
          HEAVY_IRON_BALL, IRON_CHAIN, TOWEL, CORPSE, AKLYS, SILVER } from './objects.js';
 import { ECMD_OK, ECMD_TIME, ECMD_FAIL, W_ARMOR, W_ACCESSORY,
-         W_SADDLE, W_RINGL, W_RINGR, W_TOOL } from './const.js';
+         W_SADDLE, W_RINGL, W_RINGR, W_TOOL, W_ARM, W_ARMC, W_ARMH, W_ARMS,
+         W_ARMG, W_ARMF, W_ARMU, W_AMUL, W_BALL, W_CHAIN, I_SPECIAL } from './const.js';
+import { w_blocks } from './worn.js';
+import { PM_MONK } from './monsters.js';
 import { M1_NOHANDS, M2_DEMON, M2_WERE, S_IMP, S_VAMPIRE, MZ_SMALL, mons,
          PM_SHADE, PM_TENGU } from './monsters.js';
 import { pline, You, You_cant } from './display.js';

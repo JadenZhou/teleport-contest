@@ -81,7 +81,7 @@ const ydir = [0, -1, -1, -1, 0, 1, 1, 1];
 
 
 // Stairway list management
-function stairway_add(x, y, up, isladder, dest) {
+export function stairway_add(x, y, up, isladder, dest) {
     const node = { sx: x, sy: y, up, isladder, tolev: { ...dest },
                    u_traversed: false, next: game.stairs };
     game.stairs = node;

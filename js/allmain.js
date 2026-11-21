@@ -10,7 +10,9 @@ import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init } from './nhlua.js';
 import { rhack, domove } from './cmd.js';
-import { docrt, cls, bot, flush_screen, pline } from './display.js';
+import { docrt, cls, bot, flush_screen, pline, see_monsters } from './display.js';
+import { read_engr_at } from './engrave.js';
+import { encumber_msg } from './pickup.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { mcalcmove, mcalcdistress, movemon } from './mon.js';
 import { initrack, settrack } from './track.js';
@@ -21,7 +23,7 @@ import { deferred_goto } from './do.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
-import { init_dungeons, depth, find_level } from './dungeon.js';
+import { init_dungeons, depth, find_level, In_hell } from './dungeon.js';
 import { ask_do_tutorial } from './options.js';
 import { phase_of_the_moon, friday_13th } from './calendar.js';
 import { change_luck } from './attrib.js';
@@ -96,7 +98,6 @@ export async function newgame() {
     // Structural phase consumes RNG for rooms/corridors/doors/stairs
     await mklev();
     u_on_upstairs();
-    init_vision_globals();   /* C: vision_init() at program startup */
     vision_reset();          /* set up internals for level (after mklev) */
     /* check_special_room(FALSE): no special room is entered on arrival
        at level 1 yet -- not ported yet (hack.c) */
@@ -120,6 +121,13 @@ export async function newgame() {
     if (g.flags.legacy) {
         await com_pager(g.u.uroleplay.pauper ? "pauper_legacy" : "legacy");
     }
+
+    /* urealtime.realtime = 0L; urealtime.start_timing = getnow(): the
+       fixed game clock */
+    g.urealtime = { realtime: 0, start_timing: 0, finish_time: 0 };
+    /* INSURANCE save_currentstate(): the level 0 lock file isn't modelled */
+    g.program_state.something_worth_saving =
+        (g.program_state.something_worth_saving || 0) + 1; /* useful data now exists */
 
     /* Success! */
     await welcome(true);
@@ -165,7 +173,27 @@ export async function welcome(new_game) /* false => restoring an old game */ {
     await pline(new_game ? `${Hello(null)} ${g.plname}, welcome to NetHack!  You are a${buf}.`
                          : `${Hello(null)} ${g.plname}, the${buf}, welcome back to NetHack!`);
 
-    /* livelog_printf() and the restore-only messages: not ported yet */
+    if (new_game) {
+        /* guarantee that 'major' event category is never empty:
+           livelog_printf() -- the live log isn't kept */
+    } else {
+        /* if restoring in Gehennom, give same hot/smoky message as when
+           first entering it */
+        await hellish_smoke_mesg();
+        /* remind player of the level annotation, like in goto_level():
+           print_level_annotation() -- level annotations (#annotate,
+           mapseen) aren't ported, so there is none to print */
+    }
+}
+
+// C ref: do.c hellish_smoke_mesg()
+async function hellish_smoke_mesg() {
+    const temperature = game.level.flags.temperature;
+    if (temperature)
+        await pline(`It is ${temperature > 0 ? "hot" : "cold"} here.`);
+
+    if (In_hell(game.u.uz) && temperature > 0)
+        throw new Error('hellish_smoke_mesg(): olfaction() not ported yet');
 }
 
 // C ref: allmain.c maybe_generate_rnd_mon()
@@ -690,8 +718,11 @@ export async function moveloop_preamble(resuming) {
     const g = game;
     const u = g.u;
 
-    /* if (resuming && iflags.deferred_X) enter_explore_mode(): restore
-       isn't ported yet */
+    /* if a save file created in normal mode is now being restored in
+       explore mode, treat it as normal restore followed by 'X' command
+       to use up the save file and require confirmation for explore mode */
+    if (resuming && g.iflags.deferred_X)
+        throw new Error('moveloop_preamble(): enter_explore_mode() not ported yet');
 
     /* side-effects from the real world */
     g.flags.moonphase = phase_of_the_moon();
@@ -724,8 +755,18 @@ export async function moveloop_preamble(resuming) {
         /* initrack(): not ported yet */
     }
     g.disp_botlx = true; /* for STATUS_HILITES */
-    /* resuming: read_engr_at(), fix_shop_damage(); encumber_msg();
-       deferred see_monsters() -- not ported yet */
+    if (resuming) { /* restoring old game */
+        await read_engr_at(u.ux, u.uy); /* subset of pickup() */
+        /* fix_shop_damage(): shop repair isn't ported */
+        if (g.level.damagelist)
+            throw new Error('moveloop_preamble(): fix_shop_damage() not ported yet');
+    }
+
+    await encumber_msg(); /* in case they auto-picked up something */
+    if (g.defer_see_monsters) {
+        g.defer_see_monsters = false;
+        see_monsters();
+    }
 
     u.uz0.dlevel = u.uz.dlevel;
     g.context.move = 0;

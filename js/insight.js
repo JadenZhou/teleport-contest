@@ -399,7 +399,7 @@ function contained_gold(obj, even_if_unknown) {
 }
 
 // C ref: invent.c hidden_gold()
-function hidden_gold(even_if_unknown) {
+export function hidden_gold(even_if_unknown) {
     let value = 0;
 
     for (let obj = game.invent; obj; obj = obj.nobj)
@@ -409,7 +409,7 @@ function hidden_gold(even_if_unknown) {
 }
 
 // C ref: invent.c currency()
-function currency(amount) {
+export function currency(amount) {
     let res;
 
     if (Hallucination())
@@ -473,7 +473,7 @@ export function inside_shop(x, y) {
 
 // C ref: wield.c empty_handed()
 /* description of hands when not wielding anything */
-function empty_handed() {
+export function empty_handed() {
     return game.uarmg ? "empty handed" /* gloves imply hands */
            : humanoid(game.youmonst.data)
              /* hands but no weapon and no gloves */

@@ -1002,7 +1002,7 @@ export function adjalign(n) {
 }
 
 // C ref: mon.c adj_erinys() -- only the first steps are ported
-function adj_erinys(abuse) {
+export function adj_erinys(abuse) {
     if (abuse > 5)
         throw new Error('adj_erinys(): Erinyes strengthening not ported yet');
 }
