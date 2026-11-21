@@ -56,6 +56,19 @@ import { STRANGE_OBJECT, WAN_POLYMORPH, SPE_POLYMORPH, POT_POLYMORPH,
          MAGIC_MARKER, POT_GAIN_ABILITY, POT_WATER, POT_OIL, SPE_BLANK_PAPER,
          SPE_NOVEL, ROCK, MINERAL } from './objects.js';
 import { PM_CROCODILE } from './monsters.js';
+import { AC_VALUE } from './rng.js';
+import { m_at, closed_door } from './makemon.js';
+import { canspotmon, map_invisible, unmap_invisible } from './display.js';
+import { find_mac } from './worn.js';
+import { couldsee } from './vision.js';
+import { SCROLL_CLASS, FOOD_CLASS, GLOB_OF_GREEN_SLIME, SCR_FIRE, SPE_FIREBALL,
+         BRASS_LANTERN, CANDELABRUM_OF_INVOCATION, TALLOW_CANDLE,
+         WAX_CANDLE } from './objects.js';
+import { nomul } from './hack.js';
+import { stop_occupation } from './allmain.js';
+import { wakeup } from './mon.js';
+import { STONE, LAVAWALL, IRONBARS, FOUNTAIN, ICE, STRAT_WAITMASK, WEB,
+         IS_ROOM, IS_WALL, In_mines, Is_airlevel, ZAP_POS, SDOOR } from './const.js';
 import { engr_at } from './engrave.js';
 import { M1_NOHANDS, M1_CONCEAL, AD_COLD, AD_FIRE, AD_ELEC, AD_ACID,
          AD_DISN } from './monsters.js';
@@ -824,7 +837,7 @@ export async function weffects(obj) {
     const g = game;
     const u = g.u;
     const otyp = obj.otyp;
-    const disclose = false;
+    let disclose = false;
     const was_unkn = !objects[otyp].oc_name_known;
 
     exercise(A_WIS, true);
@@ -853,11 +866,16 @@ export async function weffects(obj) {
         if (otyp === WAN_DIGGING || otyp === SPE_DIG)
             throw new Error('weffects(): zap_dig() not ported yet');
         else if (otyp >= SPE_MAGIC_MISSILE && otyp <= SPE_FINGER_OF_DEATH)
-            throw new Error('weffects(): ubuzz() for spells not ported yet');
+            /* BZ_U_SPELL(BZ_OFS_SPE(otyp)) */
+            await ubuzz(10 + Math.abs(otyp - SPE_MAGIC_MISSILE) % 10,
+                        Math.trunc(u.ulevel / 2) + 1);
         else if (otyp >= WAN_MAGIC_MISSILE && otyp <= WAN_LIGHTNING)
-            throw new Error('weffects(): ubuzz() (rays: buzz()/dobuzz()) not ported yet');
+            /* BZ_U_WAND(BZ_OFS_WAN(otyp)) */
+            await ubuzz(Math.abs(otyp - WAN_MAGIC_MISSILE) % 10,
+                        (otyp === WAN_MAGIC_MISSILE) ? 2 : 6);
         else
             throw new Error('weffects: unexpected spell or wand'); /* impossible() */
+        disclose = true;
     }
     if (disclose) {
         learnwand(obj);
@@ -961,4 +979,426 @@ export function exclam(force) {
     /* note that large force is usual with wands so that !! would
             require information about hand/weapon/wand */
     return (force < 0) ? "?" : (force <= 4) ? "." : "!";
+}
+
+/* C ref: zap.c ZT_* -- zap types (AD_foo - 1) */
+const ZT_MAGIC_MISSILE = 0, ZT_FIRE = 1, ZT_COLD = 2, ZT_SLEEP = 3,
+    ZT_DEATH = 4, ZT_LIGHTNING = 5, ZT_POISON_GAS = 6, ZT_ACID = 7;
+void ZT_MAGIC_MISSILE; void ZT_SLEEP;
+function ZT_SPELL(x) { return 10 + x; }
+function ZT_BREATH(x) { return 20 + x; }
+/* C ref: zap.c is_hero_spell() */
+function is_hero_spell(type) { return type >= 10 && type < 20; }
+/* C ref: hack.h PHYS_EXPL_TYPE */
+const PHYS_EXPL_TYPE = -1;
+
+const flash_types = [
+    "magic missile", /* Wands must be 0-9 */
+    "bolt of fire", "bolt of cold", "sleep ray", "death ray",
+    "bolt of lightning", "", "", "", "",
+
+    "magic missile", /* Spell equivalents must be 10-19 */
+    "fireball", "cone of cold", "sleep ray", "finger of death",
+    "bolt of lightning", /* there is no spell, used for retribution */
+    "", "", "", "",
+
+    "blast of missiles", /* Dragon breath equivalents 20-29*/
+    "blast of fire", "blast of frost", "blast of sleep gas",
+    "blast of disintegration", "blast of lightning",
+    "blast of poison gas", "blast of acid", "", ""
+];
+
+// C ref: zap.c zaptype() -- convert monster zap/spell/breath value to hero
+// zap/spell/breath value
+function zaptype(type) {
+    if (type <= -30 && -39 <= type) /* monster wand zap */
+        type += 30; /* first convert -39..-30 to -9..0 so that abs()
+                     * will yield 0..9 (hero wand zap) for it */
+    type = Math.abs(type);
+    return type;
+}
+
+// C ref: zap.c flash_str()
+export function flash_str(typ, nohallu) { /* suppress hallucination (for death reasons) */
+    typ = zaptype(typ);
+    if (Hallucination() && !nohallu)
+        throw new Error('flash_str(): rnd_hallublast() not ported yet');
+    return flash_types[typ];
+}
+
+// C ref: zap.c bounce_dir()
+function bounce_dir(sx, sy, dd, bounceback) {
+    const lev = (x, y) => game.level.at(x, y);
+    if (!dd.dx || !dd.dy || (bounceback > 0 && !rn2(bounceback))) {
+        dd.dx = -dd.dx;
+        dd.dy = -dd.dy;
+    } else {
+        let rmn;
+        let bounce = 0;
+        const lsy = sy - dd.dy;
+        const lsx = sx - dd.dx;
+
+        if (isok(sx, lsy) && ZAP_POS(rmn = lev(sx, lsy).typ)
+            && !closed_door(sx, lsy)
+            && (IS_ROOM(rmn) || (isok(sx + dd.dx, lsy)
+                                 && ZAP_POS(lev(sx + dd.dx, lsy).typ))))
+            bounce = 1;
+        if (isok(lsx, sy) && ZAP_POS(rmn = lev(lsx, sy).typ)
+            && !closed_door(lsx, sy)
+            && (IS_ROOM(rmn) || (isok(lsx, sy + dd.dy)
+                                 && ZAP_POS(lev(lsx, sy + dd.dy).typ))))
+            if (!bounce || rn2(2))
+                bounce = 2;
+        switch (bounce) {
+        case 0:
+            dd.dx = -dd.dx;
+            /*FALLTHRU*/
+        case 1: // eslint-disable-line no-fallthrough
+            dd.dy = -dd.dy;
+            break;
+        case 2:
+            dd.dx = -dd.dx;
+            break;
+        }
+    }
+}
+
+// C ref: zap.c zap_hit() -- will zap/spell/breath attack score a hit
+// against armor class `ac'?
+function zap_hit(ac, type) { /* either hero cast spell type or 0 */
+    const chance = rn2(20);
+    if (type)
+        throw new Error('zap_hit(): spell_hit_bonus() not ported yet');
+    const spell_bonus = 0;
+
+    /* small chance for naked target to avoid being hit */
+    if (!chance)
+        return rnd(10) < ac + spell_bonus;
+
+    /* very high armor protection does not achieve invulnerability */
+    ac = AC_VALUE(ac);
+
+    return (3 - chance < ac + spell_bonus);
+}
+
+// C ref: zap.c ubuzz()
+export async function ubuzz(type, nd) {
+    await dobuzz(type, nd, game.u.ux, game.u.uy, game.u.dx, game.u.dy,
+                 true, false, false);
+}
+
+// C ref: zap.c buzz()
+export async function buzz(type, nd, sx, sy, dx, dy) {
+    await dobuzz(type, nd, sx, sy, dx, dy, true, false, false);
+}
+
+// C ref: zap.c dobuzz()
+/*
+ * type ==   0 to   9 : you zapping a wand
+ * type ==  10 to  19 : you casting a spell
+ * type ==  20 to  29 : you breathing as a monster
+ * type == -10 to -19 : monster casting spell
+ * type == -20 to -29 : monster breathing at you
+ * type == -30 to -39 : monster zapping a wand
+ * called with dx = dy = 0 for vertical bolts
+ */
+export async function dobuzz(
+    type,              /* 0..29 (by hero) or -39..-10 (by monster) */
+    nd,                /* damage strength ('number of dice') */
+    sx, sy,            /* starting point */
+    dx, dy,            /* direction delta */
+    sayhit, saymiss,   /* report out of sight hit/miss events */
+    forcemiss) {
+    const g = game;
+    const u = g.u;
+    let range;
+    const fltyp = zaptype(type), damgtype = fltyp % 10;
+    let lsx = sx, lsy = sy;
+    let mon;
+    const shopdamage = { v: false };
+    const fireball = (type === ZT_SPELL(ZT_FIRE)); /* set once */
+    let gas_hit = false; /* will be set during each iteration */
+    void sayhit; void saymiss; void nd;
+    /* hdmgtype only picks the transient beam glyph */
+    const hdmgtype = Hallucination() ? rn2(6) : damgtype;
+    void hdmgtype;
+
+    /* if it's a hero spell then get its SPE_TYPE */
+    const spell_type = is_hero_spell(type) ? SPE_MAGIC_MISSILE + damgtype : 0;
+
+    if (u.uswallow) {
+        if (type < 0)
+            return;
+        throw new Error('dobuzz(): zapping a ray while engulfed (zhitm()) not ported yet');
+    }
+    if (type < 0)
+        newsym(u.ux, u.uy);
+    range = rn1(7, 7);
+    if (dx === 0 && dy === 0)
+        range = 1;
+    const save_bhitpos = g.bhitpos ? { x: g.bhitpos.x, y: g.bhitpos.y } : g.bhitpos;
+
+    /* tmp_at(DISP_BEAM, zapdir_to_glyph(dx, dy, hdmgtype)): transient
+       display only */
+    while (range-- > 0) {
+        lsx = sx;
+        sx += dx;
+        lsy = sy;
+        sy += dy;
+        let make_bounce = false;
+        if (!isok(sx, sy) || g.level.at(sx, sy).typ === STONE) {
+            make_bounce = true; /* goto make_bounce */
+        } else {
+            mon = m_at(sx, sy);
+            if (cansee(sx, sy)) {
+                /* reveal/unreveal invisible monsters before tmp_at() */
+                if (mon && !canspotmon(mon))
+                    map_invisible(sx, sy);
+                else if (!mon)
+                    unmap_invisible(sx, sy);
+                /* tmp_at(sx, sy); nh_delay_output(): transient display */
+            }
+
+            /* hit() and miss() need gb.bhitpos to match the target */
+            g.bhitpos = { x: sx, y: sy };
+            gas_hit = (damgtype === ZT_POISON_GAS);
+            /* fireballs only damage when they explode; poison gas leaves
+               a trail of 1x1 clouds via zap_over_floor(), but that gets
+               skipped for a hit that is reflected so is deferred until we
+               know whether reflection is happening */
+            if (!fireball && !gas_hit) {
+                range += await zap_over_floor(sx, sy, type, shopdamage, true, 0);
+                /* zap with fire -> melt ice -> drown monster, so monster
+                   found and cached above might not be here any more */
+                mon = m_at(sx, sy);
+            }
+
+            if (mon) {
+                if (fireball)
+                    break;
+                if (type >= 0)
+                    mon.mstrategy = (mon.mstrategy || 0) & ~STRAT_WAITMASK;
+                /* buzzmonst: */
+                g.notonhead = (mon.mx !== g.bhitpos.x || mon.my !== g.bhitpos.y);
+                if (!forcemiss && zap_hit(find_mac(mon), spell_type)) {
+                    throw new Error('dobuzz(): ray hitting a monster (mon_reflects()/zhitm()) not ported yet');
+                } else {
+                    throw new Error('dobuzz(): ray missing a monster (miss()) not ported yet');
+                }
+            } else if (u.ux === sx && u.uy === sy && range >= 0) {
+                nomul(0);
+                if (u.usteed)
+                    throw new Error('dobuzz(): ray hitting the steed not ported yet');
+                if (!forcemiss && zap_hit(u.uac, 0)) {
+                    throw new Error('dobuzz(): ray hitting you (zhitu()) not ported yet');
+                } else if (!Blind()) {
+                    await pline(`${The(flash_str(fltyp, false))} whizzes by you!`);
+                } else if (damgtype === ZT_LIGHTNING) {
+                    throw new Error('dobuzz(): blind lightning tingle not ported yet');
+                }
+                if (damgtype === ZT_LIGHTNING)
+                    throw new Error('dobuzz(): flashburn() not ported yet');
+                await stop_occupation();
+                nomul(0);
+            }
+            /* gas that missed or that hit without being reflected will leave
+               a 1x1 cloud here; the earlier zap_over_floor() was deferred */
+            if (gas_hit)
+                await zap_over_floor(sx, sy, type, shopdamage, true, 0);
+        }
+
+        if (make_bounce
+            || !ZAP_POS(g.level.at(sx, sy).typ)
+            || (closed_door(sx, sy) && range >= 0)) {
+            /* make_bounce: */
+            const bchance = (!isok(sx, sy) || g.level.at(sx, sy).typ === STONE) ? 10
+                : (In_mines(u.uz) && IS_WALL(g.level.at(sx, sy).typ)) ? 20
+                    : 75;
+            if ((--range > 0 && isok(lsx, lsy) && cansee(lsx, lsy))
+                || fireball) {
+                if (Is_airlevel(u.uz)) { /* nothing to bounce off of */
+                    throw new Error('dobuzz(): ray on the Plane of Air not ported yet');
+                } else if (fireball) {
+                    sx = lsx;
+                    sy = lsy;
+                    break; /* fireballs explode before the obstacle */
+                } else
+                    await pline_The(`${flash_str(fltyp, false)} bounces!`);
+            }
+            const dd = { dx, dy };
+            bounce_dir(sx, sy, dd, bchance);
+            dx = dd.dx, dy = dd.dy;
+            /* tmp_at(DISP_CHANGE, zapdir_to_glyph(dx, dy, hdmgtype)) */
+        }
+    }
+    /* tmp_at(DISP_END, 0): transient display only */
+    if (fireball)
+        throw new Error('dobuzz(): fireball explode() not ported yet');
+    if (shopdamage.v)
+        throw new Error('dobuzz(): pay_for_damage() not ported yet');
+    g.bhitpos = save_bhitpos;
+}
+
+// C ref: zap.c zap_over_floor() -- the cases with no terrain/object
+// effects; everything else throws until ported
+async function zap_over_floor(
+    x, y,              /* location */
+    type,              /* damage type plus {wand|spell|breath} info */
+    shopdamage,        /* extra output if shop door is destroyed */
+    ignoremon,         /* ignore any monster here */
+    exploding_wand_typ) { /* supplied when breaking a wand; or POT_OIL
+                           * when a lit potion of oil explodes */
+    const g = game;
+    const lev = g.level.at(x, y);
+    const see_it = cansee(x, y);
+    let rangemod = 0;
+    const damgtype = zaptype(type) % 10;
+    const lavawall = (lev.typ === LAVAWALL);
+    void shopdamage;
+
+    if (type === PHYS_EXPL_TYPE) {
+        /* this won't have any effect on the floor */
+        return -1000; /* not a zap anyway, shouldn't matter */
+    }
+
+    switch (damgtype) {
+    case ZT_FIRE: {
+        const t = t_at(x, y);
+        if (t && t.ttyp === WEB)
+            throw new Error('zap_over_floor(): burning a web not ported yet');
+        if (lev.typ === ICE || is_pool(x, y) || lev.typ === FOUNTAIN)
+            throw new Error('zap_over_floor(): fire over ice/water/fountain not ported yet');
+        break; /* ZT_FIRE */
+    }
+    case ZT_COLD:
+        if (is_pool(x, y) || is_lava(x, y) || lavawall || lev.typ === ICE)
+            throw new Error('zap_over_floor(): cold over water/lava/ice not ported yet');
+        break; /* ZT_COLD */
+
+    case ZT_POISON_GAS:
+        if (ZAP_POS(lev.typ))
+            throw new Error('zap_over_floor(): create_gas_cloud() not ported yet');
+        break;
+
+    case ZT_LIGHTNING:
+    case ZT_ACID:
+        if (lev.typ === IRONBARS)
+            throw new Error('zap_over_floor(): ray hitting iron bars not ported yet');
+        break; /* ZT_ACID */
+
+    default:
+        break;
+    }
+
+    /* set up zap text for possible door feedback; for exploding wand, we
+       want "the blast" rather than "your blast" even if hero caused it */
+    const yourzap = (type >= 0 && !exploding_wand_typ);
+    let zapverb = "blast"; /* breath attack or wand explosion */
+    if (!exploding_wand_typ) {
+        const ztype = zaptype(type); /* 0..29 for both hero and monsters */
+
+        if (ztype < ZT_SPELL(0))
+            zapverb = "bolt"; /* wand zap */
+        else if (ztype < ZT_BREATH(0))
+            zapverb = "spell";
+    } else {
+        throw new Error('zap_over_floor(): exploding wand/oil not ported yet');
+    }
+
+    /* secret door gets revealed, converted into regular door */
+    if (lev.typ === SDOOR)
+        throw new Error('zap_over_floor(): revealing a secret door not ported yet');
+
+    /* regular door absorbs remaining zap range, possibly gets destroyed */
+    if (closed_door(x, y)) {
+        rangemod = -1000;
+        switch (damgtype) {
+        case ZT_FIRE:
+        case ZT_COLD:
+        case ZT_LIGHTNING:
+            throw new Error('zap_over_floor(): ray destroying a door not ported yet');
+        case ZT_DEATH:
+            /* death spells/wands don't disintegrate */
+            if (Math.abs(type) === ZT_BREATH(ZT_DEATH))
+                throw new Error('zap_over_floor(): ray destroying a door not ported yet');
+            /* goto def_case */
+            // eslint-disable-next-line no-fallthrough
+        default:
+            /* def_case: (exploding_wand_typ is 0 here) */
+            if (see_it) {
+                /* "the door absorbs the blast" would be
+                   inaccurate for an exploding wand since
+                   other adjacent locations still get hit */
+                await pline_The(`door absorbs ${yourzap ? "your" : "the"} ${zapverb}!`);
+            } else
+                await You("feel vibrations."); /* You_feel() */
+            break;
+        }
+    }
+
+    if ((g.level.objects || []).some(o => o.ox === x && o.oy === y) /* OBJ_AT() */
+        && damgtype === ZT_FIRE)
+        if (await burn_floor_objects(x, y, false, type > 0) && couldsee(x, y)) {
+            newsym(x, y);
+            await You(`${!Blind() ? "see a puff" : "smell a whiff"} of smoke.`);
+        }
+    let mon;
+    if (!ignoremon && (mon = m_at(x, y)) !== null && mon !== undefined)
+        await wakeup(mon, (type >= 0) ? true : false);
+    return rangemod;
+}
+
+/* C ref: obj.h ignitable() */
+function ignitable(otmp) {
+    return otmp.otyp === BRASS_LANTERN || otmp.otyp === OIL_LAMP
+        || (otmp.otyp === MAGIC_LAMP && otmp.spe > 0)
+        || otmp.otyp === CANDELABRUM_OF_INVOCATION
+        || otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE
+        || otmp.otyp === POT_OIL;
+}
+
+// C ref: zap.c burn_floor_objects() -- burn scrolls and spellbooks on
+// floor at position x,y; return the number of scrolls and spellbooks burned
+async function burn_floor_objects(
+    x, y,
+    give_feedback, /* caller needs to decide about visibility checks */
+    u_caused) {
+    let cnt = 0;
+
+    for (const obj of (game.level.objects || []).filter(o => o.ox === x
+                                                        && o.oy === y)) {
+        if (obj.oclass === SCROLL_CLASS || obj.oclass === SPBOOK_CLASS
+            || (obj.oclass === FOOD_CLASS
+                && obj.otyp === GLOB_OF_GREEN_SLIME)) {
+            if (obj.otyp === SCR_FIRE || obj.otyp === SPE_FIREBALL
+                || obj_resists(obj, 2, 100))
+                continue;
+            const scrquan = obj.quan; /* number present */
+            let delquan = 0;          /* number to destroy */
+            for (let i = scrquan; i > 0; i--)
+                if (!rn2(3))
+                    delquan++;
+            if (delquan) {
+                if (give_feedback)
+                    throw new Error('burn_floor_objects(): feedback messages not ported yet');
+                /* useupf(), which charges, only if hero caused damage */
+                if (u_caused)
+                    throw new Error('burn_floor_objects(): useupf() not ported yet');
+                else if (delquan < scrquan) {
+                    obj.quan -= delquan;
+                    obj.owt = weight(obj);
+                } else
+                    delobj(obj);
+                cnt += delquan;
+            }
+        }
+    }
+    /* This also ignites floor items, but does not change cnt
+       because they weren't consumed. */
+    /* ignite_items(svl.level.objects[x][y]) -> catch_lit() */
+    for (const obj of (game.level.objects || []).filter(o => o.ox === x
+                                                        && o.oy === y))
+        if (!obj.lamplit && !obj.in_use && ignitable(obj))
+            throw new Error('burn_floor_objects(): catch_lit() not ported yet');
+    return cnt;
 }
