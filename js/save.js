@@ -34,6 +34,7 @@ import { change_luck } from './attrib.js';
 import { monsndx } from './mondata.js';
 import { objects, NUM_OBJECTS } from './objects.js';
 import { getlev } from './restore.js';
+import { GameMap } from './game.js';
 import { setworn } from './wield.js';
 import { ECMD_OK, WRITING, FREEING, COUNTING, FULL_MOON, VISITED, LFILE_EXISTS,
          REST_GSTATE, W_BALL, W_CHAIN, Has_contents } from './const.js';
@@ -542,7 +543,7 @@ function savelev_core(nhfp, lev) {
         /* clear_level_structures(); gf.ftrap = 0; gb.billobjs = 0;
            memset(svr.rooms, 0, ...) */
         g.fmon = null;
-        g.level = null;
+        g.level = new GameMap();
         g.stairs = null;
         g.billobjs = null;
     }
