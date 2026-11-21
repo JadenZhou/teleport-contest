@@ -47,6 +47,7 @@ import {
     artifact_exists, nartifact_exist,
 } from './artifact.js';
 import { tin_details } from './eat.js';
+import { the as the_article } from './iactions.js';
 import {
     mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
     is_rustprone, is_crackable, is_corrodeable, is_rottable, is_damageable,
@@ -2941,6 +2942,32 @@ export function distant_name(obj, func) {
 // C ref: objnam.c xname()
 export function xname(obj) {
     return xname_flags(obj, 0);
+}
+
+// C ref: objnam.c singular()
+export function singular(otmp, func) {
+    /* using xname for corpses does not give the monster type */
+    if (otmp.otyp === O.CORPSE && func === xname)
+        throw new Error('singular(): cxname() for corpses not ported yet');
+    const savequan = otmp.quan;
+    otmp.quan = 1;
+    const nam = func(otmp);
+    otmp.quan = savequan;
+    return nam;
+}
+
+// C ref: objnam.c The()
+/* capitalized variant of the() */
+export function The(str) {
+    const tmp = the_article(str);
+    return tmp.charAt(0).toUpperCase() + tmp.slice(1);
+}
+
+// C ref: objnam.c Tobjnam()
+/* return form of the verb (input plural) for present tense 3rd person
+   subj; also uses The() */
+export function Tobjnam(otmp, verb) {
+    return `${The(xname(otmp))} ${otense(otmp, verb)}`;
 }
 
 // C ref: objnam.c yname() -- xname, with "your"/"the" (shk_your())

@@ -100,6 +100,34 @@ export function setuswapwep(obj) {
     setworn(obj, W_SWAPWEP);
 }
 
+// C ref: wield.c uwepgone()
+export function uwepgone() {
+    const uwep = game.uwep;
+    if (uwep) {
+        if (uwep.lamplit) /* artifact_light(uwep) && uwep->lamplit */
+            throw new Error('uwepgone(): end_burn() of a shining weapon not ported yet');
+        setworn(null, W_WEP);
+        game.unweapon = true;
+        /* update_inventory(): no perm_invent */
+    }
+}
+
+// C ref: wield.c uswapwepgone()
+export function uswapwepgone() {
+    if (game.uswapwep) {
+        setworn(null, W_SWAPWEP);
+        /* update_inventory(): no perm_invent */
+    }
+}
+
+// C ref: wield.c uqwepgone()
+export function uqwepgone() {
+    if (game.uquiver) {
+        setworn(null, W_QUIVER);
+        /* update_inventory(): no perm_invent */
+    }
+}
+
 /* C ref: mondata.h cantwield() */
 function cantwield(ptr) {
     return (nohands(ptr) || verysmall(ptr));

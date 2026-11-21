@@ -18,6 +18,56 @@ import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN, W_ARM, W_WEP,
 import { update_mon_extrinsics, update_mon_extrinsics_sync } from './worn.js';
 import { mwepgone } from './weapon.js';
 import { check_gear_next_turn } from './mon.js';
+import { W_ARMOR, W_AMUL, W_RING, W_TOOL, W_WEAPONS, W_BALL,
+         W_CHAIN } from './const.js';
+import { uwepgone, uswapwepgone, uqwepgone } from './wield.js';
+
+// C ref: steal.c remove_worn_item() -- wielded and quivered items; armor,
+// accessories, the ball and chain and setnotworn() aren't ported yet
+export async function remove_worn_item(obj,
+                                       unchain_ball) /* whether to unpunish or just unwield */ {
+    const g = game;
+    /* if (donning(obj)) cancel_don(): no delayed X_on() routine is ported,
+       so nothing is being donned */
+    if (!obj.owornmask)
+        return;
+
+    /*
+     * Losing worn gear might drop hero into water or lava or onto a
+     * location-changing trap or take away the ability to breathe in water.
+     * Marking it 'in_use' prevents emergency_disrobe() from dropping it
+     * and lava_effects() from destroying it.
+     */
+    const oldinuse = obj.in_use;
+    obj.in_use = 1;
+
+    if (obj.owornmask & W_ARMOR) {
+        throw new Error('remove_worn_item(): worn armor not ported yet');
+    } else if (obj.owornmask & W_AMUL) {
+        throw new Error('remove_worn_item(): Amulet_off() not ported yet');
+    } else if (obj.owornmask & W_RING) {
+        throw new Error('remove_worn_item(): Ring_gone() not ported yet');
+    } else if (obj.owornmask & W_TOOL) {
+        throw new Error('remove_worn_item(): Blindf_off() not ported yet');
+    } else if (obj.owornmask & W_WEAPONS) {
+        if (obj === g.uwep)
+            uwepgone();
+        if (obj === g.uswapwep)
+            uswapwepgone();
+        if (obj === g.uquiver)
+            uqwepgone();
+    }
+
+    if (obj.owornmask & (W_BALL | W_CHAIN)) {
+        if (unchain_ball)
+            throw new Error('remove_worn_item(): unpunish() not ported yet');
+    } else if (obj.owornmask) {
+        /* catchall */
+        throw new Error('remove_worn_item(): setnotworn() not ported yet');
+    }
+
+    obj.in_use = oldinuse;
+}
 
 // C ref: steal.c mpickobj()
 /* Returns 1 if otmp is free'd, 0 otherwise. */

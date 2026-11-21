@@ -530,7 +530,7 @@ const def_oc_names = [
 // C ref: weapon.c weapon_descr()
 /* weapon's skill category name for use as generalized description of
    weapon */
-function weapon_descr(obj) {
+export function weapon_descr(obj) {
     const skill = weapon_type(obj);
     let descr = P_NAME(skill);
 
@@ -613,7 +613,7 @@ function skill_level_name(skill) {
 }
 
 // C ref: weapon.c skill_name()
-function skill_name(skill) {
+export function skill_name(skill) {
     return P_NAME(skill);
 }
 

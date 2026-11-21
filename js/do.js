@@ -922,7 +922,7 @@ export async function dropz(obj, with_impact) {
 }
 
 // C ref: hack.c impact_disturbs_zombies()
-function impact_disturbs_zombies(obj, violent) {
+export function impact_disturbs_zombies(obj, violent) {
     /* if object won't make a noticeable impact, let buried zombies rest */
     if ((obj.owt || 0) < (violent ? 10 : 100) /* || is_flimsy(obj) */)
         return;
@@ -957,7 +957,7 @@ function down_gate(x, y) {
 }
 
 // C ref: dokick.c ship_object() -- only the "doesn't fall" case so far
-async function ship_object(otmp, x, y, shop_floor_obj) {
+export async function ship_object(otmp, x, y, shop_floor_obj) {
     void shop_floor_obj;
     if (!otmp)
         return false;
