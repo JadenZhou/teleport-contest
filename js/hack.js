@@ -28,9 +28,11 @@ import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          MZ_LARGE, M1_CONCEAL, S_VORTEX, PM_AIR_ELEMENTAL, M1_SLITHY, S_GHOST,
          PM_ORACLE, S_EEL, PM_DISPLACER_BEAST, M2_PNAME, AT_EXPL } from './monsters.js';
 import { m_at, is_pool, is_lava, closed_door, may_passwall, sobj_at, goodpos,
-         place_monster } from './makemon.js';
+         place_monster, accessible } from './makemon.js';
+import { dig_typ } from './dig.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
-         You_cant, pline_The, There, unmap_object } from './display.js';
+         You_cant, pline_The, There, unmap_invisible, unmap_object,
+         glyph_is_invisible } from './display.js';
 import { vision_recalc } from './vision.js';
 import { t_at, VIBRATING_SQUARE, is_pit, WEB } from './trap.js';
 import { dist2 } from './hacklib.js';
@@ -1432,9 +1434,8 @@ async function dopush(sx, sy, rx, ry, otmp, costly) {
     }
 
     /* Move the boulder *after* the message. */
-    /* glyph_is_invisible(levl[rx][ry].glyph): unmap_object() */
-    if (game.level.at(rx, ry).glyph_invisible)
-        throw new Error('dopush(): unmap_object() not ported yet');
+    if (glyph_is_invisible(game.level.at(rx, ry).remembered_glyph))
+        unmap_object(rx, ry);
     otmp.next_boulder = 0;
     movobj(otmp, rx, ry); /* does newsym(rx,ry) */
     if (Blind()) {
@@ -1861,8 +1862,7 @@ async function domove_attackmon_at(mtmp, x, y, displaceu) {
     return false;
 }
 
-// C ref: hack.c domove_fight_ironbars() -- force-fight iron bars with
-// your weapon
+// C ref: hack.c domove_fight_ironbars()
 function domove_fight_ironbars(x, y) {
     if (game.context.forcefight && game.level.at(x, y).typ === IRONBARS
         && game.uwep)
@@ -1870,8 +1870,7 @@ function domove_fight_ironbars(x, y) {
     return false;
 }
 
-// C ref: hack.c domove_fight_web() -- force-fight a spider web with your
-// weapon
+// C ref: hack.c domove_fight_web()
 function domove_fight_web(x, y) {
     const trap = t_at(x, y);
 
@@ -1880,13 +1879,15 @@ function domove_fight_web(x, y) {
     return false;
 }
 
-// C ref: hack.c domove_fight_empty() -- force-fight (x,y) which doesn't
-// have anything to fight; a remembered 'I' (glyph_is_invisible()) isn't
-// ported, so only the 'F' prefix gets here
+// C ref: hack.c domove_fight_empty() -- 'F' with no monster, or a
+// remembered 'I' (the map's glyph at <x,y> is taken from the hero's map
+// memory, which is what the displayed glyph is for a remembered 'I')
 async function domove_fight_empty(x, y) {
     const unknown_obstacle = "an unknown obstacle";
     const u = game.u;
     const off_edge = !isok(x, y);
+    const glyph_invis = !off_edge
+                        && glyph_is_invisible(game.level.at(x, y).remembered_glyph);
 
     if (off_edge)
         x = 0, y = 1; /* for forcefight against the edge of the map; make
@@ -1895,12 +1896,14 @@ async function domove_fight_empty(x, y) {
                        * because m_at() might find a vault guard there */
 
     /* specifying 'F' with no monster wastes a turn */
-    if (game.context.forcefight) {
+    if (game.context.forcefight
+        /* remembered an 'I' && didn't use a move command */
+        || (glyph_invis && !m_at(x, y) && !game.context.nopick)) {
         let boulder = null;
-        const explo = (u.umonnum !== u.umonster /* Upolyd */
-                       && game.youmonst.data.mattk.some(a => a.aatyp === AT_EXPL)),
-            solid = (off_edge || (!ACCESSIBLE(game.level.at(x, y).typ)
-                                  || IS_FURNITURE(game.level.at(x, y).typ)));
+        const explo = (u.umonnum !== u.umonster) /* Upolyd */
+                      && (game.youmonst.data.mattk || []).some(a => a.aatyp === AT_EXPL);
+        const solid = (off_edge || (!accessible(x, y)
+                                    || IS_FURNITURE(game.level.at(x, y).typ)));
         let buf;
 
         if (off_edge) {
@@ -1912,17 +1915,18 @@ async function domove_fight_empty(x, y) {
                 /* if a statue is displayed at the target location,
                    player is attempting to attack it [and boulder
                    handling below is suitable for handling that] */
-                if (sobj_at(STATUE, x, y) || uhave(HALLUC))
-                    throw new Error('domove_fight_empty(): glyph_is_statue() not ported yet');
+                const rg = game.level.at(x, y).remembered_glyph;
+                if (rg && rg.statue)
+                    throw new Error('domove_fight_empty(): attacking a displayed statue not ported yet');
 
                 /* force fight at boulder/statue or wall/door while wielding
-                   pick:  start digging to break the boulder or wall */
-                if (game.uwep && (is_pick(game.uwep) || is_axe(game.uwep))
-                    /* dig_typ() can only be non-zero at these */
-                    && (sobj_at(STATUE, x, y) || boulder || closed_door(x, y)
-                        || game.level.at(x, y).typ === TREE
-                        || IS_OBSTRUCTED(game.level.at(x, y).typ)))
-                    throw new Error('domove_fight_empty(): dig_typ() not ported yet');
+                   pick:  start digging to break the boulder or wall
+                   (remembered 'I' and monster glyphs at the spot aren't
+                   tracked by this port's map memory) */
+                if (game.context.forcefight
+                    /* can we dig? */
+                    && game.uwep && dig_typ(game.uwep, x, y))
+                    throw new Error('domove_fight_empty(): use_pick_axe2() not ported yet');
             }
 
             /* about to become known empty -- remove 'I' if present */
@@ -1931,7 +1935,9 @@ async function domove_fight_empty(x, y) {
                 throw new Error('domove_fight_empty(): map_object(boulder) not ported yet');
             newsym(x, y);
 
-            if (Underwater() && !is_pool(x, y)) {
+            if (boulder) {
+                throw new Error('domove_fight_empty(): ansimpleoname() not ported yet');
+            } else if (Underwater() && !is_pool(x, y)) {
                 throw new Error('domove_fight_empty(): Underwater not ported yet');
             } else if (solid) {
                 /* glyph might indicate unseen terrain if hero is blind;
@@ -1942,7 +1948,6 @@ async function domove_fight_empty(x, y) {
                 const lev = game.level.at(x, y);
                 if (lev.seenv || IS_STWALL(lev.typ)
                     || lev.typ === SDOOR || lev.typ === SCORR) {
-                    /* glyph = back_to_glyph(x, y) */
                     buf = the(defsyms_explanation[back_to_cmap(x, y)]);
                 } else {
                     buf = unknown_obstacle;
@@ -1956,7 +1961,8 @@ async function domove_fight_empty(x, y) {
         }
 
         /* futile: */
-        await You(`${!(boulder || solid) ? "" : !explo ? "harmlessly " : "futilely "}${explo ? "explode at" : "attack"} ${buf}.`);
+        await You(`${!(boulder || solid) ? "" : !explo ? "harmlessly " : "futilely "}`
+                  + `${explo ? "explode at" : "attack"} ${buf}.`);
 
         nomul(0);
         if (explo)
@@ -2132,6 +2138,7 @@ async function domove_core() {
     }
 
     if (!displaceu.val) {
+
         if (domove_fight_ironbars(x, y))
             return;
 
@@ -2141,7 +2148,7 @@ async function domove_core() {
         if (await domove_fight_empty(x, y))
             return;
 
-        /* (void) unmap_invisible(x, y): remembered 'I' isn't ported */
+        unmap_invisible(x, y);
         /* not attacking an animal, so we try to move */
         if ((u.dx || u.dy) && u.usteed)
             throw new Error('domove_core(): stucksteed() not ported yet');

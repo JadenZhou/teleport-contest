@@ -31,7 +31,7 @@ import {
     A_LAWFUL, POOL, MOAT, WATER, DRAWBRIDGE_UP, LAVAPOOL, LAVAWALL,
     W_NONPASSWALL, D_CLOSED, D_LOCKED, P_POLEARMS, P_SHORT_SWORD, P_SABER,
     ALTAR, COLNO, ROWNO, isok, ACCESSIBLE, IS_STWALL, IS_DOOR,
-    W_ARM, I_SPECIAL,
+    W_ARM, I_SPECIAL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT, ICE, STONE,
 } from './const.js';
 import {
     ROOMOFFSET, OBJ_AT, IS_WALL, SDOOR, SCORR, HWALL, TLCORNER, TRWALL, BLCORNER,
@@ -58,6 +58,7 @@ import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
 import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon } from './display.js';
+import { does_block, block_point } from './vision.js';
 import { set_apparxy } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
@@ -566,8 +567,29 @@ export function is_lava(x, y) {
            || (typ === DRAWBRIDGE_UP
                && ((game.level.at(x, y).drawbridgemask ?? 0) & 0x07) === 0x02);
 }
-// C ref: hack.c accessible(); lock.c closed_door(); hack.c may_passwall()
-export function accessible(x, y) { return ACCESSIBLE(game.level.at(x, y).typ); }
+// C ref: dbridge.c db_under_typ()
+function db_under_typ(mask) {
+    switch (mask & DB_UNDER) {
+    case DB_ICE:
+        return ICE;
+    case DB_LAVA:
+        return LAVAPOOL;
+    case DB_MOAT:
+        return MOAT;
+    default:
+        return STONE;
+    }
+}
+// C ref: monmove.c accessible()
+export function accessible(x, y) {
+    /* use underlying terrain in front of closed drawbridge */
+    const lev = game.level.at(x, y);
+    const levtyp = (lev.typ === DRAWBRIDGE_UP) /* SURFACE_AT() */
+                   ? db_under_typ(lev.drawbridgemask ?? 0) : lev.typ;
+
+    return ACCESSIBLE(levtyp) && !closed_door(x, y);
+}
+// C ref: lock.c closed_door(); hack.c may_passwall()
 export function closed_door(x, y) {
     const loc = game.level.at(x, y);
     return IS_DOOR(loc.typ) && ((loc.doormask ?? 0) & (D_LOCKED | D_CLOSED)) !== 0;
@@ -2111,11 +2133,8 @@ export function set_mimic_sym(mtmp) {
         mtmp.mextra.mcorpsenm = NON_PM;
     }
 
-    /* if (does_block(mx, my, &levl[mx][my])) block_point(mx, my);
-       -- the JS vision has no block_point(); recompute vision instead */
-    if ((ap_type === M_AP_FURNITURE && (appear === S_hcdoor || appear === S_vcdoor))
-        || (ap_type === M_AP_OBJECT && appear === O.BOULDER))
-        game.vision_full_recalc = 1;
+    if (does_block(mx, my, game.level.at(mx, my)))
+        block_point(mx, my);
 }
 // C ref: mon.c hideunder() -- concealment state only (no rolls); floor
 // objects aren't kept in a list yet, so there is nothing to hide under

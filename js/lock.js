@@ -13,6 +13,7 @@ import { rn2, rnl } from './rng.js';
 import { pline, newsym, You, You_cant, pline_The, canseemon } from './display.js';
 import { tty_yn_function } from './wintty.js';
 import { get_adjacent_loc } from './cmd.js';
+import { container_at, doloot } from './pickup.js';
 import { set_occupation } from './allmain.js';
 import { mon_nam } from './do_name.js';
 import { doname, yname } from './objnam.js';
@@ -404,8 +405,12 @@ function stumble_on_door_mimic(x, y) {
     return false;
 }
 
-// C ref: lock.c doopen_indir() -- try to open a door at <x,y> (the #open
-// direction prompt, x == 0, isn't ported yet)
+// C ref: lock.c doopen() -- try to open a door
+export async function doopen() {
+    return await doopen_indir(0, 0);
+}
+
+// C ref: lock.c doopen_indir()
 export async function doopen_indir(x, y) {
     const u = game.u;
     const cc = { x: 0, y: 0 };
@@ -416,19 +421,25 @@ export async function doopen_indir(x, y) {
         return ECMD_OK;
     }
 
-    /* dirprompt "Open where? [.>]" for a hero in a pit over a container:
-       only used by get_adjacent_loc() */
+    let dirprompt = null; /* have get_adjacent_loc() -> getdir() use default */
+    if (u.utrap && u.utraptype === TT_PIT && container_at(u.ux, u.uy, false))
+        dirprompt = "Open where? [.>]";
+
     if (x > 0 && y >= 0) {
+        /* nonzero <x,y> is used when hero in amorphous form tries to
+           flow under a closed door at <x,y>; the test here was using
+           'y > 0' but that would give incorrect results if doors are
+           ever allowed to be placed on the top row of the map */
         cc.x = x;
         cc.y = y;
-    } else {
-        throw new Error('doopen_indir(): get_adjacent_loc() not ported yet');
+    } else if (!(await get_adjacent_loc(dirprompt, null, u.ux, u.uy, cc))) {
+        return ECMD_OK;
     }
 
     /* open at yourself/up/down: switch to loot unless there is a closed
        door here (possible with Passes_walls) and direction isn't 'down' */
     if (u.ux === cc.x && u.uy === cc.y && (u.dz > 0 || !closed_door(u.ux, u.uy)))
-        throw new Error('doopen_indir(): doloot() not ported yet');
+        return await doloot();
 
     if (u.utrap && u.utraptype === TT_PIT) {
         await You_cant("reach over the edge of the pit.");

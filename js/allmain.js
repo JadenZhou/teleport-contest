@@ -14,7 +14,7 @@ import { docrt, cls, bot, flush_screen, pline } from './display.js';
 import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { mcalcmove, mcalcdistress, movemon } from './mon.js';
 import { initrack, settrack } from './track.js';
-import { m_at, makemon } from './makemon.js';
+import { m_at, makemon, makemon_flush_msg } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
 import { deferred_goto } from './do.js';
@@ -170,14 +170,21 @@ export async function welcome(new_game) /* false => restoring an old game */ {
 
 // C ref: allmain.c maybe_generate_rnd_mon()
 /* small chance of generating a new random monster */
-function maybe_generate_rnd_mon() {
+async function maybe_generate_rnd_mon() {
     const g = game;
     const u = g.u;
 
     if (!rn2(u.uevent.udemigod ? 25
              : (depth(u.uz) > depth(g.dungeon_topology.d_stronghold_level)) ? 50
-             : 70))
-        makemon(null, 0, 0, NO_MM_FLAGS);
+             : 70)) {
+        g.makemon_want_msg = true; /* see makemon()'s Norep() comment */
+        try {
+            makemon(null, 0, 0, NO_MM_FLAGS);
+        } finally {
+            g.makemon_want_msg = false;
+        }
+        await makemon_flush_msg();
+    }
 }
 
 // C ref: allmain.c u_calc_moveamt()
@@ -453,7 +460,7 @@ export async function moveloop_core() {
                 /* occasionally add another monster; since this takes
                    place after movement has been allotted, the new
                    monster effectively loses its first turn */
-                maybe_generate_rnd_mon();
+                await maybe_generate_rnd_mon();
 
                 u_calc_moveamt(mvl_wtcap);
                 settrack();

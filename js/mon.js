@@ -21,7 +21,7 @@ import {
 } from './const.js';
 import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
-import { newsym, pline } from './display.js';
+import { newsym, pline, glyph_is_invisible, unmap_object } from './display.js';
 import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
          nonliving, is_golem, is_mplayer, closed_door, hideunder,
          In_endgame, is_placeholder, mbirth_limit, newmonhp,
@@ -332,8 +332,8 @@ export async function mondead(mtmp) {
 
     /* logdeadmon(mtmp, mndx): achievements/livelog have no game effect here */
 
-    /* if (glyph_is_invisible(levl[mx][my].glyph)) unmap_object(): the
-       remembered-invisible glyph is not ported */
+    if (glyph_is_invisible(game.level.at(mtmp.mx, mtmp.my).remembered_glyph))
+        unmap_object(mtmp.mx, mtmp.my);
 
     /* remove 'mtmp' from play; it will stay on the fmon list until end of
        current move, then dmonsfree() will get rid of it */

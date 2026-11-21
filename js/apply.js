@@ -10,7 +10,9 @@ import { game } from './gstate.js';
 import { You } from './display.js';
 import { getobj } from './invent.js';
 import { check_capacity } from './hack.js';
-import { is_pole } from './wield.js';
+import { is_pole, retouch_object } from './wield.js';
+import { pick_lock } from './lock.js';
+import * as O from './objects.js';
 import { is_graystone } from './iactions.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
@@ -153,7 +155,138 @@ export async function doapply() {
     const obj = await getobj("use or apply", apply_ok, GETOBJ_NOFLAGS);
     if (!obj)
         return ECMD_CANCEL;
-    throw new Error('doapply(): applying an object not ported yet');
+
+    let res = ECMD_TIME;
+    if (!retouch_object(obj))
+        return ECMD_TIME; /* evading your grasp costs a turn; just be
+                             grateful that you don't drop it as well */
+
+    if (obj.oclass === WAND_CLASS)
+        throw new Error('doapply(): do_break_wand() not ported yet');
+
+    if (obj.oclass === SPBOOK_CLASS)
+        throw new Error('doapply(): flip_through_book() not ported yet');
+
+    if (obj.oclass === COIN_CLASS)
+        throw new Error('doapply(): flip_coin() not ported yet');
+
+    switch (obj.otyp) {
+    case O.BLINDFOLD:
+    case O.LENSES:
+        throw new Error('doapply(): Blindf_on()/Blindf_off() not ported yet');
+    case CREAM_PIE:
+        throw new Error('doapply(): use_cream_pie() not ported yet');
+    case LUMP_OF_ROYAL_JELLY:
+        throw new Error('doapply(): use_royal_jelly() not ported yet');
+    case BULLWHIP:
+        throw new Error('doapply(): use_whip() not ported yet');
+    case O.GRAPPLING_HOOK:
+        throw new Error('doapply(): use_grapple() not ported yet');
+    case O.LARGE_BOX:
+    case O.CHEST:
+    case O.ICE_BOX:
+    case O.SACK:
+    case O.BAG_OF_HOLDING:
+    case O.OILSKIN_SACK:
+        throw new Error('doapply(): use_container() not ported yet');
+    case O.BAG_OF_TRICKS:
+        throw new Error('doapply(): bagotricks() not ported yet');
+    case O.CAN_OF_GREASE:
+        throw new Error('doapply(): use_grease() not ported yet');
+    case O.LOCK_PICK:
+    case O.CREDIT_CARD:
+    case O.SKELETON_KEY:
+        res = ((await pick_lock(obj, 0, 0, null)) !== 0) ? ECMD_TIME : ECMD_OK;
+        break;
+    case PICK_AXE:
+    case DWARVISH_MATTOCK:
+        throw new Error('doapply(): use_pick_axe() not ported yet');
+    case O.TINNING_KIT:
+        throw new Error('doapply(): use_tinning_kit() not ported yet');
+    case O.LEASH:
+        throw new Error('doapply(): use_leash() not ported yet');
+    case O.SADDLE:
+        throw new Error('doapply(): use_saddle() not ported yet');
+    case O.MAGIC_WHISTLE:
+        throw new Error('doapply(): use_magic_whistle() not ported yet');
+    case O.TIN_WHISTLE:
+        throw new Error('doapply(): use_whistle() not ported yet');
+    case EUCALYPTUS_LEAF:
+        throw new Error('doapply(): eucalyptus leaf whistle not ported yet');
+    case O.STETHOSCOPE:
+        throw new Error('doapply(): use_stethoscope() not ported yet');
+    case O.MIRROR:
+        throw new Error('doapply(): use_mirror() not ported yet');
+    case O.BELL:
+    case O.BELL_OF_OPENING:
+        throw new Error('doapply(): use_bell() not ported yet');
+    case O.CANDELABRUM_OF_INVOCATION:
+        throw new Error('doapply(): use_candelabrum() not ported yet');
+    case O.WAX_CANDLE:
+    case O.TALLOW_CANDLE:
+        throw new Error('doapply(): use_candle() not ported yet');
+    case OIL_LAMP:
+    case MAGIC_LAMP:
+    case BRASS_LANTERN:
+        throw new Error('doapply(): use_lamp() not ported yet');
+    case POT_OIL:
+        throw new Error('doapply(): light_cocktail() not ported yet');
+    case O.EXPENSIVE_CAMERA:
+        throw new Error('doapply(): use_camera() not ported yet');
+    case O.TOWEL:
+        throw new Error('doapply(): use_towel() not ported yet');
+    case O.CRYSTAL_BALL:
+        throw new Error('doapply(): use_crystal_ball() not ported yet');
+    case O.MAGIC_MARKER:
+        throw new Error('doapply(): dowrite() not ported yet');
+    case O.TIN_OPENER:
+        throw new Error('doapply(): use_tin_opener() not ported yet');
+    case O.FIGURINE:
+        throw new Error('doapply(): use_figurine() not ported yet');
+    case O.UNICORN_HORN:
+        throw new Error('doapply(): use_unicorn_horn() not ported yet');
+    case O.WOODEN_FLUTE:
+    case O.MAGIC_FLUTE:
+    case O.TOOLED_HORN:
+    case O.FROST_HORN:
+    case O.FIRE_HORN:
+    case O.WOODEN_HARP:
+    case O.MAGIC_HARP:
+    case O.BUGLE:
+    case O.LEATHER_DRUM:
+    case O.DRUM_OF_EARTHQUAKE:
+        throw new Error('doapply(): do_play_instrument() not ported yet');
+    case O.HORN_OF_PLENTY: /* not a musical instrument */
+        throw new Error('doapply(): hornoplenty() not ported yet');
+    case O.LAND_MINE:
+    case O.BEARTRAP:
+        throw new Error('doapply(): use_trap() not ported yet');
+    case O.FLINT:
+    case O.LUCKSTONE:
+    case O.LOADSTONE:
+    case TOUCHSTONE:
+        throw new Error('doapply(): use_stone() not ported yet');
+    case BANANA:
+        if (Hallucination()) {
+            await pline("It rings! ... But no-one answers.");
+            break;
+        }
+        /*FALLTHRU*/
+    default:
+        /* Pole-weapons can strike at a distance */
+        if (is_pole(obj)) {
+            throw new Error('doapply(): use_pole() not ported yet');
+        } else if (is_pick(obj) || is_axe(obj)) {
+            throw new Error('doapply(): use_pick_axe() not ported yet');
+        }
+        await pline("Sorry, I don't know how to use that.");
+        return ECMD_FAIL;
+    }
+    /* This assumes that anything that potentially destroyed obj has kept
+     * track of it and set obj to null before this point. */
+    if (obj && obj.oartifact)
+        throw new Error('doapply(): arti_speak() not ported yet');
+    return res;
 }
 
 // C ref: apply.c dojump() -- the #jump command
