@@ -1144,8 +1144,23 @@ async function parse() {
        is always reset to otherInp by readchar() */
     program_state().input_state = commandInp;
 
-    /* !gc.Cmd.num_pad: number_pad is off */
-    foo = await get_count(null, 0, LARGEST_INT, 'command_count', GC_NOFLAGS);
+    /* gc.Cmd.num_pad: iflags.num_pad (reset_commands(FALSE) isn't ported) */
+    if (!game.iflags.num_pad
+        || (foo = await readchar()) === 0x6e) { /* Cmd.spkeys[NHKF_COUNT] */
+        /* if 'num_pad' is On then readchar() has just reset input_state;
+           set it back to commandInp, so that get_count() supports 'altmeta';
+           otherwise "n<count>ESC<character>" becomes "n<count>ESC" (with
+           <character> not read from keyboard yet) rather than intended count
+           and meta keystroke "n<count>M-<character>" */
+        program_state().input_state = commandInp;
+
+        foo = await get_count(null, 0, LARGEST_INT, 'command_count', GC_NOFLAGS);
+    }
+    /* the number_pad key bindings (reset_commands(FALSE): digit movement,
+       M-digit run keys, Cmd.swap_yz, Cmd.pcHack_compat M-0,
+       Cmd.phone_layout) aren't ported */
+    if (game.iflags.num_pad || game.iflags.num_pad_mode)
+        throw new Error('parse(): number_pad key bindings (reset_commands(FALSE)) not ported yet');
     game.last_command_count = game.command_count;
 
     if (foo === 0x1b) { /* esc cancels count (TH) */
