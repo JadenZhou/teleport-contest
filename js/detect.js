@@ -1,9 +1,8 @@
 // detect.js — detection and searching.
 // C ref: detect.c
 //
-// Ported so far: dosearch0() for intrinsic autosearch (aflag != 0) and
-// lock.c cvt_sdoor_to_door().  The explicit-search parts (aflag == 0:
-// feel_location(), mfind0(), unmap_invisible()) are not ported yet.
+// Ported so far: dosearch0() (not its feel_location()/unmap_invisible()
+// parts), mfind0(), warnreveal() and lock.c cvt_sdoor_to_door().
 
 import { game } from './gstate.js';
 import { rnl } from './rng.js';
@@ -18,7 +17,11 @@ import { NO_COLOR, CLR_GRAY } from './terminal.js';
 import { recalc_block_point } from './vision.js';
 import { exercise } from './attrib.js';
 import { m_at } from './makemon.js';
-import { canspotmon } from './display.js';
+import { canspotmon, sensemon, warning_of, Blind, map_invisible,
+         glyph_is_invisible } from './display.js';
+import { tty_display_nhwindow } from './wintty.js';
+import { seemimic } from './mon.js';
+import { y_monnam, a_monnam } from './do_name.js';
 import { cmd_safety_prevention } from './hack.js';
 import { S_EEL, M1_HIDE, M1_CONCEAL } from './monsters.js';
 
@@ -62,16 +65,16 @@ function nomul0() {
 
 // C ref: detect.c mfind0()
 /* used by dosearch0() and warnreveal() */
-function mfind0(mtmp, via_warning) {
+async function mfind0(mtmp, via_warning) {
     const x = mtmp.mx, y = mtmp.my;
     let found_something = false;
 
-    if (via_warning)
-        throw new Error('mfind0(): warning not ported yet');
+    if (via_warning && !warning_of(mtmp))
+        return -1;
 
-    if (mtmp.m_ap_type) {
-        /* seemimic(mtmp) */
-        throw new Error('mfind0(): seemimic() not ported yet');
+    if (mtmp.m_ap_type) { /* M_AP_TYPE(mtmp) */
+        seemimic(mtmp);
+        found_something = true;
     } else {
         /* this used to only be executed if a !canspotmon() test passed
            but that failed to bring sensed monsters out of hiding */
@@ -79,6 +82,12 @@ function mfind0(mtmp, via_warning) {
         if (mtmp.mundetected && (is_hider(mtmp.data)
                                  || hides_under(mtmp.data)
                                  || mtmp.data.mlet === S_EEL)) {
+            if (via_warning && found_something) {
+                /* set_msg_xy(x, y): accessibility only */
+                await pline(`Your danger sense causes you to take a second ${
+                    Blind() ? "to check nearby" : "look close by"}.`);
+                await tty_display_nhwindow(game.WIN_MESSAGE, false); /* flush messages */
+            }
             mtmp.mundetected = 0;
             found_something = true;
         }
@@ -86,9 +95,22 @@ function mfind0(mtmp, via_warning) {
     }
 
     if (found_something) {
-        /* exercise(A_WIS, TRUE); map_invisible(); "You feel an unseen
-           monster!" / "You find %s." -- not ported yet */
-        throw new Error('mfind0(): finding a hidden monster not ported yet');
+        if (!canspotmon(mtmp)
+            && glyph_is_invisible(game.level.at(x, y).remembered_glyph))
+            return -1; /* Found invisible monster in square which already has
+                        * 'I' in it.  Logically, this should still take time
+                        * and lead to `return 1', but if we did that the hero
+                        * would keep finding the same monster every turn. */
+        exercise(A_WIS, true);
+        if (!canspotmon(mtmp)) {
+            map_invisible(x, y);
+            /* set_msg_xy(x, y) */
+            await pline("You feel an unseen monster!");
+        } else if (!sensemon(mtmp)) {
+            /* set_msg_xy(x, y) */
+            await pline(`You find ${mtmp.mtame ? y_monnam(mtmp) : a_monnam(mtmp)}.`);
+        }
+        return 1;
     }
     return 0;
 }
@@ -143,7 +165,7 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
                 } else {
                     /* Be careful not to find anything in an SCORR or SDOOR */
                     if ((mtmp = m_at(x, y)) && !aflag) {
-                        const mfres = mfind0(mtmp, false);
+                        const mfres = await mfind0(mtmp, false);
 
                         if (mfres === -1)
                             continue;
@@ -182,6 +204,21 @@ export async function dosearch() {
                                     "already_found_flag"))
         return 0; /* ECMD_OK */
     return (await dosearch0(0)) ? 1 /* ECMD_TIME */ : 0 /* ECMD_OK */;
+}
+
+// C ref: detect.c warnreveal()
+export async function warnreveal() {
+    const u = game.u;
+    let x, y, mtmp;
+
+    for (x = u.ux - 1; x <= u.ux + 1; x++)
+        for (y = u.uy - 1; y <= u.uy + 1; y++) {
+            if (!isok(x, y) || (x === u.ux && y === u.uy)) /* u_at(x, y) */
+                continue;
+            if ((mtmp = m_at(x, y)) != null
+                && warning_of(mtmp) && mtmp.mundetected)
+                await mfind0(mtmp, true); /* via_warning */
+        }
 }
 
 // C ref: detect.c unconstrain_map()

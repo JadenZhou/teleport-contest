@@ -51,7 +51,7 @@ import { dosounds } from './sounds.js';
 import { gethungry } from './eat.js';
 import { age_spells } from './spell.js';
 import { u_wipe_engr } from './engrave.js';
-import { dosearch0 } from './detect.js';
+import { dosearch0, warnreveal } from './detect.js';
 import { set_uasmon } from './polyself.js';
 import { init_artifacts } from './artifact.js';
 
@@ -71,6 +71,7 @@ export async function newgame() {
     const g = game;
     let i;
 
+    g.context.warnlevel = 1;
     g.context.next_attrib_check = 600; /* arbitrary first setting */
     g.context.tribute = { enabled: true, bookstock: false }; /* turn on 3.6 tributes */
 
@@ -577,8 +578,7 @@ export async function moveloop_core() {
                     && g.multi >= 0)
                     await dosearch0(1);
                 if (P[WARNING].intrinsic || P[WARNING].extrinsic) /* Warning */
-                    /* warnreveal(): needs warning_of() and mfind0() */
-                    throw new Error('moveloop_core(): warnreveal() not ported yet');
+                    await warnreveal();
                 if (g.were_changes) {
                     /* update innate intrinsics (mainly Drain_resistance) */
                     set_uasmon();
