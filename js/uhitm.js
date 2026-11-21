@@ -2156,7 +2156,7 @@ const levitate = ["float", "Float", "wobble", "Wobble"],
     crawl = ["crawl", "Crawl", "falter", "Falter"];
 
 // C ref: mondata.c stagger()
-function stagger(ptr, def) {
+export function stagger(ptr, def) {
     const locoindx = (def[0] !== highc(def[0])) ? 2 : 3;
 
     return (is_floater(ptr) ? levitate[locoindx]

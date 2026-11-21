@@ -68,6 +68,9 @@ import { canseemon } from './display.js';
 import { mon_nam, Monnam } from './do_name.js';
 import { You_hear } from './sounds.js';
 import { just_an } from './objnam.js';
+import { seemimic } from './mon.js';
+import { resist } from './zap.js';
+import { M_AP_FURNITURE, M_AP_OBJECT, NOTELL } from './const.js';
 import { dist2 } from './hacklib.js';
 import { rn1 } from './rng.js';
 import { nomul, end_running } from './hack.js';
@@ -1139,12 +1142,15 @@ async function trapeffect_bear_trap(mtmp, trap, trflags) {
 
 // C ref: mhitm.c sleep_monst()
 /* `mon' is hit by a sleep attack; return 1 if it's affected, 0 otherwise */
-function sleep_monst(mon, amt, how) {
+export function sleep_monst(mon, amt, how) {
     /* reveal mimic unless already asleep or paralyzed (won't be 'busy') */
-    if (how >= 0)
-        throw new Error('sleep_monst(): seemimic()/resist() not ported yet');
+    if (how >= 0 && !mon.msleeping && !mon.mfrozen
+        && mon.data.mlet === S_MIMIC && (mon.m_ap_type === M_AP_FURNITURE
+                                         || mon.m_ap_type === M_AP_OBJECT))
+        seemimic(mon);
 
-    if (resists_sleep(mon) || defended(mon, AD_SLEE)) {
+    if (resists_sleep(mon) || defended(mon, AD_SLEE)
+        || (how >= 0 && resist(mon, how, 0, NOTELL))) {
         /* shieldeff(mon->mx, mon->my): display effect only */
     } else if (mon.mcanmove) {
         finish_meating(mon); /* terminate any meal-in-progress */

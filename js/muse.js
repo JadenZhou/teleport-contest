@@ -1125,3 +1125,14 @@ export async function use_offensive(mtmp) {
 }
 
 void m_next2u; void mon_knows_traps;
+
+// C ref: muse.c mcureblindness() -- cure mon's blindness (use_defensive,
+// dog_eat, meatobj)
+export async function mcureblindness(mon, verbos) {
+    if (!mon.mcansee) {
+        mon.mcansee = 1;
+        mon.mblinded = 0;
+        if (verbos && haseyes(mon.data))
+            await pline(`${Monnam(mon)} can see again.`);
+    }
+}

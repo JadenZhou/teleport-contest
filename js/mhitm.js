@@ -18,6 +18,7 @@ import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC, W_SADDLE, W_ARMG,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, ERODE_BURN,
          ERODE_RUST, ERODE_CORRODE, CONFLICT, BLINDED } from './const.js';
+import { STRAT_WAITFORU } from './const.js';
 import { mons, AT_NONE, AT_CLAW, AT_BITE, AT_KICK, AT_BUTT, AT_TUCH,
          AT_STNG, AT_HUGS, AT_ENGL, AT_TENT, AT_WEAP, AT_EXPL, AT_BOOM,
          AT_BREA, AT_SPIT,
@@ -707,4 +708,23 @@ async function passivemm(magr, mdef, mhitb, mdead, mwep) {
         return (mdead | mhit | M_ATTK_AGR_DIED);
     }
     return (mdead | mhit);
+}
+
+// C ref: mhitm.c paralyze_monst()
+export function paralyze_monst(mon, amt) {
+    if (amt > 127)
+        amt = 127;
+
+    mon.mcanmove = 0;
+    mon.mfrozen = amt;
+    mon.meating = 0; /* terminate any meal-in-progress */
+    mon.mstrategy &= ~STRAT_WAITFORU;
+}
+
+// C ref: mhitm.c slept_monst() -- sleeping grabber releases, engulfer
+// doesn't; don't use for paralysis!
+export async function slept_monst(mon) {
+    if (helpless(mon) && mon === game.u.ustuck
+        && !sticks(game.youmonst.data) && !game.u.uswallow)
+        throw new Error('slept_monst(): grip relaxes (unstuck()) not ported yet');
 }

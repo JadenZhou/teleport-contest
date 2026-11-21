@@ -64,7 +64,7 @@ import { exercise, ACURR, poisoned } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { stop_occupation } from './allmain.js';
 import { nomul, calc_capacity } from './hack.js';
-import { make_blinded } from './potion.js';
+import { make_blinded, potionhit } from './potion.js';
 import { You_hear } from './sounds.js';
 import { monstseesu, monstunseesu, shade_miss, passive_obj } from './uhitm.js';
 import { mswings_verb } from './mhitu.js';
@@ -311,12 +311,6 @@ export async function thitu(
         }
         return 1;
     }
-}
-
-// C ref: potion.c potionhit() -- not ported yet
-async function potionhit(mon, obj, how) {
-    void mon; void obj; void how;
-    throw new Error('potionhit() not ported yet');
 }
 
 // C ref: dothrow.c should_mulch_missile()

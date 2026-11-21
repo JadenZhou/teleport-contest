@@ -62,7 +62,12 @@ import { STRANGE_OBJECT, WAN_POLYMORPH, SPE_POLYMORPH, POT_POLYMORPH,
          SPE_NOVEL, ROCK, MINERAL } from './objects.js';
 import { PM_CROCODILE } from './monsters.js';
 import { AC_VALUE } from './rng.js';
-import { m_at, closed_door } from './makemon.js';
+import { m_at, closed_door, is_mplayer } from './makemon.js';
+import { RING_CLASS } from './objects.js';
+import { You_feel } from './display.js';
+import { enlightenment } from './insight.js';
+import { tty_display_nhwindow } from './wintty.js';
+import { MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS } from './const.js';
 import { canspotmon, map_invisible, unmap_invisible } from './display.js';
 import { find_mac } from './worn.js';
 import { tmp_at, DISP_BEAM, DISP_CHANGE, DISP_END } from './display.js';
@@ -120,6 +125,72 @@ export function learnwand(obj) {
         }
         /* update_inventory(): no perm_invent */
     }
+}
+
+// C ref: zap.c resist() -- monster mtmp resists the effect of an object
+// of class oclass, taking `damage' (halved if resisted); the synchronous C
+// caller can't await killed()/monkilled(), so a fatal `damage' stops
+export function resist(mtmp, oclass, damage, tell) {
+    let resisted;
+    let alev, dlev;
+
+    /* fake players always pass resistance test against Conflict
+       (this doesn't guarantee that they're never affected by it) */
+    if (oclass === RING_CLASS && !damage && !tell && is_mplayer(mtmp.data))
+        return 1;
+
+    /* attack level */
+    switch (oclass) {
+    case WAND_CLASS:
+        alev = 12;
+        break;
+    case TOOL_CLASS:
+        alev = 10;
+        break; /* instrument */
+    case WEAPON_CLASS:
+        alev = 10;
+        break; /* artifact */
+    case SCROLL_CLASS:
+        alev = 9;
+        break;
+    case POTION_CLASS:
+        alev = 6;
+        break;
+    case RING_CLASS:
+        alev = 5;
+        break;
+    default:
+        alev = game.u.ulevel;
+        break; /* spell */
+    }
+    /* defense level */
+    dlev = mtmp.m_lev;
+    if (dlev > 50)
+        dlev = 50;
+    else if (dlev < 1)
+        dlev = is_mplayer(mtmp.data) ? game.u.ulevel : 1;
+
+    resisted = rn2(100 + alev - dlev) < mtmp.data.mr;
+    if (resisted) {
+        /* if (tell) shieldeff_mon(mtmp): transient display only */
+        damage = Math.trunc((damage + 1) / 2);
+    }
+
+    if (damage) {
+        mtmp.mhp -= damage;
+        if (mtmp.mhp < 1) /* DEADMONSTER() */
+            throw new Error('resist(): killing the monster (monkilled()/killed()) not ported yet');
+    }
+    return resisted ? 1 : 0;
+}
+
+// C ref: zap.c do_enlightenment_effect()
+export async function do_enlightenment_effect() {
+    await You_feel("self-knowledgeable...");
+    await tty_display_nhwindow(game.WIN_MESSAGE, false);
+    await enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
+    await pline_The("feeling subsides.");
+    exercise(A_WIS, true);
 }
 
 // C ref: zap.c bhitm() -- monster mtmp was hit by the effect of wand or
@@ -666,7 +737,7 @@ export async function zappable(wand) {
  * Won't get here if wand has no charges (unless wresting 1 last charge).
  */
 export async function zapnodir(obj) {
-    const known = false;
+    let known = false;
 
     switch (obj.otyp) {
     case WAN_LIGHT:
@@ -688,7 +759,10 @@ export async function zapnodir(obj) {
     case WAN_WISHING:
         throw new Error('zapnodir(): wand of wishing (makewish()) not ported yet');
     case WAN_ENLIGHTENMENT:
-        throw new Error('zapnodir(): wand of enlightenment not ported yet');
+        known = !!obj.dknown;
+        /* do_enlightenmnt_effect() always describes enlightenment */
+        await do_enlightenment_effect();
+        break;
     default:
         break;
     }
