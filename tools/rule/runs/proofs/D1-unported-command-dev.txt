@@ -1,0 +1,6 @@
+PROOF-OK  dev81205-monk-vault-escort.session.json: rule 4982->3276 honest 22->27 | stopStep 89 mainFSM 21 branchRuleStep 92 (main 266) lostHonest [] 
+PROOF-OK  dev81328-dequa-fountain-explore.session.json: rule 2699->2537 honest 49->22 | stopStep 22 mainFSM 17 branchRuleStep 37 (main 56) lostHonest [25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,52,53,54,55] 
+PROOF-OK  dev81369-valk-level2-pit-dog-wait.session.json: rule 2636->2324 honest 42->19 | stopStep 19 mainFSM 19 branchRuleStep 21 (main null) lostHonest [20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,43] 
+PROOF-OK  dev81902-wizard-extcmd-wishlist.session.json: rule 3031->3013 honest 51->51 | stopStep 51 mainFSM 51 branchRuleStep 55 (main 62) lostHonest [] 
+PROOF-OK  dev81943-wizard-wear-shop.session.json: rule 4628->4624 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 16) lostHonest [] 
+5 regressed session(s); all satisfy decision D
