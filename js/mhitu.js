@@ -154,6 +154,21 @@ function stop_occupation() {
     /* cmdq_clear(CQ_CANNED): the command queue isn't ported yet */
 }
 
+// C ref: mhitu.c mpoisons_subj()
+/* return how a poison attack was delivered */
+export function mpoisons_subj(mtmp, mattk) {
+    if (mattk.aatyp === AT_WEAP) {
+        const mwep = (mtmp === game.youmonst) ? game.uwep : (mtmp.mw || null);
+        /* "Foo's attack was poisoned." is pretty lame, but at least
+           it's better than "sting" when not a stinging attack... */
+        return (!mwep || !mwep.opoisoned) ? "attack" : "weapon";
+    } else {
+        return (mattk.aatyp === AT_TUCH) ? "contact"
+               : (mattk.aatyp === AT_GAZE) ? "gaze"
+                 : (mattk.aatyp === AT_BITE) ? "bite" : "sting";
+    }
+}
+
 // C ref: mhitu.c hitmsg()
 /* monster hits hero */
 export async function hitmsg(mtmp, mattk) {

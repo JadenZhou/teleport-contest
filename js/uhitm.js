@@ -16,7 +16,9 @@ import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { pline, canspotmon, You } from './display.js';
 import { Monnam, y_monnam } from './do_name.js';
-import { hitmsg, magic_negation } from './mhitu.js';
+import { hitmsg, magic_negation, mpoisons_subj } from './mhitu.js';
+import { poisoned } from './attrib.js';
+import { pmname, Mgender } from './do_name.js';
 import { exercise } from './attrib.js';
 import * as M from './monsters.js';
 import { mons, AT_CLAW, AT_KICK, AT_BUTT, AT_WEAP, AT_HUGS, AT_ENGL, AT_TUCH,
@@ -45,7 +47,7 @@ import { mon_nam, l_monnam, x_monnam, ARTICLE_A, SUPPRESS_IT,
          SUPPRESS_INVISIBLE, SUPPRESS_HALLUCINATION, SUPPRESS_SADDLE,
          SUPPRESS_NAME } from './do_name.js';
 import { adjalign, ACURR } from './attrib.js';
-import { STRAT_WAITMASK, MMOVE_DIED, HAND, A_DEX, A_WIS, A_LAWFUL, CONFUSION,
+import { STRAT_WAITMASK, MMOVE_DIED, HAND, A_DEX, A_WIS, A_LAWFUL, CONFUSION, A_CON,
          STUNNED, PROT_FROM_SHAPE_CHANGERS, DETECT_MONSTERS, FREE_ACTION,
          REFLECTING, FLYING, LEVITATION, POISON_RES, M_AP_TYPMASK,
          PARANOID_HIT, engulfing_u, HMON_MELEE, HMON_THROWN, HMON_KICKED,
@@ -329,12 +331,73 @@ async function mhitm_ad_stck(magr, mattk, mdef, mhm) {
     }
 }
 
+// C ref: uhitm.c mhitm_really_poison()
+/* Helper for mhitm_ad_drst(), containing some code that is also called from
+   mhitm_ad_phys() */
+async function mhitm_really_poison(magr, mattk, mdef, mhm) {
+    const vis = game.mhitm_vis;
+    if (vis && canspotmon(magr))
+        await pline(`${s_suffix(Monnam(magr))} ${mpoisons_subj(magr, mattk)} was poisoned!`);
+    if (resists_poison(mdef)) {
+        if (vis && canspotmon(mdef) && canspotmon(magr))
+            await pline_The(`poison doesn't seem to affect ${mon_nam(mdef)}.`);
+    } else {
+        mhm.damage += rn1(10, 6);
+        if (mhm.damage >= mdef.mhp && vis && canspotmon(mdef))
+            await pline_The("poison was deadly...");
+    }
+}
+
+// C ref: uhitm.c mhitm_ad_drst()
+async function mhitm_ad_drst(magr, mattk, mdef, mhm) {
+    const negated = mhitm_mgc_atk_negated(magr, mdef, false).negated;
+    const pa = magr.data;
+
+    if (magr === game.youmonst) {
+        /* uhitm */
+        if (!negated && !rn2(8)) {
+            await Your(`${mpoisons_subj(magr, mattk)} was poisoned!`);
+            if (resists_poison(mdef)) {
+                await pline_The(`poison doesn't seem to affect ${mon_nam(mdef)}.`);
+            } else {
+                if (!rn2(10)) {
+                    await Your("poison was deadly...");
+                    mhm.damage = mdef.mhp;
+                } else
+                    mhm.damage += rn1(10, 6);
+            }
+        }
+    } else if (mdef === game.youmonst) {
+        /* mhitu */
+        let ptmp = A_STR; /* A_STR == 0 */
+
+        switch (mattk.adtyp) {
+        case M.AD_DRST: ptmp = A_STR; break;
+        case M.AD_DRDX: ptmp = A_DEX; break;
+        case M.AD_DRCO: ptmp = A_CON; break;
+        }
+        await hitmsg(magr, mattk);
+        if (!negated && !rn2(8)) {
+            const buf = `${s_suffix(Monnam(magr))} ${mpoisons_subj(magr, mattk)}`;
+            await poisoned(buf, ptmp, pmname(pa, Mgender(magr)), 30, false);
+        }
+    } else {
+        /* mhitm */
+        if (!negated && !rn2(8)) {
+            await mhitm_really_poison(magr, mattk, mdef, mhm);
+        }
+    }
+}
+
 // C ref: uhitm.c mhitm_adtyping()
 export async function mhitm_adtyping(magr, mattk, mdef, mhm) {
     switch (mattk.adtyp) {
     case AD_PHYS: await mhitm_ad_phys(magr, mattk, mdef, mhm); break;
     case AD_ELEC: await mhitm_ad_elec(magr, mattk, mdef, mhm); break;
     case AD_STCK: await mhitm_ad_stck(magr, mattk, mdef, mhm); break;
+    case M.AD_DRST:
+    case M.AD_DRDX:
+    case M.AD_DRCO: await mhitm_ad_drst(magr, mattk, mdef, mhm); break;
     default:
         throw new Error(`mhitm_adtyping(): damage type ${mattk.adtyp} vs hero not ported yet`);
     }
