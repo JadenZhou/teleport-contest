@@ -11,6 +11,7 @@
 // set_mimic_sym, rndghostname, worm tail segments.
 
 import { christen_monst, rndghostname, Amonnam, y_monnam } from './do_name.js';
+import { in_town } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
@@ -2143,8 +2144,7 @@ export function set_mimic_sym(mtmp) {
         else
             appear = Is_rogue_level(game.u.uz) ? S_vwall : S_vcdoor;
     } else if (game.level.flags.is_maze_lev
-               && !(In_mines(game.u.uz)
-                    && (() => { throw new Error('set_mimic_sym(): in_town() not ported yet'); })())
+               && !(In_mines(game.u.uz) && in_town(game.u.ux, game.u.uy))
                && !In_sokoban(game.u.uz) && rn2(2)) {
         ap_type = M_AP_OBJECT;
         appear = O.STATUE;

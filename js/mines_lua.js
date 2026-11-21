@@ -488,6 +488,143 @@ function minetn_4_lua(L) {
     des.random_corridors();
 }
 
+// C ref: dat/minetn-5.lua
+// -- "Grotto Town" by Kelly Bailey
+function minetn_5_lua(L) {
+    const G = L.globals, des = G.des, selection = G.selection;
+
+    des.level_init({ style: 'solidfill', fg: ' ' });
+
+    des.level_flags('mazelevel');
+
+    des.map([
+        '-----         ---------                                                    ',
+        '|...---  ------.......--    -------                       ---------------  ',
+        '|.....----.........--..|    |.....|          -------      |.............|  ',
+        '--..-....-.----------..|    |.....|          |.....|     --+---+--.----+-  ',
+        ' --.--.....----     ----    |.....|  ------  --....----  |..-...--.-.+..|  ',
+        '  ---.........----  -----   ---+---  |..+.|   ---..-..----..---+-..---..|  ',
+        '    ----.-....|..----...--    |.|    |..|.|    ---+-.....-+--........--+-  ',
+        '       -----..|....-.....---- |.|    |..|.------......--................|  ',
+        '    ------ |..|.............---.--   ----.+..|-.......--..--------+--..--  ',
+        '    |....| --......---...........-----  |.|..|-...{....---|.........|..--  ',
+        '    |....|  |........-...-...........----.|..|--.......|  |.........|...|  ',
+        '    ---+--------....-------...---......--.-------....---- -----------...|  ',
+        ' ------.---...--...--..-..--...-..---...|.--..-...-....------- |.......--  ',
+        ' |..|-.........-..---..-..---.....--....|........---...-|....| |.-------   ',
+        ' |..+...............-+---+-----..--..........--....--...+....| |.|...S.    ',
+        '-----.....{....----...............-...........--...-...-|....| |.|...|     ',
+        '|..............-- --+--.---------.........--..-........------- |.--+-------',
+        '-+-----.........| |...|.|....|  --.......------...|....---------.....|....|',
+        '|...| --..------- |...|.+....|   ---...---    --..|...--......-...{..+..-+|',
+        '|...|  ----       ------|....|     -----       -----.....----........|..|.|',
+        '-----                   ------                     -------  ---------------',
+    ].join('\n') + '\n');
+
+    if (G.percent(75)) {
+        if (G.percent(50)) {
+            des.terrain(selection.line(25, 8, 25, 9), '|');
+        } else {
+            des.terrain(selection.line(16, 13, 17, 13), '-');
+        }
+    }
+    if (G.percent(75)) {
+        if (G.percent(50)) {
+            des.terrain(selection.line(36, 10, 36, 11), '|');
+        } else {
+            des.terrain(selection.line(32, 15, 33, 15), '-');
+        }
+    }
+    if (G.percent(50)) {
+        des.terrain(selection.area(21, 4, 22, 5), '.');
+        des.terrain(selection.line(14, 9, 14, 10), '|');
+    }
+    if (G.percent(50)) {
+        des.terrain([46, 13], '|');
+        des.terrain(selection.line(43, 5, 47, 5), '-');
+        des.terrain(selection.line(42, 6, 46, 6), '.');
+        des.terrain(selection.line(46, 7, 47, 7), '.');
+    }
+    if (G.percent(50)) {
+        des.terrain(selection.area(69, 11, 71, 11), '-');
+    }
+
+    des.stair('up', 1, 1);
+    des.stair('down', 46, 3);
+    des.feature('fountain', 50, 9);
+    des.feature('fountain', 10, 15);
+    des.feature('fountain', 66, 18);
+
+    des.region(selection.area(0, 0, 74, 20), 'unlit');
+    des.region(selection.area(9, 13, 11, 17), 'lit');
+    des.region(selection.area(8, 14, 12, 16), 'lit');
+    des.region(selection.area(49, 7, 51, 11), 'lit');
+    des.region(selection.area(48, 8, 52, 10), 'lit');
+    des.region(selection.area(64, 17, 68, 19), 'lit');
+    des.region(selection.area(37, 13, 39, 17), 'lit');
+    des.region(selection.area(36, 14, 40, 17), 'lit');
+    des.region(selection.area(59, 2, 72, 10), 'lit');
+
+    des.monster({ id: 'watchman', peaceful: 1 });
+    des.monster({ id: 'watchman', peaceful: 1 });
+    des.monster({ id: 'watchman', peaceful: 1 });
+    des.monster({ id: 'watchman', peaceful: 1 });
+    des.monster({ id: 'watch captain', peaceful: 1 });
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome lord');
+    des.monster('gnome lord');
+    des.monster('dwarf');
+    des.monster('dwarf');
+    des.monster('dwarf');
+
+    // -- The shops
+    des.region({ region: [25, 17, 28, 19], lit: 1, type: 'candle shop', filled: 1 });
+    des.door('closed', 24, 18);
+    des.region({ region: [59, 9, 67, 10], lit: 1, type: 'shop', filled: 1 });
+    des.door('closed', 66, 8);
+    des.region({ region: [57, 13, 60, 15], lit: 1, type: 'tool shop', filled: 1 });
+    des.door('closed', 56, 14);
+    des.region({ region: [5, 9, 8, 10], lit: 1, type: G.monkfoodshop(), filled: 1 });
+    des.door('closed', 7, 11);
+    // -- Gnome homes
+    des.door('closed', 4, 14);
+    des.door('locked', 1, 17);
+    des.monster('gnomish wizard', 2, 19);
+    des.door('locked', 20, 16);
+    des.monster('G', 20, 18);
+    des.door('random', 21, 14);
+    des.door('random', 25, 14);
+    des.door('random', 42, 8);
+    des.door('locked', 40, 5);
+    des.monster('G', 38, 7);
+    des.door('random', 59, 3);
+    des.door('random', 58, 6);
+    des.door('random', 63, 3);
+    des.door('random', 63, 5);
+    des.door('locked', 71, 3);
+    des.door('locked', 71, 6);
+    des.door('closed', 69, 4);
+    des.door('closed', 67, 16);
+    des.monster('gnomish wizard', 67, 14);
+    des.object('=', 70, 14);
+    des.door('locked', 69, 18);
+    des.monster('gnome lord', 71, 19);
+    des.door('locked', 73, 18);
+    des.object('chest', 73, 19);
+    des.door('locked', 50, 6);
+    des.object('(', 50, 3);
+    des.object({ id: 'statue', x: 38, y: 15, montype: 'gnome king', historic: 1 });
+    // -- Temple
+    des.region({ region: [29, 2, 33, 4], lit: 1, type: 'temple', filled: 1 });
+    des.door('closed', 31, 5);
+    des.altar({ x: 31, y: 3, align: G.align[0], type: 'shrine' });
+}
+
 // C ref: dat/minetn-6.lua
 // "Bustling Town" by Kelly Bailey
 function minetn_6_lua(L) {
@@ -708,6 +845,448 @@ function minend_1_lua(L) {
     des.monster('h');
 }
 
+// C ref: dat/minetn-7.lua
+// -- "Bazaar Town" by Kelly Bailey
+function minetn_7_lua(L) {
+    const G = L.globals, des = G.des;
+
+    des.room({ type: 'ordinary', lit: 1, x: 3, y: 3,
+               xalign: 'center', yalign: 'center', w: 30, h: 15,
+               contents: function() {
+                   des.feature('fountain', 12, 7);
+                   des.feature('fountain', 11, 13);
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 2, y: 2, w: 4, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'south' });
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 7, y: 2, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'north' });
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 7, y: 5, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'south' });
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', lit: 1, x: 10, y: 2, w: 3, h: 4,
+                                  contents: function() {
+                                      des.monster('gnome');
+                                      des.monster('monkey');
+                                      des.monster('monkey');
+                                      des.monster('monkey');
+                                      des.door({ state: 'closed', wall: 'south' });
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 14, y: 2, w: 4, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'south', pos: 0 });
+                                      des.monster('n');
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 16, y: 5, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'south' });
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', lit: 0, x: 19, y: 2, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'locked', wall: 'east' });
+                                      des.monster('gnome king');
+                                  } });
+                   }
+
+                   des.room({ type: G.monkfoodshop(), chance: 50, lit: 1, x: 19, y: 5, w: 2, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'south' });
+                              } });
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 2, y: 7, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'east' });
+                                  } });
+                   }
+
+                   des.room({ type: 'tool shop', chance: 50, lit: 1, x: 2, y: 10, w: 2, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'south' });
+                              } });
+
+                   des.room({ type: 'candle shop', lit: 1, x: 5, y: 10, w: 3, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'north' });
+                              } });
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 11, y: 10, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'locked', wall: 'west' });
+                                      des.monster('G');
+                                  } });
+                   }
+
+                   des.room({ type: 'shop', chance: 60, lit: 1, x: 14, y: 10, w: 2, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'north' });
+                              } });
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 17, y: 11, w: 4, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'north' });
+                                  } });
+                   }
+
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', x: 22, y: 11, w: 2, h: 2,
+                                  contents: function() {
+                                      des.door({ state: 'closed', wall: 'south' });
+                                      des.feature('sink', 0, 0);
+                                  } });
+                   }
+
+                   des.room({ type: G.monkfoodshop(), chance: 50, lit: 1, x: 25, y: 11, w: 3, h: 2,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'east' });
+                              } });
+
+                   des.room({ type: 'tool shop', chance: 30, lit: 1, x: 25, y: 2, w: 3, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'west' });
+                              } });
+
+                   des.room({ type: 'temple', lit: 1, x: 24, y: 6, w: 4, h: 4,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'west' });
+                                  des.altar({ x: 2, y: 1, align: G.align[0], type: 'shrine' });
+                                  des.monster('gnomish wizard');
+                                  des.monster('gnomish wizard');
+                              } });
+
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watch captain', peaceful: 1 });
+                   des.monster('gnome');
+                   des.monster('gnome');
+                   des.monster('gnome');
+                   des.monster('gnome lord');
+                   des.monster('monkey');
+                   des.monster('monkey');
+
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.stair('up');
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.stair('down');
+                   des.trap();
+                   des.monster('gnome');
+                   des.monster('gnome');
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.monster('dwarf');
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.trap();
+                   des.monster('gnome');
+               } });
+
+    des.random_corridors();
+}
+
+// C ref: dat/minend-2.lua
+// -- Mine end level variant 2
+// -- "Gnome King's Wine Cellar"
+function minend_2_lua(L) {
+    const G = L.globals, des = G.des, selection = G.selection;
+
+    des.level_init({ style: 'solidfill', fg: ' ' });
+
+    des.level_flags('mazelevel');
+
+    des.map([
+        '---------------------------------------------------------------------------',
+        '|...................................................|                     |',
+        '|.|---------S--.--|...|--------------------------|..|                     |',
+        '|.||---|   |.||-| |...|..........................|..|                     |',
+        '|.||...| |-|.|.|---...|.............................|                ..   |',
+        '|.||...|-|.....|....|-|..........................|..|.               ..   |',
+        '|.||.....|-S|..|....|............................|..|..                   |',
+        '|.||--|..|..|..|-|..|----------------------------|..|-.                   |',
+        '|.|   |..|..|....|..................................|...                  |',
+        '|.|   |..|..|----|..-----------------------------|..|....                 |',
+        '|.|---|..|--|.......|----------------------------|..|.....                |',
+        '|...........|----.--|......................|     |..|.......              |',
+        '|-----------|...|.| |------------------|.|.|-----|..|.....|..             |',
+        '|-----------|.{.|.|--------------------|.|..........|.....|....           |',
+        '|...............|.S......................|-------------..-----...         |',
+        '|.--------------|.|--------------------|.|.........................       |',
+        '|.................|                    |.....................|........    |',
+        '---------------------------------------------------------------------------',
+    ].join('\n') + '\n');
+
+    if (G.percent(50)) {
+        des.terrain([55, 14], '-');
+        des.terrain([56, 14], '-');
+        des.terrain([61, 15], '|');
+        des.terrain([52, 5], 'S');
+        des.door('locked', 52, 5);
+    }
+    if (G.percent(50)) {
+        des.terrain([18, 1], '|');
+        des.terrain(selection.area(7, 12, 8, 13), '.');
+    }
+    if (G.percent(50)) {
+        des.terrain([49, 4], '|');
+        des.terrain([21, 5], '.');
+    }
+    if (G.percent(50)) {
+        if (G.percent(50)) {
+            des.terrain([22, 1], '|');
+        } else {
+            des.terrain([50, 7], '-');
+            des.terrain([51, 7], '-');
+        }
+    }
+
+    // -- uncontrolled arrival (via trap door, level teleport) will be in the central
+    // -- portion of level to prevent ending up stuck in the treasure area, whether
+    // -- arriving from above or below (despite this being bottom of Mines branch,
+    // -- hero might arrive from below by invoking Wiz role's Eye of the Aethiopica)
+    des.teleport_region({ region: [23, 3, 48, 16], region_islev: 1 });
+
+    // -- Dungeon Description
+    des.feature('fountain', [14, 13]);
+    des.region(selection.area(23, 3, 48, 6), 'lit');
+    des.region(selection.area(21, 6, 22, 6), 'lit');
+    des.region(selection.area(14, 4, 14, 4), 'unlit');
+    des.region(selection.area(10, 5, 14, 8), 'unlit');
+    des.region(selection.area(10, 9, 11, 9), 'unlit');
+    des.region(selection.area(15, 8, 16, 8), 'unlit');
+    // -- Secret doors
+    des.door('locked', 12, 2);
+    des.door('locked', 11, 6);
+    // -- Stairs
+    des.stair('up', 36, 4);
+    // -- Non diggable walls
+    des.non_diggable(selection.area(0, 0, 52, 17));
+    des.non_diggable(selection.area(53, 0, 74, 0));
+    des.non_diggable(selection.area(53, 17, 74, 17));
+    des.non_diggable(selection.area(74, 1, 74, 16));
+    des.non_diggable(selection.area(53, 7, 55, 7));
+    des.non_diggable(selection.area(53, 14, 61, 14));
+    // -- The Gnome King's wine cellar.
+    // -- the Trespassers sign is a long-running joke
+    des.engraving([12, 3], 'engrave',
+                  "You are now entering the Gnome King's wine cellar.");
+    des.engraving([12, 4], 'engrave', 'Trespassers will be persecuted!');
+    des.object('potion of booze', 10, 7);
+    des.object('potion of booze', 10, 7);
+    des.object('!', 10, 7);
+    des.object('potion of booze', 10, 8);
+    des.object('potion of booze', 10, 8);
+    des.object('!', 10, 8);
+    des.object('potion of booze', 10, 9);
+    des.object('potion of booze', 10, 9);
+    des.object('potion of object detection', 10, 9);
+    // -- Objects
+    // -- The Treasure chamber...
+    des.object('diamond', 69, 4);
+    des.object('*', 69, 4);
+    des.object('diamond', 69, 4);
+    des.object('*', 69, 4);
+    des.object('emerald', 70, 4);
+    des.object('*', 70, 4);
+    des.object('emerald', 70, 4);
+    des.object('*', 70, 4);
+    des.object('emerald', 69, 5);
+    des.object('*', 69, 5);
+    des.object('ruby', 69, 5);
+    des.object('*', 69, 5);
+    des.object('ruby', 70, 5);
+    des.object('amethyst', 70, 5);
+    des.object('*', 70, 5);
+    des.object('amethyst', 70, 5);
+    des.object({ id: 'luckstone', x: 70, y: 5,
+                 buc: 'not-cursed', achievement: 1 });
+    // -- Scattered gems...
+    des.object('*');
+    des.object('*');
+    des.object('*');
+    des.object('*');
+    des.object('*');
+    des.object('*');
+    des.object('*');
+    des.object('(');
+    des.object('(');
+    des.object();
+    des.object();
+    des.object();
+    // -- Random traps
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    // -- Random monsters.
+    des.monster('gnome king');
+    des.monster('gnome lord');
+    des.monster('gnome lord');
+    des.monster('gnome lord');
+    des.monster('gnomish wizard');
+    des.monster('gnomish wizard');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('gnome');
+    des.monster('hobbit');
+    des.monster('hobbit');
+    des.monster('dwarf');
+    des.monster('dwarf');
+    des.monster('dwarf');
+    des.monster('h');
+}
+
+// C ref: dat/minend-3.lua
+// -- "Catacombs" by Kelly Bailey
+// -- Relies on some very specific behavior of MAZEWALK.
+function minend_3_lua(L) {
+    const G = L.globals, des = G.des, selection = G.selection;
+
+    des.level_init({ style: 'solidfill', fg: '-' });
+
+    des.level_flags('mazelevel', 'nommap');
+
+    des.map({ halign: 'center', valign: 'bottom', map: [
+        ' - - - - - - - - - - -- -- - - . - - - - - - - - - -- - - -- - - - - . - - |',
+        '------...---------.-----------...-----.-------.-------     ----------------|',
+        ' - - - - - - - - - - - . - - - . - - - - - - - - - - -- - -- - . - - - - - |',
+        '------------.---------...-------------------------.---   ------------------|',
+        ' - - - - - - - - - - . . - - --- - . - - - - - - - - -- -- - - - - |.....| |',
+        '--.---------------.......------------------------------- ----------|.....S-|',
+        ' - - - - |.. ..| - ....... . - - - - |.........| - - - --- - - - - |.....| |',
+        '----.----|.....|------.......--------|.........|--------------.------------|',
+        ' - - - - |..{..| - - -.... . --- - -.S.........S - - - - - - - - - - - - - |',
+        '---------|.....|--.---...------------|.........|---------------------------|',
+        ' - - - - |.. ..| - - - . - - - - - - |.........| - --- . - - - - - - - - - |',
+        '----------------------...-------.---------------------...------------------|',
+        '---..| - - - - - - - - . --- - - - - - - - - - - - - - . - - --- - - --- - |',
+        '-.S..|----.-------.------- ---------.-----------------...----- -----.-------',
+        '---..| - - - - - - - -- - - -- . - - - - - . - - - . - . - - -- -- - - - -- ',
+        '-.S..|--------.---.---       -...---------------...{.---------   ---------  ',
+        '--|. - - - - - - - -- - - - -- . - - - --- - - - . . - - - - -- - - - - - - ',
+    ].join('\n') + '\n' });
+
+    // (Lua place[k] is JS place[k - 1])
+    const place = [ [1, 15], [68, 6], [1, 13] ];
+    G.shuffle(place);
+
+    des.non_diggable(selection.area(67, 3, 73, 7));
+    des.non_diggable(selection.area(0, 12, 2, 16));
+    des.feature('fountain', [12, 8]);
+    des.feature('fountain', [51, 15]);
+    des.region(selection.area(0, 0, 75, 16), 'unlit');
+    des.region(selection.area(38, 6, 46, 10), 'lit');
+    des.door('closed', 37, 8);
+    des.door('closed', 47, 8);
+    des.door('closed', 73, 5);
+    des.door('closed', 2, 15);
+    des.mazewalk({ x: 36, y: 8, dir: 'west', stocked: false });
+    des.stair('up', 42, 8);
+    des.wallify();
+
+    // -- Objects
+    des.object('diamond');
+    des.object('*');
+    des.object('diamond');
+    des.object('*');
+    des.object('emerald');
+    des.object('*');
+    des.object('emerald');
+    des.object('*');
+    des.object('emerald');
+    des.object('*');
+    des.object('ruby');
+    des.object('*');
+    des.object('ruby');
+    des.object('amethyst');
+    des.object('*');
+    des.object('amethyst');
+    des.object({ id: 'luckstone', coord: place[1], buc: 'not-cursed', achievement: 1 });
+    des.object('flint', place[0]);
+    des.object('?');
+    des.object('?');
+    des.object('?');
+    des.object('?');
+    des.object('?');
+    des.object('+');
+    des.object('+');
+    des.object('+');
+    des.object('+');
+    des.object();
+    des.object();
+    des.object();
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    // -- One-time annoyance factor
+    des.trap('level teleport', place[1]);
+    des.trap('level teleport', place[0]);
+    des.monster('M');
+    des.monster('M');
+    des.monster('M');
+    des.monster('M');
+    des.monster('M');
+    des.monster('ettin mummy');
+    des.monster('V');
+    des.monster('Z');
+    des.monster('Z');
+    des.monster('Z');
+    des.monster('Z');
+    des.monster('Z');
+    des.monster('V');
+    des.monster('e');
+    des.monster('e');
+    des.monster('e');
+    des.monster('e');
+}
+
 // The hand-ported Mines level scripts by file name, for nhl_loadlua().
 export const mines_lua_files = {
     'minefill.lua': minefill_lua,
@@ -715,6 +1294,10 @@ export const mines_lua_files = {
     'minetn-2.lua': minetn_2_lua,
     'minetn-3.lua': minetn_3_lua,
     'minetn-4.lua': minetn_4_lua,
+    'minetn-5.lua': minetn_5_lua,
     'minetn-6.lua': minetn_6_lua,
+    'minetn-7.lua': minetn_7_lua,
     'minend-1.lua': minend_1_lua,
+    'minend-2.lua': minend_2_lua,
+    'minend-3.lua': minend_3_lua,
 };

@@ -3,6 +3,7 @@
 // Only the parts reached during level creation are ported so far.
 
 import { game } from './gstate.js';
+import { in_town } from './hack.js';
 import { rnd, rn2 } from './rng.js';
 import { cvt_sdoor_to_door } from './detect.js';
 import { canseemon, newsym, pline, Hallucination } from './display.js';
@@ -204,14 +205,6 @@ export function may_dig(x, y) {
              && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
 }
 
-/* C ref: hack.c in_town() -- a town only exists on special levels
-   (has_town); the town room check isn't ported */
-function in_town(x, y) {
-    void x; void y;
-    if (!game.level.flags.has_town)
-        return false;
-    throw new Error('in_town(): town rooms not ported yet');
-}
 
 // C ref: dig.c watch_dig() -- town watchmen react to digging
 function watch_dig(mtmp, x, y, zap) {
