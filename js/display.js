@@ -570,7 +570,7 @@ function terrain_glyph_dec(loc, x, y) {
     const arboreal = !!game.level?.flags?.arboreal;
     const S_stone = { ch: ' ', color: NO_COLOR, dec: false };
     const S_tree = { ch: 'g', color: CLR_GREEN, dec: true, asc: '#' };
-    const S_room = { ch: '~', color: NO_COLOR, dec: true };    /* '.' */
+    const S_room = { ch: '~', color: NO_COLOR, dec: true, cmap: 'S_room' }; /* '.' */
     const S_ndoor = { ch: '~', color: CLR_GRAY, dec: true };   /* '.' */
     const S_hwall = { ch: 'q', color: NO_COLOR, dec: true };   /* '-' */
     const S_vwall = { ch: 'x', color: NO_COLOR, dec: true };   /* '|' */
@@ -911,6 +911,80 @@ export function see_nearby_objects() {
         }
 }
 
+// C ref: display.h glyph_is_invisible() -- for a remembered glyph
+// (lev->glyph): the "remembered, unseen monster" 'I'
+export function glyph_is_invisible(rg) {
+    return !!rg?.invisible;
+}
+
+// C ref: display.c map_invisible()
+/*
+ * Make the hero remember that a square contains an invisible monster.
+ * This is a special case in that the square will continue to be displayed
+ * this way even when the hero is close enough to see it.  To get rid of
+ * this and display the square's actual contents, use unmap_object() followed
+ * by newsym() if necessary.
+ */
+export function map_invisible(x, y) {
+    if (x !== game.u.ux || y !== game.u.uy) { /* don't display I at hero's location */
+        /* GLYPH_INVISIBLE: S_invisible 'I', invis_color() NO_COLOR */
+        const glyph = { ch: 'I', color: NO_COLOR, decgfx: false, invisible: true };
+        if (game.level.flags?.hero_memory)
+            game.level.at(x, y).remembered_glyph = glyph;
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+    }
+}
+
+// C ref: display.c unmap_invisible()
+export function unmap_invisible(x, y) {
+    if (isok(x, y) && glyph_is_invisible(game.level.at(x, y).remembered_glyph)) {
+        unmap_object(x, y);
+        newsym(x, y);
+        return true;
+    }
+    return false;
+}
+
+// C ref: display.c unmap_object()
+/*
+ * Remove something from the map when the hero realizes it's not there any
+ * more.  Replace it with background or known trap, but not with any other
+ * If this is used for detection, a full screen update is imminent anyway;
+ * if this is used to get rid of an invisible monster notation, we might have
+ * to call newsym().
+ */
+export function unmap_object(x, y) {
+    let trap, ep;
+
+    if (!game.level.flags?.hero_memory)
+        return;
+
+    const lev = game.level.at(x, y);
+    if ((trap = t_at(x, y)) !== null && trap && trap.tseen
+        && !covers_objects(x, y) /* covers_traps() */) {
+        map_trap(trap, false);
+    } else if (lev.seenv) {
+        if (spot_shows_engravings(x, y)
+            && (ep = engr_at(x, y)) !== null && ep
+            && !covers_objects(x, y) /* covers_traps() */) {
+            if (cansee(x, y))
+                ep.erevealed = 1;
+            map_engraving(ep, false);
+        } else {
+            map_background(x, y, false);
+        }
+
+        /* turn remembered dark room squares dark */
+        if (!lev.waslit && lev.remembered_glyph?.cmap === 'S_room'
+            && lev.typ === ROOM)
+            lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
+                                     cmap: 'S_stone' };
+    } else {
+        lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
+                                 cmap: 'S_stone' }; /* default val */
+    }
+}
+
 // C ref: display.c map_background()
 function map_background(x, y, show) {
     const loc = game.level.at(x, y);
@@ -1089,6 +1163,8 @@ export function newsym(x, y) {
             display_monster(x, y, mon);
         } else if (mon && mon_warning(mon) && !worm_tail) {
             throw new Error('newsym(): display_warning() not ported yet');
+        } else if (glyph_is_invisible(loc.remembered_glyph)) {
+            map_invisible(x, y);
         } else {
             _map_location(x, y, true); /* map the location */
         }

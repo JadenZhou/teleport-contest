@@ -34,7 +34,8 @@ import { dig_typ } from './dig.js';
 import { AT_EXPL } from './monsters.js';
 import { IS_STWALL, WEB as WEB_TRAP } from './const.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
-         You_cant, pline_The, There } from './display.js';
+         You_cant, pline_The, There, unmap_invisible, unmap_object,
+         glyph_is_invisible } from './display.js';
 import { vision_recalc } from './vision.js';
 import { t_at, VIBRATING_SQUARE, is_pit } from './trap.js';
 import { dist2 } from './hacklib.js';
@@ -1417,9 +1418,8 @@ async function dopush(sx, sy, rx, ry, otmp, costly) {
     }
 
     /* Move the boulder *after* the message. */
-    /* glyph_is_invisible(levl[rx][ry].glyph): unmap_object() */
-    if (game.level.at(rx, ry).glyph_invisible)
-        throw new Error('dopush(): unmap_object() not ported yet');
+    if (glyph_is_invisible(game.level.at(rx, ry).remembered_glyph))
+        unmap_object(rx, ry);
     otmp.next_boulder = 0;
     movobj(otmp, rx, ry); /* does newsym(rx,ry) */
     if (Blind()) {
@@ -1864,12 +1864,14 @@ function domove_fight_web(x, y) {
 }
 
 // C ref: hack.c domove_fight_empty() -- 'F' with no monster, or a
-// remembered 'I' (remembered invisible monsters aren't ported yet, so
-// only the 'F' case can be reached)
+// remembered 'I' (the map's glyph at <x,y> is taken from the hero's map
+// memory, which is what the displayed glyph is for a remembered 'I')
 async function domove_fight_empty(x, y) {
     const unknown_obstacle = "an unknown obstacle";
     const u = game.u;
     const off_edge = !isok(x, y);
+    const glyph_invis = !off_edge
+                        && glyph_is_invisible(game.level.at(x, y).remembered_glyph);
 
     if (off_edge)
         x = 0, y = 1; /* for forcefight against the edge of the map; make
@@ -1878,7 +1880,9 @@ async function domove_fight_empty(x, y) {
                        * because m_at() might find a vault guard there */
 
     /* specifying 'F' with no monster wastes a turn */
-    if (game.context.forcefight) {
+    if (game.context.forcefight
+        /* remembered an 'I' && didn't use a move command */
+        || (glyph_invis && !m_at(x, y) && !game.context.nopick)) {
         let boulder = null;
         const explo = (u.umonnum !== u.umonster) /* Upolyd */
                       && (game.youmonst.data.mattk || []).some(a => a.aatyp === AT_EXPL);
@@ -1909,8 +1913,8 @@ async function domove_fight_empty(x, y) {
                     throw new Error('domove_fight_empty(): use_pick_axe2() not ported yet');
             }
 
-            /* about to become known empty -- remove 'I' if present
-               (unmap_object(): remembered 'I' isn't ported) */
+            /* about to become known empty -- remove 'I' if present */
+            unmap_object(x, y);
             if (boulder)
                 throw new Error('domove_fight_empty(): map_object(boulder) not ported yet');
             newsym(x, y);
@@ -2128,7 +2132,7 @@ async function domove_core() {
         if (await domove_fight_empty(x, y))
             return;
 
-        /* (void) unmap_invisible(x, y): remembered 'I' isn't ported */
+        unmap_invisible(x, y);
         /* not attacking an animal, so we try to move */
         if ((u.dx || u.dy) && u.usteed)
             throw new Error('domove_core(): stucksteed() not ported yet');
