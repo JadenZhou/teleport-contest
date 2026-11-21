@@ -1,8 +1,10 @@
 // questlev_lua.js — hand port of the quest level scripts sessions reach:
 // dat/Bar-strt.lua and dat/Pri-strt.lua (the quest home levels),
-// dat/Bar-loca.lua (locate level) and dat/Bar-fila.lua (filler level).
+// dat/Bar-loca.lua (locate level), dat/Bar-fila.lua and dat/Bar-filb.lua
+// (filler levels) and dat/Bar-goal.lua (goal level).
 // makemaz() loads them through load_special() (sp_lev.c).
-// C ref: dat/Bar-strt.lua, dat/Pri-strt.lua, dat/Bar-loca.lua, dat/Bar-fila.lua
+// C ref: dat/Bar-strt.lua, dat/Pri-strt.lua, dat/Bar-loca.lua, dat/Bar-fila.lua,
+// dat/Bar-filb.lua, dat/Bar-goal.lua
 //
 // These scripts roll no dice on the Lua side; the selection operator '&'
 // is lua_band() (nhlua.js).
@@ -360,10 +362,106 @@ function Bar_fila_lua(L) {
     des.monster({ id: 'rock troll', peaceful: 0 });
 }
 
+// C ref: dat/Bar-filb.lua
+//	The "fill" level for the quest.
+function Bar_filb_lua(L) {
+    const G = L.globals, des = G.des;
+
+    des.level_init({ style: 'solidfill', fg: ' ' });
+
+    des.level_flags('mazelevel', 'noflip');
+
+    des.level_init({ style: 'mines', fg: '.', bg: ' ', smoothed: true, joined: true, lit: 0, walled: true });
+
+    //
+    des.stair('up');
+    des.stair('down');
+    //
+    for (let i = 0; i < 11; i++) /* eleven des.object() lines */
+        des.object();
+    //
+    des.trap();
+    des.trap();
+    des.trap();
+    des.trap();
+    //
+    for (let i = 0; i < 7; i++) /* seven ogre lines */
+        des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ class: 'O', peaceful: 0 });
+    des.monster({ id: 'rock troll', peaceful: 0 });
+    des.monster({ id: 'rock troll', peaceful: 0 });
+    des.monster({ id: 'rock troll', peaceful: 0 });
+    des.monster({ class: 'T', peaceful: 0 });
+}
+
+const MAP_Bar_goal = [
+    '                                                                            ',
+    '                               .............                                ',
+    '                             ..................                             ',
+    '        ....              .........................          ....           ',
+    '      .......          ..........................           .......         ',
+    '      ......             ........................          .......          ',
+    '      ..  ......................................             ..             ',
+    '       ..                 .....................             ..              ',
+    '        ..                 ..................              ..               ',
+    '         ..         ..S...S..............   ................                ',
+    '          ..                   ........                ...                  ',
+    '       .........                                         ..                 ',
+    '       ......  ..                                         ...  ....         ',
+    '      .. ...    ..                             ......       ........        ',
+    '   ....          .. ..................        ........       ......         ',
+    '  ......          ......................       ......         ..            ',
+    '   ....             ..................              ...........             ',
+    '                      ..............                                        ',
+    '                        ...........                                         ',
+    '                                                                            ',
+].join('\n') + '\n';
+
+// C ref: dat/Bar-goal.lua
+//	The "goal" level for the quest.
+function Bar_goal_lua(L) {
+    const G = L.globals, des = G.des, selection = G.selection;
+
+    des.level_init({ style: 'solidfill', fg: ' ' });
+
+    des.level_flags('mazelevel');
+
+    des.map(MAP_Bar_goal);
+    // -- Dungeon Description
+    des.region(selection.area(0, 0, 75, 19), 'unlit');
+    // -- Secret doors
+    des.door('locked', 22, 9);
+    des.door('locked', 26, 9);
+    // -- Stairs
+    des.stair('up', 36, 5);
+    // -- The altar.  Unattended.
+    des.altar({ x: 63, y: 4, align: 'noncoaligned', type: 'altar' });
+    des.non_diggable(selection.area(0, 0, 75, 19));
+    // -- Objects
+    des.object({ id: 'luckstone', x: 63, y: 4, buc: 'blessed', spe: 0, name: 'The Heart of Ahriman' });
+    for (let i = 0; i < 14; i++) /* fourteen des.object() lines */
+        des.object();
+    // -- Random traps
+    for (let i = 0; i < 6; i++) /* six des.trap() lines */
+        des.trap();
+    // -- Random monsters.
+    des.monster({ id: 'Thoth Amon', x: 63, y: 4, peaceful: 0 });
+    for (let i = 0; i < 16; i++) /* sixteen ogre lines */
+        des.monster({ id: 'ogre', peaceful: 0 });
+    des.monster({ class: 'O', peaceful: 0 });
+    des.monster({ class: 'O', peaceful: 0 });
+    for (let i = 0; i < 8; i++) /* eight rock troll lines */
+        des.monster({ id: 'rock troll', peaceful: 0 });
+    des.monster({ class: 'T', peaceful: 0 });
+    des.wallify();
+}
+
 // The hand-ported quest level scripts by file name, for nhl_loadlua().
 export const quest_level_lua_files = {
     'Bar-strt.lua': Bar_strt_lua,
     'Bar-loca.lua': Bar_loca_lua,
     'Bar-fila.lua': Bar_fila_lua,
+    'Bar-filb.lua': Bar_filb_lua,
+    'Bar-goal.lua': Bar_goal_lua,
     'Pri-strt.lua': Pri_strt_lua,
 };

@@ -115,6 +115,7 @@ import { in_rooms } from './hack.js';
 import { premap_detect } from './detect.js';
 import { christen_monst } from './do_name.js';
 import { newcham } from './mon.js';
+import { mkmap } from './mkmap.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -3949,7 +3950,13 @@ function splev_initlev(linit) {
     case LVLINIT_ROGUE:
         throw new Error('splev_initlev(): makeroguerooms() not ported yet');
     case LVLINIT_MINES:
-        throw new Error('splev_initlev(): mkmap() (mines style) not ported yet');
+        if (linit.lit === BOOL_RANDOM)
+            linit.lit = rn2(2);
+        if (linit.filling > -1)
+            lvlfill_solid(linit.filling, 0);
+        linit.icedpools = game.icedpools;
+        mkmap(linit);
+        break;
     case LVLINIT_SWAMP:
         if (linit.lit === BOOL_RANDOM)
             linit.lit = rn2(2);

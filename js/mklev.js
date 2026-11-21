@@ -1848,7 +1848,7 @@ function maybe_sdoor(chance) {
 }
 
 // C ref: sp_lev.c dig_corridor()
-function dig_corridor(org, dest, npoints_out, nxcor, ftyp, btyp) {
+export function dig_corridor(org, dest, npoints_out, nxcor, ftyp, btyp) {
     const map = game.level;
     let dx = 0, dy = 0;
     let xx = org.x, yy = org.y;
