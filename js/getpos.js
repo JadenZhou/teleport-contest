@@ -238,8 +238,12 @@ export async function getpos(ccp, force, goal) {
             [cx, cy] = truncate_to_map(cx, cy, dx, dy);
         } else if (" \r\n".includes(ch) && c !== 0) { /* quitchars */
             if (!force) {
-                /* pline("Done.") ... */
-                throw new Error('getpos(): non-forced quit not ported yet');
+                await pline("Done.");
+                msg_given = false; /* suppress clear */
+                cx = -1;
+                cy = 0;
+                result = 0; /* not -1 */
+                break;
             }
             /* force: goto nxtc */
         } else {

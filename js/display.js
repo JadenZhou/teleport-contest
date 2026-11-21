@@ -18,7 +18,8 @@ import {
     BLINDED, INFRAVISION, TELEPAT, WARN_OF_MON, DETECT_MONSTERS, WARNING,
     NO_TRAP, BEAR_TRAP, PIT, SPIKED_PIT, WEB,
 } from './const.js';
-import { HALLUC, Is_waterlevel, isok, IS_STWALL } from './const.js';
+import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT,
+         M_AP_FURNITURE } from './const.js';
 import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL,
@@ -671,14 +672,100 @@ function tty_color(color) {
 }
 
 // ── show_glyph_cell ──
-export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr = 0) {
+export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr = 0,
+                                kind = 'cmap') {
     const loc = game.level?.at(x, y);
     if (!loc) return;
     loc.disp_ch = ch;
     loc.disp_color = color;
     loc.disp_decgfx = !!decgfx;
     loc.disp_attr = attr | 0;
+    /* which glyph range the shown glyph comes from (glyph_is_monster(),
+       glyph_is_object(), glyph_is_trap(), glyph_is_invisible(), ...) */
+    loc.disp_kind = kind;
     loc.gnew = 1;
+}
+
+/* the glyph range of a remembered glyph (lev->glyph): map_object(),
+   map_trap(), map_engraving() and map_invisible() mark theirs; the rest
+   are background (cmap) glyphs */
+export function glyph_kind(rg) {
+    return !rg ? 'cmap' : rg.invisible ? 'invisible' : rg.obj ? 'obj'
+           : rg.trap ? 'trap' : rg.engr ? 'engr' : 'cmap';
+}
+
+// C ref: mkroom.c cmap_to_type() -- indexed by defsym.h S_* (S_stone 0 ..
+// S_water 48, in defsym.h order); the catchall is STONE
+const CMAP_TO_TYPE = [
+    STONE, VWALL, HWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER, CROSSWALL,
+    TUWALL, TDWALL, TLWALL, TRWALL,
+    DOOR, DOOR, DOOR, DOOR, DOOR,         /* S_ndoor .. S_hcdoor */
+    IRONBARS, TREE, ROOM, ROOM,           /* S_bars, S_tree, S_room, S_darkroom */
+    STONE, CORR, CORR, STONE,             /* S_engroom, S_corr, S_litcorr, S_engrcorr */
+    STAIRS, STAIRS, LADDER, LADDER,       /* S_upstair .. S_dnladder */
+    STONE, STONE, STONE, STONE,           /* branch stairs/ladders */
+    ALTAR, GRAVE, THRONE, SINK, FOUNTAIN, POOL, ICE, LAVAPOOL, LAVAWALL,
+    DRAWBRIDGE_DOWN, DRAWBRIDGE_DOWN, DBWALL, DBWALL, /* S_vodbridge .. S_hcdbridge */
+    AIR, CLOUD, WATER,
+];
+export function cmap_to_type(sym) {
+    return CMAP_TO_TYPE[sym] ?? STONE;
+}
+
+// C ref: dbridge.c db_under_typ()
+function db_under_typ(mask) {
+    switch (mask & DB_UNDER) {
+    case DB_ICE: return ICE;
+    case DB_LAVA: return LAVAPOOL;
+    case DB_MOAT: return MOAT;
+    default: return STONE;
+    }
+}
+
+// C ref: dungeon.c update_lastseentyp() -- svl.lastseentyp[][] is kept on
+// the level (game.level.lastseentyp), zeroed when the level is made
+export function update_lastseentyp(x, y) {
+    const L = game.level;
+    const lev = L.at(x, y);
+    let ltyp = lev.typ;
+    let mtmp;
+
+    if (ltyp === DRAWBRIDGE_UP)
+        ltyp = db_under_typ(lev.drawbridgemask ?? lev.flags);
+    if ((mtmp = mon_at_loc(x, y)) !== null
+        && mtmp.m_ap_type === M_AP_FURNITURE && canseemon(mtmp))
+        ltyp = cmap_to_type(mtmp.mappearance);
+    if (!L.lastseentyp) {
+        L.lastseentyp = [];
+        for (let c = 0; c < COLNO; c++)
+            L.lastseentyp.push(new Array(ROWNO).fill(0));
+    }
+    L.lastseentyp[x][y] = ltyp;
+}
+
+// C ref: display.c show_glyph() -- for a glyph in the remembered/glyph_at()
+// form
+export function show_glyph(x, y, glyph) {
+    show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0,
+                    glyph.kind ?? glyph_kind(glyph));
+}
+
+// C ref: display.c back_to_glyph() -- in the remembered-glyph form
+export function back_to_glyph(x, y) {
+    return rememb_glyph(terrain_glyph(game.level.at(x, y), x, y));
+}
+
+// C ref: display.h trap_to_glyph() -- in the remembered-glyph form
+export function trap_to_glyph(trap) {
+    const [ch, color] = TRAP_DEFSYMS[trap.ttyp - 1];
+    return { ch, color, decgfx: false, trap: true };
+}
+
+// C ref: display.c glyph_at() -- the glyph shown at a map spot (gbuf)
+export function glyph_at(x, y) {
+    const loc = game.level.at(x, y);
+    return { ch: loc.disp_ch ?? ' ', color: loc.disp_color ?? NO_COLOR,
+             decgfx: !!loc.disp_decgfx, kind: loc.disp_kind ?? 'cmap' };
 }
 
 // C ref: defsym.h MONSYMS -- def_monsyms[].sym, indexed by mlet (S_ANT = 1)
@@ -787,7 +874,7 @@ function display_monster(x, y, mon) {
        with iflags.wc2_petattr when hilite_pet is on */
     const attr = (mon.mtame && !Hallucination() && game.iflags?.wc_hilite_pet)
                  ? game.iflags.wc2_petattr : 0;
-    show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false, attr);
+    show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false, attr, 'mon');
 }
 
 // C ref: you.h Hallucination
@@ -803,7 +890,7 @@ function newsym_rn2(x) {
 }
 
 // C ref: display.h covers_objects()
-function covers_objects(x, y) {
+export function covers_objects(x, y) {
     const typ = game.level.at(x, y).typ;
     return (is_pool(x, y) && !game.u?.uinwater) || typ === LAVAPOOL
            || typ === LAVAWALL;
@@ -841,17 +928,17 @@ function obj_to_glyph(obj, rng) {
     if (obj.otyp === STATUE) {
         if (Hallucination()) rng(2);
         return { ch: def_monsyms[mons[obj.corpsenm].mlet] ?? '?',
-                 color: objects[STATUE].oc_color, decgfx: false };
+                 color: objects[STATUE].oc_color, decgfx: false, obj: true };
     }
     if (Hallucination()) rng(2);
     if (obj.otyp === CORPSE)
         return { ch: def_oc_syms[objects[CORPSE].oc_class],
-                 color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false };
+                 color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false, obj: true };
     const generic = obj_is_generic(obj);
     const offset = generic ? obj.oclass : obj.otyp;
     /* 'generic' marks glyph_is_generic_object() */
     return { ch: def_oc_syms[objects[offset].oc_class],
-             color: objects[offset].oc_color, decgfx: false, generic };
+             color: objects[offset].oc_color, decgfx: false, generic, obj: true };
 }
 
 // C ref: display.c map_object()
@@ -881,7 +968,7 @@ function map_object(obj, show) {
         loc.remembered_glyph = glyph;
     }
     if (show)
-        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'obj');
 }
 
 // C ref: display.c see_nearby_objects()
@@ -936,7 +1023,7 @@ export function map_invisible(x, y) {
         const glyph = { ch: 'I', color: NO_COLOR, decgfx: false, invisible: true };
         if (game.level.flags?.hero_memory)
             game.level.at(x, y).remembered_glyph = glyph;
-        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'invisible');
     }
 }
 
@@ -1041,12 +1128,12 @@ const TRAP_DEFSYMS = [
 function map_trap(trap, show) {
     const x = trap.tx, y = trap.ty;
     const [ch, color] = TRAP_DEFSYMS[trap.ttyp - 1]; /* trap_to_glyph(trap) */
-    const glyph = { ch, color, decgfx: false };
+    const glyph = { ch, color, decgfx: false, trap: true };
 
     if (game.level.flags?.hero_memory)
         game.level.at(x, y).remembered_glyph = glyph;
     if (show)
-        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'trap');
 }
 
 // C ref: engrave.h spot_shows_engravings()
@@ -1065,16 +1152,16 @@ function map_engraving(ep, show) {
        S_engrcorr on a corridor, else S_engroom; DECgraphics doesn't
        change either */
     const glyph = (game.level.at(x, y).typ === CORR)
-        ? { ch: '#', color: CLR_BRIGHT_BLUE, decgfx: false }  /* S_engrcorr */
-        : { ch: '`', color: CLR_BRIGHT_BLUE, decgfx: false }; /* S_engroom */
+        ? { ch: '#', color: CLR_BRIGHT_BLUE, decgfx: false, engr: true }  /* S_engrcorr */
+        : { ch: '`', color: CLR_BRIGHT_BLUE, decgfx: false, engr: true }; /* S_engroom */
 
     if (game.level.flags?.hero_memory)
         game.level.at(x, y).remembered_glyph = glyph;
     if (show)
-        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx);
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'engr');
 }
 
-// C ref: display.c _map_location() -- update_lastseentyp() and gas
+// C ref: display.c _map_location() -- gas
 // regions (show_region()) are not ported yet
 function _map_location(x, y, show) {
     let obj, trap, ml_ep;
@@ -1091,6 +1178,10 @@ function _map_location(x, y, show) {
     } else {
         map_background(x, y, show);
     }
+
+    update_lastseentyp(x, y);
+    /* if (show && !Blind && visible_region_at(x, y)) show_region():
+       gas regions aren't shown yet */
 }
 
 // C ref: display.c newsym_force() -- newsym() plus marking the spot as
@@ -1137,7 +1228,7 @@ export function newsym(x, y) {
                 && !loc.waslit)
                 loc.remembered_glyph = rememb_glyph(S_corr_g);
         }
-        show_glyph_cell(x, y, '@', CLR_WHITE, false);
+        show_glyph_cell(x, y, '@', CLR_WHITE, false, 0, 'mon');
         return;
     }
 
@@ -1198,7 +1289,8 @@ export function newsym(x, y) {
             loc.remembered_glyph = rememb_glyph(S_corr_g);
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
-            loc.remembered_glyph.color, loc.remembered_glyph.decgfx);
+            loc.remembered_glyph.color, loc.remembered_glyph.decgfx, 0,
+            glyph_kind(loc.remembered_glyph));
     } else {
         /* show_mem: never seen, the unexplored glyph (blank) */
         show_glyph_cell(x, y, ' ', NO_COLOR, false);
@@ -1265,7 +1357,7 @@ export async function docrt_flags(refresh_flags) {
                 if (!lev) continue;
                 const gl = lev.remembered_glyph;
                 if (gl)
-                    show_glyph_cell(x, y, gl.ch, gl.color, gl.decgfx);
+                    show_glyph_cell(x, y, gl.ch, gl.color, gl.decgfx, 0, glyph_kind(gl));
                 else
                     show_glyph_cell(x, y, ' ', NO_COLOR, false);
             }
