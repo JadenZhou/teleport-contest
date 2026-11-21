@@ -36,6 +36,7 @@ import { objects, NUM_OBJECTS } from './objects.js';
 import { getlev } from './restore.js';
 import { GameMap } from './game.js';
 import { setworn } from './worn.js';
+import { forget_temple_entry } from './priest.js';
 import { ECMD_OK, WRITING, FREEING, COUNTING, FULL_MOON, VISITED, LFILE_EXISTS,
          REST_GSTATE, W_BALL, W_CHAIN, Has_contents } from './const.js';
 
@@ -870,7 +871,7 @@ function savemonchn(nhfp, holder, key) {
         if (update_file(nhfp)) {
             mtmp.mnum = monsndx(mtmp.data);
             if (mtmp.ispriest)
-                throw new Error('savemonchn(): forget_temple_entry() not ported yet');
+                forget_temple_entry(mtmp); /* EPRI() */
             savemon(nhfp, mtmp);
         }
         if (mtmp.minvent)

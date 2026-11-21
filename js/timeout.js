@@ -19,6 +19,7 @@ import { PM_ARCHEOLOGIST } from './monsters.js';
 import { FEDORA, LUCKSTONE } from './objects.js';
 import { stone_luck } from './attrib.js';
 import { carrying } from './invent.js';
+import { spec_ability, SPFX_LUCK } from './artifact.js';
 
 /* C ref: role.h Role_if() */
 function Role_if(pm) { return game.urole.mnum === pm; }
@@ -28,9 +29,7 @@ export function confers_luck(obj) {
     /* might as well check for this too */
     if (obj.otyp === LUCKSTONE)
         return true;
-    /* obj->oartifact && spec_ability(obj, SPFX_LUCK): artifacts aren't
-       ported yet */
-    return false;
+    return !!(obj.oartifact && spec_ability(obj, SPFX_LUCK));
 }
 
 // C ref: timeout.c nh_timeout()

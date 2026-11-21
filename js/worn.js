@@ -348,6 +348,10 @@ export function mon_set_minvis(mon, cursed_potion) {
 export async function mon_adjust_speed(mon, adjust, obj) {
     await run_msgs(mon_adjust_speed_g(mon, adjust, obj));
 }
+/* mon_adjust_speed() from a synchronous caller (makemon()) */
+export function mon_adjust_speed_sync(mon, adjust, obj) {
+    run_msgs_sync(mon_adjust_speed_g(mon, adjust, obj));
+}
 function* mon_adjust_speed_g(
     mon,
     adjust, /* positive => increase speed, negative => decrease */
