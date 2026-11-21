@@ -29,7 +29,7 @@ import { dovspell, docast } from './spell.js';
 import { dodiscovered } from './o_init.js';
 import { doattributes } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
-import { dodrop } from './do.js';
+import { dodrop, dodown, doup } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
 import { doloot } from './pickup.js';
@@ -95,6 +95,8 @@ const cmd_funcs = {
     docast: () => docast(),
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),
+    dodown: () => dodown(),
+    doup: () => doup(),
     dozap: () => dozap(),
     docallcmd: () => docallcmd(),
     doloot: () => doloot(),
@@ -764,7 +766,7 @@ async function parse() {
 }
 
 // C ref: cmd.c set_move_cmd()
-function set_move_cmd(dir, run) {
+export function set_move_cmd(dir, run) {
     const u = game.u;
     u.dz = zdir[dir];
     u.dx = xdir[dir];

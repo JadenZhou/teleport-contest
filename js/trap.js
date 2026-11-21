@@ -262,7 +262,7 @@ function Wounded_legs() {
     return !!(uprop(WOUNDED_LEGS).intrinsic || uprop(WOUNDED_LEGS).extrinsic);
 }
 /* C ref: hack.h Maybe_Half_Phys() */
-function Maybe_Half_Phys(dmg) {
+export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;
 }
 
@@ -270,7 +270,7 @@ function Maybe_Half_Phys(dmg) {
 async function You_feel(line) { await pline(`You feel ${line}`); }
 
 // C ref: hack.c losehp() -- the not-polymorphed, surviving case
-async function losehp(n, knam, k_format) {
+export async function losehp(n, knam, k_format) {
     const u = game.u;
     void knam; void k_format;
     game.disp_botl = true; /* u.uhp or u.mh is changing */
@@ -1498,6 +1498,26 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
             throw new Error('trapeffect_fire_trap(): destroy_items() not ported yet');
         throw new Error('trapeffect_fire_trap(): burn_floor_objects() not ported yet');
     }
+}
+
+// C ref: trap.c selftouch()
+export async function selftouch(arg) {
+    const g = game;
+    const Stone_resistance = !!(uprop(STONE_RES).intrinsic
+                                || uprop(STONE_RES).extrinsic);
+    void arg;
+    if (g.uwep && g.uwep.otyp === CORPSE
+        && (g.uwep.corpsenm === PM_COCKATRICE
+            || g.uwep.corpsenm === PM_CHICKATRICE) /* touch_petrifies() */
+        && !Stone_resistance)
+        throw new Error('selftouch(): instapetrify() not ported yet');
+    /* Or your secondary weapon, if wielded [hypothetical; we don't
+       allow two-weapon combat when either weapon is a corpse] */
+    if (g.u.twoweap && g.uswapwep && g.uswapwep.otyp === CORPSE
+        && (g.uswapwep.corpsenm === PM_COCKATRICE
+            || g.uswapwep.corpsenm === PM_CHICKATRICE)
+        && !Stone_resistance)
+        throw new Error('selftouch(): instapetrify() not ported yet');
 }
 
 // C ref: trap.c mselftouch()
