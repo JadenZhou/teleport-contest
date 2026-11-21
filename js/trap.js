@@ -289,7 +289,7 @@ export async function losehp(n, knam, k_format) {
 }
 
 // C ref: do.c set_wounded_legs()
-async function set_wounded_legs(side, timex) {
+export async function set_wounded_legs(side, timex) {
     const u = game.u;
     const W = u.uprops[WOUNDED_LEGS];
     /* KMH -- STEED
