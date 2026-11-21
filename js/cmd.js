@@ -21,7 +21,7 @@ import { dotalk } from './sounds.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
          MOVEMENTCMD, CMD_PARAM, CMD_M_PREFIX, CMD_gGF_PREFIX } from './func_tab.js';
-import { strcmpi, strncmpi, highc } from './hacklib.js';
+import { strcmpi, strncmpi, highc, visctrl } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
@@ -471,20 +471,6 @@ function cmdbind_get(key) {
     return game.Cmd.cmdbinds.get(key & 0xff) || null;
 }
 
-// C ref: hacklib.c visctrl()
-function visctrl(c) {
-    let ccc = '';
-    if (c & 0o200)
-        ccc += 'M-';
-    c &= 0o177;
-    if (c < 0o40)
-        ccc += '^' + String.fromCharCode(c | 0o100); /* letter */
-    else if (c === 0o177)
-        ccc += '^' + String.fromCharCode(c & ~0o100); /* '?' */
-    else
-        ccc += String.fromCharCode(c); /* printable character */
-    return ccc;
-}
 
 // C ref: cmd.c reset_cmd_vars()
 function reset_cmd_vars(reset_cmdq) {
@@ -762,6 +748,75 @@ const GC_NOFLAGS = 0, GC_SAVEHIST = 1, GC_CONDHIST = 2, GC_ECHOFIRST = 4;
 const LARGEST_INT = 32767;
 const LONG_MAX = Number.MAX_SAFE_INTEGER;
 
+/* C ref: hack.h program_state.input_state values, significant during
+   readchar(); get_count() expects digits then a command so parse() sets
+   it to commandInp */
+export const otherInp = 0, commandInp = 1, getposInp = 2, getdirInp = 3;
+
+function program_state() {
+    if (!game.program_state)
+        game.program_state = {};
+    return game.program_state;
+}
+
+// C ref: cmd.c pgetchar() -- courtesy of aeb@cwi.nl; the debug fuzzer
+// isn't ported
+async function pgetchar() {
+    return await nhgetch();
+}
+
+// C ref: cmd.c readchar_core() -- a key is 0..255; a meta key (M-c) is
+// the key with the 8th bit set; the readchar_queue, ^A do-again and
+// mouse clicks aren't ported (an EOF/NUL is read as ESC by nhgetch)
+async function readchar_core() {
+    let sym = await nhgetch(); /* nh_poskey() */
+
+    if (sym === 0x1b && game.iflags?.altmeta
+        && program_state().input_state !== otherInp) {
+        /* iflags.altmeta: treat two character ``ESC c'' as single `M-c' but
+           only when we're called by parse() [possibly via get_count()]
+           or getpos() [to support Alt+digit] or getdir() [for arrow keys
+           under curses] */
+        sym = await pgetchar();
+        if (sym === 0)
+            sym = 0x1b;
+        else if (sym !== 0x1b)
+            sym |= 0o200; /* force 8th bit on */
+    }
+
+    /* next readchar() will be for an ordinary char unless parse()
+       sets this back to non-zero */
+    program_state().input_state = otherInp;
+    return sym & 0xff;
+}
+
+// C ref: cmd.c readchar() -- get a character
+export async function readchar() {
+    return await readchar_core();
+}
+
+// C ref: cmd.c readchar_poskey() -- used by getpos() to accept mouse input
+// as well as keyboard input
+export async function readchar_poskey() {
+    program_state().input_state = getposInp;
+    return await readchar_core();
+}
+
+// C ref: cmd.c key2txt()
+export function key2txt(c) {
+    /* should probably switch to "SPC", "ESC", "RET"
+       since nethack's documentation uses ESC for <escape> */
+    if (c === 0x20)
+        return "<space>";
+    else if (c === 0x1b)
+        return "<esc>"; /* "<escape>" won't fit */
+    else if (c === 0x0a)
+        return "<enter>"; /* "<return>" won't fit */
+    else if (c === 0o177)
+        return "<del>"; /* "<delete>" won't fit */
+    return visctrl(c);
+}
+
 // C ref: cmd.c get_count()
 /* read a count (digits) and return the next non-digit key; the count
    goes into game[countfield] (C's 'count' output pointer) */
@@ -785,6 +840,7 @@ export async function get_count(allowchars, /* what comes after digits; if Null,
     /* this should be done in port code so that we have erase_char
        and kill_char available; we can at least fake erase_char */
     const STANDBY_erase_char = 0o177;
+    const save_input_state = program_state().input_state;
 
     game[countfield] = 0;
     for (;;) {
@@ -792,7 +848,10 @@ export async function get_count(allowchars, /* what comes after digits; if Null,
             key = inkey;
             inkey = 0;
         } else {
-            key = await nhgetch(); /* readchar() */
+            /* if readchar() has already been called in this loop, it will
+               have reset input_state; put that back to its previous value */
+            program_state().input_state = save_input_state;
+            key = await readchar();
         }
 
         if (key >= 0x30 && key <= 0x39) { /* digit(key) */
@@ -852,7 +911,9 @@ async function parse() {
     game.context.move = 1; /* assume next command will take game time */
     await flush_screen(1); /* Flush screen buffer. Put the cursor on the hero. */
 
-    /* program_state.input_state = commandInp: 'altmeta' isn't ported */
+    /* affects readchar() behavior for ESC iff 'altmeta' option is On;
+       is always reset to otherInp by readchar() */
+    program_state().input_state = commandInp;
 
     /* !gc.Cmd.num_pad: number_pad is off */
     foo = await get_count(null, 0, LARGEST_INT, 'command_count', GC_NOFLAGS);
@@ -1226,6 +1287,7 @@ export async function getdir(s) {
     let dirsym, is_mov;
 
     /* cmdq_pop(): queued directions aren't ported */
+    program_state().input_state = getdirInp;
     dirsym = await tty_yn_function((s && s[0] !== '^') ? s : "In what direction?",
                                    null, '\0');
     if (typeof dirsym === 'string')
