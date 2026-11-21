@@ -46,7 +46,7 @@ import {
     selection_clear, selection_iterate, l_selection_check,
 } from './selvar.js';
 import {
-    get_table_int_opt, get_table_str_opt, get_table_option, nhl_error,
+    get_table_int_opt, get_table_str, get_table_str_opt, get_table_option, nhl_error,
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
@@ -88,6 +88,8 @@ import { induced_align } from './dungeon.js';
 import { nhl_push_obj } from './nhlobj.js';
 import { bury_an_obj } from './dig.js';
 import { stock_room } from './shknam.js';
+import { make_engr_at, engr_at, del_engr_at } from './engrave.js';
+import { DUST, ENGRAVE, BURN, MARK, ENGR_BLOOD } from './const.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -858,7 +860,7 @@ function sel_set_ter(x, y, terr) {
     } else if (levl(x, y).typ === HWALL || levl(x, y).typ === IRONBARS) {
         levl(x, y).horizontal = true;
     } else if (levl(x, y).typ === CLOUD) {
-        /* del_engr_at(x, y): no engravings exist yet */
+        del_engr_at(x, y);
     }
 }
 
@@ -2999,6 +3001,60 @@ export function cvt_to_relcoord(c) {
     }
 }
 
+// C ref: sp_lev.c lspo_engraving()
+/* engraving({ x = 1, y = 1, type="burn", text="Foo" }); */
+/* engraving({ coord={1, 1}, type="burn", text="Foo" }); */
+/* engraving({x,y}, "engrave", "Foo"); */
+export function lspo_engraving(...args) {
+    const engrtypes = ['dust', 'engrave', 'burn', 'mark', 'blood'];
+    const engrtypes2i = [DUST, ENGRAVE, BURN, MARK, ENGR_BLOOD, 0];
+    let etyp = DUST;
+    let txt = null;
+    let ecoord;
+    let x = -1, y = -1;
+    const argc = args.length;
+    let guardobjs = FALSE;
+    let wipeout = TRUE;
+
+    create_des_coder();
+
+    if (argc === 1) {
+        const tbl = args[0];
+        if (lua_type(tbl) !== LUA_TTABLE)
+            nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+        ({ x, y } = get_table_xy_or_coord(tbl));
+        etyp = engrtypes2i[get_table_option(tbl, 'type', 'engrave', engrtypes)];
+        txt = get_table_str(tbl, 'text');
+        wipeout = get_table_boolean_opt(tbl, 'degrade', TRUE);
+        guardobjs = get_table_boolean_opt(tbl, 'guardobjects', FALSE);
+    } else if (argc === 3) {
+        const c = get_coord(args[0]);
+        x = c ? c.x : 0;
+        y = c ? c.y : 0;
+        etyp = engrtypes2i[luaL_checkoption(args[1], 'engrave', engrtypes)];
+        txt = luaL_checkstring(args[2]);
+    } else {
+        nhl_error(null, 'Wrong parameters');
+    }
+
+    if (x === -1 && y === -1)
+        ecoord = SP_COORD_PACK_RANDOM(0);
+    else
+        ecoord = SP_COORD_PACK(x, y);
+
+    const c = { x, y };
+    get_location_coord(c, DRY, game.coder.croom, ecoord);
+    x = c.x, y = c.y;
+    make_engr_at(x, y, txt, null, 0, etyp);
+    const ep = engr_at(x, y);
+    if (ep) {
+        ep.guardobjects = guardobjs;
+        ep.nowipeout = !wipeout;
+    }
+    return 0;
+}
+
 // C ref: sp_lev.c l_register_des() — the des_functions[] names. The
 // ported ones are installed below; the others raise a Lua error when called.
 const sp_lev_des_names = [
@@ -3035,5 +3091,6 @@ export function l_register_des(L) {
     des.feature = lspo_feature;
     des.gas_cloud = lspo_gas_cloud;
     des.replace_terrain = lspo_replace_terrain;
+    des.engraving = lspo_engraving;
     L.globals.des = des;
 }
