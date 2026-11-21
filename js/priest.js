@@ -18,8 +18,8 @@ import { makemon, mongets, set_malign, m_at, MON_AT } from './makemon.js';
 import { mkobj, curse, uncurse, SPBOOK_no_NOVEL } from './mkobj.js';
 import { mpickobj } from './steal.js';
 import { which_armor } from './worn.js';
+import { rloc_mklev } from './teleport.js';
 import { mon_learns_traps } from './mondata.js';
-import { rloc } from './teleport.js';
 import { pm_good_location } from './sp_lev.js';
 import { mfndpos } from './mon.js';
 import { mon_allowflags } from './mon.js';
@@ -70,7 +70,10 @@ export function mon_aligntyp(mon) {
 
 // C ref: priest.c priestini()
 /* exclusively for mktemple() */
-export async function priestini(
+// Also called by sp_lev.c create_altar() for temple shrines, from the
+// synchronous level-script code, so this port is synchronous; see
+// rloc_mklev() for the "insurance" rloc().
+export function priestini(
     lvl,
     sroom,
     sx, sy,
@@ -93,7 +96,7 @@ export async function priestini(
         px = sx, py = sy;
 
     if (MON_AT(px, py))
-        await rloc(m_at(px, py), RLOC_NOMSG); /* insurance */
+        rloc_mklev(m_at(px, py), RLOC_NOMSG); /* rloc(): insurance */
 
     priest = makemon(prim, px, py, MM_EPRI);
     if (priest) {

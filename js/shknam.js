@@ -17,7 +17,8 @@ import {
     SPE_NOVEL, NUM_OBJECTS, VEGGY, EGG, TIN, CORPSE, objects, OBJ_NAME,
 } from './objects.js';
 import { mons, PM_SHOPKEEPER, S_MIMIC, PM_LICHEN } from './monsters.js';
-import { makemon, mkmonmoney, mongets, set_malign, m_at, mkclass } from './makemon.js';
+import { makemon, mkmonmoney, mongets, set_malign, m_at, MON_AT, mkclass } from './makemon.js';
+import { RLOC_NOMSG } from './const.js';
 import { mkobj_at, mksobj_at, set_tin_variety } from './mkobj.js';
 import { vegetarian } from './eat.js';
 import { distmin, highc } from './hacklib.js';
@@ -27,6 +28,7 @@ import { noit_mon_nam } from './do_name.js';
 import { ledger_no, Is_special, assign_level, on_level, depth } from './dungeon.js';
 import { newsym } from './display.js';
 import { cvt_sdoor_to_door } from './detect.js';
+import { rloc_mklev } from './teleport.js';
 
 // C ref: mkroom.h VEGETARIAN_CLASS
 const VEGETARIAN_CLASS = MAXOCLASSES + 1;
@@ -372,8 +374,8 @@ function shkinit(shp, sroom) {
         return -1;
     const sx = s.x, sy = s.y;
 
-    if (m_at(sx, sy))
-        throw new Error('shkinit(): rloc() of a monster on the shopkeeper spot not ported yet');
+    if (MON_AT(sx, sy))
+        rloc_mklev(m_at(sx, sy), RLOC_NOMSG); /* rloc(): insurance */
 
     /* now initialize the shopkeeper monster structure */
     const shk = makemon(mons[PM_SHOPKEEPER], sx, sy, MM_ESHK);

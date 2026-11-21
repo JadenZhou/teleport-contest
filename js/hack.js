@@ -49,6 +49,8 @@ import { COIN_CLASS, BOULDER, PICK_AXE, DWARVISH_MATTOCK, STATUE, WEAPON_CLASS,
          TOOL_CLASS, objects } from './objects.js';
 import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { u_on_newpos } from './mklev.js';
+import { inside_room } from './sp_lev.js';
+import { record_achievement } from './do.js';
 import { doopen_indir } from './lock.js';
 import { do_attack } from './uhitm.js';
 import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
@@ -86,7 +88,6 @@ import { midnight } from './calendar.js';
 import { Hello } from './role.js';
 import { search_special } from './sounds.js';
 import { wake_msg } from './mon.js';
-import { inside_room } from './sp_lev.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
@@ -880,6 +881,29 @@ export function move_update(newlev) {
     u.ushops_left = left;
 }
 
+// C ref: hack.c in_town()
+export function in_town(x, y) {
+    let has_subrooms = false;
+
+    if (!game.level.flags.has_town)
+        return false;
+
+    /*
+     * See if (x,y) is in a room with subrooms, if so, assume it's the
+     * town.  If there are no subrooms, the whole level is in town.
+     */
+    for (const sroom of game.level.rooms) {
+        if (!sroom || !(sroom.hx > 0)) break;
+        if (sroom.nsubrooms > 0) {
+            has_subrooms = true;
+            if (inside_room(sroom, x, y))
+                return true;
+        }
+    }
+
+    return !has_subrooms;
+}
+
 // C ref: hack.c check_special_room()
 /* possibly deliver a one-time room entry message; the special room
    messages other than shops aren't ported yet */
@@ -892,10 +916,22 @@ export async function check_special_room(newlev) {
     if (u.ushops0)
         await u_left_shop(u.ushops_left, newlev);
 
-    /* the 'entered Mine Town' achievement */
+    /*
+     * Check for attaining 'entered Mine Town' achievement.
+     * Most of the Mine Town variations have the town in one large room
+     * containing a bunch of subrooms; we check for entering that large
+     * room.  However, two of the variations cover the whole level rather
+     * than include a room with subrooms.  We need to check for town entry
+     * before the possible early return for not having entered a room in
+     * case we have arrived in the town but have not entered any room.
+     */
     if (game.level.flags?.has_town && !game.context?.achieveo?.minetn_reached
-        && u.uz.dnum === game.dungeon_topology.d_mines_dnum) /* In_mines() */
-        throw new Error('check_special_room(): in_town() not ported yet');
+        && u.uz.dnum === game.dungeon_topology.d_mines_dnum /* In_mines() */
+        && in_town(u.ux, u.uy)) {
+        record_achievement('ACH_TOWN');
+        if (!game.context.achieveo) game.context.achieveo = {};
+        game.context.achieveo.minetn_reached = true;
+    }
 
     if (!u.uentered && !u.ushops_entered) /* implied by newlev */
         return; /* no entrance messages necessary */
