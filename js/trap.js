@@ -605,7 +605,7 @@ export function u_locomotion(def) {
 }
 
 // C ref: mondata.c locomotion()
-function locomotion(ptr, def) {
+export function locomotion(ptr, def) {
     const capitalize = (def[0] === def[0].toUpperCase());
     const levitate = ["float", "Float", "wobble", "Wobble"];
     const flys = ["fly", "Fly", "flutter", "Flutter"];

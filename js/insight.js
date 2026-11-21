@@ -337,7 +337,7 @@ function temp_resist(propidx) {
 }
 
 /* C ref: dungeon.c has_ceiling() */
-function has_ceiling(lev) {
+export function has_ceiling(lev) {
     /* FIXME: some (most? all?) of the quest home levels are conceptually
        above ground and don't have ceilings outside of their buildings
        but we don't presently check for that */

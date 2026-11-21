@@ -24,6 +24,10 @@ import { check_special_room } from './hack.js';
 import { pickup } from './pickup.js';
 import { keepdogs, losedogs } from './dog.js';
 import { kill_genocided_monsters } from './mon.js';
+import { savelev } from './save.js';
+import { create_levelfile, level_info } from './files.js';
+import { close_nhfile } from './sfbase.js';
+import { LFILE_EXISTS, VISITED, WRITING, FREEING } from './const.js';
 import { m_at } from './makemon.js';
 import { mklev, place_lregion } from './mklev.js';
 import { vision_reset } from './vision.js';
@@ -376,6 +380,29 @@ export async function deferred_goto() {
     game.dfr_post_msg = null;
 }
 
+// C ref: do.c currentlevel_rewrite()
+async function currentlevel_rewrite() {
+    /* since level change might be a bit slow, flush any buffered screen
+     *  output (like "you fall through a trap door") */
+    /* mark_synch(): the tty port writes output as it goes */
+
+    const whynot = { v: '' };
+    const nhfp = create_levelfile(ledger_no(game.u.uz), whynot);
+    if (!nhfp) {
+        /*
+         * This is not quite impossible: e.g., we may have
+         * exceeded our quota. If that is the case then we
+         * cannot leave this level, and cannot save either.
+         * Another possibility is that the directory was not
+         * writable.
+         */
+        await pline(whynot.v);
+        return null;
+    }
+
+    return nhfp;
+}
+
 // C ref: do.c goto_level()
 export async function goto_level(newlevel, at_stairs, falling, portal) {
     const g = game;
@@ -430,8 +457,9 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* tethered movement makes level change while trapped feasible */
     /* u.utrap && u.utraptype == TT_BURIEDBALL: punishment not ported */
 
-    /* nhfp = currentlevel_rewrite(): the level "file" is kept in memory
-       (game.level_files), since js/ can't do file I/O */
+    const nhfp = await currentlevel_rewrite();
+    if (!nhfp)
+        return;
 
     /* maybe_reset_pick(), reset_trapset(): no lock-picking or trap-setting
        context is ported yet */
@@ -460,9 +488,12 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
        vision state is rebuilt by vision_reset() on arrival */
 
     /*
-     * Save the level we're leaving.  C does savelev() into a level file;
-     * js/ can't do file I/O, so the level is kept in memory instead
-     * (game.level_files[ledger]).
+     * Save the level we're leaving.  If we're entering the endgame,
+     * we can get rid of all existing levels because they cannot be
+     * reached any more.  We still need to use savelev()'s cleanup
+     * for the level being left, to recover dynamic memory in use and
+     * to avoid dangling timers and light sources.
+     * (The level "file" is an in-memory record list; see files.js.)
      */
     const cant_go_back = ((newdungeon && In_endgame(newlevel))
                           || leaving_tutorial);
@@ -471,13 +502,19 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         for (let m = g.fmon; m; m = m.nmon)
             if (!(m.mhp <= 0))
                 m.mlstmv = g.moves;
+        /* if (nhfp->structlevel) bufon(nhfp->fd): no buffering to do */
+    } else {
+        /* free_luathemes(): only reachable via the endgame/tutorial
+           entry, which throws above */
+        throw new Error('goto_level(): free_luathemes() not ported yet');
     }
-    /* savelev(nhfp, ledger_no(&u.uz)) -- in-memory stand-in */
-    if (!g.level_files) g.level_files = {};
-    g.level_files[ledger_no(u.uz)] = {
-        level: g.level, fmon: g.fmon, stairs: g.stairs,
-        rooms: g.level?.rooms,
-    };
+    const save_mode = nhfp.mode;
+    nhfp.mode = cant_go_back ? FREEING : (WRITING | FREEING);
+    savelev(nhfp, ledger_no(u.uz));
+    nhfp.mode = save_mode;
+    close_nhfile(nhfp);
+    /* if (cant_go_back): discarding unreachable levels is only reachable
+       via the endgame/tutorial entry, which throws above */
 
     /* Is_rogue_level(newlevel) || Is_rogue_level(&u.uz): assign_graphics():
        the rogue level isn't ported yet */
@@ -504,8 +541,12 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     g.updest = { lx: 0, ly: 0, hx: 0, hy: 0, nlx: 0, nly: 0, nhx: 0, nhy: 0 };
     g.dndest = { lx: 0, ly: 0, hx: 0, hy: 0, nlx: 0, nly: 0, nhx: 0, nhy: 0 };
 
-    if (!g.level_files[new_ledger]) {
+    if (!(level_info(new_ledger).flags & LFILE_EXISTS)) {
         /* entering this level for first time; make it now */
+        if (level_info(new_ledger).flags & VISITED) {
+            /* impossible("goto_level: returning to discarded level?") */
+            level_info(new_ledger).flags &= ~VISITED;
+        }
         await mklev();
         /* new = TRUE; familiar = bones_include_name(svp.plname) */
     } else {

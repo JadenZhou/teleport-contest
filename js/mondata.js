@@ -6,6 +6,10 @@
 
 import * as M from './monsters.js';
 import { game } from './gstate.js';
+import { ROLL_FROM } from './rng.js';
+import { M_SEEN_NOTHING, M_SEEN_MAGR, M_SEEN_FIRE, M_SEEN_COLD,
+         M_SEEN_SLEEP, M_SEEN_DISINT, M_SEEN_ELEC, M_SEEN_POISON,
+         M_SEEN_ACID } from './const.js';
 import { strncmpi, strcmpi, strstri } from './hacklib.js';
 import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
          FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
@@ -644,4 +648,33 @@ export function name_to_monplus(in_str, remainder_p, gender_name_var) {
             gender_name_var.v = matchgend;
     }
     return mntmp;
+}
+
+// C ref: mondata.c cvt_adtyp_to_mseenres()
+/* Convert attack damage type AD_foo to M_SEEN_bar */
+export function cvt_adtyp_to_mseenres(adtyp) {
+    switch (adtyp) {
+    case M.AD_MAGM: return M_SEEN_MAGR;
+    case M.AD_FIRE: return M_SEEN_FIRE;
+    case M.AD_COLD: return M_SEEN_COLD;
+    case M.AD_SLEE: return M_SEEN_SLEEP;
+    case M.AD_DISN: return M_SEEN_DISINT;
+    case M.AD_ELEC: return M_SEEN_ELEC;
+    case M.AD_DRST: return M_SEEN_POISON;
+    case M.AD_ACID: return M_SEEN_ACID;
+    /* M_SEEN_REFL has no corresponding AD_foo type */
+    default: return M_SEEN_NOTHING;
+    }
+}
+
+// C ref: mondata.c get_atkdam_type()
+/* Return the AD_ damage type for an attack; random breath picks one */
+export function get_atkdam_type(adtyp) {
+    if (adtyp === M.AD_RBRE) {
+        const rnd_breath_typ = [
+            M.AD_MAGM, M.AD_FIRE, M.AD_COLD, M.AD_SLEE,
+            M.AD_DISN, M.AD_ELEC, M.AD_DRST, M.AD_ACID ];
+        return ROLL_FROM(rnd_breath_typ);
+    }
+    return adtyp;
 }

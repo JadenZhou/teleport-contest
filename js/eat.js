@@ -212,7 +212,7 @@ function is_fainted() {
 }
 
 // C ref: youprop.h Unaware -- (multi < 0 && (unconscious() || is_fainted()))
-function Unaware() {
+export function Unaware() {
     return game.multi < 0 && (unconscious() || is_fainted());
 }
 
