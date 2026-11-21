@@ -58,7 +58,7 @@ import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
 import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon } from './display.js';
-import { does_block, block_point } from './vision.js';
+import { does_block, block_point, cansee } from './vision.js';
 import { set_apparxy } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
@@ -1497,10 +1497,6 @@ export function newmonhp(mon, mndx) {
         mon.mhp = mon.mhpmax;
     }
 }
-
-// C ref: display.h cansee() -- vision is not ported; nothing is seen
-// during level creation
-function cansee(x, y) { return false; }
 
 // C ref: makemon.c makemon_rnd_goodpos()
 function makemon_rnd_goodpos(mon, gpflags, cc) {
