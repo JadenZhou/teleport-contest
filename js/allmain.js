@@ -29,6 +29,7 @@ import { init_dungeons, depth, find_level, In_hell } from './dungeon.js';
 import { ask_do_tutorial } from './options.js';
 import { phase_of_the_moon, friday_13th } from './calendar.js';
 import { change_luck } from './attrib.js';
+import { set_wear } from './do_wear.js';
 import { FULL_MOON, NEW_MOON, COLNO } from './const.js';
 import { mons, monst_globals_init, LOW_PM, NUMMONS, G_NOCORPSE } from './monsters.js';
 import { decl_globals_init } from './decl.js';
@@ -748,8 +749,7 @@ export async function moveloop_preamble(resuming) {
     if (!resuming) { /* new game */
         g.program_state.beyond_savefile_load = 1; /* for TTY_PERM_INVENT */
         g.context.rndencode = rnd(9000);
-        /* set_wear((struct obj *) 0): side-effects of starting gear --
-           not ported yet */
+        await set_wear(null); /* for side-effects of starting gear */
         reset_justpicked(g.invent);
         await pickup(1); /* autopickup at initial location */
         /* only matters if someday a character is able to start with

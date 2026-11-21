@@ -1016,6 +1016,40 @@ function Ring_on(obj) {
     }
 }
 
+// C ref: do_wear.c set_wear() -- called in moveloop()'s prologue to set
+// side-effects of worn start-up items; also used by poly_obj() when a
+// worn item gets transformed
+export async function set_wear(obj) { /* if Null, do all worn items; otherwise just obj */
+    const g = game;
+    g.initial_don = !obj;
+
+    if (!obj ? !!g.ublindf : (obj === g.ublindf))
+        await Blindf_on(g.ublindf);
+    if (!obj ? !!g.uright : (obj === g.uright))
+        Ring_on(g.uright);
+    if (!obj ? !!g.uleft : (obj === g.uleft))
+        Ring_on(g.uleft);
+    if (!obj ? !!g.uamul : (obj === g.uamul))
+        await Amulet_on(g.uamul);
+
+    if (!obj ? !!g.uarmu : (obj === g.uarmu))
+        await Shirt_on();
+    if (!obj ? !!g.uarm : (obj === g.uarm))
+        await Armor_on();
+    if (!obj ? !!g.uarmc : (obj === g.uarmc))
+        await Cloak_on();
+    if (!obj ? !!g.uarmf : (obj === g.uarmf))
+        await Boots_on();
+    if (!obj ? !!g.uarmg : (obj === g.uarmg))
+        await Gloves_on();
+    if (!obj ? !!g.uarmh : (obj === g.uarmh))
+        await Helmet_on();
+    if (!obj ? !!g.uarms : (obj === g.uarms))
+        await Shield_on();
+
+    g.initial_don = false;
+}
+
 // C ref: do_wear.c already_wearing(), already_wearing2()
 async function already_wearing(cc) {
     await You(`are already wearing ${cc}${(cc === c_that_) ? '!' : '.'}`);
