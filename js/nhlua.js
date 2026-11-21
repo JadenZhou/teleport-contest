@@ -47,6 +47,9 @@ import { quest_level_lua_files } from './questlev_lua.js';
 import { soko_lua_files } from './soko_lua.js';
 import { tower_lua_files } from './tower_lua.js';
 import { mines_lua_files } from './mines_lua.js';
+import { valley_lua_files } from './valley_lua.js';
+import { medusa_lua_files } from './medusa_lua.js';
+import { castle_lua_files } from './castle_lua.js';
 import { name_to_mon } from './mondata.js';
 import { l_register_des, get_coord, cvt_to_abscoord } from './sp_lev.js';
 import { l_selection_register } from './selvar.js';
@@ -506,6 +509,12 @@ function nhl_lua_file(fname) {
         return tower_lua_files[fname];
     if (Object.hasOwn(mines_lua_files, fname))
         return mines_lua_files[fname];
+    if (Object.hasOwn(valley_lua_files, fname))
+        return valley_lua_files[fname];
+    if (Object.hasOwn(medusa_lua_files, fname))
+        return medusa_lua_files[fname];
+    if (Object.hasOwn(castle_lua_files, fname))
+        return castle_lua_files[fname];
     return null;
 }
 

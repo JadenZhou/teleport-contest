@@ -210,6 +210,7 @@ export function place_lregion(lx, ly, hx, hy, nlx, nly, nhx, nhy, rtype, lev) {
          */
         if (rtype === LR_BRANCH && game.level.nroom) {
             place_branch(Is_branchlev(game.u.uz), 0, 0);
+            return;
         }
 
         lx = 1; /* column 0 is not used */

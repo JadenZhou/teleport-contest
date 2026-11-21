@@ -126,8 +126,19 @@ function uncommon(mndx) {
 function align_shift(ptr) {
     let alshift;
 
-    /* C caches Is_special(&u.uz) per value of moves */
-    const lev = Is_special(game.u.uz);
+    /* C: static oldmoves = 0L (!= 1, the starting value of moves) and
+       static s_level *lev -- Is_special(&u.uz) is looked up again only
+       when moves has changed since the last call, so on a level change
+       within one move 'lev' is still the previous level's */
+    if (game.align_shift_oldmoves === undefined) {
+        game.align_shift_oldmoves = 0;
+        game.align_shift_lev = null;
+    }
+    if (game.align_shift_oldmoves !== game.moves) {
+        game.align_shift_lev = Is_special(game.u.uz);
+        game.align_shift_oldmoves = game.moves;
+    }
+    const lev = game.align_shift_lev;
     switch ((lev) ? lev.flags.align : game.dungeons[game.u.uz.dnum].flags.align) {
     default: /* just in case */
     case AM_NONE:
@@ -1228,10 +1239,15 @@ export function mkmonmoney(mtmp, amount) {
     }
 }
 
-// C ref: objclass.h ARM_BONUS()
+// C ref: hack.h ARM_BONUS()
 function ARM_BONUS(obj) {
     return objects[obj.otyp].a_ac + (obj.spe || 0)
-           - Math.min(obj.oeroded || 0, objects[obj.otyp].a_ac);
+           - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac);
+}
+
+// C ref: obj.h greatest_erosion()
+function greatest_erosion(otmp) {
+    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
 }
 
 // C ref: makemon.c m_initinv()

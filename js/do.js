@@ -8,10 +8,13 @@
 // ported yet.
 
 import { game } from './gstate.js';
-import { pline, docrt, flush_screen } from './display.js';
+import { pline, pline_The, docrt, flush_screen } from './display.js';
+import { You_hear } from './sounds.js';
+import { ACH_HELL } from './const.js';
 import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
     In_hell, builds_up, at_dgn_entrance, level_difficulty,
+    In_W_tower,
 } from './dungeon.js';
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR } from './const.js';
 import * as O from './objects.js';
@@ -416,11 +419,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
        level isn't ported) and never familiar (no bones files);
        dist, do_fall_dmg: falling isn't ported */
     const prev_temperature = g.level.flags?.temperature || 0;
-    /* was_in_W_tower = In_W_tower(u.ux, u.uy, &u.uz): the Wizard's Tower
-       levels are only in Gehennom, which isn't ported yet */
-    if (In_hell(u.uz))
-        throw new Error('goto_level(): In_W_tower() not ported yet');
-    const was_in_W_tower = false;
+    const was_in_W_tower = In_W_tower(u.ux, u.uy, u.uz);
 
     if (dunlev(newlevel) > dunlevs_in_dungeon(newlevel))
         newlevel.dlevel = dunlevs_in_dungeon(newlevel);
@@ -678,11 +677,19 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     await deliver_splev_message();
 
     /* Check whether we just entered Gehennom. */
-    if (!In_hell(u.uz0) && In_hell(u.uz))
-        throw new Error('goto_level(): entering Gehennom not ported yet');
-    /* in case we've managed to bypass the Valley's stairway down:
-       if (Inhell && !Is_valley(&u.uz)) u.uevent.gehennom_entered = 1;
-       -- unreachable, In_hell() throws above */
+    if (!In_hell(u.uz0) && In_hell(u.uz)) {
+        if (on_level(u.uz, g.dungeon_topology.d_valley_level)) { /* Is_valley() */
+            await You("arrive at the Valley of the Dead...");
+            await pline_The("odor of burnt flesh and decay pervades the air.");
+            /* Soundeffect(se_groans_and_moans, 25) */
+            await You_hear("groans and moans everywhere.");
+        }
+
+        record_achievement(ACH_HELL); /* reached Gehennom */
+    }
+    /* in case we've managed to bypass the Valley's stairway down */
+    if (In_hell(u.uz) && !on_level(u.uz, g.dungeon_topology.d_valley_level))
+        u.uevent.gehennom_entered = 1;
 
     /* familiar is bones_include_name(plname): bones files aren't ported,
        so a new level is never familiar */

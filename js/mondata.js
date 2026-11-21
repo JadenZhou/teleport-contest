@@ -15,7 +15,7 @@ import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
          FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
          ACID_RES, STONE_RES, DRAIN_RES, ANTIMAGIC, BLND_RES, ALL_TRAPS,
          NO_TRAP, W_ARMOR, W_ACCESSORY, W_WEP, W_SWAPWEP, W_ARMC, W_ARM,
-         W_ARMH, BLINDED,
+         W_ARMH, BLINDED, G_GENOD,
        } from './const.js';
 import { objects, ALCHEMY_SMOCK, WEAPON_CLASS, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
@@ -341,6 +341,15 @@ export function defended(mon, adtyp) {
         throw new Error('defended(): defends() not ported yet');
 
     return false;
+}
+
+// C ref: mondata.c poly_when_stoned()
+export function poly_when_stoned(ptr) {
+    /* non-stone golems turn into stone golems unless latter is genocided */
+    return (ptr.mlet === M.S_GOLEM /* is_golem(ptr) */
+            && ptr !== M.mons[M.PM_STONE_GOLEM]
+            && !((game.mvitals?.[M.PM_STONE_GOLEM]?.mvflags || 0) & G_GENOD));
+    /* allow G_EXTINCT */
 }
 
 // C ref: monst.h mon_resistancebits()
