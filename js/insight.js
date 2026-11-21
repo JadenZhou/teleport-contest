@@ -512,7 +512,7 @@ const barehands_or_martial = [
 ];
 /* C ref: skills.h martial_bonus() */
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
-function P_NAME(type) {
+export function P_NAME(type) {
     return (skill_names_indices[type] > 0)
            ? OBJ_NAME(objects[skill_names_indices[type]])
            : (type === P_BARE_HANDED_COMBAT)
@@ -582,7 +582,7 @@ export function weapon_descr(obj) {
 
 // C ref: weapon.c skill_level_name()
 /* the skill level name */
-function skill_level_name(skill) {
+export function skill_level_name(skill) {
     let ptr;
 
     switch (P_SKILL(skill)) {
@@ -619,7 +619,7 @@ export function skill_name(skill) {
 
 // C ref: weapon.c slots_required()
 /* return the # of slots required to advance the skill */
-function slots_required(skill) {
+export function slots_required(skill) {
     const tmp = P_SKILL(skill);
 
     /* The more difficult the training, the more slots it takes. */

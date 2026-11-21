@@ -40,7 +40,15 @@ import { mon_hates_silver, mon_hates_blessings } from './mondata.js';
 import { ACURR } from './attrib.js';
 import { adj_lev } from './makemon.js';
 import { handle_tip } from './hack.js';
-import { can_advance } from './insight.js';
+import { can_advance, P_NAME, skill_level_name, slots_required } from './insight.js';
+import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { tty_create_nhwindow, tty_start_menu, tty_add_menu, add_menu_str,
+         tty_end_menu, tty_select_menu, tty_destroy_nhwindow,
+         tty_yn_function } from './wintty.js';
+import { add_menu_heading } from './invent.js';
+import { P_SKILL_LIMIT, P_FIRST_SPELL, P_FIRST_H_TO_H, P_LAST_H_TO_H,
+         P_FIRST_WEAPON, NHW_MENU, MENU_BEHAVE_STANDARD, PICK_NONE, PICK_ONE,
+         MAXULEV, MENU_ITEMFLAGS_NONE, ECMD_OK } from './const.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -1109,6 +1117,220 @@ export async function use_skill(skill, degree) {
         if (!advance_before && can_advance(skill, false))
             await give_may_advance_msg(skill);
     }
+}
+
+// C ref: weapon.c could_advance()
+/* return true if this skill could be advanced if more slots were available */
+function could_advance(skill) {
+    if (P_RESTRICTED(skill)
+        || P_SKILL(skill) >= P_MAX_SKILL(skill)
+        || (game.u.skills_advanced || 0) >= P_SKILL_LIMIT)
+        return false;
+
+    return (P_ADVANCE(skill)
+            >= practice_needed_to_advance(P_SKILL(skill)));
+}
+
+// C ref: weapon.c peaked_skill()
+/* return true if this skill has reached its maximum and there's been enough
+   practice to become eligible for the next step if that had been possible */
+function peaked_skill(skill) {
+    if (P_RESTRICTED(skill))
+        return false;
+
+    return (P_SKILL(skill) >= P_MAX_SKILL(skill)
+            && (P_ADVANCE(skill)
+                >= practice_needed_to_advance(P_SKILL(skill))));
+}
+
+// C ref: weapon.c skill_advance()
+async function skill_advance(skill) {
+    const u = game.u;
+    u.weapon_slots = (u.weapon_slots || 0) - slots_required(skill);
+    set_P_SKILL(skill, P_SKILL(skill) + 1);
+    if (!u.skill_record)
+        u.skill_record = [];
+    u.skills_advanced = u.skills_advanced || 0;
+    u.skill_record[u.skills_advanced++] = skill;
+    /* subtly change the advance message to indicate no more advancement */
+    await pline(`You are now ${P_SKILL(skill) >= P_MAX_SKILL(skill) ? "most" : "more"
+                } skilled in ${P_NAME(skill)}.`);
+
+    /* wizards discover spellbook IDs depending on spell 'school' skill limits;
+       this allows them to successfully write books for unknown spells without
+       the Luck bias they used to have over other roles */
+    if (skill >= P_FIRST_SPELL && skill <= P_LAST_SPELL)
+        skill_based_spellbook_id();
+}
+
+/* C ref: weapon.c skill_ranges[] */
+const skill_ranges = [
+    { first: P_FIRST_H_TO_H, last: P_LAST_H_TO_H, name: "Fighting Skills" },
+    { first: P_FIRST_WEAPON, last: P_LAST_WEAPON, name: "Weapon Skills" },
+    { first: P_FIRST_SPELL, last: P_LAST_SPELL, name: "Spellcasting Skills" },
+];
+
+/* C ref: wizard (flags.debug) */
+function wizard() { return !!game.flags?.debug; }
+/* C ref: printf "%-*s" and "%5d" field widths */
+function padr(s, w) { return s.length >= w ? s : s + ' '.repeat(w - s.length); }
+function padl(s, w) { s = String(s); return s.length >= w ? s : ' '.repeat(w - s.length) + s; }
+
+// C ref: weapon.c add_skills_to_menu()
+/* write a list of skills onto the given menu
+
+   if selectable is set, give selection letters for skills that can be
+   advanced and leave room for them on skills that can't be advanced */
+function add_skills_to_menu(win, selectable, speedy) {
+    let i, len, longest;
+    let buf, prefix;
+    const clr = NO_COLOR;
+
+    /* Find the longest skill name. */
+    for (longest = 0, i = 0; i < P_NUM_SKILLS; i++) {
+        if (P_RESTRICTED(i))
+            continue;
+        if ((len = P_NAME(i).length) > longest)
+            longest = len;
+    }
+
+    /* List the skills, making ones that could be advanced selectable if
+       selectable is set.  List the miscellaneous skills first.  Possible
+       future enhancement: list spell skills before weapon skills for
+       spellcaster roles. */
+    for (let pass = 0; pass < skill_ranges.length; pass++)
+        for (i = skill_ranges[pass].first; i <= skill_ranges[pass].last;
+             i++) {
+            /* Print headings for skill types */
+            if (i === skill_ranges[pass].first)
+                add_menu_heading(win, skill_ranges[pass].name);
+
+            if (P_RESTRICTED(i))
+                continue;
+            /*
+             * Sigh, this assumes a monospaced font unless
+             * iflags.menu_tab_sep is set in which case it puts
+             * tabs between columns.
+             * The 12 is the longest skill level name.
+             * The "    " is room for a selection letter and dash, "a - ".
+             */
+            if (!selectable)
+                prefix = "";
+            else if (can_advance(i, speedy))
+                prefix = ""; /* will be preceded by menu choice */
+            else if (could_advance(i))
+                prefix = "  * ";
+            else if (peaked_skill(i))
+                prefix = "  # ";
+            else
+                prefix = "    ";
+            const sklnambuf = skill_level_name(i);
+            if (wizard()) {
+                if (!game.iflags.menu_tab_sep)
+                    buf = ` ${prefix}${padr(P_NAME(i), longest)} ${padr(sklnambuf, 12)} ${
+                        padl(P_ADVANCE(i), 5)}(${
+                        padl(practice_needed_to_advance(P_SKILL(i)), 4)})`;
+                else
+                    buf = ` ${prefix}${P_NAME(i)}\t${sklnambuf}\t${
+                        padl(P_ADVANCE(i), 5)}(${
+                        padl(practice_needed_to_advance(P_SKILL(i)), 4)})`;
+            } else {
+                if (!game.iflags.menu_tab_sep)
+                    buf = ` ${prefix} ${padr(P_NAME(i), longest)} [${sklnambuf}]`;
+                else
+                    buf = ` ${prefix}${P_NAME(i)}\t[${sklnambuf}]`;
+            }
+            const any = (selectable && can_advance(i, speedy)) ? i + 1 : 0;
+            tty_add_menu(win, null, any, '', '', ATR_NONE, clr, buf,
+                         MENU_ITEMFLAGS_NONE);
+        }
+}
+
+/* C ref: hack.h plur() */
+function plur(x) { return (x === 1) ? "" : "s"; }
+
+// C ref: weapon.c enhance_weapon_skill()
+/*
+ * The `#enhance' extended command.  What we _really_ would like is
+ * to keep being able to pick things to advance until we couldn't any
+ * more.  This is currently not possible -- the menu code has no way
+ * to call us back for instant action.  Even if it did, we would also need
+ * to be able to update the menu since selecting one item could make
+ * others unselectable.
+ */
+export async function enhance_weapon_skill() {
+    const u = game.u;
+    let i, n, to_advance, eventually_advance, maxxed_cnt;
+    let buf;
+    let speedy = false;
+
+    /* player knows about #enhance, don't show tip anymore */
+    game.context.tips = (game.context.tips || 0) | (1 << TIP_ENHANCE);
+
+    if (wizard() && await tty_yn_function("Advance skills without practice?",
+                                          "yn", 'n') === 'y')
+        speedy = true;
+
+    do {
+        /* count advanceable skills */
+        to_advance = eventually_advance = maxxed_cnt = 0;
+        for (i = 0; i < P_NUM_SKILLS; i++) {
+            if (P_RESTRICTED(i))
+                continue;
+            if (can_advance(i, speedy))
+                to_advance++;
+            else if (could_advance(i))
+                eventually_advance++;
+            else if (peaked_skill(i))
+                maxxed_cnt++;
+        }
+
+        const win = tty_create_nhwindow(NHW_MENU);
+        tty_start_menu(win, MENU_BEHAVE_STANDARD);
+
+        /* start with a legend if any entries will be annotated
+           with "*" or "#" below */
+        if (eventually_advance > 0 || maxxed_cnt > 0) {
+            if (eventually_advance > 0) {
+                buf = `(Skill${plur(eventually_advance)} flagged by "*" may be enhanced ${
+                    (u.ulevel < MAXULEV)
+                        ? "when you're more experienced"
+                        : "if skill slots become available"}.)`;
+                add_menu_str(win, buf);
+            }
+            if (maxxed_cnt > 0) {
+                buf = `(Skill${plur(maxxed_cnt)} flagged by "#" cannot be enhanced any further.)`;
+                add_menu_str(win, buf);
+            }
+            add_menu_str(win, "");
+        }
+
+        add_skills_to_menu(
+            win, to_advance + eventually_advance + maxxed_cnt > 0, speedy);
+
+        buf = (to_advance > 0) ? "Pick a skill to advance:"
+                               : "Current skills:";
+        if (wizard() && !speedy)
+            buf += `  (${u.weapon_slots || 0} slot${plur(u.weapon_slots || 0)} available)`;
+        tty_end_menu(win, buf);
+        const res = await tty_select_menu(win, to_advance ? PICK_ONE : PICK_NONE);
+        n = res.n;
+        await tty_destroy_nhwindow(win);
+        if (n > 0) {
+            n = res.selected[0].item - 1; /* get item selected */
+            await skill_advance(n);
+            /* check for more skills able to advance; if so, then... */
+            for (n = i = 0; i < P_NUM_SKILLS; i++) {
+                if (can_advance(i, speedy)) {
+                    if (!speedy)
+                        await pline("You feel you could be more dangerous!");
+                    n++;
+                    break;
+                }
+            }
+        }
+    } while (speedy && n > 0);
+    return ECMD_OK;
 }
 
 // C ref: weapon.c uwep_skill_type()
