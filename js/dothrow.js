@@ -21,7 +21,7 @@ import { u_on_newpos } from './mklev.js';
 import { check_special_room } from './hack.js';
 import { m_at, may_passwall, closed_door, sobj_at, is_pool, is_lava } from './makemon.js';
 import { bad_rock, wake_nearto, wakeup, setmangry } from './mon.js';
-import { t_at, VIBRATING_SQUARE } from './trap.js';
+import { t_at, VIBRATING_SQUARE, WEB } from './trap.js';
 import { x_monnam, ARTICLE_A, SUPPRESS_SADDLE, AUGMENT_IT } from './do_name.js';
 import { BOULDER } from './objects.js';
 import { isok, IS_DOOR, IS_OBSTRUCTED, D_ISOPEN, IRONBARS, PASSES_WALLS,

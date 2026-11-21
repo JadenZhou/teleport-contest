@@ -1004,25 +1004,17 @@ export function see_nearby_objects() {
 }
 
 // C ref: display.h glyph_is_invisible() -- for a remembered glyph
-// (lev->glyph): the "remembered, unseen monster" 'I'
+// (lev->glyph): the "remembered, unseen monster" 'I'; also takes a
+// glyph_at() glyph (its kind)
 export function glyph_is_invisible(rg) {
-    return !!rg?.invisible;
+    return !!rg?.invisible || rg?.kind === 'invisible';
 }
 
-// C ref: display.h glyph_at() -- the glyph currently shown at <x,y>
-// (gg.gbuf[y][x].glyph).  The JS display buffer keeps the shown cell
-// (show_glyph_cell()), so this returns a descriptor of it in the form
-// glyph_is_invisible() takes: S_invisible 'I' is the only glyph drawn
-// with that character.  Warning glyphs are never shown here
-// (display_warning() isn't ported; newsym() stops before drawing one).
-export function glyph_at(x, y) {
-    const loc = game.level.at(x, y);
-    return { ch: loc.disp_ch, invisible: loc.disp_ch === 'I', warning: false };
-}
-
-// C ref: display.h glyph_is_warning()
+// C ref: display.h glyph_is_warning() -- for a glyph_at() glyph; warning
+// glyphs are never shown yet (display_warning() isn't ported; newsym()
+// stops before drawing one)
 export function glyph_is_warning(glyph) {
-    return !!glyph?.warning;
+    return glyph?.kind === 'warning';
 }
 
 // C ref: display.c map_invisible()
