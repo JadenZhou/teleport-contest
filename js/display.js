@@ -15,7 +15,8 @@ import {
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
     CROSSWALL, TUWALL, TDWALL, TLWALL, TRWALL,
     D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS,
-    BLINDED, INFRAVISION, TELEPAT, WARN_OF_MON, DETECT_MONSTERS,
+    BLINDED, INFRAVISION, TELEPAT, WARN_OF_MON, DETECT_MONSTERS, WARNING,
+    NO_TRAP, BEAR_TRAP, PIT, SPIKED_PIT, WEB,
 } from './const.js';
 import { HALLUC, Is_waterlevel, isok, IS_STWALL } from './const.js';
 import {
@@ -656,9 +657,17 @@ function terrain_glyph_dec(loc, x, y) {
 }
 
 // C ref: termcap.c init_hilite() -- hilites[CLR_GRAY] = hilites[NO_COLOR]
-// = 0, so term_start_color() emits nothing for gray: it shows as default
+// = 0, so term_start_color() emits nothing for gray: it shows as default.
+// With the use_darkgray option (iflags.wc2_darkgray, on by default)
+// hilites[CLR_BLACK] is bright black, color index 8 like NO_COLOR (the
+// recorder's nomux_set_fg() makes the same remap); without it, black is
+// shown as blue.
 function tty_color(color) {
-    return (color === undefined || color === CLR_GRAY) ? NO_COLOR : color;
+    if (color === undefined || color === CLR_GRAY)
+        return NO_COLOR;
+    if (color === CLR_BLACK)
+        return (game.iflags?.wc2_darkgray !== false) ? NO_COLOR : CLR_BLUE;
+    return color;
 }
 
 // ── show_glyph_cell ──
@@ -751,6 +760,20 @@ export function sensemon(mon) {
 // C ref: display.h canspotmon()
 export function canspotmon(mon) {
     return canseemon(mon) || sensemon(mon);
+}
+
+// C ref: display.c is_worm_tail() -- the monster found at <x,y> is
+// there only by a tail segment
+function is_worm_tail(mon, x, y) {
+    return !!mon && (x !== mon.mx || y !== mon.my);
+}
+
+// C ref: display.h _mon_warning()
+function mon_warning(mon) {
+    const u = game.u;
+    return uprop(WARNING) && !mon.mpeaceful
+           && ((mon.mx - u.ux) ** 2 + (mon.my - u.uy) ** 2) < 100 /* mdistu() */
+           && Math.trunc((mon.m_lev || 0) / 4) >= (game.context.warnlevel || 0);
 }
 
 // C ref: display.c display_monster() -- the plain case: the monster's own
@@ -1039,17 +1062,50 @@ export function newsym(x, y) {
         return;
     }
 
-    // Only update display/memory if cell is IN_SIGHT (lit and visible)
+    let mon;
+    /* Can physically see the location. */
     if (cansee(x, y)) {
-        /* C ref: display.c newsym(): a monster seen at the spot is shown
-           over the mapped location (display_monster()) */
-        const mon = mon_at_loc(x, y);
-        if (mon && mon_visible(mon) && !mon.m_ap_type) {
+        mon = mon_at_loc(x, y);
+        const worm_tail = is_worm_tail(mon, x, y);
+        const see_it = !!mon && (mon_visible(mon)
+                                 || (!worm_tail && (tp_sensemon(mon)
+                                                    || MATCH_WARN_OF_MON(mon))));
+        /* mimics' disguises (display_monster()'s M_AP_FURNITURE/OBJECT/
+           MONSTER cases) aren't ported yet: the location under them is
+           shown instead */
+        if (mon && (see_it || (!worm_tail && uprop(DETECT_MONSTERS)))
+            && !mon.m_ap_type) {
+            if (mon.mtrapped) {
+                const trap = t_at(x, y);
+                const tt = trap ? trap.ttyp : NO_TRAP;
+
+                /* if monster is in a physical trap, you see trap too */
+                if (tt === BEAR_TRAP || tt === PIT || tt === SPIKED_PIT
+                    || tt === WEB)
+                    trap.tseen = 1;
+            }
             _map_location(x, y, false); /* map under the monster */
+            /* also gets rid of any invisibility glyph */
             display_monster(x, y, mon);
+        } else if (mon && mon_warning(mon) && !worm_tail) {
+            throw new Error('newsym(): display_warning() not ported yet');
         } else {
-            _map_location(x, y, true);
+            _map_location(x, y, true); /* map the location */
         }
+
+    /* Can't see the location. */
+    } else if ((mon = mon_at_loc(x, y)) !== null
+               && (tp_sensemon(mon) || MATCH_WARN_OF_MON(mon)
+                   || (see_with_infrared(mon) && mon_visible(mon))
+                   || (uprop(DETECT_MONSTERS) && !is_worm_tail(mon, x, y)))) {
+        /* Seen or sensed monsters are printed every time.
+           This also gets rid of any invisibility glyph.
+           (display_monster() shows a disguised mimic only when it is
+           physically seen or sensed through its disguise) */
+        if (!mon.m_ap_type)
+            display_monster(x, y, mon);
+    } else if (mon && mon_warning(mon) && !is_worm_tail(mon, x, y)) {
+        throw new Error('newsym(): display_warning() not ported yet');
     } else if (loc.remembered_glyph) {
         /* C ref: display.c newsym(), can't see the location: a spot
            remembered as both dark (waslit is false) and lit (glyph is a
@@ -1062,6 +1118,9 @@ export function newsym(x, y) {
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx);
+    } else {
+        /* show_mem: never seen, the unexplored glyph (blank) */
+        show_glyph_cell(x, y, ' ', NO_COLOR, false);
     }
 }
 
