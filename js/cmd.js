@@ -36,6 +36,8 @@ import { IS_DOOR, IS_FURNITURE, NHW_TEXT, ECMD_OK, ECMD_TIME, ECMD_CANCEL,
          ECMD_FAIL } from './const.js';
 import { dovspell, docast } from './spell.js';
 import { dosit } from './sit.js';
+import { doinvoke } from './artifact.js';
+import { donamelevel } from './dungeon.js';
 import { authorize_explore_mode } from './sys.js';
 import { dodiscovered } from './o_init.js';
 import { doattributes, dogenocided } from './insight.js';
@@ -53,7 +55,7 @@ import { enhance_weapon_skill } from './weapon.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
-import { dodrink } from './potion.js';
+import { dodrink, dodip } from './potion.js';
 import { dopay } from './shk.js';
 import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
@@ -164,6 +166,9 @@ const cmd_funcs = {
     dowhatis: () => dowhatis(),
     dowhatdoes: () => dowhatdoes(),
     dosit: () => dosit(),
+    dodip: () => dodip(),
+    doinvoke: () => doinvoke(),
+    donamelevel: () => donamelevel(),
     dogenocided: () => dogenocided(),
     doturn: () => doturn(),
     dosacrifice: () => dosacrifice(),
