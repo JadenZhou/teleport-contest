@@ -690,7 +690,7 @@ export async function ohitmon(
         if (!DEADMONSTER(mtmp) && !game.context.mon_moving)
             await setmangry(mtmp, true);
 
-        objgone = await drop_throw(otmp, 1, bx, by);
+        objgone = await drop_throw(otmp, 1, game.bhitpos.x, game.bhitpos.y);
         if (!objgone && range === -1) { /* special case */
             obj_extract_self(otmp);      /* free it for motion again */
             return 0;
