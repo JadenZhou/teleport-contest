@@ -820,7 +820,7 @@ function sp_Flying() {
 
 // C ref: hack.c switch_terrain()
 /* moving onto different terrain might cause Lev or Fly to toggle */
-async function switch_terrain() {
+export async function switch_terrain() {
     const u = game.u;
     const lev = game.level.at(u.ux, u.uy);
     const blocklev = (IS_OBSTRUCTED(lev.typ) || closed_door(u.ux, u.uy)
