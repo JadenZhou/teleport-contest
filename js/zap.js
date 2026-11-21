@@ -60,6 +60,8 @@ import { AC_VALUE } from './rng.js';
 import { m_at, closed_door } from './makemon.js';
 import { canspotmon, map_invisible, unmap_invisible } from './display.js';
 import { find_mac } from './worn.js';
+import { tmp_at, DISP_BEAM, DISP_CHANGE, DISP_END } from './display.js';
+import { zap_dig } from './dig.js';
 import { couldsee } from './vision.js';
 import { SCROLL_CLASS, FOOD_CLASS, GLOB_OF_GREEN_SLIME, SCR_FIRE, SPE_FIREBALL,
          BRASS_LANTERN, CANDELABRUM_OF_INVOCATION, TALLOW_CANDLE,
@@ -864,7 +866,7 @@ export async function weffects(obj) {
         /* neither immediate nor directionless */
 
         if (otyp === WAN_DIGGING || otyp === SPE_DIG)
-            throw new Error('weffects(): zap_dig() not ported yet');
+            await zap_dig();
         else if (otyp >= SPE_MAGIC_MISSILE && otyp <= SPE_FINGER_OF_DEATH)
             /* BZ_U_SPELL(BZ_OFS_SPE(otyp)) */
             await ubuzz(10 + Math.abs(otyp - SPE_MAGIC_MISSILE) % 10,
@@ -1138,8 +1140,7 @@ export async function dobuzz(
         range = 1;
     const save_bhitpos = g.bhitpos ? { x: g.bhitpos.x, y: g.bhitpos.y } : g.bhitpos;
 
-    /* tmp_at(DISP_BEAM, zapdir_to_glyph(dx, dy, hdmgtype)): transient
-       display only */
+    tmp_at(DISP_BEAM, 0); /* zapdir_to_glyph(dx, dy, hdmgtype) */
     while (range-- > 0) {
         lsx = sx;
         sx += dx;
@@ -1156,7 +1157,10 @@ export async function dobuzz(
                     map_invisible(sx, sy);
                 else if (!mon)
                     unmap_invisible(sx, sy);
-                /* tmp_at(sx, sy); nh_delay_output(): transient display */
+                if (ZAP_POS(g.level.at(sx, sy).typ)
+                    || (isok(lsx, lsy) && cansee(lsx, lsy)))
+                    tmp_at(sx, sy);
+                /* nh_delay_output(): wait a little */
             }
 
             /* hit() and miss() need gb.bhitpos to match the target */
@@ -1228,10 +1232,10 @@ export async function dobuzz(
             const dd = { dx, dy };
             bounce_dir(sx, sy, dd, bchance);
             dx = dd.dx, dy = dd.dy;
-            /* tmp_at(DISP_CHANGE, zapdir_to_glyph(dx, dy, hdmgtype)) */
+            tmp_at(DISP_CHANGE, 0); /* zapdir_to_glyph(dx, dy, hdmgtype) */
         }
     }
-    /* tmp_at(DISP_END, 0): transient display only */
+    tmp_at(DISP_END, 0);
     if (fireball)
         throw new Error('dobuzz(): fireball explode() not ported yet');
     if (shopdamage.v)

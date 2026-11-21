@@ -17,6 +17,12 @@ import { objects, STATUE, PICK_AXE, DWARVISH_MATTOCK, WEAPON_CLASS,
 import { closed_door, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
 import { bimanual } from './wield.js';
+import { rn1 } from './rng.js';
+import { SDOOR, DOOR, CORR, ROOM, FOUNTAIN, SHOPBASE, W_NONDIGGABLE, D_NODOOR,
+         IS_STWALL, IS_TREE, Is_earthlevel } from './const.js';
+import { in_rooms } from './hack.js';
+import { cansee, recalc_block_point, unblock_point } from './vision.js';
+import { pline_The, tmp_at, DISP_BEAM, DISP_END } from './display.js';
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -181,4 +187,120 @@ export function holetime() {
     if (!game.occupation || game.occupation.name !== 'dig' || !game.u.ushops)
         return -1;
     throw new Error('holetime(): digging effort not ported yet');
+}
+
+/* C ref: hack.c may_dig() */
+function may_dig(x, y) {
+    const lev = game.level.at(x, y);
+    return !((IS_STWALL(lev.typ) || IS_TREE(lev.typ))
+             && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
+}
+
+/* C ref: hack.c in_town() -- a town only exists on special levels
+   (has_town); the town room check isn't ported */
+function in_town(x, y) {
+    void x; void y;
+    if (!game.level.flags.has_town)
+        return false;
+    throw new Error('in_town(): town rooms not ported yet');
+}
+
+// C ref: dig.c watch_dig() -- town watchmen react to digging
+function watch_dig(mtmp, x, y, zap) {
+    const lev = game.level.at(x, y);
+    void mtmp; void zap;
+
+    if (in_town(x, y)
+        && (closed_door(x, y) || lev.typ === SDOOR || IS_WALL(lev.typ)
+            || lev.typ === FOUNTAIN || IS_TREE(lev.typ)))
+        throw new Error('watch_dig(): town watch reaction not ported yet');
+}
+
+// C ref: dig.c zap_dig() -- digging via wand zap or spell cast
+export async function zap_dig() {
+    const g = game;
+    const u = g.u;
+    let room;
+    let zx, zy;
+    let digdepth;
+    let shopdoor, shopwall;
+
+    /*
+     * Original effect (approximately):
+     * from CORR: dig until we pierce a wall
+     * from ROOM: pierce wall and dig until we reach
+     * an ACCESSIBLE place.
+     * Currently: dig for digdepth positions;
+     * also down on request of Lennart Augustsson.
+     * 3.6.0: from a PIT: dig one adjacent pit.
+     */
+
+    if (u.uswallow)
+        throw new Error('zap_dig(): digging out of an engulfer not ported yet');
+
+    if (u.dz)
+        throw new Error('zap_dig(): digging up or down not ported yet');
+
+    /* normal case: digging across the level */
+    shopdoor = shopwall = false;
+    const maze_dig = g.level.flags.is_maze_lev && !Is_earthlevel(u.uz);
+    zx = u.ux + u.dx;
+    zy = u.uy + u.dy;
+    if (u.utrap && u.utraptype === TT_PIT && t_at(u.ux, u.uy))
+        throw new Error('zap_dig(): digging sideways from a pit not ported yet');
+    digdepth = rn1(18, 8);
+    tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_digbeam) */
+    while (--digdepth >= 0) {
+        if (!isok(zx, zy))
+            break;
+        room = g.level.at(zx, zy);
+        tmp_at(zx, zy);
+        /* nh_delay_output(): wait a little bit */
+
+        if (closed_door(zx, zy) || room.typ === SDOOR) {
+            if (in_rooms(zx, zy, SHOPBASE).length)
+                throw new Error('zap_dig(): shop door damage (add_damage()) not ported yet');
+            if (room.typ === SDOOR)
+                room.typ = DOOR; /* doormask set below */
+            else if (cansee(zx, zy))
+                await pline_The("door is razed!");
+            watch_dig(null, zx, zy, true);
+            room.doormask = D_NODOOR;
+            recalc_block_point(zx, zy); /* vision */
+            digdepth -= 2;
+            if (maze_dig)
+                break;
+        } else if (maze_dig) {
+            throw new Error('zap_dig(): digging on a maze level not ported yet');
+        } else if (IS_OBSTRUCTED(room.typ)) {
+            if (!may_dig(zx, zy))
+                break;
+            if (IS_WALL(room.typ) || room.typ === SDOOR) {
+                if (in_rooms(zx, zy, SHOPBASE).length)
+                    throw new Error('zap_dig(): shop wall damage (add_damage()) not ported yet');
+                watch_dig(null, zx, zy, true);
+                if (g.level.flags.is_cavernous_lev && !in_town(zx, zy)) {
+                    room.typ = CORR, room.flags = 0;
+                } else {
+                    room.typ = DOOR, room.doormask = D_NODOOR;
+                }
+                digdepth -= 2;
+            } else if (IS_TREE(room.typ)) {
+                room.typ = ROOM, room.flags = 0;
+                digdepth -= 2;
+            } else { /* IS_OBSTRUCTED but not IS_WALL or SDOOR */
+                room.typ = CORR, room.flags = 0;
+                digdepth--;
+            }
+            unblock_point(zx, zy); /* vision */
+        }
+        zx += u.dx;
+        zy += u.dy;
+    } /* while */
+    tmp_at(DISP_END, 0); /* closing call */
+
+    /* pitflow is only set by the (unported) pit case above */
+
+    if (shopdoor || shopwall)
+        throw new Error('zap_dig(): pay_for_damage() not ported yet');
 }
