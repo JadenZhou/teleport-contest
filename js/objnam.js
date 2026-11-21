@@ -35,7 +35,11 @@ import { mons, LOW_PM, S_PUDDING, PM_GRAY_OOZE, PM_BLACK_PUDDING,
          PM_GRAY_DRAGON, PM_YELLOW_DRAGON } from './monsters.js';
 import {
     name_to_mon, name_to_monplus, is_male, is_female, is_neuter,
+    is_were, is_human, is_elf, is_dwarf, is_gnome, is_orc,
 } from './mondata.js';
+import { ismnum } from './const.js';
+import { dead_species, set_corpsenm, can_be_hatched } from './mkobj.js';
+import { zombie_form } from './mon.js';
 import { def_char_to_objclass } from './drawing.js';
 import { genders } from './role.js';
 import {
@@ -55,6 +59,96 @@ const vowels = "aeiouAEIOU";
 
 function not_ported(what) {
     throw new Error(`readobjnam: ${what} is not ported yet`);
+}
+
+/* C ref: mondata.h verysmall() */
+function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
+
+// C ref: were.c counter_were()
+function counter_were(pm) {
+    switch (pm) {
+    case M.PM_WEREWOLF:
+        return M.PM_HUMAN_WEREWOLF;
+    case M.PM_HUMAN_WEREWOLF:
+        return M.PM_WEREWOLF;
+    case M.PM_WEREJACKAL:
+        return M.PM_HUMAN_WEREJACKAL;
+    case M.PM_HUMAN_WEREJACKAL:
+        return M.PM_WEREJACKAL;
+    case M.PM_WERERAT:
+        return M.PM_HUMAN_WERERAT;
+    case M.PM_HUMAN_WERERAT:
+        return M.PM_WERERAT;
+    default:
+        return NON_PM;
+    }
+}
+
+// C ref: mon.c genus()
+/*
+ * Return associated character class monster, rather than species
+ * if mode is 1.
+ */
+function genus(mndx, mode) {
+    switch (mndx) {
+    /* Quest guardians */
+    case M.PM_STUDENT:
+        mndx = mode ? M.PM_ARCHEOLOGIST : M.PM_HUMAN;
+        break;
+    case M.PM_CHIEFTAIN:
+        mndx = mode ? M.PM_BARBARIAN : M.PM_HUMAN;
+        break;
+    case M.PM_NEANDERTHAL:
+        mndx = mode ? M.PM_CAVE_DWELLER : M.PM_HUMAN;
+        break;
+    case M.PM_ATTENDANT:
+        mndx = mode ? M.PM_HEALER : M.PM_HUMAN;
+        break;
+    case M.PM_PAGE:
+        mndx = mode ? M.PM_KNIGHT : M.PM_HUMAN;
+        break;
+    case M.PM_ABBOT:
+        mndx = mode ? M.PM_MONK : M.PM_HUMAN;
+        break;
+    case M.PM_ACOLYTE:
+        mndx = mode ? M.PM_CLERIC : M.PM_HUMAN;
+        break;
+    case M.PM_HUNTER:
+        mndx = mode ? M.PM_RANGER : M.PM_HUMAN;
+        break;
+    case M.PM_THUG:
+        mndx = mode ? M.PM_ROGUE : M.PM_HUMAN;
+        break;
+    case M.PM_ROSHI:
+        mndx = mode ? M.PM_SAMURAI : M.PM_HUMAN;
+        break;
+    case M.PM_GUIDE:
+        mndx = mode ? M.PM_TOURIST : M.PM_HUMAN;
+        break;
+    case M.PM_APPRENTICE:
+        mndx = mode ? M.PM_WIZARD : M.PM_HUMAN;
+        break;
+    case M.PM_WARRIOR:
+        mndx = mode ? M.PM_VALKYRIE : M.PM_HUMAN;
+        break;
+    default:
+        if (ismnum(mndx)) {
+            const ptr = mons[mndx];
+
+            if (is_human(ptr))
+                mndx = M.PM_HUMAN;
+            else if (is_elf(ptr))
+                mndx = M.PM_ELF;
+            else if (is_dwarf(ptr))
+                mndx = M.PM_DWARF;
+            else if (is_gnome(ptr))
+                mndx = M.PM_GNOME;
+            else if (is_orc(ptr))
+                mndx = M.PM_ORC;
+        }
+        break;
+    }
+    return mndx;
 }
 
 // C ref: objnam.c just_an()
@@ -2276,8 +2370,63 @@ export function readobjnam(bp, no_wish) {
     }
 
     /* set otmp->corpsenm or dragon scale [mail] */
-    if (d.mntmp >= LOW_PM)
-        not_ported('readobjnam() monster types for corpses/tins/eggs/figurines/statues');
+    if (ismnum(d.mntmp)) {
+        let humanwere;
+
+        if (d.mntmp === M.PM_LONG_WORM_TAIL)
+            d.mntmp = M.PM_LONG_WORM;
+        /* werecreatures in beast form are all flagged no-corpse so for
+           corpses and tins, switch to their corresponding human form;
+           for figurines, override the can't-be-human restriction instead */
+        if (d.typ !== O.FIGURINE && is_were(mons[d.mntmp])
+            && (game.mvitals[d.mntmp].mvflags & M.G_NOCORPSE) !== 0
+            && (humanwere = counter_were(d.mntmp)) !== NON_PM)
+            d.mntmp = humanwere;
+
+        switch (d.typ) {
+        case O.TIN:
+            if (dead_species(d.mntmp, false)) {
+                d.otmp.corpsenm = NON_PM; /* it's empty */
+            } else if ((!(mons[d.mntmp].geno & M.G_UNIQ) || wizard())
+                       && !(game.mvitals[d.mntmp].mvflags & M.G_NOCORPSE)
+                       && mons[d.mntmp].cnutrit !== 0) {
+                d.otmp.corpsenm = d.mntmp;
+            }
+            break;
+        case O.CORPSE:
+            if ((!(mons[d.mntmp].geno & M.G_UNIQ) || wizard())
+                && !(game.mvitals[d.mntmp].mvflags & M.G_NOCORPSE)) {
+                if (mons[d.mntmp].msound === M.MS_GUARDIAN)
+                    d.mntmp = genus(d.mntmp, 1);
+                set_corpsenm(d.otmp, d.mntmp);
+            }
+            if (d.zombify && zombie_form(mons[d.mntmp]))
+                not_ported('readobjnam() zombifying corpse timer (start_timer())');
+            break;
+        case O.EGG:
+            d.mntmp = can_be_hatched(d.mntmp);
+            /* this also sets hatch timer if appropriate */
+            set_corpsenm(d.otmp, d.mntmp);
+            break;
+        case O.FIGURINE:
+            if (!(mons[d.mntmp].geno & M.G_UNIQ)
+                && (!is_human(mons[d.mntmp]) || is_were(mons[d.mntmp]))
+                && d.mntmp !== M.PM_MAIL_DAEMON) /* MAIL_STRUCTURES */
+                d.otmp.corpsenm = d.mntmp;
+            break;
+        case O.STATUE:
+            d.otmp.corpsenm = d.mntmp;
+            if (Has_contents(d.otmp) && verysmall(mons[d.mntmp]))
+                not_ported('readobjnam() statue delete_contents()');
+            break;
+        case O.SCALE_MAIL:
+            /* Dragon mail - depends on the order of objects & dragons. */
+            if (d.mntmp >= PM_GRAY_DRAGON && d.mntmp <= PM_YELLOW_DRAGON)
+                d.otmp.otyp = O.GRAY_DRAGON_SCALE_MAIL
+                              + d.mntmp - PM_GRAY_DRAGON;
+            break;
+        }
+    }
 
     /* set blessed/cursed -- setting the fields directly is safe
      * since weight() is called below and addinv() will take care
@@ -2573,6 +2722,148 @@ function xcalled(pfx, sfx) {
     return `${pfx}${pfx[0] ? " " : ""}called ${sfx}`;
 }
 
+/* C ref: do_wear.c hard_helmet(); obj.h is_helmet(); objclass.h
+   is_metallic() */
+function hard_helmet(obj) {
+    if (!obj || !(obj.oclass === O.ARMOR_CLASS
+                  && objects[obj.otyp].oc_armcat === O.ARM_HELM))
+        return false;
+    return ((objects[obj.otyp].oc_material >= O.IRON
+             && objects[obj.otyp].oc_material <= O.MITHRIL)
+            || is_crackable(obj)) ? true : false;
+}
+
+// C ref: objnam.c armor_simple_name()
+export function armor_simple_name(armor) {
+    let result = null;
+    const armcat = objects[armor.otyp].oc_armcat;
+
+    switch (armcat) {
+    case O.ARM_SUIT:
+        result = suit_simple_name(armor);
+        break;
+    case O.ARM_CLOAK:
+        result = cloak_simple_name(armor);
+        break;
+    case O.ARM_HELM:
+        result = helm_simple_name(armor);
+        break;
+    case O.ARM_GLOVES:
+        result = gloves_simple_name(armor);
+        break;
+    case O.ARM_BOOTS:
+        result = boots_simple_name(armor);
+        break;
+    case O.ARM_SHIELD:
+        result = shield_simple_name(armor);
+        break;
+    case O.ARM_SHIRT:
+        result = shirt_simple_name(armor);
+        break;
+    default:
+        throw new Error(`armor_simple_name(): unknown armor category ${armcat}`);
+    }
+    return result;
+}
+
+// C ref: objnam.c suit_simple_name()
+export function suit_simple_name(suit) {
+    let suitnm;
+
+    if (suit) {
+        if (suit.otyp >= O.GRAY_DRAGON_SCALE_MAIL
+            && suit.otyp <= O.YELLOW_DRAGON_SCALE_MAIL) /* Is_dragon_mail() */
+            return "dragon mail"; /* <color> dragon scale mail */
+        else if (suit.otyp >= O.GRAY_DRAGON_SCALES
+                 && suit.otyp <= O.YELLOW_DRAGON_SCALES) /* Is_dragon_scales() */
+            return "dragon scales";
+        suitnm = OBJ_NAME(objects[suit.otyp]);
+        if (suitnm.length > 5 && suitnm.endsWith(" mail"))
+            return "mail"; /* most suits fall into this category */
+        else if (suitnm.length > 7 && suitnm.endsWith(" jacket"))
+            return "jacket"; /* leather jacket */
+    }
+    /* "suit" is lame but "armor" is ambiguous and "body armor" is absurd */
+    return "suit";
+}
+
+// C ref: objnam.c cloak_simple_name()
+export function cloak_simple_name(cloak) {
+    if (cloak) {
+        switch (cloak.otyp) {
+        case O.ROBE:
+            return "robe";
+        case O.MUMMY_WRAPPING:
+            return "wrapping";
+        case O.ALCHEMY_SMOCK:
+            return (objects[cloak.otyp].oc_name_known && cloak.dknown)
+                       ? "smock"
+                       : "apron";
+        default:
+            break;
+        }
+    }
+    return "cloak";
+}
+
+// C ref: objnam.c helm_simple_name()
+/* helm vs hat for messages */
+export function helm_simple_name(helmet) {
+    return !hard_helmet(helmet) ? "hat" : "helm";
+}
+
+// C ref: objnam.c gloves_simple_name()
+/* gloves vs gauntlets; depends upon discovery state */
+export function gloves_simple_name(gloves) {
+    const gauntlets = "gauntlets";
+
+    if (gloves && gloves.dknown) {
+        const otyp = gloves.otyp;
+        const ocl = objects[otyp];
+        const actualn = OBJ_NAME(ocl), descrpn = OBJ_DESCR(ocl);
+
+        if (strstri(objects[otyp].oc_name_known ? actualn : descrpn,
+                    gauntlets))
+            return gauntlets;
+    }
+    return "gloves";
+}
+
+// C ref: objnam.c boots_simple_name()
+/* boots vs shoes; depends upon discovery state */
+export function boots_simple_name(boots) {
+    const shoes = "shoes";
+
+    if (boots && boots.dknown) {
+        const otyp = boots.otyp;
+        const ocl = objects[otyp];
+        const actualn = OBJ_NAME(ocl), descrpn = OBJ_DESCR(ocl);
+
+        if (strstri(descrpn, shoes)
+            || (objects[otyp].oc_name_known && strstri(actualn, shoes)))
+            return shoes;
+    }
+    return "boots";
+}
+
+// C ref: objnam.c shield_simple_name()
+/* simplified shield for messages */
+export function shield_simple_name(shield) {
+    if (shield) {
+        /* xname() describes unknown (unseen) reflection as smooth */
+        if (shield.otyp === O.SHIELD_OF_REFLECTION)
+            return shield.dknown ? "silver shield" : "smooth shield";
+    }
+    return "shield";
+}
+
+// C ref: objnam.c shirt_simple_name()
+/* for completeness */
+export function shirt_simple_name(shirt) {
+    void shirt;
+    return "shirt";
+}
+
 /* C ref: decl.c gd.distantname -- set while distant_name() formats an
    object the hero only sees from afar */
 let distantname = 0;
@@ -2737,7 +3028,7 @@ function xname_flags(obj, cxn_flags) {
         if (nn)
             buf += actualn;
         else if (un)
-            xn_not_ported('armor_simple_name()');
+            buf += xcalled(armor_simple_name(obj), un);
         else
             buf += dn;
         break;

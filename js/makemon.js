@@ -9,7 +9,7 @@
 // Not ported yet: m_initgrp (groups), newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm segments, qt_montype() for the quest.
 
-import { christen_monst, rndghostname } from './do_name.js';
+import { christen_monst, rndghostname, Amonnam } from './do_name.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
@@ -1869,7 +1869,7 @@ export function makemon(ptr, x, y, mmflags) {
             if ((canseemon(mtmp) && (ap_type === M_AP_NOTHING
                                      || ap_type === M_AP_MONSTER))
                 || makemon_sensemon(mtmp)) {
-                what = makemon_Amonnam(mtmp);
+                what = Amonnam(mtmp);
                 if (ap_type === M_AP_MONSTER)
                     exclaim = true;
             } else if (canseemon(mtmp)) {
@@ -1928,22 +1928,6 @@ function makemon_sensemon(mtmp) {
     return false;
 }
 
-/* C ref: do_name.c Amonnam() -- x_monnam(mtmp, ARTICLE_A, NULL, 0, FALSE)
-   capitalized; only the plain case (no name, not unique, not invisible,
-   not saddled, not hallucinating) is ported here */
-function makemon_Amonnam(mtmp) {
-    if (mtmp.mgivenname || mtmp.isshk || mtmp.ispriest || mtmp.isminion
-        || mtmp.minvis || (mtmp.data.geno & G_UNIQ)
-        || ((mtmp.misc_worn_check || 0) & W_SADDLE))
-        throw new Error('makemon(): x_monnam() for named/special monsters not ported yet');
-    const hal = game.u.uprops?.[HALLUC];
-    if (hal && hal.intrinsic)
-        throw new Error('makemon(): x_monnam() while hallucinating not ported yet');
-    const ptr = mtmp.data;
-    const name = ptr.pmnames[mtmp.female ? 1 : 0] || ptr.pmnames[2];
-    const bp = an(name);
-    return bp.charAt(0).toUpperCase() + bp.slice(1);
-}
 // C ref: monst.h STRAT_* bits
 const STRAT_APPEARMSG = 0x80000000;
 const STRAT_WAITFORU = 0x20000000;
