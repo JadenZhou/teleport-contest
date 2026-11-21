@@ -371,16 +371,16 @@ function disco() {
     return game.disco;
 }
 
-// C ref: o_init.c discover_object() -- the Samurai Japanese_item_name()
-// case (which only adds pre-known Japanese items to disco[]) is not ported
-// yet; dodiscovered() stops for a Samurai
+// C ref: o_init.c discover_object()
 export function discover_object(oindx, mark_as_known, mark_as_encountered,
                                 credit_hero) {
     if (oindx < FIRST_OBJECT) /* don't discover generic objects */
         return;
 
     if ((!objects[oindx].oc_name_known && mark_as_known)
-        || (!objects[oindx].oc_encountered && mark_as_encountered)) {
+        || (!objects[oindx].oc_encountered && mark_as_encountered)
+        || (Role_if_samurai()
+            && Japanese_item_name(oindx, null))) {
         let dindx;
         const acls = objects[oindx].oc_class;
         const d = disco();
@@ -412,7 +412,9 @@ export function discover_object(oindx, mark_as_known, mark_as_encountered,
 function interesting_to_discover(i) {
     /* most players who don't speak Japanese manage to figure out what
        gunyoki, osaku, and so forth mean, but treat them as pre-discovered
-       to be disclosed by '\' -- Samurai: dodiscovered() stops earlier */
+       to be disclosed by '\' */
+    if (Role_if_samurai() && Japanese_item_name(i, null))
+        return true;
 
     /* Objects that were discovered without encountering them are now printed
        with a '*' */
@@ -428,7 +430,7 @@ const uniq_objs = [
     /* same order as major oracularity; alphabetical when fully IDed */
     BELL_OF_OPENING,
     SPE_BOOK_OF_THE_DEAD,
-    CANDELABRUM_OF_INVOCATION, MAGIC_HARP, WOODEN_HARP,
+    CANDELABRUM_OF_INVOCATION,
 ];
 
 // C ref: o_init.c discovered_cmp() -- discoveries qsort comparison function
@@ -489,7 +491,7 @@ async function choose_disco_sort(
 }
 
 // C ref: o_init.c disco_typename() -- augment obj_typename() with
-// explanation of Japanese item names (Samurai: obj_typename() stops)
+// explanation of Japanese item names
 function disco_typename(otyp) {
     let result = obj_typename(otyp);
 
@@ -506,10 +508,10 @@ function disco_typename(otyp) {
 
         if (!actualn) { /* won't happen; used to pacify static analyzer */
             ;
-        } else if (strstri(result, " called")) {
+        } else if (strstri(result, " called") >= 0) {
             buf = ` [${actualn}] called`;
             result = strsubst(result, " called", buf);
-        } else if (strstri(result, " (")) {
+        } else if (strstri(result, " (") >= 0) {
             buf = ` [${actualn}] (`;
             result = strsubst(result, " (", buf);
         } else {
@@ -519,12 +521,10 @@ function disco_typename(otyp) {
     return result;
 }
 
-// C ref: hacklib.c strsubst() -- substitute the first occurrence of orig
+/* C ref: hacklib.c strsubst() -- replace the first occurrence */
 function strsubst(bp, orig, replacement) {
-    const found = bp.indexOf(orig);
-    if (found >= 0)
-        bp = bp.slice(0, found) + replacement + bp.slice(found + orig.length);
-    return bp;
+    const at = bp.indexOf(orig);
+    return (at < 0) ? bp : bp.slice(0, at) + replacement + bp.slice(at + orig.length);
 }
 
 // C ref: shk.c append_price_quote() -- the price range seen in shops

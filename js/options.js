@@ -13,6 +13,9 @@ import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSI
 
 import { strncmpi, strcmpi } from './hacklib.js';
 import { authorize_wizard_mode, authorize_explore_mode } from './sys.js';
+import { bind_key } from './cmd.js';
+import { def_char_to_objclass } from './drawing.js';
+import { MAXOCLASSES } from './objects.js';
 import {
     str2role, str2race, str2gend, str2align, setrolefilter, clearrolefilter,
     RS_filter,
@@ -21,8 +24,6 @@ import {
     NHW_MENU, PICK_ONE, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE,
 } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
-import { def_char_to_objclass } from './drawing.js';
-import { MAXOCLASSES } from './objects.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, add_menu_str,
     tty_end_menu, tty_select_menu, tty_destroy_nhwindow,
@@ -175,34 +176,41 @@ function optfn_alignment(result, negated, val) {
     return true;
 }
 
-// C ref: options.c optfn_pickup_types() (req == do_set, from the config
-// file: go.opt_initial, so no prompting); flags.pickup_types holds object
-// class numbers (as character codes), "" meaning all classes
+// C ref: options.c optfn_pickup_types() (req == do_set while reading the
+// config file, go.opt_initial); flags.pickup_types holds object class
+// numbers, one character each, like C
 function optfn_pickup_types(result, negated, op) {
+    let oc_sym;
+    let num;
+    let badopt = false;
 
+    /* types of objects to pick up automatically */
     result.flags.pickup_types = ''; /* all */
-    if (!op) {
+    if (op === null || op === undefined || op === '') { /* empty_optstr */
         /* for backwards compatibility, "pickup" without a value is a
-           synonym for autopickup of all types */
+           synonym for autopickup of all types (and during
+           initialization, we can't prompt yet) */
         result.flags.pickup = !negated;
         return true;
     }
     if (negated)
-        return false; /* bad_negation() */
-    op = op.replace(/^ +/, '');
+        throw new Error('optfn_pickup_types(): bad_negation() not ported yet');
+    while (op[0] === ' ')
+        op = op.slice(1);
     if (op[0] !== 'a' && op[0] !== 'A') {
-        let badopt = false;
+        num = 0;
         for (const ch of op) {
-            const oc_sym = def_char_to_objclass(ch);
+            oc_sym = def_char_to_objclass(ch);
             /* make sure all are valid obj symbols occurring once */
             if (oc_sym !== MAXOCLASSES
-                && !result.flags.pickup_types.includes(String.fromCharCode(oc_sym)))
+                && !result.flags.pickup_types.includes(String.fromCharCode(oc_sym))) {
                 result.flags.pickup_types += String.fromCharCode(oc_sym);
-            else
+                ++num;
+            } else
                 badopt = true;
         }
         if (badopt)
-            throw new Error('optfn_pickup_types(): config_error_add() for a bad parameter not ported yet');
+            throw new Error('optfn_pickup_types(): config_error_add() not ported yet');
     }
     return true;
 }
@@ -317,6 +325,18 @@ export function parseNethackrc(rc) {
         const line = rawLine.trim();
         if (!line || line.startsWith('#')) continue;
 
+        /* C ref: cfgfiles.c parse_config_line() -- BIND= (match_varname()
+           of "BINDINGS", at least 4 letters) goes to cnf_line_BINDINGS(),
+           i.e. parsebindings(), which the game start-up applies after
+           reset_commands(TRUE) */
+        const stmt = mungspaces(line).match(/^([A-Za-z_]+) ?[=:] ?(.*)$/);
+        if (stmt && stmt[1].length >= 4
+            && !strncmpi(stmt[1], "BINDINGS", stmt[1].length)) {
+            result.bindings = result.bindings || [];
+            result.bindings.push(stmt[2]);
+            continue;
+        }
+
         const optMatch = line.match(/^OPTIONS=(.+)/i);
         if (!optMatch) continue;
 
@@ -389,6 +409,184 @@ export function parseNethackrc(rc) {
         }
     }
     return result;
+}
+
+// C ref: options.c txt2key()
+function txt2key(txt) {
+    let uc;
+    let makemeta = false;
+    const C = (c) => (0x1f & c);
+    const M = (c) => (0x80 | c);
+
+    txt = txt.trim(); /* trimspaces() */
+    if (!txt)
+        return 0;
+
+    /* simple character */
+    if (txt.length === 1)
+        return txt.charCodeAt(0) & 0xff;
+
+    /* a few special entries */
+    if (txt === "<enter>")
+        return 0x0a;
+    if (txt === "<space>")
+        return 0x20;
+    if (txt === "<esc>")
+        return 0x1b;
+
+    /* handle things like \b and \7 and \mX */
+    if (txt[0] === '\\')
+        throw new Error('txt2key(): escapes() not ported yet');
+
+    /* control and meta keys */
+    if (txt[0].toUpperCase() === 'M') { /* highc() */
+        /*
+         * M <nothing>             return 'M'
+         * M - <nothing>           return M-'-'
+         * M <other><nothing>      return M-<other>
+         * otherwise M is pending until after ^/C- processing.
+         * Since trailing spaces are discarded, the only way to
+         * specify M-' ' is via "160".
+         */
+        if (txt.length === 1)
+            return txt.charCodeAt(0);
+        /* skip past 'M' or 'm' and maybe '-' */
+        txt = txt.slice(1);
+        if (txt[0] === '-' && txt.length > 1)
+            txt = txt.slice(1);
+        if (txt.length === 1)
+            return M(txt.charCodeAt(0)) & 0xff;
+        makemeta = true;
+    }
+    if (txt[0] === '^' || txt[0].toUpperCase() === 'C') {
+        /*
+         * C <nothing>             return 'C' or M-'C'
+         * C - <nothing>           return '-' or M-'-'
+         * C [-] <other><nothing>  return C-<other> or M-C-<other>
+         * C [-] ?                 return <rubout>
+         * otherwise return C-<other> or M-C-<other>
+         */
+        uc = txt.charCodeAt(0) & 0xff;
+        if (txt.length === 1)
+            return makemeta ? M(uc) : uc;
+        txt = txt.slice(1);
+        /* unlike M-x, lots of values of x are invalid for C-x;
+           checking and rejecting them is not worthwhile; GIGO;
+           we do accept "^-x" as synonym for "^x" or "C-x" */
+        if (txt[0] === '-' && txt.length > 1)
+            txt = txt.slice(1);
+        /* and accept ^?, which gets used despite not being a control char */
+        if (txt[0] === '?')
+            return makemeta ? 0o377 : 0o177; /* rubout/delete */
+        uc = C(txt.charCodeAt(0) & 0xff);
+        return makemeta ? M(uc) : uc;
+    }
+    if (makemeta && txt)
+        return M(txt.charCodeAt(0)) & 0xff;
+
+    /* ascii codes: must be three-digit decimal */
+    if (txt[0] >= '0' && txt[0] <= '9') {
+        let key = 0;
+
+        for (let i = 0; i < 3; i++) {
+            if (!(txt[i] >= '0' && txt[i] <= '9'))
+                return 0;
+            key = 10 * key + txt.charCodeAt(i) - 0x30;
+        }
+        return key & 0xff;
+    }
+
+    return 0;
+}
+
+// C ref: options.c parsebindings()
+/* parse key:command[,key2:command2,...] after BINDINGS= prefix has been
+   stripped; returns False if any problem seen, True if every binding in
+   the comma-separated list is successful */
+export function parsebindings(bindings) {
+    let bind;
+    let key;
+    let ret = true; /* assume success */
+    const mousebtn_names = [ "mouse1", "mouse2" ];
+
+    /* look for first comma, then decide whether it is the key being bound
+       or a list element separator; if it's a key, find separator beyond it */
+    if ((bind = bindings.indexOf(',')) >= 0) {
+        /* at start so it represents a key */
+        if (bind === 0)
+            bind = bindings.indexOf(',', bind + 1);
+
+        /* to get here, bind is not at the start, so bind[-1] is valid;
+           check whether current comma happens to be for "\,:cmd" or
+           "',':cmd" (":cmd" part is assumed if the comma has expected
+           quoting) */
+        else if (bindings[bind - 1] === '\\'
+                 || (bindings[bind - 1] === '\'' && bindings[bind + 1] === '\''))
+            bind = bindings.indexOf(',', bind + 2);
+    }
+    /* if a comma separator has been found, break off first binding from rest;
+       parse the rest and then handle this first one when recursion returns */
+    if (bind >= 0) {
+        const rest = bindings.slice(bind + 1);
+        bindings = bindings.slice(0, bind);
+        if (!parsebindings(rest))
+            ret = false;
+    }
+
+    /* parse a single binding: first split around : */
+    if ((bind = bindings.indexOf(':')) < 0)
+        return false; /* it's not a binding */
+    const cmd = bindings.slice(bind + 1).trim(); /* trimspaces() */
+    bindings = bindings.slice(0, bind);
+
+    for (let i = 0; i < mousebtn_names.length; i++)
+        if (bindings === mousebtn_names[i])
+            throw new Error('parsebindings(): bind_mousebtn() not ported yet');
+
+    /* read the key to be bound */
+    key = txt2key(bindings);
+    if (!key)
+        throw new Error('parsebindings(): config_error_add() not ported yet');
+
+    /* is it a special key? */
+    if (bind_specialkey(key, cmd))
+        throw new Error('parsebindings(): Cmd.spkeys[] not ported yet');
+
+    /* is it a menu command? */
+    if (default_menu_cmd_names.includes(cmd))
+        throw new Error('parsebindings(): add_menu_cmd_alias() not ported yet');
+
+    /* extended command? */
+    if (!bind_key(key, cmd, true))
+        throw new Error('parsebindings(): config_error_add() not ported yet');
+    return ret;
+}
+
+/* C ref: options.c default_menu_cmd_info[].name */
+const default_menu_cmd_names = [
+    "menu_next_page", "menu_previous_page", "menu_first_page",
+    "menu_last_page", "menu_select_all", "menu_invert_all",
+    "menu_deselect_all", "menu_select_page", "menu_invert_page",
+    "menu_deselect_page", "menu_search", "menu_shift_right",
+    "menu_shift_left",
+];
+
+/* C ref: cmd.c spkeys_binds[].name, bind_specialkey() -- whether the
+   command names a special key */
+function bind_specialkey(key, command) {
+    const spkeys_names = [
+        "getdir.self", "getdir.self2", "getdir.help", "getdir.mouse",
+        "count", "getpos.self", "getpos.pick", "getpos.pick.quick",
+        "getpos.pick.once", "getpos.pick.verbose", "getpos.valid",
+        "getpos.autodescribe", "getpos.mon.next", "getpos.mon.prev",
+        "getpos.obj.next", "getpos.obj.prev", "getpos.door.next",
+        "getpos.door.prev", "getpos.unexplored.next",
+        "getpos.unexplored.prev", "getpos.valid.next", "getpos.valid.prev",
+        "getpos.all.next", "getpos.all.prev", "getpos.help",
+        "getpos.filter", "getpos.moveskip", "getpos.menu",
+    ];
+    void key;
+    return spkeys_names.includes(command);
 }
 
 // C ref: files.c nh_basename()

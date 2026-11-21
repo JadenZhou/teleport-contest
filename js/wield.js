@@ -18,7 +18,8 @@ import { prinv, getobj, hands_obj, splittable, freeinv } from './invent.js';
 import { addinv } from './u_init.js';
 import { splitobj } from './mkobj.js';
 import { simpleonames } from './iactions.js';
-import { vtense } from './objnam.js';
+import { vtense, otense } from './objnam.js';
+import { inv_cnt } from './hack.js';
 import { highc } from './hacklib.js';
 import { tty_yn_function } from './wintty.js';
 import { LENSES, ARMOR_CLASS, ARM_GLOVES, ARM_BOOTS } from './objects.js';
@@ -267,14 +268,6 @@ async function ynq(query) {
     return await tty_yn_function(query, "ynq", 'q');
 }
 
-// C ref: hack.c inv_cnt()
-function inv_cnt(incl_gold) {
-    let ct = 0;
-    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
-        if (incl_gold || otmp.invlet !== '$')
-            ct++;
-    return ct;
-}
 
 /* C ref: obj.h is_plural() (undiscovered_artifact() isn't ported),
    pair_of() */
@@ -290,14 +283,6 @@ function pair_of(o) {
                     || objects[o.otyp].oc_armcat === ARM_BOOTS)));
 }
 
-// C ref: objnam.c otense()
-function otense(otmp, verb) {
-    /* verb is given in plural (without trailing s).  Return as input
-       if the result of xname(otmp) would be plural. */
-    if (!is_plural(otmp))
-        return vtense(null, verb);
-    return verb;
-}
 
 // C ref: shk.c Shk_Your()/shk_your() -- the hero's own (unpaid-free,
 // carried) objects

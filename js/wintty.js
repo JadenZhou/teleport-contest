@@ -413,7 +413,7 @@ async function tty_putstr_menu_text(window, cw, attr, str) {
 // topl.c: the message window (top line)
 
 // C ref: wintty.h WIN_STOP, WIN_NOSTOP, WIN_LOCKHISTORY
-const WIN_STOP = 1;
+export const WIN_STOP = 1;
 const WIN_NOSTOP = 0x10;
 const WIN_LOCKHISTORY = 4;
 

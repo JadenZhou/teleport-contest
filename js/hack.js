@@ -57,6 +57,7 @@ import { CORPSE } from './objects.js';
 import { is_flyer, is_floater } from './mondata.js';
 import { float_vs_flight } from './polyself.js';
 import { pickup } from './pickup.js';
+import { shop_keeper } from './insight.js';
 import { IS_THRONE, IS_GRAVE, IS_FOUNTAIN, IS_ALTAR, D_ISOPEN, STAIRS,
          ECMD_TIME, ECMD_OK } from './const.js';
 import { dotrap } from './trap.js';
@@ -1059,11 +1060,6 @@ function IS_SHOP(x) {
     return (game.level.rooms?.[x]?.rtype ?? 0) >= SHOPBASE;
 }
 
-/* C ref: shk.c shop_keeper() */
-function shop_keeper(rmno) {
-    return (rmno >= ROOMOFFSET)
-        ? (game.level.rooms?.[rmno - ROOMOFFSET]?.resident || null) : null;
-}
 
 /* C ref: '*in_rooms(x, y, SHOPBASE)' -- the first char of the buffer,
    '\0' when the spot is in no shop */

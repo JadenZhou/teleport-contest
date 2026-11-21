@@ -25,6 +25,7 @@ import { is_demon, is_undead } from './mondata.js';
 import { ABASE, AMAX, adjattrib, adjalign, change_luck } from './attrib.js';
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
+import { paranoid_query } from './cmd.js';
 import { welded, bimanual } from './wield.js';
 import { which_armor, sobj_at, is_pool, is_lava } from './makemon.js';
 import { confers_luck } from './timeout.js';
@@ -34,6 +35,12 @@ import { tty_yn_function } from './wintty.js';
 
 // C ref: pray.c Moloch
 const Moloch = "Moloch";
+
+// C ref: pray.c u_gname()
+/* returns the name of the hero's deity */
+export function u_gname() {
+    return align_gname(game.u.ualign.type);
+}
 
 // C ref: pray.c align_gname()
 export function align_gname(alignment) {
@@ -663,7 +670,7 @@ function water_prayer(bless_water) {
 }
 
 // C ref: pray.c can_pray()
-async function can_pray(praying) /* false means no messages should be given */ {
+export async function can_pray(praying) /* false means no messages should be given */ {
     const g = game;
     const u = g.u;
     let alignment;
@@ -796,17 +803,6 @@ async function prayer_done() {
     return 1;
 }
 
-// C ref: cmd.c paranoid_query() -> paranoid_ynq() -- the !be_paranoid
-// case: a plain y/n query
-async function paranoid_query(be_paranoid, prompt) {
-    let c;
-    if (be_paranoid)
-        throw new Error('paranoid_query(): paranoid_confirm "yes" query not ported yet');
-    c = await tty_yn_function(prompt, "yn", 'n'); /* ynchars */
-    if (c !== 'y')
-        c = 'n';
-    return c === 'y';
-}
 
 // C ref: pline.c verbalize()
 async function verbalize(line) {
