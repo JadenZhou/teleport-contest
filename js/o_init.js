@@ -227,6 +227,8 @@ export function init_oclass_probs() {
     let i;
     let sum;
     let oclass;
+    /* go.oclass_prob_totals[MAXOCLASSES] (zeroed at program start) */
+    if (!game.oclass_prob_totals) game.oclass_prob_totals = new Array(MAXOCLASSES).fill(0);
     for (oclass = 0; oclass < MAXOCLASSES; ++oclass) {
         sum = 0;
         /* note: for ILLOBJ_CLASS, bases[oclass+1]-1 isn't the last item

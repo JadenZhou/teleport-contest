@@ -45,6 +45,7 @@ import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
 import { dohelp } from './pager.js';
 import { doopen } from './lock.js';
+import { dosave } from './save.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -124,6 +125,7 @@ const cmd_funcs = {
     doset_simple: () => doset_simple(),
     doset: () => doset(),
     dopickup: () => dopickup(),
+    dosave: () => dosave(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",

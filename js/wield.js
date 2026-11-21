@@ -10,7 +10,10 @@ import { P_NONE, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, P_POLEARMS, P_LANCE,
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, TIN_OPENER,
          HEAVY_IRON_BALL, IRON_CHAIN, TOWEL, CORPSE, AKLYS, SILVER } from './objects.js';
 import { ECMD_OK, ECMD_TIME, ECMD_FAIL, W_ARMOR, W_ACCESSORY,
-         W_SADDLE, W_RINGL, W_RINGR, W_TOOL } from './const.js';
+         W_SADDLE, W_RINGL, W_RINGR, W_TOOL, W_ARM, W_ARMC, W_ARMH, W_ARMS,
+         W_ARMG, W_ARMF, W_ARMU, W_AMUL, W_BALL, W_CHAIN, I_SPECIAL } from './const.js';
+import { w_blocks } from './worn.js';
+import { PM_MONK } from './monsters.js';
 import { M1_NOHANDS, M2_DEMON, M2_WERE, S_IMP, S_VAMPIRE, MZ_SMALL, mons,
          PM_SHADE, PM_TENGU } from './monsters.js';
 import { pline, You } from './display.js';
@@ -68,57 +71,93 @@ export function is_pole(otmp) {
 }
 export function is_wet_towel(o) { return o.otyp === TOWEL && o.spe > 0; }
 
-// C ref: worn.c setworn() -- the weapon slots (W_WEP, W_SWAPWEP,
-// W_QUIVER); armor and accessories aren't handled here yet
-const weapon_slots = [
+// C ref: worn.c worn[] -- the hero's equipment slots
+const worn = [
+    { w_mask: W_ARM, w_obj: 'uarm' },
+    { w_mask: W_ARMC, w_obj: 'uarmc' },
+    { w_mask: W_ARMH, w_obj: 'uarmh' },
+    { w_mask: W_ARMS, w_obj: 'uarms' },
+    { w_mask: W_ARMG, w_obj: 'uarmg' },
+    { w_mask: W_ARMF, w_obj: 'uarmf' },
+    { w_mask: W_ARMU, w_obj: 'uarmu' },
+    { w_mask: W_RINGL, w_obj: 'uleft' },
+    { w_mask: W_RINGR, w_obj: 'uright' },
     { w_mask: W_WEP, w_obj: 'uwep' },
     { w_mask: W_SWAPWEP, w_obj: 'uswapwep' },
     { w_mask: W_QUIVER, w_obj: 'uquiver' },
-    { w_mask: W_RINGL, w_obj: 'uleft' },
-    { w_mask: W_RINGR, w_obj: 'uright' },
-    { w_mask: W_TOOL, w_obj: 'ublindf' },
+    { w_mask: W_AMUL, w_obj: 'uamul' },
+    { w_mask: W_TOOL, w_obj: 'ublindf' }, /* blindfold|towel|lenses */
+    { w_mask: W_BALL, w_obj: 'uball' },
+    { w_mask: W_CHAIN, w_obj: 'uchain' },
 ];
+
+// C ref: worn.c setworn()
 export function setworn(obj, mask) {
-    if (mask & ~(W_WEP | W_SWAPWEP | W_QUIVER | W_RINGL | W_RINGR | W_TOOL))
-        throw new Error('setworn(): armor/amulet/eyewear slots not ported yet');
-    for (const wp of weapon_slots) {
-        if (wp.w_mask & mask) {
-            const oobj = game[wp.w_obj];
-            if (oobj) {
-                if (game.u.twoweap && (oobj.owornmask & (W_WEP | W_SWAPWEP)))
-                    game.u.twoweap = false; /* set_twoweap(FALSE) */
-                oobj.owornmask &= ~wp.w_mask;
-                if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
-                    const p = objects[oobj.otyp].oc_oprop;
-                    if (p)
-                        throw new Error('setworn(): extrinsic-granting weapon not ported yet');
-                    if (oobj.oartifact)
-                        throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
-                }
-                /* cancel_doff(): no armor removal in progress for weapons */
-            }
-            game[wp.w_obj] = obj;
-            if (obj) {
-                obj.owornmask = (obj.owornmask || 0) | wp.w_mask;
-                if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
-                    if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
-                        || mask !== W_WEP) {
-                        const p = objects[obj.otyp].oc_oprop;
-                        if (p && (wp.w_mask & (W_RINGL | W_RINGR | W_TOOL))) {
-                            /* u.uprops[p].extrinsic |= wp->w_mask */
-                            const up = game.u.uprops[p];
-                            up.extrinsic = (up.extrinsic || 0) | wp.w_mask;
-                            /* w_blocks(): rings don't block properties */
-                        } else if (p)
-                            throw new Error('setworn(): extrinsic-granting weapon not ported yet');
+    const u = game.u;
+    let p;
+
+    if ((mask & (W_ARM | I_SPECIAL)) === (W_ARM | I_SPECIAL)) {
+        /* restoring saved game; no properties are conferred via skin */
+        game.uskin = obj;
+        /* assert( !uarm ); */
+    } else {
+        for (const wp of worn) {
+            if (wp.w_mask & mask) {
+                const oobj = game[wp.w_obj];
+                if (oobj && !(oobj.owornmask & wp.w_mask))
+                    console.error(`impossible: Setworn: mask=0x${wp.w_mask.toString(16)}.`);
+                if (oobj) {
+                    if (u.twoweap && (oobj.owornmask & (W_WEP | W_SWAPWEP)))
+                        u.twoweap = false; /* set_twoweap(FALSE) */
+                    oobj.owornmask &= ~wp.w_mask;
+                    if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
+                        p = objects[oobj.otyp].oc_oprop;
+                        if (p)
+                            throw new Error('setworn(): removing an extrinsic-granting item (monstunseesu_prop()) not ported yet');
+                        u.uprops[p].extrinsic = u.uprops[p].extrinsic & ~wp.w_mask;
+                        if ((p = w_blocks(oobj, mask)) !== 0)
+                            u.uprops[p].blocked &= ~wp.w_mask;
+                        if (oobj.oartifact)
+                            throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
                     }
-                    if (obj.oartifact)
-                        throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
+                    /* in case wearing or removal is in progress or removal
+                       is pending (via 'A' command for multiple items):
+                       cancel_doff() -- no multi-turn armor removal yet */
+                }
+                game[wp.w_obj] = obj;
+                if (obj) {
+                    obj.owornmask = (obj.owornmask || 0) | wp.w_mask;
+                    /* Prevent getting/blocking intrinsics from wielding
+                     * potions, through the quiver, etc.
+                     * Allow weapon-tools, too.
+                     * wp_mask should be same as mask at this point.
+                     */
+                    if (wp.w_mask & ~(W_SWAPWEP | W_QUIVER)) {
+                        if (obj.oclass === WEAPON_CLASS || is_weptool(obj)
+                            || mask !== W_WEP) {
+                            p = objects[obj.otyp].oc_oprop;
+                            const up = u.uprops[p];
+                            up.extrinsic = (up.extrinsic || 0) | wp.w_mask;
+                            if ((p = w_blocks(obj, mask)) !== 0)
+                                u.uprops[p].blocked |= wp.w_mask;
+                        }
+                        if (obj.oartifact)
+                            throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
+                    }
                 }
             }
         }
+        if (obj && (obj.owornmask & W_ARMOR) !== 0)
+            u.uroleplay.nudist = false;
+        /* tux -> tuxedo -> "monkey suit" -> monk's suit */
+        game.iflags.tux_penalty = !!(game.uarm && game.urole.mnum === PM_MONK
+                                     && game.urole.spelarmr);
     }
-    /* update_inventory(): no perm_invent */
+    if ((game.flags.weaponstatus && (mask & W_WEP) !== 0)
+        || (game.flags.armorstatus && (mask & W_ARMOR) !== 0))
+        game.disp_botl = true;
+    /* update_inventory(): no perm_invent; recalc_telepat_range(): no
+       telepathy range yet */
 }
 
 // C ref: wield.c setuwep()
