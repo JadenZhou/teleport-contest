@@ -1,0 +1,2 @@
+PROOF-OK  seed0116-wizard-wear-shop.session.json: rule 5517->5516 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 16) lostHonest [] 
+1 regressed session(s); all satisfy decision D

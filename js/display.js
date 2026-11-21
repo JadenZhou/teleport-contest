@@ -778,11 +778,16 @@ function mon_warning(mon) {
 
 // C ref: display.c display_monster() -- the plain case: the monster's own
 // glyph (mon_to_glyph()), in its mons[] color; mimic appearances,
-// hilite_pet/ridden-steed flags and warnings are not ported yet
+// ridden-steed flags and warnings are not ported yet
 function display_monster(x, y, mon) {
     const ptr = mon.data;
     const ch = def_monsyms[ptr.mlet] ?? '?';
-    show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false);
+    /* a tame monster gets pet_to_glyph() (mon->mtame && !Hallucination),
+       whose glyphs have MG_PET; wintty.c tty_print_glyph() shows those
+       with iflags.wc2_petattr when hilite_pet is on */
+    const attr = (mon.mtame && !Hallucination() && game.iflags?.wc_hilite_pet)
+                 ? game.iflags.wc2_petattr : 0;
+    show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false, attr);
 }
 
 // C ref: you.h Hallucination
@@ -1188,7 +1193,7 @@ export function newsym(x, y) {
            lit corridor) was seen by night vision (or lit_corridor), so
            correct the hero's memory to match waslit */
         if ((!loc.waslit || (game.flags.dark_room !== false
-                             && game.flags.color !== false))
+                             && game.iflags.wc_color !== false))
             && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
             loc.remembered_glyph = rememb_glyph(S_corr_g);
         // Out of sight but remembered — show remembered glyph
@@ -1455,8 +1460,10 @@ function _buildScreenOutput(cursor_on_u) {
         output += render_map_row(y) + '\n';
     }
 
-    // Row 22-23: status
-    const [st1, st2] = game._status_lines || ['', ''];
+    // Row 22-23: status, as long as no screen clear has erased them
+    // since bot() last drew them
+    const [st1, st2] = (game.status_shown !== false && game._status_lines)
+                       || ['', ''];
     output += st1 + '\n';
     output += st2;
 
@@ -1478,14 +1485,16 @@ function _buildScreenOutput(cursor_on_u) {
                 display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), loc.disp_attr ?? 0);
             }
         }
-        // Status lines
-        const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
-            m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');
-        for (let c = 0; c < display.cols; c++)
-            display.setCell(c, 22, c < s1.length ? s1[c] : ' ', NO_COLOR, 0);
-        const s2 = st2;
-        for (let c = 0; c < display.cols; c++)
-            display.setCell(c, 23, c < s2.length ? s2[c] : ' ', NO_COLOR, 0);
+        // Status lines (left alone while erased)
+        if (game.status_shown !== false) {
+            const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
+                m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');
+            for (let c = 0; c < display.cols; c++)
+                display.setCell(c, 22, c < s1.length ? s1[c] : ' ', NO_COLOR, 0);
+            const s2 = st2;
+            for (let c = 0; c < display.cols; c++)
+                display.setCell(c, 23, c < s2.length ? s2[c] : ' ', NO_COLOR, 0);
+        }
         // C ref: display.c flush_screen(): if (cursor_on_u) curs(WIN_MAP, u.ux, u.uy)
         if (cursor_on_u && game.u?.ux > 0) {
             display.setCursor(game.u.ux - 1, game.u.uy + 1);
@@ -1522,6 +1531,8 @@ export async function cls() {
         await tty_display_nhwindow(game.WIN_MESSAGE, false); /* flush messages */
     game.disp_botlx = true;                   /* force update of botl window */
     if (display?.clearScreen) display.clearScreen();  /* clear_nhwindow(WIN_MAP) */
+    if (game.status_shown !== undefined)
+        game.status_shown = false; /* erase_tty_screen() */
 }
 
 // ── bot ──
@@ -1529,10 +1540,15 @@ export async function cls() {
 // window keeps them until the next bot()); they are drawn on rows 22-23
 // and again by each flush_screen() redraw.
 export function bot() {
+    /* gb.bot_disabled: set while windows.c select_menu() and getlin()
+       have a menu or prompt up */
+    if (game.bot_disabled)
+        return;
     const display = game?.nhDisplay;
     if (game.u && game.u.uhp !== -1) {
         const st1 = _statusLine1(), st2 = _statusLine2();
         game._status_lines = [st1, st2];
+        game.status_shown = true;
         if (display?.grid) {
             const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
                 m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');

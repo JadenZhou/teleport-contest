@@ -1,0 +1,12 @@
+PROOF-OK  probe90909-valk-level2-pit-dog-wait.session.json: rule 2431->2431 honest 20->19 | stopStep 19 mainFSM 19 branchRuleStep null (main null) lostHonest [20] 
+PROOF-OK  probe90935-valk-level2-pit-dog-wait.session.json: rule 2814->2814 honest 20->19 | stopStep 19 mainFSM 19 branchRuleStep null (main null) lostHonest [20] 
+PROOF-OK  probe90948-valk-level2-pit-dog-wait.session.json: rule 2637->2637 honest 20->19 | stopStep 19 mainFSM 19 branchRuleStep null (main null) lostHonest [20] 
+PROOF-OK  probe90974-valk-level2-pit-dog-wait.session.json: rule 2680->2680 honest 20->19 | stopStep 19 mainFSM 19 branchRuleStep null (main null) lostHonest [20] 
+PROOF-OK  probe90987-valk-level2-pit-dog-wait.session.json: rule 3300->3300 honest 20->19 | stopStep 19 mainFSM 19 branchRuleStep null (main null) lostHonest [20] 
+PROOF-OK  probe91000-valk-level2-pit-dog-wait.session.json: rule 2239->2239 honest 20->19 | stopStep 19 mainFSM 19 branchRuleStep null (main null) lostHonest [20] 
+PROOF-OK  probe92323-wizard-wear-shop.session.json: rule 5041->5027 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 18) lostHonest [] 
+PROOF-OK  probe92349-wizard-wear-shop.session.json: rule 8774->8773 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 16) lostHonest [] 
+PROOF-OK  probe92362-wizard-wear-shop.session.json: rule 4458->4456 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 16) lostHonest [] 
+PROOF-OK  probe92401-wizard-wear-shop.session.json: rule 4736->4649 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 17) lostHonest [] 
+PROOF-OK  probe92414-wizard-wear-shop.session.json: rule 4895->4877 honest 16->16 | stopStep 16 mainFSM 16 branchRuleStep 16 (main 18) lostHonest [] 
+11 regressed session(s); all satisfy decision D

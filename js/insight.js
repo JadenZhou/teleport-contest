@@ -73,7 +73,7 @@ import { SHOPBASE, NO_ROOM, ROOMOFFSET } from './const.js';
 import { ACURR, ABASE, AMAX, ATTRMAX, from_what } from './attrib.js';
 import { P_SKILL, P_MAX_SKILL, P_ADVANCE, P_RESTRICTED, weapon_type,
          practice_needed_to_advance } from './weapon.js';
-import { def_oc_syms } from './drawing.js';
+import { oc_to_str } from './options.js';
 import { is_pool, is_lava } from './makemon.js';
 import { ART_OGRESMASHER } from './artilist.js';
 import { hates_silver, defended } from './mondata.js';
@@ -469,14 +469,6 @@ export function inside_shop(x, y) {
         || !((game.level.rooms?.[rno - ROOMOFFSET]?.rtype ?? 0) >= SHOPBASE))
         rno = NO_ROOM;
     return rno;
-}
-
-// C ref: options.c oc_to_str()
-function oc_to_str(src) {
-    let dest = '';
-    for (const c of src || '')
-        dest += def_oc_syms[c.charCodeAt(0)];
-    return dest;
 }
 
 // C ref: wield.c empty_handed()

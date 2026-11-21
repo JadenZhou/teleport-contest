@@ -13,7 +13,8 @@ import { game, resetGame } from './gstate.js';
 import { initRng, enableRngLog, getRngLog } from './rng.js';
 import { pushKey, nhgetch } from './input.js';
 import { early_init, newgame, moveloop_preamble, moveloop_core, maybe_do_tutorial } from './allmain.js';
-import { parseNethackrc, set_playmode, parsebindings } from './options.js';
+import { parseNethackrc, set_playmode, parsebindings,
+         initoptions_init_defaults } from './options.js';
 import { reset_commands } from './cmd.js';
 import { wd_message } from './sys.js';
 import { plnamesuffix } from './role.js';
@@ -100,11 +101,16 @@ export class NethackGame {
         /* whoami(): the JS port has no login name to fall back on, so a
            game without OPTIONS=name asks "Who are you?" */
         g.plname = opts.name || '';
-        /* boolean options that default to on (optlist.h) */
-        g.flags = { verbose: true, legacy: true, acoustics: true, tutorial: true,
-                    safe_dog: true, autoopen: true, pickup_thrown: true,
-                    ...opts.flags };
-        g.iflags = { ...opts.iflags };
+        /* C ref: options.c initoptions_init() -- every boolean option's
+           default (optlist.h) and the other option defaults, then what
+           the config file set */
+        const dflt = initoptions_init_defaults();
+        g.flags = { ...dflt.flags, verbose: true, legacy: true, acoustics: true,
+                    tutorial: true, safe_dog: true, autoopen: true,
+                    pickup_thrown: true, ...opts.flags };
+        g.iflags = { ...dflt.iflags, ...opts.iflags };
+        g.a11y = { ...dflt.a11y, ...opts.a11y };
+        if (opts.horsename) g.horsename = opts.horsename;
         g.pl_character = opts.pl_character || '';
         /* the fixed clock calendar.c getlt() reads */
         g.datetime = this._datetime;
@@ -124,7 +130,8 @@ export class NethackGame {
         g.configfile = '.nethackrc';
 
         // Initialize hero struct (zeroed again by u_init_misc())
-        g.u = { ux: 0, uy: 0, ux0: 0, uy0: 0, uroleplay: {} };
+        g.u = { ux: 0, uy: 0, ux0: 0, uy0: 0,
+                uroleplay: { ...dflt.uroleplay, ...opts.uroleplay } };
         g.context = { move: 0 };
         g.program_state = {};
         /* C ref: options.c initoptions_init() -- default fruit name;

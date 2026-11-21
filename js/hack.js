@@ -21,26 +21,25 @@ import {
     Is_waterlevel, HEADSTONE, GP_ALLOW_U, PROT_FROM_SHAPE_CHANGERS,
     D_BROKEN, D_NODOOR, NO_ROOM, SHARED, SHARED_PLUS, ROOMOFFSET, COLNO,
     ROWNO, xdir, ydir, DO_MOVE, TEST_MOVE, WT_TOOMUCH_DIAGONAL, IS_DOOR,
-    IS_FURNITURE, SCORR, SDOOR, TREE, OROOM,
+    IS_FURNITURE, SCORR, SDOOR, TREE, OROOM, P_AXE, ACCESSIBLE, IS_STWALL,
 } from './const.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_GRID_BUG, mons, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, MZ_SMALL,
          MZ_LARGE, M1_CONCEAL, S_VORTEX, PM_AIR_ELEMENTAL, M1_SLITHY, S_GHOST,
-         PM_ORACLE, S_EEL, PM_DISPLACER_BEAST, M2_PNAME } from './monsters.js';
+         PM_ORACLE, S_EEL, PM_DISPLACER_BEAST, M2_PNAME, AT_EXPL } from './monsters.js';
 import { m_at, is_pool, is_lava, closed_door, may_passwall, sobj_at, goodpos,
          place_monster, accessible } from './makemon.js';
-import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { dig_typ } from './dig.js';
-import { AT_EXPL } from './monsters.js';
-import { IS_STWALL, WEB as WEB_TRAP } from './const.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object,
          glyph_is_invisible } from './display.js';
 import { vision_recalc } from './vision.js';
-import { t_at, VIBRATING_SQUARE, is_pit } from './trap.js';
+import { t_at, VIBRATING_SQUARE, is_pit, WEB } from './trap.js';
 import { dist2 } from './hacklib.js';
 import { onscary } from './monmove.js';
-import { COIN_CLASS, BOULDER, PICK_AXE, DWARVISH_MATTOCK } from './objects.js';
+import { COIN_CLASS, BOULDER, PICK_AXE, DWARVISH_MATTOCK, STATUE, WEAPON_CLASS,
+         TOOL_CLASS, objects } from './objects.js';
+import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { u_on_newpos } from './mklev.js';
 import { doopen_indir } from './lock.js';
 import { do_attack } from './uhitm.js';
@@ -86,6 +85,11 @@ function impossible(msg) { console.error(`impossible: ${msg}`); }
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
     return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
+}
+/* C ref: obj.h is_axe() */
+function is_axe(otmp) {
+    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
+            && objects[otmp.otyp].oc_skill === P_AXE);
 }
 
 function strongmonst(ptr) { return (ptr.mflags2 & M2_STRONG) !== 0; }
@@ -1858,7 +1862,7 @@ function domove_fight_ironbars(x, y) {
 function domove_fight_web(x, y) {
     const trap = t_at(x, y);
 
-    if (game.context.forcefight && trap && trap.ttyp === WEB_TRAP && trap.tseen)
+    if (game.context.forcefight && trap && trap.ttyp === WEB && trap.tseen)
         throw new Error('domove_fight_web(): cutting a web not ported yet');
     return false;
 }
