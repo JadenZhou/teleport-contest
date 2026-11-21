@@ -95,12 +95,22 @@ function cl_eos() {
     for (let r = cy + 1; r < t.rows; r++)
         for (let c = 0; c < t.cols; c++) d.setCell(c, r, ' ', NO_COLOR, 0);
     cmov(cx, cy);
+    /* the status lines (rows - 2 on) are gone from the screen until the
+       next bot() redraws them */
+    if (cy <= t.rows - 2)
+        game.status_shown = false;
 }
 
-// C ref: termcap.c term_clear_screen()
+// C ref: termcap.c term_clear_screen() -- and wintty.c erase_tty_screen(),
+// which blanks the status window (tty_clear_nhwindow(WIN_STATUS) sets
+// disp.botlx) once it is in use
 function term_clear_screen() {
     term()?.clearScreen();
     cmov(0, 0);
+    if (game.status_shown !== undefined) {
+        game.status_shown = false;
+        game.disp_botlx = true;
+    }
 }
 
 // C ref: termcap.c home()
@@ -776,9 +786,20 @@ const erase_char = '\x7f', kill_char = '\x15';
 const BUFSZ = 256;
 
 // C ref: getline.c tty_getlin()
+// (callers reach it directly, so it also does what the core's wrapper,
+// windows.c getlin(), does: no status line updates while it's up; the
+// command queue isn't ported)
 export async function tty_getlin(query) {
+    const old_bot_disabled = game.bot_disabled; /* getlin() */
+
+    if (!game.program_state) game.program_state = {};
+    game.program_state.in_getlin = 1;
+    game.bot_disabled = true;
     game.suppress_history = false;
-    return hooked_tty_getlin(query, null);
+    const buf = await hooked_tty_getlin(query, null);
+    game.bot_disabled = old_bot_disabled;
+    game.program_state.in_getlin = 0;
+    return buf;
 }
 
 // C ref: getline.c hooked_tty_getlin() (NEWAUTOCOMP, !EDIT_GETLIN);
@@ -1047,14 +1068,19 @@ export function tty_end_menu(window, prompt) {
 }
 
 // C ref: wintty.c tty_select_menu()
+// (callers reach it directly, so it also does what the core's wrapper,
+// windows.c select_menu(), does: no status line updates while it's up)
 export async function tty_select_menu(window, how) {
     const cw = wins()[window];
     let n, cancelled;
+    const old_bot_disabled = game.bot_disabled; /* select_menu() */
 
+    game.bot_disabled = true;
     cw.how = how;
     await tty_display_nhwindow(window, true);
     cancelled = !!(cw.flags & WIN_CANCELLED);
     await tty_dismiss_nhwindow(window); /* does not destroy window data */
+    game.bot_disabled = old_bot_disabled;
 
     const selected = [];
     if (cancelled) {
