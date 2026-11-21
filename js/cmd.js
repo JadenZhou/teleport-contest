@@ -5,7 +5,8 @@
 
 import { game } from './gstate.js';
 import { nhgetch } from './input.js';
-import { newsym, flush_screen, pline, You_cant } from './display.js';
+import { newsym, flush_screen, pline, You_cant, You } from './display.js';
+import { getpos } from './getpos.js';
 import { vision_recalc } from './vision.js';
 import { tty_start_menu, tty_add_menu, tty_end_menu, tty_select_menu } from './wintty.js';
 import { reveal_terrain } from './detect.js';
@@ -108,6 +109,8 @@ const cmd_funcs = {
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),
     doddrop: () => doddrop(),
+    dotravel: () => dotravel(),
+    dotravel_target: () => dotravel_target(),
     dodown: () => dodown(),
     doup: () => doup(),
     dozap: () => dozap(),
@@ -1106,6 +1109,88 @@ export async function get_adjacent_loc(prompt, emsg, x, y, cc) {
         return 0;
     }
     return 1;
+}
+
+// C ref: cmd.c dotravel() -- '_' command, #travel, via keyboard rather
+// than mouse click
+async function dotravel() {
+    const u = game.u;
+    const iflags = game.iflags;
+    const cc = { x: 0, y: 0 };
+
+    /*
+     * Traveling used to be a no-op if user toggled 'travel' option
+     * Off.  However, travel was initially implemented as a mouse-only
+     * command and the original purpose of the option was to be able
+     * to prevent clicks on the map from initiating travel.
+     *
+     * Travel via '_' came later.  Since it requires a destination--
+     * which offers the user a chance to cancel if it was accidental--
+     * there's no reason for the option to disable travel-by-keys.
+     */
+
+    if (!iflags.travelcc)
+        iflags.travelcc = { x: 0, y: 0 };
+    cc.x = iflags.travelcc.x;
+    cc.y = iflags.travelcc.y;
+    if (cc.x === 0 && cc.y === 0) {
+        /* No cached destination, start attempt from current position */
+        cc.x = u.ux;
+        cc.y = u.uy;
+    }
+    iflags.getloc_travelmode = true;
+    if (iflags.menu_requested) {
+        throw new Error('dotravel(): getpos_menu() (m_ travel) not ported yet');
+    } else {
+        await pline("Where do you want to travel to?");
+        if ((await getpos(cc, true, "the desired destination")) < 0) {
+            /* user pressed ESC */
+            iflags.getloc_travelmode = false;
+            return ECMD_CANCEL;
+        }
+    }
+    iflags.travelcc.x = u.tx = cc.x;
+    iflags.travelcc.y = u.ty = cc.y;
+
+    return await dotravel_target();
+}
+
+// C ref: cmd.c dotravel_target() -- #retravel, travel to iflags.travelcc,
+// which must be set
+async function dotravel_target() {
+    const u = game.u;
+    const iflags = game.iflags;
+    const ctx = game.context;
+
+    if (!iflags.travelcc)
+        iflags.travelcc = { x: 0, y: 0 };
+    if (!isok(iflags.travelcc.x, iflags.travelcc.y)) {
+        /* assume <0,0>, the value assigned when travel reaches destination */
+        await pline("No travel destination set.");
+        return ECMD_OK;
+    } else if (u.ux === iflags.travelcc.x && u.uy === iflags.travelcc.y) {
+        /* maybe interrupted while traveling then just walked rest of way
+           so destination hasn't been reset yet */
+        await You("are already here.");
+        iflags.travelcc.x = iflags.travelcc.y = 0;
+        return ECMD_OK;
+    }
+
+    iflags.getloc_travelmode = false;
+
+    ctx.travel = 1;
+    ctx.travel1 = 1;
+    ctx.run = 8;
+    ctx.nopick = 1;
+    game.domove_attempting |= DOMOVE_RUSH;
+
+    if (!game.multi)
+        game.multi = Math.max(COLNO, ROWNO);
+    u.last_str_turn = 0;
+    ctx.mv = true;
+
+    await domove();
+    return ECMD_TIME;
 }
 
 // C ref: cmd.c paranoid_ynq() -- the !be_paranoid cases (plain y/n or
