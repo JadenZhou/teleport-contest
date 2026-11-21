@@ -38,6 +38,7 @@ import { merged } from './invent.js';
 import { obj_no_longer_held } from './do.js';
 import { block_point, recalc_block_point } from './vision.js';
 import { vobj_at } from './display.js';
+import { attach_egg_hatch_timeout } from './timeout.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -184,21 +185,50 @@ export function start_corpse_timeout(body) {
 
 // C ref: mkobj.c set_corpsenm()
 export function set_corpsenm(obj, id) {
-    /* obj->timed: timers are not ported yet */
+    const old_id = obj.corpsenm;
+    let when = 0;
+
+    if (obj.timer) { /* obj->timed */
+        if (obj.otyp === O.EGG) {
+            /* when = stop_timer(HATCH_EGG, obj_to_any(obj)): the time left
+               needs the timer queue */
+            throw new Error('set_corpsenm(): stop_timer() of an egg hatch timer not ported yet');
+        } else {
+            when = 0;
+            obj.timer = null; /* obj_stop_timers(obj): corpse or figurine */
+        }
+    }
+    /* oeaten is used to determine how much nutrition is left in
+       multiple-bite food and also used to derive how many hit points
+       a creature resurrected from a partly eaten corpse gets; latter
+       is of interest when a <foo> corpse revives as a <foo> zombie
+       in case they are defined with different mons[].cnutrit values */
+    if (obj.otyp === O.CORPSE && obj.oeaten
+        /* when oeaten is non-zero, index old_id can't be NON_PM
+           and divisor mons[old_id].cnutrit can't be zero */
+        && mons[old_id].cnutrit !== mons[id].cnutrit) {
+        obj.oeaten = Math.trunc(obj.oeaten * mons[id].cnutrit
+                                / mons[old_id].cnutrit);
+    }
+
     obj.corpsenm = id;
     switch (obj.otyp) {
     case O.CORPSE:
         start_corpse_timeout(obj);
-        obj.owt = objects[obj.otyp].oc_weight; /* weight(obj) */
+        obj.owt = weight(obj);
         break;
     case O.FIGURINE:
-        /* attach_fig_transform_timeout() only for carried figurines */
+        if (obj.corpsenm !== NON_PM && !dead_species(obj.corpsenm, true)
+            && (obj.where === 'OBJ_INVENT' || obj.where === 'OBJ_MINVENT')) /* carried() || mcarried() */
+            throw new Error('set_corpsenm(): attach_fig_transform_timeout() not ported yet');
+        obj.owt = weight(obj);
         break;
     case O.EGG:
-        if (obj.corpsenm !== NON_PM)
-            impossible('set_corpsenm: egg hatch timers are not ported yet');
+        if (obj.corpsenm !== NON_PM && !dead_species(obj.corpsenm, true))
+            attach_egg_hatch_timeout(obj, when);
         break;
     default: /* tin, etc. */
+        obj.owt = weight(obj);
         break;
     }
 }
