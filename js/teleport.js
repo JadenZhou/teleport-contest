@@ -10,7 +10,8 @@ import { rn2, rnl } from './rng.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { In_endgame, In_quest, In_mines, TELEPORT_CONTROL, STUNNED, CONFUSION } from './const.js';
-import { dunlevs_in_dungeon, In_hell, depth, get_level, on_level } from './dungeon.js';
+import { dunlevs_in_dungeon, In_hell, depth, get_level, on_level,
+         print_dungeon } from './dungeon.js';
 import { schedule_goto, UTOTYPE_NONE } from './do.js';
 import {
     COLNO, ROWNO, ZAP_POS, isok, GP_ALLOW_XY, GP_CHECKSCARY, NO_MM_FLAGS,
@@ -338,15 +339,17 @@ function is_pool_or_lava_at(x, y) {
            || typ === LAVAWALL;
 }
 
-// C ref: teleport.c level_tele() -- the prompt for the destination; the
-// teleport itself (schedule_goto()/goto_level()), random_levtport, the
-// wizard-mode level menu and lev_by_name() are not ported yet
+// C ref: teleport.c level_tele() -- the prompt for the destination and
+// the wizard-mode level menu; random_levtport and lev_by_name() are not
+// ported yet
 export async function level_tele() {
     const g = game;
     const u = g.u;
     const wizard = !!g.flags?.debug;
     let newlev = 0;
     let buf = '';
+    const newlevel = { dnum: 0, dlevel: 0 };
+    let force_dest = false;
 
     if ((u.uhave?.amulet || In_endgame(u.uz) /* || In_sokoban(&u.uz) */)
         && !wizard) {
@@ -379,9 +382,23 @@ export async function level_tele() {
             } else if (buf === "\x1b") { /* cancelled */
                 return;
             }
-            if (!/^-?\d+$/.test(buf))
-                return; /* '?' menu and lev_by_name() -- not ported yet */
-            newlev = parseInt(buf, 10); /* atoi() */
+            if (wizard && buf === "?") {
+                /* levTport_menu: */
+                const r = await print_dungeon(true);
+                newlev = r.lev;
+                if (!newlev)
+                    return;
+
+                newlevel.dnum = r.rdgn;
+                newlevel.dlevel = r.rlev;
+                if (In_endgame(newlevel) && !In_endgame(u.uz))
+                    throw new Error('level_tele(): "Endgame prerequisite" amulet not ported yet');
+                force_dest = true;
+            } else {
+                if (!/^-?\d+$/.test(buf))
+                    return; /* lev_by_name() -- not ported yet */
+                newlev = parseInt(buf, 10); /* atoi() */
+            }
         } while (!newlev && !digit(buf[0])
                  && (buf[0] !== '-' || !digit(buf[1])) && trycnt < 10);
 
@@ -394,7 +411,8 @@ export async function level_tele() {
          */
         /* single_level_branch(): Is_knox() */
         if (g.dungeon_topology.d_knox_level
-            && on_level(u.uz, g.dungeon_topology.d_knox_level) && newlev > 0)
+            && on_level(u.uz, g.dungeon_topology.d_knox_level) && newlev > 0
+            && !force_dest)
             throw new Error('level_tele(): single_level_branch() not ported yet');
         /* if in Quest, the player sees "Home 1", etc., on the status
          * line, instead of the logical depth of the level.  controlled
@@ -420,13 +438,15 @@ export async function level_tele() {
 
     /* svk.killer.name[0] = 0: still alive, so far... */
 
-    if (newlev < 0)
+    if (newlev < 0 && !force_dest)
         throw new Error('level_tele(): teleporting above the dungeon not ported yet');
 
-    /* escape_by_flying, force_dest (wizard menu): not reached */
-    const newlevel = { dnum: 0, dlevel: 0 };
+    /* escape_by_flying: not reached */
     const topo = g.dungeon_topology;
-    if (u.uz.dnum === topo.d_medusa_level.dnum
+    if (force_dest) {
+        /* wizard mode menu; no further validation needed */
+        ;
+    } else if (u.uz.dnum === topo.d_medusa_level.dnum
         && newlev >= g.dungeons[u.uz.dnum].depth_start
                      + dunlevs_in_dungeon(u.uz)) {
         throw new Error('level_tele(): find_hell() not ported yet');
