@@ -41,6 +41,7 @@ import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon } from './do_wear.js';
 import { dodrink } from './potion.js';
+import { doread } from './read.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -107,6 +108,7 @@ const cmd_funcs = {
     doputon: () => doputon(),
     dodrink: () => dodrink(),
     dolook: () => dolook(),
+    doread: () => doread(),
     dojump: () => dojump(),
     dopickup: () => dopickup(),
 };
