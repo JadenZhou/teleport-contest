@@ -44,6 +44,7 @@ import { Never_mind, isok } from './const.js';
 import { dofire, dothrow } from './dothrow.js';
 import { dokick } from './dokick.js';
 import { doswapweapon, dowieldquiver, dowield, dotwoweapon } from './wield.js';
+import { enhance_weapon_skill } from './weapon.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { doeat } from './eat.js';
 import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
@@ -129,6 +130,7 @@ const cmd_funcs = {
     doread: () => doread(),
     dowield: () => dowield(),
     dotwoweapon: () => dotwoweapon(),
+    enhance_weapon_skill: () => enhance_weapon_skill(),
     dohelp: () => dohelp(),
     doopen: () => doopen(),
     dojump: () => dojump(),

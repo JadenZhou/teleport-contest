@@ -193,7 +193,7 @@ function is_lminion(mon) {
         && mon.data.maligntyp > 0;
 }
 /* C ref: monmove.h m_canseeu() */
-function m_canseeu(m) {
+export function m_canseeu(m) {
     return ((!Invis() || perceives(m.data))
             && !(Underwater() || game.u.uburied || m.mburied))
         ? couldsee(m.mx, m.my) : false;

@@ -125,7 +125,7 @@ function TWOWEAPOK(obj) {
 }
 
 // C ref: wield.c can_twoweapon()
-async function can_twoweapon() {
+export async function can_twoweapon() {
     const g = game;
     let otmp;
 
@@ -455,7 +455,7 @@ async function wielding(wep) {
 }
 
 // C ref: wield.c untwoweapon()
-async function untwoweapon() {
+export async function untwoweapon() {
     if (game.u.twoweap)
         throw new Error('untwoweapon(): set_twoweap() not ported yet');
 }

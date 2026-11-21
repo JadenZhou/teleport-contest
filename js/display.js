@@ -830,7 +830,7 @@ export function canseemon(mon) {
 }
 
 // C ref: display.h _tp_sensemon()
-function tp_sensemon(mon) {
+export function tp_sensemon(mon) {
     const u = game.u;
     const P = u.uprops?.[TELEPAT];
     const Blind_telepat = !!(P && (P.intrinsic || P.extrinsic));
@@ -1048,9 +1048,17 @@ export function see_nearby_objects() {
 }
 
 // C ref: display.h glyph_is_invisible() -- for a remembered glyph
-// (lev->glyph): the "remembered, unseen monster" 'I'
+// (lev->glyph): the "remembered, unseen monster" 'I'; also takes a
+// glyph_at() glyph (its kind)
 export function glyph_is_invisible(rg) {
-    return !!rg?.invisible;
+    return !!rg?.invisible || rg?.kind === 'invisible';
+}
+
+// C ref: display.h glyph_is_warning() -- for a glyph_at() glyph; warning
+// glyphs are never shown yet (display_warning() isn't ported; newsym()
+// stops before drawing one)
+export function glyph_is_warning(glyph) {
+    return glyph?.kind === 'warning';
 }
 
 // C ref: display.c map_invisible()

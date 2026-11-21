@@ -53,7 +53,8 @@ import { the } from './iactions.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
 import { set_ustuck } from './uhitm.js';
-import { CONFLICT } from './const.js';
+import { CONFLICT, HVY_ENCUMBER } from './const.js';
+import { gethungry } from './eat.js';
 import { AT_ENGL, AT_HUGS, AD_STCK } from './monsters.js';
 import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
          LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
@@ -286,8 +287,22 @@ export async function check_capacity(str) {
     return 0;
 }
 
+// C ref: hack.c overexertion()
+/* used to be called in attack() after hitum();
+   now also called after an action that took a lot of effort */
+export async function overexertion() {
+    /* this used to be part of domove() when moving to a monster's
+       position, but is now called by do_attack() so that it doesn't
+       execute if you decline to attack a peaceful monster */
+    await gethungry();
+    if ((game.moves % 3) !== 0 && near_capacity() >= HVY_ENCUMBER) {
+        throw new Error('overexertion(): overexert_hp() not ported yet');
+    }
+    return (game.multi < 0); /* might have fainted (forced to sleep) */
+}
+
 // C ref: mondata.c noattacks()
-function noattacks(ptr) {
+export function noattacks(ptr) {
     for (const mattk of ptr.mattk || []) {
         /* AT_BOOM "passive attack" (gas spore's explosion upon death)
            isn't an attack as far as our callers are concerned */
