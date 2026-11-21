@@ -24,7 +24,9 @@ import {
     NO_TRAP, BEAR_TRAP, PIT, SPIKED_PIT, WEB,
 } from './const.js';
 import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT,
-         M_AP_FURNITURE, WARNCOUNT, def_warnsyms } from './const.js';
+         M_AP_FURNITURE, WARNCOUNT, def_warnsyms, In_mines, In_sokoban,
+         Is_knox_level } from './const.js';
+import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
 import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
@@ -79,7 +81,9 @@ const DEF_CMAP_FOR_DEC = {
 function terrain_glyph(loc, x, y) {
     const tg = terrain_glyph_dec(loc, x, y);
     if (tg.dec && !/^decgraphics$/i.test(game.symset_name || ''))
-        return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch, color: tg.color, dec: false,
+        /* the default symset doesn't color the branch wall variants */
+        return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch,
+                 color: tg.wall ? NO_COLOR : tg.color, dec: false,
                  cmap: tg.cmap };
     return { ch: tg.ch, color: tg.color, dec: tg.dec, cmap: tg.cmap };
 }
@@ -568,6 +572,21 @@ function wall_angle(lev) {
 const S_corr_g = { ch: '#', color: CLR_GRAY, dec: false, cmap: 'S_corr' };
 const S_litcorr_g = { ch: '#', color: CLR_WHITE, dec: false, cmap: 'S_litcorr' };
 
+// C ref: display.h cmap_walls_to_glyph() + display.c reset_glyphmap()
+// wall_color(): the color of the hero's branch's wall glyphs under the
+// DECgraphics symset, which gives the branch variants custom colors
+// (G_vwall_mines: /brown, ..._gehennom: /red, ..._knox: /yellow,
+// ..._sokoban: /blue); the main dungeon's walls keep the default.
+function dec_wall_color() {
+    const uz = game.u?.uz;
+    if (!uz || !game.dungeons) return NO_COLOR;
+    return In_mines(uz) ? CLR_BROWN
+        : In_hell(uz) ? CLR_RED
+          : Is_knox_level(uz) ? CLR_YELLOW
+            : In_sokoban(uz) ? CLR_BLUE
+              : NO_COLOR;
+}
+
 // C ref: display.c back_to_glyph() -- the background glyph of a spot,
 // as { ch, color, dec } with the DECgraphics symset's line-drawing
 // characters (dat/symbols "DECgraphics") where it overrides defsym.h;
@@ -603,19 +622,23 @@ function terrain_glyph_dec(loc, x, y) {
         /* idx = ptr->seenv ? wall_angle(ptr) : S_stone */
         if (!loc.seenv)
             return S_stone;
+        /* the wall glyph varies by dungeon branch (display.h
+           cmap_walls_to_glyph()); the DECgraphics symset colors the
+           branch variants (dat/symbols G_<wall>_mines: /brown etc.) */
+        const wc = dec_wall_color();
         switch (wall_angle(loc)) {
         case 'S_tree':   return S_tree;
-        case 'S_hwall':  return S_hwall;                                  // ─
-        case 'S_vwall':  return S_vwall;                                  // │
-        case 'S_tlcorn': return { ch: 'l', color: NO_COLOR, dec: true };  // ┌
-        case 'S_trcorn': return { ch: 'k', color: NO_COLOR, dec: true };  // ┐
-        case 'S_blcorn': return { ch: 'm', color: NO_COLOR, dec: true };  // └
-        case 'S_brcorn': return { ch: 'j', color: NO_COLOR, dec: true };  // ┘
-        case 'S_crwall': return { ch: 'n', color: NO_COLOR, dec: true };  // ┼
-        case 'S_tuwall': return { ch: 'v', color: NO_COLOR, dec: true };  // ┴
-        case 'S_tdwall': return { ch: 'w', color: NO_COLOR, dec: true };  // ┬
-        case 'S_tlwall': return { ch: 'u', color: NO_COLOR, dec: true };  // ┤
-        case 'S_trwall': return { ch: 't', color: NO_COLOR, dec: true };  // ├
+        case 'S_hwall':  return { ...S_hwall, color: wc, wall: true };    // ─
+        case 'S_vwall':  return { ...S_vwall, color: wc, wall: true };    // │
+        case 'S_tlcorn': return { ch: 'l', color: wc, dec: true, wall: true };  // ┌
+        case 'S_trcorn': return { ch: 'k', color: wc, dec: true, wall: true };  // ┐
+        case 'S_blcorn': return { ch: 'm', color: wc, dec: true, wall: true };  // └
+        case 'S_brcorn': return { ch: 'j', color: wc, dec: true, wall: true };  // ┘
+        case 'S_crwall': return { ch: 'n', color: wc, dec: true, wall: true };  // ┼
+        case 'S_tuwall': return { ch: 'v', color: wc, dec: true, wall: true };  // ┴
+        case 'S_tdwall': return { ch: 'w', color: wc, dec: true, wall: true };  // ┬
+        case 'S_tlwall': return { ch: 'u', color: wc, dec: true, wall: true };  // ┤
+        case 'S_trwall': return { ch: 't', color: wc, dec: true, wall: true };  // ├
         default:         return S_stone;
         }
     }

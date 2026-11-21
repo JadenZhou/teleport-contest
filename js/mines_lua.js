@@ -221,6 +221,273 @@ function minetn_1_lua(L) {
     des.wallify();
 }
 
+// C ref: dat/minetn-2.lua
+// -- Minetown variant 2
+// -- "Town Square"
+function minetn_2_lua(L) {
+    const G = L.globals, des = G.des;
+
+    // a closet: des.room({ type = "ordinary", [lit=], x=,y=, w=2,h=2,
+    //                      contents = function() des.door(...) [des.monster(...)] end })
+    const closet = (lit, x, y, state, wall, mon) => {
+        const r = { type: 'ordinary', x, y, w: 2, h: 2,
+                    contents: function() {
+                        des.door({ state, wall });
+                        if (mon) des.monster(mon);
+                    } };
+        if (lit !== undefined) r.lit = lit;
+        return r;
+    };
+
+    des.room({ type: 'ordinary', lit: 1, x: 3, y: 3,
+               xalign: 'center', yalign: 'center', w: 31, h: 15,
+               contents: function() {
+                   des.feature('fountain', 17, 5);
+                   des.feature('fountain', 13, 8);
+                   if (G.percent(75)) {
+                       des.room(closet(undefined, 2, 0, 'closed', 'west'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(0, 5, 0, 'closed', 'south'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(undefined, 8, 0, 'closed', 'east'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(1, 16, 0, 'closed', 'west'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(0, 19, 0, 'closed', 'south'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(undefined, 22, 0, 'closed', 'south', 'gnome'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(0, 25, 0, 'closed', 'east'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(1, 2, 5, 'closed', 'north'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(1, 5, 5, 'closed', 'south'));
+                   }
+                   if (G.percent(75)) {
+                       des.room(closet(undefined, 8, 5, 'locked', 'north', 'gnome'));
+                   }
+                   des.room({ type: 'shop', chance: 90, lit: 1, x: 2, y: 10, w: 4, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'west' });
+                              } });
+                   des.room({ type: 'tool shop', chance: 90, lit: 1, x: 23, y: 10, w: 4, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'east' });
+                              } });
+                   des.room({ type: G.monkfoodshop(), chance: 90, lit: 1, x: 24, y: 5, w: 3, h: 4,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'north' });
+                              } });
+                   des.room({ type: 'candle shop', lit: 1, x: 11, y: 10, w: 4, h: 3,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'east' });
+                              } });
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', lit: 0, x: 7, y: 10, w: 3, h: 3,
+                                  contents: function() {
+                                      des.door({ state: 'locked', wall: 'north' });
+                                      des.monster('gnome');
+                                  } });
+                   }
+                   des.room({ type: 'temple', lit: 1, x: 19, y: 5, w: 4, h: 4,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'north' });
+                                  des.altar({ x: 2, y: 2, align: G.align[0], type: 'shrine' });
+                                  des.monster('gnomish wizard');
+                                  des.monster('gnomish wizard');
+                              } });
+                   if (G.percent(75)) {
+                       des.room({ type: 'ordinary', lit: 1, x: 18, y: 10, w: 4, h: 3,
+                                  contents: function() {
+                                      des.door({ state: 'locked', wall: 'west' });
+                                      des.monster('gnome lord');
+                                  } });
+                   }
+                   // -- The Town Watch
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watch captain', peaceful: 1 });
+               } });
+    des.room({ contents: function() {
+        des.stair('up');
+    } });
+    des.room({ contents: function() {
+        des.stair('down');
+        des.trap();
+        des.monster('gnome');
+        des.monster('gnome');
+    } });
+    des.room({ contents: function() {
+        des.monster('dwarf');
+    } });
+    des.room({ contents: function() {
+        des.trap();
+        des.monster('gnome');
+    } });
+    des.random_corridors();
+}
+
+// C ref: dat/minetn-3.lua
+// -- Minetown variant 3 by Kelly Bailey
+// -- "Alley Town"
+// (The bare 'random' entries in some des.room() tables are positional
+// nils in Lua, which the des.room() options never read.)
+function minetn_3_lua(L) {
+    const G = L.globals, des = G.des;
+
+    // a subroom whose contents are a door and maybe a monster
+    const room = (opts, state, wall, mon) => des.room({ ...opts,
+        contents: function() {
+            des.door({ state, wall });
+            if (mon) des.monster(mon);
+        } });
+
+    des.room({ type: 'ordinary', lit: 1, x: 3, y: 3,
+               xalign: 'center', yalign: 'center', w: 31, h: 15,
+               contents: function() {
+                   des.feature('fountain', 1, 6);
+                   des.feature('fountain', 29, 13);
+                   room({ type: 'ordinary', x: 2, y: 2, w: 2, h: 2 }, 'closed', 'south');
+                   room({ type: 'tool shop', chance: 30, lit: 1, x: 5, y: 3, w: 2, h: 3 }, 'closed', 'south');
+                   room({ type: 'ordinary', x: 2, y: 10, w: 2, h: 3 }, 'locked', 'north', 'G');
+                   room({ type: 'ordinary', x: 5, y: 9, w: 2, h: 2 }, 'closed', 'north');
+                   des.room({ type: 'temple', lit: 1, x: 10, y: 2, w: 3, h: 4,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'east' });
+                                  des.altar({ x: 1, y: 1, align: G.align[0], type: 'shrine' });
+                                  des.monster('gnomish wizard');
+                                  des.monster('gnomish wizard');
+                              } });
+                   room({ type: 'ordinary', x: 11, y: 7, w: 2, h: 2 }, 'closed', 'west');
+                   room({ type: 'shop', lit: 1, x: 10, y: 10, w: 3, h: 3 }, 'closed', 'west');
+                   room({ type: 'ordinary', x: 14, y: 8, w: 2, h: 2 }, 'locked', 'north', 'G');
+                   room({ type: 'ordinary', x: 14, y: 11, w: 2, h: 2 }, 'closed', 'south');
+                   room({ type: 'tool shop', chance: 40, lit: 1, x: 17, y: 10, w: 3, h: 3 }, 'closed', 'north');
+                   room({ type: 'ordinary', x: 21, y: 11, w: 2, h: 2 }, 'locked', 'east', 'G');
+                   room({ type: G.monkfoodshop(), chance: 90, lit: 1, x: 26, y: 8, w: 3, h: 2 }, 'closed', 'west');
+                   room({ type: 'ordinary', x: 16, y: 2, w: 2, h: 2 }, 'closed', 'west');
+                   room({ type: 'ordinary', x: 19, y: 2, w: 2, h: 2 }, 'closed', 'north');
+                   room({ type: 'wand shop', chance: 30, lit: 1, x: 19, y: 5, w: 3, h: 2 }, 'closed', 'west');
+                   room({ type: 'candle shop', lit: 1, x: 25, y: 2, w: 3, h: 3 }, 'closed', 'south');
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watch captain', peaceful: 1 });
+               } });
+    des.room({ type: 'ordinary', contents: function() {
+        des.stair('up');
+    } });
+    des.room({ type: 'ordinary', contents: function() {
+        des.stair('down');
+        des.trap();
+        des.monster('gnome');
+        des.monster('gnome');
+    } });
+    des.room({ type: 'ordinary', contents: function() {
+        des.monster('dwarf');
+    } });
+    des.room({ type: 'ordinary', contents: function() {
+        des.trap();
+        des.monster('gnome');
+    } });
+    des.random_corridors();
+}
+
+// C ref: dat/minetn-4.lua
+// -- Minetown variant 4 by Kelly Bailey
+// -- "College Town"
+function minetn_4_lua(L) {
+    const G = L.globals, des = G.des;
+
+    // a subroom whose contents are a door and some monsters
+    const room = (opts, state, wall, ...mons) => des.room({ ...opts,
+        contents: function() {
+            des.door({ state, wall });
+            for (const mon of mons) des.monster(mon);
+        } });
+
+    des.room({ type: 'ordinary', lit: 1, x: 3, y: 3,
+               xalign: 'center', yalign: 'center', w: 30, h: 15,
+               contents: function() {
+                   des.feature('fountain', 8, 7);
+                   des.feature('fountain', 18, 7);
+
+                   room({ type: 'book shop', lit: 1, x: 4, y: 2, w: 3, h: 3 }, 'closed', 'south');
+
+                   room({ type: 'ordinary', x: 8, y: 2, w: 2, h: 2 }, 'closed', 'south');
+
+                   des.room({ type: 'temple', lit: 1, x: 11, y: 3, w: 5, h: 4,
+                              contents: function() {
+                                  des.door({ state: 'closed', wall: 'south' });
+                                  des.altar({ x: 2, y: 1, align: G.align[0], type: 'shrine' });
+                                  des.monster('gnomish wizard');
+                                  des.monster('gnomish wizard');
+                              } });
+
+                   room({ type: 'ordinary', x: 19, y: 2, w: 2, h: 2 }, 'closed', 'south', 'G');
+
+                   room({ type: 'candle shop', lit: 1, x: 22, y: 2, w: 3, h: 3 }, 'closed', 'south');
+
+                   room({ type: 'ordinary', x: 26, y: 2, w: 2, h: 2 }, 'locked', 'east', 'G');
+
+                   room({ type: 'tool shop', chance: 90, lit: 1, x: 4, y: 10, w: 3, h: 3 }, 'closed', 'north');
+
+                   room({ type: 'ordinary', x: 8, y: 11, w: 2, h: 2 }, 'locked', 'south',
+                        'kobold shaman', 'kobold shaman', 'kitten', 'f');
+
+                   room({ type: G.monkfoodshop(), chance: 90, lit: 1, x: 11, y: 11, w: 3, h: 2 }, 'closed', 'east');
+
+                   room({ type: 'ordinary', x: 17, y: 11, w: 2, h: 2 }, 'closed', 'west');
+
+                   room({ type: 'ordinary', x: 20, y: 10, w: 2, h: 2 }, 'locked', 'north', 'G');
+
+                   room({ type: 'shop', chance: 90, lit: 1, x: 23, y: 10, w: 3, h: 3 }, 'closed', 'north');
+
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watchman', peaceful: 1 });
+                   des.monster({ id: 'watch captain', peaceful: 1 });
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.stair('up');
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.stair('down');
+                   des.trap();
+                   des.monster('gnome');
+                   des.monster('gnome');
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.monster('dwarf');
+               } });
+
+    des.room({ type: 'ordinary',
+               contents: function() {
+                   des.trap();
+                   des.monster('gnome');
+               } });
+
+    des.random_corridors();
+}
+
 // C ref: dat/minetn-6.lua
 // "Bustling Town" by Kelly Bailey
 function minetn_6_lua(L) {
@@ -445,6 +712,9 @@ function minend_1_lua(L) {
 export const mines_lua_files = {
     'minefill.lua': minefill_lua,
     'minetn-1.lua': minetn_1_lua,
+    'minetn-2.lua': minetn_2_lua,
+    'minetn-3.lua': minetn_3_lua,
+    'minetn-4.lua': minetn_4_lua,
     'minetn-6.lua': minetn_6_lua,
     'minend-1.lua': minend_1_lua,
 };
