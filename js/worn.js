@@ -166,7 +166,7 @@ function res_to_mr(r) {
 
 /* C ref: worn.c w_blocks() -- This only allows for one blocking item per
    property */
-function w_blocks(o, m) {
+export function w_blocks(o, m) {
     return (o.otyp === O.MUMMY_WRAPPING && (m & W_ARMC) !== 0) ? INVIS
         : (o.otyp === O.CORNUTHAUM && (m & W_ARMH) !== 0
            && !Role_if(M.PM_WIZARD)) ? CLAIRVOYANT

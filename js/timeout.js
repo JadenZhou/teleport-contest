@@ -31,7 +31,7 @@ export function confers_luck(obj) {
 
 // C ref: attrib.c stone_luck()
 /* there has just been an inventory change affecting a luck-granting item */
-function stone_luck(include_uncursed) {
+export function stone_luck(include_uncursed) {
     let bonchance = 0;
 
     for (let otmp = game.invent; otmp; otmp = otmp.nobj)
@@ -46,7 +46,7 @@ function stone_luck(include_uncursed) {
 }
 
 // C ref: invent.c carrying()
-function carrying(type) {
+export function carrying(type) {
     for (let otmp = game.invent; otmp; otmp = otmp.nobj)
         if (otmp.otyp === type)
             return otmp;

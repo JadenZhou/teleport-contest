@@ -33,6 +33,12 @@ import { tty_yn_function } from './wintty.js';
 // C ref: pray.c Moloch
 const Moloch = "Moloch";
 
+// C ref: pray.c u_gname()
+/* returns the name of the hero's deity */
+export function u_gname() {
+    return align_gname(game.u.ualign.type);
+}
+
 // C ref: pray.c align_gname()
 export function align_gname(alignment) {
     let gnam;
@@ -584,7 +590,7 @@ function water_prayer(bless_water) {
 }
 
 // C ref: pray.c can_pray()
-async function can_pray(praying) /* false means no messages should be given */ {
+export async function can_pray(praying) /* false means no messages should be given */ {
     const g = game;
     const u = g.u;
     let alignment;

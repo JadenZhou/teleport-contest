@@ -34,6 +34,7 @@ import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
 import { assigninvlet, reorder_invent, merged } from './invent.js';
 import { Japanese_item_name } from './objnam.js';
+import { w_blocks } from './worn.js';
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
 // Every numeric field reads as 0, nested structs are zero-filled objects.
@@ -1384,15 +1385,34 @@ function ARM_BONUS(obj) {
             - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac));
 }
 
-// C ref: worn.c setworn() -- records the worn slot; property updates
-// from worn items are not ported yet
+// C ref: worn.c setworn() -- the armor slots, putting on starting
+// armor; taking off a worn item isn't reached from here
 function setworn(obj, mask) {
+    const u = game.u;
     const slot = { [K.W_ARMS]: 'uarms', [K.W_ARMH]: 'uarmh',
                    [K.W_ARMG]: 'uarmg', [K.W_ARMU]: 'uarmu',
                    [K.W_ARMC]: 'uarmc', [K.W_ARMF]: 'uarmf',
                    [K.W_ARM]: 'uarm' }[mask];
+    let p;
+
+    if (game[slot])
+        throw new Error('setworn(): replacing a worn armor slot not ported yet');
     game[slot] = obj;
-    obj.owornmask = (obj.owornmask || 0) | mask;
+    if (obj) {
+        obj.owornmask = (obj.owornmask || 0) | mask;
+        /* mask != W_WEP: armor confers its property */
+        p = objects[obj.otyp].oc_oprop;
+        u.uprops[p].extrinsic = u.uprops[p].extrinsic | mask;
+        if ((p = w_blocks(obj, mask)) !== 0)
+            u.uprops[p].blocked |= mask;
+        if (obj.oartifact)
+            throw new Error('setworn(): set_artifact_intrinsic() not ported yet');
+    }
+    if (obj && (obj.owornmask & K.W_ARMOR) !== 0)
+        u.uroleplay.nudist = false;
+    /* tux -> tuxedo -> "monkey suit" -> monk's suit */
+    game.iflags.tux_penalty = !!(game.uarm && game.urole.mnum === M.PM_MONK
+                                 && game.urole.spelarmr);
 }
 // C ref: wield.c setuwep(), setuqwep(), setuswapwep() -- slot only
 function setuwep(obj) { game.uwep = obj; obj.owornmask = (obj.owornmask || 0) | K.W_WEP; }
