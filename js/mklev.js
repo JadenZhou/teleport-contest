@@ -470,132 +470,132 @@ async function makelevel() {
                    && depth_of_level(g.u.uz) > depth_of_level(medusa))) {
         makemaz('');
     } else {
-    /* otherwise, fall through - it's a "regular" level. */
-    const u_depth = depth_of_level(g.u.uz);
+        /* otherwise, fall through - it's a "regular" level. */
+        const u_depth = depth_of_level(g.u.uz);
 
-    if (Is_rogue_level(g.u.uz)) {
-        /* makeroguerooms(); makerogueghost(); */
-        throw new Error('makelevel(): makeroguerooms() not ported yet');
-    } else {
-        await makerooms();
-    }
-    sort_rooms();
+        if (Is_rogue_level(g.u.uz)) {
+            /* makeroguerooms(); makerogueghost(); */
+            throw new Error('makelevel(): makeroguerooms() not ported yet');
+        } else {
+            await makerooms();
+        }
+        sort_rooms();
 
-    await generate_stairs(); /* up and down stairs */
+        await generate_stairs(); /* up and down stairs */
 
-    const branchp = Is_branchlev(g.u.uz); /* possible dungeon branch */
-    let room_threshold = branchp ? 4 : 3; /* minimum number of rooms needed
-                                            to allow a random special room */
+        const branchp = Is_branchlev(g.u.uz); /* possible dungeon branch */
+        let room_threshold = branchp ? 4 : 3; /* minimum number of rooms needed
+                                                to allow a random special room */
 
-    makecorridors();
-    await make_niches();
+        makecorridors();
+        await make_niches();
 
-    /* make a secret treasure vault, not connected to the rest */
-    if (do_vault()) {
-        const w = { v: 1 }, h = { v: 1 };
-        const vx = { v: g.vault_x }, vy = { v: g.vault_y };
-        let fill_vault = false;
+        /* make a secret treasure vault, not connected to the rest */
+        if (do_vault()) {
+            const w = { v: 1 }, h = { v: 1 };
+            const vx = { v: g.vault_x }, vy = { v: g.vault_y };
+            let fill_vault = false;
 
-        /* debugpline0("trying to make a vault..."); */
-        /* check_room() adjusts gv.vault_x and gv.vault_y through pointers */
-        fill_vault = check_room(vx, w, vy, h, true);
-        g.vault_x = vx.v; g.vault_y = vy.v;
-        if (!fill_vault && rnd_rect() && create_vault()) {
-            g.vault_x = vx.v = g.level.rooms[g.level.nroom].lx;
-            g.vault_y = vy.v = g.level.rooms[g.level.nroom].ly;
+            /* debugpline0("trying to make a vault..."); */
+            /* check_room() adjusts gv.vault_x and gv.vault_y through pointers */
             fill_vault = check_room(vx, w, vy, h, true);
             g.vault_x = vx.v; g.vault_y = vy.v;
-            if (!fill_vault)
-                g.level.rooms[g.level.nroom].hx = -1;
+            if (!fill_vault && rnd_rect() && create_vault()) {
+                g.vault_x = vx.v = g.level.rooms[g.level.nroom].lx;
+                g.vault_y = vy.v = g.level.rooms[g.level.nroom].ly;
+                fill_vault = check_room(vx, w, vy, h, true);
+                g.vault_x = vx.v; g.vault_y = vy.v;
+                if (!fill_vault)
+                    g.level.rooms[g.level.nroom].hx = -1;
+            }
+            if (fill_vault) { /* fill_vault: */
+                add_room(g.vault_x, g.vault_y,
+                         g.vault_x + w.v, g.vault_y + h.v,
+                         true, VAULT, false);
+                g.level.flags.has_vault = true;
+                ++room_threshold;
+                g.level.rooms[g.level.nroom - 1].needfill = FILL_NORMAL;
+                fill_special_room(g.level.rooms[g.level.nroom - 1]);
+                mk_knox_portal(g.vault_x + w.v, g.vault_y + h.v);
+                if (!g.level.flags.noteleport && !rn2(3))
+                    await makevtele();
+            }
         }
-        if (fill_vault) { /* fill_vault: */
-            add_room(g.vault_x, g.vault_y,
-                     g.vault_x + w.v, g.vault_y + h.v,
-                     true, VAULT, false);
-            g.level.flags.has_vault = true;
-            ++room_threshold;
-            g.level.rooms[g.level.nroom - 1].needfill = FILL_NORMAL;
-            fill_special_room(g.level.rooms[g.level.nroom - 1]);
-            mk_knox_portal(g.vault_x + w.v, g.vault_y + h.v);
-            if (!g.level.flags.noteleport && !rn2(3))
-                await makevtele();
+
+        /* make up to 1 special room, with type dependent on depth;
+           note that mkroom doesn't guarantee a room gets created, and that
+           this step only sets the room's rtype - it doesn't fill it yet. */
+        /* (wizard && nh_getenv("SHOPTYPE")): the JS port has no environment */
+        if (u_depth > 1 && u_depth < depth_of_level(g.dungeon_topology.d_medusa_level)
+            && g.level.nroom >= room_threshold && rn2(u_depth) < 3)
+            await do_mkroom(SHOPBASE);
+        else if (u_depth > 4 && !rn2(6))
+            await do_mkroom(COURT);
+        else if (u_depth > 5 && !rn2(8)
+                 && !(g.mvitals[PM_LEPRECHAUN].mvflags & G_GONE))
+            await do_mkroom(LEPREHALL);
+        else if (u_depth > 6 && !rn2(7))
+            await do_mkroom(ZOO);
+        else if (u_depth > 8 && !rn2(5))
+            await do_mkroom(TEMPLE);
+        else if (u_depth > 9 && !rn2(5)
+                 && !(g.mvitals[PM_KILLER_BEE].mvflags & G_GONE))
+            await do_mkroom(BEEHIVE);
+        else if (u_depth > 11 && !rn2(6))
+            await do_mkroom(MORGUE);
+        else if (u_depth > 12 && !rn2(8) && antholemon())
+            await do_mkroom(ANTHOLE);
+        else if (u_depth > 14 && !rn2(4)
+                 && !(g.mvitals[PM_SOLDIER].mvflags & G_GONE))
+            await do_mkroom(BARRACKS);
+        else if (u_depth > 15 && !rn2(6))
+            await do_mkroom(SWAMP);
+        else if (u_depth > 16 && !rn2(8)
+                 && !(g.mvitals[PM_COCKATRICE].mvflags & G_GONE))
+            await do_mkroom(COCKNEST);
+
+        /* skip0: */
+        const prevstairs = game.stairs; /* used to test for place_branch() success */
+        /* Place multi-dungeon branch. */
+        if (branchp) {
+            place_branch(branchp);
+        }
+
+        /* for main dungeon level 1, the stairs up where the hero starts
+           are branch stairs; treat them as if hero had just come down
+           them by marking them as having been traversed; most recently
+           created stairway is held in 'gs.stairs' */
+        if (g.u.uz.dnum === 0 && g.u.uz.dlevel === 1 && game.stairs !== prevstairs)
+            game.stairs.u_traversed = true;
+
+        /* some levels have specially generated items in ordinary
+           rooms (intended to be indistinguishable from the normally
+           generated items); work out which room these will be placed in */
+        let fillable_room_count = 0;
+        for (let i = 0; i < g.level.nroom; i++) {
+            if (ROOM_IS_FILLABLE(g.level.rooms[i]))
+                fillable_room_count++;
+        }
+        /* choose a random fillable room to be the one that gets the
+           bonus items, if there are any; if there aren't any we don't
+           generate the bonus items (but levels with no fillable rooms
+           typically don't have any bonus items to generate anyway) */
+        g.bonus_item_room_countdown = fillable_room_count
+                                      ? rn2(fillable_room_count) : -1;
+
+        /* for each room: put things inside */
+        for (let ri = 0; ri < g.level.rooms.length; ri++) {
+            const croom = g.level.rooms[ri];
+            if (!croom || !(croom.hx > 0))
+                break;
+            const fillable = ROOM_IS_FILLABLE(croom);
+
+            fill_ordinary_room(croom,
+                               fillable && g.bonus_item_room_countdown === 0);
+            if (fillable)
+                --g.bonus_item_room_countdown;
         }
     }
-
-    /* make up to 1 special room, with type dependent on depth;
-       note that mkroom doesn't guarantee a room gets created, and that
-       this step only sets the room's rtype - it doesn't fill it yet. */
-    /* (wizard && nh_getenv("SHOPTYPE")): the JS port has no environment */
-    if (u_depth > 1 && u_depth < depth_of_level(g.dungeon_topology.d_medusa_level)
-        && g.level.nroom >= room_threshold && rn2(u_depth) < 3)
-        await do_mkroom(SHOPBASE);
-    else if (u_depth > 4 && !rn2(6))
-        await do_mkroom(COURT);
-    else if (u_depth > 5 && !rn2(8)
-             && !(g.mvitals[PM_LEPRECHAUN].mvflags & G_GONE))
-        await do_mkroom(LEPREHALL);
-    else if (u_depth > 6 && !rn2(7))
-        await do_mkroom(ZOO);
-    else if (u_depth > 8 && !rn2(5))
-        await do_mkroom(TEMPLE);
-    else if (u_depth > 9 && !rn2(5)
-             && !(g.mvitals[PM_KILLER_BEE].mvflags & G_GONE))
-        await do_mkroom(BEEHIVE);
-    else if (u_depth > 11 && !rn2(6))
-        await do_mkroom(MORGUE);
-    else if (u_depth > 12 && !rn2(8) && antholemon())
-        await do_mkroom(ANTHOLE);
-    else if (u_depth > 14 && !rn2(4)
-             && !(g.mvitals[PM_SOLDIER].mvflags & G_GONE))
-        await do_mkroom(BARRACKS);
-    else if (u_depth > 15 && !rn2(6))
-        await do_mkroom(SWAMP);
-    else if (u_depth > 16 && !rn2(8)
-             && !(g.mvitals[PM_COCKATRICE].mvflags & G_GONE))
-        await do_mkroom(COCKNEST);
-
-    /* skip0: */
-    const prevstairs = game.stairs; /* used to test for place_branch() success */
-    /* Place multi-dungeon branch. */
-    if (branchp) {
-        place_branch(branchp);
-    }
-
-    /* for main dungeon level 1, the stairs up where the hero starts
-       are branch stairs; treat them as if hero had just come down
-       them by marking them as having been traversed; most recently
-       created stairway is held in 'gs.stairs' */
-    if (g.u.uz.dnum === 0 && g.u.uz.dlevel === 1 && game.stairs !== prevstairs)
-        game.stairs.u_traversed = true;
-
-    /* some levels have specially generated items in ordinary
-       rooms (intended to be indistinguishable from the normally
-       generated items); work out which room these will be placed in */
-    let fillable_room_count = 0;
-    for (let i = 0; i < g.level.nroom; i++) {
-        if (ROOM_IS_FILLABLE(g.level.rooms[i]))
-            fillable_room_count++;
-    }
-    /* choose a random fillable room to be the one that gets the
-       bonus items, if there are any; if there aren't any we don't
-       generate the bonus items (but levels with no fillable rooms
-       typically don't have any bonus items to generate anyway) */
-    g.bonus_item_room_countdown = fillable_room_count
-                                  ? rn2(fillable_room_count) : -1;
-
-    /* for each room: put things inside */
-    for (let ri = 0; ri < g.level.rooms.length; ri++) {
-        const croom = g.level.rooms[ri];
-        if (!croom || !(croom.hx > 0))
-            break;
-        const fillable = ROOM_IS_FILLABLE(croom);
-
-        fill_ordinary_room(croom,
-                           fillable && g.bonus_item_room_countdown === 0);
-        if (fillable)
-            --g.bonus_item_room_countdown;
-    }
-    } /* end of the "regular" level */
 
     /* Fill all special rooms now, regardless of whether this is a special
      * level, proto level, or ordinary level. */
