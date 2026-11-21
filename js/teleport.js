@@ -1135,7 +1135,8 @@ async function rloc_to_core(mtmp, x, y, rlocflags) {
 export function rloc_mklev(mtmp, rlocflags) {
     const u = game.u;
     if (!(rlocflags & RLOC_NOMSG) || game.occupation || mtmp.mtrapped
-        || mtmp === u.usteed || mtmp.iswiz || mtmp.isshk || mtmp.wormno
+        || mtmp === u.usteed || mtmp.iswiz || mtmp.isshk || mtmp.ispriest
+        || mtmp.wormno || !mtmp.mx
         || u.ustuck === mtmp)
         throw new Error('rloc(): relocating this monster during level creation not ported yet');
     void rloc(mtmp, rlocflags);
