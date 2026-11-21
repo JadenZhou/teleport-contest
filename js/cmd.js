@@ -14,7 +14,7 @@ import { dopray } from './pray.js';
 import { dotalk } from './sounds.js';
 import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
-         MOVEMENTCMD, CMD_PARAM } from './func_tab.js';
+         MOVEMENTCMD, CMD_PARAM, CMD_M_PREFIX, CMD_gGF_PREFIX } from './func_tab.js';
 import { strcmpi, strncmpi, highc } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
@@ -109,6 +109,10 @@ const cmd_funcs = {
     dodrink: () => dodrink(),
     dolook: () => dolook(),
     doread: () => doread(),
+    do_fight: () => do_fight(),
+    do_rush: () => do_rush(),
+    do_run: () => do_run(),
+    do_reqmenu: () => do_reqmenu(),
     dojump: () => dojump(),
     dopickup: () => dopickup(),
 };
@@ -119,6 +123,61 @@ const cmd_funcs = {
     cmd_funcs[`do_run_${name}`] = () => { set_move_cmd(dir, 1); return ECMD_TIME; };
     cmd_funcs[`do_rush_${name}`] = () => { set_move_cmd(dir, 3); return ECMD_TIME; };
 });
+
+// C ref: cmd.c do_reqmenu() -- the 'm' prefix
+async function do_reqmenu() {
+    if (game.iflags.menu_requested) {
+        /* Norep() */
+        await pline(`Double ${visctrl(cmd_from_func("do_reqmenu"))} prefix, canceled.`);
+        game.iflags.menu_requested = false;
+        return ECMD_CANCEL;
+    }
+
+    game.iflags.menu_requested = true;
+    return ECMD_OK;
+}
+
+// C ref: cmd.c do_rush() -- the 'g' prefix
+async function do_rush() {
+    if ((game.domove_attempting & DOMOVE_RUSH)) {
+        await pline("Double rush prefix, canceled."); /* Norep() */
+        game.context.run = 0;
+        game.domove_attempting = 0;
+        return ECMD_CANCEL;
+    }
+
+    game.context.run = 2;
+    game.domove_attempting |= DOMOVE_RUSH;
+    return ECMD_OK;
+}
+
+// C ref: cmd.c do_run() -- the 'G' prefix
+async function do_run() {
+    if ((game.domove_attempting & DOMOVE_RUSH)) {
+        await pline("Double run prefix, canceled."); /* Norep() */
+        game.context.run = 0;
+        game.domove_attempting = 0;
+        return ECMD_CANCEL;
+    }
+
+    game.context.run = 3;
+    game.domove_attempting |= DOMOVE_RUSH;
+    return ECMD_OK;
+}
+
+// C ref: cmd.c do_fight() -- the 'F' prefix
+async function do_fight() {
+    if (game.context.forcefight) {
+        await pline("Double fight prefix, canceled."); /* Norep() */
+        game.context.forcefight = 0;
+        game.domove_attempting = 0;
+        return ECMD_CANCEL;
+    }
+
+    game.context.forcefight = 1;
+    game.domove_attempting |= DOMOVE_WALK;
+    return ECMD_OK;
+}
 
 // C ref: wizcmds.c wiz_level_tele()
 async function wiz_level_tele() {
@@ -374,8 +433,10 @@ function rhack_result(res, func) {
     }
 }
 
-// C ref: cmd.c rhack — main command dispatcher
-export async function rhack(key) {
+// C ref: cmd.c rhack — main command dispatcher; after a prefix command
+// (F, g, G, m) C loops back to got_prefix_input for the next command,
+// which this port does by calling rhack() again with prefix_seen set
+export async function rhack(key, prefix_seen = null, was_m_prefix = false) {
     const firsttime = (key === 0);
     let cmdq_ec = null;
 
@@ -411,11 +472,34 @@ export async function rhack(key) {
             /* can_do_extcmd() already gave a message */
             reset_cmd_vars(true);
             res = ECMD_OK;
-        } else if (tlist.flags & PREFIXCMD) {
-            /* the F, m, g and G prefixes (and their next command) are
-               not ported yet: nothing happens */
-            game.context.move = 0;
-            return;
+        } else if (prefix_seen && !(tlist.flags & PREFIXCMD)
+                   && !(tlist.flags & (was_m_prefix ? CMD_M_PREFIX
+                                                    : CMD_gGF_PREFIX))) {
+            const pfxidx = cmd_from_func(prefix_seen.ef_funct);
+            const which = pfxidx ? visctrl(pfxidx)
+                          : (prefix_seen.ef_funct === "do_reqmenu")
+                            ? "move-no-pickup or request-menu"
+                            : prefix_seen.ef_txt;
+
+            /*
+             * We got a prefix previously and looped for another
+             * command instead of returning, but the command we got
+             * doesn't accept a prefix.  The feedback here supersedes
+             * the former call to help_dir() (for 'bad_command' below).
+             */
+            if (was_m_prefix) {
+                /* custompline(SUPPRESS_HISTORY) */
+                await pline(`The ${tlist.ef_txt} command does not accept '${which}' prefix.`);
+            } else {
+                const ch = tlist.key;
+                const up = (ch === 0x3c /* '<' */ || func === "doup"),
+                    down = (ch === 0x3e /* '>' */ || func === "dodown");
+
+                await pline(`The '${which}' prefix should be followed by a movement command${
+                    (up || down) ? " other than up or down" : ""}.`);
+            }
+            res = ECMD_FAIL;
+            prefix_seen = null;
         } else {
             const fn = cmd_funcs[func];
             if (!fn) {
@@ -427,7 +511,18 @@ export async function rhack(key) {
                 return;
             }
             res = await fn();
-            if ((tlist.flags & MOVEMENTCMD) && game.domove_attempting) {
+            if ((tlist.flags & PREFIXCMD) !== 0) {
+                /* it was a prefix command, mark and get another cmd */
+                if ((res & ECMD_CANCEL) !== 0) {
+                    /* prefix commands cancel if pressed twice */
+                    reset_cmd_vars(true);
+                    return;
+                }
+                /* goto got_prefix_input */
+                await rhack(firsttime ? 0 : key, tlist,
+                            was_m_prefix || func === "do_reqmenu");
+                return;
+            } else if ((tlist.flags & MOVEMENTCMD) && game.domove_attempting) {
                 if (((game.domove_attempting & (DOMOVE_RUSH | DOMOVE_WALK)) !== 0)
                     && !game.context.travel && !dxdy_moveok()) {
                     /* trying to move diagonally as a grid bug */
