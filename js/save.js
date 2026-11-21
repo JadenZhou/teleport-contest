@@ -567,7 +567,8 @@ export function rest_adjust_levelflags() {
 
 /* struct rm fields that are the tty's screen buffer, not level data */
 const RM_DISPLAY_FIELDS = new Set(['disp_ch', 'disp_color', 'disp_decgfx',
-                                   'disp_attr', 'gnew', 'glyph_symidx']);
+                                   'disp_attr', 'disp_objpile', 'gnew',
+                                   'glyph_symidx']);
 
 // C ref: save.c savelevl()
 function savelevl(nhfp) {

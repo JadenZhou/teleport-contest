@@ -32,7 +32,7 @@ import { t_at } from './trap.js';
 import { engr_at } from './engrave.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
-         CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE } from './terminal.js';
+         CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE, ATR_INVERSE } from './terminal.js';
 
 // ── ANSI color codes ──
 // Maps CLR_* constants (0-15) to ANSI SGR color codes.
@@ -672,8 +672,9 @@ function tty_color(color) {
 }
 
 // ── show_glyph_cell ──
+// objpile: the glyph is one of the *_PILETOP glyphs (MG_OBJPILE)
 export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr = 0,
-                                kind = 'cmap') {
+                                kind = 'cmap', objpile = false) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
     loc.disp_ch = ch;
@@ -683,7 +684,22 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
     /* which glyph range the shown glyph comes from (glyph_is_monster(),
        glyph_is_object(), glyph_is_trap(), glyph_is_invisible(), ...) */
     loc.disp_kind = kind;
+    loc.disp_objpile = !!objpile;
     loc.gnew = 1;
+}
+
+// C ref: wintty.c tty_print_glyph() -- the video attribute a map cell is
+// printed with. MG_PET with hilite_pet gives iflags.wc2_petattr (worked
+// out by display_monster() into disp_attr); otherwise MG_OBJPILE with
+// hilite_pile is shown in inverse when use_inverse is on. Like the tty,
+// this is decided when the glyph is printed, from the current options.
+function tty_glyph_attr(loc) {
+    if (loc.disp_attr)
+        return loc.disp_attr;
+    if (loc.disp_objpile && game.iflags?.hilite_pile
+        && game.iflags?.wc_inverse !== false)
+        return ATR_INVERSE;
+    return 0;
 }
 
 /* the glyph range of a remembered glyph (lev->glyph): map_object(),
@@ -747,7 +763,7 @@ export function update_lastseentyp(x, y) {
 // form
 export function show_glyph(x, y, glyph) {
     show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0,
-                    glyph.kind ?? glyph_kind(glyph));
+                    glyph.kind ?? glyph_kind(glyph), glyph.piletop);
 }
 
 // C ref: display.c back_to_glyph() -- in the remembered-glyph form
@@ -765,7 +781,8 @@ export function trap_to_glyph(trap) {
 export function glyph_at(x, y) {
     const loc = game.level.at(x, y);
     return { ch: loc.disp_ch ?? ' ', color: loc.disp_color ?? NO_COLOR,
-             decgfx: !!loc.disp_decgfx, kind: loc.disp_kind ?? 'cmap' };
+             decgfx: !!loc.disp_decgfx, kind: loc.disp_kind ?? 'cmap',
+             piletop: !!loc.disp_objpile };
 }
 
 // C ref: defsym.h MONSYMS -- def_monsyms[].sym, indexed by mlet (S_ANT = 1)
@@ -923,22 +940,48 @@ function obj_is_generic(obj) {
 // monster's color, generic objects the class's generic object (objects[]
 // index oclass), the rest their own objects[] entry; the boulder uses
 // SYM_BOULDER, which defaults to the rock class symbol. Pile-top glyphs
-// differ only in MG_OBJPILE, which tty shows only with hilite_pile.
+// (the *_PILETOP_OFF ranges) are marked 'piletop': they map like the plain
+// ones but with MG_OBJPILE, which tty shows only with hilite_pile.
 function obj_to_glyph(obj, rng) {
     if (obj.otyp === STATUE) {
         if (Hallucination()) rng(2);
         return { ch: def_monsyms[mons[obj.corpsenm].mlet] ?? '?',
-                 color: objects[STATUE].oc_color, decgfx: false, obj: true };
+                 color: objects[STATUE].oc_color, decgfx: false, obj: true,
+                 piletop: obj_is_piletop(obj) };
     }
     if (Hallucination()) rng(2);
     if (obj.otyp === CORPSE)
         return { ch: def_oc_syms[objects[CORPSE].oc_class],
-                 color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false, obj: true };
+                 color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false, obj: true,
+                 piletop: obj_is_piletop(obj) };
     const generic = obj_is_generic(obj);
     const offset = generic ? obj.oclass : obj.otyp;
     /* 'generic' marks glyph_is_generic_object() */
     return { ch: def_oc_syms[objects[offset].oc_class],
-             color: objects[offset].oc_color, decgfx: false, generic, obj: true };
+             color: objects[offset].oc_color, decgfx: false, generic, obj: true,
+             piletop: obj_is_piletop(obj) };
+}
+
+// C ref: display.h obj_is_piletop() -- the object is on the floor and its
+// spot's pile (level.objects[ox][oy]) has a second object (->nexthere);
+// a boulder hides the pile except when on top of another boulder. The pile
+// is read from the floor chain the way place_object() orders it: boulders
+// on top, then the rest, newest first.
+function obj_is_piletop(obj) {
+    if (obj.where !== 'OBJ_FLOOR')
+        return false;
+    let boulders = 0, count = 0;
+    for (const o of game.level?.objects || []) {
+        if (o.ox !== obj.ox || o.oy !== obj.oy || o.where !== 'OBJ_FLOOR')
+            continue;
+        count++;
+        if (o.otyp === BOULDER) boulders++;
+    }
+    if (count < 2)
+        return false;
+    /* go.otg_otmp, the pile's second object, is a boulder only when the
+       pile has two or more of them */
+    return obj.otyp !== BOULDER || boulders >= 2;
 }
 
 // C ref: display.c map_object()
@@ -968,7 +1011,8 @@ function map_object(obj, show) {
         loc.remembered_glyph = glyph;
     }
     if (show)
-        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'obj');
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'obj',
+                        glyph.piletop);
 }
 
 // C ref: display.c see_nearby_objects()
@@ -1290,7 +1334,7 @@ export function newsym(x, y) {
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx, 0,
-            glyph_kind(loc.remembered_glyph));
+            glyph_kind(loc.remembered_glyph), loc.remembered_glyph.piletop);
     } else {
         /* show_mem: never seen, the unexplored glyph (blank) */
         show_glyph_cell(x, y, ' ', NO_COLOR, false);
@@ -1357,7 +1401,8 @@ export async function docrt_flags(refresh_flags) {
                 if (!lev) continue;
                 const gl = lev.remembered_glyph;
                 if (gl)
-                    show_glyph_cell(x, y, gl.ch, gl.color, gl.decgfx, 0, glyph_kind(gl));
+                    show_glyph_cell(x, y, gl.ch, gl.color, gl.decgfx, 0, glyph_kind(gl),
+                                    gl.piletop);
                 else
                     show_glyph_cell(x, y, ' ', NO_COLOR, false);
             }
@@ -1398,7 +1443,7 @@ export function row_refresh(start, stop, y) {
         const loc = game.level.at(x, y);
         if (!loc?.disp_ch || loc.disp_ch === ' ') continue;
         const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
-        display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), loc.disp_attr ?? 0);
+        display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), tty_glyph_attr(loc));
     }
 }
 
@@ -1574,7 +1619,7 @@ function _buildScreenOutput(cursor_on_u) {
                     continue;
                 }
                 const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
-                display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), loc.disp_attr ?? 0);
+                display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), tty_glyph_attr(loc));
             }
         }
         // Status lines (left alone while erased)
