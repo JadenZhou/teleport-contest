@@ -12,7 +12,7 @@ import { game } from './gstate.js';
 import { pline, newsym, flush_screen } from './display.js';
 import { tty_putstr, tty_clear_nhwindow } from './wintty.js';
 import { nhgetch } from './input.js';
-import { handle_tip } from './hack.js';
+import { handle_tip, is_valid_travelpt } from './hack.js';
 import { movecmd_mode, MV_WALK, MV_RUSH, MV_RUN, cmd_from_func } from './cmd.js';
 import { do_screen_description } from './pager.js';
 import { COLNO, ROWNO, TIP_GETPOS, TOPLINE_NEED_MORE, TOPLINE_NON_EMPTY } from './const.js';
@@ -137,9 +137,9 @@ export async function auto_describe(cx, cy) {
         const autodescribe = game.iflags?.autodescribe !== false;
         const msg = `${firstmatch}${tmpbuf ? " " : ""}${tmpbuf}`
             + `${(autodescribe && st.getvalid && !(await st.getvalid(cx, cy)))
-                 ? " (invalid target)" : ""}`;
-        /* iflags.getloc_travelmode: " (no travel path)" -- travel isn't
-           ported */
+                 ? " (invalid target)" : ""}`
+            + `${(game.iflags?.getloc_travelmode && !(await is_valid_travelpt(cx, cy)))
+                 ? " (no travel path)" : ""}`;
         /* custompline(SUPPRESS_HISTORY | OVERRIDE_MSGTYPE | NO_CURS_ON_U) */
         await flush_screen(0);
         await tty_putstr(game.WIN_MESSAGE, 0, msg);
