@@ -1037,7 +1037,7 @@ export function newsym(x, y) {
            lit corridor) was seen by night vision (or lit_corridor), so
            correct the hero's memory to match waslit */
         if ((!loc.waslit || (game.flags.dark_room !== false
-                             && game.flags.color !== false))
+                             && game.iflags.wc_color !== false))
             && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
             loc.remembered_glyph = rememb_glyph(S_corr_g);
         // Out of sight but remembered — show remembered glyph

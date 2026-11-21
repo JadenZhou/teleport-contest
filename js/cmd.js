@@ -204,17 +204,44 @@ function bind_key_fn(map, key, fn) {
         map.set(key & 0xff, ec);
 }
 
-// C ref: cmd.c cmdbind_add()
+// C ref: cmd.c cmdbind_add() -- bind->userbind is kept in the
+// game.Cmd.userbinds set of keys
 function cmdbind_add(key, extcmd, user) {
-    void user; /* bind->userbind: only used when saving options */
     key &= 0xff;
     if (!key)
         return;
     if (!extcmd) {
         game.Cmd.cmdbinds.delete(key); /* cmdbind_remove(key) */
+        game.Cmd.userbinds.delete(key);
         return;
     }
     game.Cmd.cmdbinds.set(key, extcmd);
+    if (user)
+        game.Cmd.userbinds.add(key);
+    else
+        game.Cmd.userbinds.delete(key);
+}
+
+// C ref: cmd.c count_bind_keys()
+export function count_bind_keys() {
+    const keys = new Set();
+    let nbinds = 0;
+
+    if (!game.Cmd)
+        reset_commands(true); /* initoptions_init() */
+    /* commands bound to different key */
+    for (const [key, cmd] of game.Cmd.cmdbinds) {
+        keys.add(key);
+        if (game.Cmd.userbinds.has(key) && cmd && (cmd.key & 0xff) !== key)
+            nbinds++;
+    }
+
+    /* commands which should be bound to a key, but aren't */
+    for (const ec of extcmdlist)
+        if (ec.key && !keys.has(ec.key & 0xff))
+            nbinds++;
+
+    return nbinds;
 }
 
 // C ref: cmd.c bind_key()
@@ -224,6 +251,7 @@ export function bind_key(key, command, user) {
     /* special case: "nothing" is reserved for unbinding */
     if (!strcmpi(command, "nothing")) {
         game.Cmd.cmdbinds.delete(key & 0xff); /* cmdbind_remove(key) */
+        game.Cmd.userbinds.delete(key & 0xff);
         return true;
     }
 
@@ -264,7 +292,7 @@ export function bind_key(key, command, user) {
 export function reset_commands(initial) {
     if (!initial)
         throw new Error('reset_commands(): changing number_pad not ported yet');
-    game.Cmd = { cmdbinds: commands_init() };
+    game.Cmd = { cmdbinds: commands_init(), userbinds: new Set() };
 }
 
 // C ref: cmd.c commands_init() + the rest of reset_commands(TRUE)
