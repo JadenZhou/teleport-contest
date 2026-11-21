@@ -1349,7 +1349,7 @@ async function doset_simple_menu() {
         }
         /* tear down this instance of the menu; if pick_cnt is 1, caller
            will immediately call us back to put up another instance */
-        tty_destroy_nhwindow(tmpwin);
+        await tty_destroy_nhwindow(tmpwin);
 
         if (toggled_help) {
             toggled_help = false;
@@ -1585,7 +1585,7 @@ export async function doset() {
             }
         }
 
-        tty_destroy_nhwindow(tmpwin);
+        await tty_destroy_nhwindow(tmpwin);
 
         if (pick_cnt === 1 && gavehelp) {
             /* when '?' is only the thing selected, go back and pick all
@@ -1993,7 +1993,7 @@ async function choose_classes_menu(prompt, category, way, class_list, class_sele
     tty_end_menu(win, prompt);
     const { n: cnt, selected: pick_list } = await tty_select_menu(win, way ? PICK_ANY : PICK_ONE);
     n = cnt;
-    tty_destroy_nhwindow(win);
+    await tty_destroy_nhwindow(win);
     if (n > 0) {
         if (category === 1) {
             /* for object classes, first check for 'all'; it means 'use
