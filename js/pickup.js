@@ -1354,7 +1354,7 @@ async function carry_count(obj, /* object to pick up... */
 
 // C ref: objnam.c safe_qbuf() -- the case where the formatted object name
 // fits (short_oname()'s first step); shortening a long name isn't ported
-function safe_qbuf(qprefix, qsuffix, obj, func, lastR) {
+export function safe_qbuf(qprefix, qsuffix, obj, func, lastR) {
     const lenlimit = QBUFSZ - 1;
     let qbuf = (qprefix || '').slice(0, lenlimit);
     let len = qbuf.length;

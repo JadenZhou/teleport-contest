@@ -141,6 +141,8 @@ export class NethackGame {
         g.u = { ux: 0, uy: 0, ux0: 0, uy0: 0, uz: { dnum: 0, dlevel: 0 },
                 uroleplay: { ...dflt.uroleplay, ...opts.uroleplay } };
         g.context = { move: 0 };
+        /* C ref: decl.c -- hero_seq starts at 1L << 3 (moves*8 + n, moves 1) */
+        g.hero_seq = 1 << 3;
         g.program_state = {};
         /* C ref: options.c initoptions_init() -- default fruit name;
            initoptions_finish() -- fruitadd(pl_fruit) */

@@ -1,8 +1,7 @@
 // worn.js — monster armor: which_armor(), find_mac(), m_dowear(),
 // m_dowear_type(), mon_set_minvis(), mon_adjust_speed(),
 // update_mon_extrinsics(), extra_pref() and racial_exception().
-// C ref: worn.c.  The hero's setworn()/setnotworn() and the bypass bits
-// aren't ported here.
+// C ref: worn.c.  Also the hero's setworn()/setnotworn().
 //
 // m_dowear_type(), mon_adjust_speed() and update_mon_extrinsics() can print
 // messages but have synchronous callers (makemon() and friends, with
@@ -295,6 +294,45 @@ export function setworn(obj, mask) {
     }
     if ((g.flags.weaponstatus && (mask & W_WEP) !== 0)
         || (g.flags.armorstatus && (mask & W_ARMOR) !== 0))
+        g.disp_botl = true;
+    /* update_inventory(): no perm_invent */
+    recalc_telepat_range();
+}
+
+// C ref: worn.c setnotworn()
+/* called e.g. when obj is destroyed */
+/* Updated to use the extrinsic and blocked fields. */
+export function setnotworn(obj) {
+    const g = game;
+    const u = g.u;
+    let p;
+    let unworn = 0;
+
+    if (!obj)
+        return;
+    if (u.twoweap && (obj === g.uwep || obj === g.uswapwep))
+        u.twoweap = false; /* set_twoweap(FALSE) */
+    for (const wp of worn)
+        if (obj === g[wp.w_obj]) {
+            /* in case wearing or removal is in progress or removal
+               is pending (via 'A' command for multiple items) */
+            cancel_doff(obj, wp.w_mask);
+
+            g[wp.w_obj] = null;
+            unworn |= wp.w_mask;
+            p = objects[obj.otyp].oc_oprop;
+            uprop(p).extrinsic = uprop(p).extrinsic & ~wp.w_mask;
+            monstunseesu(cvt_prop_to_mseenres(p)); /* remove this extrinsic from seenres */
+            obj.owornmask &= ~wp.w_mask;
+            if (obj.oartifact)
+                throw new Error('setnotworn(): set_artifact_intrinsic() not ported yet');
+            if ((p = w_blocks(obj, wp.w_mask)) !== 0)
+                uprop(p).blocked &= ~wp.w_mask;
+        }
+    if (!g.uarm)
+        g.iflags.tux_penalty = false;
+    if ((g.flags.weaponstatus && (unworn & W_WEP) !== 0)
+        || (g.flags.armorstatus && (unworn & W_ARMOR) !== 0))
         g.disp_botl = true;
     /* update_inventory(): no perm_invent */
     recalc_telepat_range();
