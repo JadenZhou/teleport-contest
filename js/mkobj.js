@@ -882,7 +882,7 @@ import { nartifact_exist, mk_artifact } from './artifact.js';
 import { A_NONE } from './const.js';
 
 function not_ported(what) {
-    impossible(`mksobj_init: ${what} is not ported yet`);
+    throw new Error(`mkobj: ${what} not ported yet`);
 }
 
 // C ref: mkobj.c boxiprobs[]
