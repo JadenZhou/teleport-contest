@@ -46,6 +46,9 @@ import { ART_MJOLLNIR } from './artilist.js';
 import { is_missile, is_ammo, setuqwep } from './wield.js';
 import { confers_luck } from './timeout.js';
 import { set_moreluck } from './attrib.js';
+import { setnotworn } from './worn.js';
+import { food_disappears } from './eat.js';
+import { costly_spot, shop_keeper } from './insight.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
     tty_select_menu, tty_message_menu, tty_yn_function, tty_display_nhwindow,
@@ -603,6 +606,93 @@ async function addinv_core0(obj, other_obj, update_perm_invent) {
 // default fashion
 export async function addinv(obj) {
     return await addinv_core0(obj, null, true);
+}
+
+// C ref: invent.c addinv_nomerge()
+/* add obj to the hero's inventory by inserting in alphabetical order */
+export async function addinv_nomerge(obj) {
+    const save_nomerge = obj.nomerge;
+
+    obj.nomerge = 1;
+    const result = await addinv(obj);
+    obj.nomerge = save_nomerge;
+    return result;
+}
+
+// C ref: invent.c useupall()
+/* used up all of an inventory item */
+export function useupall(obj) {
+    setnotworn(obj);
+    freeinv(obj);
+    obfree(obj, null); /* deletes contents also */
+}
+
+// C ref: invent.c useup()
+/* an item in inventory is going away after being used */
+export function useup(obj) {
+    /* Note:  This works correctly for containers because they (containers)
+       don't merge. */
+    if (obj.quan > 1) {
+        obj.in_use = 0; /* no longer in use */
+        obj.quan--;
+        obj.owt = weight(obj);
+        /* update_inventory(): no perm_invent */
+    } else {
+        useupall(obj);
+    }
+}
+
+// C ref: shk.c onbill() -- the bill entry for obj, if any; shop bills
+// aren't ported yet, so only an empty bill is handled
+function onbill(obj, shkp, silent) {
+    void silent;
+    if (shkp && shkp.mextra?.eshk?.billct)
+        throw new Error('onbill(): shop bill entries not ported yet');
+    return null;
+}
+
+// C ref: shk.c obfree()
+/* delete obj from the game; 'merge' is the stack it merged into, if any */
+export function obfree(obj, merge) {
+    if (obj.otyp === O.LEASH && obj.leashmon)
+        throw new Error('obfree(): o_unleash() not ported yet');
+    if (obj.oclass === O.FOOD_CLASS)
+        food_disappears(obj);
+    if (obj.oclass === O.SPBOOK_CLASS) {
+        /* book_disappears(obj) */
+        const ctx = game.context;
+        if (ctx.spbook && obj === ctx.spbook.book) {
+            ctx.spbook.book = null;
+            ctx.spbook.o_id = 0;
+        }
+    }
+    if (obj.cobj && obj.cobj.length) /* Has_contents(obj) */
+        throw new Error('obfree(): delete_contents() not ported yet');
+    if (obj.otyp >= O.LARGE_BOX && obj.otyp <= O.BAG_OF_TRICKS) /* Is_container */
+        throw new Error('obfree(): maybe_reset_pick() not ported yet');
+    if (obj.otyp === O.BOULDER)
+        obj.next_boulder = 0;
+
+    let shkp = null;
+    if (obj.unpaid)
+        throw new Error('obfree(): unpaid object (next_shkp()/onbill()) not ported yet');
+    /* sanity check, in case obj is on bill but not marked 'unpaid' */
+    if (!shkp)
+        shkp = shop_keeper(game.u.ushops ? (game.u.ushops.charCodeAt(0) || 0) : 0);
+    if (onbill(obj, shkp, false)) {
+        /* bill handling: not reached (onbill() throws for a non-empty bill) */
+    } else {
+        /* not on bill; a merged-away stack with a higher price adjustment
+           passes its o_id on (oid_price_adjustment()) */
+        if (merge)
+            throw new Error('obfree(): merge price adjustment not ported yet');
+    }
+    if (obj.owornmask) {
+        /* impossible("obfree: deleting worn obj") */
+        setnotworn(obj);
+    }
+    /* dealloc_obj(obj): garbage collected */
+    obj.where = 'OBJ_DELETED';
 }
 
 // C ref: shk.c picked_container()
@@ -1901,5 +1991,25 @@ export function delobj_core(obj, force) {
         maybe_unhide_at(obj.ox, obj.oy);
         newsym(obj.ox, obj.oy);
     }
-    /* obfree(obj, (struct obj *) 0): garbage collected */
+    obfree(obj, null); /* frees contents also */
+}
+
+// C ref: invent.c useupf()
+/* use up an object that's on the floor, charging for it as needed */
+export function useupf(obj, numused) {
+    let otmp;
+    const at_u = (obj.ox === game.u.ux && obj.oy === game.u.uy);
+
+    /* burn_floor_objects() keeps an object pointer that it tries to
+     * useupf() multiple times, so obj must survive if plural */
+    if (obj.quan > numused)
+        otmp = splitobj(obj, numused);
+    else
+        otmp = obj;
+    if (!game.context.mon_moving && costly_spot(otmp.ox, otmp.oy))
+        throw new Error('useupf(): addtobill()/stolen_value() not ported yet');
+    delobj(otmp);
+    if (at_u && game.u.uundetected
+        && (game.youmonst.data.mflags1 & M.M1_CONCEAL) !== 0) /* hides_under() */
+        throw new Error('useupf(): hideunder() not ported yet');
 }

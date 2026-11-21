@@ -45,6 +45,8 @@ import { forget_temple_entry } from './priest.js';
 import { MON_DETACH } from './const.js';
 import { confers_luck } from './timeout.js';
 import { set_moreluck } from './attrib.js';
+import { eaten_stat } from './eat.js';
+import { costly_spot } from './insight.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -961,11 +963,10 @@ export function weight(obj) {
     if (obj.otyp === O.CORPSE && obj.corpsenm >= LOW_PM) {
         wt = obj.quan * mons[obj.corpsenm].cwt;
         if (obj.oeaten)
-            not_ported('eaten_stat()');
+            wt = eaten_stat(wt, obj);
         return wt;
     } else if (obj.oclass === O.FOOD_CLASS && obj.oeaten) {
-        not_ported('eaten_stat()');
-        return obj.quan * wt;
+        return eaten_stat(obj.quan * wt, obj);
     } else if (obj.oclass === O.COIN_CLASS) {
         /* 5.0: always weigh at least 1 unit; used to yield 0 for 1..49 */
         wt = Math.trunc((obj.quan + 50) / 100);
@@ -976,6 +977,34 @@ export function weight(obj) {
         return wt + obj.spe * objects[O.TALLOW_CANDLE].oc_weight;
     }
     return (wt ? wt * obj.quan : (obj.quan + 1) >> 1);
+}
+
+// C ref: mkobj.c costly_alteration()
+/* possibly bill for an object which the player has just modified;
+   only the "nobody is charging for it" cases are ported */
+export function costly_alteration(obj, alter_type) {
+    void alter_type;
+    let ox, oy;
+
+    if (obj.where === 'OBJ_INVENT' || obj.where === 'OBJ_FREE') {
+        /* OBJ_FREE catches obj_no_longer_held()'s transformation
+           of crysknife back into worm tooth; the object has been
+           removed from inventory but not necessarily placed at
+           its new location yet--the unpaid flag will still be set
+           if this item is owned by a shop */
+        if (!obj.unpaid)
+            return;
+    } else {
+        /* this get_obj_location shouldn't fail, but if it does,
+           use hero's location */
+        if (obj.where === 'OBJ_FLOOR')
+            ox = obj.ox, oy = obj.oy;
+        else
+            throw new Error('costly_alteration(): get_obj_location() of a contained/carried object not ported yet');
+        if (!costly_spot(ox, oy))
+            return;
+    }
+    throw new Error('costly_alteration(): billing for an altered shop object not ported yet');
 }
 
 // C ref: mkobj.c mkbox_cnts()

@@ -854,7 +854,7 @@ function Blind() {
 }
 
 // C ref: potion.c toggle_blindness() -- blindness has just been toggled
-function toggle_blindness() {
+export function toggle_blindness() {
     const g = game;
     const Stinging = !!(g.uwep && (uprop(WARN_OF_MON).extrinsic & W_WEP) !== 0);
     const Blind_telepat = !!(uprop(TELEPAT).intrinsic || uprop(TELEPAT).extrinsic);

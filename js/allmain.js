@@ -51,7 +51,7 @@ import { ACURR, exerchk } from './attrib.js';
 import { near_capacity, lookaround, end_running, nomul, monster_nearby } from './hack.js';
 import { nh_timeout } from './timeout.js';
 import { dosounds } from './sounds.js';
-import { gethungry } from './eat.js';
+import { gethungry, reset_eat, maybe_finished_meal } from './eat.js';
 import { age_spells } from './spell.js';
 import { u_wipe_engr } from './engrave.js';
 import { dosearch0, warnreveal } from './detect.js';
@@ -316,9 +316,8 @@ export function set_occupation(fn, txt, xtime) {
 export async function stop_occupation() {
     const g = game;
     if (g.occupation) {
-        /* maybe_finished_meal(TRUE): only for the eatfood occupation,
-           which isn't ported */
-        await pline(`You stop ${g.occtxt}.`); /* You() */
+        if (!await maybe_finished_meal(true))
+            await pline(`You stop ${g.occtxt}.`); /* You() */
         g.occupation = null;
         g.disp_botl = true; /* in case u.uhs changed */
         nomul(0);
@@ -326,14 +325,6 @@ export async function stop_occupation() {
         nomul(0);
     }
     g.cmdq = []; /* cmdq_clear(CQ_CANNED) */
-}
-
-// C ref: eat.c reset_eat() -- we only set a flag here - the actual reset
-// process is done after the round is spent eating
-function reset_eat() {
-    const v = game.context.victual;
-    if (v && v.eating && !v.doreset)
-        v.doreset = true;
 }
 
 // C ref: hack.c unmul()

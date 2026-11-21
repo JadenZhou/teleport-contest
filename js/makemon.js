@@ -60,7 +60,7 @@ import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon } from './display.js';
 import { does_block, block_point, cansee } from './vision.js';
-import { set_apparxy } from './monmove.js';
+import { set_apparxy, dochugw } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
 import { mpickobj } from './steal.js';
@@ -1983,8 +1983,15 @@ export function makemon(ptr, x, y, mmflags) {
             }
         }
         /* if discernable and a threat, stop fiddling while Rome burns */
-        if (game.occupation)
-            throw new Error('makemon(): dochugw() for an occupied hero not ported yet');
+        if (game.occupation) {
+            /* (void) dochugw(mtmp, FALSE): async (stop_occupation() prints),
+               so like the message above it is handed to the caller, which
+               runs it right after the message in makemon_flush_msg() */
+            if (game.makemon_want_msg)
+                game.makemon_dochugw = mtmp;
+            else
+                throw new Error('makemon(): dochugw() for an occupied hero not ported yet');
+        }
 
         /* TODO: unify with teleport appears msg */
     }
@@ -2002,6 +2009,11 @@ export async function makemon_flush_msg() {
     game.makemon_msg = null;
     if (msg)
         await pline(msg);
+    /* and makemon()'s dochugw(mtmp, FALSE) for an occupied hero */
+    const mtmp = game.makemon_dochugw;
+    game.makemon_dochugw = null;
+    if (mtmp)
+        await dochugw(mtmp, false);
 }
 
 /* C ref: display.h sensemon() -- telepathy, extended detection and
