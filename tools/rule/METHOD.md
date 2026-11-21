@@ -186,6 +186,25 @@ failures diverge late (step 64+) and look like recorder screen-capture quirks, n
 gameplay. The private sessions (`~/code/teleport-research/private-sessions/recorded`: 12
 public recipes with new seeds, 1,071 screens) were recorded this way.
 
+**Don't rebuild the recorder with the updated patch 006 (checked 2026-11-21).** Upstream
+`6ee30e6` changed `nethack-c/patches/006-nomux-capture.patch`: a bigger capture buffer and a
+raw-mode reset on exit. A build with it, tested from `/tmp/nhbuild`:
+- reproduces only 38/44 public sessions instead of 39/44;
+- deterministically changes the save/exit cursor in `seed0013-friday13-save-then-fullmoon-restore`
+  (steps 48 and 98: official [0,1,1], new [0,0,1]), which the current build reproduces exactly.
+
+The official public sessions therefore match the *old* capture behaviour. The overflow half of
+the fix changes none of our dev or private recordings. Keep the current build in
+`nethack-c/recorder`. `build-recorder.sh` would now apply the new patch, so restore patch 006
+from before `6ee30e6` if you ever need to rebuild.
+
+**Meta keys (stream A, next).** Held-out sessions contain keys above 0x7f (issue #23): meta
+keys, where `M-e` is the single char U+00E5. Public sessions never do, so neither do dev or
+probe. Port all of C's meta-key bindings faithfully (cmd.c, `M(...)`), and record a meta-key
+probe set. The merged `scripts/record-session.mjs` writes one byte per key (latin1), so the
+current recorder handles such recipes. Build recipes from public ones by replacing
+extended commands with their meta-key forms (e.g. `#pray` → `M-p`).
+
 ## Deferred
 
 - **Messages half of the rule** (every message from the same C function): a recorder patch
