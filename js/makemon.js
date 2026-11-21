@@ -1755,7 +1755,8 @@ export function makemon(ptr, x, y, mmflags) {
     game.fmon = mtmp;
     mtmp.m_id = next_ident();
     set_mon_data(mtmp, ptr); /* mtmp->data = ptr; */
-    /* quest_status.leader_m_id: the quest isn't ported yet */
+    if (ptr.msound === M.MS_LEADER && game.urole.ldrnum === mndx) /* quest_info(MS_LEADER) */
+        game.quest_status.leader_m_id = mtmp.m_id;
     mtmp.mnum = mndx;
 
     /* set up level and hit points */
@@ -1767,8 +1768,17 @@ export function makemon(ptr, x, y, mmflags) {
         mtmp.female = 1;
     else if (is_male(ptr) || ((mmflags & MM_MALE) !== 0 && maleok))
         mtmp.female = 0;
-    /* leader and nemesis gender (quest_status.ldrgend/nemgend) would go
-       here; the quest isn't ported yet */
+    /* leader and nemesis gender is usually hardcoded in mons[],
+       but for ones which can be random, it has already been chosen
+       (in role_init(), for possible use by the quest pager code) */
+    else if (ptr.msound === M.MS_LEADER && game.urole.ldrnum === mndx) /* quest_info(MS_LEADER) */
+        mtmp.female = game.quest_status.ldrgend;
+    else if (ptr.msound === M.MS_NEMESIS && game.urole.neminum === mndx) /* quest_info(MS_NEMESIS) */
+        mtmp.female = game.quest_status.nemgend;
+
+    /* female used to be set randomly here even for neuters on the
+       grounds that it was ignored, but after corpses were changed to
+       retain gender it matters because it affects stacking of corpses */
     else
         mtmp.female = femaleok ? rn2(2) : 0;
 

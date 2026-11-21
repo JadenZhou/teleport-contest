@@ -18,7 +18,9 @@ import * as O from './objects.js';
 import { is_pool, is_lava, u_at } from './makemon.js';
 import { t_at, is_pit, is_hole } from './trap.js';
 import { cansee } from './vision.js';
-import { PM_TOURIST } from './monsters.js';
+import { PM_TOURIST, PM_ROGUE } from './monsters.js';
+import { onquest, ok_to_quest } from './quest.js';
+import { com_pager, deliver_splev_message } from './questpgr.js';
 import { more_experienced, newexplevel } from './exper.js';
 import { check_special_room } from './hack.js';
 import { pickup } from './pickup.js';
@@ -445,8 +447,10 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
      */
     const qstart_level = g.dungeon_topology?.d_qstart_level;
     if (qstart_level && qstart_level.dlevel && on_level(u.uz, qstart_level)
-        && !newdungeon)
-        throw new Error('goto_level(): ok_to_quest() not ported yet');
+        && !newdungeon && !ok_to_quest()) {
+        await pline("A mysterious force prevents you from descending.");
+        return;
+    }
 
     if (on_level(newlevel, u.uz))
         return; /* this can happen */
@@ -671,7 +675,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         await maybe_lvltport_feedback(); /* potentially called by Sting_effects() */
 
     /* special levels can have a custom arrival message */
-    deliver_splev_message();
+    await deliver_splev_message();
 
     /* Check whether we just entered Gehennom. */
     if (!In_hell(u.uz0) && In_hell(u.uz))
@@ -688,7 +692,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (In_endgame(u.uz)) {
         throw new Error('goto_level(): endgame arrival not ported yet');
     } else if (u.uz.dnum === topo.d_quest_dnum) { /* In_quest() */
-        throw new Error('goto_level(): onquest() not ported yet');
+        await onquest(); /* might be reaching locate|goal level */
     } else if (topo.d_knox_level?.dlevel && on_level(u.uz, topo.d_knox_level)) {
         /* Is_knox() */
         throw new Error('goto_level(): Fort Ludios arrival not ported yet');
@@ -708,9 +712,21 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         }
         /* main dungeon message from your quest leader */
         if (u.uz0.dnum !== topo.d_quest_dnum && at_dgn_entrance("The Quest")
-            && !(u.uevent?.qcompleted || u.uevent?.qexpelled
-                 || g.quest_status?.leader_is_dead))
-            throw new Error('goto_level(): quest portal message not ported yet');
+            && !(u.uevent.qcompleted || u.uevent.qexpelled
+                 || g.quest_status.leader_is_dead)) {
+            /* [TODO: copy of same TODO below; if an achievement for
+               receiving quest call from leader gets added, that should
+               come after logging new level entry] */
+            if (!u.uevent.qcalled) {
+                u.uevent.qcalled = 1;
+                /* main "leader needs help" message */
+                await com_pager("quest_portal");
+            } else { /* reminder message */
+                await com_pager((g.urole.mnum === PM_ROGUE) /* Role_if() */
+                                ? "quest_portal_demand"
+                                : "quest_portal_again");
+            }
+        }
     }
 
     temperature_change_msg(prev_temperature);
@@ -759,13 +775,6 @@ export async function maybe_lvltport_feedback() {
         await pline(g.dfr_post_msg);
         g.dfr_post_msg = null;
     }
-}
-
-// C ref: questpgr.c deliver_splev_message()
-function deliver_splev_message() {
-    /* there's no provision for delivering via window instead of pline */
-    if (game.lev_message)
-        throw new Error('deliver_splev_message(): deliver_by_pline() not ported yet');
 }
 
 // C ref: do.c temperature_change_msg()
@@ -1129,8 +1138,9 @@ function down_gate(x, y) {
     game.gate_str = null;
     /* this matches the player restriction in goto_level() */
     const qstart_level = game.dungeon_topology?.d_qstart_level;
-    if (qstart_level && qstart_level.dlevel && on_level(game.u.uz, qstart_level))
-        throw new Error('down_gate(): ok_to_quest() not ported yet');
+    if (qstart_level && qstart_level.dlevel && on_level(game.u.uz, qstart_level)
+        && !ok_to_quest())
+        return 'MIGR_NOWHERE';
     if (stway && !stway.up && !stway.isladder) {
         game.gate_str = "down the stairs";
         return 'MIGR_STAIRS';

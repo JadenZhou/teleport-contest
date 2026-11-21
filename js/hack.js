@@ -86,6 +86,7 @@ function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
 import { NUM_TIPS, TIP_ENHANCE, TIP_SWIM, TIP_UNTRAP_MON, TIP_GETPOS,
          NHCORE_GETPOS_TIP } from './const.js';
+import { intemple } from './priest.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -906,7 +907,7 @@ export async function check_special_room(newlev) {
         if (rt !== OROOM && rt !== TEMPLE && rt < SHOPBASE)
             throw new Error('check_special_room(): special room entry not ported yet');
         if (rt === TEMPLE)
-            throw new Error('check_special_room(): intemple() not ported yet');
+            await intemple(roomno + ROOMOFFSET);
         /* default: */
         msg_given = (rt === TEMPLE || rt >= SHOPBASE);
         rt = 0;

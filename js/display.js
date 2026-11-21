@@ -5,7 +5,7 @@ import { game } from './gstate.js';
 import { money_cnt } from './u_init.js';
 import { cansee, couldsee, vision_recalc } from './vision.js';
 import { tty_putstr, tty_display_nhwindow } from './wintty.js';
-import { rank, condtests } from './botl.js';
+import { rank, condtests, describe_level } from './botl.js';
 import { near_capacity } from './hack.js';
 import { NOT_HUNGRY, UNENCUMBERED, SICK, SICK_VOMITABLE, SICK_NONVOMITABLE, TT_LAVA,
          TT_BURIEDBALL, CONFUSION, DEAF, FLYING, HALLUC_RES, LEVITATION, SLIMED,
@@ -1600,9 +1600,20 @@ export function row_refresh(start, stop, y) {
     for (let x = Math.max(start, 1); x <= stop && x < COLNO; x++) {
         const loc = game.level.at(x, y);
         if (!loc?.disp_ch || loc.disp_ch === ' ') continue;
-        const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
+        const ch = loc.disp_decgfx ? dec_cell_char(loc.disp_ch) : loc.disp_ch;
         display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), tty_glyph_attr(loc));
     }
+}
+
+// A DEC special-graphics character as the terminal grid holds it. The tty
+// recordings decode only the VT100 line-drawing set (box corners and
+// rules, checkerboard, centered dot) to Unicode; the other alternate
+// charset letters ('g' plus-minus for S_tree, '`' diamond, 'f' degree,
+// '|' not-equal, ...) stay as their ASCII letters (frozen/screen-decode.mjs
+// DEC_MAP), so only that subset is converted.
+const DEC_LINE_DRAWING = 'lqkxmjtuwvna~';
+function dec_cell_char(ch) {
+    return DEC_LINE_DRAWING.includes(ch) ? (DEC_TO_UNICODE[ch] || ch) : ch;
 }
 
 // ── Serialize a map row with DEC line-drawing and ANSI colors ──
@@ -1716,7 +1727,10 @@ function _statusLine2() {
         ? ` ${STAT_HU[u.uhs].replace(/ +$/, '')}` : '';
     const cap = near_capacity();
     const capstr = (cap > UNENCUMBERED) ? ` ${STAT_ENC[cap]}` : '';
-    const line = `Dlvl:${u.uz?.dlevel || 1} $:${Math.min(money_cnt(game.invent), 999999)} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
+    /* BL_LEVELDESC: describe_level(buf, 1), with wintty.c's
+       tty_status_update() suppressing its trailing blanks */
+    const leveldesc = describe_level(1)[1].replace(/ +$/, '');
+    const line = `${leveldesc} $:${Math.min(money_cnt(game.invent), 999999)} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
     /* make_things_fit(): shrinking or truncating an overlong line */
     if (line.length > 79)
         throw new Error('_statusLine2(): make_things_fit() shrinking not ported yet');
@@ -1884,7 +1898,7 @@ function _buildScreenOutput(cursor_on_u) {
                     display.setCell(x - 1, y + 1, ' ', NO_COLOR, 0);
                     continue;
                 }
-                const ch = loc.disp_decgfx ? (DEC_TO_UNICODE[loc.disp_ch] || loc.disp_ch) : loc.disp_ch;
+                const ch = loc.disp_decgfx ? dec_cell_char(loc.disp_ch) : loc.disp_ch;
                 display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), tty_glyph_attr(loc));
             }
         }
