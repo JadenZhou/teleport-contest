@@ -79,7 +79,7 @@ import { In_hell } from './dungeon.js';
 import { stop_occupation } from './allmain.js';
 import { shk_move, costly_spot, after_shk_move, inhishop } from './shk.js';
 import { in_rooms } from './hack.js';
-import { pri_move } from './priest.js';
+import { pri_move, in_your_sanctuary } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -471,11 +471,8 @@ async function distfleeck(mtmp, out) {
         out.scared = 0;
 }
 
-// C ref: priest.c in_your_sanctuary()
-export function in_your_sanctuary(mon, x, y) {
-    if (!game.level.flags?.has_temple) return false;
-    throw new Error('in_your_sanctuary(): temples not ported yet');
-}
+// C ref: priest.c in_your_sanctuary() -- ported in priest.js
+export { in_your_sanctuary };
 
 // ── C ref: monmove.c set_apparxy() ──
 export function set_apparxy(mtmp) {

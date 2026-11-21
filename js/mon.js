@@ -107,6 +107,7 @@ import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
 import { in_rooms } from './hack.js';
+import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
 import { stinky_nemesis } from './questpgr.js';
 
@@ -2068,8 +2069,14 @@ export function mfndpos(mon, data, flag) {
                         }
                         /* Note: ALLOW_SANCT only prevents movement, not
                            attack, into a temple. */
-                        if (lev.flags?.has_temple)
-                            throw new Error('mfndpos(): temples not ported yet');
+                        if (lev.flags?.has_temple
+                            && in_rooms(nx, ny, TEMPLE).length
+                            && !in_rooms(x, y, TEMPLE).length
+                            && in_your_sanctuary(null, nx, ny)) {
+                            if (!(flag & ALLOW_SANCT))
+                                continue;
+                            info |= ALLOW_SANCT;
+                        }
                     }
                     if (checkobj && sobj_at(CLOVE_OF_GARLIC, nx, ny)) {
                         if (flag & NOGARLIC)
