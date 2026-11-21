@@ -88,7 +88,6 @@ import { midnight } from './calendar.js';
 import { Hello } from './role.js';
 import { search_special } from './sounds.js';
 import { wake_msg } from './mon.js';
-import { inside_room } from './sp_lev.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
