@@ -70,8 +70,9 @@ const DEF_CMAP_FOR_DEC = {
 function terrain_glyph(loc, x, y) {
     const tg = terrain_glyph_dec(loc, x, y);
     if (tg.dec && !/^decgraphics$/i.test(game.symset_name || ''))
-        return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch, color: tg.color, dec: false };
-    return { ch: tg.ch, color: tg.color, dec: tg.dec };
+        return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch, color: tg.color, dec: false,
+                 cmap: tg.cmap };
+    return { ch: tg.ch, color: tg.color, dec: tg.dec, cmap: tg.cmap };
 }
 
 // C ref: stairs.c stairway_at()
@@ -550,6 +551,14 @@ function wall_angle(lev) {
     return idx;
 }
 
+/* C ref: defsym.h S_corr, S_litcorr; display.c map_glyphinfo(): when
+   S_litcorr has the same symbol as S_corr (it does in the default and
+   DECgraphics symsets) it is shown in CLR_WHITE to tell them apart.
+   'cmap' lets newsym() and feel_location() recognize the remembered
+   glyph (lev->glyph == cmap_to_glyph(S_litcorr)). */
+const S_corr_g = { ch: '#', color: CLR_GRAY, dec: false, cmap: 'S_corr' };
+const S_litcorr_g = { ch: '#', color: CLR_WHITE, dec: false, cmap: 'S_litcorr' };
+
 // C ref: display.c back_to_glyph() -- the background glyph of a spot,
 // as { ch, color, dec } with the DECgraphics symset's line-drawing
 // characters (dat/symbols "DECgraphics") where it overrides defsym.h;
@@ -567,7 +576,9 @@ function terrain_glyph_dec(loc, x, y) {
     case SCORR:
     case STONE:     return arboreal ? S_tree : S_stone;
     case ROOM:      return S_room;
-    case CORR:      return { ch: '#', color: CLR_GRAY, dec: false }; /* S_corr/S_litcorr */
+    case CORR:
+        /* idx = (ptr->waslit || flags.lit_corridor) ? S_litcorr : S_corr */
+        return (loc.waslit || game.flags?.lit_corridor) ? S_litcorr_g : S_corr_g;
     case HWALL:
     case VWALL:
     case TLCORNER:
@@ -847,7 +858,8 @@ function map_background(x, y, show) {
     const loc = game.level.at(x, y);
     const tg = terrain_glyph(loc, x, y);
     if (game.level.flags?.hero_memory)
-        loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
+        loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
+                                 cmap: tg.cmap };
     if (show)
         show_glyph_cell(x, y, tg.ch, tg.color, tg.dec);
 }
@@ -949,9 +961,12 @@ export function newsym(x, y) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
 
-    /* C ref: display.c newsym(): when the spot can be seen, an engraving
-       there is revealed, even when covered by objects or a monster */
+    /* C ref: display.c newsym(): when the spot can be seen, remember its
+       lit condition (not templit, so that temporarily lit spots re-darken
+       out of sight), and an engraving there is revealed, even when
+       covered by objects or a monster */
     if (cansee(x, y)) {
+        loc.waslit = (loc.lit ? 1 : 0); /* remember lit condition */
         const ep = engr_at(x, y);
         if (ep)
             ep.erevealed = 1;
@@ -963,7 +978,13 @@ export function newsym(x, y) {
             _map_location(x, y, false);
         } else {
             const tg = terrain_glyph(loc, x, y);
-            loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec };
+            loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
+                                     cmap: tg.cmap };
+            /* C ref: display.c feel_location(): Corridors are never felt
+               as lit (unless remembered that way) (lit_corridor only). */
+            if (loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr'
+                && !loc.waslit)
+                loc.remembered_glyph = rememb_glyph(S_corr_g);
         }
         show_glyph_cell(x, y, '@', CLR_WHITE, false);
         return;
@@ -981,10 +1002,23 @@ export function newsym(x, y) {
             _map_location(x, y, true);
         }
     } else if (loc.remembered_glyph) {
+        /* C ref: display.c newsym(), can't see the location: a spot
+           remembered as both dark (waslit is false) and lit (glyph is a
+           lit corridor) was seen by night vision (or lit_corridor), so
+           correct the hero's memory to match waslit */
+        if ((!loc.waslit || (game.flags.dark_room !== false
+                             && game.flags.color !== false))
+            && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
+            loc.remembered_glyph = rememb_glyph(S_corr_g);
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx);
     }
+}
+
+/* a terrain glyph in the remembered-glyph form (lev->glyph) */
+function rememb_glyph(tg) {
+    return { ch: tg.ch, color: tg.color, decgfx: tg.dec, cmap: tg.cmap };
 }
 
 // C ref: display.h enum docrt_flags_bits
