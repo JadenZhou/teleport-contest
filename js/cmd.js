@@ -19,7 +19,8 @@ import { strcmpi, strncmpi, highc } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele } from './teleport.js';
 import { wiz_level_change, wiz_wish } from './wizcmds.js';
-import { ddoinv, dolook } from './invent.js';
+import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
+         doprtool } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
 export { domove };
@@ -126,6 +127,12 @@ const cmd_funcs = {
     doset: () => doset(),
     dopickup: () => dopickup(),
     dosave: () => dosave(),
+    doprgold: () => doprgold(),
+    doprwep: () => doprwep(),
+    doprarm: () => doprarm(),
+    doprring: () => doprring(),
+    dopramulet: () => dopramulet(),
+    doprtool: () => doprtool(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",

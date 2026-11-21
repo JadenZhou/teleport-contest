@@ -9,7 +9,8 @@ import { maybe_unhide_at } from './mon.js';
 import { doname, makeplural } from './objnam.js';
 import { rn2 } from './rng.js';
 import { ing_suffix } from './hacklib.js';
-import { body_part } from './insight.js';
+import { body_part, hidden_gold, currency, empty_handed } from './insight.js';
+import { money_cnt } from './u_init.js';
 import { welded } from './wield.js';
 import { stairway_at } from './display.js';
 import { an, vtense } from './objnam.js';
@@ -30,7 +31,7 @@ import {
     GETOBJ_EXCLUDE, GETOBJ_DOWNPLAY, GETOBJ_SUGGEST, GETOBJ_EXCLUDE_INACCESS,
     GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_EXCLUDE_NONINVENT, GETOBJ_ALLOWCNT,
     GETOBJ_PROMPT, Never_mind, FINGERTIP, HAND, W_ARMOR, W_ACCESSORY,
-    W_SADDLE, W_WEAPONS,
+    W_SADDLE, W_WEAPONS, W_TOOL,
 } from './const.js';
 import { objects } from './objects.js';
 import * as M from './monsters.js';
@@ -292,10 +293,8 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
     if (lets && !lets.length)
         lets = null; /* simplify tests: (lets) instead of (lets && *lets) */
 
-    if (game.iflags?.override_ID
-        || (game.flags?.sortloot && game.flags.sortloot !== 'n'
-            && game.flags.sortloot !== 'l'))
-        throw new Error('display_pickinv(): wizid/sortloot are not ported yet');
+    if (game.iflags?.override_ID && game.flags?.debug)
+        throw new Error('display_pickinv(): wizid is not ported yet');
 
     /* partial inventory in perm_invent setting; don't operate on
        full inventory window, use an alternate one instead; create
@@ -303,6 +302,7 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
     if (game.cached_pickinv_win == null || game.cached_pickinv_win === WIN_ERR)
         game.cached_pickinv_win = tty_create_nhwindow(NHW_MENU);
     const win = game.cached_pickinv_win;
+    const inuse_only = (game.flags?.sortloot === 'i');
 
     n = lets ? lets.length
              : !game.invent ? 0 : !game.invent.nobj ? 1 : 2;
@@ -343,6 +343,9 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
         return ret;
     }
 
+    if (inuse_only || (game.flags?.sortloot && game.flags.sortloot !== 'n'
+                       && game.flags.sortloot !== 'l'))
+        throw new Error('display_pickinv(): in-use/sortloot menus are not ported yet');
     const sortedinvent = sortloot_invent(sortpack);
     tty_start_menu(win, MENU_BEHAVE_STANDARD);
     if (usextra) {
@@ -1317,18 +1320,37 @@ export async function dolook() {
 }
 
 
+/* C ref: invent.c inuse_headers[4], the in-use "Accessories" heading that
+   dispinv_with_action() can relabel */
+let inuse_accessories = "Accessories";
+
 // C ref: invent.c dispinv_with_action()
 async function dispinv_with_action(lets, use_inuse_ordering, alt_label) {
+    let save_accessories = null;
+    let save_sortloot = null;
     const len = lets ? lets.length : 0;
     const menumode = (len !== 1 || game.iflags?.menu_requested) ? true : false;
     const save_force_invmenu = game.iflags.force_invmenu;
 
-    if (use_inuse_ordering || alt_label)
-        throw new Error('dispinv_with_action(): in-use ordering is not ported yet');
+    if (use_inuse_ordering) {
+        save_accessories = inuse_accessories;
+        save_sortloot = game.flags.sortloot;
+
+        game.flags.sortloot = 'i'; /* checked by display_pickinv() */
+        if (alt_label)
+            inuse_accessories = alt_label;
+    }
     game.iflags.force_invmenu = false;
 
-    const c = await display_inventory(lets, menumode);
-
+    let c;
+    try {
+        c = await display_inventory(lets, menumode);
+    } finally {
+        if (use_inuse_ordering) {
+            game.flags.sortloot = save_sortloot;
+            inuse_accessories = save_accessories;
+        }
+    }
     game.iflags.force_invmenu = save_force_invmenu;
 
     if (c && c !== '\x1b') {
@@ -1345,6 +1367,221 @@ async function dispinv_with_action(lets, use_inuse_ordering, alt_label) {
 // C ref: invent.c ddoinv() -- the #inventory command
 export async function ddoinv() {
     return await dispinv_with_action(null, false, null);
+}
+
+// C ref: invent.c doprgold() -- the #showgold command
+export async function doprgold() {
+    /* Command takes containers into account. */
+    const umoney = money_cnt(game.invent);
+
+    /* Only list the money you know about.  Guards and shopkeepers
+       can somehow tell if there is any gold anywhere on your
+       person, but you have no such preternatural gold-sense. */
+    const hmoney = hidden_gold(false);
+
+    if (game.flags.verbose) {
+        let buf;
+
+        if (!umoney) {
+            buf = "Your wallet is empty";
+        } else {
+            buf = `Your wallet contains ${umoney} ${currency(umoney)}`;
+        }
+        if (hmoney) {
+            buf += `, ${umoney ? "and" : "but"} you have ${hmoney} `
+                   + `${umoney ? "more" : currency(hmoney)} stashed away in your pack`;
+        }
+        await pline(`${buf}.`);
+    } else {
+        const total = umoney + hmoney;
+        if (total)
+            await You(`are carrying a total of ${total} ${currency(total)}.`);
+        else
+            await You("have no money.");
+    }
+    shopper_financial_report();
+
+    if (umoney && game.iflags.menu_requested) {
+        /* mustn't use TRUE or gold wouldn't show up unless it was quivered */
+        await dispinv_with_action("$", false, null);
+    }
+
+    return ECMD_OK;
+}
+
+// C ref: shk.c shopper_financial_report() -- the report for the shop the
+// hero is in (shop_keeper(inside_shop(u.ux, u.uy))) and the level's other
+// shops (next_shkp()); without a shopkeeper there is nothing to report
+function shopper_financial_report() {
+    for (let shkp = game.fmon; shkp; shkp = shkp.nmon)
+        if (shkp.isshk && !shkp.dead)
+            throw new Error('shopper_financial_report(): shopkeepers not ported yet');
+}
+
+// C ref: invent.c doprwep() -- the #seeweapon command
+export async function doprwep() {
+    if (!game.uwep) {
+        await You(`are ${empty_handed()}.`);
+    } else if (!game.iflags.menu_requested) {
+        await prinv(null, game.uwep, 0);
+        if (game.u.twoweap)
+            await prinv(null, game.uswapwep, 0);
+    } else {
+        /* 4: uwep, uswapwep, uquiver, terminator */
+        let lets = '';
+
+        /* obj_to_let() will assign letters to all of invent if necessary
+           (for '!fixinv') so doesn't need to be repeated once called here */
+        lets += obj_to_let(game.uwep);
+        if (game.uswapwep)
+            lets += game.uswapwep.invlet;
+        if (game.uquiver)
+            lets += game.uquiver.invlet;
+
+        await dispinv_with_action(lets, true, null);
+    }
+    return ECMD_OK;
+}
+
+// C ref: invent.c wearing_armor()
+export function wearing_armor() {
+    const g = game;
+    return !!(g.uarm || g.uarmc || g.uarmf || g.uarmg
+              || g.uarmh || g.uarms || g.uarmu);
+}
+
+// C ref: invent.c noarmor()
+/* caller is responsible for checking !wearing_armor() */
+async function noarmor(report_uskin) {
+    if (!game.uskin || !report_uskin) {
+        await You("are not wearing any armor.");
+    } else {
+        throw new Error('noarmor(): dragon scales embedded in skin not ported yet');
+    }
+}
+
+// C ref: invent.c doprarm() -- the #seearmor command
+export async function doprarm() {
+    const g = game;
+    /*
+     * Note:  players sometimes get here by pressing a function key which
+     * transmits ''ESC [ <something>'' rather than by pressing '[';
+     * there's nothing we can--or should-do about that here.
+     */
+
+    if (!wearing_armor()) {
+        await noarmor(true);
+    } else {
+        /* 8: up to 7 pieces of armor plus terminator */
+        let lets = '';
+
+        /* obj_to_let() will assign letters to all of invent if necessary
+           (for '!fixinv') so doesn't need to be repeated once called, but
+           each armor slot doesn't know whether any that precede have made
+           that call so just do it for each one; use SORTPACK_INUSE order */
+        if (g.uarm)
+            lets += obj_to_let(g.uarm);
+        if (g.uarmc)
+            lets += obj_to_let(g.uarmc);
+        if (g.uarms)
+            lets += obj_to_let(g.uarms);
+        if (g.uarmh)
+            lets += obj_to_let(g.uarmh);
+        if (g.uarmg)
+            lets += obj_to_let(g.uarmg);
+        if (g.uarmf)
+            lets += obj_to_let(g.uarmf);
+        if (g.uarmu)
+            lets += obj_to_let(g.uarmu);
+
+        await dispinv_with_action(lets, true, null);
+    }
+    return ECMD_OK;
+}
+
+// C ref: invent.c doprring() -- the #seerings command
+export async function doprring() {
+    const g = game;
+    if (!g.uleft && !g.uright) {
+        await You("are not wearing any rings.");
+    } else {
+        /* 3: uright, uleft, terminator */
+        let lets = '';
+        let use_inuse_mode = false;
+
+        /* if either ring is a meat ring, switch to use_inuse_mode in order
+           to label it/them as "Rings" rather than "Comestibles" */
+        if (g.uright) {
+            lets += obj_to_let(g.uright);
+            if (g.uright.oclass !== O.RING_CLASS)
+                use_inuse_mode = true;
+        }
+        if (g.uleft) {
+            lets += obj_to_let(g.uleft);
+            if (g.uleft.oclass !== O.RING_CLASS)
+                use_inuse_mode = true;
+        }
+        /* also switch to use_inuse_mode if there are two rings or player
+           used the 'm' prefix */
+        if (lets.length > 1 || g.iflags.menu_requested)
+            use_inuse_mode = true;
+
+        await dispinv_with_action(lets, use_inuse_mode,
+                                  /* note; alternate label will be ignored
+                                     if 'use_inuse_mode' is False */
+                                  (lets.length === 1) ? "Ring" : "Rings");
+    }
+    return ECMD_OK;
+}
+
+// C ref: invent.c dopramulet() -- the #seeamulet command
+export async function dopramulet() {
+    if (!game.uamul) {
+        await You("are not wearing an amulet.");
+    } else {
+        /* using display_inventory() instead of prinv() allows player
+           to use 'm "' to force and menu and be able to choose amulet
+           in order to perform a context-sensitive item action */
+        const lets = obj_to_let(game.uamul);
+
+        await dispinv_with_action(lets, true, "Amulet");
+    }
+    return ECMD_OK;
+}
+
+// C ref: invent.c tool_being_used()
+/* is 'obj' a tool that's in use?  can't simply check obj->owornmask */
+function tool_being_used(obj) {
+    /*
+     * [Should this also include lit potions of oil?  They're not tools
+     *  but they are "in use" without being noticeable via obj->owornmask.]
+     */
+    if ((obj.owornmask & (W_TOOL | W_SADDLE)) !== 0)
+        return true;
+    if (obj.oclass !== O.TOOL_CLASS)
+        return false;
+    /* [don't actually need to check uwep here; caller catches it] */
+    return !!(obj === game.uwep || obj.lamplit
+              || (obj.otyp === O.LEASH && obj.leashmon));
+}
+
+// C ref: invent.c doprtool() -- the #seetools command
+export async function doprtool() {
+    let lets = '';
+
+    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (tool_being_used(otmp)) {
+            /* we could be carrying more than 52 items; theoretically they
+               might all be lit candles so avoid potential lets[] overflow */
+            if (lets.length >= 52)
+                break;
+            lets += obj_to_let(otmp);
+        }
+    if (!lets.length)
+        await You("are not using any tools.");
+    else
+        await dispinv_with_action(lets, true, null);
+    return ECMD_OK;
 }
 
 /* C ref: you.h Blind, Hallucination */
