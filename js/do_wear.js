@@ -44,7 +44,9 @@ import { STEALTH, DISPLACED, INVIS, SEE_INVIS, DETECT_MONSTERS, FLYING,
          P_SHORT_SWORD, P_SABER } from './const.js';
 import { objects, ARM_SUIT, ARM_SHIELD, ARM_HELM, ARM_GLOVES, ARM_BOOTS,
          ARM_CLOAK, ARM_SHIRT } from './objects.js';
-import { PM_ARCHEOLOGIST, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
+import { PM_ARCHEOLOGIST, PM_COCKATRICE, PM_CHICKATRICE, PM_CLERIC } from './monsters.js';
+import { WARN_OF_MON } from './const.js';
+import { addinv_core2 } from './invent.js';
 import { You_cant } from './display.js';
 import { doname, cloak_simple_name, suit_simple_name, helm_simple_name,
          gloves_simple_name, boots_simple_name, shield_simple_name,
@@ -700,6 +702,84 @@ async function Amulet_on(amul) {
         await on_msg(g.uamul);
 }
 
+// C ref: do_wear.c Amulet_off()
+export async function Amulet_off() {
+    const g = game;
+    const amul = g.uamul; /* for off_msg() after setworn(NULL,W_AMUL) */
+    let mkn = false, early_off_msg = false;
+
+    takeoff_ctx().mask &= ~W_AMUL;
+
+    switch (g.uamul.otyp) {
+    case O.AMULET_OF_ESP:
+        /* need to update ability before calling see_monsters() */
+        setworn(null, W_AMUL);
+        await off_msg(amul);
+        early_off_msg = true;
+
+        see_monsters();
+        break;
+    case O.AMULET_OF_LIFE_SAVING:
+    case O.AMULET_VERSUS_POISON:
+    case O.AMULET_OF_REFLECTION:
+    case O.AMULET_OF_CHANGE:
+    case O.AMULET_OF_UNCHANGING:
+    case O.FAKE_AMULET_OF_YENDOR:
+        break;
+    case O.AMULET_OF_MAGICAL_BREATHING:
+        /* amulet is currently still on; take it off before calling drown()
+           and region_danger(); call off_msg() before specific messages */
+        setworn(null, W_AMUL);
+        await off_msg(amul); /* 'uamul' has been set to Null */
+        early_off_msg = true;
+
+        if (g.u.uinwater)
+            throw new Error('Amulet_off(): drown() while Underwater not ported yet');
+        if (region_danger())
+            throw new Error('Amulet_off(): breathing poison gas not ported yet');
+        break;
+    case O.AMULET_OF_STRANGULATION:
+        setworn(null, W_AMUL);
+        await off_msg(amul);
+        early_off_msg = true;
+
+        if (uprop(STRANGLED).intrinsic)
+            throw new Error('Amulet_off(): ending strangulation not ported yet');
+        break;
+    case O.AMULET_OF_RESTFUL_SLEEP:
+        setworn(null, W_AMUL);
+        /* HSleepy = 0L; -- avoid clobbering FROMOUTSIDE bit */
+        if (!uprop(SLEEPY).extrinsic && !(uprop(SLEEPY).intrinsic & ~TIMEOUT))
+            uprop(SLEEPY).intrinsic &= ~TIMEOUT; /* clear timeout bits */
+        break;
+    case O.AMULET_OF_FLYING: {
+        const was_flying = Flying();
+
+        /* remove amulet 'early' to determine whether Flying changes;
+           also in case spoteffects() does something with the amulet */
+        setworn(null, W_AMUL);
+        await off_msg(amul);
+        early_off_msg = true;
+
+        float_vs_flight(); /* probably not needed here */
+        if (was_flying && !Flying())
+            throw new Error('Amulet_off(): landing (spoteffects()) not ported yet');
+        break;
+    }
+    case O.AMULET_OF_GUARDING:
+        find_ac();
+        break;
+    case O.AMULET_OF_YENDOR:
+        break;
+    }
+
+    setworn(null, W_AMUL);
+    if (!early_off_msg)
+        await off_msg(amul); /* (not 'uamul'; it's Null now) */
+    if (mkn)
+        makeknown(amul.otyp);
+}
+
 /* C ref: region.c region_danger() -- gas clouds aren't ported */
 function region_danger() {
     if (game.regions && game.regions.length)
@@ -775,16 +855,50 @@ function Blind() {
 
 // C ref: potion.c toggle_blindness() -- blindness has just been toggled
 function toggle_blindness() {
-    game.disp_botl = true; /* status conditions need update */
-    game.vision_full_recalc = 1; /* vision has changed */
+    const g = game;
+    const Stinging = !!(g.uwep && (uprop(WARN_OF_MON).extrinsic & W_WEP) !== 0);
+    const Blind_telepat = !!(uprop(TELEPAT).intrinsic || uprop(TELEPAT).extrinsic);
+    const Infravision = !!((uprop(INFRAVISION).intrinsic || uprop(INFRAVISION).extrinsic)
+                           && !uprop(INFRAVISION).blocked);
+
+    /* blindness has just been toggled */
+    g.disp_botl = true; /* status conditions need update */
+    g.vision_full_recalc = 1; /* vision has changed */
+    /* this vision recalculation used to be deferred until moveloop(),
+       but that made it possible for vision irregularities to occur */
     vision_recalc(0);
-    /* Blind_telepat || Infravision || Stinging: see_monsters() */
-    if (game.u.uprops?.[TELEPAT]?.intrinsic || game.u.uprops?.[TELEPAT]?.extrinsic
-        || game.u.uprops?.[INFRAVISION]?.intrinsic || game.u.uprops?.[INFRAVISION]?.extrinsic)
-        throw new Error('toggle_blindness(): see_monsters() not ported yet');
+    if (Blind_telepat || Infravision || Stinging)
+        see_monsters(); /* also counts EWarn_of_mon monsters */
+    if (Stinging)
+        throw new Error('toggle_blindness(): Sting_effects() not ported yet');
     /* update dknown flag for inventory picked up while blind */
     if (!Blind())
-        throw new Error('toggle_blindness(): learn_unseen_invent() not ported yet');
+        learn_unseen_invent();
+}
+
+// C ref: invent.c learn_unseen_invent()
+function learn_unseen_invent() {
+    if (Blind())
+        return; /* sanity check */
+
+    for (let otmp = game.invent; otmp; otmp = otmp.nobj) {
+        if (otmp.dknown && (otmp.bknown || !Role_if(PM_CLERIC))
+            && (otmp.oclass !== O.SCROLL_CLASS || !Role_if(PM_ARCHEOLOGIST)))
+            continue; /* already seen */
+        /* xname() will set dknown, perhaps bknown (for priest[ess]);
+           result from xname() is immediately released for re-use */
+        xname(otmp);
+        addinv_core2(otmp); /* you react to seeing the object */
+    }
+    /* update_inventory(): no perm_invent */
+}
+
+// C ref: mhitu.c gulp_blnd_check()
+function gulp_blnd_check() {
+    const u = game.u;
+    if (!uprop(BLINDED).intrinsic && u.uswallow)
+        throw new Error('gulp_blnd_check(): engulfer blinding (gulpmu()) not ported yet');
+    return false;
 }
 
 // C ref: do_wear.c Blindf_on()
@@ -793,20 +907,71 @@ async function Blindf_on(otmp) {
     let changed = false;
 
     /* blindfold might be wielded; release it for wearing */
-    if (otmp.owornmask)
-        throw new Error('Blindf_on(): remove_worn_item() not ported yet');
+    await remove_worn_item(otmp, false);
     setworn(otmp, W_TOOL);
     await on_msg(otmp);
 
     if (Blind() && !already_blind) {
         changed = true;
         if (game.flags?.verbose ?? true)
-            await pline("You can't see any more."); /* You_cant() */
+            await You_cant("see any more.");
         /* set ball&chain variables before the hero goes blind */
         if (game.uball)
             throw new Error('Blindf_on(): set_bc() not ported yet');
     } else if (already_blind && !Blind()) {
-        throw new Error('Blindf_on(): regaining sight not ported yet');
+        changed = true;
+        /* "You are now wearing the Eyes of the Overworld." */
+        if (game.u.uroleplay?.blind) {
+            /* this can only happen by putting on the Eyes of the Overworld;
+               that shouldn't actually produce a permanent cure, but we
+               can't let the "blind from birth" conduct remain intact */
+            await pline("For the first time in your life, you can see!");
+            game.u.uroleplay.blind = false;
+        } else
+            await You("can see!");
+    }
+    if (changed) {
+        toggle_blindness(); /* potion.c */
+    }
+}
+
+// C ref: do_wear.c Blindf_off()
+export async function Blindf_off(otmp) {
+    const g = game;
+    const was_blind = Blind();
+    let changed = false;
+    const nooffmsg = !otmp;
+
+    if (!otmp)
+        otmp = g.ublindf;
+    if (!otmp) {
+        impossible("Blindf_off without eyewear?");
+        return;
+    }
+    takeoff_ctx().mask &= ~W_TOOL;
+    setworn(null, otmp.owornmask);
+    if (!nooffmsg)
+        await off_msg(otmp);
+
+    if (Blind()) {
+        if (was_blind) {
+            /* "still cannot see" makes no sense when removing lenses
+               since they can't have been the cause of your blindness */
+            if (otmp.otyp !== LENSES)
+                await You("still cannot see.");
+        } else {
+            changed = true; /* !was_blind */
+            /* "You were wearing the Eyes of the Overworld." */
+            await You_cant("see anything now!");
+            /* set ball&chain variables before the hero goes blind */
+            if (g.uball)
+                throw new Error('Blindf_off(): set_bc() not ported yet');
+        }
+    } else if (was_blind) {
+        if (!gulp_blnd_check()) {
+            changed = true; /* !Blind */
+            await You("can see again.");
+        }
     }
     if (changed) {
         toggle_blindness(); /* potion.c */
@@ -1264,7 +1429,7 @@ async function off_msg(otmp) {
 }
 
 // C ref: do_wear.c Boots_off()
-async function Boots_off() {
+export async function Boots_off() {
     const g = game;
     const otmp = g.uarmf;
     const otyp = otmp.otyp;
@@ -1297,7 +1462,7 @@ async function Boots_off() {
 }
 
 // C ref: do_wear.c Cloak_off()
-async function Cloak_off() {
+export async function Cloak_off() {
     const g = game;
     const otmp = g.uarmc;
     const otyp = otmp.otyp;
@@ -1334,7 +1499,7 @@ async function Cloak_off() {
 }
 
 // C ref: do_wear.c Helmet_off()
-async function Helmet_off() {
+export async function Helmet_off() {
     const g = game;
     const tk = takeoff_ctx();
     tk.mask &= ~W_ARMH;
@@ -1376,7 +1541,7 @@ async function Helmet_off() {
 }
 
 // C ref: do_wear.c Gloves_off()
-async function Gloves_off() {
+export async function Gloves_off() {
     const g = game;
     const tk = takeoff_ctx();
     tk.mask &= ~W_ARMG;
@@ -1414,7 +1579,7 @@ async function Gloves_off() {
 }
 
 // C ref: do_wear.c Shield_off()
-async function Shield_off() {
+export async function Shield_off() {
     const g = game;
     takeoff_ctx().mask &= ~W_ARMS;
 
@@ -1440,7 +1605,7 @@ async function Shield_off() {
 }
 
 // C ref: do_wear.c Shirt_off()
-async function Shirt_off() {
+export async function Shirt_off() {
     const g = game;
     takeoff_ctx().mask &= ~W_ARMU;
 
@@ -1459,7 +1624,7 @@ async function Shirt_off() {
 }
 
 // C ref: do_wear.c Armor_off()
-async function Armor_off() {
+export async function Armor_off() {
     const g = game;
     const otmp = g.uarm;
     const tk = takeoff_ctx();
@@ -1771,9 +1936,9 @@ async function armor_or_accessory_off(obj) {
         await off_msg(obj);
         throw new Error('armor_or_accessory_off(): Ring_off() not ported yet');
     } else if (obj === g.uamul) {
-        throw new Error('armor_or_accessory_off(): Amulet_off() not ported yet');
+        await Amulet_off(); /* does its own off_msg */
     } else if (obj === g.ublindf) {
-        throw new Error('armor_or_accessory_off(): Blindf_off() not ported yet');
+        await Blindf_off(obj); /* does its own off_msg */
     } else {
         impossible(`removing strange accessory: ${obj.otyp}`);
         if (obj.owornmask)
