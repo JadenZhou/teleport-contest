@@ -2902,7 +2902,10 @@ async function domove_core() {
         return;
 
     if (u.uswallow) {
-        throw new Error('domove_core(): engulfed movement not ported yet');
+        u.dx = u.dy = 0;
+        x = u.ustuck.mx, y = u.ustuck.my;
+        u_on_newpos(x, y); /* set u.ux,uy and handle CLIPPING */
+        mtmp = u.ustuck;
     } else {
         /* air_turbulence() */
         if (Is_airlevel(u.uz))
