@@ -697,6 +697,111 @@ export async function food_detect(sobj) {
     return 0;
 }
 
+// C ref: detect.c map_monst()
+/* show a monster on the map (for detection) */
+function map_monst(mtmp, showtail) {
+    const g = game;
+    if (def_monsyms_dt[mtmp.data.mlet] === ' ')
+        throw new Error('map_monst(): detected_mon_to_glyph() not ported yet');
+    /* mtmp->mtame ? pet_to_glyph(mtmp, newsym_rn2)
+                   : mon_to_glyph(mtmp, newsym_rn2) */
+    const ptr = Hallucination_dt() ? mons_dt[rn2_on_display_rng_dt(NUMMONS_DT)]
+                                   : mtmp.data;
+    const attr = (mtmp.mtame && !Hallucination_dt() && g.iflags?.wc_hilite_pet)
+                 ? g.iflags.wc2_petattr : 0;
+    show_glyph_cell_dt(mtmp.mx, mtmp.my, def_monsyms_dt[ptr.mlet] ?? '?',
+                       ptr.mcolor ?? NO_COLOR, false, attr, 'mon', false,
+                       { mndx: ptr.pmidx });
+
+    if (showtail && mtmp.data === mons_dt[PM_LONG_WORM_DT] && mtmp.wormno)
+        throw new Error('map_monst(): detect_wsegs() not ported yet');
+}
+
+// C ref: detect.c monster_detect()
+/*
+ * Used by: crystal balls, potions, fountains
+ *
+ * Returns 1 if nothing was detected.
+ * Returns 0 if something was detected.
+ */
+export async function monster_detect(otmp, /* detecting object (if any) */
+                                     mclass) { /* monster class, 0 for all */
+    const g = game, u = g.u;
+    let mtmp;
+    let mcnt = 0;
+
+    /* Note: This used to just check fmon for a non-zero value
+     * but in versions since 3.3.0 fmon can test TRUE due to the
+     * presence of dmons, so we have to find at least one
+     * with positive hit-points to know for sure.
+     */
+    for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (mtmp.mhp < 1 || (mtmp.isgd && !mtmp.mx))
+            continue;
+        ++mcnt;
+        break; /* no need for full count, just 1 or more vs 0 */
+    }
+
+    if (!mcnt) {
+        if (otmp)
+            await strange_feeling_dt(otmp, Hallucination_dt()
+                                           ? "You get the heebie jeebies."
+                                           : "You feel threatened.");
+        return 1;
+    } else {
+        let woken = false;
+        const swallowed = u.uswallow; /* before unconstrain_map() */
+
+        await cls_dt();
+        const unconstrained = unconstrain_map();
+        for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
+            if (mtmp.mhp < 1 || (mtmp.isgd && !mtmp.mx))
+                continue;
+            if (!mclass || mtmp.data.mlet === mclass
+                || (mtmp.data === mons_dt[PM_LONG_WORM_DT]
+                    && mclass === S_WORM_TAIL_DT))
+                map_monst(mtmp, true);
+
+            if (otmp && otmp.cursed
+                && (mtmp.msleeping || !mtmp.mcanmove)) { /* helpless() */
+                mtmp.msleeping = mtmp.mfrozen = 0;
+                mtmp.mcanmove = 1;
+                woken = true;
+            }
+        }
+        if (!swallowed) /* display_self() */
+            show_glyph_cell_dt(u.ux, u.uy, '@', CLR_WHITE_DT, false, 0, 'mon');
+        await pline("You sense the presence of monsters.");
+        if (woken)
+            await pline("Monsters sense the presence of you.");
+
+        if ((otmp && otmp.blessed) && !unconstrained) {
+            /* persistent detection--just show updated map */
+            throw new Error('monster_detect(): display_nhwindow(WIN_MAP, TRUE) not ported yet');
+        } else {
+            /* one-shot detection--allow player to move cursor around and
+               get autodescribe feedback */
+            const p = u.uprops[DETECT_MONSTERS_DT];
+            p.extrinsic |= I_SPECIAL_DT;
+            await browse_map(TER_DETECT_DT | TER_MON, "monster of interest");
+            p.extrinsic &= ~I_SPECIAL_DT;
+        }
+
+        await map_redisplay();
+    }
+    return 0;
+}
+
+import { show_glyph_cell as show_glyph_cell_dt,
+         Hallucination as Hallucination_dt } from './display.js';
+import { rn2_on_display_rng as rn2_on_display_rng_dt } from './rng.js';
+import { mons as mons_dt, NUMMONS as NUMMONS_DT, PM_LONG_WORM as PM_LONG_WORM_DT,
+         S_WORM_TAIL as S_WORM_TAIL_DT } from './monsters.js';
+import { def_monsyms as def_monsyms_dt } from './drawing.js';
+import { CLR_WHITE as CLR_WHITE_DT } from './terminal.js';
+import { DETECT_MONSTERS as DETECT_MONSTERS_DT,
+         I_SPECIAL as I_SPECIAL_DT } from './const.js';
+
 // C ref: detect.c trap_detect() -- not ported yet
 export async function trap_detect(sobj) {
     void sobj;

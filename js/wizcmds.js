@@ -20,6 +20,9 @@ import { prinv } from './invent.js';
 import * as O from './objects.js';
 import { create_particular } from './read.js';
 import { losexp, pluslvl } from './exper.js';
+import { near_capacity, inv_cnt } from './hack.js';
+import { encumber_msg } from './pickup.js';
+import { MOD_ENCUMBER } from './const.js';
 
 // C ref: wizcmds.c wiz_level_change() -- #levelchange
 export async function wiz_level_change() {
@@ -100,17 +103,31 @@ export async function hold_another_object(obj, drop_fmt, drop_arg, hold_msg) {
         throw new Error('hold_another_object(): Fumbling is not ported yet');
     if (obj.otyp === O.CORPSE && obj.wishedfor)
         throw new Error('hold_another_object(): wished-for corpse is not ported yet');
-    /* prev_encumbr = near_capacity() ...; inv_cnt()/near_capacity() drop
-       check -- not ported yet */
     const oquan = obj.quan;
+    let prev_encumbr = near_capacity(); /* before addinv() */
+
+    /* encumbrance limit is max( current_state, pickup_burden );
+       this used to use hardcoded MOD_ENCUMBER (stressed) instead
+       of the 'pickup_burden' option (which defaults to stressed) */
+    const pickup_burden = game.flags.pickup_burden ?? MOD_ENCUMBER;
+    if (prev_encumbr < pickup_burden)
+        prev_encumbr = pickup_burden;
     obj = await addinv(obj); /* addinv_core0(obj, NULL, FALSE) */
+    if (inv_cnt(false) > 52 /* invlet_basic */
+        || ((obj.otyp !== O.LOADSTONE || !obj.cursed)
+            && near_capacity() > prev_encumbr)) {
+        /* undo any merge which took place; goto drop_it */
+        throw new Error('hold_another_object(): drop_it (too much to hold) not ported yet');
+    }
     /* if (flags.autoquiver && !uquiver && !obj->owornmask
            && (is_missile(obj) || ammo_and_launcher(obj, uwep)
                || ammo_and_launcher(obj, uswapwep)))
            setuqwep(obj); -- not ported yet */
     if (hold_msg || drop_fmt)
         await prinv(hold_msg, obj, oquan);
-    /* update_inventory(); encumber_msg() -- not ported yet */
+    /* obj made it into inventory and is staying there */
+    /* update_inventory(): no perm_invent */
+    await encumber_msg();
     void drop_arg;
     return obj;
 }

@@ -647,7 +647,7 @@ async function forget(howmuch) {
         losespells();
 
     /* Forget some skills. */
-    drain_weapon_skill(rnd(howmuch ? 5 : 3));
+    await drain_weapon_skill(rnd(howmuch ? 5 : 3));
 
     /* forget having seen monsts (affects recognizing unseen ones by sound) */
     for (let mtmp = g.fmon; mtmp; mtmp = mtmp.nmon)
@@ -657,12 +657,7 @@ async function forget(howmuch) {
     for (let mtmp = g.migrating_mons; mtmp; mtmp = mtmp.nmon)
         mtmp.meverseen = 0;
 }
-
-// C ref: weapon.c drain_weapon_skill() -- not ported yet
-function drain_weapon_skill(n) {
-    void n;
-    throw new Error('drain_weapon_skill() not ported yet');
-}
+import { drain_weapon_skill } from './weapon.js';
 
 // C ref: read.c maybe_tame() -- monster is hit by scroll of taming's effect
 async function maybe_tame(mtmp, sobj) {
@@ -1474,7 +1469,7 @@ async function seffect_light(sobjp) {
     }
 }
 
-// C ref: uhitm.c lightdamage() -- light shining on a hero polymorphed
+// C ref: zap.c lightdamage() -- light shining on a hero polymorphed
 // into a gremlin; a hero in normal form takes no damage
 async function lightdamage(obj, ordinary, amt) {
     void obj, ordinary, amt;
