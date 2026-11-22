@@ -23,7 +23,7 @@ import { rnd } from './rng.js';
 import { AT_WEAP } from './monsters.js';
 import { HAND, GLIB, A_DEX } from './const.js';
 import { makeplural } from './objnam.js';
-import { body_part } from './insight.js';
+import { body_part, empty_handed as empty_handed_wl } from './insight.js';
 import { ACURR } from './attrib.js';
 import { prinv, getobj, hands_obj, splittable, freeinv } from './invent.js';
 import { addinv } from './u_init.js';
@@ -244,6 +244,15 @@ export function Hate_silver() {
                           || (ptr.mlet === S_IMP && ptr !== mons[PM_TENGU]))));
 }
 
+/* C ref: obj.h is_sword() */
+function is_sword_wl(otmp) {
+    return otmp.oclass === WEAPON_CLASS
+        && objects[otmp.otyp].oc_skill >= P_SHORT_SWORD_WL
+        && objects[otmp.otyp].oc_skill <= P_SABER_WL;
+}
+import { BATTLE_AXE as BATTLE_AXE_WL } from './objects.js';
+import { P_SHORT_SWORD as P_SHORT_SWORD_WL, P_SABER as P_SABER_WL } from './const.js';
+
 // C ref: wield.c ready_weapon()
 export async function ready_weapon(wep) {
     /* Separated function so swapping works easily */
@@ -252,11 +261,19 @@ export async function ready_weapon(wep) {
 
     if (!wep) {
         /* No weapon */
-        throw new Error('ready_weapon(): empty_handed() not ported yet');
+        if (game.uwep) {
+            await You(`are ${empty_handed_wl()}.`);
+            setuwep(null);
+            res = ECMD_TIME;
+        } else
+            await You(`are already ${empty_handed_wl()}.`);
     } else if (wep.otyp === CORPSE) {
         throw new Error('ready_weapon(): cant_wield_corpse() not ported yet');
     } else if (game.uarms && bimanual(wep)) {
-        throw new Error('ready_weapon(): two-handed weapon with a shield not ported yet');
+        await You(`cannot wield a two-handed ${
+            is_sword_wl(wep) ? "sword" : wep.otyp === BATTLE_AXE_WL ? "axe"
+                                                                    : "weapon"} while wearing a shield.`);
+        res = ECMD_FAIL;
     } else if (!(await retouch_object(wep, false))) {
         res = ECMD_TIME; /* takes a turn even though it doesn't get wielded */
     } else {
@@ -280,8 +297,14 @@ export async function ready_weapon(wep) {
         }
 
         setuwep(wep);
-        if (was_twoweap && !game.u.twoweap && (game.flags?.verbose ?? true))
-            throw new Error('ready_weapon(): no-longer-twoweapon message not ported yet');
+        if (was_twoweap && !game.u.twoweap && (game.flags?.verbose ?? true)) {
+            /* skip this message if we already got "empty handed" one above;
+               also, Null is not safe for neither TWOWEAPOK() or bimanual() */
+            if (game.uwep)
+                await You(`${(TWOWEAPOK(game.uwep) && !bimanual(game.uwep))
+                             ? "are no longer using two weapons at once"
+                             : "can no longer wield two weapons at once"}.`);
+        }
 
         /* KMH -- Talking artifacts are finally implemented */
         if (wep.oartifact) {
