@@ -2780,7 +2780,7 @@ export function healmon(mtmp, amt, overheal) {
 function ofood(o) {
     return o.otyp === CORPSE || o.otyp === EGG || o.otyp === TIN;
 }
-function polyfood(obj) {
+export function polyfood(obj) {
     return (ofood(obj) && obj.corpsenm >= LOW_PM
             && (pm_to_cham(obj.corpsenm) !== NON_PM
                 || dmgtype(mons[obj.corpsenm], MM.AD_POLY)));

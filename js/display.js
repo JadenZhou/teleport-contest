@@ -843,7 +843,7 @@ export function cmap_to_type(sym) {
 }
 
 // C ref: dbridge.c db_under_typ()
-function db_under_typ(mask) {
+export function db_under_typ(mask) {
     switch (mask & DB_UNDER) {
     case DB_ICE: return ICE;
     case DB_LAVA: return LAVAPOOL;

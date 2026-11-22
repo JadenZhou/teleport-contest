@@ -60,6 +60,8 @@ import { dodrink, dodip, aggravate } from './potion.js';
 import { dopay } from './shk.js';
 import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
+import { doengrave } from './engrave.js';
+import { set_occupation } from './allmain.js';
 import { dohelp, dowhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
 import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
@@ -146,6 +148,7 @@ const cmd_funcs = {
     dopay: () => dopay(),
     dolook: () => dolook(),
     doread: () => doread(),
+    doengrave: () => doengrave(),
     dowield: () => dowield(),
     dotwoweapon: () => dotwoweapon(),
     enhance_weapon_skill: () => enhance_weapon_skill(),
@@ -917,8 +920,8 @@ export async function rhack(key) {
                     ? `rhack(): unported command prefix ${func} not ported yet`
                     : `rhack(): unported command ${func} not ported yet`);
             }
-            /* tlist->f_text && !occupation && multi: set_occupation()
-               isn't used by any command ported so far */
+            if (tlist.f_text && !game.occupation && game.multi)
+                set_occupation(fn, tlist.f_text, game.multi);
             game.ext_tlist = null;
             /* cmdq_add_ec(CQ_REPEAT, ...): the ^A repeat isn't ported */
 

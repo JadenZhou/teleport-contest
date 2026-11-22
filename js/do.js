@@ -57,7 +57,10 @@ import { MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION, UNPAID_TYPES,
          USE_INVLET, INVORDER_SORT } from './const.js';
 import { GETOBJ_PROMPT, GETOBJ_ALLOWCNT, ECMD_FAIL, ECMD_TIME, W_ARMOR,
          W_ACCESSORY, W_SADDLE, IS_SINK, LOST_DROPPED } from './const.js';
-import { welded, setuwep, setuqwep, setuswapwep } from './wield.js';
+import { welded, setuwep, setuqwep, setuswapwep, bimanual } from './wield.js';
+import { Norep } from './display.js';
+import { makeplural } from './objnam.js';
+import { HAND } from './const.js';
 import { placebc, unplacebc, drag_down, ballrelease, drop_ball } from './ball.js';
 import { You, newsym, stairway_at } from './display.js';
 import { can_reach_floor } from './engrave.js';
@@ -1090,12 +1093,19 @@ export function reset_occupations() {
 export async function canletgo(obj, word) {
     if (obj.owornmask & (W_ARMOR | W_ACCESSORY)) {
         if (word)
-            throw new Error('canletgo(): Norep() not ported yet');
+            await Norep(`You cannot ${word} something you are wearing.`);
         return false;
     }
     if (obj === game.uwep && welded(game.uwep)) {
-        if (word)
-            throw new Error('canletgo(): Norep() not ported yet');
+        /* no weldmsg(), so uwep->bknown might become set silently
+           if word is "" */
+        if (word) {
+            let hand = body_part(HAND);
+
+            if (bimanual(game.uwep))
+                hand = makeplural(hand);
+            await Norep(`You cannot ${word} something welded to your ${hand}.`);
+        }
         return false;
     }
     if (obj.otyp === O.LOADSTONE && obj.cursed) {
