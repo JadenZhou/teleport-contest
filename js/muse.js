@@ -22,7 +22,8 @@ import { losehp } from './trap.js';
 import { find_mac } from './worn.js';
 import { resists_magm } from './mondata.js';
 import { hit, miss, exclam, buzz, dobuzz, bhito,
-         find_drawbridge } from './zap.js';
+         find_drawbridge, resist_async } from './zap.js';
+import { TELL } from './const.js';
 import { m_throw } from './mthrowu.js';
 import { POTION_CLASS, WAND_CLASS, WAN_OPENING, WAN_LOCKING,
          WAN_CANCELLATION, SPE_CANCELLATION } from './objects.js';
@@ -755,14 +756,18 @@ async function precheck(mon, obj) {
 
     if (obj.oclass === POTION_CLASS) {
         const mvitals = game.mvitals || [];
+        /* C ref: hack.h POTION_OCCUPANT_CHANCE() */
+        const POTION_OCCUPANT_CHANCE = (n) => 13 + 2 * n;
         if (objdescr_is(obj, "milky")) {
-            if (!((mvitals[M.PM_GHOST]?.mvflags || 0) & G_GONE))
-                /* !rn2(POTION_OCCUPANT_CHANCE(born)): ghost from the bottle */
+            if (!((mvitals[M.PM_GHOST]?.mvflags || 0) & G_GONE)
+                && !rn2(POTION_OCCUPANT_CHANCE(mvitals[M.PM_GHOST]?.born || 0)))
+                /* enexto(), mquaffmsg(), makemon(PM_GHOST), paralyze_monst() */
                 throw new Error('precheck(): milky potion ghost not ported yet');
         }
         if (objdescr_is(obj, "smoky")
-            && !((mvitals[M.PM_DJINNI]?.mvflags || 0) & G_GONE))
-            /* !rn2(POTION_OCCUPANT_CHANCE(born)): djinni from the bottle */
+            && !((mvitals[M.PM_DJINNI]?.mvflags || 0) & G_GONE)
+            && !rn2(POTION_OCCUPANT_CHANCE(mvitals[M.PM_DJINNI]?.born || 0)))
+            /* enexto(), mquaffmsg(), makemon(PM_DJINNI), the djinni's mood */
             throw new Error('precheck(): smoky potion djinni not ported yet');
     }
     if (obj.oclass === WAND_CLASS && obj.cursed
@@ -891,8 +896,7 @@ async function mbhitm(mtmp, otmp) {
         } else if (rnd(20) < 10 + find_mac(mtmp)) {
             tmp = d(2, 12);
             await hit("wand", mtmp, exclam(tmp));
-            /* (void) resist(mtmp, otmp->oclass, tmp, TELL) */
-            throw new Error('mbhitm(): resist() not ported yet');
+            await resist_async(mtmp, otmp.oclass, tmp, TELL);
         } else {
             await miss("wand", mtmp);
         }
@@ -1125,3 +1129,14 @@ export async function use_offensive(mtmp) {
 }
 
 void m_next2u; void mon_knows_traps;
+
+// C ref: muse.c mcureblindness() -- cure mon's blindness (use_defensive,
+// dog_eat, meatobj)
+export async function mcureblindness(mon, verbos) {
+    if (!mon.mcansee) {
+        mon.mcansee = 1;
+        mon.mblinded = 0;
+        if (verbos && haseyes(mon.data))
+            await pline(`${Monnam(mon)} can see again.`);
+    }
+}
