@@ -1709,7 +1709,7 @@ function monhaskey(mon, for_unlocking) {
     return !!(m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK));
 }
 /* C ref: mondata.c passes_bars() */
-function passes_bars(mptr) {
+export function passes_bars(mptr) {
     return (passes_walls(mptr) || amorphous(mptr)
             || (mptr.mflags1 & M1_UNSOLID) !== 0
             || is_whirly(mptr) || verysmall(mptr)
