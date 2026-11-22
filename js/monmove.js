@@ -7,6 +7,7 @@
 // 'not ported yet' error instead of skipping their rolls.
 
 import { game } from './gstate.js';
+import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
 import { rn2, rnd, d } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc,
@@ -867,8 +868,10 @@ export async function dochug(mtmp) {
             if (await mattacku(mtmp))
                 return 1; /* monster died (e.g. exploded) */
         }
-        if (mtmp.wormno)
-            throw new Error('dochug(): wormhitu() not ported yet');
+        if (mtmp.wormno) {
+            if (await wormhitu(mtmp))
+                return 1; /* worm died (poly'd hero passive counter-attack) */
+        }
     }
     /* special speeches for quest monsters */
     if (!helpless(mtmp) && d.nearby)
@@ -1509,8 +1512,7 @@ export async function m_move(mtmp, after) {
     can_open = !(nohands(ptr) || verysmall(ptr));
     can_unlock = ((can_open && monhaskey(mtmp, true))
                   || mtmp.iswiz || is_rider(ptr));
-    if (mtmp.wormno)
-        throw new Error('m_move(): long worms not ported yet');
+    if (!mtmp.wormno) { /* if (mtmp->wormno) goto not_special; */
     /* my dog gets special treatment */
     if (mtmp.mtame) {
         return await postmov(mtmp, ptr, omx, omy, await dog_move(mtmp, after),
@@ -1548,6 +1550,7 @@ export async function m_move(mtmp, after) {
     /* teleport if that lies in our nature */
     if (ptr === mons[M.PM_TENGU] && !rn2(5) && !mtmp.mcan)
         throw new Error('m_move(): tengu rloc() not ported yet');
+    } /* !mtmp->wormno */
 
     /* not_special: */
     if (u.uswallow && !mtmp.mflee && u.ustuck !== mtmp)
@@ -1733,11 +1736,17 @@ export async function m_move(mtmp, after) {
 
         await m_postmove_effect(mtmp);
 
-        /* move a normal monster */
+        /* move a normal monster; for a long worm, remove_monster() and
+           place_monster() only manipulate the head; they leave tail as-is */
         /* remove_monster(omx, omy): game.level.monsters is a list keyed
            by mx/my, so place_monster() moving it is enough */
         place_monster(mtmp, nix, niy);
         /* msg_mon_movement(): a11y.mon_movement is off by default */
+        /* for a long worm, insert a new segment to reconnect the head
+           with the tail; worm_move() keeps the end of the tail if worm
+           is scheduled to grow, removes that for move-without-growing */
+        if (mtmp.wormno)
+            worm_move(mtmp);
 
         maybe_unhide_at(mtmp.mx, mtmp.my);
 
@@ -1748,10 +1757,9 @@ export async function m_move(mtmp, after) {
             return MMOVE_MOVED;
         }
         /* for a long worm, shrink it (by discarding end of tail) when
-           it has failed to move: worm_nomove(): long worms aren't
-           ported yet */
+           it has failed to move */
         if (mtmp.wormno)
-            throw new Error('m_move(): worm_nomove() not ported yet');
+            worm_nomove(mtmp);
     }
     return await postmov(mtmp, ptr, omx, omy, mmoved,
                    seenflgs, can_tunnel, can_unlock, can_open);
@@ -1937,8 +1945,11 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             if (await mpickstuff(mtmp))
                 mmoved = MMOVE_DONE;
 
-            if (mtmp.minvis)
+            if (mtmp.minvis) {
                 newsym(mtmp.mx, mtmp.my);
+                if (mtmp.wormno)
+                    see_wsegs(mtmp);
+            }
         }
 
         await maybe_spin_web(mtmp);

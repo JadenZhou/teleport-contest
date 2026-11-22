@@ -784,6 +784,26 @@ export function flip_worm_segs_horizontal(worm, minx, maxx) {
     }
 }
 
+// C ref: sp_lev.c flip_level() -- its swap of level.monsters[][] within
+// the flipped area, for the cells that hold worm tail segments
+export function flip_wseg_cells(flp, minx, miny, maxx, maxy) {
+    const ws = game.level.wsegs;
+    if (!ws || !ws.size)
+        return;
+    const moved = [];
+    for (const [k, worm] of ws) {
+        const x = Math.trunc(k / 32), y = k % 32;
+        if (x < minx || x > maxx || y < miny || y > maxy)
+            continue;
+        moved.push([k, (flp & 2) ? (maxx - x) + minx : x,
+                    (flp & 1) ? (maxy - y) + miny : y, worm]);
+    }
+    for (const [k] of moved)
+        ws.delete(k);
+    for (const [, nx, ny, worm] of moved)
+        ws.set(wkey(nx, ny), worm);
+}
+
 // C ref: worm.c redraw_worm()
 export function redraw_worm(worm) {
     const g = W();

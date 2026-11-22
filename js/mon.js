@@ -5,6 +5,8 @@
 // monnear(), mon_allowflags().
 
 import { game } from './gstate.js';
+import { remove_worm, wormgone, worm_known, worm_cross, count_wsegs, get_wormno,
+         initworm, place_worm_tail_randomly } from './worm.js';
 import { healup_nocure } from './potion.js';
 import { mcureblindness } from './muse.js';
 import { clear_bypasses, bypass_obj } from './worn.js';
@@ -72,7 +74,7 @@ import { attacktype_fordmg, resists_poison } from './mondata.js';
 import { visible_region_at, cmap_to_glyph, S_poisoncloud, create_gas_cloud } from './region.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
-import { grow_up, goodpos } from './makemon.js';
+import { grow_up, goodpos, place_monster } from './makemon.js';
 import { enexto, rloc_to_core } from './teleport.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
@@ -249,9 +251,9 @@ function mon_leaving_level(mon) {
 
     if (onmap) {
         if (mon.wormno)
-            throw new Error('mon_leaving_level(): remove_worm() not ported yet');
-        /* remove_monster(mx, my) */
-        lst.splice(i, 1);
+            remove_worm(mon);
+        else
+            lst.splice(i, 1); /* remove_monster(mx, my) */
     }
     if (onmap) {
         mon.mundetected = 0; /* for migration; doesn't matter for death */
@@ -369,7 +371,7 @@ function m_detach(mtmp, mptr, due_to_death) {
         if (mtmp.isshk)
             throw new Error('m_detach(): shkgone() not ported yet');
         if (mtmp.wormno)
-            throw new Error('m_detach(): wormgone() not ported yet');
+            wormgone(mtmp);
         /* In_endgame(&u.uz): MON_ENDGAME_FREE -- the endgame isn't reached */
 
         mtmp.mstate = (mtmp.mstate || 0) | MON_DETACH;
@@ -1116,11 +1118,6 @@ function completelyrusts(ptr) { return ptr === mons[PM_IRON_GOLEM]; }
 function completelyrots(ptr) {
     return ptr === mons[PM_WOOD_GOLEM] || ptr === mons[PM_LEATHER_GOLEM];
 }
-// C ref: worm.c worm_known()
-function worm_known(worm) {
-    void worm;
-    throw new Error('worm_known() not ported yet');
-}
 
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & MM.M1_CLING) !== 0; }
@@ -1766,8 +1763,13 @@ function* newcham_g(mtmp, mdat, ncflags) {
     if (In_endgame(game.u.uz) && is_mplayer(olddata) && mtmp.mgivenname)
         throw new Error('newcham(): endgame mplayer names not ported yet');
 
-    if (mtmp.wormno) /* throw tail away */
-        throw new Error('newcham(): wormgone() not ported yet');
+    if (mtmp.wormno) { /* throw tail away */
+        const mx = mtmp.mx, my = mtmp.my;
+
+        wormgone(mtmp); /* discards tail segments, takes head off the map */
+        /* put the head back; it will morph into mtmp's new form */
+        place_monster(mtmp, mx, my);
+    }
     if ((mtmp.m_ap_type || 0) && mdat.mlet !== MM.S_MIMIC)
         seemimic(mtmp); /* revert to normal monster */
 
@@ -1805,8 +1807,10 @@ function* newcham_g(mtmp, mdat, ncflags) {
     if (game.u.ustuck === mtmp)
         throw new Error('newcham(): engulfing/sticky hero not ported yet');
 
-    if (mdat === mons[MM.PM_LONG_WORM])
-        throw new Error('newcham(): get_wormno()/initworm() not ported yet');
+    if (mdat === mons[MM.PM_LONG_WORM] && (mtmp.wormno = get_wormno()) !== 0) {
+        initworm(mtmp, rn2(5));
+        place_worm_tail_randomly(mtmp, mtmp.mx, mtmp.my);
+    }
 
     mtmp.meverseen = 0; /* never seen mon in present shape; newsym() ->
                          * display_monster() may change it right back */
@@ -2321,9 +2325,8 @@ function mm_displacement(magr, mdef) {
         /* no displacing grid bugs diagonally */
         && !(magr.mx !== mdef.mx && magr.my !== mdef.my
              && NODIAG(monsndx(pd)))
-        /* no displacing trapped monsters or multi-location longworms
-           (long worms aren't ported yet) */
-        && !mdef.mtrapped && !mdef.wormno
+        /* no displacing trapped monsters or multi-location longworms */
+        && !mdef.mtrapped && (!mdef.wormno || !count_wsegs(mdef))
         /* riders can move anything; others, same size or smaller only */
         && (is_rider(pa) || pa.msize >= pd.msize))
         return ALLOW_MDISP;
@@ -2440,9 +2443,12 @@ export function mfndpos(mon, data, flag) {
                     && (nodiag
                         || (IS_DOOR(nowtyp) && ((lev.at(x, y).doormask ?? 0) & ~D_BROKEN))
                         || (IS_DOOR(ntyp) && ((nloc.doormask ?? 0) & ~D_BROKEN))
-                        /* Is_rogue_level() and long worm segment crossing:
-                           not ported yet */
-                        ))
+                        || ((IS_DOOR(nowtyp) || IS_DOOR(ntyp))
+                            && Is_rogue_level(game.u.uz))
+                        /* mustn't pass between adjacent long worm segments,
+                           but can attack that way */
+                        || (m_at(x, ny) && m_at(nx, y) && worm_cross(x, y, nx, ny)
+                            && !m_at(nx, ny) && (nx !== game.u.ux || ny !== game.u.uy))))
                     continue;
                 if ((!lavaok || !(flag & ALLOW_WALL)) && ntyp === LAVAWALL)
                     continue;

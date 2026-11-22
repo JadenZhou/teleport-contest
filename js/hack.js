@@ -94,6 +94,7 @@ import { search_special, You_hear } from './sounds.js';
 import { DEAF } from './const.js';
 import { wake_msg, seemimic, maybe_unhide_at } from './mon.js';
 import { drag_ball, move_bc } from './ball.js';
+import { worm_cross } from './worm.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
@@ -1908,9 +1909,12 @@ async function test_move_rest(ux, uy, dx, dy, mode, x, y) {
         default:
             break; /* can squeeze through */
         }
+    } else if (dx && dy && worm_cross(ux, uy, x, y)) {
+        /* consecutive long worm segments are at <ux,y> and <x,uy> */
+        if (mode === DO_MOVE)
+            await pline(`${YMonnam(m_at(ux, y))} is in your way.`);
+        return false;
     }
-    /* worm_cross(): long worm segments aren't ported (m_move() throws
-       for long worms) */
 
     /* Pick travel path that does not require crossing a trap.
      * Avoid water and lava using the usual running rules.

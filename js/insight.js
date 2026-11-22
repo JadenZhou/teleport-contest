@@ -17,6 +17,7 @@
 // youprop.h property macros).
 
 import { game } from './gstate.js';
+import { count_wsegs, wseg_at } from './worm.js';
 import {
     A_CHAOTIC, A_NEUTRAL, A_LAWFUL, A_NONE, A_STR, A_INT, A_WIS, A_DEX,
     A_CON, A_CHA, A_CURRENT, A_ORIGINAL, NHW_MENU, PICK_NONE,
@@ -2142,8 +2143,20 @@ export async function mstatusline(mtmp) {
     } else if (mtmp.mpeaceful)
         info += ", peaceful";
 
-    if (mtmp.data === M.mons[M.PM_LONG_WORM])
-        throw new Error('mstatusline(): long worm segments not ported yet');
+    if (mtmp.data === M.mons[M.PM_LONG_WORM]) {
+        let segndx, nsegs = count_wsegs(mtmp);
+
+        /* the worm code internals don't consider the head to be one of
+           the worm's segments, but we count it as such when presenting
+           worm feedback to the player */
+        if (!nsegs) {
+            info += ", single segment";
+        } else {
+            ++nsegs; /* include head in the segment count */
+            segndx = wseg_at(mtmp, game.bhitpos.x, game.bhitpos.y);
+            info += `, ${segndx}${ordin(segndx)} of ${nsegs} segments`;
+        }
+    }
     if (mtmp.cham != null && mtmp.cham >= 0 /* ismnum() */
         && mtmp.data !== M.mons[mtmp.cham])
         /* don't reveal the innate form (chameleon, vampire, &c),
