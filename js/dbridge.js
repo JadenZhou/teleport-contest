@@ -10,7 +10,9 @@ import { game } from './gstate.js';
 import {
     IS_WALL, DRAWBRIDGE_UP, DRAWBRIDGE_DOWN, DBWALL, DOOR, LAVAPOOL,
     D_NODOOR, W_NONDIGGABLE, DB_NORTH, DB_SOUTH, DB_EAST, DB_WEST, DB_LAVA,
+    DB_DIR, IS_DRAWBRIDGE,
 } from './const.js';
+import { isok } from './hacklib.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -68,4 +70,36 @@ export function create_drawbridge(x, y, dir, flag) {
     if (lava)
         levl(x, y).drawbridgemask |= DB_LAVA;
     return true;
+}
+
+// C ref: dbridge.c is_drawbridge_wall()
+/*
+ * We want to know whether a wall (or a door) is the portcullis (passageway)
+ * of an eventual drawbridge.
+ *
+ * Return value:  the direction of the drawbridge.
+ */
+export function is_drawbridge_wall(x, y) {
+    if (!isok(x, y))
+        return -1;
+
+    const levl = (xx, yy) => game.level.at(xx, yy);
+    const lev = levl(x, y);
+    if (lev.typ !== DOOR && lev.typ !== DBWALL)
+        return -1;
+
+    if (isok(x + 1, y) && IS_DRAWBRIDGE(levl(x + 1, y).typ)
+        && ((levl(x + 1, y).drawbridgemask || 0) & DB_DIR) === DB_WEST)
+        return DB_WEST;
+    if (isok(x - 1, y) && IS_DRAWBRIDGE(levl(x - 1, y).typ)
+        && ((levl(x - 1, y).drawbridgemask || 0) & DB_DIR) === DB_EAST)
+        return DB_EAST;
+    if (isok(x, y - 1) && IS_DRAWBRIDGE(levl(x, y - 1).typ)
+        && ((levl(x, y - 1).drawbridgemask || 0) & DB_DIR) === DB_SOUTH)
+        return DB_SOUTH;
+    if (isok(x, y + 1) && IS_DRAWBRIDGE(levl(x, y + 1).typ)
+        && ((levl(x, y + 1).drawbridgemask || 0) & DB_DIR) === DB_NORTH)
+        return DB_NORTH;
+
+    return -1;
 }

@@ -63,7 +63,8 @@ import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
 import { Resists_Elem } from './mondata.js';
-import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level } from './const.js';
+import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
+         SEE_INVIS } from './const.js';
 import { set_apparxy, dochugw } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
@@ -2797,7 +2798,11 @@ function is_vampshifter_mon(mon) {
            || mon.cham === M.PM_VLAD_THE_IMPALER;
 }
 // C ref: youprop.h See_invisible -- intrinsics aren't tracked yet
-function See_invisible() { return false; }
+/* C ref: youprop.h See_invisible */
+function See_invisible() {
+    const p = game.u?.uprops?.[SEE_INVIS];
+    return !!(p && (p.intrinsic || p.extrinsic));
+}
 
 // C ref: muse.c rnd_misc_item()
 export function rnd_misc_item(mtmp) {

@@ -20,7 +20,7 @@ import {
     ALLOW_U, ALLOW_M, ALLOW_TM, ALLOW_ALL, ALLOW_MDISP, ALLOW_TRAPS,
     ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
     NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
-    M_AP_MONSTER, MON_DETACH, W_AMUL, NON_PM, NATTK, Is_rogue_level,
+    M_AP_MONSTER, MON_DETACH, MON_MIGRATING, W_AMUL, NON_PM, NATTK, Is_rogue_level,
     G_GENOD, STRAT_WAITMASK, STRAT_WAITFORU, BOLT_LIM, W_ARM,
 } from './const.js';
 import { dist2 } from './hacklib.js';
@@ -249,6 +249,43 @@ function mon_leaving_level(mon) {
             seemimic(mon);
         /* fill_pit(mx, my): boulders dropping into pits not ported */
         newsym(mx, my);
+    }
+}
+
+// C ref: mon.c relmon()
+/* remove a monster from the fmon list (and the map); 'list' is the name
+   of the game list to put it on ('migrating_mons' or 'mydogs') or null */
+export function relmon(mon, list) {
+    const g = game;
+
+    if (!g.fmon)
+        throw new Error('relmon: no fmon available.'); /* panic() */
+
+    /* take 'mon' off the map */
+    mon_leaving_level(mon);
+
+    /* remove 'mon' from the 'fmon' list */
+    if (mon === g.fmon) {
+        g.fmon = g.fmon.nmon;
+    } else {
+        let mtmp;
+
+        for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon)
+            if (mtmp.nmon === mon) {
+                mtmp.nmon = mon.nmon;
+                break;
+            }
+        if (!mtmp)
+            throw new Error('relmon: mon not in list.'); /* panic() */
+    }
+
+    if (list) {
+        /* insert into gm.mydogs or gm.migrating_mons */
+        mon.nmon = g[list] || null;
+        g[list] = mon;
+    } else {
+        /* orphan has no next monster */
+        mon.nmon = null;
     }
 }
 
@@ -1055,12 +1092,14 @@ async function movemon_singlemon(mtmp) {
     }
 
     /* one dead monster needs to perform a move after death: vault guard */
-    if (mtmp.isgd && !mtmp.mx)
+    if (mtmp.isgd && !mtmp.mx && !((mtmp.mstate || 0) & MON_MIGRATING))
         throw new Error('movemon_singlemon(): gd_move() not ported yet');
     if (DEADMONSTER(mtmp))
         return false;
 
-    /* monster isn't on this map anymore: migration isn't ported yet */
+    /* monster isn't on this map anymore */
+    if (mtmp.mstate) /* mon_offmap(): mstate != MON_FLOOR */
+        return false;
 
     m_everyturn_effect(mtmp);
 

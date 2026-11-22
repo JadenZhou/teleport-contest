@@ -11,7 +11,7 @@ import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { In_endgame, In_quest, In_mines, TELEPORT_CONTROL, STUNNED, CONFUSION } from './const.js';
 import { dunlevs_in_dungeon, In_hell, depth, get_level, on_level, find_hell,
-         print_dungeon } from './dungeon.js';
+         print_dungeon, ledger_no } from './dungeon.js';
 import { schedule_goto, UTOTYPE_NONE } from './do.js';
 import {
     COLNO, ROWNO, ZAP_POS, isok, GP_ALLOW_XY, GP_CHECKSCARY, NO_MM_FLAGS,
@@ -38,7 +38,9 @@ import { maybe_unhide_at } from './mon.js';
 import { set_apparxy, mon_track_clear, dochugw, onscary } from './monmove.js';
 import { mintrap, seetrap, t_at, is_hole, is_pit, HOLE, TRAPDOOR, TELEP_TRAP,
          LEVEL_TELEP, MAGIC_PORTAL, NO_TRAP, Trap_Effect_Finished,
-         clamp_hole_destination } from './trap.js';
+         Trap_Moved_Mon, clamp_hole_destination } from './trap.js';
+import { migrate_to_level } from './dog.js';
+import { MIGR_RANDOM } from './const.js';
 import { within_bounded_area } from './rect.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { flooreffects } from './do.js';
@@ -1344,6 +1346,7 @@ export async function mlevel_tele_trap(mtmp, trap, force_it, in_sight) {
         return Trap_Effect_Finished; /* temporary? kludge */
     if (teleport_pet(mtmp, force_it)) {
         const tolevel = { dnum: 0, dlevel: 0 };
+        const migrate_typ = MIGR_RANDOM; /* MIGR_PORTAL: portals aren't ported */
 
         if (is_hole(tt)) {
             const topo = game.dungeon_topology;
@@ -1410,7 +1413,8 @@ export async function mlevel_tele_trap(mtmp, trap, force_it, in_sight) {
         if ((tt === TELEP_TRAP || tt === LEVEL_TELEP)
             && !control_teleport(mtmp.data))
             mtmp.mconf = 1;
-        throw new Error('mlevel_tele_trap(): migrate_to_level() not ported yet');
+        migrate_to_level(mtmp, ledger_no(tolevel), migrate_typ, null);
+        return Trap_Moved_Mon; /* no longer on this level */
     }
     return Trap_Effect_Finished;
 }

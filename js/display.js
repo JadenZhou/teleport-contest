@@ -2198,6 +2198,9 @@ export async function pline(msg) {
     if (game.u?.ux)
         await flush_screen(1); /* %% */
     await tty_putstr(game.WIN_MESSAGE, 0, msg);
+    /* this gets cleared after every pline message */
+    if (game.iflags)
+        game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
 }
 
 // C ref: pline.c Norep() -- pline() with PLINE_NOREPEAT: msgtype_type()

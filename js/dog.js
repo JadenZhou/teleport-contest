@@ -18,7 +18,13 @@ import { makemon, is_domestic, set_malign, put_saddle_on_mon,
 import { monsndx } from './mondata.js';
 import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
-import { on_level } from './dungeon.js';
+import { on_level, ledger_to_dnum, ledger_to_dlev, depth,
+         In_W_tower } from './dungeon.js';
+import { relmon } from './mon.js';
+import { vision_recalc } from './vision.js';
+import { PM_FLAMING_SPHERE, PM_SHOCKING_SPHERE, PM_BABY_GOLD_DRAGON,
+         PM_FIRE_VORTEX, PM_FIRE_ELEMENTAL, PM_GOLD_DRAGON,
+         S_LIGHT } from './monsters.js';
 import { mintrap } from './trap.js';
 import { NO_TRAP_FLAGS } from './const.js';
 import { pline, canseemon, newsym } from './display.js';
@@ -230,7 +236,7 @@ function levl_follower(mtmp) {
 }
 
 // C ref: steal.c mon_has_amulet()
-function mon_has_amulet(mtmp) {
+export function mon_has_amulet(mtmp) {
     for (const otmp of mtmp.minvent || [])
         if (otmp.otyp === AMULET_OF_YENDOR)
             return true;
@@ -373,6 +379,66 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
             throw new Error('keepdogs(): leash goes slack not ported yet');
         }
     }
+}
+
+/* C ref: mondata.h emits_light() */
+function emits_light(ptr) {
+    return (ptr.mlet === S_LIGHT || ptr === mons[PM_FLAMING_SPHERE]
+            || ptr === mons[PM_SHOCKING_SPHERE]
+            || ptr === mons[PM_BABY_GOLD_DRAGON]
+            || ptr === mons[PM_FIRE_VORTEX])
+        ? 1
+        : (ptr === mons[PM_FIRE_ELEMENTAL]
+           || ptr === mons[PM_GOLD_DRAGON]) ? 1 : 0;
+}
+
+// C ref: dog.c migrate_to_level()
+export function migrate_to_level(
+    mtmp,
+    tolev, /* destination level */
+    xyloc, /* MIGR_xxx destination xy location: */
+    cc)    /* optional destination coordinates */
+{
+    const u = game.u;
+    const new_lev = { dnum: 0, dlevel: 0 };
+    let xyflags;
+    const mx = mtmp.mx, my = mtmp.my; /* <mx,my> needed below */
+
+    if (mtmp.mleashed)
+        throw new Error('migrate_to_level(): m_unleash() not ported yet');
+
+    /* prepare to take mtmp off the map */
+    const num_segs = mon_leave(mtmp);
+    /* take off map and move mtmp from fmon list to migrating_mons */
+    relmon(mtmp, 'migrating_mons'); /* mtmp->mx,my retain their value */
+    mtmp.mstate = (mtmp.mstate || 0) | MON_MIGRATING;
+
+    new_lev.dnum = ledger_to_dnum(tolev);
+    new_lev.dlevel = ledger_to_dlev(tolev);
+    /* overload mtmp->[mx,my], mtmp->[mux,muy], and mtmp->mtrack[] as
+       destination codes */
+    xyflags = (depth(new_lev) < depth(u.uz)) ? 1 : 0; /* 1 => up */
+    if (In_W_tower(mx, my, u.uz))
+        xyflags |= 2;
+    mtmp.wormno = num_segs;
+    mtmp.mlstmv = game.moves;
+    if (!mtmp.mtrack)
+        mon_track_clear(mtmp);
+    /* (mtrack[] entries are replaced rather than modified: JS shares the
+       coordinate objects that mon_track_add() shifts along) */
+    mtmp.mtrack[2] = { x: u.uz.dnum,  /* migrating from this dungeon */
+                       y: u.uz.dlevel }; /* migrating from this dungeon level */
+    mtmp.mtrack[1] = { x: cc ? cc.x : mx,
+                       y: cc ? cc.y : my };
+    mtmp.mtrack[0] = { x: xyloc, y: xyflags };
+    mtmp.mux = new_lev.dnum;
+    mtmp.muy = new_lev.dlevel;
+    mtmp.mx = mtmp.my = 0; /* mx==0 implies migrating */
+
+    /* don't extinguish a mobile light; it still exists but has changed
+       from local (monst->mx > 0) to global (mx==0, not on this level) */
+    if (emits_light(mtmp.data))
+        vision_recalc(0);
 }
 
 /* note: always reset when used so doesn't need to be part of struct 'g' */
