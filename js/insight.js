@@ -399,8 +399,9 @@ export function body_part(part) {
 function contained_gold(obj, even_if_unknown) {
     let value = 0;
 
-    /* objects other than coins won't have any gold inside them */
-    for (let otmp = obj.cobj; otmp; otmp = otmp.nobj)
+    /* objects other than coins won't have any gold inside them
+       (JS container contents are an array) */
+    for (const otmp of (Array.isArray(obj.cobj) ? obj.cobj : []))
         if (otmp.oclass === COIN_CLASS)
             value += otmp.quan;
         else if (otmp.cobj && (otmp.cknown || even_if_unknown))

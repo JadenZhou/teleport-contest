@@ -22,7 +22,7 @@ import { rndmonst_adj } from './makemon.js';
 import { monsndx, little_to_big, big_to_little, is_human } from './mondata.js';
 import * as M from './monsters.js';
 import { assign_candy_wrapper } from './read.js';
-import { noveltitle } from './do_name.js';
+import { noveltitle, oname } from './do_name.js';
 import {
     mons, LOW_PM, SPECIAL_PM, G_UNIQ, G_NOGEN, G_HELL, G_NOHELL, G_NOCORPSE,
     M2_MALE, M2_FEMALE, M2_NEUTER, MZ_SMALL, S_TROLL,
@@ -34,7 +34,7 @@ import {
     PM_ETTIN_MUMMY, PM_ETTIN, PM_LIZARD, PM_LICHEN, PM_DEATH, PM_FAMINE,
     PM_PESTILENCE,
 } from './monsters.js';
-import { merged } from './invent.js';
+import { merged, freeinv } from './invent.js';
 import { obj_no_longer_held } from './do.js';
 import { block_point, recalc_block_point } from './vision.js';
 import { vobj_at } from './display.js';
@@ -45,6 +45,9 @@ import { forget_temple_entry } from './priest.js';
 import { MON_DETACH } from './const.js';
 import { confers_luck } from './timeout.js';
 import { set_moreluck } from './attrib.js';
+import { bimanual } from './wield.js';
+import { reset_remarm } from './do_wear.js';
+import { book_cursed_sync } from './spell.js';
 import { eaten_stat, tin_variety, tintxt_fodder, vegetarian } from './eat.js';
 import { costly_spot } from './insight.js';
 
@@ -656,6 +659,9 @@ export function obj_extract_self(obj) {
     case 'OBJ_FREE':
     case 'OBJ_LUAFREE':
         break;
+    case 'OBJ_INVENT':
+        freeinv(obj);
+        break;
     case 'OBJ_FLOOR': { /* remove_object() */
         const fobj = game.level.objects || [];
         const i = fobj.indexOf(obj);
@@ -856,8 +862,38 @@ export function bless(otmp) {
 
 // C ref: mkobj.c curse()
 export function curse(otmp) {
+    let already_cursed;
+
+    if (otmp.oclass === COIN_CLASS)
+        return;
+    if (otmp.lamplit)
+        throw new Error('curse(): arti_light_radius() of a lit object not ported yet');
+    already_cursed = otmp.cursed;
     otmp.blessed = 0;
     otmp.cursed = 1;
+    /* welded two-handed weapon interferes with some armor removal */
+    if (otmp === game.uwep && bimanual(game.uwep))
+        reset_remarm();
+    /* rules at top of wield.c state that twoweapon cannot be done
+       with cursed alternate weapon */
+    if (otmp === game.uswapwep && game.u.twoweap)
+        throw new Error('curse(): drop_uswapwep() not ported yet');
+    /* some cursed items need immediate updating */
+    if (otmp.where === 'OBJ_INVENT' /* carried(otmp) */ && confers_luck(otmp)) {
+        set_moreluck();
+    } else if (otmp.otyp === O.BAG_OF_HOLDING) {
+        otmp.owt = weight(otmp);
+    } else if (otmp.otyp === O.FIGURINE) {
+        if (otmp.corpsenm !== NON_PM && !dead_species(otmp.corpsenm, true)
+            && (otmp.where === 'OBJ_INVENT' || otmp.where === 'OBJ_MINVENT'))
+            throw new Error('curse(): attach_fig_transform_timeout() not ported yet');
+    } else if (otmp.oclass === SPBOOK_CLASS) {
+        /* if book hero is reading becomes cursed, interrupt */
+        if (!already_cursed)
+            book_cursed_sync(otmp);
+    }
+    /* if (otmp->lamplit) maybe_adjust_light(): lit objects stop above */
+    return;
 }
 
 // C ref: mkobj.c uncurse()
@@ -1562,6 +1598,36 @@ export function mk_tt_object(
     }
 
     return otmp;
+}
+
+// C ref: mkobj.c mk_named_object()
+/* make a new corpse or statue, uninitialized if a statue (i.e. no books);
+   never returns Null */
+export function mk_named_object(
+    objtype, /* CORPSE or STATUE */
+    ptr,
+    x, y,
+    nm)
+{
+    let otmp;
+    const corpstatflags = (objtype !== O.STATUE) ? CORPSTAT_INIT
+                                                 : 0 /* CORPSTAT_NONE */;
+
+    otmp = mkcorpstat(objtype, null, ptr, x, y, corpstatflags);
+    if (nm)
+        otmp = oname(otmp, nm, 0 /* ONAME_NO_FLAGS */);
+    return otmp;
+}
+
+// C ref: mkobj.c obj_attach_mid()
+export function obj_attach_mid(obj, mid) {
+    if (!mid || !obj)
+        return null;
+    /* newomid(obj) */
+    if (!obj.oextra)
+        obj.oextra = {};
+    obj.oextra.omid = mid; /* OMID(obj) = mid */
+    return obj;
 }
 
 // C ref: mkobj.c mkgold()

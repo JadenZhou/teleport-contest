@@ -39,14 +39,16 @@ import { mons, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
          BUC_UNKNOWN } from './const.js';
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj,
-         dead_species } from './mkobj.js';
+         dead_species, curse } from './mkobj.js';
 import { itemactions } from './iactions.js';
 import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR } from './const.js';
 import { ART_MJOLLNIR } from './artilist.js';
 import { is_missile, is_ammo, setuqwep } from './wield.js';
 import { confers_luck } from './timeout.js';
 import { set_moreluck } from './attrib.js';
-import { setnotworn } from './worn.js';
+import { setnotworn, setworn } from './worn.js';
+import { oname } from './do_name.js';
+import { W_WEP, W_SWAPWEP, W_QUIVER, ONAME_SKIP_INVUPD } from './const.js';
 import { food_disappears } from './eat.js';
 import { costly_spot, shop_keeper, inside_shop, inhishop, next_shkp, onbill,
          same_price } from './shk.js';
@@ -445,7 +447,7 @@ function freeinv_core(obj) {
     }
 
     if (obj.otyp === O.LOADSTONE) {
-        throw new Error('freeinv_core(): loadstone curse() not ported yet');
+        curse(obj);
     } else if (confers_luck(obj)) {
         set_moreluck();
         game.disp_botl = true;
@@ -1923,7 +1925,8 @@ export function stackobj(obj) {
 // C ref: invent.c merged() -- 'r' is { otmp, obj } (C: potmp, pobj);
 // returns 1 when obj was merged into otmp
 export function merged(r) {
-    const otmp = r.otmp, obj = r.obj;
+    let otmp = r.otmp;
+    const obj = r.obj;
     let discovered = false;
 
     if (mergable(otmp, obj)) {
@@ -1942,7 +1945,7 @@ export function merged(r) {
         } else if (!inv_Is_pudding(otmp))
             otmp.owt = weight(otmp);
         if (!has_oname(otmp) && has_oname(obj))
-            throw new Error('merged(): oname() is not ported yet');
+            otmp = r.otmp = oname(otmp, obj.oextra.oname, ONAME_SKIP_INVUPD);
         obj_extract_self(obj);
 
         if (obj.pickup_prev && otmp.where === 'OBJ_INVENT')
@@ -1967,8 +1970,32 @@ export function merged(r) {
                 discovered = true;
         }
         /* fixup for `#adjust' merging wielded darts, daggers, &c */
-        if (obj.owornmask && otmp.where === 'OBJ_INVENT')
-            throw new Error('merged(): merging worn items is not ported yet');
+        if (obj.owornmask && otmp.where === 'OBJ_INVENT') {
+            let wmask = otmp.owornmask | obj.owornmask;
+
+            /* Both the items might be worn in competing slots;
+               merger preference (regardless of which is which):
+             primary weapon + alternate weapon -> primary weapon;
+             primary weapon + quiver -> primary weapon;
+             alternate weapon + quiver -> alternate weapon.
+               (Prior to 3.3.0, it was not possible for the two
+               stacks to be worn in different slots and `obj'
+               didn't need to be unworn when merging.) */
+            if (wmask & W_WEP) {
+                wmask = W_WEP;
+            } else if (wmask & W_SWAPWEP) {
+                wmask = W_SWAPWEP;
+            } else if (wmask & W_QUIVER) {
+                wmask = W_QUIVER;
+            } else {
+                console.error(`impossible: merging strangely worn items (${wmask})`);
+                wmask = otmp.owornmask;
+            }
+            if ((otmp.owornmask & ~wmask) !== 0)
+                setnotworn(otmp);
+            setworn(otmp, wmask);
+            setnotworn(obj);
+        }
         if (obj.bypass)
             otmp.bypass = 1;
         /* handle puddings a bit differently */
@@ -2188,3 +2215,369 @@ import { MV_KNOWS_EGG, SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
          INVORDER_SORT, PICK_ANY, thats_enough_tries,
          MENU_TRADITIONAL as MENU_TRADITIONAL_IV, MENU_FULL as MENU_FULL_IV,
          HALLUC as HALLUC_IV, HALLUC_RES as HALLUC_RES_IV } from './const.js';
+
+import { inv_cnt as inv_cnt_iv } from './hack.js';
+import { ECMD_CANCEL as ECMD_CANCEL_IV, ECMD_FAIL as ECMD_FAIL_IV } from './const.js';
+
+// C ref: hacklib.c letter()
+function letter_iv(c) {
+    return ('@' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
+}
+
+// C ref: mkobj.c extract_nobj() -- for the hero's inventory chain
+function extract_nobj_invent(obj) {
+    let curr, prev;
+
+    for (prev = null, curr = game.invent; curr; prev = curr, curr = curr.nobj) {
+        if (curr === obj) {
+            if (prev)
+                prev.nobj = curr.nobj;
+            else
+                game.invent = curr.nobj;
+            break;
+        }
+    }
+    if (!curr)
+        throw new Error('extract_nobj: object lost'); /* panic() */
+    obj.where = 'OBJ_FREE';
+    obj.nobj = null;
+}
+
+// C ref: invent.c check_invent_gold()
+export function check_invent_gold(why) { /* 'why' == caller in case of warning */
+    let goldstacks = 0, wrongslot = 0;
+
+    /* there should be at most one stack of gold in invent, in slot '$' */
+    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (otmp.oclass === O.COIN_CLASS) {
+            ++goldstacks;
+            if (otmp.invlet !== GOLD_SYM)
+                ++wrongslot;
+        }
+
+    if (goldstacks > 1 || wrongslot > 0) {
+        console.error(`impossible: ${why}: ${(wrongslot > 1) ? "gold in wrong slots"
+                      : (wrongslot > 0) ? "gold in wrong slot" : ""}${
+                      (wrongslot > 0 && goldstacks > 1) ? " and " : ""}${
+                      (goldstacks > 1) ? "multiple gold stacks" : ""}`);
+        return true; /* gold can be #adjusted */
+    }
+
+    return false; /* gold can't be #adjusted */
+}
+
+// C ref: invent.c adjust_ok()
+/* normal getobj callback for item to #adjust; excludes gold */
+function adjust_ok(obj) {
+    if (!obj || obj.oclass === O.COIN_CLASS)
+        return GETOBJ_EXCLUDE;
+
+    return GETOBJ_SUGGEST;
+}
+
+// C ref: invent.c adjust_gold_ok()
+/* getobj callback for item to #adjust if gold is wonky; allows gold */
+function adjust_gold_ok(obj) {
+    if (!obj)
+        return GETOBJ_EXCLUDE;
+
+    return GETOBJ_SUGGEST;
+}
+
+// C ref: invent.c doorganize()
+/* #adjust command: inventory organizer by Del Lamb */
+export async function doorganize() {
+    /* when no invent, or just gold in '$' slot, there's nothing to adjust */
+    if (!game.invent || (game.invent.oclass === O.COIN_CLASS
+                         && game.invent.invlet === GOLD_SYM
+                         && !game.invent.nobj)) {
+        await You(`aren't carrying anything ${
+                  !game.invent ? "to adjust" : "adjustable"}.`);
+        return ECMD_OK;
+    }
+
+    if (!invlet_constant())
+        throw new Error('doorganize(): reassign() not ported yet');
+
+    /* filter passed to getobj() depends upon gold sanity */
+    const adjust_filter = check_invent_gold("adjust") ? adjust_gold_ok
+                                                      : adjust_ok;
+
+    /* get object the user wants to organize (the 'from' slot) */
+    const obj = await getobj("adjust", adjust_filter,
+                             GETOBJ_PROMPT | GETOBJ_ALLOWCNT);
+
+    return doorganize_core(obj);
+}
+
+// C ref: invent.c adjust_split()
+/* alternate version of #adjust used by itemactions() for splitting */
+export async function adjust_split() {
+    let obj;
+    let splitamount = 0;
+
+    /* invlet should be queued so no getobj prompting is expected */
+    obj = await getobj("split", adjust_ok, 0 /* GETOBJ_NOFLAGS */);
+    if (!obj || obj.quan < 2 || obj.otyp === O.GOLD_PIECE)
+        return ECMD_FAIL_IV; /* caller has set things up to avoid this */
+
+    if (obj.quan === 2) {
+        splitamount = 1;
+    } else {
+        /* get first digit; doesn't wait for <return> */
+        throw new Error('adjust_split(): "Split off how many?" get_count() not ported yet');
+    }
+    if (splitamount < 1 || splitamount >= obj.quan) {
+        const Amount = "Amount to split from current stack must be";
+
+        if (splitamount < 1)
+            await pline(`${Amount} at least 1.`);
+        else
+            await pline(`${Amount} less than ${obj.quan}.`);
+        return ECMD_CANCEL_IV;
+    }
+
+    /* normally a split would take place in getobj() if player supplies
+       a count there, so doorganize_core() figures out 'splitamount'
+       from the object; it will undo the split if player cancels while
+       selecting the destination slot */
+    obj = splitobj(obj, splitamount);
+    return doorganize_core(obj);
+}
+
+// C ref: invent.c doorganize_core()
+async function doorganize_core(obj) {
+    let otmp, splitting, bumped;
+    let ix, trycnt;
+    let let_;
+    const GOLD_INDX = 0, GOLD_OFFSET = 1;
+    const OVRFLW_INDX = GOLD_OFFSET + invlet_basic; /* past gold+2*26 letters */
+    let lets; /* room for '$a-zA-Z#' */
+    let qbuf;
+    let objname, otmpname;
+    let adj_type;
+    let ever_mind = false;
+
+    if (!obj)
+        return ECMD_CANCEL_IV;
+
+    /* can only be gold if check_invent_gold() found a problem:  multiple '$'
+       stacks and/or gold in some other slot, otherwise (*adjust_filter)()
+       won't allow gold to be picked; if player has picked any stack of gold
+       as #adjust 'from' slot, we'll force the 'to' slot to be '$' below */
+    const isgold = (obj.oclass === O.COIN_CLASS);
+
+    /* figure out whether user gave a split count to getobj() */
+    splitting = bumped = null;
+    for (otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (otmp.nobj === obj) { /* knowledge of splitobj() operation */
+            if (otmp.invlet === obj.invlet)
+                splitting = otmp;
+            break;
+        }
+
+    /* merged(); C's merged() gives the "comparing" message itself */
+    const do_merged = async (r) => {
+        const res = merged(r);
+        if (res && r.learned)
+            await pline("You learn more about your items by comparing them.");
+        return res;
+    };
+
+    /* initialize the list with all lower and upper case letters */
+    lets = new Array(1 + invlet_basic + 1 + 1);
+    lets[GOLD_INDX] = (obj.oclass === O.COIN_CLASS) ? GOLD_SYM : ' ';
+    ix = GOLD_OFFSET;
+    for (let c = 97; c <= 122; c++)
+        lets[ix++] = String.fromCharCode(c); /* 'a'..'z' */
+    for (let c = 65; c <= 90; c++)
+        lets[ix++] = String.fromCharCode(c); /* 'A'..'Z' */
+    lets[OVRFLW_INDX] = ' ';
+    lets[lets.length - 1] = '\0';
+    /* for floating inv letters, truncate list after the first open slot */
+    if (!invlet_constant() && (ix = inv_cnt_iv(false)) < invlet_basic)
+        lets[ix + (splitting ? 1 : 2)] = '\0';
+
+    /* blank out all the letters currently in use in the inventory
+       except those that will be merged with the selected object */
+    for (otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (otmp !== obj && !mergable(otmp, obj)) {
+            let_ = otmp.invlet;
+            if (let_ >= 'a' && let_ <= 'z')
+                lets[GOLD_OFFSET + let_.charCodeAt(0) - 97] = ' ';
+            else if (let_ >= 'A' && let_ <= 'Z')
+                lets[GOLD_OFFSET + let_.charCodeAt(0) - 65 + 26] = ' ';
+            /* overflow defaults to off, but it we find a stack using that
+               slot, switch to on -- the opposite of normal invlet handling */
+            else if (let_ === NOINVSYM)
+                lets[OVRFLW_INDX] = NOINVSYM;
+        }
+
+    /* compact the list by removing all the blanks */
+    let compacted = '';
+    for (ix = 0; lets[ix] !== '\0'; ix++)
+        if (lets[ix] !== ' ')
+            compacted += lets[ix];
+    /* and by dashing runs of letters */
+    if (compacted.length > 5)
+        compacted = compactify(compacted);
+    lets = compacted;
+
+    /* get 'to' slot to use as destination */
+    if (!splitting)
+        qbuf = "Adjust letter";
+    else /* note: splitting->quan is the amount being left in original slot */
+        qbuf = `Split ${obj.quan}`;
+    qbuf += ` to what [${lets}]${game.invent ? " (? see used letters)" : ""}?`;
+    let noadjust = false;
+    for (trycnt = 1; ; ++trycnt) {
+        let_ = !isgold ? await tty_yn_function(qbuf, null, '\0') /* yn_function() */
+                       : GOLD_SYM;
+        if (let_ === '?' || let_ === '*')
+            throw new Error('doorganize_core(): display_used_invlets() not ported yet');
+        if (quitchars.includes(let_)
+            /* adjusting to same slot is meaningful since all
+               compatible stacks get collected along the way,
+               but splitting to same slot is not */
+            || (splitting && let_ === obj.invlet)) {
+            noadjust = true;
+            break;
+        } else if (let_ === GOLD_SYM && obj.oclass !== O.COIN_CLASS) {
+            await pline(`Only gold coins may be moved into the '${GOLD_SYM}' slot.`);
+            ever_mind = true;
+            noadjust = true;
+            break;
+        }
+        /* letter() classifies '@' as one; compactify() can put '-' in lets;
+           the only thing of interest that strchr() might find is '$' or '#'
+           since letter() catches everything else that we put into lets[] */
+        if ((letter_iv(let_) && let_ !== '@') || (lets.includes(let_) && let_ !== '-'))
+            break; /* got one */
+        if (trycnt === 5) {
+            noadjust = true;
+            break;
+        }
+        await pline("Select an inventory slot letter."); /* else try again */
+    }
+    if (noadjust) {
+        /* noadjust: */
+        if (splitting)
+            await do_merged({ otmp: splitting, obj });
+        if (!ever_mind)
+            await pline(Never_mind);
+        return ECMD_OK;
+    }
+
+    const collect = (let_ === obj.invlet);
+    /* change the inventory and print the resulting item */
+    adj_type = collect ? "Collecting:"
+               : !splitting ? "Moving:"
+                 : "Splitting:";
+
+    /*
+     * don't use freeinv/addinv to avoid double-touching artifacts,
+     * dousing lamps, losing luck, cursing loadstone, etc.
+     */
+    extract_nobj_invent(obj);
+
+    for (otmp = game.invent; otmp; ) {
+        otmpname = has_oname(otmp) ? otmp.oextra.oname : null;
+        /* it's tempting to pull this outside the loop, but merged() could
+           free ONAME(obj) [via obfree()] and replace it with ONAME(otmp) */
+        objname = has_oname(obj) ? obj.oextra.oname : null;
+
+        if (collect) {
+            /* Collecting: #adjust an inventory stack into its same slot;
+               keep it there and merge other compatible stacks into it.
+               Traditional inventory behavior is to merge unnamed stacks
+               with compatible named ones; we only want that if it is
+               the 'from' stack (obj) with a name and candidate (otmp)
+               without one, not unnamed 'from' with named candidate. */
+            const r = { otmp, obj };
+            if ((!otmpname || (objname && objname === otmpname))
+                && await do_merged(r)) {
+                /*adj_type = "Collecting:"; //already set to this*/
+                obj = otmp = r.otmp;
+                otmp = otmp.nobj;
+                extract_nobj_invent(obj);
+                continue; /* otmp has already been updated */
+            }
+        } else if (otmp.invlet === let_) {
+            /* Merging: when from and to are compatible */
+            let r = { otmp, obj };
+            if ((!otmpname || (objname && objname === otmpname))
+                && await do_merged(r)) {
+                adj_type = "Merging:";
+                obj = otmp = r.otmp;
+                otmp = otmp.nobj;
+                extract_nobj_invent(obj);
+                break; /* otmp has been updated and we're done merging */
+            }
+            /* Moving or splitting: don't merge extra compatible stacks.
+               Found 'otmp' in destination slot; merge if compatible,
+               otherwise bump whatever is there to an open slot. */
+            if (!splitting) {
+                adj_type = "Swapping:";
+                otmp.invlet = obj.invlet;
+            } else {
+                /* strip 'from' name if it has one */
+                if (objname && !obj.oartifact)
+                    obj.oextra.oname = ''; /* ONAME(obj) = (char *) 0 */
+                if (!mergable(otmp, obj)) {
+                    /* won't merge; put 'from' name back */
+                    if (objname)
+                        obj.oextra.oname = objname;
+                } else {
+                    /* will merge; discard 'from' name */
+                    if (objname)
+                        objname = null;
+                }
+
+                r = { otmp, obj };
+                if (await do_merged(r)) {
+                    adj_type = "Splitting and merging:";
+                    obj = otmp = r.otmp;
+                    extract_nobj_invent(obj);
+                } else if (inv_cnt_iv(false) >= invlet_basic) {
+                    await do_merged({ otmp: splitting, obj }); /* undo split */
+                    /* "knapsack cannot accommodate any more items" */
+                    await pline("Your pack is too full."); /* Your() */
+                    return ECMD_OK;
+                } else {
+                    bumped = otmp;
+                    extract_nobj_invent(bumped);
+                }
+            } /* moving vs splitting */
+            break; /* not collecting and found 'to' slot */
+        } /* collect */
+        otmp = otmp.nobj;
+    }
+
+    /* inline addinv; insert loose object at beginning of inventory */
+    obj.invlet = let_;
+    obj.nobj = game.invent;
+    obj.where = 'OBJ_INVENT';
+    game.invent = obj;
+    reorder_invent();
+    if (bumped) {
+        /* splitting the 'from' stack is causing an incompatible
+           stack in the 'to' slot to be moved into an open one;
+           we need to do another inline insertion to inventory */
+        assigninvlet(bumped);
+        bumped.nobj = game.invent;
+        bumped.where = 'OBJ_INVENT';
+        game.invent = bumped;
+        reorder_invent();
+    }
+
+    /* messages deferred until inventory has been fully reestablished */
+    await prinv(adj_type, obj, 0);
+    if (bumped)
+        await prinv("Moving:", bumped, 0);
+    if (splitting && game.context?.objsplit) { /* clear_splitobjs() */
+        game.context.objsplit.parent_oid = 0;
+        game.context.objsplit.child_oid = 0;
+    }
+    /* update_inventory(): no perm_invent */
+    return ECMD_OK;
+}

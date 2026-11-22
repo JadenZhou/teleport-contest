@@ -465,6 +465,16 @@ export function migrate_to_level(
         vision_recalc(0);
 }
 
+// C ref: dog.c update_mlstmv()
+/* record `last move time' for all monsters prior to level save so that
+   mon_arrive() can catch up for lost time when they're restored later */
+export function update_mlstmv() {
+    /* iter_mons(set_mon_lastmove) */
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon)
+        if (!(mtmp.mhp <= 0)) /* !DEADMONSTER(mtmp) */
+            mtmp.mlstmv = game.moves; /* set_mon_lastmove() */
+}
+
 /* note: always reset when used so doesn't need to be part of struct 'g' */
 let failed_arrivals = null;
 

@@ -1711,7 +1711,7 @@ export function is_unpaid(obj) {
 }
 
 /* C ref: zap.c get_obj_location() */
-function get_obj_location(obj, locflags) {
+export function get_obj_location(obj, locflags) {
     switch (obj.where) {
     case 'OBJ_INVENT':
         return [game.u.ux, game.u.uy];
@@ -1733,6 +1733,17 @@ function get_obj_location(obj, locflags) {
         break;
     }
     return null;
+}
+
+// C ref: shk.c fix_shop_damage()
+export function fix_shop_damage() {
+    /* if this level has no shop damage, there's nothing to do */
+    const dl = game.level.damagelist;
+    if (!dl || (Array.isArray(dl) && !dl.length))
+        return;
+
+    /* go through all shopkeepers on the level: repair_damage() */
+    throw new Error('fix_shop_damage(): repair_damage() not ported yet');
 }
 
 // C ref: shk.c get_cost_of_shop_item()

@@ -117,7 +117,10 @@ import { flooreffects } from './do.js';
 import { s_suffix } from './hacklib.js';
 import { change_luck, adjalign } from './attrib.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
-import { You_hear, growl } from './sounds.js';
+import { You_hear, growl, maybe_gasp } from './sounds.js';
+import { PLNMSG_GROWL, DEAF } from './const.js';
+import { little_to_big } from './mondata.js';
+import { quest_info } from './questpgr.js';
 import { is_lightblocker_mappear, does_block, unblock_point,
          couldsee } from './vision.js';
 import { M1_HUMANOID } from './monsters.js';
@@ -1007,6 +1010,8 @@ function finish_meating(mtmp) {
 // C ref: mon.c peacefuls_respond()
 /* make other peaceful monsters react */
 async function peacefuls_respond(mtmp) {
+    const mndx = monsndx(mtmp.data);
+
     for (let mon = game.fmon; mon; mon = mon.nmon) {
         if (DEADMONSTER(mon))
             continue;
@@ -1015,9 +1020,112 @@ async function peacefuls_respond(mtmp) {
 
         if (!(mon.data.mflags1 & M1_MINDLESS) && mon.mpeaceful
             && couldsee(mon.mx, mon.my) && !mon.msleeping
-            && mon.mcansee && m_canseeu(mon))
-            throw new Error('peacefuls_respond(): peaceful monster reactions not ported yet');
+            && mon.mcansee && m_canseeu(mon)) {
+            let buf = '';
+            let exclaimed = false, needpunct = false, alreadyfleeing;
+            const is_watch = ptr => ptr === MM.mons[MM.PM_WATCHMAN]
+                                    || ptr === MM.mons[MM.PM_WATCH_CAPTAIN];
+            const Deaf = () => !!(game.u.uprops[DEAF]?.intrinsic
+                                  || game.u.uprops[DEAF]?.extrinsic);
+
+            if (humanoid(mon.data) || mon.isshk || mon.ispriest) {
+                if (is_watch(mon.data)) {
+                    /* SetVoice(mon, 0, 80, 0); verbalize() */
+                    if (!Deaf())
+                        await pline('"Halt!  You\'re under arrest!"');
+                    await angry_guards(Deaf());
+                } else {
+                    if (!Deaf() && !rn2(5)) {
+                        const gasp = maybe_gasp(mon);
+
+                        if (gasp) {
+                            if (gasp.slice(0, 4).toLowerCase() === "gasp") {
+                                buf = `${Monnam(mon)} gasps`;
+                                needpunct = true;
+                            } else {
+                                buf = `${Monnam(mon)} exclaims "${gasp}"`;
+                            }
+                            exclaimed = true;
+                        }
+                    }
+                    /* shopkeepers and temple priests might gasp in
+                       surprise, but they won't become angry here;
+                       quest leader will only get angry if hero attacks
+                       own quest guardians */
+                    if (mon.isshk || mon.ispriest
+                        || (mon.data === MM.mons[quest_info(MM.MS_LEADER)]
+                            && mtmp.data !== MM.mons[game.urole.guardnum])) {
+                        if (exclaimed)
+                            await pline(`${buf} then shrugs.`); /* pline_mon() */
+                        continue;
+                    }
+
+                    if (mon.data.mlevel < rn2(10)
+                        /* don't have quest guardians turn to flee */
+                        && (mon.data !== MM.mons[game.urole.guardnum])) {
+                        alreadyfleeing = (mon.mflee || mon.mfleetim);
+                        await monflee(mon, rn2(50) + 25, true, !exclaimed);
+                        if (exclaimed) {
+                            if (game.flags.verbose && !alreadyfleeing) {
+                                buf += " and then turns to flee.";
+                                needpunct = false;
+                            }
+                        } else
+                            exclaimed = true; /* got msg from monflee() */
+                    }
+                    if (buf)
+                        await pline(`${buf}${needpunct ? "." : ""}`); /* pline_mon() */
+                    if (mon.mtame) {
+                        ; /* mustn't set mpeaceful to 0 as below;
+                           * perhaps reduce tameness? */
+                    } else {
+                        mon.mpeaceful = 0;
+                        mon.mstrategy &= ~STRAT_WAITMASK;
+                        adjalign(-1);
+                        if (!exclaimed)
+                            await pline(`${Monnam(mon)} gets angry!`); /* pline_mon() */
+                    }
+                }
+            } else if (mon.data.mlet === mtmp.data.mlet
+                       && big_little_match(mndx, monsndx(mon.data))
+                       && !rn2(3)) {
+                if (!rn2(4)) {
+                    await growl(mon);
+                    exclaimed = (game.iflags.last_msg === PLNMSG_GROWL);
+                }
+                if (rn2(6)) {
+                    alreadyfleeing = (mon.mflee || mon.mfleetim);
+                    await monflee(mon, rn2(25) + 15, true, !exclaimed);
+                    if (exclaimed && !alreadyfleeing)
+                        /* word like a separate sentence so that we
+                           don't have to poke around inside growl() */
+                        await pline("And then starts to flee.");
+                }
+            }
+        }
     }
+}
+
+// C ref: mondata.c big_little_match()
+function big_little_match(montyp1, montyp2) {
+    let l, b;
+
+    /* simplest case: both are same pm */
+    if (montyp1 === montyp2)
+        return true;
+    /* assume it isn't possible to grow from one class letter to another */
+    if (MM.mons[montyp1].mlet !== MM.mons[montyp2].mlet)
+        return false;
+    /* check whether montyp1 can grow up into montyp2 */
+    for (l = montyp1; (b = little_to_big(l)) !== l; l = b)
+        if (b === montyp2)
+            return true;
+    /* check whether montyp2 can grow up into montyp1 */
+    for (l = montyp2; (b = little_to_big(l)) !== l; l = b)
+        if (b === montyp1)
+            return true;
+    /* neither grows up to become the other; no match */
+    return false;
 }
 
 // C ref: mon.c setmangry()

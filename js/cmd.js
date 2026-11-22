@@ -28,7 +28,7 @@ import { dosearch } from './detect.js';
 import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
-         doprtool, add_menu_heading } from './invent.js';
+         doprtool, add_menu_heading, doorganize, adjust_split } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
 export { domove };
@@ -62,6 +62,7 @@ import { doread } from './read.js';
 import { dohelp, dowhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
 import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
+import { done2 } from './end.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -100,6 +101,9 @@ export function extcmds_match(findstr, ecmflags) {
 // extended commands both go through this table)
 const cmd_funcs = {
     doextcmd: () => doextcmd(),
+    done2: () => done2(),
+    doorganize: () => doorganize(),
+    adjust_split: () => adjust_split(),
     doextlist: () => doextlist(),
     dosearch: () => dosearch(),
     dopray: () => dopray(),
