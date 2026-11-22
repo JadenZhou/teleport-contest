@@ -764,7 +764,12 @@ export async function zapnodir(obj) {
     switch (obj.otyp) {
     case WAN_LIGHT:
     case SPE_LIGHT_ZN:
-        throw new Error('zapnodir(): wand of light (litroom()) not ported yet');
+        /* FIXME? wand of light becoming discovered should be contingent upon
+           seeing at least one previously unlit spot become lit */
+        known = !!(obj.dknown && !Blind());
+        await litroom(true, obj);
+        await lightdamage(obj, true, 5);
+        break;
     case WAN_SECRET_DOOR_DETECTION:
     case SPE_DETECT_UNSEEN_ZN:
         /* findit() gives sufficient feedback to discover the wand even when
@@ -1679,3 +1684,4 @@ import { findit } from './detect.js';
 import { makewish } from './wizcmds.js';
 import { SPE_LIGHT as SPE_LIGHT_ZN,
          SPE_DETECT_UNSEEN as SPE_DETECT_UNSEEN_ZN } from './objects.js';
+import { litroom, lightdamage } from './read.js';
