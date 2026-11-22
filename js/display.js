@@ -1416,6 +1416,24 @@ export function map_object(obj, show) {
                         glyph.piletop, glyph_gid(glyph));
 }
 
+// C ref: display.c see_objects()
+export function see_objects() {
+    for (const obj of (game.level?.objects || []).slice())
+        if (obj.where === 'OBJ_FLOOR' && vobj_at(obj.ox, obj.oy) === obj)
+            newsym(obj.ox, obj.oy);
+
+    /* update_inventory(): perm_invent isn't ported */
+}
+
+// C ref: display.c see_traps()
+export function see_traps() {
+    for (const trap of (game.level?.traps || []).slice()) {
+        /* glyph = _glyph_at(trap->tx, trap->ty) */
+        if (game.level.at(trap.tx, trap.ty).disp_kind === 'trap') /* glyph_is_trap() */
+            newsym(trap.tx, trap.ty);
+    }
+}
+
 // C ref: display.c see_nearby_objects()
 /* mark the top object of nearby stacks as having been seen, and if
    that object was being displayed as generic, redisplay it as specific */

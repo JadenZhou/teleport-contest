@@ -59,7 +59,14 @@ import { place_object } from './mkobj.js';
 import { stackobj } from './invent.js';
 import { attack_checks } from './uhitm.js';
 import { overexertion } from './hack.js';
-import { canspotmon } from './display.js';
+import { canspotmon, canseemon } from './display.js';
+import { wakeup, setmangry } from './mon.js';
+import { mpickobj } from './steal.js';
+import { miss } from './zap.js';
+import { Monnam, mon_nam } from './do_name.js';
+import { cansee } from './vision.js';
+import { M2_GREEDY, M2_MERC, S_MIMIC } from './monsters.js';
+import { M_AP_NOTHING } from './const.js';
 
 /* C ref: youprop.h -- the hero's properties used by the kick code */
 function uprop(p) {
@@ -331,6 +338,62 @@ async function kick_nondoor(x, y, avrg_attrib) {
 
 // C ref: dokick.c dokick()
 /* the #kick command */
+// C ref: dokick.c ghitm()
+/*
+ *  Return TRUE if caught (the gold taken care of), FALSE otherwise.
+ *  The gold object is *not* attached to the fobj chain!
+ */
+export async function ghitm(mtmp, gold) {
+    let msg_given = false;
+
+    if (!likes_gold(mtmp.data) && !mtmp.isshk && !mtmp.ispriest
+        && !mtmp.isgd && !is_mercenary(mtmp.data)) {
+        await wakeup(mtmp, true);
+    } else if (!mtmp.mcanmove) {
+        /* too light to do real damage */
+        if (canseemon(mtmp)) {
+            await pline_The(`${xname(gold)} harmlessly ${otense(gold, "hit")} ${
+                             mon_nam(mtmp)}.`);
+            msg_given = true;
+        }
+    } else {
+        const was_sleeping = mtmp.msleeping;
+
+        mtmp.msleeping = 0; /* end indeterminate sleep */
+        finish_meating(mtmp);
+        if (!mtmp.isgd && !rn2(4)) /* not always pleasing */
+            await setmangry(mtmp, true);
+        /* greedy monsters catch gold */
+        if (cansee(mtmp.mx, mtmp.my))
+            await pline(`${Monnam(mtmp)} ${was_sleeping ? "awakens and " : ""
+                         }catches the gold.`);
+        if (mtmp.isshk || mtmp.ispriest || mtmp.isgd || is_mercenary(mtmp.data))
+            throw new Error('ghitm(): gold caught by a shopkeeper/priest/guard/mercenary not ported yet');
+        /* (void) */ mpickobj(mtmp, gold);
+        gold = null; /* obj has been freed */
+        return true;
+    }
+
+    if (!msg_given)
+        await miss(xname(gold), mtmp);
+    return false;
+}
+
+/* C ref: mondata.h likes_gold(), is_mercenary() */
+function likes_gold(ptr) { return (ptr.mflags2 & M2_GREEDY) !== 0; }
+function is_mercenary(ptr) { return (ptr.mflags2 & M2_MERC) !== 0; }
+
+// C ref: dogmove.c finish_meating()
+function finish_meating(mtmp) {
+    mtmp.meating = 0;
+    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== S_MIMIC) {
+        /* was eating a mimic and now appearance needs resetting */
+        mtmp.m_ap_type = M_AP_NOTHING;
+        mtmp.mappearance = 0;
+        newsym(mtmp.mx, mtmp.my);
+    }
+}
+
 // C ref: dokick.c maybe_kick_monster()
 async function maybe_kick_monster(mon, x, y) {
     if (mon) {

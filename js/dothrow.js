@@ -62,6 +62,14 @@ import { encumber_msg } from './pickup.js';
 import { remove_worn_item } from './steal.js';
 import { weapon_type, P_SKILL, hitval } from './weapon.js';
 import { is_weptool } from './mkobj.js';
+import { add_to_minv } from './mkobj.js';
+import { mon_nam } from './do_name.js';
+import { s_suffix } from './hacklib.js';
+import { pline_The } from './display.js';
+import { Is_waterlevel as Is_waterlevel_tg } from './const.js';
+import { AT_ENGL, AD_DGST } from './monsters.js';
+import { sellobj } from './shk.js';
+import { ghitm } from './dokick.js';
 import { weapon_descr, skill_name, inside_shop, body_part } from './insight.js';
 import { xname, an, singular, The, Tobjnam } from './objnam.js';
 import { the, surface } from './iactions.js';
@@ -231,7 +239,7 @@ async function throw_obj(obj, shotlimit) {
         if (obj.oclass === COIN_CLASS && obj !== g.uquiver) {
             /* throw_gold will unsplit the stack itself if necessary and may
                have freed the object, so don't route through unsplit_stack */
-            throw new Error('throw_obj(): throw_gold() not ported yet');
+            return await throw_gold(obj);
         }
 
         if (!await canletgo(obj, "throw")) {
@@ -398,6 +406,82 @@ async function throw_obj(obj, shotlimit) {
         /* (void) */ unsplitobj(obj);
     }
     return res;
+}
+
+// C ref: dothrow.c throw_gold()
+async function throw_gold(obj) {
+    const g = game;
+    const u = g.u;
+    let range, odx, ody;
+    let mon;
+
+    if (!u.dx && !u.dy && !u.dz) {
+        await You("cannot throw gold at yourself.");
+        /* If we tried to throw part of a stack, force it to merge back
+           together (same as in throw_obj).  Essential for gold. */
+        if (obj.o_id === g.context.objsplit?.parent_oid
+            || obj.o_id === g.context.objsplit?.child_oid)
+            /* (void) */ unsplitobj(obj);
+        return ECMD_CANCEL;
+    }
+    freeinv(obj);
+    if (u.uswallow) {
+        let swallower = mon_nam(u.ustuck);
+
+        if (digests_tg(u.ustuck.data))
+            swallower = s_suffix(swallower) + " entrails";
+        await pline_The(`gold disappears into ${swallower}.`);
+        add_to_minv(u.ustuck, obj);
+        return ECMD_TIME;
+    }
+
+    if (u.dz) {
+        if (u.dz < 0 && !Is_airlevel(u.uz) && !Underwater()
+            && !Is_waterlevel_tg(u.uz))
+            throw new Error('throw_gold(): gold thrown at the ceiling not ported yet');
+        g.bhitpos = { x: u.ux, y: u.uy };
+    } else {
+        /* consistent with range for normal objects */
+        range = Math.trunc(acurrstr() / 2 - obj.owt / 40);
+
+        /* see if the gold has a place to move into */
+        odx = u.ux + u.dx;
+        ody = u.uy + u.dy;
+        if (!isok(odx, ody)
+            || !ZAP_POS(g.level.at(odx, ody).typ) || closed_door(odx, ody)) {
+            g.bhitpos = { x: u.ux, y: u.uy };
+        } else {
+            const pobj = { obj };
+            mon = await bhit(u.dx, u.dy, range, THROWN_WEAPON,
+                             null, null, pobj);
+            obj = pobj.obj;
+            if (!obj)
+                return ECMD_TIME; /* object is gone */
+            if (mon) {
+                if (await ghitm(mon, obj)) /* was it caught? */
+                    return ECMD_TIME;
+            } else {
+                if (await ship_object(obj, g.bhitpos.x, g.bhitpos.y, false))
+                    return ECMD_TIME;
+            }
+        }
+    }
+
+    if (await flooreffects(obj, g.bhitpos.x, g.bhitpos.y, "fall"))
+        return ECMD_TIME;
+    if (u.dz > 0)
+        await pline_The(`gold hits the ${surface(g.bhitpos.x, g.bhitpos.y)}.`);
+    place_object(obj, g.bhitpos.x, g.bhitpos.y);
+    if (u.ushops && u.ushops.length)
+        await sellobj(obj, g.bhitpos.x, g.bhitpos.y);
+    stackobj(obj);
+    newsym(g.bhitpos.x, g.bhitpos.y);
+    return ECMD_TIME;
+}
+
+/* C ref: mondata.h digests() */
+function digests_tg(ptr) {
+    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
 }
 
 // C ref: dothrow.c throwing_weapon()
