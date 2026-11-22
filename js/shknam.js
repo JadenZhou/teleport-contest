@@ -505,6 +505,28 @@ function stock_room_goodpos(sroom, rmno, sh, sx, sy) {
 
 // C ref: shknam.c veggy_item()
 /* is 'obj' (or, if obj is null, 'otyp') vegetarian food? */
+// C ref: shknam.c saleable()
+/* does shkp's shop stock this kind of item? */
+export function saleable(shkp, obj) {
+    const shp_indx = shkp.mextra.eshk.shoptype - SHOPBASE;
+    const shp = shtypes[shp_indx];
+
+    if (shp.symb === RANDOM_CLASS)
+        return true;
+    for (let i = 0; i < shtypes[0].iprobs.length && shp.iprobs[i].iprob; i++) {
+        /* pseudo-class needs special handling */
+        if (shp.iprobs[i].itype === VEGETARIAN_CLASS) {
+            if (veggy_item(obj, 0))
+                return true;
+        } else if ((shp.iprobs[i].itype < 0)
+                       ? shp.iprobs[i].itype === -obj.otyp
+                       : shp.iprobs[i].itype === obj.oclass)
+            return true;
+    }
+    /* not found */
+    return false;
+}
+
 export function veggy_item(obj, otyp /* used iff obj is null */) {
     let corpsenm;
     let oclass;

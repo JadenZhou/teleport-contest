@@ -3474,6 +3474,52 @@ export function doname(obj) {
     return doname_base(obj, 0);
 }
 
+// C ref: objnam.c paydoname()
+/* doname() for itemized buying of 'obj' from a shop */
+export function paydoname(obj) {
+    const and_contents = " and its contents";
+    let p;
+    const save_cknown = obj.cknown;
+    const iflags = game.iflags || (game.iflags = {});
+    const save_wizweight = iflags.wizweight;
+    const has_contents = !!(obj.cobj && obj.cobj.length); /* Has_contents() */
+
+    if (has_contents)
+        obj.cknown = 0;
+    /* avoid showing item weights to unclutter billing's pay-menu a bit */
+    iflags.wizweight = false;
+    /* suppress invent-style price; caller will add billing-style price */
+    iflags.suppress_price = (iflags.suppress_price || 0) + 1;
+    p = doname_base(obj, 0);
+    iflags.suppress_price--;
+    iflags.wizweight = save_wizweight;
+
+    if (has_contents) {
+        /* buy_container() sets no_charge for a container that has just
+           been purchased so that when paydoname() is called by
+           shk_names_obj(), we'll provide "a/an <container>" instead of
+           "your <container>" */
+        if (!obj.no_charge) {
+            if (p.startsWith("a "))
+                p = p.slice(2);
+            else if (p.startsWith("an "))
+                p = p.slice(3);
+            p = (obj.unpaid ? "an unpaid " : "your ") + p; /* strprepend() */
+        }
+
+        if (!obj.cknown) {
+            if (obj.unpaid) {
+                if (p.length + and_contents.length < 256 /* BUFSZ */ - 4 /* PREFIX */)
+                    p += and_contents;
+            } else {
+                p = "the contents of " + p;
+            }
+        }
+    }
+    obj.cknown = save_cknown;
+    return p;
+}
+
 // C ref: objnam.c doname_with_price()
 /* Name of object including price. */
 export function doname_with_price(obj) {
