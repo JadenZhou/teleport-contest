@@ -1186,7 +1186,7 @@ export async function dropz(obj, with_impact) {
             return;
         place_object(obj, game.u.ux, game.u.uy);
         if (with_impact)
-            container_impact_dmg(obj, game.u.ux, game.u.uy);
+            await container_impact_dmg(obj, game.u.ux, game.u.uy);
         impact_disturbs_zombies(obj, with_impact);
         if (obj === game.uball)
             await drop_ball(game.u.ux, game.u.uy);

@@ -24,8 +24,7 @@ import { isok, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, IS_THRONE,
          RIGHT_SIDE, LEFT_SIDE, BOTH_SIDES, Is_airlevel, Is_waterlevel } from './const.js';
 import { mons, MZ_SMALL, S_LIZARD, PM_SAMURAI, PM_MONK, PM_SASQUATCH, M1_NOLIMBS, M1_SLITHY,
          M2_GIANT } from './monsters.js';
-import { BOULDER, KICKING_BOOTS, BAG_OF_HOLDING, BAG_OF_TRICKS } from './objects.js';
-import { Is_container } from './mkobj.js';
+import { BOULDER, KICKING_BOOTS } from './objects.js';
 import { m_at, sobj_at, is_pool } from './makemon.js';
 import { near_capacity, in_rooms } from './hack.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
@@ -104,20 +103,6 @@ export async function legs_in_no_shape(for_what, /* jumping, kicking, riding */
                             : (wl === RIGHT_SIDE) ? "right " : ""}${bp} ${
             (wl === BOTH_SIDES) ? "are" : "is"} in no shape for ${for_what}.`);
     }
-}
-
-// C ref: dokick.c container_impact_dmg()
-/* container is kicked, dropped, thrown or otherwise impacted by player.
- * Assumes container is on floor.  Checks contents for possible damage. */
-export function container_impact_dmg(obj,
-                                     x, /* coordinates where object was */
-                                     y) /* before the impact, not after */ {
-    /* only consider normal containers */
-    if (!Is_container(obj) || !(obj.cobj && obj.cobj.length) /* Has_contents */
-        || obj.otyp === BAG_OF_HOLDING || obj.otyp === BAG_OF_TRICKS) /* Is_mbag */
-        return;
-
-    throw new Error('container_impact_dmg(): container contents not ported yet');
 }
 
 // C ref: dokick.c kickstr()

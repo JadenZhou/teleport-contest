@@ -2319,7 +2319,7 @@ async function out_container(obj) {
         obj.owt = weight(obj);
     }
 
-    if (obj.oartifact && !touch_artifact(obj, game.youmonst))
+    if (obj.oartifact && !(await touch_artifact(obj, game.youmonst)))
         return 0;
 
     if (fatal_corpse_mistake(obj, false))
