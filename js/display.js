@@ -1985,8 +1985,29 @@ export function feel_location(x, y) {
 
         _map_location(x, y, true);
 
-        if (game.uball || game.uchain) /* Punished */
-            throw new Error('feel_location(): ball and chain (bc_felt) not ported yet');
+        if (game.uball) { /* Punished */
+            /*
+             * A ball or chain is only felt if it is first on the object
+             * location list.  Otherwise, we need to clear the felt bit ---
+             * something has been dropped on the ball/chain.  If the bit is
+             * not cleared, then when the ball/chain is moved it will drop
+             * the wrong glyph.
+             */
+            const uchain = game.uchain, uball = game.uball;
+            if (uchain && uchain.where === 'OBJ_FLOOR'
+                && uchain.ox === x && uchain.oy === y
+                && vobj_at(x, y) === uchain)
+                u.bc_felt |= 0x02; /* BC_CHAIN */
+            else
+                u.bc_felt &= ~0x02; /* do not feel the chain */
+
+            if (uball && uball.where === 'OBJ_FLOOR'
+                && uball.ox === x && uball.oy === y
+                && vobj_at(x, y) === uball)
+                u.bc_felt |= 0x01; /* BC_BALL */
+            else
+                u.bc_felt &= ~0x01; /* do not feel the ball */
+        }
 
         /* Floor spaces are dark if unlit.  Corridors are dark if unlit.
            (JS remembers no S_darkroom glyphs; see newsym()) */
