@@ -22,6 +22,10 @@ import { midnight, night } from './calendar.js';
 import { new_were } from './were.js';
 import { In_hell } from './dungeon.js';
 import { PROT_FROM_SHAPE_CHANGERS } from './const.js';
+import { ART_STORMBRINGER, ART_VORPAL_BLADE } from './artilist.js';
+import { resists_cold } from './mondata.js';
+import { CORPSE } from './objects.js';
+import { IS_WATERWALL, isok } from './const.js';
 import * as M from './monsters.js';
 import { mons, AT_NONE, AT_CLAW, AT_KICK, AT_BITE, AT_STNG, AT_TUCH,
          AT_BUTT, AT_TENT, AT_HUGS, AT_GAZE, AT_EXPL, AT_BOOM, AT_ENGL,
@@ -372,8 +376,57 @@ async function wildmiss(mtmp, mattk) {
     /* no feedback if hero doesn't see the monster's spot */
     if (!cansee(mtmp.mx, mtmp.my))
         return;
-    void mattk;
-    throw new Error('wildmiss(): wild miss messages not ported yet');
+    /* maybe it's attacking an image around the corner? */
+
+    const compat = ((mattk.adtyp === AD_SEDU || mattk.adtyp === AD_SSEX)
+                    ? could_seduce(mtmp, game.youmonst, mattk) : 0);
+    const Monst_name = Monnam(mtmp);
+
+    /* set_msg_xy(mtmp->mx, mtmp->my): message positioning only */
+    if (unotseen) { /* !mtmp->cansee || (Invis && !perceives(mtmp->data)) */
+        const swings = (mattk.aatyp === AT_BITE) ? "snaps"
+                       : (mattk.aatyp === AT_KICK) ? "kicks"
+                         : (mattk.aatyp === AT_STNG
+                            || mattk.aatyp === AT_BUTT
+                            || nolimbs(mtmp.data)) ? "lunges"
+                           : "swings";
+
+        if (compat) {
+            await pline(`${Monst_name} tries to touch you and misses!`);
+        } else {
+            switch (rn2(3)) {
+            case 0:
+                await pline(`${Monst_name} ${swings} wildly and misses!`);
+                break;
+            case 1:
+                await pline(`${Monst_name} attacks a spot beside you.`);
+                break;
+            case 2:
+                await pline(`${Monst_name} strikes at ${
+                    (isok(mtmp.mux, mtmp.muy)
+                     && IS_WATERWALL(game.level.at(mtmp.mux, mtmp.muy).typ)) /* is_waterwall() */
+                        ? "empty water"
+                        : "thin air"}!`);
+                break;
+            default:
+                await pline(`${Monst_name} ${swings} wildly!`);
+                break;
+            }
+        }
+    } else if (unotthere) { /* Displaced */
+        /* give 'displaced' message even if hero is Blind */
+        if (compat)
+            await pline(`${Monst_name} smiles ${(compat === 2) ? "engagingly" : "seductively"} at your ${Invis() ? "invisible " : ""}displaced image...`);
+        else
+            await pline(`${Monst_name} strikes at your ${Invis() ? "invisible " : ""}displaced image and misses you!`);
+    } else if (usubmerged) { /* Underwater */
+        /* monsters may miss especially on water level where
+           bubbles shake the player here and there */
+        if (compat)
+            await pline(`${Monst_name} reaches towards your distorted image.`);
+        else
+            await pline(`${Monst_name} is fooled by water reflections and misses!`);
+    }
 }
 
 // C ref: mhitu.c getmattk() -- with the hero as defender
@@ -381,6 +434,7 @@ async function wildmiss(mtmp, mattk) {
 export function getmattk(magr, mdef, indx, prev_result) {
     const mptr = magr.data;
     let attk = mptr.mattk[indx];
+    const weap = (magr === game.youmonst) ? game.uwep : (magr.mw || null); /* MON_WEP() */
     const udefend = (mdef === game.youmonst);
 
     /* honor SEDUCE=0: SYSOPT_SEDUCE is on in the recorded games */
@@ -417,11 +471,28 @@ export function getmattk(magr, mdef, indx, prev_result) {
                && attk.aatyp === AT_WEAP && attk.adtyp !== AD_PHYS
                && !(mptr.mattk[1].aatyp === AT_WEAP
                     && mptr.mattk[1].adtyp === AD_PHYS)
-               && (magr.mcan || magr.mw)) {
-        throw new Error('getmattk(): non-physical weapon attack substitution not ported yet');
+               && (magr.mcan
+                   || (weap && ((weap.otyp === CORPSE
+                                 && touch_petrifies(mons[weap.corpsenm]))
+                                || weap.oartifact === ART_STORMBRINGER /* is_art() */
+                                || weap.oartifact === ART_VORPAL_BLADE)))) {
+        /* barrow wight, Nazgul, erinys have weapon attack for non-physical
+           damage; force physical damage if attacker has been cancelled or
+           if weapon is sufficiently interesting */
+        attk = { ...attk, adtyp: AD_PHYS };
     } else if (indx === 0 && attk.aatyp === AT_TUCH && attk.adtyp === AD_COLD
-               && (udefend ? Cold_resistance() : true)) {
-        throw new Error('getmattk(): lich cold touch substitution not ported yet');
+               && (udefend ? Cold_resistance()
+                           : resists_cold(mdef))
+               /* don't substitute if target is immune to normal damage */
+               && mdef.data !== mons[M.PM_SHADE]) {
+        /* liches have a touch attack for cold damage and also a spell
+           attack; change the touch damage from cold to physical if
+           target will resist */
+        attk = { ...attk, adtyp: AD_PHYS };
+        /* lessen new physical damage compared to old cold damage */
+        attk.damn = Math.trunc((attk.damn + 1) / 2);
+        if (attk.damd === 10)
+            attk.damd = 6;
     }
 
     /* elementals on their home plane do double damage:

@@ -847,7 +847,7 @@ async function mhitm_ad_drli(magr, mattk, mdef, mhm) {
 }
 
 // C ref: mondata.c on_fire()
-function on_fire(mptr, mattk) {
+export function on_fire(mptr, mattk) {
     let what;
 
     switch (monsndx(mptr)) {
