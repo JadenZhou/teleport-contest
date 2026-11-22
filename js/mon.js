@@ -88,7 +88,7 @@ import { has_ceiling } from './insight.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, ROOM } from './const.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
-import { relobj, thiefdead } from './steal.js';
+import { relobj, thiefdead, mdrop_special_objs, discard_minvent } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear, monflee } from './monmove.js';
 import { tele_restrict, rloc } from './teleport.js';
@@ -224,19 +224,22 @@ async function m_calcdistress(mtmp) {
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 
-// C ref: mon.c mongone() -- the parts reached so far (level creation):
-// unstuck(), mdrop_special_objs() and the vault guard case are not ported.
+// C ref: mon.c mongone() -- the vault guard case is not ported; unstuck()
+// is checked in mon_leaving_level().
 /* remove a monster from the game without leaving a corpse */
 export function mongone(mdef) {
     mdef.mhp = 0; /* can skip some inventory bookkeeping */
 
+    /* dead vault guard is actually kept at coordinate <0,0> until
+       his temporary corridor to/from the vault has been removed */
     if (mdef.isgd)
         throw new Error('mongone: vault guards are not ported yet');
+    /* stuck to you? release: unstuck(mdef) -- see mon_leaving_level() */
+    /* drop special items like the Amulet so that a dismissed Kop or nurse
+       can't remove them from the game */
+    mdrop_special_objs(mdef);
     /* release rest of monster's inventory--it is removed from game */
-    /* discard_minvent(mdef, FALSE): obfree() each; nothing to free in JS */
-    for (const o of mdef.minvent || [])
-        o.where = 'OBJ_DELETED';
-    mdef.minvent = null;
+    discard_minvent(mdef, false);
     m_detach(mdef, mdef.data, false);
 }
 
@@ -373,7 +376,7 @@ function m_detach(mtmp, mptr, due_to_death) {
         if (game.stealmid && mtmp.m_id === game.stealmid)
             thiefdead();
         if (mtmp.isshk)
-            throw new Error('m_detach(): shkgone() not ported yet');
+            shkgone(mtmp);
         if (mtmp.wormno)
             wormgone(mtmp);
         /* In_endgame(&u.uz): MON_ENDGAME_FREE -- the endgame isn't reached */
@@ -3177,3 +3180,4 @@ import { STOMACH as STOMACH_MN, KILLED_BY_AN as KILLED_BY_AN_MN } from './const.
 import { killer as killer_mn } from './topten.js';
 import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
 import { mon_explodes } from './explode.js';
+import { shkgone } from './shk.js';
