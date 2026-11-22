@@ -6,6 +6,15 @@
 // *_dialogue() routines and run_timers() are not ported yet; nothing the
 // JS port does yet starts them (see the comments below).
 
+import { vobj_at } from './display.js';
+import { inv_weight } from './hack.js';
+import { wake_nearby } from './mon.js';
+import { is_ice } from './dig.js';
+import { sobj_at as sobj_at_to } from './makemon.js';
+import { doname, makeplural } from './objnam.js';
+import { FROMOUTSIDE, WT_NOISY_INV, FOOT } from './const.js';
+import { CORPSE, ROCK } from './objects.js';
+import { PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { game } from './gstate.js';
 import * as P from './const.js';
 import { rnd } from './rng.js';
@@ -750,10 +759,33 @@ export async function nh_timeout() {
                 /* stuck_in_wall(), region_danger() feedback */
                 throw new Error(`nh_timeout(): timeout of property ${idx} not ported yet`);
             case SICK:
-            case FUMBLING:
-                /* these cases roll dice (rn2(100) < ACURR(A_CON), rnd(20))
-                   and need done_timeout()/slip_or_trip() */
+                /* rn2(100) < ACURR(A_CON) and done_timeout() */
                 throw new Error(`nh_timeout(): timeout of property ${idx} not ported yet`);
+            case FUMBLING:
+                /* call this only when a move took place.  */
+                /* otherwise handle fumbling msgs locally. */
+                if (u.umoved && !(prop_on(P[LEVITATION]) && !P[LEVITATION].blocked)
+                    && !(prop_on(P[FLYING]) && !P[FLYING].blocked)) {
+                    await slip_or_trip();
+                    nomul(-2);
+                    g.multi_reason = "fumbling";
+                    g.nomovemsg = "";
+                    /* The more you are carrying the more likely you
+                     * are to make noise when you fumble.  Adjustments
+                     * to this number must be thoroughly play tested.
+                     */
+                    if ((inv_weight() > (WT_NOISY_INV * -1))) {
+                        if (!(prop_on(P[DEAF])))
+                            await You("make a lot of noise!");
+                        await wake_nearby(false);
+                    }
+                }
+                /* from outside means slippery ice; don't reset
+                   counter if that's the only fumble reason */
+                upp.intrinsic &= ~FROMOUTSIDE;
+                if (prop_on(upp)) /* Fumbling */
+                    incr_itimeout(FUMBLING, rnd(20));
+                break;
             default:
                 /* the remaining properties have no case in C */
                 break;
@@ -764,6 +796,81 @@ export async function nh_timeout() {
     /* run_timers(): the timer queue isn't ported yet; no timer set by
        level creation (corpse rot, revival, melting ice) comes due within
        the turns the sessions reach so far */
+}
+
+/* C ref: youprop.h property test: intrinsic or extrinsic */
+function prop_on(upp) { return !!(upp.intrinsic || upp.extrinsic); }
+
+// C ref: timeout.c slip_or_trip()
+/* give a fumble message */
+async function slip_or_trip() {
+    const u = game.u;
+    let otmp = vobj_at(u.ux, u.uy), otmp2;
+    let what;
+    const on_foot = !u.usteed;
+    const P = u.uprops;
+    const Hallu = !!((prop_on(P[HALLUC]) && !prop_on(P[HALLUC_RES])));
+
+    if (otmp && on_foot && !u.uinwater && is_pool(u.ux, u.uy))
+        otmp = null;
+
+    if (otmp && on_foot) { /* trip over something in particular */
+        /*
+          If there is only one item, it will have just been named
+          during the move, so refer to it by pronoun; otherwise,
+          if the top item has been or can be seen, refer to it by
+          name; if not, look for rocks to trip over; trip over
+          anonymous "something" if there aren't any rocks.
+        */
+        const Blnd = !!(prop_on(P[BLINDED]) && !P[BLINDED].blocked)
+                     || !!u.ucreamed;
+        what = (game.iflags.last_msg === 'PLNMSG_ONE_ITEM_HERE')
+                ? ((otmp.quan === 1) ? "it"
+                      : Hallu ? "they" : "them")
+                : (otmp.dknown || !Blnd)
+                      ? doname(otmp)
+                      : ((otmp2 = sobj_at_to(ROCK, u.ux, u.uy)) == null
+                             ? "something"
+                             : (otmp2.quan === 1 ? "a rock" : "some rocks"));
+        if (Hallu) {
+            throw new Error('slip_or_trip(): hallucinatory "Egads!" message not ported yet');
+        } else {
+            await You(`trip over ${what}.`);
+        }
+        if (!game.uarmf && otmp.otyp === CORPSE
+            && (otmp.corpsenm === PM_COCKATRICE
+                || otmp.corpsenm === PM_CHICKATRICE) /* touch_petrifies() */
+            && !prop_on(P[STONE_RES]))
+            throw new Error('slip_or_trip(): instapetrify() not ported yet');
+    } else if ((P[FUMBLING].intrinsic & FROMOUTSIDE)
+               || (is_ice(u.ux, u.uy) && !rn2(3))) {
+        /* slipping on ice: message, dismount_steed() or hurtle() */
+        throw new Error('slip_or_trip(): slipping on ice not ported yet');
+    } else {
+        if (on_foot) {
+            switch (rn2(4)) {
+            case 1:
+                await You(`trip over your own ${
+                    Hallu ? "elbow" : makeplural(body_part(FOOT))}.`);
+                break;
+            case 2:
+                await You(`slip ${
+                    Hallu ? "on a banana peel" : "and nearly fall"}.`);
+                break;
+            case 3:
+                await You("flounder.");
+                break;
+            default:
+                await You("stumble.");
+                break;
+            }
+
+        /* mounted; saddle should never end up being Null here;
+           don't fall off when it happens to be cursed */
+        } else {
+            throw new Error('slip_or_trip(): mounted fumbling (dismount_steed()) not ported yet');
+        }
+    }
 }
 
 // C ref: timeout.c fall_asleep()
