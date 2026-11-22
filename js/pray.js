@@ -42,6 +42,25 @@ import { killed } from './mon.js';
 import { monflee } from './monmove.js';
 import { resist } from './zap.js';
 import { aggravate } from './potion.js';
+import { GLIB, PLNMSG_OBJ_GLOWS, TELEDS_NO_FLAGS, STOMACH, SICK_ALL, FIXED_ABIL, EYE } from "./const.js";
+import { AMULET_OF_STRANGULATION } from './objects.js';
+import { M1_NOEYES, PM_CYCLOPS, PM_FLOATING_EYE, mons } from './monsters.js';
+import { Yobjnam2, vtense, makeplural } from './objnam.js';
+import { hcolor } from './do_name.js';
+import { body_part } from './insight.js';
+import { uncurse } from './mkobj.js';
+import { make_stoned, make_slimed, make_sick, make_blinded, make_deaf, make_stunned,
+         make_confused, make_hallucinated, set_itimeout } from './potion.js';
+import { Your, You, You_feel, Blind } from './display.js';
+import { useup } from './invent.js';
+import { safe_teleds } from './teleport.js';
+import { reset_utrap, heal_legs } from './trap.js';
+import { init_uhunger } from './eat.js';
+import { region_safety } from './region.js';
+import { rnd, d } from './rng.js';
+import { setuhpmax } from './attrib.js';
+import { unpunish } from './read.js';
+import { encumber_msg } from './pickup.js';
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
@@ -615,6 +634,225 @@ async function angrygods(resp_god) {
         u.ublesscnt = new_ublesscnt;
 }
 
+/* C ref: youprop.h Blinded, Deaf; mondata.h eyecount() */
+function Blinded() {
+    return !!(HProp(BLINDED) && !game.u.uprops[BLINDED].blocked);
+}
+function Deaf() { return !!(HProp(DEAF) || EProp(DEAF) || game.u.uroleplay?.deaf); }
+function eyecount(ptr) {
+    return !(ptr.mflags1 & M1_NOEYES) ? ((ptr === mons[PM_CYCLOPS]
+                                         || ptr === mons[PM_FLOATING_EYE]) ? 1 : 2)
+                                      : 0;
+}
+
+// C ref: pray.c fix_curse_trouble()
+async function fix_curse_trouble(otmp, what) {
+    const g = game;
+    if (!otmp) {
+        console.error('impossible: fix_curse_trouble: nothing to uncurse.');
+        return;
+    }
+    if (otmp === g.uarmg && uhave(GLIB))
+        throw new Error('fix_curse_trouble(): make_glib() not ported yet');
+    if (!Blind() || (otmp === g.ublindf
+                     && EProp(BLINDED) && !Blinded())) { /* Blindfolded_only */
+        await pline(`${what ? what : Yobjnam2(otmp, "softly glow")} ${hcolor("amber") /* NH_AMBER */}.`);
+        g.iflags.last_msg = PLNMSG_OBJ_GLOWS;
+        otmp.bknown = !Hallucination(); /* ok to skip set_bknown() */
+    }
+    uncurse(otmp);
+    /* update_inventory(): no perm_invent */
+}
+
+// C ref: pray.c fix_worst_trouble()
+async function fix_worst_trouble(trouble) {
+    const g = game;
+    const u = g.u;
+    let i, maxhp;
+    let otmp = null;
+    let what = null;
+    const leftglow = "Your left ring softly glows",
+          rightglow = "Your right ring softly glows";
+
+    switch (trouble) {
+    case TROUBLE_STONED:
+        await make_stoned(0, "You feel more limber.", 0, null);
+        break;
+    case TROUBLE_SLIMED:
+        await make_slimed(0, "The slime disappears.");
+        break;
+    case TROUBLE_STRANGLED:
+        if (g.uamul && g.uamul.otyp === AMULET_OF_STRANGULATION) {
+            await Your("amulet vanishes!");
+            useup(g.uamul);
+        }
+        await You("can breathe again.");
+        u.uprops[STRANGLED].intrinsic = 0; /* Strangled = 0 */
+        g.disp_botl = true;
+        break;
+    case TROUBLE_LAVA:
+        /* teleport should always succeed, but if not, just untrap them */
+        if (!(await safe_teleds(TELEDS_NO_FLAGS)))
+            await reset_utrap(true);
+        throw new Error('fix_worst_trouble(): rescued_from_terrain() not ported yet');
+    case TROUBLE_STARVING:
+        /* temporarily lost strength recovery now handled by init_uhunger() */
+        /*FALLTHRU*/
+    case TROUBLE_HUNGRY:
+        await Your(`${body_part(STOMACH)} feels content.`);
+        init_uhunger();
+        g.disp_botl = true;
+        break;
+    case TROUBLE_SICK:
+        await You_feel("better.");
+        await make_sick(0, null, false, SICK_ALL);
+        break;
+    case TROUBLE_REGION:
+        /* stinking cloud, with hero vulnerable to HP loss */
+        await region_safety();
+        break;
+    case TROUBLE_HIT:
+        /* "fix all troubles" will keep trying if hero has
+           5 or less hit points, so make sure they're always
+           boosted to be more than that */
+        await You_feel("much better.");
+        if (Upolyd()) {
+            maxhp = u.mhmax + rnd(5);
+            setuhpmax(Math.max(maxhp, 5 + 1), false); /* acts as setmhmax() */
+            u.mh = u.mhmax;
+        }
+        maxhp = u.uhpmax;
+        if (maxhp < u.ulevel * 5 + 11)
+            maxhp += rnd(5);
+        /* True: update u.uhpmax even if currently poly'd */
+        setuhpmax(Math.max(maxhp, 5 + 1), true);
+        u.uhp = u.uhpmax; /* setuhpmax() will do this when u.uhp is higher
+                           * than u.uhpmax; prayer also does this if lower */
+        g.disp_botl = true;
+        break;
+    case TROUBLE_COLLAPSING:
+        /* override Fixed_abil; uncurse that if feasible */
+        await You_feel(`${(AMAX(A_STR) - ABASE(A_STR) > 6) ? "much " : ""}stronger.`);
+        u.acurr.a[A_STR] = u.amax.a[A_STR]; /* ABASE(A_STR) = AMAX(A_STR) */
+        g.disp_botl = true;
+        if (uhave(FIXED_ABIL))
+            throw new Error('fix_worst_trouble(): stuck_ring() not ported yet');
+        break;
+    case TROUBLE_STUCK_IN_WALL:
+        /* no control, but works on no-teleport levels */
+        if (await safe_teleds(TELEDS_NO_FLAGS)) {
+            await Your("surroundings change.");
+        } else {
+            /* safe_teleds() couldn't find a safe place; perhaps the
+               level is completely full.  As a last resort, confer
+               intrinsic wall/rock-phazing.  Hero might get stuck
+               again fairly soon.... */
+            set_itimeout(PASSES_WALLS, d(4, 4) + 4); /* 8..20 */
+            /* how else could you move between packed rocks or among
+               lattice forming "solid" rock? */
+            await You_feel("much slimmer.");
+        }
+        break;
+    case TROUBLE_CURSED_LEVITATION:
+        if (Cursed_obj(g.uarmf, LEVITATION_BOOTS)) {
+            otmp = g.uarmf;
+        } else {
+            throw new Error('fix_worst_trouble(): stuck_ring() not ported yet');
+        }
+        await fix_curse_trouble(otmp, what);
+        break;
+    case TROUBLE_UNUSEABLE_HANDS:
+        if (welded(g.uwep)) {
+            otmp = g.uwep;
+            await fix_curse_trouble(otmp, what);
+            break;
+        }
+        if (Upolyd() && nohands(g.youmonst.data))
+            throw new Error('fix_worst_trouble(): rehumanize()/unchanger() not ported yet');
+        if (nohands(g.youmonst.data) || !freehand())
+            console.error('impossible: fix_worst_trouble: couldn\'t cure hands.');
+        break;
+    case TROUBLE_CURSED_BLINDFOLD:
+        otmp = g.ublindf;
+        await fix_curse_trouble(otmp, what);
+        break;
+    case TROUBLE_LYCANTHROPE:
+        throw new Error('fix_worst_trouble(): you_unwere() not ported yet');
+    case TROUBLE_PUNISHED:
+        await Your("chain disappears.");
+        if (u.utrap && u.utraptype === TT_BURIEDBALL)
+            throw new Error('fix_worst_trouble(): buried_ball_to_freedom() not ported yet');
+        else
+            await unpunish();
+        break;
+    case TROUBLE_FUMBLING:
+        if (Cursed_obj(g.uarmg, GAUNTLETS_OF_FUMBLING))
+            otmp = g.uarmg;
+        else if (Cursed_obj(g.uarmf, FUMBLE_BOOTS))
+            otmp = g.uarmf;
+        await fix_curse_trouble(otmp, what);
+        break;
+    case TROUBLE_CURSED_ITEMS:
+        otmp = worst_cursed_item();
+        if (otmp === g.uright)
+            what = rightglow;
+        else if (otmp === g.uleft)
+            what = leftglow;
+        await fix_curse_trouble(otmp, what);
+        break;
+    case TROUBLE_POISONED:
+        /* override Fixed_abil; ignore items which confer that */
+        if (Hallucination())
+            await pline("There's a tiger in your tank.");
+        else
+            await You_feel("in good health again.");
+        for (i = 0; i < A_MAX; i++) {
+            if (ABASE(i) < AMAX(i)) {
+                u.acurr.a[i] = u.amax.a[i]; /* ABASE(i) = AMAX(i) */
+                g.disp_botl = true;
+            }
+        }
+        await encumber_msg();
+        break;
+    case TROUBLE_BLIND: { /* handles deafness as well as blindness */
+        let msgbuf = "";
+        let eyes = body_part(EYE);
+        const cure_deaf = (HProp(DEAF) & TIMEOUT) ? true : false;
+
+        if (Blinded()) {
+            if (eyecount(g.youmonst.data) !== 1)
+                eyes = makeplural(eyes);
+            msgbuf = `Your ${eyes} ${vtense(eyes, "feel")} better`;
+            u.ucreamed = 0;
+            await make_blinded(0, false);
+        }
+        if (cure_deaf) {
+            await make_deaf(0, false);
+            if (!Deaf())
+                msgbuf += `${!msgbuf ? "You" : " and you"} can hear again`;
+        }
+        if (msgbuf)
+            await pline(`${msgbuf}.`);
+        break;
+    }
+    case TROUBLE_WOUNDED_LEGS:
+        await heal_legs(0);
+        break;
+    case TROUBLE_STUNNED:
+        await make_stunned(0, true);
+        break;
+    case TROUBLE_CONFUSED:
+        await make_confused(0, true);
+        break;
+    case TROUBLE_HALLUCINATION:
+        await pline("Looks like you are back in Kansas.");
+        await make_hallucinated(0, false, 0);
+        break;
+    case TROUBLE_SADDLE:
+        throw new Error('fix_worst_trouble(): cursed saddle not ported yet');
+    }
+}
+
 // C ref: pray.c pleased()
 async function pleased(g_align) {
     const u = game.u;
@@ -642,6 +880,7 @@ async function pleased(g_align) {
             pat_on_head = 1;
     } else {
         let action;
+        let tryct = 0;
         const prayer_luck = Math.max(Luck(), -1); /* => (prayer_luck + 2 > 0) */
         action = rn1(prayer_luck + (on_altar() ? 3 + (on_shrine() ? 1 : 0) : 2), 1);
         if (!on_altar())
@@ -651,17 +890,27 @@ async function pleased(g_align) {
 
         switch (Math.min(action, 5)) {
         case 5:
+            pat_on_head = 1;
+            /*FALLTHRU*/
         case 4:
-        case 3:
-        case 2:
-            if (trouble)
-                throw new Error('pleased(): fix_worst_trouble() not ported yet');
-            if (Math.min(action, 5) === 5)
-                pat_on_head = 1;
+            do
+                await fix_worst_trouble(trouble);
+            while ((trouble = in_trouble()) !== 0);
             break;
+
+        case 3:
+            /* up to 10 troubles */
+            await fix_worst_trouble(trouble);
+            /*FALLTHRU*/
+        case 2:
+            /* up to 9 troubles */
+            while ((trouble = in_trouble()) > 0 && (++tryct < 10))
+                await fix_worst_trouble(trouble);
+            break;
+
         case 1:
             if (trouble > 0)
-                throw new Error('pleased(): fix_worst_trouble() not ported yet');
+                await fix_worst_trouble(trouble);
             break;
         case 0:
             break; /* your god blows you off, too bad */

@@ -18,7 +18,7 @@ import { pline, You, Your, pline_The, canseemon, canspotmon,
          sensemon } from './display.js';
 import { dist2, s_suffix } from './hacklib.js';
 import { in_rooms, check_special_room } from './hack.js';
-import { on_level } from './dungeon.js';
+import { on_level, assign_level } from './dungeon.js';
 import { m_at, sobj_at } from './makemon.js';
 import { carrying } from './invent.js';
 import { mattacku } from './mhitu.js';
@@ -31,6 +31,7 @@ import { y_monnam, pronoun_gender, PRONOUN_NO_IT,
          PRONOUN_HALLU } from './do_name.js';
 import { adjalign, ACURR } from './attrib.js';
 import { record_achievement } from './do.js';
+import { ACH_SHOP } from './const.js';
 import { discover_object } from './o_init.js';
 import { t_at } from './trap.js';
 import { passes_walls } from './mondata.js';
@@ -348,7 +349,7 @@ export async function u_entered_shop(enterstring) {
         u.ushops = '';
         return;
     }
-    record_achievement('ACH_SHOP');
+    record_achievement(ACH_SHOP);
 
     eshkp.bill_p = eshkp.bill || (eshkp.bill = []); /* &(eshkp->bill[0]) */
 
@@ -517,6 +518,31 @@ export async function noisy_shop(sroom) {
 
     if (mtmp && inhishop(mtmp)) {
         await wake_nearto(mtmp.mx, mtmp.my, 11 * 11);
+    }
+}
+
+// C ref: shk.c set_residency()
+export function set_residency(shkp, zero_out) {
+    if (on_level(shkp.mextra.eshk.shoplevel, game.u.uz))
+        game.level.rooms[shkp.mextra.eshk.shoproom - ROOMOFFSET].resident =
+            (zero_out) ? null : shkp;
+}
+
+// C ref: shk.c restshk()
+/* called in restoring a level */
+export function restshk(shkp, ghostly) {
+    if (game.u.uz.dlevel) {
+        const eshkp = shkp.mextra.eshk;
+
+        if (eshkp.bill_p !== -1000)
+            eshkp.bill_p = eshkp.bill || (eshkp.bill = []); /* &eshkp->bill[0] */
+        /* shoplevel can change as dungeons move around */
+        /* savebones guarantees that non-homed shk's will be gone */
+        if (ghostly) {
+            assign_level(eshkp.shoplevel, game.u.uz);
+            if (ANGRY(shkp) && strncmpi(eshkp.customer, game.plname, PL_NSIZ))
+                pacify_shk(shkp, true);
+        }
     }
 }
 

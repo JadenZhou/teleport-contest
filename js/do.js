@@ -8,13 +8,14 @@
 // ported yet.
 
 import { game } from './gstate.js';
+import { container_impact_dmg } from './dokick.js';
 import { pline, pline_The, docrt, flush_screen, Hallucination,
          Blind } from './display.js';
 import { bones_include_name } from './bones.js';
 import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
 import { olfaction } from './mondata.js';
-import { ACH_HELL } from './const.js';
+import { ACH_HELL, ACH_MINE, ACH_SOKO, ACH_BGRM } from './const.js';
 import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
     In_hell, builds_up, at_dgn_entrance, level_difficulty,
@@ -67,7 +68,7 @@ import { rn2, rnd } from './rng.js';
 import { You_cant, Your } from './display.js';
 import { BLINDED, TIMEOUT, FACE } from './const.js';
 import { incr_itimeout, set_itimeout, make_blinded } from './potion.js';
-import { body_part } from './insight.js';
+import { body_part, record_achievement } from './insight.js';
 import { set_occupation } from './allmain.js';
 import { ECMD_OK, LADDER, UNENCUMBERED, SLT_ENCUMBER, TOOKPLUNGE, KILLED_BY,
          TT_PIT, Is_stronghold, RLOC_NOMSG, LEVITATION, FLYING,
@@ -762,17 +763,17 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         throw new Error('goto_level(): Fort Ludios arrival not ported yet');
     } else if (u.uz.dnum === topo.d_mines_dnum) { /* In_mines() */
         if (newdungeon)
-            record_achievement('ACH_MINE');
+            record_achievement(ACH_MINE);
     } else if (u.uz.dnum === topo.d_sokoban_dnum) { /* In_sokoban() */
         if (newdungeon)
-            record_achievement('ACH_SOKO');
+            record_achievement(ACH_SOKO);
     } else {
         if (new_ && topo.d_rogue_level?.dlevel
             && on_level(u.uz, topo.d_rogue_level)) { /* Is_rogue_level() */
             throw new Error('goto_level(): the rogue level not ported yet');
         } else if (new_ && topo.d_bigroom_level?.dlevel
                    && on_level(u.uz, topo.d_bigroom_level)) { /* Is_bigroom() */
-            record_achievement('ACH_BGRM');
+            record_achievement(ACH_BGRM);
         }
         /* main dungeon message from your quest leader */
         if (u.uz0.dnum !== topo.d_quest_dnum && at_dgn_entrance("The Quest")
@@ -868,16 +869,8 @@ async function temperature_change_msg(prev_temperature) {
     }
 }
 
-// C ref: insight.c record_achievement() -- the achievement list is only
-// shown by #achievements and the dumplog, neither ported; C's livelog
-// message isn't shown on the tty
-export function record_achievement(achidx) {
-    const u = game.u;
-    if (!u.uachieved) u.uachieved = [];
-    if (u.uachieved.includes(achidx))
-        return;
-    u.uachieved.push(achidx);
-}
+// C ref: insight.c record_achievement() (ported in insight.js)
+export { record_achievement };
 
 // C ref: do.c flooreffects() -- only the plain case, where nothing
 // happens to the object, is ported; boulders filling pits or pools, lava
@@ -1193,7 +1186,7 @@ export async function dropz(obj, with_impact) {
             return;
         place_object(obj, game.u.ux, game.u.uy);
         if (with_impact)
-            throw new Error('dropz(): container_impact_dmg() not ported yet');
+            await container_impact_dmg(obj, game.u.ux, game.u.uy);
         impact_disturbs_zombies(obj, with_impact);
         if (obj === game.uball)
             await drop_ball(game.u.ux, game.u.uy);

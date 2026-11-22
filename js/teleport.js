@@ -45,7 +45,12 @@ import { MIGR_RANDOM } from './const.js';
 import { within_bounded_area } from './rect.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { flooreffects } from './do.js';
-import { dist2 } from './hacklib.js';
+import { dist2, distmin } from './hacklib.js';
+import { drag_ball, move_bc, placebc, unplacebc } from './ball.js';
+import { fill_pit } from './muse.js';
+import { reset_utrap } from './trap.js';
+import { near_capacity } from './hack.js';
+import { SLT_ENCUMBER, TELEDS_ALLOW_DRAG } from './const.js';
 import { CORPSE, AMULET_OF_YENDOR, BOULDER } from './objects.js';
 import { STRAT_APPEARMSG, RLOC_MSG, RLOC_NONE, NO_TRAP_FLAGS, BLINDED,
          BOLT_LIM } from './const.js';
@@ -64,6 +69,9 @@ import { check_capacity } from './hack.js';
 import { morehungry } from './eat.js';
 import { in_out_region, update_player_regions, update_monster_region } from './region.js';
 import { learnscroll } from './read.js';
+
+/* C ref: youprop.h Punished */
+function Punished() { return !!game.uball; }
 
 /* C ref: mondata.h is_rider() */
 function is_rider(ptr) {
@@ -275,18 +283,49 @@ async function rloc_to_flag(mtmp, x, y, rlocflags) {
 // C ref: teleport.c teleds() -- put the hero at <nux,nuy> on this level
 export async function teleds(nux, nuy, teleds_flags) {
     const u = game.u;
+    let was_swallowed;
+    let ball_active, ball_still_in_range = false,
+        allow_drag = (teleds_flags & TELEDS_ALLOW_DRAG) !== 0;
     const is_teleport = (teleds_flags & TELEDS_TELEPORT) !== 0;
 
     /* vault_occupied(u.urooms) ? findgd() : 0 */
     if (u.urooms && in_rooms_vault(u.urooms))
         throw new Error('teleds(): vault guard not ported yet');
-    if (u.utraptype === TT_BURIEDBALL || game.uball)
-        throw new Error('teleds(): ball and chain not ported yet');
-    /* ball_active = (Punished && uball->where != OBJ_FREE): no ball */
-    /* reset_utrap(FALSE): set_utrap(0, 0) */
-    u.utrap = 0;
-    u.utraptype = 0;
-    const was_swallowed = u.uswallow; /* set_ustuck(Null) clears uswallow */
+
+    if (u.utraptype === TT_BURIEDBALL) {
+        /* unearth it */
+        throw new Error('teleds(): buried_ball_to_punishment() not ported yet');
+    }
+    ball_active = (Punished() && game.uball.where !== 'OBJ_FREE');
+    if (!ball_active
+        || near_capacity() > SLT_ENCUMBER
+        || distmin(u.ux, u.uy, nux, nuy) > 1)
+        allow_drag = false;
+
+    /* If they have to move the ball, then drag if allow_drag is true;
+     * otherwise they are teleporting, so unplacebc().
+     * If they don't have to move the ball, then always "drag" whether or
+     * not allow_drag is true, because we are calling that function, not
+     * to drag, but to move the chain.  *However*, there are some dumb
+     * special cases:
+     *    0                          0
+     *   _X  move east       ----->  X_
+     *    @                           @
+     * These are permissible if teleporting, but not if dragging.  As a
+     * result, drag_ball() needs to know about allow_drag and might end
+     * up dragging the ball anyway.  Also, drag_ball() might find that
+     * dragging the ball is completely impossible (ball in range but there's
+     * rock in the way), in which case it teleports the ball on its own.
+     */
+    if (ball_active) {
+        if (game.uball.where !== 'OBJ_INVENT' /* !carried(uball) */
+            && distmin(nux, nuy, game.uball.ox, game.uball.oy) <= 2)
+            ball_still_in_range = true; /* don't have to move the ball */
+        else if (!allow_drag)
+            unplacebc(); /* have to move the ball */
+    }
+    await reset_utrap(false);
+    was_swallowed = u.uswallow; /* set_ustuck(Null) clears uswallow */
     set_ustuck(null);
     u.ux0 = u.ux;
     u.uy0 = u.uy;
@@ -299,15 +338,28 @@ export async function teleds(nux, nuy, teleds_flags) {
     if (was_swallowed)
         throw new Error('teleds(): leaving an engulfer not ported yet');
 
+    if (ball_active && (ball_still_in_range || allow_drag)) {
+        /* bc_control, ballx, bally, chainx, chainy, cause_delay */
+        const bc = {};
+
+        if (await drag_ball(nux, nuy, bc, allow_drag))
+            move_bc(0, bc.bc_control, bc.ballx, bc.bally, bc.chainx, bc.chainy);
+        else {
+            /* dragging fails if hero is encumbered beyond 'burdened' */
+            /* uball might've been cleared via drag_ball -> spoteffects ->
+               dotrap -> magic trap unpunishment */
+            ball_active = (Punished() && game.uball.where !== 'OBJ_FREE');
+            if (ball_active)
+                unplacebc(); /* to match placebc() below */
+        }
+    }
+
     /* must set u.ux, u.uy after drag_ball(), which may need to know
        the old position if allow_drag is true... */
     u_on_newpos(nux, nuy); /* set u.<x,y>, usteed-><mx,my>; cliparound() */
-    /* fill_pit(u.ux0, u.uy0): a pit/hole with a boulder at the old spot */
-    {
-        const t = t_at(u.ux0, u.uy0);
-        if (t && (is_pit(t.ttyp) || is_hole(t.ttyp)) && sobj_at(BOULDER, u.ux0, u.uy0))
-            throw new Error('teleds(): fill_pit() not ported yet');
-    }
+    await fill_pit(u.ux0, u.uy0);
+    if (ball_active && game.uchain && game.uchain.where === 'OBJ_FREE')
+        await placebc(); /* put back the ball&chain if they were taken off map */
     update_player_regions();
     /*
      *  Make sure the hero disappears from the old location.  This will

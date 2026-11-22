@@ -2294,8 +2294,8 @@ export async function doeat() {
         /* let them eat rings */
         await You_cant("eat something you're wearing.");
         return ECMD_OK;
-    } else if (!(carried(otmp) ? retouch_object(otmp)
-                               : touch_artifact(otmp, game.youmonst))) {
+    } else if (!(carried(otmp) ? await retouch_object(otmp, false)
+                               : await touch_artifact(otmp, game.youmonst))) {
         return ECMD_TIME; /* got blasted so use a turn */
     }
     if (objects[otmp.otyp].oc_material >= IRON

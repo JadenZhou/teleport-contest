@@ -46,6 +46,7 @@ import { canseemon, You } from './display.js';
 import { Monnam } from './do_name.js';
 import { body_part } from './insight.js';
 import { record_achievement } from './do.js';
+import { ACH_TMPL } from './const.js';
 
 // C ref: priest.c ALGN_SINNED, ALGN_DEVOUT
 const ALGN_SINNED = (-4); /* worse than strayed (-1..-3) */
@@ -388,7 +389,7 @@ export async function intemple(roomno) {
 
     if ((priest = findpriest(String.fromCharCode(roomno))) !== null) {
         /* tended */
-        record_achievement('ACH_TMPL');
+        record_achievement(ACH_TMPL);
 
         const epri_p = priest.epri;
         const shrined = has_shrine(priest);
@@ -551,4 +552,13 @@ export function in_your_sanctuary(
         return false;
     return !!(has_shrine(priest) && p_coaligned(priest)
               && priest.mpeaceful);
+}
+
+// C ref: priest.c restpriest()
+/* called in restoring a level */
+export function restpriest(mtmp, ghostly) {
+    if (game.u.uz.dlevel) {
+        if (ghostly)
+            assign_level(mtmp.mextra.epri.shrlevel, game.u.uz);
+    }
 }

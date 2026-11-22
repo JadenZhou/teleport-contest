@@ -56,6 +56,7 @@ import { u_on_newpos } from './mklev.js';
 import { room_discovered } from './dungeon.js';
 import { inside_room } from './sp_lev.js';
 import { record_achievement } from './do.js';
+import { ACH_TOWN } from './const.js';
 import { doopen_indir } from './lock.js';
 import { do_attack } from './uhitm.js';
 import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
@@ -1012,7 +1013,7 @@ export async function check_special_room(newlev) {
     if (game.level.flags?.has_town && !game.context?.achieveo?.minetn_reached
         && u.uz.dnum === game.dungeon_topology.d_mines_dnum /* In_mines() */
         && in_town(u.ux, u.uy)) {
-        record_achievement('ACH_TOWN');
+        record_achievement(ACH_TOWN);
         if (!game.context.achieveo) game.context.achieveo = {};
         game.context.achieveo.minetn_reached = true;
     }

@@ -10,6 +10,7 @@
 // forcelock(), breakchestlock(), u_have_forceable_weapon(),
 // chest_shatter_msg()) and #close (doclose()).
 
+import { touch_artifact } from './artifact.js';
 import { game } from './gstate.js';
 import { rn2, rnl } from './rng.js';
 import { pline, newsym, You, You_cant, pline_The, canseemon } from './display.js';
@@ -403,9 +404,10 @@ export async function pick_lock(pick, rx, ry, container) {
                     /* credit cards are only good for unlocking */
                     await You_cant(`do that with ${an(simple_typename(picktyp))}.`);
                     return PICKLOCK_LEARNED_SOMETHING;
-                } else if (autounlock && pick.oartifact) {
+                } else if (autounlock
+                           && !(await touch_artifact(pick, game.youmonst))) {
                     /* note: for !autounlock, apply already did touch check */
-                    throw new Error('pick_lock(): touch_artifact() not ported yet');
+                    return PICKLOCK_DID_SOMETHING;
                 }
                 switch (picktyp) {
                 case CREDIT_CARD:
@@ -505,8 +507,8 @@ export async function pick_lock(pick, rx, ry, container) {
                 return PICKLOCK_DID_NOTHING;
 
             /* note: for !autounlock, 'apply' already did touch check */
-            if (autounlock && pick.oartifact)
-                throw new Error('pick_lock(): touch_artifact() not ported yet');
+            if (autounlock && !(await touch_artifact(pick, game.youmonst)))
+                return PICKLOCK_DID_SOMETHING;
 
             switch (picktyp) {
             case CREDIT_CARD:

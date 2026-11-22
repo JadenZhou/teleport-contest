@@ -107,7 +107,7 @@ export async function hold_another_object(obj, drop_fmt, drop_arg, hold_msg) {
         /* in case touching this object turns out to be fatal */
         place_object(obj, game.u.ux, game.u.uy);
 
-        if (!touch_artifact(obj, game.youmonst)) {
+        if (!(await touch_artifact(obj, game.youmonst))) {
             throw new Error('hold_another_object(): dropy() of an untouchable artifact is not ported yet');
         } else if (wasUpolyd && !game.u.mtimedone) {
             throw new Error('hold_another_object(): losing grip on reverting form is not ported yet');

@@ -42,7 +42,15 @@ import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj,
          dead_species, curse } from './mkobj.js';
 import { itemactions } from './iactions.js';
-import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR } from './const.js';
+import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR, Is_knox_level,
+         Is_earthlevel, Is_airlevel, Is_firelevel, Is_waterlevel } from './const.js';
+import { dunlev, depth } from './dungeon.js';
+import { is_quest_artifact } from './questpgr.js';
+import { artitouch } from './quest.js';
+import { set_artifact_intrinsic, set_artifact_intrinsic_sync } from './artifact.js';
+import { record_achievement } from './insight.js';
+import { ACH_AMUL, ACH_CNDL, ACH_BELL, ACH_BOOK, ACH_MINE_PRIZE, ACH_SOKO_PRIZE,
+         W_ART } from './const.js';
 import { ART_MJOLLNIR } from './artilist.js';
 import { is_missile, is_ammo, setuqwep } from './wield.js';
 import { confers_luck } from './timeout.js';
@@ -469,14 +477,34 @@ export async function display_inventory(lets, want_reply) {
 
 // C ref: invent.c freeinv_core()
 function freeinv_core(obj) {
+    const u = game.u;
+
     if (obj.oclass === O.COIN_CLASS) {
         game.disp_botl = true;
         return;
-    } else if (obj.otyp === O.AMULET_OF_YENDOR
-               || obj.otyp === O.CANDELABRUM_OF_INVOCATION
-               || obj.otyp === O.BELL_OF_OPENING
-               || obj.otyp === O.SPE_BOOK_OF_THE_DEAD || obj.oartifact) {
-        throw new Error('freeinv_core(): invocation items/artifacts not ported yet');
+    } else if (obj.otyp === O.AMULET_OF_YENDOR) {
+        if (!u.uhave.amulet)
+            console.error("impossible: don't have amulet?");
+        u.uhave.amulet = 0;
+    } else if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
+        if (!u.uhave.menorah)
+            console.error("impossible: don't have candelabrum?");
+        u.uhave.menorah = 0;
+    } else if (obj.otyp === O.BELL_OF_OPENING) {
+        if (!u.uhave.bell)
+            console.error("impossible: don't have silver bell?");
+        u.uhave.bell = 0;
+    } else if (obj.otyp === O.SPE_BOOK_OF_THE_DEAD) {
+        if (!u.uhave.book)
+            console.error("impossible: don't have the book?");
+        u.uhave.book = 0;
+    } else if (obj.oartifact) {
+        if (is_quest_artifact(obj)) {
+            if (!u.uhave.questart)
+                console.error("impossible: don't have quest artifact?");
+            u.uhave.questart = 0;
+        }
+        set_artifact_intrinsic_sync(obj, 0, W_ART);
     }
 
     if (obj.otyp === O.LOADSTONE) {
@@ -518,25 +546,52 @@ export function freeinv(obj) {
  * inventory.  Called _before_ the object has been added to the hero's
  * inventory.
  */
-export function addinv_core1(obj) {
+export async function addinv_core1(obj) {
+    const u = game.u;
+
     if (obj.oclass === O.COIN_CLASS) {
         game.disp_botl = true;
-    } else if (obj.otyp === O.AMULET_OF_YENDOR
-               || obj.otyp === O.CANDELABRUM_OF_INVOCATION
-               || obj.otyp === O.BELL_OF_OPENING
-               || obj.otyp === O.SPE_BOOK_OF_THE_DEAD) {
-        throw new Error('addinv_core1(): invocation items (u.uhave, record_achievement) not ported yet');
+    } else if (obj.otyp === O.AMULET_OF_YENDOR) {
+        if (u.uhave.amulet)
+            console.error('impossible: already have amulet?');
+        u.uhave.amulet = 1;
+        record_achievement(ACH_AMUL);
+    } else if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
+        if (u.uhave.menorah)
+            console.error('impossible: already have candelabrum?');
+        u.uhave.menorah = 1;
+        record_achievement(ACH_CNDL);
+    } else if (obj.otyp === O.BELL_OF_OPENING) {
+        if (u.uhave.bell)
+            console.error('impossible: already have silver bell?');
+        u.uhave.bell = 1;
+        record_achievement(ACH_BELL);
+    } else if (obj.otyp === O.SPE_BOOK_OF_THE_DEAD) {
+        if (u.uhave.book)
+            console.error('impossible: already have the book?');
+        u.uhave.book = 1;
+        record_achievement(ACH_BOOK);
     } else if (obj.oartifact) {
-        throw new Error('addinv_core1(): artifacts (set_artifact_intrinsic) not ported yet');
+        if (is_quest_artifact(obj)) {
+            if (u.uhave.questart)
+                console.error('impossible: already have quest artifact?');
+            u.uhave.questart = 1;
+            await artitouch(obj);
+        }
+        await set_artifact_intrinsic(obj, 1, W_ART);
     }
 
     /* "special achievements"; revealed in end of game disclosure and
        dumplog, originally just recorded in XLOGFILE */
     const achieveo = game.context?.achieveo;
-    if (achieveo && obj.o_id === achieveo.mines_prize_oid) {
-        throw new Error('addinv_core1(): mines prize record_achievement() not ported yet');
-    } else if (achieveo && obj.o_id === achieveo.soko_prize_oid) {
-        throw new Error('addinv_core1(): sokoban prize record_achievement() not ported yet');
+    if (achieveo && obj.o_id === achieveo.mines_prize_oid) { /* is_mines_prize() */
+        record_achievement(ACH_MINE_PRIZE);
+        achieveo.mines_prize_oid = 0; /* done w/ luckstone o_id */
+        obj.nomerge = 0; /* was set in create_object(sp_lev.c) */
+    } else if (achieveo && obj.o_id === achieveo.soko_prize_oid) { /* is_soko_prize() */
+        record_achievement(ACH_SOKO_PRIZE);
+        achieveo.soko_prize_oid = 0; /* done w/ bag/amulet o_id */
+        obj.nomerge = 0; /* (got set in sp_lev.c) */
     }
 }
 
@@ -589,7 +644,7 @@ async function addinv_core0(obj, other_obj, update_perm_invent) {
         reset_justpicked(game.invent);
     }
 
-    addinv_core1(obj); /* handle most side effects of carrying obj */
+    await addinv_core1(obj); /* handle most side effects of carrying obj */
 
     added: {
         /* for addinv_before(); if something has been removed and is now
@@ -1333,15 +1388,32 @@ function stairs_description(sway, stcase) {
     if (!(tolev.dnum !== game.u.uz.dnum && sway.u_traversed)) {
         /* ordinary stairs or branch stairs to not-yet-visited branch */
         outbuf = `${stairs} ${updown}`;
-        if (sway.u_traversed)
-            throw new Error('stairs_description(): " to level %d" not ported yet');
+        if (sway.u_traversed) {
+            const specialdepth = (tolev.dnum === game.dungeon_topology.d_quest_dnum
+                                  || Is_knox_level(tolev)); /* single_level_branch(): knox */
+            const to_dlev = specialdepth ? dunlev(tolev) : depth(tolev);
+
+            outbuf += ` to level ${to_dlev}`;
+        }
     } else if (game.u.uz.dnum === 0 && game.u.uz.dlevel === 1 && sway.up) {
         /* stairs up from level one are a special case */
-        if (game.u.uhave?.amulet)
-            throw new Error('stairs_description(): stairs up with the Amulet not ported yet');
-        outbuf = `${stairs} ${updown} out of the dungeon`;
+        /* stairs up from level one are a special case; they are marked
+           as having been traversed because the hero obviously started
+           the game by coming down them, but the remote side varies
+           depending on whether the Amulet is being carried */
+        const amulet = game.u.uhave?.amulet;
+        outbuf = `${!amulet ? "" : "branch "}${stairs} ${updown} ${
+            !amulet ? "out of the dungeon"
+            /* minimize our expectations about what comes next */
+            : (Is_earthlevel(tolev) || Is_airlevel(tolev)
+               || Is_firelevel(tolev) || Is_waterlevel(tolev))
+              ? "to the Elemental Planes"
+              : "to the end game"}`;
     } else {
-        throw new Error('stairs_description(): known branch stairs not ported yet');
+        /* known branch stairs; tacking on destination level is too verbose */
+        outbuf = `branch ${stairs} ${updown} to ${game.dungeons[tolev.dnum].dname}`;
+        /* dungeons[].dname is capitalized; undo that for "The <Branch>" */
+        outbuf = outbuf.replace("The ", "the "); /* strsubst() */
     }
     return outbuf;
 }

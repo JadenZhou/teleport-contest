@@ -1431,9 +1431,9 @@ function mksobj_init(otmp, artif) {
         break;
     case POTION_CLASS: /* note: potions get some additional init below */
     case SCROLL_CLASS:
-        /* SCR_MAIL exists only with MAIL_STRUCTURES, which this build
-           does not define */
-        blessorcurse(otmp, 4);
+        /* #ifdef MAIL_STRUCTURES (global.h always defines it) */
+        if (otmp.otyp !== O.SCR_MAIL)
+            blessorcurse(otmp, 4);
         break;
     case SPBOOK_CLASS:
         otmp.spestudied = 0;

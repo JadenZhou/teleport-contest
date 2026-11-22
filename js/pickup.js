@@ -1521,7 +1521,7 @@ export async function pickup_object(obj,
     } else if (obj.where === 'OBJ_MINVENT' && obj.owornmask
                && game.u.uswallow && obj.ocarry === game.u.ustuck) {
         throw new Error('pickup_object(): ysimple_name() for a worn engulfer item not ported yet');
-    } else if (obj.oartifact && !touch_artifact(obj, game.youmonst)) {
+    } else if (obj.oartifact && !(await touch_artifact(obj, game.youmonst))) {
         return 0;
     } else if (obj.otyp === CORPSE) {
         if (fatal_corpse_mistake(obj, telekinesis)
@@ -2319,7 +2319,7 @@ async function out_container(obj) {
         obj.owt = weight(obj);
     }
 
-    if (obj.oartifact && !touch_artifact(obj, game.youmonst))
+    if (obj.oartifact && !(await touch_artifact(obj, game.youmonst)))
         return 0;
 
     if (fatal_corpse_mistake(obj, false))

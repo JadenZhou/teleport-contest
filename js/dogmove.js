@@ -5,6 +5,7 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
+import { touch_artifact_mon } from './artifact.js';
 import { game } from './gstate.js';
 import { eaten_stat } from './eat.js';
 import { mon_wield_item } from './weapon.js';
@@ -316,8 +317,8 @@ export function can_touch_safely(mtmp, otmp) {
         && (otyp !== O.BELL_OF_OPENING
             || (mtmp.data.mflags3 & M.M3_COVETOUS) === 0 /* !is_covetous() */))
         return false;
-    if (otmp.oartifact)
-        throw new Error('can_touch_safely(): touch_artifact() not ported yet');
+    if (!touch_artifact_mon(otmp, mtmp))
+        return false;
     return true;
 }
 

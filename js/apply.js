@@ -360,7 +360,7 @@ export async function doapply() {
         return ECMD_CANCEL;
 
     let res = ECMD_TIME;
-    if (!retouch_object(obj))
+    if (!(await retouch_object(obj, false)))
         return ECMD_TIME; /* evading your grasp costs a turn; just be
                              grateful that you don't drop it as well */
 
