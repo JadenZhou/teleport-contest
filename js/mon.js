@@ -885,6 +885,7 @@ export function seemimic(mtmp) {
         delete mtmp.mextra.mcorpsenm; /* freemcorpsenm(mtmp) */
 
     mtmp.m_ap_type = M_AP_NOTHING;
+    mtmp.m_ap_fdknown = 0; /* M_AP_F_DKNOWN, kept apart from m_ap_type */
     mtmp.mappearance = 0;
 
     /*

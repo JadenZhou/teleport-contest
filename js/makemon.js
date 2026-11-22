@@ -2248,6 +2248,7 @@ export function set_mimic_sym(mtmp) {
         }
     }
     mtmp.m_ap_type = ap_type;
+    mtmp.m_ap_fdknown = 0; /* M_AP_F_DKNOWN, kept apart from m_ap_type */
     mtmp.mappearance = appear;
     /* when appearing as an object based on a monster type, pick a shape */
     if (ap_type === M_AP_OBJECT
