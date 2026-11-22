@@ -985,8 +985,9 @@ function mon_warning(mon) {
 }
 
 // C ref: display.c show_mon_or_warn()
-// (the glyph is passed as its ch/color/kind, as show_glyph_cell() takes it)
-function show_mon_or_warn(x, y, ch, color, kind) {
+// (the glyph is passed as its ch/color/kind, plus the MG_PET attribute and
+// glyph identity, as show_glyph_cell() takes it)
+function show_mon_or_warn(x, y, ch, color, kind, attr = 0, gid = null) {
     let o;
 
     /* "remembered, unseen monster" is tracked by object layer so if we're
@@ -998,7 +999,7 @@ function show_mon_or_warn(x, y, ch, color, kind) {
             map_object(o, false);
     }
 
-    show_glyph_cell(x, y, ch, color, false, 0, kind);
+    show_glyph_cell(x, y, ch, color, false, attr, kind, false, gid);
 }
 
 // C ref: display.c display_warning()
@@ -1131,8 +1132,8 @@ function display_monster(
            with iflags.wc2_petattr when hilite_pet is on */
         const attr = (mon.mtame && !Hallucination() && game.iflags?.wc_hilite_pet)
                      ? game.iflags.wc2_petattr : 0;
-        show_glyph_cell(x, y, ch, ptr.mcolor ?? NO_COLOR, false, attr, 'mon',
-                        false, { mndx: ptr.pmidx });
+        show_mon_or_warn(x, y, ch, ptr.mcolor ?? NO_COLOR, 'mon', attr,
+                         { mndx: ptr.pmidx });
         mon.meverseen = 1;
     }
 }
