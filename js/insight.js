@@ -75,6 +75,7 @@ import { depth, dunlev, on_level } from './dungeon.js';
 import { find_ac, money_cnt } from './u_init.js';
 import { near_capacity, inv_weight, in_rooms } from './hack.js';
 import { SHOPBASE, NO_ROOM, ROOMOFFSET } from './const.js';
+import { ACH_RNK1, ACH_RNK8, ACH_SOKO, N_ACH } from './const.js';
 import { ACURR, ABASE, AMAX, ATTRMAX, from_what } from './attrib.js';
 import { P_SKILL, P_MAX_SKILL, P_ADVANCE, P_RESTRICTED, weapon_type,
          practice_needed_to_advance } from './weapon.js';
@@ -2293,9 +2294,82 @@ function num_gone(mvflags) {
     return mindx;
 }
 
+// C ref: insight.c record_achievement()
+/* add an achievement to the list; C's list is 0-terminated, here it's a
+   plain array */
+export function record_achievement(achidx) {
+    const u = game.u;
+    let i;
+    let repeat_achievement = 0;
+    const absidx = Math.abs(achidx);
+
+    if (!u.uachieved)
+        u.uachieved = [];
+    /* valid achievements range from 1 to N_ACH-1; however, ranks can be
+       stored as the complement (ie, negative) to track gender */
+    if ((achidx < 1 && (absidx < ACH_RNK1 || absidx > ACH_RNK8))
+        || achidx >= N_ACH) {
+        console.error(`impossible: Achievement #${achidx} is out of range.`);
+        return;
+    }
+
+    /* find first empty slot or achievement #achidx; an attempt to
+       duplicate an achievement can happen if any of Bell, Candelabrum,
+       Book, or Amulet is dropped then picked up again */
+    for (i = 0; i < u.uachieved.length; ++i)
+        if (Math.abs(u.uachieved[i]) === absidx) {
+            repeat_achievement = 1;
+            break;
+        }
+
+    /* SoundAchievement(achidx, 0, repeat_achievement): no sound interface */
+
+    if (repeat_achievement)
+        return; /* already recorded, don't duplicate it */
+    u.uachieved[i] = achidx;
+
+    /* livelog_printf(): the livelog isn't shown on the tty */
+}
+
+// C ref: insight.c remove_achievement()
+/* discard a recorded achievement; return True if removed, False otherwise */
+export function remove_achievement(achidx) {
+    const u = game.u;
+    const list = u.uachieved || [];
+    let i;
+
+    for (i = 0; i < list.length; ++i)
+        if (Math.abs(list[i]) === Math.abs(achidx))
+            break; /* stop when found */
+    if (i >= list.length) /* not found */
+        return false;
+    list.splice(i, 1);
+    return true;
+}
+
 // C ref: insight.c count_achievements()
 export function count_achievements() {
     return (game.u.uachieved || []).length;
+}
+
+// C ref: insight.c achieve_rank()
+/* convert a rank index to an achievement number; encode it when female
+   in order to subsequently report gender-specific ranks accurately */
+export function achieve_rank(rank) /* 1..8 */ {
+    let achidx = (rank - 1) + ACH_RNK1;
+
+    if (game.flags.female)
+        achidx = -achidx;
+    return achidx;
+}
+
+// C ref: insight.c sokoban_in_play()
+/* return True if sokoban branch has been entered, False otherwise */
+export function sokoban_in_play() {
+    for (const a of game.u.uachieved || [])
+        if (a === ACH_SOKO)
+            return true;
+    return false;
 }
 
 // C ref: insight.c vanqsort_cmp() -- qsort() comparison for the

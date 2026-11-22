@@ -2294,7 +2294,7 @@ export async function doeat() {
         /* let them eat rings */
         await You_cant("eat something you're wearing.");
         return ECMD_OK;
-    } else if (!(carried(otmp) ? retouch_object(otmp)
+    } else if (!(carried(otmp) ? await retouch_object(otmp, false)
                                : touch_artifact(otmp, game.youmonst))) {
         return ECMD_TIME; /* got blasted so use a turn */
     }

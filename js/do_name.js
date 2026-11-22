@@ -3,6 +3,8 @@
 // Ported so far: christen_monst(), rndghostname(), noveltitle(), the x_monnam()
 // family.
 
+import { set_artifact_intrinsic_sync } from './artifact.js';
+import { W_WEP } from './const.js';
 import { game } from './gstate.js';
 import { rn2, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { canspotmon } from './display.js';
@@ -277,7 +279,7 @@ export function oname(
             throw new Error('oname(): untwoweapon() is not ported yet');
         /* activate warning if you've just named your weapon "Sting" */
         if (obj === game.uwep)
-            throw new Error('oname(): set_artifact_intrinsic() is not ported yet');
+            set_artifact_intrinsic_sync(obj, true, W_WEP);
         /* if obj is owned by a shop, increase your bill */
         if (obj.unpaid)
             throw new Error('oname(): alter_cost() is not ported yet');

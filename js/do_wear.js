@@ -1354,7 +1354,7 @@ async function accessory_or_armor_on(obj) {
         }
     }
 
-    if (!retouch_object(obj))
+    if (!(await retouch_object(obj, false)))
         return ECMD_TIME; /* costs a turn even though it didn't get worn */
 
     if (armor) {

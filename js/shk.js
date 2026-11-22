@@ -31,6 +31,7 @@ import { y_monnam, pronoun_gender, PRONOUN_NO_IT,
          PRONOUN_HALLU } from './do_name.js';
 import { adjalign, ACURR } from './attrib.js';
 import { record_achievement } from './do.js';
+import { ACH_SHOP } from './const.js';
 import { discover_object } from './o_init.js';
 import { t_at } from './trap.js';
 import { passes_walls } from './mondata.js';
@@ -348,7 +349,7 @@ export async function u_entered_shop(enterstring) {
         u.ushops = '';
         return;
     }
-    record_achievement('ACH_SHOP');
+    record_achievement(ACH_SHOP);
 
     eshkp.bill_p = eshkp.bill || (eshkp.bill = []); /* &(eshkp->bill[0]) */
 
