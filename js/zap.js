@@ -82,9 +82,9 @@ import { wakeup, monkilled, killed } from './mon.js';
 import { AD_RBRE } from './monsters.js';
 import { STONE, LAVAWALL, IRONBARS, FOUNTAIN, ICE, STRAT_WAITMASK, WEB,
          IS_ROOM, IS_WALL, In_mines, Is_airlevel, ZAP_POS, SDOOR } from './const.js';
-import { engr_at } from './engrave.js';
+import { engr_at, wipe_engr_at } from './engrave.js';
 import { M1_NOHANDS, M1_CONCEAL, AD_COLD, AD_FIRE, AD_ELEC, AD_ACID,
-         AD_DISN } from './monsters.js';
+         AD_DISN, AD_MAGM } from './monsters.js';
 import {
     COLD_RES, FIRE_RES, SHOCK_RES, ACID_RES, DISINT_RES, W_ARMOR, W_ACCESSORY,
     W_WEP, W_ART, W_ARMC, W_ARM, W_ARMU, W_ARMH, W_ARMG, W_ARMF, W_ARMS,
@@ -1568,6 +1568,41 @@ async function zap_over_floor(
     if (!ignoremon && (mon = m_at(x, y)) !== null && mon !== undefined)
         await wakeup(mon, (type >= 0) ? true : false);
     return rangemod;
+}
+
+// C ref: zap.c mon_spell_hits_spot()
+/* monster has cast flames or frost at target on <x,y>; called by mcastu() */
+export async function mon_spell_hits_spot(
+    caster, /* UNUSED */
+    adtyp, /* canonical damage type */
+    x, y) /* so far, only used for targeting <u.ux,u.uy> */
+{
+    void caster;
+    /* "shower of missiles" or [hypothetical] "acid rain" attack:
+       thoroughly clobber an engraving (unless its type makes it be
+       scuff-protected); zap_over_floor() doesn't handle this */
+    if (adtyp === AD_MAGM || adtyp === AD_ACID) {
+        const ep = engr_at(x, y);
+        const etext = ep ? ep.engr_txt.actual_text : null;
+
+        if (etext)
+            wipe_engr_at(x, y, etext.length + d(6, 6), true);
+        /* hero and player will still remember prior text until the spot
+           is re-examined (lookhere or move off and back on) */
+    }
+
+    /* hit items and/or terrain; only matters for AD_FIRE and AD_COLD but
+       accept any basic damage type that zap_over_floor() might handle */
+    if (adtyp >= AD_MAGM && adtyp <= AD_ACID) {
+        const shopdummy = { v: false }; /* zap_over_floor() requires this
+                                             * even though it's only used when
+                                             * zapdmgtyp is non-negative */
+        const zt_typ = adtyp - 1,            /* convert AD_xxxx to ZT_xxxx */
+            zapdmgtyp = -ZT_SPELL(zt_typ);   /* damage is from monster spell */
+
+        await zap_over_floor(x, y, zapdmgtyp, shopdummy, true, 0);
+    } /* else impossible("Unsupported damage type (%d) for
+         mon_spell_hits_spot.", adtyp) */
 }
 
 /* C ref: obj.h ignitable() */

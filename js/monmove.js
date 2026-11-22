@@ -39,6 +39,15 @@ import { You_hear } from './sounds.js';
 import { find_defensive, find_offensive, find_misc, use_defensive,
          use_misc, cures_stoning, mcould_eat_tin } from './muse.js';
 import { mattacku } from './mhitu.js';
+import { castmu } from './mcastu.js';
+import { M_ATTK_HIT, G_GENOD } from './const.js';
+import { an, xname } from './objnam.js';
+import { delobj } from './invent.js';
+import { grow_up } from './makemon.js';
+import { is_organic } from './objects.js';
+import { eaten_stat } from './eat.js';
+import { extract_from_minvent } from './steal.js';
+import { m_consume_obj } from './mon.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
@@ -671,6 +680,87 @@ function m_arrival(mon) {
     return -1;
 }
 
+// ── C ref: monmove.c find_pmmonst() ──
+function find_pmmonst(pm) {
+    let mtmp = null;
+
+    if ((game.mvitals[pm].mvflags & G_GENOD) === 0)
+        for (mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+            if (mtmp.mhp < 1) /* DEADMONSTER() */
+                continue;
+            if (mtmp.data === mons[pm])
+                break;
+        }
+
+    return mtmp || null;
+}
+
+// ── C ref: monmove.c bee_eat_jelly() ──
+/* killer bee 'mon' is on a spot containing lump of royal jelly 'obj' and
+   will eat it if there is no queen bee on the level; return 1: mon died,
+   0: mon ate jelly and used up its move, -1: mon didn't eat jelly to use
+   its move [the return values are ordered so that a caller who does
+   'if (res >= 0) return res' gets the right result] */
+async function bee_eat_jelly(mon, obj) {
+    let m_delay;
+    const mtmp = find_pmmonst(M.PM_QUEEN_BEE);
+
+    /* if there's no queen on the level, eat the royal jelly and become one */
+    if (!mtmp) {
+        m_delay = obj.blessed ? 3 : !obj.cursed ? 5 : 7;
+        if (obj.quan > 1)
+            obj = splitobj(obj, 1);
+        if (canseemon(mon))
+            await pline(`${Monnam(mon)} eats ${an(xname(obj))}.`); /* pline_mon() */
+        delobj(obj);
+
+        if (mon.m_lev < mons[M.PM_QUEEN_BEE].mlevel - 1)
+            mon.m_lev = mons[M.PM_QUEEN_BEE].mlevel - 1;
+        /* there should be delay after eating, but that's too much
+           hassle; transform immediately, then have a short delay */
+        await grow_up(mon, null);
+
+        if (mon.mhp < 1) /* DEADMONSTER() */
+            return 1; /* dead; apparently queen bees have been genocided */
+        mon.mfrozen = m_delay, mon.mcanmove = 0;
+        return 0; /* bee used its move */
+    }
+    return -1; /* a queen is already present; ordinary bee hasn't moved yet */
+}
+
+/* C ref: obj.h is_mines_prize(), is_soko_prize() */
+function is_mines_prize(o) {
+    return o.o_id === game.context.achieveo?.mines_prize_oid;
+}
+function is_soko_prize(o) {
+    return o.o_id === game.context.achieveo?.soko_prize_oid;
+}
+
+// ── C ref: monmove.c gelcube_digests() ──
+/* gelatinous cube eats something from its inventory */
+async function gelcube_digests(mtmp) {
+    if (mtmp.meating || !mtmp.minvent || !mtmp.minvent.length)
+        return -1;
+
+    /* walk mon->minvent in C chain order (newest first) */
+    let otmp = null;
+    for (const o of mtmp.minvent.slice().reverse()) {
+        if (is_organic(o) && !o.oartifact
+            && !is_mines_prize(o) && !is_soko_prize(o)) {
+            otmp = o;
+            break;
+        }
+    }
+
+    if (!otmp)
+        return -1;
+
+    mtmp.meating = eaten_stat(mtmp.meating, otmp);
+    extract_from_minvent(mtmp, otmp, true, true);
+    await m_consume_obj(mtmp, otmp);
+    return 0; /* used a move */
+}
+
 // ── C ref: monmove.c dochug() ──
 export async function dochug(mtmp) {
     const u = game.u;
@@ -805,8 +895,20 @@ export async function dochug(mtmp) {
      * PHASE THREE: Now the actual movement phase
      */
 
-    if (mdat === mons[M.PM_KILLER_BEE] || mdat === mons[M.PM_GELATINOUS_CUBE])
-        throw new Error('dochug(): bee_eat_jelly()/gelcube_digests() not ported yet');
+    /* A killer bee may eat honey in order to turn into a queen bee,
+       costing it a move. */
+    let otmp, res;
+    if (mdat === mons[M.PM_KILLER_BEE]
+        /* could be smarter and deliberately move to royal jelly, but
+           then we'd need to scan the level for queen bee in advance;
+           avoid that overhead and rely on serendipity... */
+        && (otmp = sobj_at(OBJ.LUMP_OF_ROYAL_JELLY, mtmp.mx, mtmp.my)) !== null
+        && (res = await bee_eat_jelly(mtmp, otmp)) >= 0)
+        return res;
+
+    if (mdat === mons[M.PM_GELATINOUS_CUBE]
+        && (res = await gelcube_digests(mtmp)) >= 0)
+        return res;
 
     /* A monster that passes the following checks has the opportunity
        to move. Movement itself is handled by the m_move() function. */
@@ -817,12 +919,21 @@ export async function dochug(mtmp) {
         || (!mtmp.mcansee && !rn2(4)) || mtmp.mpeaceful) {
 
         /* Possibly cast an undirected spell if not attacking you */
+        /* note that most of the time castmu() will pick a directed
+           spell and do nothing, so the monster moves normally */
+        /* arbitrary distance restriction to keep monster far away
+           from you from having cast dozens of sticks-to-snakes
+           or similar spells by the time you reach it */
         if (!mtmp.mspec_used
             && dist2(mtmp.mx, mtmp.my, u.ux, u.uy) <= 49) {
             for (const a of mdat.mattk) {
                 if (a.aatyp === M.AT_MAGC
-                    && (a.adtyp === M.AD_SPEL || a.adtyp === M.AD_CLRC))
-                    throw new Error('dochug(): castmu() not ported yet');
+                    && (a.adtyp === M.AD_SPEL || a.adtyp === M.AD_CLRC)) {
+                    if ((await castmu(mtmp, a, false, false) & M_ATTK_HIT)) {
+                        status = MMOVE_DONE; /* bypass m_move() */
+                        break;
+                    }
+                }
             }
         }
 

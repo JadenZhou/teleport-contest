@@ -910,6 +910,18 @@ export function uncurse(otmp) {
     return;
 }
 
+// C ref: mkobj.c unbless()
+export function unbless(otmp) {
+    if (otmp.lamplit)
+        throw new Error('unbless(): arti_light_radius() of a lit object not ported yet');
+    otmp.blessed = 0;
+    if (otmp.where === 'OBJ_INVENT' /* carried(otmp) */ && confers_luck(otmp))
+        set_moreluck();
+    else if (otmp.otyp === O.BAG_OF_HOLDING)
+        otmp.owt = weight(otmp);
+    /* if (otmp->lamplit) maybe_adjust_light(): lit objects stop above */
+}
+
 // C ref: mkobj.c blessorcurse()
 export function blessorcurse(otmp, chance) {
     if (otmp.blessed || otmp.cursed)

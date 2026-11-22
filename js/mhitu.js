@@ -37,6 +37,7 @@ import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
          PIERCE } from './objects.js';
 import { mon_wield_item, hitval } from './weapon.js';
 import { thrwmu, spitmu, breamu } from './mthrowu.js';
+import { castmu, buzzmu } from './mcastu.js';
 import { Is_rogue_level, DIED } from './const.js';
 import { done_in_by } from './end.js';
 import { ART_SNICKERSNEE } from './artilist.js';
@@ -620,9 +621,9 @@ export async function mattacku(mtmp) {
             break;
         case AT_MAGC:
             if (v.range2)
-                throw new Error('mattacku(): buzzmu() not ported yet');
+                sum[i] = await buzzmu(mtmp, mattk);
             else
-                throw new Error('mattacku(): castmu() not ported yet');
+                sum[i] = await castmu(mtmp, mattk, true, v.foundyou);
             break;
 
         default: /* no attack */
