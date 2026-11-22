@@ -1562,6 +1562,28 @@ function get_table_coords_or_region(tbl) {
     return { dx1, dy1, dx2, dy2 };
 }
 
+// C ref: sp_lev.c light_region()
+function light_region(tmpregion) {
+    const litstate = tmpregion.rlit ? true : false;
+    let hiy = tmpregion.y2;
+    let lowy = tmpregion.y1;
+    let lowx = tmpregion.x1, hix = tmpregion.x2;
+
+    if (litstate) {
+        /* adjust region size for walls, but only if lighted */
+        lowx = Math.max(lowx - 1, 1);
+        hix = Math.min(hix + 1, COLNO - 1);
+        lowy = Math.max(lowy - 1, 0);
+        hiy = Math.min(hiy + 1, ROWNO - 1);
+    }
+    for (let x = lowx; x <= hix; x++) {
+        for (let y = lowy; y <= hiy; y++) {
+            const lev = game.level.at(x, y);
+            lev.lit = IS_LAVA(lev.typ) ? true : litstate;
+        }
+    }
+}
+
 // C ref: sp_lev.c sel_set_lit()
 function sel_set_lit(x, y, arg) {
     const lit = arg;
@@ -1648,8 +1670,9 @@ export function lspo_region(...args) {
     if (room_not_needed || game.level.nroom >= MAXNROFROOMS) {
         if (!room_not_needed)
             impossible('Too many rooms on new level!');
-        /* light_region(&tmpregion) is not ported yet */
-        nhl_error(null, 'des.region: light_region() is not ported yet');
+        const tmpregion = { rlit, x1: dx1, y1: dy1, x2: dx2, y2: dy2 };
+        light_region(tmpregion);
+
         return 0;
     }
 
