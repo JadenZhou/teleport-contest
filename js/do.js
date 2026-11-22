@@ -10,6 +10,7 @@
 import { game } from './gstate.js';
 import { pline, pline_The, docrt, flush_screen } from './display.js';
 import { You_hear } from './sounds.js';
+import { sellobj } from './shk.js';
 import { olfaction } from './mondata.js';
 import { ACH_HELL } from './const.js';
 import {
@@ -1139,7 +1140,7 @@ export async function dropz(obj, with_impact) {
         if (obj === game.uball)
             throw new Error('dropz(): drop_ball() not ported yet');
         else if (game.level.flags?.has_shop)
-            throw new Error('dropz(): sellobj() not ported yet');
+            await sellobj(obj, game.u.ux, game.u.uy);
         stackobj(obj);
         /* Blind && Levitation: map_object() */
         newsym(game.u.ux, game.u.uy); /* remap location under self */

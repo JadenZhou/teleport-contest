@@ -57,10 +57,10 @@ import { engr_at } from './engrave.js';
 import { enexto_core, enexto_gpflags } from './teleport.js';
 import { newedog } from './dog.js';
 import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
-         DETECT_MONSTERS } from './const.js';
+         DETECT_MONSTERS, PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { dist2 } from './hacklib.js';
 import { an, vtense } from './objnam.js';
-import { newsym, pline, canseemon, You_see } from './display.js';
+import { newsym, pline, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
 import { Resists_Elem } from './mondata.js';
 import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level } from './const.js';
@@ -2136,7 +2136,8 @@ export function set_mimic_sym(mtmp) {
     const levl = (x, y) => game.level.at(x, y);
     let assign = false;
 
-    if (!mtmp /* || Protection_from_shape_changers */)
+    const pfsc = game.u.uprops?.[PROT_FROM_SHAPE_CHANGERS];
+    if (!mtmp || !!(pfsc && (pfsc.intrinsic || pfsc.extrinsic))) /* Protection_from_shape_changers */
         return;
     mx = mtmp.mx;
     my = mtmp.my;
@@ -2150,7 +2151,7 @@ export function set_mimic_sym(mtmp) {
 
     if (OBJ_AT(mx, my)) {
         ap_type = M_AP_OBJECT;
-        appear = game.level.objects.find(o => o.ox === mx && o.oy === my).otyp;
+        appear = vobj_at(mx, my).otyp; /* svl.level.objects[mx][my]->otyp */
     } else if (IS_DOOR(typ) || IS_WALL(typ) || typ === SDOOR || typ === SCORR) {
         ap_type = M_AP_FURNITURE;
         /*

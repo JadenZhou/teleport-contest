@@ -243,8 +243,10 @@ function mon_leaving_level(mon) {
     }
     if (onmap) {
         mon.mundetected = 0; /* for migration; doesn't matter for death */
+        /* unhide mimic in case its shape has been blocking line of sight
+           or it is accompanying the hero to another level */
         if (mon.m_ap_type && mon.m_ap_type !== M_AP_MONSTER)
-            throw new Error('mon_leaving_level(): seemimic() not ported yet');
+            seemimic(mon);
         /* fill_pit(mx, my): boulders dropping into pits not ported */
         newsym(mx, my);
     }
@@ -1531,7 +1533,7 @@ export function newcham(mtmp, mdat, ncflags) {
     if (mtmp.wormno) /* throw tail away */
         throw new Error('newcham(): wormgone() not ported yet');
     if ((mtmp.m_ap_type || 0) && mdat.mlet !== MM.S_MIMIC)
-        throw new Error('newcham(): seemimic() not ported yet');
+        seemimic(mtmp); /* revert to normal monster */
 
     /* (this code used to try to adjust the monster's health based on
        a normal one of its type but there are too many special cases

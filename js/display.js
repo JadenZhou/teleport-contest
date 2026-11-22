@@ -1661,7 +1661,8 @@ export function newsym(x, y) {
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx, 0,
-            glyph_kind(loc.remembered_glyph), loc.remembered_glyph.piletop);
+            glyph_kind(loc.remembered_glyph), loc.remembered_glyph.piletop,
+            glyph_gid(loc.remembered_glyph));
     } else {
         /* show_mem: never seen, the unexplored glyph (blank) */
         show_glyph_cell(x, y, ' ', NO_COLOR, false);
@@ -1729,7 +1730,7 @@ export async function docrt_flags(refresh_flags) {
                 const gl = lev.remembered_glyph;
                 if (gl)
                     show_glyph_cell(x, y, gl.ch, gl.color, gl.decgfx, 0, glyph_kind(gl),
-                                    gl.piletop);
+                                    gl.piletop, glyph_gid(gl));
                 else
                     show_glyph_cell(x, y, ' ', NO_COLOR, false);
             }

@@ -9,7 +9,7 @@ import { rn2, rnd, rn1, d } from './rng.js';
 import { distmin, isok } from './hacklib.js';
 import { cansee } from './vision.js';
 import { m_at, grow_up } from './makemon.js';
-import { monkilled, zombie_maker, monnear } from './mon.js';
+import { monkilled, zombie_maker, monnear, seemimic } from './mon.js';
 import { thrwmm, spitmm, breamm } from './mthrowu.js';
 import { canspotmon, newsym, pline, map_invisible } from './display.js';
 import { Monnam, mon_nam_too } from './do_name.js';
@@ -172,14 +172,18 @@ async function noises(magr, mattk) {
 function pre_mm_attack(magr, mdef) {
     let showit = false;
 
+    /* unhiding or unmimicking happens even if hero can't see it
+       because the formerly concealed monster is now in action */
     if (M_AP_TYPE(mdef)) {
-        throw new Error('pre_mm_attack(): seemimic() not ported yet');
+        seemimic(mdef);
+        showit ||= game.mhitm_vis;
     } else if (mdef.mundetected) {
         mdef.mundetected = 0;
         showit ||= game.mhitm_vis;
     }
     if (M_AP_TYPE(magr)) {
-        throw new Error('pre_mm_attack(): seemimic() not ported yet');
+        seemimic(magr);
+        showit ||= game.mhitm_vis;
     } else if (magr.mundetected) {
         magr.mundetected = 0;
         showit ||= game.mhitm_vis;
