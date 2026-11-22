@@ -160,13 +160,6 @@ import { pline } from './display.js';
 import { body_part } from './insight.js';
 import { SPE_NOVEL } from './objects.js';
 
-// C ref: do_name.c safe_oname()
-function safe_oname(obj) {
-    if (obj.oextra?.oname) /* has_oname(obj) */
-        return obj.oextra.oname;
-    return "";
-}
-
 // C ref: do_name.c name_from_player() -- get a name for a monster or an
 // object from player; truncate if longer than PL_PSIZ, then return it
 // (null for no name); the !EDIT_GETLIN build ignores defres
