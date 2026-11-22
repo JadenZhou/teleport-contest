@@ -51,6 +51,7 @@ import { setnotworn, setworn } from './worn.js';
 import { oname } from './do_name.js';
 import { W_WEP, W_SWAPWEP, W_QUIVER, ONAME_SKIP_INVUPD } from './const.js';
 import { food_disappears } from './eat.js';
+import { maybe_reset_pick } from './lock.js';
 import { costly_spot, shop_keeper, inside_shop, inhishop, next_shkp, onbill,
          same_price } from './shk.js';
 import {
@@ -699,6 +700,16 @@ export function useup(obj) {
 
 /* C ref: shk.c onbill() -- in shk.js */
 
+// C ref: shk.c delete_contents()
+export function delete_contents(obj) {
+    let curr;
+
+    while ((curr = (obj.cobj && obj.cobj.length) ? obj.cobj[0] : null) !== null) {
+        obj_extract_self(curr);
+        obfree(curr, null);
+    }
+}
+
 // C ref: shk.c obfree()
 /* delete obj from the game; 'merge' is the stack it merged into, if any */
 export function obfree(obj, merge) {
@@ -715,9 +726,9 @@ export function obfree(obj, merge) {
         }
     }
     if (obj.cobj && obj.cobj.length) /* Has_contents(obj) */
-        throw new Error('obfree(): delete_contents() not ported yet');
+        delete_contents(obj);
     if (obj.otyp >= O.LARGE_BOX && obj.otyp <= O.BAG_OF_TRICKS) /* Is_container */
-        throw new Error('obfree(): maybe_reset_pick() not ported yet');
+        maybe_reset_pick(obj);
     if (obj.otyp === O.BOULDER)
         obj.next_boulder = 0;
 
