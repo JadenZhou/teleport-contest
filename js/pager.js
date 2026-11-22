@@ -48,7 +48,11 @@ import { STONE, SCORR, ROOM, CORR, SDOOR, HWALL, VWALL, TLCORNER, TRCORNER,
          DOOR, IRONBARS, TREE, POOL, MOAT, STAIRS, LADDER, FOUNTAIN, SINK,
          ALTAR, GRAVE, THRONE, ICE, LAVAPOOL, LAVAWALL, AIR, CLOUD, WATER,
          DBWALL, DRAWBRIDGE_UP, DRAWBRIDGE_DOWN, LA_DOWN, D_BROKEN, D_ISOPEN,
-         D_TRAPPED, IS_WALL, MALE, FEMALE, HALLUC, INVIS, BLINDED } from './const.js';
+         D_TRAPPED, IS_WALL, MALE, FEMALE, HALLUC, INVIS, BLINDED,
+         isok, IS_WATERWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT,
+         Is_medusa_level, Is_juiblex_level, Is_qstart, Is_waterlevel } from './const.js';
+import { hliquid } from './potion.js';
+import { PM_SAMURAI } from './monsters.js';
 
 /* C ref: defsym.h PCHAR()/PCHAR2() explanations, S_stone .. S_water */
 const S_stone = 0, S_ndoor = 12, S_vodoor = 13, S_hodoor = 14,
@@ -155,6 +159,66 @@ export function back_to_cmap(x, y) {
     default:
         return S_room;
     }
+}
+
+// C ref: dbridge.c db_under_typ()
+function db_under_typ(mask) {
+    switch (mask & DB_UNDER) {
+    case DB_ICE: return ICE;
+    case DB_LAVA: return LAVAPOOL;
+    case DB_MOAT: return MOAT;
+    default: return STONE;
+    }
+}
+
+// C ref: pager.c waterbody_name()
+/* describe a pool location's contents; the Snprintf()s are into a
+   40-character buffer (pooltype[40]) */
+export function waterbody_name(x, y) {
+    let ltyp;
+    const hallucinate = Hallucination() && !game.program_state?.gameover;
+
+    if (!isok(x, y))
+        return "drink"; /* should never happen */
+    /* ltyp = SURFACE_AT(x, y) */
+    const loc = game.level.at(x, y);
+    ltyp = (loc.typ === DRAWBRIDGE_UP) ? db_under_typ(loc.drawbridgemask)
+                                        : loc.typ;
+
+    if (ltyp === LAVAPOOL) {
+        return `molten ${hliquid("lava")}`.slice(0, 39);
+    } else if (ltyp === ICE) {
+        if (!hallucinate)
+            return "ice";
+        return `frozen ${hliquid("water")}`.slice(0, 39);
+    } else if (ltyp === POOL) {
+        return `pool of ${hliquid("water")}`.slice(0, 39);
+    } else if (ltyp === MOAT) {
+        /* a bit of extra flavor over general moat */
+        if (hallucinate) {
+            return `deep ${hliquid("water")}`.slice(0, 39);
+        } else if (Is_medusa_level(game.u.uz)) {
+            /* somewhat iffy since ordinary stairs can take you beneath,
+               but previous generic "water" was rather anti-climactic */
+            return "shallow sea";
+        } else if (Is_juiblex_level(game.u.uz)) {
+            return "swamp";
+        } else if (game.urole.mnum === PM_SAMURAI && Is_qstart(game.u.uz)) {
+            /* samurai quest home level has two isolated moat spots;
+               they sound silly if farlook describes them as such */
+            return "pond";
+        } else {
+            return "moat";
+        }
+    } else if (IS_WATERWALL(ltyp)) {
+        if (Is_waterlevel(game.u.uz))
+            return "limitless water"; /* even if hallucinating */
+        return `wall of ${hliquid("water")}`.slice(0, 39);
+    } else if (ltyp === LAVAWALL) {
+        return `wall of ${hliquid("lava")}`.slice(0, 39);
+    }
+    /* default; should be unreachable */
+    return "water"; /* don't hallucinate this as some other liquid */
 }
 
 // C ref: pager.c self_lookat()

@@ -15,7 +15,10 @@ import { mons, PM_LITTLE_DOG, PM_KITTEN, PM_PONY, PM_CAVE_DWELLER,
 import { AMULET_OF_YENDOR } from './objects.js';
 import { makemon, is_domestic, set_malign, put_saddle_on_mon,
          m_at, pm_to_cham } from './makemon.js';
-import { monsndx } from './mondata.js';
+import { monsndx, regenerates } from './mondata.js';
+import { healmon } from './mon.js';
+import { M1_CARNIVORE, M1_HERBIVORE, S_MIMIC } from './monsters.js';
+import { LARGEST_INT, M_AP_NOTHING } from './const.js';
 import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
 import { on_level } from './dungeon.js';
@@ -514,4 +517,113 @@ export async function mon_arrive(mtmp, when) {
      * The monster arrived on this level independently of the player.
      */
     throw new Error('mon_arrive(): independent arrival (mon_catchup_elapsed_time(), MIGR_* placement) not ported yet');
+}
+
+// C ref: dog.c mon_catchup_elapsed_time()
+/* heal monster for time spent elsewhere */
+export function mon_catchup_elapsed_time(
+    mtmp,
+    nmv) /* number of moves */
+{
+    let imv = 0; /* avoid zillions of casts and lint warnings */
+
+    /* NH_DEVEL_STATUS != NH_STATUS_RELEASED in this build */
+    if (nmv < 0) { /* crash likely... */
+        throw new Error('panic: catchup from future time?');
+    } else if (nmv === 0) { /* safe, but shouldn't happen */
+        /* impossible("catchup from now?") */
+    } else if (nmv >= LARGEST_INT) /* paranoia */
+        imv = LARGEST_INT - 1;
+    else
+        imv = nmv;
+
+    /* might stop being afraid, blind or frozen */
+    /* set to 1 and allow final decrement in movemon() */
+    if (mtmp.mblinded) {
+        if (imv >= mtmp.mblinded)
+            mtmp.mblinded = 1;
+        else
+            mtmp.mblinded -= imv;
+    }
+    if (mtmp.mfrozen) {
+        if (imv >= mtmp.mfrozen)
+            mtmp.mfrozen = 1;
+        else
+            mtmp.mfrozen -= imv;
+    }
+    if (mtmp.mfleetim) {
+        if (imv >= mtmp.mfleetim)
+            mtmp.mfleetim = 1;
+        else
+            mtmp.mfleetim -= imv;
+    }
+
+    /* might recover from temporary trouble */
+    if (mtmp.mtrapped && rn2(imv + 1) > (40 / 2 | 0))
+        mtmp.mtrapped = 0;
+    if (mtmp.mconf && rn2(imv + 1) > (50 / 2 | 0))
+        mtmp.mconf = 0;
+    if (mtmp.mstun && rn2(imv + 1) > (10 / 2 | 0))
+        mtmp.mstun = 0;
+
+    /* might finish eating or be able to use special ability again */
+    if (mtmp.meating) {
+        if (imv > mtmp.meating)
+            finish_meating(mtmp);
+        else
+            mtmp.meating -= imv;
+    }
+    if (imv > (mtmp.mspec_used || 0))
+        mtmp.mspec_used = 0;
+    else
+        mtmp.mspec_used -= imv;
+
+    /* reduce tameness for every 150 moves you are separated */
+    if (mtmp.mtame) {
+        const wilder = Math.trunc((imv + 75) / 150);
+        if (mtmp.mtame > wilder)
+            mtmp.mtame -= wilder; /* less tame */
+        else if (mtmp.mtame > rn2(wilder))
+            mtmp.mtame = 0; /* untame */
+        else
+            mtmp.mtame = mtmp.mpeaceful = 0; /* hostile! */
+    }
+    /* check to see if it would have died as a pet; if so, go wild instead
+     * of dying the next time we call dog_move()
+     */
+    if (mtmp.mtame && !mtmp.isminion
+        && ((mtmp.data.mflags1 & M1_CARNIVORE) /* carnivorous() */
+            || (mtmp.data.mflags1 & M1_HERBIVORE))) { /* herbivorous() */
+        const edog = mtmp.edog;
+
+        if ((game.moves > edog.hungrytime + 500 && mtmp.mhp < 3)
+            || (game.moves > edog.hungrytime + 750))
+            mtmp.mtame = mtmp.mpeaceful = 0;
+    }
+
+    if (!mtmp.mtame && mtmp.mleashed) {
+        /* leashed monsters should always be with hero, consequently
+           never losing any time to be accounted for later */
+        /* impossible("catching up for leashed monster?") */
+        throw new Error('mon_catchup_elapsed_time(): m_unleash() not ported yet');
+    }
+
+    /* recover lost hit points */
+    if (!regenerates(mtmp.data))
+        imv = Math.trunc(imv / 20);
+    healmon(mtmp, imv, 0);
+
+    /* set_mon_lastmove(mtmp) */
+    mtmp.mlstmv = game.moves;
+}
+
+// C ref: dogmove.c finish_meating()
+function finish_meating(mtmp) {
+    mtmp.meating = 0;
+    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== S_MIMIC) {
+        /* was eating a mimic and now appearance needs resetting */
+        mtmp.m_ap_type = M_AP_NOTHING;
+        mtmp.mappearance = 0;
+        newsym(mtmp.mx, mtmp.my);
+    }
 }

@@ -121,7 +121,7 @@ import { can_saddle, put_saddle_on_mon } from './makemon.js';
 import { in_rooms } from './hack.js';
 import { premap_detect } from './detect.js';
 import { christen_monst, oname } from './do_name.js';
-import { newcham, mongone } from './mon.js';
+import { newcham_sync, mongone } from './mon.js';
 import { mkmap } from './mkmap.js';
 
 // C ref: dungeon.h In_mines()
@@ -2237,7 +2237,7 @@ function create_monster(m, croom) {
                explicitly request that, shift back to vampire */
             if (is_vampshifter(mtmp) && !is_vampire(mtmp.data)
                 && m.appear !== M_AP_MONSTER) /* vampshifted() */
-                newcham(mtmp, mons[mtmp.cham], 0 /* NO_NC_FLAGS */);
+                newcham_sync(mtmp, mons[mtmp.cham], 0 /* NO_NC_FLAGS */);
         }
         if (m.m_lev_adj) {
             if (mtmp.m_lev + m.m_lev_adj > 49)

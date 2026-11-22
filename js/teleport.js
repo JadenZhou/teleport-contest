@@ -59,6 +59,7 @@ import { PM_WIZARD } from './monsters.js';
 import { ACURR } from './attrib.js';
 import { check_capacity } from './hack.js';
 import { morehungry } from './eat.js';
+import { in_out_region, update_player_regions, update_monster_region } from './region.js';
 
 /* C ref: mondata.h is_rider() */
 function is_rider(ptr) {
@@ -303,9 +304,7 @@ export async function teleds(nux, nuy, teleds_flags) {
         if (t && (is_pit(t.ttyp) || is_hole(t.ttyp)) && sobj_at(BOULDER, u.ux0, u.uy0))
             throw new Error('teleds(): fill_pit() not ported yet');
     }
-    /* update_player_regions(): regions aren't ported yet */
-    if (game.regions && game.regions.length)
-        throw new Error('teleds(): update_player_regions() not ported yet');
+    update_player_regions();
     /*
      *  Make sure the hero disappears from the old location.  This will
      *  not happen if she is teleported within sight of her previous
@@ -339,7 +338,7 @@ export async function teleds(nux, nuy, teleds_flags) {
 }
 
 // C ref: teleport.c teleok()
-function teleok(x, y, trapok) {
+async function teleok(x, y, trapok) {
     if (!trapok) {
         /* allow teleportation onto vibrating square, it's not a real trap;
            also allow pits and holes if levitating or flying */
@@ -360,9 +359,8 @@ function teleok(x, y, trapok) {
         return false;
     if (!tele_jump_ok(game.u.ux, game.u.uy, x, y))
         return false;
-    /* in_out_region(x, y): regions aren't ported */
-    if (game.regions && game.regions.length)
-        throw new Error('teleok(): in_out_region() not ported yet');
+    if (!(await in_out_region(x, y)))
+        return false;
     return true;
 }
 
@@ -400,7 +398,7 @@ export async function safe_teleds(teleds_flags) {
     for (tcnt = 0; tcnt < 40; ++tcnt) {
         nux = rnd(COLNO - 1);
         nuy = rn2(ROWNO);
-        if (teleok(nux, nuy, false)) {
+        if (await teleok(nux, nuy, false)) {
             await teleds(nux, nuy, teleds_flags);
             return true;
         }
@@ -417,11 +415,11 @@ export async function safe_teleds(teleds_flags) {
        encountered trap spot that is acceptable to teleok(,,TRUE) */
     for (tcnt = 0; tcnt < candycount; ++tcnt) {
         nux = candy[tcnt].x, nuy = candy[tcnt].y;
-        if (teleok(nux, nuy, false)) {
+        if (await teleok(nux, nuy, false)) {
             await teleds(nux, nuy, teleds_flags);
             return true;
         }
-        if (!backupspot.x && t_at(nux, nuy) && teleok(nux, nuy, true))
+        if (!backupspot.x && t_at(nux, nuy) && await teleok(nux, nuy, true))
             backupspot.x = nux, backupspot.y = nuy;
     }
     /* no non-trap spot found; if we skipped a viable trap spot, use it */
@@ -511,7 +509,7 @@ export async function scrolltele(scroll) {
                 return; /* abort */
             /* possible extensions: introduce a small error if
                magic power is low; allow transfer to solid rock */
-            if (teleok(cc.x, cc.y, false)) {
+            if (await teleok(cc.x, cc.y, false)) {
                 /* for scroll, discover it regardless of destination */
                 await teleds(cc.x, cc.y, TELEDS_TELEPORT);
                 if (u.ux === iflags.travelcc.x && u.uy === iflags.travelcc.y)
@@ -1074,7 +1072,7 @@ async function rloc_to_core(mtmp, x, y, rlocflags) {
 
     mon_track_clear(mtmp);
     place_monster(mtmp, x, y); /* put monster down */
-    /* update_monster_region(mtmp): no regions are created yet */
+    update_monster_region(mtmp);
 
     if (u.ustuck === mtmp)
         throw new Error('rloc_to_core(): u.ustuck teleporting not ported yet');

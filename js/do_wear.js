@@ -65,6 +65,7 @@ import { float_vs_flight } from './polyself.js';
 import { unmul } from './allmain.js';
 import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
+import { region_danger } from './region.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -779,13 +780,6 @@ export async function Amulet_off() {
         await off_msg(amul); /* (not 'uamul'; it's Null now) */
     if (mkn)
         makeknown(amul.otyp);
-}
-
-/* C ref: region.c region_danger() -- gas clouds aren't ported */
-function region_danger() {
-    if (game.regions && game.regions.length)
-        throw new Error('region_danger(): gas clouds not ported yet');
-    return false;
 }
 
 // C ref: mon.c can_be_strangled() -- for the hero

@@ -28,7 +28,7 @@ import { which_armor } from './worn.js';
 import { title_to_mon } from './botl.js';
 import { clear_path } from './vision.js';
 import {
-    mons, NATTK, AT_ANY, AD_DRLI, M1_FLY, M1_SWIM, M1_WALLWALK, M1_NOEYES,
+    mons, NATTK, AT_ANY, AD_ANY, AD_DRLI, M1_FLY, M1_SWIM, M1_WALLWALK, M1_NOEYES,
     M1_REGEN, M1_SEE_INVIS, M1_TPORT, M1_TPORT_CNTRL, M2_UNDEAD, M2_WERE,
     M2_ELF, M2_DWARF, M2_GNOME, M2_ORC, M2_HUMAN, M2_DEMON, M2_MALE,
     M2_FEMALE, M2_NEUTER, M3_INFRAVISION, S_EYE, S_LIGHT, S_VAMPIRE,
@@ -423,6 +423,7 @@ export function Resists_Elem(mon, propindx) {
 /* C ref: monst.h resists_fire()/resists_sleep() */
 export function resists_fire(mon) { return Resists_Elem(mon, FIRE_RES); }
 export function resists_sleep(mon) { return Resists_Elem(mon, SLEEP_RES); }
+export function resists_poison(mon) { return Resists_Elem(mon, POISON_RES); }
 
 /* hero inventory is a nobj chain; monster minvent is an array in pickup
    order (C prepends, so walk it newest first) */
@@ -525,6 +526,16 @@ export function dmgtype_fromattack(ptr, dtyp, atyp) {
     for (let i = 0; i < NATTK; i++) {
         const a = ptr.mattk[i];
         if (a.adtyp === dtyp && (atyp === AT_ANY || a.aatyp === atyp))
+            return a;
+    }
+    return null;
+}
+
+// C ref: mondata.c attacktype_fordmg()
+export function attacktype_fordmg(ptr, atyp, dtyp) {
+    for (let i = 0; i < NATTK; i++) {
+        const a = ptr.mattk[i];
+        if (a.aatyp === atyp && (dtyp === AD_ANY || a.adtyp === dtyp))
             return a;
     }
     return null;
