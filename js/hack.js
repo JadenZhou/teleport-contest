@@ -60,7 +60,7 @@ import { do_attack } from './uhitm.js';
 import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
          ARTICLE_YOUR, SUPPRESS_SADDLE } from './do_name.js';
 import { curr_mon_load } from './dogmove.js';
-import { bad_rock, passes_bars } from './mon.js';
+import { bad_rock, passes_bars, minliquid } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
 import { an, xname } from './objnam.js';
 import { the } from './iactions.js';
@@ -2706,8 +2706,8 @@ async function domove_swap_with_pet(mtmp, x, y) {
 
         /* check for displacing it into pools and traps:
            minliquid(mtmp) ? Trap_Killed_Mon : mintrap(mtmp, NO_TRAP_FLAGS) */
-        if (is_pool(mtmp.mx, mtmp.my) || is_lava(mtmp.mx, mtmp.my))
-            throw new Error('domove_swap_with_pet(): minliquid() not ported yet');
+        if (await minliquid(mtmp))
+            throw new Error('domove_swap_with_pet(): Trap_Killed_Mon (pet drowned) not ported yet');
         if (t_at(mtmp.mx, mtmp.my))
             throw new Error('domove_swap_with_pet(): mintrap() not ported yet');
         /* Trap_Effect_Finished */

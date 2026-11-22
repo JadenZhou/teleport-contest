@@ -86,7 +86,10 @@ import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
 import { relobj } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
-         mon_track_clear } from './monmove.js';
+         mon_track_clear, monflee } from './monmove.js';
+import { tele_restrict, rloc } from './teleport.js';
+import { can_teleport } from './mondata.js';
+import { FOUNTAIN, FLYING, LEVITATION, RLOC_MSG } from './const.js';
 import { canseemon, sensemon } from './display.js';
 import { UNICORN_HORN, WORM_TOOTH } from './objects.js';
 import { CORPSTAT_NONE, CORPSTAT_BURIED, CORPSTAT_INIT, CORPSTAT_FEMALE,
@@ -186,7 +189,7 @@ async function m_calcdistress(mtmp) {
     if (mtmp.data.mmove === 0) {
         if (game.vision_full_recalc)
             vision_recalc(0);
-        if (minliquid(mtmp))
+        if (await minliquid(mtmp))
             return;
     }
 
@@ -1039,10 +1042,133 @@ function worm_known(worm) {
     throw new Error('worm_known() not ported yet');
 }
 
-// C ref: mon.c minliquid() -- monsters in pools or lava aren't ported yet
-function minliquid(mtmp) {
-    if (is_pool(mtmp.mx, mtmp.my) || is_lava(mtmp.mx, mtmp.my))
-        throw new Error('minliquid() not ported yet');
+/* C ref: mondata.h is_clinger() */
+function is_clinger(ptr) { return (ptr.mflags1 & MM.M1_CLING) !== 0; }
+
+// C ref: mon.c minliquid()
+/* check mtmp and water/lava for compatibility, 0 (survived), 1 (died) */
+export async function minliquid(mtmp) {
+    let res;
+
+    /* set up flag for mondead() and xkilled() */
+    game.sad_feeling = (mtmp.mtame && !canseemon(mtmp));
+    res = await minliquid_core(mtmp);
+    /* always clear the flag */
+    game.sad_feeling = false;
+    return res;
+}
+
+// C ref: mon.c minliquid_core()
+/* guts of minliquid() */
+async function minliquid_core(mtmp) {
+    let inpool, inlava, infountain;
+    const u = game.u;
+    const waterwall = isok(mtmp.mx, mtmp.my)
+                      && IS_WATERWALL(game.level.at(mtmp.mx, mtmp.my).typ);
+    const ptr = mtmp.data;
+    const uhas = (p) => !!(u.uprops[p]?.intrinsic || u.uprops[p]?.extrinsic);
+
+    /* [ceiling clingers are handled below] */
+    inpool = (is_pool(mtmp.mx, mtmp.my)
+              && (!(is_flyer(ptr) || is_floater(ptr))
+                  /* there's no "above the surface" on the plane of water */
+                  || Is_waterlevel(u.uz)));
+    inlava = (is_lava(mtmp.mx, mtmp.my)
+              && !(is_flyer(ptr) || is_floater(ptr)));
+    infountain = (game.level.at(mtmp.mx, mtmp.my).typ === FOUNTAIN);
+
+    /* Flying and levitation keeps our steed out of the liquid
+       (but not water-walking or swimming; note: if hero is in a
+       water location on the Plane of Water, flight and levitating
+       are blocked so this (Flying || Levitation) test fails there
+       and steed will be subject to water effects, as intended) */
+    if (mtmp === u.usteed && (uhas(FLYING) || uhas(LEVITATION)) && !waterwall)
+        return 0;
+
+    /* Gremlin multiplying won't go on forever since the hit points
+     * keep going down, and when it gets to 1 hit point the clone
+     * function will fail.
+     */
+    if (ptr === mons[MM.PM_GREMLIN] && (inpool || infountain) && rn2(3)) {
+        throw new Error('minliquid(): split_mon() not ported yet');
+    } else if (ptr === mons[MM.PM_IRON_GOLEM] && inpool && !rn2(5)) {
+        const dam = d(2, 6);
+
+        if (cansee(mtmp.mx, mtmp.my))
+            await pline(`${Monnam(mtmp)} rusts.`); /* pline_mon() */
+        mtmp.mhp -= dam;
+        if (mtmp.mhpmax > dam)
+            mtmp.mhpmax -= dam;
+        if (DEADMONSTER(mtmp)) {
+            await mondied(mtmp);
+            if (DEADMONSTER(mtmp))
+                return 1;
+        }
+        /* water_damage_chain(mtmp->minvent, FALSE) */
+        if (mtmp.minvent?.length)
+            throw new Error('minliquid(): water_damage_chain() not ported yet');
+        return 0;
+    }
+
+    if (inlava) {
+        /*
+         * Lava effects much as water effects. Lava likers are able to
+         * protect their stuff. Fire resistant monsters can only protect
+         * themselves  --ALI
+         */
+        if (!is_clinger(ptr)
+            && !(ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER])) {
+            /* likes_lava() */
+            throw new Error('minliquid(): monster in lava not ported yet');
+        }
+    } else if (inpool || waterwall) {
+        /* Most monsters drown in pools.  flooreffects() will take care of
+         * water damage to dead monsters' inventory, but survivors need to
+         * be handled here.  Swimmers are able to protect their stuff...
+         */
+        if ((waterwall || !is_clinger(ptr))
+            /* !cant_drown(): is_swimmer() || amphibious() || breathless() */
+            && !(is_swimmer(ptr) || (ptr.mflags1 & MM.M1_AMPHIBIOUS) !== 0
+                 || (ptr.mflags1 & MM.M1_BREATHLESS) !== 0)) {
+            /* like hero with teleport intrinsic or spell, teleport away
+               if possible */
+            if (can_teleport(ptr) && !(await tele_restrict(mtmp))) {
+                if (await rloc(mtmp, RLOC_MSG))
+                    return 0;
+            }
+            if (cansee(mtmp.mx, mtmp.my)) {
+                if (game.context.mon_moving)
+                    await pline(`${Monnam(mtmp)} drowns.`); /* pline_mon() */
+                else
+                    /* hero used fire to melt ice that monster was on */
+                    await pline(`You drown ${mon_nam(mtmp)}.`);
+            }
+            if (u.ustuck === mtmp && u.uswallow) { /* engulfing_u() */
+                /* This can happen after a purple worm plucks you off a
+                   flying steed while you are over water. */
+                throw new Error('minliquid(): engulfer sinking not ported yet');
+            }
+            if (game.context.mon_moving)
+                await mondied(mtmp); /* ok to leave corpse despite water */
+            else
+                await xkilled(mtmp, XKILL_NOMSG);
+            if (!DEADMONSTER(mtmp)) {
+                /* lifesaved: m_in_air(), water_damage_chain(), rloc(),
+                   deal_with_overcrowding() */
+                throw new Error('minliquid(): lifesaved drowning monster not ported yet');
+            }
+            return 1;
+        }
+    } else {
+        /* but eels have a difficult time outside */
+        if (ptr.mlet === S_EEL && !Is_waterlevel(u.uz)
+            && !((ptr.mflags1 & MM.M1_BREATHLESS) !== 0)) {
+            /* as mhp gets lower, the rate of further loss slows down */
+            if (mtmp.mhp > 1 && rn2(mtmp.mhp) > rn2(8))
+                mtmp.mhp--;
+            await monflee(mtmp, 2, false, false);
+        }
+    }
     return 0;
 }
 
@@ -1086,7 +1212,7 @@ async function movemon_singlemon(mtmp) {
     if (game.context.bypasses)
         clear_bypasses();
     /* clear_splitobjs(): not ported yet */
-    if (minliquid(mtmp))
+    if (await minliquid(mtmp))
         return false;
 
     /* after losing equipment, try to put on replacement */
