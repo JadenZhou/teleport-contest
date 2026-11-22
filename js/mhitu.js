@@ -2035,8 +2035,58 @@ async function passiveum(olduasmon, mtmp, mattk) {
     }
     if (!Upolyd())
         return M_ATTK_HIT;
-    throw new Error('passiveum(): polymorphed hero passives not ported yet');
+
+    /* These affect the enemy only if you are still a monster */
+    if (rn2(3))
+        switch (oldu_mattk.adtyp) {
+        case AD_PHYS:
+            if (oldu_mattk.aatyp === AT_BOOM)
+                throw new Error('passiveum(): exploding hero (rehumanize()) not ported yet');
+            break;
+        case AD_COLD: /* Brown mold or blue jelly */
+            if (resists_cold_mu(mtmp)) {
+                /* shieldeff(mtmp->mx, mtmp->my): transient display only */
+                await pline(`${Monnam(mtmp)} is mildly chilly.`); /* pline_mon() */
+                /* golemeffects(mtmp, AD_COLD, tmp): no effect for cold */
+                tmp = 0;
+                break;
+            }
+            await pline(`${Monnam(mtmp)} is suddenly very cold!`); /* pline_mon() */
+            game.u.mh += Math.trunc((tmp + rn2(2)) / 2);
+            if (game.u.mhmax < game.u.mh)
+                game.u.mhmax = game.u.mh;
+            if (game.u.mhmax > ((game.youmonst.data.mlevel + 1) * 8))
+                throw new Error('passiveum(): split_mon() not ported yet');
+            break;
+        case M.AD_PLYS: /* Floating eye */
+        case M.AD_STUN: /* Yellow mold */
+        case M.AD_FIRE: /* Red mold */
+        case M.AD_ELEC:
+            throw new Error('passiveum(): polymorphed hero passive damage types not ported yet');
+        default:
+            tmp = 0;
+            break;
+        }
+    else
+        tmp = 0;
+
+    return await assess_dmg_mu(mtmp, tmp);
 }
+
+// C ref: mhitu.c assess_dmg()
+async function assess_dmg_mu(mtmp, tmp) {
+    if ((mtmp.mhp -= tmp) <= 0) {
+        await pline(`${Monnam(mtmp)} dies!`); /* pline_mon() */
+        await xkilled_mu(mtmp, XKILL_NOMSG_MU);
+        if (!(mtmp.mhp < 1)) /* !DEADMONSTER(mtmp) */
+            return M_ATTK_HIT;
+        return M_ATTK_AGR_DIED;
+    }
+    return M_ATTK_HIT;
+}
+import { xkilled as xkilled_mu } from './mon.js';
+import { resists_cold as resists_cold_mu } from './mondata.js';
+import { XKILL_NOMSG as XKILL_NOMSG_MU } from './const.js';
 
 void mon_currwep; void Blind; void AT_GAZE;
 import { mon_explodes } from './explode.js';
