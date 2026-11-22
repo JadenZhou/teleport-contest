@@ -71,6 +71,9 @@ import { m_in_air } from './monmove.js';
 import { canseemon } from './display.js';
 import { mon_nam, Monnam } from './do_name.js';
 import { You_hear } from './sounds.js';
+import { self_invis_message } from './potion.js';
+import { perceives, pm_invisible } from './mondata.js';
+import { INVIS, SEE_INVIS } from './const.js';
 import { just_an } from './objnam.js';
 import { seemimic } from './mon.js';
 import { resist } from './zap.js';
@@ -2176,8 +2179,32 @@ async function domagictrap() {
         case 10:
             /* sometimes nothing happens */
             break;
-        case 11: /* toggle intrinsic invisibility */
-            throw new Error('domagictrap(): invisibility toggle not ported yet');
+        case 11: { /* toggle intrinsic invisibility */
+            const inv = u.uprops[INVIS], seeinv = u.uprops[SEE_INVIS];
+            const Invis = (inv.intrinsic || inv.extrinsic) && !inv.blocked;
+            const See_invisible = !!(seeinv.intrinsic || seeinv.extrinsic
+                                     || perceives(game.youmonst.data));
+
+            /* Soundeffect(se_low_hum, 100); */
+            await You_hear("a low hum.");
+            if (!Invis) {
+                if (!Blind())
+                    await self_invis_message();
+            } else if (!inv.extrinsic && !pm_invisible(game.youmonst.data)) {
+                if (!Blind()) {
+                    if (!See_invisible)
+                        await You("can see yourself again!");
+                    else
+                        await pline("You can't see through yourself anymore."); /* You_cant() */
+                }
+            } else {
+                /* If we're invisible from another source */
+                await You_feel(`a little more ${inv.intrinsic ? "obvious" : "hidden"} now.`);
+            }
+            inv.intrinsic = inv.intrinsic ? 0 : (inv.intrinsic | FROMOUTSIDE);
+            newsym(u.ux, u.uy);
+            break;
+        }
         case 12: /* a flash of fire */
             throw new Error('domagictrap(): dofiretrap() not ported yet');
 

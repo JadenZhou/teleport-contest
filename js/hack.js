@@ -77,7 +77,7 @@ import { CORPSE } from './objects.js';
 import { is_flyer, is_floater, dmgtype } from './mondata.js';
 import { float_vs_flight } from './polyself.js';
 import { pickup } from './pickup.js';
-import { shop_keeper, u_left_shop, u_entered_shop } from './shk.js';
+import { shop_keeper, u_left_shop, u_entered_shop, costly_spot } from './shk.js';
 import { IS_THRONE, IS_GRAVE, IS_FOUNTAIN, IS_ALTAR, D_ISOPEN, STAIRS,
          ECMD_TIME, ECMD_OK } from './const.js';
 import { dotrap } from './trap.js';
@@ -2145,9 +2145,8 @@ async function moverock_core(sx, sy) {
                 || doorless_door(rx, ry)) && !sobj_at(BOULDER, rx, ry)) {
             ttmp = t_at(rx, ry);
             mtmp = m_at(rx, ry);
-            costly = false; /* costly_spot(sx, sy) && shop_keeper(): below */
-            if (game.level.flags?.has_shop)
-                throw new Error('moverock_core(): costly_spot() not ported yet');
+            costly = !!(costly_spot(sx, sy)
+                        && shop_keeper(first_shop_rno(sx, sy)));
 
             /* KMH -- Sokoban doesn't let you push boulders diagonally */
             if (Sokoban() && game.u.dx && game.u.dy)

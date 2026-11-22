@@ -62,6 +62,7 @@ import { doread } from './read.js';
 import { dohelp, dowhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
 import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
+import { done2 } from './end.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -100,6 +101,7 @@ export function extcmds_match(findstr, ecmflags) {
 // extended commands both go through this table)
 const cmd_funcs = {
     doextcmd: () => doextcmd(),
+    done2: () => done2(),
     doextlist: () => doextlist(),
     dosearch: () => dosearch(),
     dopray: () => dopray(),

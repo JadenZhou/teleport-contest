@@ -22,8 +22,9 @@ import {
     DISCLOSE_NO_WITHOUT_PROMPT, DISCLOSE_PROMPT_DEFAULT_YES,
     DISCLOSE_PROMPT_DEFAULT_SPECIAL, In_quest, In_endgame, Is_astralevel,
     Is_knox_level, LOW_PM, M_AP_MONSTER, SICK, TIMEOUT, UNCHANGING, TT_LAVA,
-    IS_GRAVE,
+    IS_GRAVE, PARANOID_QUIT,
 } from './const.js';
+import { nomul } from './hack.js';
 import { mons, PM_HIGH_CLERIC, PM_GHOST, PM_WRAITH, PM_VAMPIRE, PM_GHOUL,
          PM_HUMAN, PM_GREEN_SLIME, PM_TOURIST, S_WRAITH, S_MUMMY, S_VAMPIRE,
          G_UNIQ, G_NOCORPSE, M2_PNAME } from './monsters.js';
@@ -59,7 +60,7 @@ import { nh_terminate } from './save.js';
 import {
     tty_display_nhwindow, tty_destroy_nhwindow, tty_create_nhwindow,
     tty_putstr, tty_exit_nhwindows, tty_raw_print, tty_yn_function,
-    tty_destroy_mapwindow, tty_destroy_statuswindow,
+    tty_destroy_mapwindow, tty_destroy_statuswindow, tty_clear_nhwindow,
 } from './wintty.js';
 
 const EXIT_SUCCESS = 0;
@@ -475,6 +476,50 @@ export async function done_object_cleanup() {
 function artifact_score(list, counting, endwin) {
     void list; void counting; void endwin;
     throw new Error('artifact_score(): not ported yet');
+}
+
+// C ref: end.c done2()
+/* "#quit" command or keyboard interrupt */
+export async function done2() {
+    const g = game;
+    const u = g.u;
+    let abandon_tutorial = false;
+
+    if (u.uz.dnum === g.dungeon_topology?.d_tutorial_dnum /* In_tutorial() */
+        && await tty_yn_function("Switch from the tutorial back to regular play?",
+                                 "yn", 'n') === 'y') /* y_n() */
+        abandon_tutorial = true;
+
+    if (abandon_tutorial || !(await paranoid_query(
+            (g.flags.paranoia_bits & PARANOID_QUIT) !== 0, /* ParanoidQuit */
+            "Really quit without saving?"))) {
+        /* (void) signal(SIGINT, (SIG_RET_TYPE) done1); */
+        tty_clear_nhwindow(g.WIN_MESSAGE);
+        /* curs_on_u(): the cursor goes back to the hero at the next
+           input wait */
+        wait_synch();
+        if (g.multi > 0)
+            nomul(0);
+        if (g.multi === 0) {
+            u.uinvulnerable = 0; /* avoid ctrl-C bug -dlc */
+            u.usleep = 0;
+        }
+
+        if (abandon_tutorial)
+            throw new Error('done2(): schedule_goto() out of the tutorial not ported yet');
+        return 0; /* ECMD_OK */
+    }
+
+    if (g.flags.debug) { /* wizard (UNIX) */
+        const c = await tty_yn_function("Dump core?", "ynq", 'n'); /* ynq() */
+
+        if (c === 'y') {
+            throw new Error('done2(): NH_abort() not ported yet');
+        } else if (c === 'q')
+            inc_done_stopprint(); /* done_stopprint++ */
+    }
+    await done(QUIT);
+    return 0; /* ECMD_OK */
 }
 
 // C ref: end.c done()

@@ -20,7 +20,7 @@ import {
     DRAWBRIDGE_DOWN, D_BROKEN, LA_DOWN,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
     CROSSWALL, TUWALL, TDWALL, TLWALL, TRWALL,
-    D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS,
+    D_NODOOR, D_ISOPEN, D_CLOSED, D_LOCKED, SEE_INVIS, INVIS,
     BLINDED, INFRAVISION, TELEPAT, WARN_OF_MON, DETECT_MONSTERS, WARNING,
     NO_TRAP, BEAR_TRAP, PIT, SPIKED_PIT, WEB,
 } from './const.js';
@@ -36,7 +36,7 @@ import {
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL, FIRST_OBJECT,
 } from './objects.js';
 import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS, S_EEL, M1_FLY,
-         PM_TENGU, PM_LONG_WORM_TAIL } from './monsters.js';
+         PM_TENGU, PM_LONG_WORM_TAIL, M1_SEE_INVIS } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
 import { is_pool, is_lava } from './makemon.js';
@@ -909,6 +909,22 @@ export function mon_visible(mon) {
     return (!mon.minvis || See_invisible) && !mon.mundetected;
 }
 
+/* C ref: display.h canspotself(), canseeself(), senseself();
+   youprop.h Invisible, See_invisible, Unblind_telepat, Detect_monsters */
+export function canspotself() {
+    const u = game.u;
+    const inv = u.uprops[INVIS];
+    const Invis = !!((inv.intrinsic || inv.extrinsic) && !inv.blocked);
+    const See_invisible = uprop(SEE_INVIS)
+                          || (game.youmonst.data.mflags1 & M1_SEE_INVIS) !== 0;
+    const Invisible = Invis && !See_invisible;
+    const canseeself = Blind() || !!u.uswallow
+                       || (!Invisible && !u.uundetected);
+    const senseself = !!u.uprops[TELEPAT]?.extrinsic /* Unblind_telepat */
+                      || uprop(DETECT_MONSTERS);
+    return canseeself || senseself;
+}
+
 /* C ref: youprop.h -- the hero's property tests canspotmon() needs */
 function uprop(p) {
     const P = game.u?.uprops?.[p];
@@ -1655,8 +1671,17 @@ export function newsym(x, y) {
     if (game.u?.ux === x && game.u?.uy === y) {
         // Hero: update the remembered spot under the hero, then show self
         if (cansee(x, y)) {
-            _map_location(x, y, false);
+            const see_self = canspotself();
+
+            /* update map information for <u.ux,u.uy> (remembered topology,
+               object, known trap) but don't display it unless we're blind
+               or can't see ourself */
+            _map_location(x, y, !see_self);
+            if (!see_self)
+                return;
         } else {
+            if (!canspotself())
+                throw new Error('newsym(): feel_location() of an unseen hero spot not ported yet');
             const tg = terrain_glyph(loc, x, y);
             loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
                                      cmap: tg.cmap };
