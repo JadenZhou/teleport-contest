@@ -146,7 +146,7 @@ export function set_uasmon() {
     PROPSET(SEE_INVIS, perceives(mdat));
     PROPSET(TELEPAT, telepathic(mdat));
     /* note that Infravision uses mons[race] rather than usual mons[role] */
-    const Upolyd = (u.mtimedone !== 0);
+    const Upolyd = (u.umonnum !== u.umonster);
     PROPSET(INFRAVISION, infravision(Upolyd ? mdat : mons[g.urace.mnum]));
     PROPSET(INVIS, pm_invisible(mdat));
     PROPSET(TELEPORT, can_teleport(mdat));
@@ -395,10 +395,10 @@ function uprop_on(p) {
     return !!(pr.intrinsic || pr.extrinsic);
 }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
+/* Blind: (HBlinded || EBlinded) && !BBlinded */
 function Blind() {
     const p = game.u.uprops[BLINDED];
-    return !!((p.intrinsic || p.extrinsic || game.u.ucreamed)
-              && !(p.blocked && !game.u.ucreamed));
+    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
 }
 function Polymorph_control() { return uprop_on(POLYMORPH_CONTROL); }
 function Unchanging() { return uprop_on(UNCHANGING); }

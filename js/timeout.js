@@ -6,6 +6,7 @@
 // *_dialogue() routines and run_timers() are not ported yet; nothing the
 // JS port does yet starts them (see the comments below).
 
+import { is_flyer } from './mondata.js';
 import { vobj_at } from './display.js';
 import { inv_weight } from './hack.js';
 import { wake_nearby } from './mon.js';
@@ -765,7 +766,9 @@ export async function nh_timeout() {
                 /* call this only when a move took place.  */
                 /* otherwise handle fumbling msgs locally. */
                 if (u.umoved && !(prop_on(P[LEVITATION]) && !P[LEVITATION].blocked)
-                    && !(prop_on(P[FLYING]) && !P[FLYING].blocked)) {
+                    && !((prop_on(P[FLYING])
+                          || (u.usteed && is_flyer(u.usteed.data)))
+                         && !P[FLYING].blocked)) {
                     await slip_or_trip();
                     nomul(-2);
                     g.multi_reason = "fumbling";
@@ -775,7 +778,7 @@ export async function nh_timeout() {
                      * to this number must be thoroughly play tested.
                      */
                     if ((inv_weight() > (WT_NOISY_INV * -1))) {
-                        if (!(prop_on(P[DEAF])))
+                        if (!(prop_on(P[DEAF]) || u.uroleplay?.deaf)) /* !Deaf */
                             await You("make a lot of noise!");
                         await wake_nearby(false);
                     }
@@ -809,7 +812,8 @@ async function slip_or_trip() {
     let what;
     const on_foot = !u.usteed;
     const P = u.uprops;
-    const Hallu = !!((prop_on(P[HALLUC]) && !prop_on(P[HALLUC_RES])));
+    /* Hallucination: HHallucination && !Halluc_resistance */
+    const Hallu = !!(P[HALLUC].intrinsic && !prop_on(P[HALLUC_RES]));
 
     if (otmp && on_foot && !u.uinwater && is_pool(u.ux, u.uy))
         otmp = null;
@@ -822,8 +826,8 @@ async function slip_or_trip() {
           name; if not, look for rocks to trip over; trip over
           anonymous "something" if there aren't any rocks.
         */
-        const Blnd = !!(prop_on(P[BLINDED]) && !P[BLINDED].blocked)
-                     || !!u.ucreamed;
+        /* Blind: (HBlinded || EBlinded) && !BBlinded */
+        const Blnd = !!(prop_on(P[BLINDED]) && !P[BLINDED].blocked);
         what = (game.iflags.last_msg === 'PLNMSG_ONE_ITEM_HERE')
                 ? ((otmp.quan === 1) ? "it"
                       : Hallu ? "they" : "them")
