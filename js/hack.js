@@ -44,7 +44,12 @@ import { glyph_at, Norep } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
 import { u_at } from './const.js';
-import { t_at, VIBRATING_SQUARE, is_pit, WEB } from './trap.js';
+import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap } from './trap.js';
+import { TT_BEARTRAP, TT_PIT, TT_WEB, TT_LAVA, TT_INFLOOR, TT_BURIEDBALL, TT_NONE } from './const.js';
+import { ART_STING } from './artilist.js';
+import { buried_ball, buried_ball_to_punishment } from './dig.js';
+import { surface } from './iactions.js';
+import { hliquid } from './potion.js';
 import { dist2, distmin } from './hacklib.js';
 import { selection_new, selection_free, selection_getpoint,
          selection_setpoint } from './selvar.js';
@@ -203,6 +208,154 @@ export function calc_capacity(xtra_wt) {
         return OVERLOADED;
     cap = Math.trunc((wt * 2) / game.wc) + 1;
     return Math.min(cap, OVERLOADED);
+}
+
+// C ref: hack.c trapmove()
+/* try to escape being stuck in a trapped state by walking out of it;
+   return true iff moving should continue to intended destination
+   (all failures and most successful escapes leave hero at original spot) */
+async function trapmove(x, y, /* targeted destination, <u.ux+u.dx,u.uy+u.dy> */
+                        desttrap) /* nonnull if another trap at <x,y> */ {
+    const u = game.u;
+    let anchored = false;
+    let predicament, culprit;
+    const steedname = !u.usteed ? null : y_monnam(u.usteed);
+    let wriggle_free = false;
+
+    if (!u.utrap)
+        return true; /* sanity check */
+
+    /*
+     * Note: caller should call reset_utrap() when we set u.utrap to 0.
+     */
+
+    switch (u.utraptype) {
+    case TT_BEARTRAP:
+        if (game.flags.verbose) {
+            predicament = "caught in a bear trap";
+            if (u.usteed)
+                await Norep(`${upstart(steedname)} is ${predicament}.`);
+            else
+                await Norep(`You are ${predicament}.`);
+        }
+        /* [why does diagonal movement give quickest escape?] */
+        if ((u.dx && u.dy) || !rn2(5))
+            u.utrap--;
+        if (!u.utrap)
+            wriggle_free = true; /* goto wriggle_free */
+        break;
+    case TT_PIT:
+        if (desttrap && desttrap.tseen
+            && is_pit(desttrap.ttyp))
+            return true; /* move into adjacent pit */
+        /* try to escape; position stays same regardless of success */
+        await climb_pit();
+        break;
+    case TT_WEB:
+        if (game.uwep && game.uwep.oartifact === ART_STING) {
+            /* escape trap but don't move and don't destroy it */
+            u.utrap = 0; /* caller will call reset_utrap() */
+            await pline("Sting cuts through the web!");
+            break;
+        }
+        if (--u.utrap) {
+            if (game.flags.verbose) {
+                predicament = "stuck to the web";
+                if (u.usteed)
+                    await Norep(`${upstart(steedname)} is ${predicament}.`);
+                else
+                    await Norep(`You are ${predicament}.`);
+            }
+        } else {
+            if (u.usteed)
+                await pline(`${upstart(steedname)} breaks out of the web.`);
+            else
+                await You("disentangle yourself.");
+        }
+        break;
+    case TT_LAVA:
+        if (game.flags.verbose) {
+            predicament = "stuck in the lava";
+            if (u.usteed)
+                await Norep(`${upstart(steedname)} is ${predicament}.`);
+            else
+                await Norep(`You are ${predicament}.`);
+        }
+        if (!is_lava(x, y)) {
+            u.utrap--;
+            if ((u.utrap & 0xff) === 0) {
+                u.utrap = 0;
+                if (u.usteed)
+                    await You(`lead ${steedname} to the edge of the ${
+                        hliquid("lava")}.`);
+                else
+                    await You(`pull yourself to the edge of the ${
+                        hliquid("lava")}.`);
+            }
+        }
+        u.umoved = true;
+        break;
+    case TT_INFLOOR:
+    case TT_BURIEDBALL:
+        anchored = (u.utraptype === TT_BURIEDBALL);
+        if (anchored) {
+            const cc = { x: u.ux, y: u.uy };
+
+            /* can move normally within radius 1 of buried ball */
+            if (buried_ball(cc) && dist2(x, y, cc.x, cc.y) <= 2) {
+                /* ugly hack: we need to issue some message here
+                   in case "you are chained to the buried ball"
+                   was the most recent message given, otherwise
+                   our next attempt to move out of tether range
+                   after this successful move would have its
+                   can't-do-that message suppressed by Norep */
+                if (game.flags.verbose)
+                    await Norep("You move within the chain's reach.");
+                return true;
+            }
+        }
+        if (--u.utrap) {
+            if (game.flags.verbose) {
+                if (anchored) {
+                    predicament = "chained to the";
+                    culprit = "buried ball";
+                } else {
+                    predicament = "stuck in the";
+                    culprit = surface(u.ux, u.uy);
+                }
+                if (u.usteed) {
+                    if (anchored)
+                        await Norep(`You and ${steedname} are ${predicament} ${
+                            culprit}.`);
+                    else
+                        await Norep(`${upstart(steedname)} is ${predicament} ${
+                            culprit}.`);
+                } else
+                    await Norep(`You are ${predicament} ${culprit}.`);
+            }
+        } else {
+            wriggle_free = true;
+        }
+        break;
+    case TT_NONE:
+        impossible("trapmove: trapped in nothing?");
+        break;
+    default:
+        impossible(`trapmove: stuck in unknown trap? (${u.utraptype})`);
+        break;
+    }
+    if (wriggle_free) {
+        /* wriggle_free: */
+        if (u.usteed)
+            await pline(`${upstart(steedname)} finally ${
+                !anchored ? "lurches" : "wrenches the ball"} free.`);
+        else
+            await You(`finally ${
+                !anchored ? "wriggle" : "wrench the ball"} free.`);
+        if (anchored)
+            await buried_ball_to_punishment();
+    }
+    return false;
 }
 
 // C ref: hack.c u_rooted()
@@ -2842,8 +2995,18 @@ async function domove_core() {
                 return;
         }
 
-        if (u.utrap)
-            throw new Error('domove_core(): trapmove() not ported yet');
+        if (u.utrap) { /* when u.utrap is True, displaceu is False */
+            const moved = await trapmove(x, y, null);
+
+            if (!u.utrap) {
+                game.disp_botl = true;
+                await reset_utrap(true); /* might resume levitation or flight */
+            }
+            /* might not have escaped, or did escape but remain in the same
+               spot */
+            if (!moved)
+                return;
+        }
 
         if (!await test_move(u.ux, u.uy, x - u.ux, y - u.uy, DO_MOVE)) {
             if (!ctx.door_opened) {

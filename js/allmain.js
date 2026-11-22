@@ -295,11 +295,23 @@ function is_pool_or_lava_at_u() {
            || typ === LAVAWALL || typ === DRAWBRIDGE_UP;
 }
 
+// C ref: cmd.c timed_occupation()
+/* used by set_occupation() for a counted command with an occupation text
+   (search, wait); the command function is game.timed_occ_fn */
+async function timed_occupation() {
+    await game.timed_occ_fn();
+    if (game.multi > 0)
+        game.multi--;
+    return (game.multi > 0) ? 1 : 0;
+}
+
 // C ref: cmd.c set_occupation()
 export function set_occupation(fn, txt, xtime) {
-    if (xtime)
-        throw new Error('set_occupation(): timed_occupation() not ported yet');
-    game.occupation = fn;
+    if (xtime) {
+        game.occupation = timed_occupation;
+        game.timed_occ_fn = fn;
+    } else
+        game.occupation = fn;
     game.occtxt = txt;
     game.occtime = 0;
 }

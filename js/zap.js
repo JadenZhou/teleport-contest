@@ -891,7 +891,7 @@ export async function dozap() {
 }
 
 // C ref: shk.c check_unpaid() -> check_unpaid_usage(otmp, FALSE)
-function check_unpaid(otmp) {
+export function check_unpaid(otmp) {
     if (!otmp.unpaid || !game.u.ushops || !game.u.ushops[0]
         || (otmp.spe <= 0 && objects[otmp.otyp].oc_charged))
         return;
@@ -1098,6 +1098,18 @@ function adtyp_to_prop(dmgtyp) {
         break;
     }
     return 0; /* prop_types start at 1 */
+}
+
+// C ref: zap.c inventory_resistance_check()
+/* Rolls to see whether an object in inventory resists damage from the
+   given damage type, due to an equipped item protecting it. */
+export function inventory_resistance_check(dmgtyp) {
+    const prob = u_adtyp_resistance_obj(dmgtyp);
+
+    if (!prob)
+        return false;
+
+    return rn2(100) < prob;
 }
 
 // C ref: zap.c u_adtyp_resistance_obj()

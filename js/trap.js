@@ -93,7 +93,21 @@ import { nomul, end_running } from './hack.js';
 import { exercise, ATEMP } from './attrib.js';
 import { body_part } from './insight.js';
 import { encumber_msg } from './pickup.js';
-import { You, Your, pline_The } from './display.js';
+import { You, Your, pline_The, Norep } from './display.js';
+import { fill_pit } from './muse.js';
+import { YMonnam } from './do_name.js';
+import { tty_clear_nhwindow } from './wintty.js';
+import { is_rottable, is_corrodeable, is_crackable,
+         costly_alteration } from './mkobj.js';
+import { remove_worn_item, extract_from_minvent } from './steal.js';
+import { delobj } from './invent.js';
+import { Yobjnam2 } from './objnam.js';
+import { inventory_resistance_check } from './zap.js';
+import { AD_ACID } from './monsters.js';
+import { COST_BURN, COST_RUST, COST_ROT, COST_CORRODE,
+         COST_CRACK } from './const.js';
+
+function impossible(msg) { console.error(`impossible: ${msg}`); }
 import { float_vs_flight } from './polyself.js';
 import { s_suffix } from './hacklib.js';
 import { m_at } from './makemon.js';
@@ -449,6 +463,56 @@ export async function reset_utrap(msg) {
             throw new Error('reset_utrap(): float_up() not ported yet');
         if (!was_Fly && Flying())
             await You("can fly.");
+    }
+}
+
+// C ref: trap.c climb_pit()
+/* shared code for climbing out of a pit */
+export async function climb_pit() {
+    const u = game.u;
+
+    if (!u.utrap || u.utraptype !== TT_PIT)
+        return;
+
+    const pitname = trapname(PIT, false);
+    if (Passes_walls()) {
+        /* marked as trapped so they can pick things up */
+        await You(`ascend from the ${pitname}.`);
+        await reset_utrap(false);
+        await fill_pit(u.ux, u.uy);
+        game.vision_full_recalc = 1; /* vision limits change */
+    } else if (!rn2(2) && sobj_at(BOULDER, u.ux, u.uy)) {
+        await Your(`${body_part(LEG)} gets stuck in a crevice.`);
+        await tty_display_nhwindow(game.WIN_MESSAGE, false);
+        tty_clear_nhwindow(game.WIN_MESSAGE);
+        await You(`free your ${body_part(LEG)}.`);
+    } else if ((Flying() || is_clinger(game.youmonst.data))
+               && !game.level.flags.sokoban_rules) {
+        /* eg fell in pit, then poly'd to a flying monster;
+           or used '>' to deliberately enter it */
+        await You(`${u_locomotion("climb")} from the ${pitname}.`);
+        await reset_utrap(false);
+        await fill_pit(u.ux, u.uy);
+        game.vision_full_recalc = 1; /* vision limits change */
+    } else if (!(--u.utrap) || m_easy_escape_pit(game.youmonst)) {
+        await reset_utrap(false);
+        await You(`${(game.level.flags.sokoban_rules && Levitation())
+                       ? "struggle against the air currents and float"
+                       : u.usteed ? "ride" : "crawl"} to the edge of the ${
+                   pitname}.`);
+        await fill_pit(u.ux, u.uy);
+        game.vision_full_recalc = 1; /* vision limits change */
+    } else if (u.dz || game.flags.verbose) {
+        /* these should use 'pitname' rather than "pit" for hallucination
+           but that would nullify Norep (this message can be repeated
+           many times without further user intervention by using a run
+           attempt to keep retrying to escape from the pit) */
+        if (u.usteed)
+            await Norep(`${YMonnam(u.usteed)} is still in a pit.`);
+        else
+            await Norep((Hallucination() && !rn2(5))
+                            ? "You've fallen, and you can't get up."
+                            : "You are still in a pit.");
     }
 }
 
@@ -1493,12 +1557,15 @@ const MAX_ERODE = 3;
 // C ref: trap.c erode_obj() -- the rust case, as reached from water_damage()
 /* returns ER_DAMAGED, ER_GREASED, ER_NOTHING or ER_DESTROYED */
 export async function erode_obj(otmp, ostr, type, ef_flags) {
-    const ER_NOTHING = 0, ER_DAMAGED = 2;
+    const ER_NOTHING = 0, ER_GREASED = 1, ER_DAMAGED = 2, ER_DESTROYED = 3;
     const action = ["smoulder", "rust", "rot", "corrode", "crack"],
+          msg = ["burnt", "rusted", "rotten", "corroded", "cracked"],
           bythe = ["heat", "oxidation", "decay", "corrosion", "impact"];
     let vulnerable = false, is_primary = true;
-    const check_grease = (ef_flags & EF_GREASE) !== 0,
-          print = (ef_flags & EF_VERBOSE) !== 0;
+    let check_grease = (ef_flags & EF_GREASE) !== 0;
+    const print = (ef_flags & EF_VERBOSE) !== 0;
+    let crackers = false; /* True: different feedback if otmp destroyed */
+    let cost_type;
 
     if (!otmp)
         return ER_NOTHING;
@@ -1515,11 +1582,39 @@ export async function erode_obj(otmp, ostr, type, ef_flags) {
                             && !!game.u.uinwater /* Underwater */)));
 
     switch (type) {
+    case ERODE_BURN:
+        if (uvictim && inventory_resistance_check(AD_FIRE))
+            return ER_NOTHING;
+        vulnerable = is_flammable(otmp);
+        check_grease = false;
+        cost_type = COST_BURN;
+        break;
     case ERODE_RUST:
         vulnerable = is_rustprone(otmp);
+        cost_type = COST_RUST;
+        break;
+    case ERODE_ROT:
+        vulnerable = is_rottable(otmp);
+        check_grease = false;
+        is_primary = false;
+        cost_type = COST_ROT;
+        break;
+    case ERODE_CORRODE:
+        if (uvictim && inventory_resistance_check(AD_ACID))
+            return ER_NOTHING;
+        vulnerable = is_corrodeable(otmp);
+        is_primary = false;
+        cost_type = COST_CORRODE;
+        break;
+    case ERODE_CRACK: /* crystal armor */
+        vulnerable = is_crackable(otmp);
+        is_primary = true;
+        crackers = true;
+        cost_type = COST_CRACK;
         break;
     default:
-        throw new Error('erode_obj(): erosion types other than rust not ported yet');
+        impossible("Invalid erosion type in erode_obj");
+        return ER_NOTHING;
     }
     const erosion = is_primary ? otmp.oeroded : otmp.oeroded2;
 
@@ -1530,7 +1625,8 @@ export async function erode_obj(otmp, ostr, type, ef_flags) {
         ostr = ostr.slice(4);
 
     if (check_grease && otmp.greased) {
-        throw new Error('erode_obj(): grease_protect() not ported yet');
+        await grease_protect(otmp, ostr, victim);
+        return ER_GREASED;
     } else if (!erosion_matters(otmp)) {
         return ER_NOTHING;
     } else if (!vulnerable || (otmp.oerodeproof && otmp.rknown)) {
@@ -1568,28 +1664,89 @@ export async function erode_obj(otmp, ostr, type, ef_flags) {
         }
 
         if (ef_flags & EF_PAY)
-            throw new Error('erode_obj(): costly_alteration() not ported yet');
+            costly_alteration(otmp, cost_type);
 
         if (is_primary)
             otmp.oeroded++;
         else
             otmp.oeroded2++;
 
-        /* update_inventory() */
+        /* if (victim == &gy.youmonst) update_inventory(): no perm_invent */
         return ER_DAMAGED;
     } else if (ef_flags & EF_DESTROY) {
-        throw new Error('erode_obj(): destroying an eroded object not ported yet');
+        otmp.in_use = 1; /* in case of hangup during message w/ --More-- */
+        if (uvictim || vismon || visobj) {
+            let actbuf;
+
+            if (!crackers)
+                actbuf = `${vtense(ostr, action[type])} away`;
+            else
+                actbuf = "shatters";
+            await pline(`${uvictim ? "Your"
+                           : !vismon ? "The" /* visobj */
+                             : s_suffix(Monnam(victim))} ${ostr} ${actbuf}!`);
+        }
+        if (ef_flags & EF_PAY)
+            costly_alteration(otmp, cost_type);
+
+        if (otmp.owornmask) {
+            /* unwear otmp before deleting it */
+            if (otmp.where === 'OBJ_INVENT') {
+                /* otmp remains in hero's invent; if we get here because
+                   it is being burned up by lava, we don't need to worry
+                   about unwearing levitation boots and having that
+                   trigger float_down to then fall in again; if such
+                   were being worn, they wouldn't be in the lava now */
+                await remove_worn_item(otmp, true); /* calls Cloak_off(),&c */
+            } else if (otmp.where === 'OBJ_MINVENT') {
+                /* results in otmp->where==OBJ_FREE; delobj() doesn't care */
+                extract_from_minvent(otmp.ocarry, otmp, true, false);
+            } else { /* worn but not in hero invent or monster minvent ? */
+                impossible(`erode_obj(${type}): destroying strangely worn item`);
+                otmp.owornmask = 0; /* otherwise a second complaint (about
+                                     * deleting a worn item) will ensue */
+            }
+        }
+        delobj(otmp);
+        return ER_DESTROYED;
     } else {
         if (game.flags.verbose && print) {
-            const msg = ["burnt", "rusted", "rotten", "corroded", "cracked"];
             if (uvictim)
-                await pline(`Your ${ostr} ${vtense(ostr, "look")} completely ${msg[type]}.`);
-            else if (vismon)
-                await pline(`${s_suffix(Monnam(victim))} ${ostr} ${
-                    vtense(ostr, "look")} completely ${msg[type]}.`);
+                await Your(`${ostr} ${vtense(ostr, Blind() ? "feel" : "look")
+                           } completely ${msg[type]}.`);
+            else if (vismon || visobj)
+                await pline(`${!vismon ? "The" : s_suffix(Monnam(victim))} ${
+                    ostr} ${vtense(ostr, "look")} completely ${msg[type]}.`);
         }
         return ER_NOTHING;
     }
+}
+
+// C ref: trap.c grease_protect()
+/* Protect an item from erosion with grease. Returns TRUE if the grease
+ * wears off.
+ */
+export async function grease_protect(otmp, ostr, victim) {
+    const txt = "protected by the layer of grease!";
+    const vismon = !!victim && (victim !== game.youmonst) && canseemon(victim);
+
+    if (ostr) {
+        if (victim === game.youmonst)
+            await Your(`${ostr} ${vtense(ostr, "are")} ${txt}`);
+        else if (vismon)
+            await pline(`${Monnam(victim)}'s ${ostr} ${vtense(ostr, "are")} ${txt}`);
+    } else if (victim === game.youmonst || vismon) {
+        await pline(`${Yobjnam2(otmp, "are")} ${txt}`);
+    }
+    if (!rn2(2)) {
+        otmp.greased = 0;
+        if (otmp.where === 'OBJ_INVENT') {
+            await pline_The("grease dissolves.");
+            /* update_inventory(): no perm_invent */
+        }
+        return true;
+    }
+    return false;
 }
 
 /* C ref: objnam.c suit_simple_name(), cloak_simple_name(),
@@ -2623,7 +2780,10 @@ export async function mintrap(mtmp, mintrapflags) {
             if (sobj_at(BOULDER, mtmp.mx, mtmp.my)
                 && is_pit(trap.ttyp)) {
                 if (!rn2(2)) {
-                    throw new Error('mintrap(): fill_pit() not ported yet');
+                    mtmp.mtrapped = 0;
+                    if (canseemon(mtmp))
+                        await pline(`${Monnam(mtmp)} pulls free...`);
+                    await fill_pit(mtmp.mx, mtmp.my);
                 }
             } else {
                 if (canseemon(mtmp)) {
@@ -2632,7 +2792,8 @@ export async function mintrap(mtmp, mintrapflags) {
                         await pline(`${Monnam(mtmp)} climbs ${
                             m_easy_escape_pit(mtmp) ? "easily " : ""}out of the pit.`);
                     else if (trap.ttyp === BEAR_TRAP || trap.ttyp === WEB)
-                        throw new Error('mintrap(): trapname() not ported yet');
+                        await pline(`${Monnam(mtmp)} pulls free of the ${
+                            trapname(trap.ttyp, false)}.`);
                 }
                 mtmp.mtrapped = 0;
             }
