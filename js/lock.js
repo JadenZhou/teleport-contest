@@ -24,6 +24,7 @@ import { D_LOCKED, M_AP_OBJECT } from './const.js';
 import { recalc_block_point } from './vision.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
 import { m_at, closed_door } from './makemon.js';
+import { stumble_onto_mimic } from './uhitm.js';
 import { A_STR, A_DEX, A_CON, IS_DOOR, D_CLOSED, D_BROKEN, D_NODOOR,
          D_ISOPEN, D_TRAPPED, DRAWBRIDGE_UP, DRAWBRIDGE_DOWN, M_AP_FURNITURE,
          TT_PIT, CONFUSION, STUNNED, PROT_FROM_SHAPE_CHANGERS } from './const.js';
@@ -290,7 +291,9 @@ export async function pick_lock(pick, rx, ry, container) {
             return PICKLOCK_LEARNED_SOMETHING;
         } else if (mtmp && is_door_mappear(mtmp)) {
             /* "The door actually was a <mimic>!" */
-            throw new Error('pick_lock(): stumble_onto_mimic() not ported yet');
+            await stumble_onto_mimic(mtmp);
+            /* mimic might keep the key (50% chance, 10% for PYEC or MKoT) */
+            throw new Error('pick_lock(): maybe_absorb_item() not ported yet');
         }
         if (!IS_DOOR(door.typ))
             throw new Error('pick_lock(): picking a non-door not ported yet');
@@ -397,11 +400,13 @@ export function autokey(opening) {
 }
 
 // C ref: lock.c stumble_on_door_mimic()
-function stumble_on_door_mimic(x, y) {
+async function stumble_on_door_mimic(x, y) {
     const mtmp = m_at(x, y);
 
-    if (mtmp && is_door_mappear(mtmp) && !uhave(PROT_FROM_SHAPE_CHANGERS))
-        throw new Error('stumble_on_door_mimic(): stumble_onto_mimic() not ported yet');
+    if (mtmp && is_door_mappear(mtmp) && !uhave(PROT_FROM_SHAPE_CHANGERS)) {
+        await stumble_onto_mimic(mtmp);
+        return true;
+    }
     return false;
 }
 
@@ -446,7 +451,7 @@ export async function doopen_indir(x, y) {
         return ECMD_OK;
     }
 
-    if (stumble_on_door_mimic(cc.x, cc.y))
+    if (await stumble_on_door_mimic(cc.x, cc.y))
         return ECMD_TIME;
 
     /* when choosing a direction is impaired, use a turn

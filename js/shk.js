@@ -792,6 +792,25 @@ export function costly_spot(x, y) {
             && !(x === eshkp.shk.x && y === eshkp.shk.y));
 }
 
+// C ref: shk.c sellobj()
+// The exclusion tests are ported: dropping something outside a shop, or in
+// a shop without its shopkeeper there, or on the shop's door/entry spot,
+// sells nothing. Selling to the shopkeeper isn't ported yet.
+export async function sellobj(obj, x, y) {
+    let shkp;
+
+    if (!(game.u.ushops && game.u.ushops.length)) /* do cheapest exclusion test first */
+        return;
+    const shkrooms = in_rooms(x, y, SHOPBASE);
+    shkp = shop_keeper(shkrooms.length ? shkrooms.charCodeAt(0) : 0);
+    if (!shkp || !inhishop(shkp))
+        return;
+    if (!costly_spot(x, y))
+        return;
+    void obj;
+    throw new Error('sellobj(): selling to a shopkeeper not ported yet');
+}
+
 // ── money transfer, paying ──
 
 /* C ref: invent.c findgold() */

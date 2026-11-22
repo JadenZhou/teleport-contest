@@ -67,7 +67,7 @@ import {
     STRAT_ARRIVE, STRAT_WAITFORU, STRAT_WAITMASK, STRAT_CLOSE,
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
-    DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER,
+    DISPLACED, HALLUC, SEE_INVIS, D_LOCKED, D_CLOSED, D_TRAPPED, M_AP_MONSTER, M_AP_NOTHING,
     COLNO, ROWNO, IS_OBSTRUCTED, MFAST, I_SPECIAL,
     NO_TRAP_FLAGS, D_ISOPEN, D_NODOOR, D_BROKEN, DEAF, W_ARMG, STONE_RES,
     MON_OFFMAP, MON_DETACH, MON_MIGRATING, MON_LIMBO,
@@ -357,11 +357,15 @@ export function mon_regen(mon, digest_meal) {
     }
 }
 
-// C ref: dog.c finish_meating()
+// C ref: dogmove.c finish_meating()
 function finish_meating(mtmp) {
     mtmp.meating = 0;
-    if (mtmp.m_ap_type && mtmp.mappearance && mtmp.cham === NON_PM)
-        throw new Error('finish_meating(): seemimic() not ported yet');
+    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== M.S_MIMIC) {
+        /* was eating a mimic and now appearance needs resetting */
+        mtmp.m_ap_type = M_AP_NOTHING;
+        mtmp.mappearance = 0;
+        newsym(mtmp.mx, mtmp.my);
+    }
 }
 
 // ── C ref: monmove.c disturb() ──

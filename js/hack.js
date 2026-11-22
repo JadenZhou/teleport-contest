@@ -62,7 +62,7 @@ import { an, xname } from './objnam.js';
 import { the } from './iactions.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
-import { set_ustuck } from './uhitm.js';
+import { set_ustuck, stumble_onto_mimic } from './uhitm.js';
 import { CONFLICT, HVY_ENCUMBER } from './const.js';
 import { gethungry } from './eat.js';
 import { AT_ENGL, AT_HUGS, AD_STCK, AD_RUST, AD_CORR, M1_METALLIVORE } from './monsters.js';
@@ -87,7 +87,7 @@ import { M1_CLING, PM_SOLDIER, PM_SERGEANT, PM_LIEUTENANT, PM_CAPTAIN } from './
 import { midnight } from './calendar.js';
 import { Hello } from './role.js';
 import { search_special } from './sounds.js';
-import { wake_msg } from './mon.js';
+import { wake_msg, seemimic } from './mon.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
@@ -2378,7 +2378,7 @@ async function domove_bump_mon(mtmp, glyph) {
         && canspotmon(mtmp) /* || glyph_is_invisible() || glyph_is_warning() */) {
         if (mtmp.m_ap_type && !uhave(PROT_FROM_SHAPE_CHANGERS)
             && !sensemon(mtmp))
-            throw new Error('domove_bump_mon(): stumble_onto_mimic() not ported yet');
+            await stumble_onto_mimic(mtmp);
         else if (mtmp.mpeaceful && !uhave(HALLUC))
             /* m_monnam(): "dog" or "Fido", no "invisible dog" or "it" */
             await pline(`Pardon me, ${m_monnam(mtmp)}.`);
@@ -2550,7 +2550,7 @@ async function domove_swap_with_pet(mtmp, x, y) {
     u.ux = u.ux0, u.uy = u.uy0;
     mtmp.mundetected = 0;
     if (mtmp.m_ap_type)
-        throw new Error('domove_swap_with_pet(): seemimic() not ported yet');
+        seemimic(mtmp);
     else if (!mtmp.mcanmove) /* (wasn't already displayed) */
         newsym(mtmp.mx, mtmp.my);
     u.ux = mtmp.mx, u.uy = mtmp.my; /* resume swapping positions */
