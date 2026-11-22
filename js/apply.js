@@ -64,6 +64,7 @@ import { ECMD_TIME, ECMD_FAIL, JUMPING, PASSES_WALLS, LEVITATION, WOUNDED_LEGS,
          INTRINSIC, UNENCUMBERED, A_STR, TT_PIT, IS_STWALL, IS_DOOR, D_ISOPEN,
          ACCESSIBLE, isok, u_at, Is_airlevel, Is_waterlevel } from './const.js';
 import { use_container } from './pickup.js';
+import { do_play_instrument } from './music.js';
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -621,7 +622,8 @@ export async function doapply() {
     case O.BUGLE:
     case O.LEATHER_DRUM:
     case O.DRUM_OF_EARTHQUAKE:
-        throw new Error('doapply(): do_play_instrument() not ported yet');
+        res = await do_play_instrument(obj);
+        break;
     case O.HORN_OF_PLENTY: /* not a musical instrument */
         throw new Error('doapply(): hornoplenty() not ported yet');
     case O.LAND_MINE:
