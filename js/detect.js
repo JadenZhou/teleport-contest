@@ -357,6 +357,7 @@ function reveal_terrain_getglyph(x, y, swallowed, default_glyph, which_subset) {
                      */
                     const save_spot = { ...lev };
                     delete save_spot.doormask;
+                    delete save_spot.drawbridgemask;
                     lev.typ = g.level.lastseentyp?.[x]?.[y] ?? 0;
                     if (IS_WALL(lev.typ) || lev.typ === SDOOR)
                         xy_set_wall_state(x, y); /* levl[x][y].wall_info */

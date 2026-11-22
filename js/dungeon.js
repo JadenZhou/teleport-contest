@@ -47,6 +47,7 @@ import {
 } from './nhlua.js';
 import { strcmpi, strncmpi, mungspaces } from './hacklib.js';
 import { tty_getlin } from './wintty.js';
+import { within_bounded_area } from './rect.js';
 
 // C's panic() (end.c) and impossible() (pline.c) are not ported yet.
 function panic(msg) { throw new Error(`panic: ${msg}`); }
@@ -1083,6 +1084,35 @@ export function induced_align(pct) {
 
     const al = rn2(3) - 1;
     return Align2amask(al);
+}
+
+// C ref: dungeon.c On_W_tower_level()
+/* is `lev' a level containing the Wizard's tower? */
+export function On_W_tower_level(lev) {
+    const t = game.dungeon_topology;
+    return (on_level(lev, t.d_wiz1_level)      /* Is_wiz1_level() */
+            || on_level(lev, t.d_wiz2_level)   /* Is_wiz2_level() */
+            || on_level(lev, t.d_wiz3_level)); /* Is_wiz3_level() */
+}
+
+// C ref: dungeon.c In_W_tower()
+/* is <x,y> of `lev' inside the Wizard's tower? */
+export function In_W_tower(x, y, lev) {
+    if (!On_W_tower_level(lev))
+        return false;
+    const dndest = game.dndest;
+    if (!dndest || !dndest.nlx) {
+        /* impossible("No boundary for Wizard's Tower?") */
+        console.error("impossible: No boundary for Wizard's Tower?");
+        return false;
+    }
+    /*
+     * Both of the exclusion regions for arriving via level teleport
+     * (from above or below) define the tower's boundary.
+     *  assert( svu.updest.nIJ == svd.dndest.nIJ for I={l|h},J={x|y} );
+     */
+    return within_bounded_area(x, y, dndest.nlx, dndest.nly,
+                               dndest.nhx, dndest.nhy);
 }
 
 // C ref: dungeon.c In_hell()

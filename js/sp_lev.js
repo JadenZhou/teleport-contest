@@ -62,7 +62,7 @@ import {
     NON_PM, MALE, FEMALE, NEUTRAL, G_EXTINCT, G_GONE, LR_TELE, LR_UPTELE,
     LR_DOWNTELE, LR_MONGEN, M_AP_OBJECT, M_AP_MONSTER, M_AP_FURNITURE,
     NO_MM_FLAGS, MM_NOTAIL, MM_NOGRP, MM_ADJACENTOK, MM_IGNOREWATER,
-    MM_NOCOUNTBIRTH, M_AP_NOTHING, PROT_FROM_SHAPE_CHANGERS,
+    MM_NOCOUNTBIRTH, MM_NOMSG, STONE_RES, M_AP_NOTHING, PROT_FROM_SHAPE_CHANGERS,
 } from './const.js';
 import {
     mons, NUMMONS, LOW_PM, MAXMCLASSES, G_UNIQ, G_NOGEN, G_IGNORE, S_EEL, S_GHOST,
@@ -74,16 +74,19 @@ import {
     CORPSE, TIN, FIGURINE, RANDOM_CLASS, COIN_CLASS, RING_CLASS,
     POTION_CLASS, SCROLL_CLASS, SPBOOK_CLASS, WAND_CLASS, MAXOCLASSES,
     BOULDER, PICK_AXE, DWARVISH_MATTOCK, WAN_DIGGING, WAN_TELEPORTATION,
-    SCR_TELEPORTATION, RIN_TELEPORTATION,
+    SCR_TELEPORTATION, RIN_TELEPORTATION, SPE_NOVEL,
 } from './objects.js';
+import { ONAME_LEVEL_DEF, IS_DRAWBRIDGE, DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST,
+         DB_WEST } from './const.js';
+import { create_drawbridge } from './dbridge.js';
 import {
     name_to_monplus, is_male, is_female, monsndx, is_vampshifter, is_vampire, is_swimmer, is_flyer,
-    is_floater, passes_walls, your_race,
+    is_floater, passes_walls, your_race, Resists_Elem, poly_when_stoned,
 } from './mondata.js';
 import {
     def_char_to_monclass, def_monsyms, def_char_to_objclass,
 } from './drawing.js';
-import { mkclass, makemon, set_malign, m_at, sobj_at } from './makemon.js';
+import { mkclass, makemon, set_malign, m_at, sobj_at, propagate } from './makemon.js';
 import { t_at } from './trap.js';
 import { create_gas_cloud_selection } from './region.js';
 import { enexto } from './teleport.js';
@@ -117,8 +120,8 @@ import { m_dowear } from './worn.js';
 import { can_saddle, put_saddle_on_mon } from './makemon.js';
 import { in_rooms } from './hack.js';
 import { premap_detect } from './detect.js';
-import { christen_monst } from './do_name.js';
-import { newcham } from './mon.js';
+import { christen_monst, oname } from './do_name.js';
+import { newcham, mongone } from './mon.js';
 import { mkmap } from './mkmap.js';
 
 // C ref: dungeon.h In_mines()
@@ -2817,8 +2820,14 @@ function create_object(o, croom) {
     }
     /* set_corpsenm() took care of egg hatch and corpse timers */
 
-    if (named)
-        nhl_error(null, 'create_object: oname() is not ported yet');
+    if (named) {
+        otmp = oname(otmp, o.name, ONAME_LEVEL_DEF);
+        if (otmp.otyp === SPE_NOVEL) {
+            /* needs to be an existing title:
+               (void) lookup_novel(o->name.str, &otmp->novelidx) */
+            nhl_error(null, 'create_object: lookup_novel() is not ported yet');
+        }
+    }
     if (o.eroded) {
         if (o.eroded < 0) {
             otmp.oerodeproof = 1;
@@ -2884,9 +2893,46 @@ function create_object(o, croom) {
             impossible('create_object: too deeply nested containers.');
     }
 
-    /* Medusa level special case: statues are petrified monsters */
-    if (o.id === STATUE && Is_medusa_level(game.u.uz) && o.corpsenm === NON_PM)
-        nhl_error(null, 'create_object: Medusa statues are not ported yet');
+    /* Medusa level special case: statues are petrified monsters, so they
+     * are not stone-resistant and have monster inventory.  They also lack
+     * other contents, but that can be specified as an empty container.
+     */
+    if (o.id === STATUE && Is_medusa_level(game.u.uz) && o.corpsenm === NON_PM) {
+        let was = null;
+        let wastyp;
+        let i = 0; /* prevent endless loop in case makemon always fails */
+
+        /* Named random statues are of player types, and aren't stone-
+         * resistant (if they were, we'd have to reset the name as well as
+         * setting corpsenm).
+         */
+        for (wastyp = otmp.corpsenm; i < 1000; i++, wastyp = rndmonnum()) {
+            /* makemon without rndmonst() might create a group */
+            was = makemon(mons[wastyp], 0, 0, MM_NOCOUNTBIRTH | MM_NOMSG);
+            if (was) {
+                if (!Resists_Elem(was, STONE_RES) /* resists_ston() */
+                    && !poly_when_stoned(mons[wastyp])) {
+                    propagate(wastyp, TRUE, FALSE);
+                    break;
+                }
+                mongone(was);
+                was = null;
+            }
+        }
+        if (was) {
+            set_corpsenm(otmp, wastyp);
+            /* C takes the head of the minvent chain, its newest object:
+               the last one of the JS array (oldest first) */
+            while (was.minvent && was.minvent.length) {
+                const obj = was.minvent[was.minvent.length - 1];
+                obj.owornmask = 0;
+                obj_extract_self(obj);
+                add_to_container(otmp, obj);
+            }
+            otmp.owt = weight(otmp);
+            mongone(was);
+        }
+    }
 
     if (o.achievement) {
         const prize_warning = 'multiple prizes on %s level';
@@ -3378,14 +3424,28 @@ function lvlfill_swamp(fg, bg, lit) {
 
 // C ref: sp_lev.c flip_dbridge_horizontal()
 function flip_dbridge_horizontal(lev) {
-    if (lev.typ === DRAWBRIDGE_UP || lev.typ === DRAWBRIDGE_DOWN)
-        throw new Error('flip_dbridge_horizontal(): drawbridges not ported yet');
+    if (IS_DRAWBRIDGE(lev.typ)) {
+        if ((lev.drawbridgemask & DB_DIR) === DB_WEST) {
+            lev.drawbridgemask &= ~DB_WEST;
+            lev.drawbridgemask |=  DB_EAST;
+        } else if ((lev.drawbridgemask & DB_DIR) === DB_EAST) {
+            lev.drawbridgemask &= ~DB_EAST;
+            lev.drawbridgemask |=  DB_WEST;
+        }
+    }
 }
 
 // C ref: sp_lev.c flip_dbridge_vertical()
 function flip_dbridge_vertical(lev) {
-    if (lev.typ === DRAWBRIDGE_UP || lev.typ === DRAWBRIDGE_DOWN)
-        throw new Error('flip_dbridge_vertical(): drawbridges not ported yet');
+    if (IS_DRAWBRIDGE(lev.typ)) {
+        if ((lev.drawbridgemask & DB_DIR) === DB_NORTH) {
+            lev.drawbridgemask &= ~DB_NORTH;
+            lev.drawbridgemask |=  DB_SOUTH;
+        } else if ((lev.drawbridgemask & DB_DIR) === DB_SOUTH) {
+            lev.drawbridgemask &= ~DB_SOUTH;
+            lev.drawbridgemask |=  DB_NORTH;
+        }
+    }
 }
 
 // C ref: hacklib.c swapbits()
@@ -4207,6 +4267,42 @@ export function lspo_random_corridors() {
     return 0;
 }
 
+// C ref: sp_lev.c lspo_drawbridge()
+/* drawbridge({ dir="east", state="closed", x=05,y=08 }); */
+export function lspo_drawbridge(tbl) {
+    const mwdirs = ['north', 'south', 'west', 'east', 'random'];
+    const mwdirs2i = [DB_NORTH, DB_SOUTH, DB_WEST, DB_EAST, -1, -2];
+    const dbopens = ['open', 'closed', 'random'];
+    const dbopens2i = [1, 0, -1, -2];
+
+    create_des_coder();
+
+    if (lua_type(tbl) !== LUA_TTABLE)
+        nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
+
+    const { x: mx, y: my } = get_table_xy_or_coord(tbl);
+
+    const dir = mwdirs2i[get_table_option(tbl, 'dir', 'random', mwdirs)];
+    const dcoord = SP_COORD_PACK(mx, my);
+    let db_open = dbopens2i[get_table_option(tbl, 'state', 'random', dbopens)];
+    const c = { x: mx, y: my };
+
+    get_location_coord(c, DRY | WET | HOT, game.coder.croom, dcoord);
+    const x = c.x, y = c.y;
+    if (!isok(mx, my)) {
+        nhl_error(null, 'drawbridge coord not ok');
+        /*NOTREACHED*/
+        return 0;
+    }
+    if (db_open === -1)
+        db_open = !rn2(2);
+    if (!create_drawbridge(x, y, dir, db_open ? TRUE : FALSE))
+        impossible('Cannot create drawbridge.');
+    SpLev_Map_set(x, y);
+
+    return 0;
+}
+
 // C ref: sp_lev.c lspo_mazewalk()
 /* mazewalk({ x = NN, y = NN, typ = ".", dir = "north", stocked = 0 }); */
 /* mazewalk({ coord = {XX, YY}, typ = ".", dir = "north" }); */
@@ -4729,6 +4825,7 @@ export function l_register_des(L) {
     des.ladder = lspo_ladder;
     des.random_corridors = lspo_random_corridors;
     des.mazewalk = lspo_mazewalk;
+    des.drawbridge = lspo_drawbridge;
     des.levregion = lspo_levregion;
     des.teleport_region = lspo_teleport_region;
     des.wallify = lspo_wallify;

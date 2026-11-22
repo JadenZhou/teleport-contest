@@ -14,20 +14,26 @@ import {
     HWALL, ROOM, CORR, IS_DOOR, ACCESSIBLE, LR_BRANCH, LR_PORTAL, LR_UPSTAIR,
     LR_DOWNSTAIR, LR_TELE, LR_UPTELE, LR_DOWNTELE, NO_MM_FLAGS,
     MKTRAP_MAZEFLAG, Is_waterlevel, Is_airlevel, Is_stronghold, In_quest,
-    MAGIC_PORTAL,
+    MAGIC_PORTAL, CORPSTAT_NONE,
 } from './const.js';
 import { Is_special, dunlevs_in_dungeon, dunlev, Is_branchlev, on_level,
          find_level } from './dungeon.js';
 import { load_special } from './sp_lev.js';
 import {
     place_lregion, mkstairs, wallification, mktrap, Invocation_lev, place_branch,
+    somex, somey,
 } from './mklev.js';
 import { maketrap } from './trap.js';
-import { mkobj_at, mksobj_at, mkgold } from './mkobj.js';
-import { makemon } from './makemon.js';
-import { mons, PM_MINOTAUR, PM_CLERIC } from './monsters.js';
-import { GEM_CLASS, RANDOM_CLASS, BOULDER } from './objects.js';
+import { mkobj_at, mksobj_at, mkgold, mk_tt_object, mkcorpstat, set_corpsenm,
+         rndmonnum } from './mkobj.js';
+import { makemon, goodpos } from './makemon.js';
+import { poly_when_stoned } from './mondata.js';
+import { mons, PM_MINOTAUR, PM_CLERIC, MR_STONE } from './monsters.js';
+import { GEM_CLASS, RANDOM_CLASS, BOULDER, STATUE } from './objects.js';
 import { dmonsfree } from './mon.js';
+
+// C ref: mondata.h pm_resistance()
+function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
 
 // C ref: mkmaze.c mz_move()
 /* move (cc.x, cc.y) one square in direction dir */
@@ -132,8 +138,41 @@ export function fixup_special() {
     }
 
     /* Still need to add some stuff to level file */
-    if (on_level(game.u.uz, game.dungeon_topology.d_medusa_level)) {
-        throw new Error('fixup_special(): Medusa level statues not ported yet');
+    if (on_level(game.u.uz, game.dungeon_topology.d_medusa_level)) { /* Is_medusa_level() */
+        let otmp;
+        let tryct;
+
+        const croom = game.level.rooms[0]; /* the first room defined on the medusa level */
+        for (tryct = rnd(4); tryct; tryct--) {
+            const x = somex(croom);
+            const y = somey(croom);
+            if (goodpos(x, y, null, 0)) {
+                let tryct2 = 0;
+
+                otmp = mk_tt_object(STATUE, x, y);
+                while (++tryct2 < 100 && otmp
+                       && (poly_when_stoned(mons[otmp.corpsenm])
+                           || pm_resistance(mons[otmp.corpsenm], MR_STONE))) {
+                    /* set_corpsenm() handles weight too */
+                    set_corpsenm(otmp, rndmonnum());
+                }
+            }
+        }
+
+        if (rn2(2))
+            otmp = mk_tt_object(STATUE, somex(croom), somey(croom));
+        else /* Medusa statues don't contain books */
+            otmp = mkcorpstat(STATUE, null, null,
+                              somex(croom), somey(croom), CORPSTAT_NONE);
+        if (otmp) {
+            tryct = 0;
+            while (++tryct < 100
+                   && (pm_resistance(mons[otmp.corpsenm], MR_STONE)
+                       || poly_when_stoned(mons[otmp.corpsenm]))) {
+                /* set_corpsenm() handles weight too */
+                set_corpsenm(otmp, rndmonnum());
+            }
+        }
     } else if (game.urole.mnum === PM_CLERIC && In_quest(game.u.uz)) {
         /* less chance for undead corpses (lured from lower morgues) */
         game.level.flags.graveyard = 1;
