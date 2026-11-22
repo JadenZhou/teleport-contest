@@ -40,6 +40,7 @@ import { PM_FLAMING_SPHERE, PM_SHOCKING_SPHERE, PM_BABY_GOLD_DRAGON,
          PM_FIRE_VORTEX, PM_FIRE_ELEMENTAL, PM_GOLD_DRAGON,
          S_LIGHT } from './monsters.js';
 import { mintrap } from './trap.js';
+import { MAGIC_PORTAL, Is_qstart } from './const.js';
 import { NO_TRAP_FLAGS } from './const.js';
 import { pline, canseemon, newsym } from './display.js';
 import { yelp, growl } from './sounds.js';
@@ -676,8 +677,23 @@ export async function mon_arrive(mtmp, when) {
             ylocale = stway.sy;
         }
         break;
-    case MIGR_PORTAL:
-        throw new Error('mon_arrive(): MIGR_PORTAL arrival not ported yet');
+    case MIGR_PORTAL: {
+        if (In_endgame(u.uz))
+            /* there is no arrival portal for endgame levels: a random
+               spot in the updest region */
+            throw new Error('mon_arrive(): endgame MIGR_PORTAL arrival not ported yet');
+        /* find the arrival portal */
+        const t = (g.level.traps || []).find(tr => tr.ttyp === MAGIC_PORTAL);
+        if (t) {
+            xlocale = t.tx, ylocale = t.ty;
+            break;
+        } else if (!(u.uevent?.qexpelled
+                     && (Is_qstart(u.uz0) || Is_qstart(u.uz)))) {
+            throw new Error('mon_arrive(): impossible("no corresponding portal?")');
+        }
+        xlocale = ylocale = 0; /* FALLTHROUGH to MIGR_RANDOM */
+        break;
+    }
     default:
     case MIGR_RANDOM:
         xlocale = ylocale = 0;

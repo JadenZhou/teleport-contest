@@ -2341,6 +2341,16 @@ async function trapeffect_level_telep(mtmp, trap, trflags) {
     }
 }
 
+// C ref: trap.c trapeffect_magic_portal()
+async function trapeffect_magic_portal(mtmp, trap, trflags) {
+    if (mtmp === game.youmonst) {
+        /* feeltrap(trap); domagicportal(trap); */
+        throw new Error('trapeffect_magic_portal(): domagicportal() not ported yet');
+    } else {
+        return trapeffect_level_telep(mtmp, trap, trflags);
+    }
+}
+
 // C ref: trap.c mu_maybe_destroy_web()
 async function mu_maybe_destroy_web(mtmp, domsg, trap) {
     const isyou = (mtmp === game.youmonst);
@@ -2864,6 +2874,7 @@ async function trapeffect_selector(mtmp, trap, trflags) {
     case LANDMINE:
         return trapeffect_landmine(mtmp, trap, trflags);
     case MAGIC_PORTAL:
+        return trapeffect_magic_portal(mtmp, trap, trflags);
     case POLY_TRAP:
     case ROLLING_BOULDER_TRAP:
     case VIBRATING_SQUARE:
