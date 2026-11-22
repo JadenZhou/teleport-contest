@@ -4,6 +4,7 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { stop_occupation } from './allmain.js';
 import { game } from './gstate.js';
 import { rn2, rnd, d, AC_VALUE } from './rng.js';
 import { cansee } from './vision.js';
@@ -39,7 +40,6 @@ import { mon_wield_item, hitval } from './weapon.js';
 import { thrwmu, spitmu, breamu } from './mthrowu.js';
 import { castmu, buzzmu } from './mcastu.js';
 import { Is_rogue_level, DIED, DEAF } from './const.js';
-import { stop_occupation } from './allmain.js';
 import { yyyymmdd } from './calendar.js';
 import { PRONOUN_NO_IT, Mgender, mon_nam, noit_mon_nam,
          noit_Monnam } from './do_name.js';
@@ -126,6 +126,8 @@ function Conflict() {
 function Half_physical_damage() { return uhave(HALF_PHDAM); }
 function Cold_resistance() { return uhave(COLD_RES); }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
+/* C ref: youprop.h Deaf */
+function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
 
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
@@ -208,8 +210,20 @@ async function mswings(
     }
 }
 
-/* C ref: youprop.h Deaf */
-function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
+// C ref: mhitu.c mpoisons_subj()
+/* return how a poison attack was delivered */
+export function mpoisons_subj(mtmp, mattk) {
+    if (mattk.aatyp === AT_WEAP) {
+        const mwep = (mtmp === game.youmonst) ? game.uwep : (mtmp.mw || null);
+        /* "Foo's attack was poisoned." is pretty lame, but at least
+           it's better than "sting" when not a stinging attack... */
+        return (!mwep || !mwep.opoisoned) ? "attack" : "weapon";
+    } else {
+        return (mattk.aatyp === AT_TUCH) ? "contact"
+               : (mattk.aatyp === AT_GAZE) ? "gaze"
+                 : (mattk.aatyp === AT_BITE) ? "bite" : "sting";
+    }
+}
 
 // C ref: mhitu.c u_slow_down()
 /* called when your intrinsic speed is taken away */
@@ -273,21 +287,6 @@ export async function u_slip_free(mtmp, mattk) {
         return true;
     }
     return false;
-}
-
-// C ref: mhitu.c mpoisons_subj()
-/* return how a poison attack was delivered */
-export function mpoisons_subj(mtmp, mattk) {
-    if (mattk.aatyp === AT_WEAP) {
-        const mwep = (mtmp === game.youmonst) ? game.uwep : (mtmp.mw || null);
-        /* "Foo's attack was poisoned." is pretty lame, but at least
-           it's better than "sting" when not a stinging attack... */
-        return (!mwep || !mwep.opoisoned) ? "attack" : "weapon";
-    } else {
-        return (mattk.aatyp === AT_TUCH) ? "contact"
-               : (mattk.aatyp === AT_GAZE) ? "gaze"
-                 : (mattk.aatyp === AT_BITE) ? "bite" : "sting";
-    }
 }
 
 // C ref: mhitu.c hitmsg()
