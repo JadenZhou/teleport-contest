@@ -36,12 +36,18 @@ import {
     TT_WEB, TT_BEARTRAP, TT_INFLOOR, TT_BURIEDBALL, TT_LAVA,
     POLY_CONTROLLED, POLY_LOW_CTRL, POLY_MONSTER, POLY_REVERT, A_STR, A_CON,
     A_WIS, KILLED_BY_AN, NEUTRAL, MALE, FEMALE, Never_mind,
-    thats_enough_tries, ismnum, In_endgame, MV_KNOWS_EGG,
+    thats_enough_tries, ismnum, In_endgame, MV_KNOWS_EGG, A_MAX, A_INT,
+    MAXULEV,
 } from './const.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { pline, You, Your, You_cant, You_feel, pline_The, newsym,
          see_monsters, canspotmon } from './display.js';
-import { ACURR, exercise } from './attrib.js';
+import { ACURR, exercise, ATTRMAX, ATTRMIN, adjabil, newhp,
+         setuhpmax } from './attrib.js';
+import { rndexp } from './potion.js';
+import { newpw } from './exper.js';
+import { newuhs } from './eat.js';
+import { max_rank_sz } from './botl.js';
 import { losehp, selftouch, set_utrap, reset_utrap } from './trap.js';
 import { tty_getlin } from './wintty.js';
 import { mungspaces } from './hacklib.js';
@@ -54,7 +60,7 @@ import { the, simpleonames, surface, cloak_simple_name,
          helm_simple_name } from './iactions.js';
 import { Unaware } from './eat.js';
 import { unmul } from './allmain.js';
-import { make_glib } from './potion.js';
+import { make_glib, set_mimic_blocking } from './potion.js';
 import { golemhp, is_pool, is_lava } from './makemon.js';
 import { find_ac } from './u_init.js';
 import { set_ustuck } from './uhitm.js';
@@ -469,7 +475,7 @@ async function polyman(fmt, arg) {
         throw new Error('polyman(): self-genocide while polymorphed not ported yet');
 
     if (uprop_on(SEE_INVIS) !== had_see_invis)
-        throw new Error('polyman(): set_mimic_blocking() not ported yet');
+        set_mimic_blocking(); /* See_invisible just toggled */
 
     if (u.twoweap && !could_twoweap(youmonst.data))
         await untwoweapon();
@@ -668,9 +674,200 @@ async function polyself_made_change(old_light) {
     }
 }
 
+// C ref: hacklib.c rounddiv()
+/* round x/y to nearest integer */
+function rounddiv(x, y) {
+    let r, m;
+    let divsgn = 1;
+
+    if (y === 0)
+        throw new Error('division by zero in rounddiv'); /* panic() */
+    else if (y < 0) {
+        divsgn = -divsgn;
+        y = -y;
+    }
+    if (x < 0) {
+        divsgn = -divsgn;
+        x = -x;
+    }
+    r = Math.trunc(x / y);
+    m = x % y;
+    if (2 * m >= y)
+        r++;
+
+    return divsgn * r;
+}
+
+// C ref: polyself.c poly_gender()
+/* Returns gender of polymorphed player;
+ * 0/1=same meaning as flags.female, 2=none.
+ */
+export function poly_gender() {
+    if (is_neuter(game.youmonst.data) || !humanoid(game.youmonst.data))
+        return 2;
+    return game.flags.female ? 1 : 0;
+}
+
+// C ref: polyself.c change_sex()
+function change_sex() {
+    const u = game.u;
+    /* Some monsters are always of one sex and their sex can't be changed;
+     * Succubi/incubi can change, but are handled below.
+     *
+     * !Upolyd check necessary because is_male() and is_female()
+     * may be true for certain roles
+     */
+    if (!Upolyd()
+        || (!is_male(game.youmonst.data) && !is_female(game.youmonst.data)
+            && !is_neuter(game.youmonst.data)))
+        game.flags.female = !game.flags.female;
+    if (Upolyd()) /* poly'd: also change saved sex */
+        u.mfemale = !u.mfemale;
+    max_rank_sz(); /* [this appears to be superfluous] */
+    if ((Upolyd() ? u.mfemale : game.flags.female) && game.urole.name.f)
+        game.pl_character = game.urole.name.f;
+    else
+        game.pl_character = game.urole.name.m;
+    if (!Upolyd()) {
+        u.umonnum = u.umonster;
+    } else if (u.umonnum === M.PM_AMOROUS_DEMON) {
+        game.flags.female = !game.flags.female;
+        set_uasmon();
+    }
+}
+
+// C ref: attrib.c redist_attr()
+/* polymorph changes a few attributes */
+function redist_attr() {
+    const u = game.u;
+    let i, tmp;
+
+    for (i = 0; i < A_MAX; i++) {
+        if (i === A_INT || i === A_WIS)
+            continue;
+        /* Polymorphing doesn't change your mind */
+        tmp = u.amax.a[i];
+        u.amax.a[i] += (rn2(5) - 2);
+        if (u.amax.a[i] > ATTRMAX(i))
+            u.amax.a[i] = ATTRMAX(i);
+        if (u.amax.a[i] < ATTRMIN(i))
+            u.amax.a[i] = ATTRMIN(i);
+        u.acurr.a[i] = Math.trunc(u.acurr.a[i] * u.amax.a[i] / tmp);
+        /* ABASE(i) > ATTRMAX(i) is impossible */
+        if (u.acurr.a[i] < ATTRMIN(i))
+            u.acurr.a[i] = ATTRMIN(i);
+    }
+    /* encumber_msg(); -- caller needs to do this */
+}
+
 // C ref: polyself.c newman()
 async function newman() {
-    throw new Error('newman(): not ported yet');
+    const u = game.u;
+    let newform;
+    let i, oldlvl, newlvl, hpmax, enmax;
+
+    oldlvl = u.ulevel;
+    newlvl = oldlvl + rn1(5, -2);     /* new = old + {-2,-1,0,+1,+2} */
+    if (newlvl > 127 || newlvl < 1) { /* level went below 0? */
+        /* goto dead; old level is still intact (in case of lifesaving) */
+        throw new Error('newman(): "new form doesn\'t seem healthy enough" death not ported yet');
+    }
+    if (newlvl > MAXULEV)
+        newlvl = MAXULEV;
+    /* If your level goes down, your peak level goes down by
+       the same amount so that you can't simply use blessed
+       full healing to undo the decrease.  But if your level
+       goes up, your peak level does *not* undergo the same
+       adjustment; you might end up losing out on the chance
+       to regain some levels previously lost to other causes. */
+    if (newlvl < oldlvl)
+        u.ulevelmax -= (oldlvl - newlvl);
+    if (u.ulevelmax < newlvl)
+        u.ulevelmax = newlvl;
+    u.ulevel = newlvl;
+
+    poly_gender(); /* oldgend: only used by livelog_newform() */
+    if (game.sex_change_ok && !rn2(10))
+        change_sex();
+
+    await adjabil(oldlvl, u.ulevel);
+
+    /* random experience points for the new experience level */
+    u.uexp = rndexp(false);
+
+    /* set up new attribute points (particularly Con) */
+    redist_attr();
+
+    /*
+     * New hit points:
+     *  remove "level gain"-based HP from any extra HP accumulated
+     *  (the "extra" might actually be negative);
+     *  modify the extra, retaining {80%, 90%, 100%, or 110%};
+     *  add in newly generated set of level-gain HP.
+     */
+    hpmax = u.uhpmax;
+    for (i = 0; i < oldlvl; i++)
+        hpmax -= u.uhpinc[i];
+    /* hpmax * rn1(4,8) / 10; 0.95*hpmax on average */
+    hpmax = rounddiv(hpmax * rn1(4, 8), 10);
+    for (i = 0; (u.ulevel = i) < newlvl; i++)
+        hpmax += newhp();
+    if (hpmax < u.ulevel)
+        hpmax = u.ulevel; /* min of 1 HP per level */
+    /* retain same proportion for current HP; u.uhp * hpmax / u.uhpmax */
+    u.uhp = rounddiv(u.uhp * hpmax, u.uhpmax);
+    setuhpmax(hpmax, true); /* might reduce u.uhp */
+    /*
+     * Do the same for spell power.
+     */
+    enmax = u.uenmax;
+    for (i = 0; i < oldlvl; i++)
+        enmax -= u.ueninc[i];
+    enmax = rounddiv(enmax * rn1(4, 8), 10);
+    for (i = 0; (u.ulevel = i) < newlvl; i++)
+        enmax += newpw();
+    if (enmax < u.ulevel)
+        enmax = u.ulevel;
+    u.uen = rounddiv(u.uen * enmax, ((u.uenmax < 1) ? 1 : u.uenmax));
+    u.uenmax = enmax;
+    /* [should alignment record be tweaked too?] */
+
+    u.uhunger = rn1(500, 500);
+    if (uprop_on(SICK))
+        throw new Error('newman(): make_sick() not ported yet');
+    if (Stoned())
+        throw new Error('newman(): make_stoned() not ported yet');
+    if (u.uhp <= 0) {
+        if (Polymorph_control()) { /* even when Stunned || Unaware */
+            if (u.uhp <= 0)
+                u.uhp = 1;
+        } else {
+            throw new Error('newman(): "new form doesn\'t seem healthy enough" death not ported yet');
+        }
+    }
+    await newuhs(false);
+    /* use saved gender we're about to revert to, not current */
+    newform = ((Upolyd() ? u.mfemale : game.flags.female)
+               && game.urace.individual.f)
+                ? game.urace.individual.f
+                : (game.urace.individual.m)
+                   ? game.urace.individual.m
+                   : game.urace.noun;
+    await polyman("You feel like a new %s!", newform);
+
+    poly_gender(); /* newgend: only used by livelog_newform() */
+    /* livelog_printf()/livelog_newform(): no livelog in this port */
+
+    if (Slimed())
+        throw new Error('newman(): "still slime on you" make_slimed() not ported yet');
+
+    game.disp_botl = true;
+    see_monsters();
+    await encumber_msg();
+
+    await retouch_equipment(2);
+    if (!game.uarmg)
+        await selftouch(no_longer_petrify_resistant);
 }
 
 // C ref: polyself.c polymon()

@@ -488,9 +488,10 @@ export function P_NAME(type) {
 
 /* C ref: drawing.c def_oc_syms[].name */
 const def_oc_names = [
-    "illegal objects", "weapon", "armor", "ring", "amulet", "tool", "food",
-    "potion", "scroll", "spellbook", "wand", "coin", "gem",
-    "boulder or statue", "iron ball", "iron chain", "venom",
+    "", /* placeholder for the "random class" */
+    "illegal objects", "weapons", "armor", "rings", "amulets", "tools",
+    "food", "potions", "scrolls", "spellbooks", "wands", "coins", "rocks",
+    "large stones", "iron balls", "chains", "venoms",
 ];
 
 // C ref: weapon.c weapon_descr()
