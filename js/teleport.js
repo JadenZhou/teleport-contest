@@ -44,6 +44,8 @@ import { migrate_to_level } from './dog.js';
 import { MIGR_RANDOM, MIGR_PORTAL } from './const.js';
 import { within_bounded_area } from './rect.js';
 import { obj_extract_self, place_object } from './mkobj.js';
+import { mksobj } from './mkobj.js';
+import { addinv, prinv } from './invent.js';
 import { flooreffects } from './do.js';
 import { dist2, distmin } from './hacklib.js';
 import { drag_ball, move_bc, placebc, unplacebc } from './ball.js';
@@ -878,8 +880,18 @@ export async function level_tele() {
 
                 newlevel.dnum = r.rdgn;
                 newlevel.dlevel = r.rlev;
-                if (In_endgame(newlevel) && !In_endgame(u.uz))
-                    throw new Error('level_tele(): "Endgame prerequisite" amulet not ported yet');
+                if (In_endgame(newlevel) && !In_endgame(u.uz)) {
+                    let amu;
+
+                    if (!u.uhave?.amulet
+                        && (amu = mksobj(AMULET_OF_YENDOR, true, false))) {
+                        /* ordinarily we'd use hold_another_object()
+                           for something like this, but we don't want
+                           fumbling or already full pack to interfere */
+                        amu = await addinv(amu);
+                        await prinv("Endgame prerequisite:", amu, 0);
+                    }
+                }
                 force_dest = true;
             } else {
                 if (!/^-?\d+$/.test(buf))
