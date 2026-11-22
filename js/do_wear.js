@@ -1742,6 +1742,30 @@ export async function Armor_off() {
     return 0;
 }
 
+// C ref: do_wear.c Armor_gone()
+/* The gone functions differ from the off functions in that if you die from
+ * taking it off and have life saving, you still die.
+ */
+export async function Armor_gone() {
+    const g = game;
+    const otmp = g.uarm;
+    const tk = takeoff_ctx();
+
+    if (otmp && otmp.lamplit)
+        throw new Error('Armor_gone(): artifact_light() end_burn() not ported yet');
+    tk.mask &= ~W_ARM;
+    setnotworn_dw(g.uarm);
+    tk.cancelled_don = false;
+
+    /* losing yellow dragon scales/mail might be fatal; arti_light
+       comes from gold dragon scales/mail so they don't overlap, but
+       conceptually the non-fatal change should be done before the
+       potentially fatal change in case the latter results in bones */
+    await dragon_armor_handling(otmp, false, false);
+
+    return 0;
+}
+
 // C ref: do_wear.c dragon_armor_handling() -- handle extra abilities for
 // hero wearing dragon scale armor
 async function dragon_armor_handling(otmp,   /* armor being put on or taken off */

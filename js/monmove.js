@@ -6,6 +6,7 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
+import { m_lined_up } from './mthrowu.js';
 import { game } from './gstate.js';
 import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
 import { picking_lock } from './lock.js';
@@ -1166,21 +1167,10 @@ function blocking_terrain(x, y) {
     return false;
 }
 
-// ── C ref: mthrowu.c m_lined_up() / lined_up() ──
+// ── C ref: mthrowu.c lined_up() ──
+/* is mtmp in position to use ranged attack on hero? */
 export function lined_up(mtmp) {
-    const u = game.u;
-    const tx = mtmp.mux, ty = mtmp.muy;
-    const ignore_boulders = (throws_rocks(mtmp.data)
-                             || m_carrying(mtmp, WAN_STRIKING));
-
-    /* hero concealment usually trumps monst awareness of being lined up */
-    if (Upolyd() && rn2(25)
-        && (u.uundetected || (game.youmonst.m_ap_type
-                              && game.youmonst.m_ap_type !== M_AP_MONSTER)))
-        return false;
-
-    /* [no callers care about the 1 vs 2 situation any more] */
-    return linedup(tx, ty, mtmp.mx, mtmp.my, ignore_boulders ? 1 : 2);
+    return m_lined_up(game.youmonst, mtmp) ? true : false;
 }
 
 // ── C ref: monmove.c m_balks_at_approaching() ──

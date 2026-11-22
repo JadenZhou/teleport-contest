@@ -564,8 +564,10 @@ async function mhitm_ad_sedu(magr, mattk, mdef, mhm) {
     void mattk;
     if (magr.mcan)
         return;
-    /* find an object to steal, non-cursed if magr is tame */
-    for (const o of (mdef.minvent || []))
+    /* find an object to steal, non-cursed if magr is tame;
+       C walks mdef->minvent from its head, the newest object, and
+       JS minvent arrays are oldest first */
+    for (const o of (mdef.minvent || []).slice().reverse())
         if (!magr.mtame || !o.cursed) {
             obj = o;
             break;

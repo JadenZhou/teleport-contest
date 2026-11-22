@@ -3,6 +3,7 @@
 // (commands_init()/reset_commands()) and the command functions ported so
 // far; hack.c domove() is in hack.js.
 
+import { dobreathe } from './polyself.js';
 import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline, You_cant, You } from './display.js';
@@ -27,7 +28,7 @@ import { strcmpi, strncmpi, highc, visctrl, strstri } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic, wiz_map,
-         wiz_detect } from './wizcmds.js';
+         wiz_detect, wiz_polyself } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
          doprtool, add_menu_heading, doorganize, adjust_split } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
@@ -192,6 +193,7 @@ const cmd_funcs = {
     wiz_intrinsic: () => wiz_intrinsic(),
     wiz_map: () => wiz_map(),
     wiz_detect: () => wiz_detect(),
+    wiz_polyself: () => wiz_polyself(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",
@@ -271,7 +273,7 @@ async function domonability() {
             return ECMD_OK;
     }
     if (can_breathe(uptr))
-        throw new Error('domonability(): dobreathe() not ported yet');
+        return await dobreathe();
     else if (attacktype(uptr, AT_SPIT))
         throw new Error('domonability(): dospit() not ported yet');
     else if (uptr.mlet === S_NYMPH)
