@@ -39,7 +39,7 @@ import { mons, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
          BUC_UNKNOWN } from './const.js';
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj,
-         dead_species } from './mkobj.js';
+         dead_species, curse } from './mkobj.js';
 import { itemactions } from './iactions.js';
 import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR } from './const.js';
 import { ART_MJOLLNIR } from './artilist.js';
@@ -445,7 +445,7 @@ function freeinv_core(obj) {
     }
 
     if (obj.otyp === O.LOADSTONE) {
-        throw new Error('freeinv_core(): loadstone curse() not ported yet');
+        curse(obj);
     } else if (confers_luck(obj)) {
         set_moreluck();
         game.disp_botl = true;

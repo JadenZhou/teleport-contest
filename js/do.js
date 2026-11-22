@@ -8,7 +8,9 @@
 // ported yet.
 
 import { game } from './gstate.js';
-import { pline, pline_The, docrt, flush_screen } from './display.js';
+import { pline, pline_The, docrt, flush_screen, Hallucination,
+         Blind } from './display.js';
+import { bones_include_name } from './bones.js';
 import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
 import { olfaction } from './mondata.js';
@@ -22,7 +24,7 @@ import {
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR } from './const.js';
 import * as O from './objects.js';
 import { is_pool, is_lava, u_at } from './makemon.js';
-import { t_at, is_pit, is_hole } from './trap.js';
+import { t_at, is_pit, is_hole, set_utrap } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
@@ -419,6 +421,32 @@ async function currentlevel_rewrite() {
     return nhfp;
 }
 
+// C ref: do.c familiar_level_msg()
+async function familiar_level_msg() {
+    const fam_msgs = [
+        "You have a sense of deja vu.",
+        "You feel like you've been here before.",
+        "This place %s familiar...", null /* no message */
+    ];
+    const halu_fam_msgs = [
+        "Whoa!  Everything %s different.",
+        "You are surrounded by twisty little passages, all alike.",
+        "Gee, this %s like uncle Conan's place...", null /* no message */
+    ];
+    let mesg;
+    const which = rn2(4);
+
+    if (Hallucination())
+        mesg = halu_fam_msgs[which];
+    else
+        mesg = fam_msgs[which];
+    if (mesg && mesg.includes('%')) {
+        mesg = mesg.replace('%s', !Blind() ? "looks" : "seems");
+    }
+    if (mesg)
+        await pline(mesg);
+}
+
 // C ref: do.c goto_level()
 export async function goto_level(newlevel, at_stairs, falling, portal) {
     const g = game;
@@ -426,9 +454,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     let up = (depth(newlevel) < depth(u.uz));
     const newdungeon = (u.uz.dnum !== newlevel.dnum);
     let leaving_tutorial = false;
-    /* familiar: never set (no bones files);
-       dist, do_fall_dmg: falling isn't ported */
-    let new_ = false;
+    /* dist, do_fall_dmg: falling isn't ported */
+    let new_ = false, familiar = false;
     const prev_temperature = g.level.flags?.temperature || 0;
     const was_in_W_tower = In_W_tower(u.ux, u.uy, u.uz);
 
@@ -486,9 +513,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     await check_special_room(true); /* probably was a trap door */
     if (Punished())
         unplacebc();
-    /* reset_utrap(FALSE) */
-    u.utrap = 0;
-    u.utraptype = 0;
+    /* reset_utrap(FALSE); needed in level_tele */
+    set_utrap(0, 0);
     /* fill_pit(u.ux, u.uy): pits aren't ported yet */
     /* set_ustuck((struct monst *) 0) */
     u.ustuck = null;
@@ -568,7 +594,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         }
         await mklev();
         new_ = true; /* made the level */
-        /* familiar = bones_include_name(svp.plname): no bones files */
+        familiar = bones_include_name(g.plname);
     } else {
         /* returning to previously visited level; reload it */
         const whynot = { v: '' };
@@ -722,8 +748,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (In_hell(u.uz) && !on_level(u.uz, g.dungeon_topology.d_valley_level))
         u.uevent.gehennom_entered = 1;
 
-    /* familiar is bones_include_name(plname): bones files aren't ported,
-       so a new level is never familiar */
+    if (familiar)
+        await familiar_level_msg();
 
     /* special location arrival messages/events */
     const topo = g.dungeon_topology;

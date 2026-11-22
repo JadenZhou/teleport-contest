@@ -121,6 +121,13 @@ export async function docallcmd() {
     return ECMD_OK;
 }
 
+// C ref: do_name.c safe_oname()
+export function safe_oname(obj) {
+    if (obj.oextra?.oname) /* has_oname(obj) */
+        return obj.oextra.oname; /* ONAME(obj) */
+    return "";
+}
+
 // C ref: do_name.c christen_monst()
 export function christen_monst(mtmp, name) {
     let lth;

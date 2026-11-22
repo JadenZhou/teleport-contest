@@ -362,7 +362,7 @@ function recalc_telepat_range() {
 }
 
 // C ref: artifact.c artifact_light()
-function artifact_light(obj) {
+export function artifact_light(obj) {
     /* not artifacts but treat them as if they were because they emit
        light without burning */
     if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL

@@ -389,7 +389,7 @@ export async function mklev() {
     /* reseed_random(rn2); reseed_random(rn2_on_display_rng): no-ops unless
        has_strong_rngseed, which a fixed-seed game doesn't have */
     init_mapseen(g.u.uz);
-    if (getbones()) return;
+    if (await getbones()) return;
     g.in_mklev = true;
     await makelevel();
     count_level_features();

@@ -330,6 +330,15 @@ export async function book_cursed(book) {
     }
 }
 
+// C ref: spell.c book_cursed() -- synchronous variant for synchronous C
+// callers (curse()); the interruption message needs pline(), so that case
+// stops here
+export function book_cursed_sync(book) {
+    if (book.cursed && game.multi >= 0
+        && game.occupation === learn && spbook().book === book)
+        throw new Error('book_cursed(): interrupting the read from a synchronous caller not ported yet');
+}
+
 // C ref: spell.c learn() -- occupation callback for studying a spellbook
 async function learn() {
     const g = game;
