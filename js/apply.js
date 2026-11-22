@@ -186,7 +186,40 @@ async function use_stethoscope(obj) {
             mtmp.mundetected = 0;
             newsym(mtmp.mx, mtmp.my);
         } else if (mtmp.mappearance) {
-            throw new Error('use_stethoscope(): exposing a mimic (seemimic()) not ported yet');
+            let what = "thing";
+            let use_plural = false;
+
+            switch (M_AP_TYPE_AP(mtmp)) {
+            case M_AP_OBJECT_AP: {
+                /* FIXME?
+                 *  we should probably be using object_from_map() here
+                 */
+                const otyp = mtmp.mappearance; /* init_dummyobj(&dummyobj, mappearance, 1L) */
+                /* simple_typename() yields "fruit" for any named fruit;
+                   we want the same thing '//' or ';' shows: "slime mold"
+                   or "grape" or "slice of pizza" */
+                if (otyp === O.SLIME_MOLD && has_mcorpsenm_ap(mtmp)) {
+                    throw new Error('use_stethoscope(): mimic shown as a named fruit (simpleonames()) not ported yet');
+                } else {
+                    what = simple_typename_ap(otyp);
+                }
+                /* is_boots(odummy) || is_gloves(odummy) || LENSES */
+                use_plural = ((objects[otyp].oc_class === O.ARMOR_CLASS
+                               && (objects[otyp].oc_armcat === O.ARM_BOOTS
+                                   || objects[otyp].oc_armcat === O.ARM_GLOVES))
+                              || otyp === O.LENSES);
+                break;
+            }
+            case M_AP_MONSTER_AP: /* ignore Hallucination here */
+                what = pmname_ap(mons[mtmp.mappearance], Mgender_ap(mtmp));
+                break;
+            case M_AP_FURNITURE_AP:
+                what = defsyms_explanation_ap[mtmp.mappearance];
+                break;
+            }
+            seemimic_ap(mtmp);
+            await pline(`${use_plural ? "Those" : "That"} ${what} ${
+                use_plural ? "are" : "is"} really ${mnm}.`);
         } else if ((game.flags.verbose ?? true) && !canspotmon(mtmp)) {
             await There(`is ${mnm} there.`);
         }
@@ -259,6 +292,28 @@ async function flip_through_book(obj) {
 
     return ECMD_TIME;
 }
+
+import { M_AP_TYPE as M_AP_TYPE_AP, M_AP_OBJECT as M_AP_OBJECT_AP,
+         M_AP_MONSTER as M_AP_MONSTER_AP,
+         M_AP_FURNITURE as M_AP_FURNITURE_AP } from './const.js';
+import { obj_typename as obj_typename_ap } from './objnam.js';
+/* C ref: mextra.h has_mcorpsenm() */
+function has_mcorpsenm_ap(mtmp) { return mtmp.mextra?.mcorpsenm !== undefined; }
+/* C ref: objnam.c simple_typename() -- obj_typename() without the
+   user-assigned name or the appended description */
+function simple_typename_ap(otyp) {
+    const save_uname = objects[otyp].oc_uname;
+    objects[otyp].oc_uname = null; /* suppress any name given by user */
+    let bufp = obj_typename_ap(otyp);
+    objects[otyp].oc_uname = save_uname;
+    const pp = bufp.indexOf(" (");
+    if (pp >= 0)
+        bufp = bufp.slice(0, pp); /* strip the appended description */
+    return bufp;
+}
+import { pmname as pmname_ap, Mgender as Mgender_ap } from './do_name.js';
+import { defsyms_explanation as defsyms_explanation_ap } from './pager.js';
+import { seemimic as seemimic_ap } from './mon.js';
 
 // C ref: apply.c use_cream_pie()
 async function use_cream_pie(obj) {
