@@ -460,6 +460,9 @@ function clear_level_structures() {
     lf.stormy = false;
     lf.stasis_until = 0;
     init_rect();
+    if (g.lev_message) {
+        g.lev_message = null; /* free(gl.lev_message) */
+    }
 }
 
 

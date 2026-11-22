@@ -113,7 +113,7 @@ import { olfaction, is_orc } from './mondata.js';
 import { highc } from './hacklib.js';
 import { mkobj, place_object } from './mkobj.js';
 import { RANDOM_CLASS, FOOD_CLASS, FIGURINE } from './objects.js';
-import { flooreffects } from './do.js';
+import { flooreffects, deferred_goto } from './do.js';
 import { s_suffix } from './hacklib.js';
 import { change_luck, adjalign } from './attrib.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
@@ -1493,8 +1493,11 @@ export async function movemon() {
     dmonsfree();
 
     /* a monster may have levteleported player -dlc */
-    if (game.u.utotype)
-        throw new Error('movemon(): deferred_goto() not ported yet');
+    if (game.u.utotype) {
+        await deferred_goto();
+        /* changed levels, so these monsters are dormant */
+        game.somebody_can_move = false;
+    }
 
     return game.somebody_can_move;
 }
