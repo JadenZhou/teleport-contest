@@ -14,25 +14,39 @@ import { A_NONE, A_LAWFUL, A_NEUTRAL, A_CHAOTIC, IS_ALTAR, Amask2align,
          BLINDED, DEAF, STUNNED, CONFUSION, HALLUC, WOUNDED_LEGS, UNCHANGING,
          TT_LAVA, TT_BURIEDBALL, WEAK, HUNGRY, EXT_ENCUMBER, HVY_ENCUMBER,
          A_STR, A_WIS, A_MAX, W_SADDLE, LOW_PM, SDOOR, SCORR, TIMEOUT,
-         IS_OBSTRUCTED, isok, ECMD_OK, ECMD_TIME } from './const.js';
-import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT } from './monsters.js';
-import { known_spell, spelleffects } from './spell.js';
+         IS_OBSTRUCTED, isok, ECMD_OK, ECMD_TIME, M_AP_FURNITURE,
+         MCORPSENM, MAXULEV, BOLT_LIM, TELL, NOTELL } from './const.js';
+/* C ref: defsym.h S_altar (cmap index) */
+const S_altar = 33;
+import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT, S_LICH, S_GHOST,
+         S_VAMPIRE, S_WRAITH, S_MUMMY, S_ZOMBIE } from './monsters.js';
+import { known_spell, spelleffects, can_chant } from './spell.js';
 import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          RIN_LEVITATION, GAUNTLETS_OF_FUMBLING, FUMBLE_BOOTS, SADDLE,
          POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
 import { pline } from './display.js';
 import { In_hell } from './dungeon.js';
-import { is_demon, is_undead } from './mondata.js';
-import { ABASE, AMAX, adjattrib, adjalign, change_luck } from './attrib.js';
+import { is_demon, is_undead, is_vampshifter } from './mondata.js';
+import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attrib.js';
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
 import { paranoid_query } from './cmd.js';
 import { welded, bimanual } from './wield.js';
-import { which_armor, sobj_at, is_pool, is_lava } from './makemon.js';
+import { which_armor, sobj_at, is_pool, is_lava, m_at, set_malign } from './makemon.js';
 import { confers_luck } from './timeout.js';
 import { region_danger } from './region.js';
 import { xlev_to_rank } from './botl.js';
 import { tty_yn_function } from './wintty.js';
+import { couldsee } from './vision.js';
+import { killed } from './mon.js';
+import { monflee } from './monmove.js';
+import { resist } from './zap.js';
+import { aggravate } from './potion.js';
+/* C ref: hack.h mdistu() */
+function mdistu(mon) {
+    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
+    return dx * dx + dy * dy;
+}
 
 // C ref: pray.c Moloch
 const Moloch = "Moloch";
@@ -41,6 +55,24 @@ const Moloch = "Moloch";
 /* returns the name of the hero's deity */
 export function u_gname() {
     return align_gname(game.u.ualign.type);
+}
+
+// C ref: pray.c altarmask_at()
+/* the altarmask of the altar at x,y, or of a mimic posing as one */
+export function altarmask_at(x, y) {
+    let res = 0;
+
+    if (isok(x, y)) {
+        const mon = m_at(x, y);
+
+        if (mon && mon.m_ap_type === M_AP_FURNITURE
+            && mon.mappearance === S_altar)
+            res = (MCORPSENM(mon) !== -1) /* has_mcorpsenm(mon) */
+                  ? MCORPSENM(mon) : 0;
+        else if (IS_ALTAR(game.level.at(x, y).typ))
+            res = game.level.at(x, y).altarmask;
+    }
+    return res;
 }
 
 // C ref: pray.c align_gname()
@@ -844,16 +876,149 @@ export async function dosacrifice() {
     throw new Error('dosacrifice(): floorfood("sacrifice") and the offering not ported yet');
 }
 
-// C ref: pray.c doturn() -- #turn command (M-t); the Knight and
-// Priest(ess) turn undead itself isn't ported
+/* C ref: pray.c static int turn_undead_range, turn_undead_msg_cnt */
+let turn_undead_range = 0;
+let turn_undead_msg_cnt = 0;
+
+// C ref: pray.c maybe_turn_mon_iter()
+/* iterable for undead turning by priest/knight */
+async function maybe_turn_mon_iter(mtmp) {
+    const u = game.u;
+    /* 3.6.3: used to use cansee() here but the purpose is to prevent
+       #turn operating through walls, not to require that the hero be
+       able to see the target location */
+    if (!couldsee(mtmp.mx, mtmp.my)
+        || mdistu(mtmp) > turn_undead_range)
+        return;
+
+    if (!mtmp.mpeaceful
+        && (is_undead(mtmp.data) || is_vampshifter(mtmp)
+            || (is_demon(mtmp.data) && (u.ulevel > (MAXULEV / 2))))) {
+        mtmp.msleeping = 0;
+        if (uhave(CONFUSION)) {
+            if (!turn_undead_msg_cnt++)
+                await pline("Unfortunately, your voice falters.");
+            mtmp.mflee = 0;
+            mtmp.mfrozen = 0;
+            mtmp.mcanmove = 1;
+        } else if (!resist(mtmp, 0, 0, TELL)) {
+            let xlev = 6;
+            let flee = true;
+
+            /* this is intentional, lichs are tougher than zombies;
+               each case adds 2 and falls through to the next */
+            switch (mtmp.data.mlet) {
+            case S_LICH:
+                xlev += 2;
+                /* FALLTHRU */
+            // eslint-disable-next-line no-fallthrough
+            case S_GHOST:
+                xlev += 2;
+                /* FALLTHRU */
+            // eslint-disable-next-line no-fallthrough
+            case S_VAMPIRE:
+                xlev += 2;
+                /* FALLTHRU */
+            // eslint-disable-next-line no-fallthrough
+            case S_WRAITH:
+                xlev += 2;
+                /* FALLTHRU */
+            // eslint-disable-next-line no-fallthrough
+            case S_MUMMY:
+                xlev += 2;
+                /* FALLTHRU */
+            // eslint-disable-next-line no-fallthrough
+            case S_ZOMBIE:
+                if (u.ulevel >= xlev && !resist(mtmp, 0, 0, NOTELL)) {
+                    if (u.ualign.type === A_CHAOTIC) {
+                        mtmp.mpeaceful = 1;
+                        set_malign(mtmp);
+                    } else { /* damn them */
+                        await killed(mtmp);
+                    }
+                    flee = false;
+                } /* else flee */
+                break;
+            default:
+                break;
+            }
+            if (flee)
+                await monflee(mtmp, 0, false, true);
+        }
+    }
+}
+
+// C ref: pray.c doturn() -- #turn command (M-t)
 export async function doturn() {
+    const g = game;
+    const u = g.u;
     /* Knights & Priest(esse)s only please */
-    if (game.urole.mnum !== PM_CLERIC && game.urole.mnum !== PM_KNIGHT) { /* Role_if() */
+    let Gname;
+
+    if (g.urole.mnum !== PM_CLERIC && g.urole.mnum !== PM_KNIGHT) { /* Role_if() */
         /* Try to use the "turn undead" spell. */
         if (known_spell(SPE_TURN_UNDEAD))
             return await spelleffects(SPE_TURN_UNDEAD, false, false);
         await pline("You don't know how to turn undead!"); /* You() */
         return ECMD_OK;
     }
-    throw new Error('doturn(): turning undead (u.uconduct.gnostic, can_chant()) not ported yet');
+    if (!u.uconduct.gnostic++) {
+        /* livelog_printf(LL_CONDUCT, "rejected atheism by turning undead") */
+    }
+
+    Gname = halu_gname(u.ualign.type);
+
+    /* [What about needing free hands (does #turn involve any gesturing)?] */
+    if (!can_chant(g.youmonst)) {
+        /* "evilness": "demons and undead" is too verbose and too precise */
+        await pline(`You are ${uhave(STRANGLED) ? "not able to call"
+                                                : "incapable of calling"} upon ${
+                        Gname} to turn aside evilness.`); /* You() */
+        /* violates agnosticism due to intent; conduct tracking is not
+           supposed to affect play but we make an exception here:  use a
+           move if this is the first time agnostic conduct has been broken */
+        return (u.uconduct.gnostic === 1) ? ECMD_TIME : ECMD_OK;
+    }
+    if ((u.ualign.type !== A_CHAOTIC
+         && (is_demon(g.youmonst.data)
+             || is_undead(g.youmonst.data) || is_vampshifter(g.youmonst)))
+        || u.ugangr > 6) { /* "Die, mortal!" */
+        await pline(`For some reason, ${Gname} seems to ignore you.`);
+        aggravate();
+        exercise(A_WIS, false);
+        return ECMD_TIME;
+    }
+    if (Inhell()) {
+        /* not actually calling upon Moloch but use alternate
+           phrasing anyway if hallucinatory feedback says it's him */
+        await pline(`Since you are in Gehennom, ${Gname} ${
+                        (Gname === Moloch) ? "won't" : "can't"} help you.`);
+        aggravate();
+        return ECMD_TIME;
+    }
+    await pline(`Calling upon ${Gname}, you chant an arcane formula.`);
+    exercise(A_WIS, true);
+
+    /* note: does not perform unturn_dead() on victims' inventories */
+    turn_undead_range = BOLT_LIM + Math.trunc(u.ulevel / 5); /* 8 to 14 */
+    turn_undead_range *= turn_undead_range;
+    turn_undead_msg_cnt = 0;
+
+    /* iter_mons(maybe_turn_mon_iter) */
+    for (let mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+            continue;
+        await maybe_turn_mon_iter(mtmp);
+    }
+
+    /*
+     *  There is no detrimental effect on self for successful #turn
+     *  while in demon or undead form.  That can only be done while
+     *  chaotic oneself (see "For some reason" above) and chaotic
+     *  turning only makes targets peaceful.
+     */
+    nomul(-(5 - Math.trunc((u.ulevel - 1) / 6))); /* -5 .. -1 */
+    g.multi_reason = "trying to turn the monsters";
+    g.nomovemsg = "You can move again."; /* You_can_move_again */
+    return ECMD_TIME;
 }

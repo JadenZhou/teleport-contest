@@ -15,6 +15,7 @@ import { rn2, rnl } from './rng.js';
 import { pline, newsym, You, You_cant, pline_The, canseemon } from './display.js';
 import { tty_yn_function } from './wintty.js';
 import { get_adjacent_loc } from './cmd.js';
+import { update_mapseen_for } from './dungeon.js';
 import { container_at, doloot } from './pickup.js';
 import { set_occupation } from './allmain.js';
 import { mon_nam } from './do_name.js';
@@ -506,10 +507,16 @@ export async function doopen_indir(x, y) {
     const door = game.level.at(cc.x, cc.y);
     /* is_drawbridge_wall(cc.x, cc.y) >= 0: drawbridges aren't ported */
     const portcullis = false;
-    /* oldglyph/update_mapseen_for(): newsym() redraws what the hero
-       already sees next to her, so neither the glyph nor lastseentyp
-       changes ("learned something") for a door in view */
-    newsym(cc.x, cc.y);
+    /* this used to be 'if (Blind)' but using a key skips that so we do too */
+    {
+        /* oldglyph: newsym() redraws what the hero already sees next to
+           her, so the remembered glyph doesn't change for a door in view */
+        const oldlastseentyp = update_mapseen_for(cc.x, cc.y);
+
+        newsym(cc.x, cc.y);
+        if ((game.level.lastseentyp?.[cc.x]?.[cc.y] ?? 0) !== oldlastseentyp)
+            res = ECMD_TIME; /* learned something */
+    }
 
     if (portcullis || !IS_DOOR(door.typ)) {
         /* closed portcullis or spot that opened bridge would span */

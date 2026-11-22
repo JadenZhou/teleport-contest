@@ -13,7 +13,7 @@ import {
     A_NONE, A_LAWFUL, A_CHAOTIC, A_NEUTRAL, N_DIRS, ROOMOFFSET, ALL_TRAPS,
     MM_EPRI, RLOC_NOMSG, W_ARMC, Amask2align, MM_ADJACENTOK, MM_EMIN,
 } from './const.js';
-import { on_level, assign_level } from './dungeon.js';
+import { on_level, assign_level, mapseen_temple } from './dungeon.js';
 import { makemon, mongets, set_malign, m_at, MON_AT } from './makemon.js';
 import { mkobj, curse, uncurse, SPBOOK_no_NOVEL } from './mkobj.js';
 import { mpickobj } from './steal.js';
@@ -466,8 +466,8 @@ export async function intemple(roomno) {
             }
         }
         /* recognize the Valley of the Dead and Moloch's Sanctum
-           once hero has encountered the temple priest on those levels:
-           mapseen_temple(priest) -- the dungeon overview isn't ported */
+           once hero has encountered the temple priest on those levels */
+        mapseen_temple(priest);
     } else {
         /* untended */
 

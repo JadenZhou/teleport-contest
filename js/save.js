@@ -24,7 +24,7 @@ import { create_savefile, open_savefile, delete_savefile, open_levelfile,
          delete_levelfile, level_info, store_version, HACK_UID } from './files.js';
 import { genders, aligns } from './role.js';
 import { close_nhfile } from './sfbase.js';
-import { ledger_no, maxledgerno } from './dungeon.js';
+import { ledger_no, maxledgerno, save_mapseen } from './dungeon.js';
 import { pline, There, docrt } from './display.js';
 import { tty_clear_nhwindow, tty_yn_function, tty_display_nhwindow,
          tty_exit_nhwindows, tty_getmsghistory } from './wintty.js';
@@ -359,7 +359,13 @@ function save_dungeon(nhfp, perform_write, free_data) {
         Sfo(nhfp, maxledgerno(), "level_info_count");
         Sfo(nhfp, g.level_info ?? null, "svl.level_info");
         Sfo(nhfp, g.inv_pos ?? null, "svi.inv_pos");
-        Sfo(nhfp, g.mapseenchn ?? null, "mapseen");
+        let count, curr_ms;
+        for (count = 0, curr_ms = g.mapseenchn ?? null; curr_ms;
+             curr_ms = curr_ms.next)
+            count++;
+        Sfo(nhfp, count, "mapseen_count");
+        for (curr_ms = g.mapseenchn ?? null; curr_ms; curr_ms = curr_ms.next)
+            save_mapseen(nhfp, curr_ms);
     }
     if (free_data) {
         g.branches = null;
