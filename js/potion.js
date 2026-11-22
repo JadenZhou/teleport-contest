@@ -1487,7 +1487,7 @@ export async function healup(nhp, nxtra, curesick, cureblind) {
     if (cureblind) {
         /* 3.6.1: it's debatable whether healing magic should clean off
            mundane 'dirt', but if it doesn't, blindness isn't cured */
-        u.ucreamed = 0;
+        game.u.ucreamed = 0;
         await make_blinded(0, true);
         /* heal deafness too */
         await make_deaf(0, true);
