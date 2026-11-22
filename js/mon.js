@@ -37,7 +37,7 @@ import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
 import { is_male, is_female, is_neuter, pm_invisible } from './mondata.js';
 import { set_mon_data } from './mondata.js';
 import { Monnam, noit_mon_nam } from './do_name.js';
-import { m_dowear, which_armor } from './worn.js';
+import { m_dowear, which_armor, mon_break_armor } from './worn.js';
 import {
     MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
     PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
@@ -2030,11 +2030,12 @@ function* newcham_g(mtmp, mdat, ncflags) {
         /* && !Protection_from_shape_changers */)
         mtmp.cham = pm_to_cham(monsndx(mdat));
 
-    /* possibly_unwield(mtmp, polyspot), mon_break_armor(mtmp, polyspot),
-       mselftouch(): only matter for a monster with a wielded weapon or
-       worn armor */
-    if (mtmp.mw || ((mtmp.misc_worn_check || 0) & ~I_SPECIAL))
-        throw new Error('newcham(): possibly_unwield()/mon_break_armor() not ported yet');
+    /* possibly_unwield(mtmp, polyspot): might lose use of weapon */
+    if (mtmp.mw)
+        throw new Error('newcham(): possibly_unwield() not ported yet');
+    mon_break_armor(mtmp, polyspot);
+    /* mselftouch(): only matters for a monster wielding a cockatrice
+       corpse (no weapon here) */
     check_gear_next_turn(mtmp);
 
     /* former giants can't continue carrying boulders */

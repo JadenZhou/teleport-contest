@@ -12,6 +12,7 @@ import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init } from './nhlua.js';
 import { rhack, domove, enter_explore_mode } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline, see_monsters } from './display.js';
+import { see_objects, see_traps, Hallucination, Blind, swallowed } from './display.js';
 import { read_engr_at } from './engrave.js';
 import { encumber_msg, pickup } from './pickup.js';
 import { reset_justpicked } from './invent.js';
@@ -661,6 +662,18 @@ export async function moveloop_core() {
     /* once-per-player-input things go here */
 
     find_ac();
+    if (!g.context.mv || Blind()) {
+        /* redo monsters if hallu or wearing a helm of telepathy */
+        if (Hallucination()) { /* update screen randomly */
+            see_monsters();
+            see_objects();
+            see_traps();
+            if (u.uswallow)
+                await swallowed(0);
+        }
+        /* else if (Unblind_telepat || Warning || Warn_of_mon
+                    || any_visible_region()) see_monsters(): not ported */
+    }
     // Vision + display
     if (g.vision_full_recalc) {
         vision_recalc(0);
