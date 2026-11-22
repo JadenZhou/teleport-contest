@@ -13,6 +13,9 @@ import { obfree } from './invent.js';
 import { observe_object } from './o_init.js';
 import { poisoned } from './attrib.js';
 import { A_CON } from './const.js';
+import { TELEPORT, POISON_RES, COLD_RES, SHOCK_RES, DISINT_RES, TELEPORT_CONTROL,
+         STEALTH, FAST, INTRINSIC } from './const.js';
+import { PM_WIZARD, PM_ELF, PM_VALKYRIE } from './monsters.js';
 import { rn2, rnl } from './rng.js';
 import { dunlev, dunlevs_in_dungeon, In_hell } from './dungeon.js';
 import {
@@ -312,7 +315,41 @@ export async function losehp(n, knam, k_format) {
         await pline("You die..."); /* urgent_pline() */
         await done(DIED);
     } else if (n > 0 && u.uhp * 10 < u.uhpmax)
-        throw new Error('losehp(): maybe_wail() not ported yet');
+        await maybe_wail();
+}
+
+// C ref: hack.c maybe_wail()
+export async function maybe_wail() {
+    const powers = [ TELEPORT, SEE_INVIS, POISON_RES, COLD_RES,
+                     SHOCK_RES, FIRE_RES, SLEEP_RES, DISINT_RES,
+                     TELEPORT_CONTROL, STEALTH, FAST, INVIS ];
+    const u = game.u;
+
+    if (game.moves <= (game.wailmsg || 0) + 50)
+        return;
+
+    game.wailmsg = game.moves;
+    if (game.urole.mnum === PM_WIZARD || game.urace.mnum === PM_ELF
+        || game.urole.mnum === PM_VALKYRIE) { /* Role_if(), Race_if() */
+        let who, i, powercnt;
+
+        who = (game.urole.mnum === PM_WIZARD || game.urole.mnum === PM_VALKYRIE)
+              ? game.urole.name.m : "Elf";
+        if (u.uhp === 1) {
+            await pline(`${who} is about to die.`);
+        } else {
+            for (i = 0, powercnt = 0; i < powers.length; ++i)
+                if (u.uprops[powers[i]].intrinsic & INTRINSIC)
+                    ++powercnt;
+
+            await pline((powercnt >= 4) ? `${who}, all your powers will be lost...`
+                                        : `${who}, your life force is running out.`);
+        }
+    } else {
+        /* Soundeffect(se_wailing_of_the_banshee, 75): no sound */
+        await You_hear(u.uhp === 1 ? "the wailing of the Banshee..."
+                                   : "the howling of the CwnAnnwn...");
+    }
 }
 
 // C ref: do.c set_wounded_legs()

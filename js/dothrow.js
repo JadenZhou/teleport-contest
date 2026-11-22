@@ -64,7 +64,11 @@ import { weapon_type, P_SKILL, hitval } from './weapon.js';
 import { is_weptool } from './mkobj.js';
 import { weapon_descr, skill_name, inside_shop, body_part } from './insight.js';
 import { xname, an, singular, The, Tobjnam } from './objnam.js';
-import { the } from './iactions.js';
+import { the, surface } from './iactions.js';
+import { doname, otense } from './objnam.js';
+import { dropy, dropz } from './do.js';
+import { IS_ALTAR, PIT, SPIKED_PIT, HOLE, TRAPDOOR } from './const.js';
+import { BRK_FROM_INV, BRK_KNOWN2BREAK, BRK_KNOWN2NOTBREAK, BRK_KNOWN_OUTCOME } from './const.js';
 import { cansee } from './vision.js';
 import { obj_resists } from './dogmove.js';
 import { map_invisible, unmap_object, glyph_is_invisible } from './display.js';
@@ -705,6 +709,75 @@ export function omon_adj(mon, obj, mon_notices) {
         break;
     }
     return tmp;
+}
+
+// C ref: dothrow.c hitfloor()
+/* Object hits floor at hero's feet.
+   Called from drop(), throwit(), hold_another_object(), litter(). */
+export async function hitfloor(obj,
+                               verbosely) /* usually True; False if caller has given drop mesg */ {
+    const u = game.u;
+
+    if (IS_SOFT(game.level.at(u.ux, u.uy).typ) || u.uinwater || u.uswallow) {
+        await dropy(obj);
+        return;
+    }
+    if (IS_ALTAR(game.level.at(u.ux, u.uy).typ)) {
+        throw new Error('hitfloor(): doaltarobj() not ported yet');
+    } else if (verbosely) {
+        const verb = (obj.otyp === WAN_STRIKING) ? "strike" : "hit";
+        let surf = surface(u.ux, u.uy);
+        const t = t_at(u.ux, u.uy);
+
+        /* describe something that might keep the object where it is
+           or precede next message stating that it falls */
+        if (t && t.tseen) {
+            switch (t.ttyp) {
+            case TRAPDOOR:
+                surf = "trap door";
+                break;
+            case HOLE:
+                surf = "edge of the hole";
+                break;
+            case PIT:
+            case SPIKED_PIT:
+                surf = "edge of the pit";
+                break;
+            default:
+                break;
+            }
+        }
+        const dn = doname(obj);
+        await pline(`${dn.charAt(0).toUpperCase() + dn.slice(1)} ${ /* Doname2() */
+            otense(obj, verb)} the ${surf}.`);
+    }
+
+    if (await hero_breaks(obj, u.ux, u.uy, BRK_FROM_INV))
+        return;
+    if (await ship_object(obj, u.ux, u.uy, false))
+        return;
+    await dropz(obj, true);
+}
+
+// C ref: dothrow.c hero_breaks()
+/*
+ * The object is going to break because of something the hero did.
+ * Return 0 if the object doesn't break, 1 if the object broke.
+ */
+async function hero_breaks(obj,
+                           x, y, /* object location (ox, oy may not be right) */
+                           breakflags) {
+    /* from_invent: thrown or dropped by player; maybe on shop bill;
+       by-hero is implicit so callers don't need to specify BRK_BY_HERO */
+    let brk = (breakflags & BRK_KNOWN_OUTCOME);
+
+    /* only call breaktest if caller hasn't already specified the outcome */
+    if (!brk)
+        brk = breaktest(obj) ? BRK_KNOWN2BREAK : BRK_KNOWN2NOTBREAK;
+    if (brk === BRK_KNOWN2NOTBREAK)
+        return 0;
+
+    throw new Error('hero_breaks(): breakmsg()/breakobj() not ported yet');
 }
 
 // C ref: dothrow.c breaktest()

@@ -8,6 +8,7 @@
 // ported yet.
 
 import { game } from './gstate.js';
+import { container_impact_dmg } from './dokick.js';
 import { pline, pline_The, docrt, flush_screen, Hallucination,
          Blind } from './display.js';
 import { bones_include_name } from './bones.js';
@@ -1193,7 +1194,7 @@ export async function dropz(obj, with_impact) {
             return;
         place_object(obj, game.u.ux, game.u.uy);
         if (with_impact)
-            throw new Error('dropz(): container_impact_dmg() not ported yet');
+            container_impact_dmg(obj, game.u.ux, game.u.uy);
         impact_disturbs_zombies(obj, with_impact);
         if (obj === game.uball)
             await drop_ball(game.u.ux, game.u.uy);

@@ -55,6 +55,8 @@ import { NHF_BONESFILE, REST_GSTATE, REST_LEVELS, REST_CURRENT_LEVEL, WRITING,
 import { next_ident } from './mkobj.js';
 import { propagate, peace_minded, set_malign } from './makemon.js';
 import { Is_branchlev } from './dungeon.js';
+import { restshk, set_residency } from './shk.js';
+import { restpriest } from './priest.js';
 import { deltrap } from './trap.js';
 import { killer } from './topten.js';
 import { done } from './end.js';
@@ -376,9 +378,9 @@ function restmonchn(nhfp) {
         }
 
         if (mtmp.isshk)
-            throw new Error('restmonchn(): restshk() not ported yet');
+            restshk(mtmp, ghostly);
         if (mtmp.ispriest)
-            throw new Error('restmonchn(): restpriest() not ported yet');
+            restpriest(mtmp, ghostly);
 
         if (!ghostly) {
             const pa = g.context?.polearm;
@@ -966,7 +968,7 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
     L.wsegs = new Map(); /* worm tail cells, placed by place_wsegs() */
     for (let mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
         if (mtmp.isshk)
-            throw new Error('getlev(): set_residency() not ported yet');
+            set_residency(mtmp, false);
         if (u.usteed_mid && mtmp.m_id === u.usteed_mid) {
             /* steed is kept on fmon list but off the map */
             u.usteed = mtmp;

@@ -23,7 +23,7 @@ import { t_at, is_pit, is_hole, deltrap, losehp, Maybe_Half_Phys,
          set_wounded_legs, reset_utrap } from './trap.js';
 import { near_capacity, weight_cap, nomul, spoteffects, movobj } from './hack.js';
 import { find_mac, setnotworn } from './worn.js';
-import { omon_adj } from './dothrow.js';
+import { omon_adj, hitfloor } from './dothrow.js';
 import { hmon } from './uhitm.js';
 import { miss } from './zap.js';
 import { xname, yname, Yname2, otense, hard_helmet } from './objnam.js';
@@ -842,7 +842,7 @@ async function litter() {
                 await You(`drop ${yname(otmp)} and ${(otmp.quan === 1) ? "it" : "they"} ${otense(otmp, "fall")} down the stairs with you.`);
                 setnotworn(otmp);
                 freeinv(otmp);
-                throw new Error('litter(): hitfloor() not ported yet');
+                await hitfloor(otmp, false);
             }
         }
     }

@@ -4,6 +4,7 @@
 // Not ported yet: make_familiar, pick_familiar_pm, dog movement/food
 // (dogmove.c), keepdogs/losedogs, tamedog and the rest of dog.c.
 
+import { set_residency } from './shk.js';
 import { game } from './gstate.js';
 import { redraw_worm, count_wsegs, wormgone, get_wormno, initworm,
          MAX_NUM_WORMS } from './worm.js';
@@ -272,7 +273,7 @@ function mon_leave(mtmp) {
     /* if this is a shopkeeper, clear the 'resident' field of her shop;
        if/when she returns, it will be set back by mon_arrive()  */
     if (mtmp.isshk)
-        throw new Error('mon_leave(): set_residency() not ported yet');
+        set_residency(mtmp, true);
 
     /* if this is a long worm, handle its tail segments before mtmp itself;
        we pass possibly truncated segment count to caller via return value  */
@@ -567,7 +568,7 @@ export async function mon_arrive(mtmp, when) {
     mtmp.nmon = g.fmon;
     g.fmon = mtmp;
     if (mtmp.isshk)
-        throw new Error('mon_arrive(): set_residency() not ported yet');
+        set_residency(mtmp, false);
 
     num_segs = mtmp.wormno;
     /* baby long worms have no tail so don't use is_longworm() */

@@ -42,7 +42,9 @@ import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj,
          dead_species, curse } from './mkobj.js';
 import { itemactions } from './iactions.js';
-import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR } from './const.js';
+import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR, Is_knox_level,
+         Is_earthlevel, Is_airlevel, Is_firelevel, Is_waterlevel } from './const.js';
+import { dunlev, depth } from './dungeon.js';
 import { ART_MJOLLNIR } from './artilist.js';
 import { is_missile, is_ammo, setuqwep } from './wield.js';
 import { confers_luck } from './timeout.js';
@@ -1322,15 +1324,32 @@ function stairs_description(sway, stcase) {
     if (!(tolev.dnum !== game.u.uz.dnum && sway.u_traversed)) {
         /* ordinary stairs or branch stairs to not-yet-visited branch */
         outbuf = `${stairs} ${updown}`;
-        if (sway.u_traversed)
-            throw new Error('stairs_description(): " to level %d" not ported yet');
+        if (sway.u_traversed) {
+            const specialdepth = (tolev.dnum === game.dungeon_topology.d_quest_dnum
+                                  || Is_knox_level(tolev)); /* single_level_branch(): knox */
+            const to_dlev = specialdepth ? dunlev(tolev) : depth(tolev);
+
+            outbuf += ` to level ${to_dlev}`;
+        }
     } else if (game.u.uz.dnum === 0 && game.u.uz.dlevel === 1 && sway.up) {
         /* stairs up from level one are a special case */
-        if (game.u.uhave?.amulet)
-            throw new Error('stairs_description(): stairs up with the Amulet not ported yet');
-        outbuf = `${stairs} ${updown} out of the dungeon`;
+        /* stairs up from level one are a special case; they are marked
+           as having been traversed because the hero obviously started
+           the game by coming down them, but the remote side varies
+           depending on whether the Amulet is being carried */
+        const amulet = game.u.uhave?.amulet;
+        outbuf = `${!amulet ? "" : "branch "}${stairs} ${updown} ${
+            !amulet ? "out of the dungeon"
+            /* minimize our expectations about what comes next */
+            : (Is_earthlevel(tolev) || Is_airlevel(tolev)
+               || Is_firelevel(tolev) || Is_waterlevel(tolev))
+              ? "to the Elemental Planes"
+              : "to the end game"}`;
     } else {
-        throw new Error('stairs_description(): known branch stairs not ported yet');
+        /* known branch stairs; tacking on destination level is too verbose */
+        outbuf = `branch ${stairs} ${updown} to ${game.dungeons[tolev.dnum].dname}`;
+        /* dungeons[].dname is capitalized; undo that for "The <Branch>" */
+        outbuf = outbuf.replace("The ", "the "); /* strsubst() */
     }
     return outbuf;
 }

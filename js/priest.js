@@ -552,3 +552,12 @@ export function in_your_sanctuary(
     return !!(has_shrine(priest) && p_coaligned(priest)
               && priest.mpeaceful);
 }
+
+// C ref: priest.c restpriest()
+/* called in restoring a level */
+export function restpriest(mtmp, ghostly) {
+    if (game.u.uz.dlevel) {
+        if (ghostly)
+            assign_level(mtmp.mextra.epri.shrlevel, game.u.uz);
+    }
+}
