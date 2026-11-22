@@ -3610,8 +3610,15 @@ function doname_base(obj, doname_flags) {
             xn_not_ported('candelabrum suffix');
         } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
                    || obj.otyp === O.BRASS_LANTERN || Is_candle_x(obj)) {
-            if (Is_candle_x(obj))
-                xn_not_ported('partly used candles');
+            if (Is_candle_x(obj)) {
+                const full_burn_time = 20 * objects[obj.otyp].oc_cost;
+                const turns_left = obj.age;
+
+                if (obj.lamplit)
+                    xn_not_ported('partly used lit candles (peek_timer(BURN_OBJECT))');
+                if (turns_left < full_burn_time)
+                    prefix += "partly used ";
+            }
             if (obj.lamplit)
                 bp += " (lit)";
             break;
