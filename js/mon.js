@@ -12,6 +12,7 @@ import { rn2, rn1 } from './rng.js';
 import * as MM from './monsters.js';
 import { SPECIAL_PM, NUMMONS } from './monsters.js';
 import { pick_nasty } from './wizard.js';
+import { tt_doppel } from './topten.js';
 import {
     MSLOW, MFAST, NORMAL_SPEED, LOW_PM, I_SPECIAL, CONFLICT, INVIS,
     DISPLACED, COLNO, ROWNO, IS_OBSTRUCTED, IS_TREE, IS_WATERWALL, IS_DOOR,
@@ -1291,8 +1292,7 @@ export function select_newcham_form(mon) {
         if (!rn2(7)) {
             mndx = pick_nasty(mons[MM.PM_JABBERWOCK].difficulty - 1);
         } else if (rn2(3)) { /* role monsters */
-            /* mndx = tt_doppel(mon): topten.c is ported separately */
-            throw new Error('select_newcham_form(): tt_doppel() (topten.c) not ported yet');
+            mndx = tt_doppel(mon);
         } else if (!rn2(3)) { /* quest guardians */
             mndx = rn1(MM.PM_APPRENTICE - MM.PM_STUDENT + 1, MM.PM_STUDENT);
             /* avoid own role's guardian */
@@ -2426,6 +2426,30 @@ export async function mon_givit(mtmp, ptr) {
         return; /* failed die roll */
 
     await mon_give_prop(mtmp, prop);
+}
+
+// C ref: mon.c hide_monst()
+/* monster/hero tries to hide under something at the current location */
+export function hide_monst(mon) {
+    const hider_under = ((mon.data.mflags1 & MM.M1_CONCEAL) !== 0) /* hides_under() */
+                        || mon.data.mlet === MM.S_EEL;
+
+    if (((mon.data.mflags1 & MM.M1_HIDE) !== 0 /* is_hider() */ || hider_under)
+        && !(mon.mundetected || mon.m_ap_type)) {
+        const x = mon.mx, y = mon.my;
+        const save_viz = game.viz_array[y][x];
+
+        /* override vision, forcing hero to be unable to see monster's spot */
+        game.viz_array[y][x] &= ~(0x2 /* IN_SIGHT */ | 0x1 /* COULD_SEE */);
+        if ((mon.data.mflags1 & MM.M1_HIDE) !== 0) /* is_hider() */
+            restrap(mon);
+        /* try again if mimic missed its 1/3 chance to hide */
+        if (mon.data.mlet === MM.S_MIMIC && !mon.m_ap_type)
+            restrap(mon);
+        game.viz_array[y][x] = save_viz;
+        if (hider_under)
+            hideunder(mon);
+    }
 }
 
 // C ref: mon.c restrap()

@@ -29,6 +29,9 @@ import { stairway_at } from './display.js';
 import { place_monster, pm_to_cham, hideunder } from './makemon.js';
 import { set_ustuck } from './uhitm.js';
 import { monsndx } from './mondata.js';
+import { rnd } from './rng.js';
+import { hide_monst } from './mon.js';
+import { mon_catchup_elapsed_time } from './dog.js';
 import { role_init } from './role.js';
 import { set_playmode } from './options.js';
 import { set_uasmon } from './polyself.js';
@@ -897,14 +900,16 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
         /* regenerate monsters while on another level */
         if (!u.uz?.dlevel || g.program_state.restoring === REST_LEVELS)
             continue;
-        if (elapsed > 0)
-            throw new Error('getlev(): mon_catchup_elapsed_time() not ported yet');
+        /* if (ghostly): bones files throw above */
+        if (elapsed > 0) {
+            mon_catchup_elapsed_time(mtmp, elapsed);
+        }
         /* update shape-changers in case protection against
            them is different now than when the level was saved */
         restore_cham(mtmp);
-        /* give hiders a chance to hide before their next move:
-           (ghostly || (elapsed > 0L && elapsed > (long) rnd(10))) --
-           elapsed is 0 here */
+        /* give hiders a chance to hide before their next move */
+        if (ghostly || (elapsed > 0 && elapsed > rnd(10)))
+            hide_monst(mtmp);
     }
 
     restdamage(nhfp);

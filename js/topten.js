@@ -1,6 +1,7 @@
 // topten.js -- the high score list.
 // C ref: topten.c -- formatkiller(), topten(), outheader(), outentry(),
-// readentry(), writeentry(), classmon(), get_rnd_toptenentry(), tt_oname().
+// readentry(), writeentry(), classmon(), get_rnd_toptenentry(), tt_oname(),
+// tt_doppel().
 //
 // The record file lives in the contest's virtual filesystem (storage.js),
 // which the segments of a session share, like the recorder's playground.
@@ -11,19 +12,20 @@
 // them is kept.
 
 import { game } from './gstate.js';
-import { rnd } from './rng.js';
+import { rn2, rnd, rn1 } from './rng.js';
 import { vfsReadFile, vfsWriteFile } from './storage.js';
 import { KILLED_BY_AN, KILLED_BY, NO_KILLER_PREFIX, PANICKED, COLNO,
          CORPSTAT_FEMALE, CORPSTAT_MALE, ONAME_NO_FLAGS } from './const.js';
 import { an } from './objnam.js';
 import { highc, copynchars } from './hacklib.js';
 import { roles, genders, aligns } from './role.js';
-import { PM_HUMAN, PM_RANGER, PM_HUMAN_MUMMY } from './monsters.js';
+import { PM_HUMAN, PM_RANGER, PM_HUMAN_MUMMY, PM_ARCHEOLOGIST, PM_WIZARD } from './monsters.js';
 import { depth, deepest_lev_reached } from './dungeon.js';
 import { yyyymmdd } from './calendar.js';
 import { tty_raw_print, tty_raw_print_bold } from './wintty.js';
 import { set_corpsenm } from './mkobj.js';
-import { oname } from './do_name.js';
+import { oname, christen_monst } from './do_name.js';
+import { canseemon } from './display.js';
 import { HACK_UID } from './files.js';
 
 // C ref: config.h RECORD
@@ -668,4 +670,27 @@ export function tt_oname(otmp) {
     otmp = oname(otmp, tt.name, ONAME_NO_FLAGS);
 
     return otmp;
+}
+
+// C ref: topten.c tt_doppel()
+/* Randomly select a topten entry to mimic */
+export function tt_doppel(mon) {
+    const tt = rn2(13) ? get_rnd_toptenentry() : null;
+    let ret;
+
+    if (!tt)
+        ret = rn1(PM_WIZARD - PM_ARCHEOLOGIST + 1, PM_ARCHEOLOGIST);
+    else {
+        if (tt.plgend[0] === 'F')
+            mon.female = 1;
+        else if (tt.plgend[0] === 'M')
+            mon.female = 0;
+        ret = classmon(tt.plrole);
+        /* Only take on a name if the player can see
+           the doppelganger, otherwise we end up with
+           named monsters spoiling the fun - Kes */
+        if (canseemon(mon))
+            christen_monst(mon, tt.name);
+    }
+    return ret;
 }

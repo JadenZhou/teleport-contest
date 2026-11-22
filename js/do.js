@@ -32,7 +32,9 @@ import { pickup } from './pickup.js';
 import { keepdogs, losedogs } from './dog.js';
 import { kill_genocided_monsters } from './mon.js';
 import { savelev } from './save.js';
-import { create_levelfile, level_info } from './files.js';
+import { create_levelfile, level_info, open_levelfile } from './files.js';
+import { getlev } from './restore.js';
+import { oinit } from './o_init.js';
 import { close_nhfile } from './sfbase.js';
 import { LFILE_EXISTS, VISITED, WRITING, FREEING } from './const.js';
 import { m_at } from './makemon.js';
@@ -556,7 +558,17 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         /* new = TRUE; familiar = bones_include_name(svp.plname) */
     } else {
         /* returning to previously visited level; reload it */
-        throw new Error('goto_level(): returning to a saved level not ported yet');
+        const whynot = { v: '' };
+        const lnhfp = open_levelfile(new_ledger, whynot);
+        if (!lnhfp) { /* tricked_fileremoved(nhfp, whynot) */
+            await pline(whynot.v);
+            throw new Error('goto_level(): tricked_fileremoved() not ported yet');
+        }
+        /* reseed_random(rn2); reseed_random(rn2_on_display_rng): no-ops
+           unless has_strong_rngseed, which a fixed-seed game doesn't have */
+        await getlev(lnhfp, g.hackpid, new_ledger);
+        close_nhfile(lnhfp);
+        oinit(); /* reassign level dependent obj probabilities */
     }
     /* reglyph_darkroom(): only changes remembered dark corridor glyphs,
        and a new level has none yet */

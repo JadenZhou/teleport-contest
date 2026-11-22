@@ -23,8 +23,12 @@ import {
     ROWNO, xdir, ydir, DO_MOVE, TEST_MOVE, WT_TOOMUCH_DIAGONAL, IS_DOOR,
     IS_FURNITURE, SCORR, SDOOR, TREE, OROOM, P_AXE, ACCESSIBLE, IS_STWALL,
     TEMPLE, ZOO, SWAMP, COURT, LEPREHALL, MORGUE, BEEHIVE, COCKNEST, ANTHOLE,
-    BARRACKS, DELPHI, THRONE, STEALTH,
+    BARRACKS, DELPHI, THRONE, STEALTH, WATER, POOL, LAVAPOOL, FIRE_RES,
 } from './const.js';
+import { waterbody_name } from './pager.js';
+import { has_ceiling } from './insight.js';
+import { ing_suffix, visctrl } from './hacklib.js';
+import { cmd_from_func } from './cmd.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_GRID_BUG, mons, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, MZ_SMALL,
          MZ_LARGE, M1_CONCEAL, S_VORTEX, PM_AIR_ELEMENTAL, M1_SLITHY, S_GHOST,
@@ -46,7 +50,7 @@ import { selection_new, selection_free, selection_getpoint,
          selection_setpoint } from './selvar.js';
 import { onscary } from './monmove.js';
 import { COIN_CLASS, BOULDER, PICK_AXE, DWARVISH_MATTOCK, STATUE, WEAPON_CLASS,
-         TOOL_CLASS, objects } from './objects.js';
+         TOOL_CLASS, objects, WATER_WALKING_BOOTS } from './objects.js';
 import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { u_on_newpos } from './mklev.js';
 import { inside_room } from './sp_lev.js';
@@ -656,6 +660,81 @@ export function end_running(and_travel) {
         g.multi = 0;
 }
 
+// C ref: hack.c u_simple_floortyp()
+/* Return a simplified floor solid/liquid state based on hero's state */
+function u_simple_floortyp(x, y) {
+    const ptr = game.youmonst.data;
+    /* grounded(): !is_flyer && !is_floater && (!is_clinger || !has_ceiling) */
+    const grounded = !is_flyer(ptr) && !is_floater(ptr)
+                     && (!is_clinger(ptr) || !has_ceiling(game.u.uz));
+    const u_in_air = (Levitation() || Flying() || !grounded);
+
+    if (isok(x, y) && IS_WATERWALL(game.level.at(x, y).typ)) /* is_waterwall() */
+        return WATER; /* wall of water, fly/lev does not matter */
+    if (game.level.at(x, y).typ === LAVAWALL)
+        return LAVAWALL; /* wall of lava, fly/lev does not matter */
+    if (!u_in_air) {
+        if (is_pool(x, y))
+            return POOL;
+        if (is_lava(x, y))
+            return LAVAPOOL;
+    }
+    return ROOM;
+}
+
+// C ref: hack.c Known_wwalking, Known_lwalking
+/* XXX: if more sources of water walking than just boots are added,
+   cause_known(insight.c) should be externified and used for this */
+function Known_wwalking() {
+    const uarmf = game.uarmf;
+    return !!(uarmf && uarmf.otyp === WATER_WALKING_BOOTS
+              && objects[WATER_WALKING_BOOTS].oc_name_known
+              && !game.u.usteed);
+}
+function Known_lwalking() {
+    return Known_wwalking() && uhave(FIRE_RES)
+           && !!game.uarmf.oerodeproof && !!game.uarmf.rknown;
+}
+
+// C ref: hack.c swim_move_danger()
+/* Is it dangerous for hero to move to x,y due to water or lava? */
+async function swim_move_danger(x, y) {
+    const u = game.u;
+    const newtyp = u_simple_floortyp(x, y);
+    const liquid_wall = IS_WATERWALL(newtyp) || newtyp === LAVAWALL;
+
+    if (Underwater() && (is_pool(x, y) || IS_WATERWALL(newtyp)))
+        return false;
+
+    if ((newtyp !== u_simple_floortyp(u.ux, u.uy))
+        && !Stunned() && !Confusion() && game.level.at(x, y).seenv
+        && (is_pool(x, y) || is_lava(x, y) || liquid_wall)) {
+
+        /* FIXME: This can be exploited to identify ring of fire resistance
+         * if the player is wearing it unidentified and has identified
+         * fireproof boots of water walking and is walking over lava. However,
+         * this is such a marginal case that it may not be worth fixing. */
+        if ((is_pool(x, y) && !Known_wwalking())
+            /* is_lava(ux,uy): don't move onto/over lava with known
+               lava-walking because it isn't completely safe, but do
+               continue to move over lava if already doing so */
+            || (is_lava(x, y) && !Known_lwalking() && !is_lava(u.ux, u.uy))
+            || liquid_wall) {
+            if (game.context.nopick) {
+                /* moving with m-prefix */
+                game.context.tips = (game.context.tips || 0) | (1 << TIP_SWIM);
+                return false;
+            } else if (ParanoidSwim() || liquid_wall) {
+                await You(`avoid ${ing_suffix(u_locomotion("step"))} into the ${
+                    waterbody_name(x, y)}.`);
+                await handle_tip(TIP_SWIM);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // C ref: hack.c handle_tip() -- maybe show a helpful gameplay tip?
 // returns True if tip gets shown
 export async function handle_tip(tip) {
@@ -671,7 +750,8 @@ export async function handle_tip(tip) {
             await pline("(Tip: use the #enhance command to advance them.)");
             break;
         case TIP_SWIM:
-            throw new Error('handle_tip(): TIP_SWIM not ported yet');
+            await pline(`(Tip: use '${visctrl(cmd_from_func("do_reqmenu"))}' prefix to step in if you really want to.)`);
+            break;
         case TIP_UNTRAP_MON:
             await pline("(Tip: perhaps #untrap would help?)");
             break;
@@ -2312,6 +2392,7 @@ function paranoia_default() {
     return true;
 }
 function ParanoidTrap() { return paranoia_default(); }
+function ParanoidSwim() { return paranoia_default(); }
 function ParanoidConfirm() { return !paranoia_default(); }
 
 // C ref: hack.c avoid_trap_andor_region()
@@ -2742,9 +2823,12 @@ async function domove_core() {
             return;
         }
 
-        /* Is it dangerous to swim in water or lava? swim_move_danger() */
-        if ((is_pool(x, y) || is_lava(x, y)) && !Levitation() && !Flying())
-            throw new Error('domove_core(): swim_move_danger() not ported yet');
+        /* Is it dangerous to swim in water or lava? */
+        if (await swim_move_danger(x, y)) {
+            ctx.move = 0;
+            nomul(0);
+            return;
+        }
     } /* !displaceu */
 
     /* Move ball and chain.  */
