@@ -57,7 +57,7 @@ import { calc_capacity } from './hack.js';
 import { canletgo, flooreffects, obj_no_longer_held, ship_object,
          impact_disturbs_zombies } from './do.js';
 import { u_wipe_engr } from './engrave.js';
-import { splitobj, place_object, is_flammable, weight } from './mkobj.js';
+import { splitobj, place_object, is_flammable, weight, unsplitobj } from './mkobj.js';
 import { encumber_msg } from './pickup.js';
 import { remove_worn_item } from './steal.js';
 import { weapon_type, P_SKILL, hitval } from './weapon.js';
@@ -395,7 +395,7 @@ async function throw_obj(obj, shotlimit) {
         /* futureproofing: objsplit will have been affected if partial stack
            was thrown; objects will have been split off stack to throw. */
         g.context.objsplit = save_osplit;
-        throw new Error('throw_obj(): unsplitobj() not ported yet');
+        /* (void) */ unsplitobj(obj);
     }
     return res;
 }

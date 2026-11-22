@@ -27,7 +27,7 @@ import { body_part, empty_handed as empty_handed_wl } from './insight.js';
 import { ACURR } from './attrib.js';
 import { prinv, getobj, hands_obj, splittable, freeinv } from './invent.js';
 import { addinv } from './u_init.js';
-import { splitobj } from './mkobj.js';
+import { splitobj, unsplitobj } from './mkobj.js';
 import { simpleonames } from './iactions.js';
 import { vtense, otense } from './objnam.js';
 import { inv_cnt } from './hack.js';
@@ -420,8 +420,12 @@ export async function dowield() {
         /* if wep is the result of supplying a count to getobj()
            we don't want to split something already wielded; for
            any other item, we need to give it its own inventory slot */
-        if (game.uwep && game.uwep.o_id === game.context.objsplit.parent_oid)
-            throw new Error('dowield(): unsplitobj() not ported yet');
+        if (game.uwep && game.uwep.o_id === game.context.objsplit.parent_oid) {
+            unsplitobj(wep);
+            /* wep was merged back to uwep, already_wielded uses wep */
+            wep = game.uwep;
+            return await already_wielded(wep);
+        }
         await finish_splitting(wep);
         return await wielding(wep);
     }
