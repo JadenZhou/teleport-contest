@@ -174,6 +174,8 @@ function is_pole(otmp) {
 function is_wet_towel(o) { return o.otyp === TOWEL && (o.spe || 0) > 0; }
 /* C ref: you.h mhis() */
 export function mhis(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].his; }
+/* C ref: you.h mhim() */
+export function mhim(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him; }
 
 // C ref: mhitu.c mswings_verb()
 /* strike types P|S|B: Pierce (pointed: stab) => "thrusts",

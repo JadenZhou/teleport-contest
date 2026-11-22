@@ -34,7 +34,7 @@ import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
 import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
-    LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL, FIRST_OBJECT,
+    LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL, FIRST_OBJECT, NUM_OBJECTS,
 } from './objects.js';
 import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS, S_EEL, M1_FLY,
          PM_TENGU, PM_LONG_WORM_TAIL, M1_SEE_INVIS } from './monsters.js';
@@ -867,7 +867,8 @@ function tty_glyph_attr(loc) {
    map_trap(), map_engraving() and map_invisible() mark theirs; the rest
    are background (cmap) glyphs */
 export function glyph_kind(rg) {
-    return !rg ? 'cmap' : rg.invisible ? 'invisible' : rg.obj ? 'obj'
+    return !rg ? 'cmap' : rg.kind === 'mon' ? 'mon'
+           : rg.invisible ? 'invisible' : rg.obj ? 'obj'
            : rg.trap ? 'trap' : rg.engr ? 'engr' : 'cmap';
 }
 
@@ -1204,11 +1205,26 @@ function display_monster(
 
     /* If mimic is unsuccessfully mimicking something, display the monster. */
     if (!mon_mimic || sensed) {
-        /* a worm tail shows as PM_LONG_WORM_TAIL (petnum_to_glyph() or
-           monnum_to_glyph(what_mon(PM_LONG_WORM_TAIL, ...))) */
-        if (worm_tail && Hallucination())
-            throw new Error('display_monster(): hallucinatory worm tail (what_mon()) not ported yet');
-        const ptr = worm_tail ? mons[PM_LONG_WORM_TAIL] : mon.data;
+        /*
+         * There are no glyphs for "detected pets" so we have to
+         * decide whether to display such things as detected or as tame.
+         * If both are being highlighted in the same way, it doesn't
+         * matter, but if not, showing them as pets is preferrable.
+         */
+        let mndx;
+        if (mon.mtame && !Hallucination()) {
+            /* petnum_to_glyph(PM_LONG_WORM_TAIL) / pet_to_glyph(mon, ...) */
+            mndx = worm_tail ? PM_LONG_WORM_TAIL : mon.data.pmidx;
+        } else {
+            /* (sightflags == DETECTED: detected_monnum_to_glyph() /
+               detected_mon_to_glyph(), shown like the plain glyph here)
+               monnum_to_glyph(what_mon(PM_LONG_WORM_TAIL,
+                                        rn2_on_display_rng)) /
+               mon_to_glyph(mon, rn2_on_display_rng) */
+            mndx = what_mon(worm_tail ? PM_LONG_WORM_TAIL : mon.data.pmidx,
+                            rn2_on_display_rng);
+        }
+        const ptr = mons[mndx];
         const ch = def_monsyms[ptr.mlet] ?? '?';
         /* a tame monster gets pet_to_glyph() (mon->mtame && !Hallucination),
            whose glyphs have MG_PET; wintty.c tty_print_glyph() shows those
@@ -1216,7 +1232,7 @@ function display_monster(
         const attr = (mon.mtame && !Hallucination() && game.iflags?.wc_hilite_pet)
                      ? game.iflags.wc2_petattr : 0;
         show_mon_or_warn(x, y, ch, ptr.mcolor ?? NO_COLOR, 'mon', attr,
-                         { mndx: ptr.pmidx });
+                         { mndx });
         mon.meverseen = 1;
     }
 }
@@ -1229,8 +1245,8 @@ export function Hallucination() {
 
 // C ref: display.h newsym_rn2 (rn2_on_display_rng) -- the display RNG is
 // separate from the core one; only hallucination draws from it here
-function newsym_rn2(x) {
-    throw new Error('newsym_rn2(): rn2_on_display_rng not ported yet');
+export function newsym_rn2(x) {
+    return rn2_on_display_rng(x);
 }
 
 // C ref: display.h covers_objects()
@@ -1272,14 +1288,10 @@ function obj_is_generic(obj) {
 // 'otyp' is glyph_to_obj() (the generic glyphs' objects[] index is the
 // class), 'corpsenm' glyph_to_statue_corpsenm()/glyph_to_body_corpsenm().
 export function obj_to_glyph(obj, rng) {
-    if (obj.otyp === STATUE) {
-        if (Hallucination()) rng(2);
-        return { ch: def_monsyms[mons[obj.corpsenm].mlet] ?? '?',
-                 color: objects[STATUE].oc_color, decgfx: false, obj: true,
-                 piletop: obj_is_piletop(obj), otyp: STATUE,
-                 corpsenm: obj.corpsenm };
-    }
-    if (Hallucination()) rng(2);
+    if (obj.otyp === STATUE)
+        return statue_to_glyph(obj, rng);
+    if (Hallucination())
+        return random_obj_to_glyph(rng);
     if (obj.otyp === CORPSE)
         return { ch: def_oc_syms[objects[CORPSE].oc_class],
                  color: mons[obj.corpsenm].mcolor ?? NO_COLOR, decgfx: false, obj: true,
@@ -1293,6 +1305,55 @@ export function obj_to_glyph(obj, rng) {
              color: objects[offset].oc_color, decgfx: false,
              generic: generic && offset > 0 && offset < FIRST_OBJECT - 1,
              obj: true, piletop: obj_is_piletop(obj), otyp: offset };
+}
+
+// C ref: display.h random_monster()
+/* won't return STRANGE_OBJECT or the generic objects */
+function random_monster(rng) {
+    return rng(NUMMONS);
+}
+
+// C ref: display.h random_object()
+function random_object(rng) {
+    return rng(NUM_OBJECTS - FIRST_OBJECT) + FIRST_OBJECT;
+}
+
+// C ref: display.h what_mon() -- a random monster when hallucinating
+export function what_mon(mon, rng) {
+    return Hallucination() ? random_monster(rng) : mon;
+}
+
+// C ref: display.h random_obj_to_glyph() -- a random object's glyph (never
+// a pile-top one); a random CORPSE becomes a random monster's body glyph
+export function random_obj_to_glyph(rng) {
+    const otg_temp = random_object(rng); /* go.otg_temp */
+    if (otg_temp === CORPSE) {
+        const mndx = random_monster(rng); /* + GLYPH_BODY_OFF */
+        return { ch: def_oc_syms[objects[CORPSE].oc_class],
+                 color: mons[mndx].mcolor ?? NO_COLOR, decgfx: false, obj: true,
+                 piletop: false, otyp: CORPSE, corpsenm: mndx };
+    }
+    /* otg_temp + GLYPH_OBJ_OFF */
+    return { ch: def_oc_syms[objects[otg_temp].oc_class],
+             color: objects[otg_temp].oc_color, decgfx: false,
+             generic: false, obj: true, piletop: false, otyp: otg_temp };
+}
+
+// C ref: display.h statue_to_glyph() -- while hallucinating, a statue
+// shows as a random monster (a GLYPH_MON_MALE_OFF/GLYPH_MON_FEM_OFF glyph)
+function statue_to_glyph(obj, rng) {
+    if (Hallucination()) {
+        const mndx = random_monster(rng);
+        /* (!(rng)(2)) ? GLYPH_MON_MALE_OFF : GLYPH_MON_FEM_OFF */
+        const female = !!rng(2);
+        const ptr = mons[mndx];
+        return { ch: def_monsyms[ptr.mlet] ?? '?', color: ptr.mcolor ?? NO_COLOR,
+                 decgfx: false, kind: 'mon', mndx, female };
+    }
+    return { ch: def_monsyms[mons[obj.corpsenm].mlet] ?? '?',
+             color: objects[STATUE].oc_color, decgfx: false, obj: true,
+             piletop: obj_is_piletop(obj), otyp: STATUE,
+             corpsenm: obj.corpsenm };
 }
 
 // C ref: display.h obj_is_piletop() -- the object is on the floor and its
@@ -1342,10 +1403,16 @@ export function map_object(obj, show) {
     if (game.level.flags?.hero_memory) {
         /* MRKR: While hallucinating, statues are seen as random monsters */
         /*       but remembered as random objects.                        */
-        loc.remembered_glyph = glyph;
+
+        if (Hallucination() && obj.otyp === STATUE) {
+            loc.remembered_glyph = random_obj_to_glyph(newsym_rn2);
+        } else {
+            loc.remembered_glyph = glyph;
+        }
     }
     if (show)
-        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0, 'obj',
+        show_glyph_cell(x, y, glyph.ch, glyph.color, glyph.decgfx, 0,
+                        glyph.kind ?? 'obj',
                         glyph.piletop, glyph_gid(glyph));
 }
 
@@ -2591,6 +2658,21 @@ function display_self() {
     show_glyph_cell(game.u.ux, game.u.uy, '@', CLR_WHITE, false, 0, 'mon');
 }
 
+// C ref: display.c swallow_to_glyph()
+/*
+ * Convert a monster number and a swallow location into the correct glyph.
+ * If you don't want a patchwork monster while hallucinating, decide on
+ * a random monster in swallowed() and don't use what_mon() here.
+ * Returns the glyph's monster (offset >> 3); 'loc' is S_sw_tl-relative.
+ */
+function swallow_to_glyph(mnum, loc) {
+    const m_3 = what_mon(mnum, rn2_on_display_rng);
+
+    if (loc < 0 || 7 < loc)
+        throw new Error('swallow_to_glyph: bad swallow location');
+    return m_3;
+}
+
 // C ref: display.c swallowed()
 /*
  *  Display the hero surrounded by the monster's stomach (S_sw_tl ..
@@ -2614,7 +2696,7 @@ export async function swallowed(first) {
                     show_glyph_cell(x, y, ' ', NO_COLOR, false); /* GLYPH_UNEXPLORED */
     }
 
-    const color = u.ustuck.data.mcolor; /* mon_color(swallower) */
+    const swallower = u.ustuck.data.pmidx; /* monsndx(u.ustuck->data) */
     const dec = dec_symset();
     /* [S_sw_tl, S_sw_tc, S_sw_tr, S_sw_ml, S_sw_mr, S_sw_bl, S_sw_bc,
        S_sw_br]: { ch, dec } */
@@ -2623,8 +2705,12 @@ export async function swallowed(first) {
            ['\\', false], ['s', true], ['/', false]]
         : [['/', false], ['-', false], ['\\', false], ['|', false], ['|', false],
            ['\\', false], ['-', false], ['/', false]];
-    const show_sw = (x, y, idx) =>
-        show_glyph_cell(x, y, sym[idx][0], color, sym[idx][1]);
+    /* show_glyph(x, y, swallow_to_glyph(swallower, S_sw_tl + idx)) */
+    const show_sw = (x, y, idx) => {
+        const mnum = swallow_to_glyph(swallower, idx);
+        /* reset_glyphmap(): mon_color(offset >> 3) */
+        show_glyph_cell(x, y, sym[idx][0], mons[mnum].mcolor, sym[idx][1]);
+    };
 
     /* assume isok(u.ux,u.uy) */
     left_ok = isok(u.ux - 1, u.uy);
