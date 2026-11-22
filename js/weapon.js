@@ -24,7 +24,7 @@ import * as O from './objects.js';
 import * as M from './monsters.js';
 import { spell_skilltype, skill_based_spellbook_id } from './spell.js';
 import { ART_SUNSWORD, ART_SNICKERSNEE } from './artilist.js';
-import { touch_artifact } from './artifact.js';
+import { touch_artifact_mon } from './artifact.js';
 import { is_weptool } from './mkobj.js';
 import { is_pool } from './makemon.js';
 import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
@@ -569,7 +569,7 @@ function can_touch_safely(mtmp, otmp) {
     if (objects[otyp].oc_material === O.SILVER && mon_hates_silver(mtmp)
         && (otyp !== O.BELL_OF_OPENING || !is_covetous(mdat)))
         return false;
-    if (!touch_artifact(otmp, mtmp))
+    if (!touch_artifact_mon(otmp, mtmp))
         return false;
     return true;
 }
@@ -837,7 +837,7 @@ export function select_hwep(mtmp) {
     /* prefer artifacts to everything else */
     for (const o of minv(mtmp)) {
         if (o.oclass === WEAPON_CLASS && o.oartifact
-            && touch_artifact(o, mtmp)
+            && touch_artifact_mon(o, mtmp)
             && ((strong && !wearing_shield)
                 || !objects[o.otyp].oc_bimanual))
             return o;

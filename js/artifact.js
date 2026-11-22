@@ -45,7 +45,14 @@ import { yname } from './objnam.js';
 import { killer_xname } from './mthrowu.js';
 import { Maybe_Half_Phys, losehp } from './trap.js';
 import { exercise } from './attrib.js';
-import { rnd } from './rng.js';
+import { rnd, d } from './rng.js';
+import { You } from './display.js';
+import { s_suffix } from './hacklib.js';
+import { the } from './iactions.js';
+import { xname } from './objnam.js';
+import { is_mplayer } from './makemon.js';
+import { mon_aligntyp } from './priest.js';
+import { A_WIS } from './const.js';
 import { KILLED_BY, A_CON, ECMD_OK, ECMD_TIME } from './const.js';
 import { getrumor } from './rumors.js';
 import { bcsign } from './mkobj.js';
@@ -1067,51 +1074,119 @@ function bane_applies(oart, mon) {
     return false;
 }
 
-// C ref: artifact.c touch_artifact() -- the hero's case; monsters and
-// the "blasted" damage are not ported yet
-/* return 1 if the object can be picked up/wielded by mon, 0 if not */
-export function touch_artifact(obj, mon) {
-    const arts = artilist();
-    const oart = get_artifact(obj);
+// C ref: artifact.c touch_artifact() -- the badclass/badalign tests,
+// shared by touch_artifact() and touch_artifact_mon(); no dice
+function touch_artifact_tests(oart, mon) {
     let badclass, badalign;
     const u = game.u;
-
-    game.touch_blasted = false;
-    if (oart === arts[ART_NONARTIFACT])
-        return 1;
-
     const yours = (mon === game.youmonst);
     /* all quest artifacts are self-willed; if this ever changes, `badclass'
        will have to be extended to explicitly include quest artifacts */
     const self_willed = ((oart.spfx & SPFX_INTEL) !== 0);
+
     if (yours) {
         badclass = self_willed
-                   && ((oart.role !== NON_PM && game.urole.mnum !== oart.role)
+                   && ((oart.role !== NON_PM && game.urole.mnum !== oart.role) /* !Role_if() */
                        || (oart.race !== NON_PM
-                           && game.urace.mnum !== oart.race));
+                           && game.urace.mnum !== oart.race)); /* !Race_if() */
         badalign = ((oart.spfx & SPFX_RESTR) !== 0
                     && oart.alignment !== A_NONE
                     && (oart.alignment !== u.ualign.type
                         || u.ualign.record < 0));
-    } else {
-        throw new Error('touch_artifact(): monsters touching artifacts are not ported yet');
+    } else if (!(mon.data.mflags3 & M.M3_COVETOUS) /* !is_covetous() */
+               && !is_mplayer(mon.data)) {
+        badclass = self_willed && oart.role !== NON_PM
+                   && oart !== artilist()[ART_EXCALIBUR];
+        badalign = !!(oart.spfx & SPFX_RESTR) && oart.alignment !== A_NONE
+                   && (oart.alignment !== mon_aligntyp(mon));
+    } else { /* an M3_WANTSxxx monster or a fake player */
+        /* special monsters trying to take the Amulet, invocation tools or
+           quest item can touch anything except `spec_applies' artifacts */
+        badclass = badalign = false;
     }
     /* weapons which attack specific categories of monsters are
        bad for them even if their alignments happen to match */
     if (!badalign)
         badalign = bane_applies(oart, mon);
+    return { yours, self_willed, badclass, badalign };
+}
+
+// C ref: artifact.c touch_artifact()
+/*
+ * creature (usually hero) tries to touch (pick up or wield) an artifact obj.
+ * Returns 0 if the object refuses to be touched.
+ * This routine does not change any object chains.
+ * Ignores such things as gauntlets, assuming the artifact is not
+ * fooled by such trappings.
+ */
+export async function touch_artifact(obj, mon) {
+    const oart = get_artifact(obj);
+
+    game.touch_blasted = false;
+    if (oart === artilist()[ART_NONARTIFACT])
+        return 1;
+
+    const { yours, self_willed, badclass, badalign } = touch_artifact_tests(oart, mon);
 
     if (((badclass || badalign) && self_willed)
         || (badalign && (!yours || !rn2(4)))) {
-        throw new Error('touch_artifact(): "You are blasted by its power" is not ported yet');
+        let dmg, tmp;
+
+        if (!yours)
+            return 0;
+        await You(`are blasted by ${s_suffix(the(xname(obj)))} power!`);
+        game.touch_blasted = true;
+        dmg = d((Antimagic() ? 2 : 4), (self_willed ? 10 : 4));
+        /* add half (maybe quarter) of the usual silver damage bonus */
+        if (O.objects[obj.otyp].oc_material === O.SILVER && Hate_silver()) {
+            tmp = rnd(10);
+            dmg += Maybe_Half_Phys(tmp);
+        }
+        await losehp(dmg, `touching ${oart.name}`, KILLED_BY); /* magic damage, not physical */
+        exercise(A_WIS, false);
     }
 
     /* can pick it up unless you're totally non-synch'd with the artifact */
     if (badclass && badalign && self_willed) {
-        throw new Error('touch_artifact(): an artifact evading your grasp is not ported yet');
+        if (yours) {
+            if (obj.where !== 'OBJ_INVENT') /* !carried(obj) */
+                await pline(`${Tobjnam(obj, "evade")} your grasp!`);
+            else
+                await pline(`${Tobjnam(obj, "are")} beyond your control!`);
+        }
+        return 0;
     }
 
     return 1;
+}
+
+// C ref: artifact.c touch_artifact() -- for synchronous monster callers;
+// a monster touching an artifact rolls no dice and gets no messages
+export function touch_artifact_mon(obj, mon) {
+    const oart = get_artifact(obj);
+
+    if (mon === game.youmonst)
+        throw new Error('touch_artifact_mon(): the hero needs touch_artifact()');
+    game.touch_blasted = false;
+    if (oart === artilist()[ART_NONARTIFACT])
+        return 1;
+
+    const { self_willed, badclass, badalign } = touch_artifact_tests(oart, mon);
+
+    if (((badclass || badalign) && self_willed) || badalign)
+        return 0; /* (!yours) */
+
+    /* can pick it up unless you're totally non-synch'd with the artifact */
+    if (badclass && badalign && self_willed)
+        return 0;
+
+    return 1;
+}
+
+/* C ref: youprop.h Antimagic */
+function Antimagic() {
+    const p = game.u.uprops[ANTIMAGIC];
+    return !!(p.intrinsic || p.extrinsic);
 }
 
 // C ref: artifact.c retouch_object()
@@ -1129,7 +1204,7 @@ export async function retouch_object(obj,
         return 1;
     }
 
-    if (touch_artifact(obj, game.youmonst)) {
+    if (await touch_artifact(obj, game.youmonst)) {
         let dmg = 0, tmp;
         const ag = (O.objects[obj.otyp].oc_material === O.SILVER && Hate_silver()),
               bane = bane_applies(get_artifact(obj), game.youmonst);
