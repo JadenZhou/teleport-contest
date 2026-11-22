@@ -76,7 +76,25 @@ import { make_sick, make_blinded, make_hallucinated } from './potion.js';
 import { Hallucination } from './display.js';
 import { resists_blnd, defended } from './mondata.js';
 import { mondead, wake_nearto } from './mon.js';
-import { WATER } from './const.js';
+import { WATER, PASSES_WALLS, SLOW_DIGESTION, SHOCK_RES, TT_WEB, RLOC_NOMSG, IS_OBSTRUCTED, TREE, IRONBARS, MAGICAL_BREATHING, ACID_RES, FIRE_RES, M_SEEN_ACID, M_SEEN_ELEC, M_SEEN_COLD, M_SEEN_FIRE } from './const.js';
+import { closed_door, sobj_at, place_monster } from './makemon.js';
+import { BOULDER } from './objects.js';
+import { s_suffix } from './hacklib.js';
+import { set_ustuck, monstseesu, monstunseesu } from './uhitm.js';
+import { placebc, unplacebc } from './ball.js';
+import { docrt, newsym, flush_screen, swallowed } from './display.js';
+import { mnexto } from './teleport.js';
+import { spoteffects } from './hack.js';
+import { attacktype_fordmg, Resists_Elem } from './mondata.js';
+import { reset_occupations } from './do.js';
+import { tty_display_nhwindow } from './wintty.js';
+import { STONE_RES } from './const.js';
+import { LEASH } from './objects.js';
+import { reset_utrap, drain_en } from './trap.js';
+import { vision_recalc } from './vision.js';
+import { You_hear } from './sounds.js';
+import { can_blnd } from './mondata.js';
+import { burn_away_slime } from './potion.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -514,7 +532,14 @@ export async function mattacku(mtmp) {
 
     /* If swallowed, can only be affected by u.ustuck */
     if (u.uswallow) {
-        throw new Error('mattacku(): swallowed hero not ported yet');
+        if (mtmp !== u.ustuck)
+            return 0;
+        u.ustuck.mux = u.ux;
+        u.ustuck.muy = u.uy;
+        if (u.uinvulnerable)
+            return 0; /* stomachs can't hurt you! */
+        v.range2 = false;
+        v.foundyou = true;
     } else if (u.usteed) {
         if (mtmp === u.usteed)
             /* Your steed won't attack you */
@@ -629,8 +654,9 @@ export async function mattacku(mtmp) {
                               || !touch_petrifies(game.youmonst.data))) {
                 if (v.foundyou) {
                     if (tmp > (j = rnd(20 + i))) {
-                        if (unsolid(game.youmonst.data))
-                            throw new Error('mattacku(): failed_grab() not ported yet');
+                        if (unsolid(game.youmonst.data)
+                            && await failed_grab(mtmp, game.youmonst, mattk))
+                            continue;
                         if (mattk.aatyp !== AT_KICK
                             || !thick_skinned(game.youmonst.data))
                             sum[i] = await hitmu(mtmp, mattk);
@@ -647,8 +673,10 @@ export async function mattacku(mtmp) {
         case AT_HUGS: /* automatic if prev two attacks succeed */
             /* Note: if displaced, prev attacks never succeeded */
             if ((!v.range2 && i >= 2 && sum[i - 1] && sum[i - 2])
-                || mtmp === u.ustuck)
-                throw new Error('mattacku(): AT_HUGS (failed_grab()) not ported yet');
+                || mtmp === u.ustuck) {
+                if (!await failed_grab(mtmp, game.youmonst, mattk))
+                    sum[i] = await hitmu(mtmp, mattk);
+            }
             break;
 
         case AT_GAZE: /* can affect you either ranged or not */
@@ -664,9 +692,31 @@ export async function mattacku(mtmp) {
             break;
 
         case AT_ENGL:
-            if (!v.range2)
-                throw new Error('mattacku(): gulpmu() not ported yet');
+            if (!v.range2) {
+                if (v.foundyou) {
+                    if (u.uswallow
+                        || (!mtmp.mspec_used && tmp > (j = rnd(20 + i)))) {
+                        /* force swallowing monster to be displayed
+                           even when hero is moving away */
+                        await flush_screen(1);
+                        sum[i] = await gulpmu(mtmp, mattk);
+                    } else {
+                        await missmu(mtmp, (tmp === j), mattk);
+                    }
+                } else if (digests(mtmp.data)) {
+                    await pline(`${Monnam(mtmp)} gulps some air!`); /* pline_mon() */
+                } else {
+                    if (v.youseeit) {
+                        await pline(`${Monnam(mtmp)} lunges forward and recoils!`); /* pline_mon() */
+                    } else {
+                        /* if (is_whirly()) Soundeffect(se_rushing_wind_noise, 60); */
+                        await You_hear(`a ${is_whirly(mtmp.data) ? "rushing noise"
+                                                                 : "splat"} nearby.`);
+                    }
+                }
+            }
             break;
+
         case AT_BREA:
             if (v.range2)
                 sum[i] = await breamu(mtmp, mattk);
@@ -948,6 +998,454 @@ export function could_seduce(magr, mdef, mattk) {
         return 0;
 
     return (genagr === 1 - gendef) ? 1 : (pagr.mlet === M.S_NYMPH) ? 2 : 0;
+}
+
+/* C ref: mondata.h digests(), enfolds(), is_whirly(), amorphous(),
+   attacktype() */
+function digests(ptr) {
+    return dmgtype_fromattack(ptr, M.AD_DGST, AT_ENGL);
+}
+function enfolds(ptr) {
+    return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL);
+}
+function dmgtype_fromattack(ptr, dtyp, atyp) {
+    for (const a of ptr.mattk || [])
+        if (a && a.adtyp === dtyp && (atyp === M.AT_ANY || a.aatyp === atyp))
+            return true;
+    return false;
+}
+function is_whirly(ptr) {
+    return ptr.mlet === M.S_VORTEX || ptr === mons[M.PM_AIR_ELEMENTAL];
+}
+function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
+function flaming(ptr) {
+    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
+           || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
+}
+/* C ref: mondata.h resists_ston() */
+function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
+// C ref: apply.c number_leashed()
+function number_leashed() {
+    let i = 0;
+    let obj;
+
+    for (obj = game.invent; obj; obj = obj.nobj)
+        if (obj.otyp === LEASH && obj.leashmon)
+            i++;
+    return i;
+}
+function attacktype(ptr, atyp) {
+    return (ptr.mattk || []).some(a => a && a.aatyp === atyp);
+}
+
+// C ref: mhitm.c failed_grab()
+/* unsolid or long worm tail: grab attempt passes through or fails to hold */
+export async function failed_grab(magr, mdef, mattk) {
+    if ((unsolid(mdef.data) || game.notonhead)
+        /* hug attack: most holders (owlbear, python, pit fiend, &c);
+           wrap damage: eel grabbing, trapper/lurker-above engulfing;
+           stick-to damage: mimic, lichen;
+           digestion damage: purple worm swallowing */
+        && (mattk.aatyp === AT_HUGS || mattk.adtyp === M.AD_WRAP
+            || mattk.adtyp === AD_STCK || mattk.adtyp === M.AD_DGST)) {
+        if ((game.mhitm_vis && canspotmon(mdef)) /* mon-vs-mon */
+            || magr === game.youmonst || mdef === game.youmonst) {
+            const tailmiss = !!game.notonhead;
+            const verb = (mattk.adtyp === M.AD_DGST) ? "gulp"
+                         : (mattk.adtyp === AD_STCK) ? "adhere"
+                           : "grab";
+            const magrnam = (magr === game.youmonst) ? "Your"
+                                                     : s_suffix(Monnam(magr));
+            let mdefnam;
+
+            if (!tailmiss) {
+                mdefnam = (mdef === game.youmonst) ? "you" : mon_nam(mdef);
+            } else {
+                throw new Error('failed_grab(): long worm tail miss not ported yet');
+            }
+            /* unsolid grab misses are actually somewhat iffy--how come
+               ordinary attacks don't also pass right through? */
+            await pline(`${magrnam} ${verb} attempt ${
+                !tailmiss ? "passes right through" : "fails to hold"} ${mdefnam}!`);
+        }
+        return true;
+    }
+    return false;
+}
+
+// C ref: mhitm.c engulf_target()
+/* return True if magr is allowed to swallow mdef, False otherwise */
+export function engulf_target(magr, mdef) {
+    const u = game.u;
+    let lev;
+    let ax, ay, dx, dy;
+    const uatk = (magr === game.youmonst),
+          udef = (mdef === game.youmonst);
+    const Passes_walls = () => uhave(PASSES_WALLS);
+    const passes_walls = (ptr) => (ptr.mflags1 & M.M1_WALLWALK) !== 0;
+
+    /* can't swallow something that's too big */
+    if (mdef.data.msize >= M.MZ_HUGE
+        || (magr.data.msize < mdef.data.msize && !is_whirly(magr.data)))
+        return false;
+
+    /* can't (move to) swallow if trapped. TODO: could do some? */
+    if (mdef.mtrapped || magr.mtrapped)
+        return false;
+
+    /* if attacker is phasing in solid rock and defender can't move there,
+       or vice versa, don't allow engulf to succeed */
+    dx = udef ? u.ux : mdef.mx;
+    dy = udef ? u.uy : mdef.my;
+    lev = game.level.at(dx, dy);
+    if (!(udef ? Passes_walls() : passes_walls(mdef.data))
+        && (IS_OBSTRUCTED(lev.typ) || closed_door(dx, dy) || lev.typ === TREE
+            /* not passes_bars(); engulfer isn't squeezing through */
+            || (lev.typ === IRONBARS && !is_whirly(magr.data))))
+        return false;
+    ax = uatk ? u.ux : magr.mx;
+    ay = uatk ? u.uy : magr.my;
+    lev = game.level.at(ax, ay);
+    if (!(uatk ? Passes_walls() : passes_walls(magr.data))
+        && (IS_OBSTRUCTED(lev.typ) || closed_door(ax, ay) || lev.typ === TREE
+            || (lev.typ === IRONBARS && !is_whirly(mdef.data))))
+        return false;
+
+    return true;
+}
+
+// C ref: mon.c unstuck()
+export async function unstuck(mtmp) {
+    const u = game.u;
+    if (u.ustuck === mtmp) {
+        const ptr = mtmp.data;
+        const swallowed = u.uswallow;
+
+        /* do this first so that docrt()'s botl update is accurate;
+           clears u.uswallow as well as setting u.ustuck to Null */
+        set_ustuck(null);
+
+        if (swallowed) {
+            game.mswallower = null;
+            u.ux = mtmp.mx;
+            u.uy = mtmp.my;
+            if (game.uball && game.uchain.where !== 'OBJ_FLOOR') /* Punished */
+                await placebc();
+            game.vision_full_recalc = 1;
+            await docrt();
+        }
+
+        /* prevent holder/engulfer from immediately re-holding/re-engulfing
+           [note: this call to unstuck() might be because u.ustuck has just
+           changed shape and doesn't have a holding attack any more, hence
+           don't set mspec_used unconditionally] */
+        if (!mtmp.mspec_used && (dmgtype(ptr, AD_STCK)
+                                 || attacktype(ptr, AT_ENGL)
+                                 || attacktype(ptr, AT_HUGS)))
+            mtmp.mspec_used = rnd(2);
+    }
+}
+
+// C ref: mhitu.c expels()
+export async function expels(
+    mtmp,
+    mdat, /* if mtmp is polymorphed, mdat != mtmp->data */
+    message) {
+    const u = game.u;
+    game.disp_botl = true;
+    if (message) {
+        if (digests(mdat)) {
+            await pline("You get regurgitated!"); /* You() */
+        } else if (enfolds(mdat)) {
+            await pline(`${Monnam(mtmp)} unfolds and you are released!`); /* pline_mon() */
+        } else {
+            let blast = '';
+            const attk = attacktype_fordmg(mdat, AT_ENGL, M.AD_ANY);
+
+            if (!attk) {
+                /* impossible("Swallower has no engulfing attack?") */
+            } else {
+                if (is_whirly(mdat)) {
+                    switch (attk.adtyp) {
+                    case M.AD_ELEC:
+                        blast = " in a shower of sparks";
+                        break;
+                    case AD_COLD:
+                        blast = " in a blast of frost";
+                        break;
+                    }
+                } else {
+                    blast = " with a squelch";
+                }
+                await pline(`You get expelled from ${mon_nam(mtmp)}${blast}!`); /* You() */
+            }
+        }
+    }
+    await unstuck(mtmp); /* ball&chain returned in unstuck() */
+    await mnexto(mtmp, RLOC_NOMSG);
+    newsym(u.ux, u.uy);
+    /* to cover for a case where mtmp is not in a next square */
+    if (Math.abs(mtmp.mx - u.ux) > 1 || Math.abs(mtmp.my - u.uy) > 1) /* um_dist(,,1) */
+        await pline("Brrooaa...  You land hard at some distance.");
+    await spoteffects(true);
+}
+
+// C ref: mhitu.c gulpmu()
+/* monster swallows you, or damage if already swallowed (u.uswallow != 0) */
+async function gulpmu(mtmp, mattk) {
+    const u = game.u;
+    const t = t_at(u.ux, u.uy);
+    let tmp = d(mattk.damn, mattk.damd);
+    let tim_tmp;
+    let i;
+    let physical_damage = false;
+
+    if (!u.uswallow) { /* swallows you */
+        const omx = mtmp.mx, omy = mtmp.my;
+
+        if (!engulf_target(mtmp, game.youmonst))
+            return M_ATTK_MISS;
+        if ((t && is_pit(t.ttyp)) && sobj_at(BOULDER, u.ux, u.uy))
+            return M_ATTK_MISS;
+        if (await failed_grab(mtmp, game.youmonst, mattk))
+            return M_ATTK_MISS;
+
+        if (game.uball) /* Punished */
+            unplacebc(); /* ball&chain go away */
+        /* remove_monster(omx, omy) */
+        mtmp.mtrapped = 0; /* no longer on old trap */
+        place_monster(mtmp, u.ux, u.uy);
+        set_ustuck(mtmp);
+        newsym(mtmp.mx, mtmp.my);
+        /* 5.0: dismount for all engulfers, not just for purple worms */
+        if (u.usteed) {
+            throw new Error('gulpmu(): dismount_steed(DISMOUNT_ENGULFED) not ported yet');
+        } else {
+            await urgent_pline(`${Monnam(mtmp)} ${
+                digests(mtmp.data) ? "swallows you whole"
+                : enfolds(mtmp.data) ? "folds itself around you"
+                  : "engulfs you"}!`);
+        }
+        await stop_occupation();
+        reset_occupations(); /* behave as if you had moved */
+
+        if (u.utrap) {
+            await pline(`You are released from the ${
+                (u.utraptype === TT_WEB) ? "web" : "trap"}!`); /* You() */
+            reset_utrap(false);
+        }
+
+        i = number_leashed();
+        if (i > 0)
+            throw new Error('gulpmu(): unleash_all() not ported yet');
+
+        if (touch_petrifies(game.youmonst.data) && !resists_ston(mtmp))
+            throw new Error('gulpmu(): minstapetrify() of the engulfer not ported yet');
+        await tty_display_nhwindow(game.WIN_MESSAGE, false);
+        vision_recalc(2); /* hero can't see anything */
+        u.uswallow = 1;
+        /* for digestion, shorter time is more dangerous;
+           for other swallowings, longer time means more
+           chances for the swallower to attack */
+        if (mattk.adtyp === M.AD_DGST) {
+            /* having good armor & high constitution makes
+               it take longer for you to be digested, but
+               you'll end up trapped inside for longer too */
+            tim_tmp = ACURR(A_CON) + 10 - u.uac + rn2(20);
+            if (tim_tmp < 0)
+                tim_tmp = 0;
+            tim_tmp = Math.trunc(tim_tmp / mtmp.m_lev);
+            tim_tmp += 3;
+        } else {
+            /* higher level attacker takes longer to eject hero */
+            tim_tmp = rnd(mtmp.m_lev + Math.trunc(10 / 2));
+        }
+        /* u.uswldtim always set > 1 */
+        u.uswldtim = (tim_tmp < 2) ? 2 : tim_tmp;
+        await swallowed(1); /* update the map display, shows hero swallowed */
+        if (!flaming(mtmp.data)) {
+            let otmp2, nextobj;
+            for (otmp2 = game.invent; otmp2; otmp2 = nextobj) {
+                nextobj = otmp2.nobj;
+                if (otmp2.lamplit) /* snuff_lit(otmp2) */
+                    throw new Error('gulpmu(): snuff_lit() not ported yet');
+            }
+        }
+    }
+
+    if (mtmp !== u.ustuck)
+        return M_ATTK_MISS;
+    if (game.uball) { /* Punished */
+        /* ball&chain are in limbo while swallowed; update their internal
+           location to be at swallower's spot */
+        if (game.uchain.where === 'OBJ_FREE')
+            game.uchain.ox = mtmp.mx, game.uchain.oy = mtmp.my;
+        if (game.uball.where === 'OBJ_FREE')
+            game.uball.ox = mtmp.mx, game.uball.oy = mtmp.my;
+    }
+    if (u.uswldtim > 0)
+        u.uswldtim -= 1;
+
+    switch (mattk.adtyp) {
+    case M.AD_DGST:
+        physical_damage = true;
+        if (uhave(SLOW_DIGESTION)) {
+            /* Messages are handled below */
+            u.uswldtim = 0;
+            tmp = 0;
+        } else if (u.uswldtim === 0) {
+            await pline(`${Monnam(mtmp)} totally digests you!`);
+            tmp = u.uhp;
+            if (Half_physical_damage())
+                tmp *= 2; /* sorry */
+        } else {
+            await pline(`${Monnam(mtmp)}${
+                (u.uswldtim === 2) ? " thoroughly"
+                : (u.uswldtim === 1) ? " utterly" : ""} digests you!`);
+            exercise(A_STR, false);
+        }
+        break;
+    case AD_PHYS:
+        physical_damage = true;
+        if (mtmp.data === mons[M.PM_FOG_CLOUD]) {
+            const ydat = game.youmonst.data;
+            const flamingy = (ydat === mons[M.PM_FIRE_VORTEX] || ydat === mons[M.PM_FLAMING_SPHERE]
+                              || ydat === mons[M.PM_FIRE_ELEMENTAL] || ydat === mons[M.PM_SALAMANDER]);
+            const Breathless = uhave(MAGICAL_BREATHING)
+                               || (ydat.mflags1 & M.M1_BREATHLESS) !== 0;
+            const Amphibious = uhave(MAGICAL_BREATHING)
+                               || (ydat.mflags1 & M.M1_AMPHIBIOUS) !== 0;
+            await pline(`You are laden with moisture and ${
+                flamingy ? "are smoldering out!"
+                : Breathless ? "find it mildly uncomfortable."
+                  : (ydat.mflags1 & M.M1_AMPHIBIOUS) !== 0 ? "feel comforted."
+                    : "can barely breathe!"}`); /* You() */
+            if ((Amphibious || Breathless) && !flamingy)
+                tmp = 0;
+        } else {
+            await pline(`You are ${enfolds(mtmp.data) ? "being squashed"
+                                                       : "pummeled with debris"}!`); /* You() */
+            exercise(A_STR, false);
+        }
+        break;
+    case AD_ACID:
+        if (uhave(ACID_RES)) {
+            await pline("You are covered with a seemingly harmless goo."); /* You() */
+            /* NB: the monst[un]seesu calls in gulpmu are no-ops since the
+               hero must be currently swallowed for the attack to hit... */
+            monstseesu(M_SEEN_ACID);
+            tmp = 0;
+        } else {
+            if (Hallucination())
+                await pline("Ouch!  You've been slimed!");
+            else
+                await pline("You are covered in slime!  It burns!"); /* You() */
+            exercise(A_STR, false);
+            monstunseesu(M_SEEN_ACID);
+        }
+        break;
+    case M.AD_BLND:
+        if (can_blnd(mtmp, game.youmonst, mattk.aatyp, null)) {
+            if (!Blind()) {
+                const was_blinded = game.u.uprops[BLINDED].intrinsic; /* Blinded */
+                if (!was_blinded)
+                    await pline("You can't see in here!"); /* You_cant() */
+                await make_blinded(tmp, false);
+                if (!was_blinded && !Blind())
+                    await pline("Your vision quickly clears."); /* Your1(vision_clears) */
+            } else
+                /* keep him blind until disgorged */
+                game.u.uprops[BLINDED].intrinsic += 1; /* incr_itimeout(&HBlinded, 1L) */
+        }
+        tmp = 0;
+        break;
+    case M.AD_ELEC:
+        if (!mtmp.mcan && rn2(2)) {
+            await pline("The air around you crackles with electricity."); /* pline_The() */
+            if (uhave(SHOCK_RES))
+                throw new Error('gulpmu(): shieldeff() not ported yet');
+            else
+                monstunseesu(M_SEEN_ELEC);
+        } else
+            tmp = 0;
+        break;
+    case AD_COLD:
+        if (!mtmp.mcan && rn2(2)) {
+            if (Cold_resistance()) {
+                throw new Error('gulpmu(): shieldeff() not ported yet');
+            } else {
+                await pline("You are freezing to death!"); /* You() */
+                monstunseesu(M_SEEN_COLD);
+            }
+        } else
+            tmp = 0;
+        break;
+    case M.AD_FIRE:
+        if (!mtmp.mcan && rn2(2)) {
+            if (uhave(FIRE_RES)) {
+                throw new Error('gulpmu(): shieldeff() not ported yet');
+            } else {
+                await pline("You are burning to a crisp!"); /* You() */
+                monstunseesu(M_SEEN_FIRE);
+            }
+            await burn_away_slime();
+        } else
+            tmp = 0;
+        break;
+    case AD_DISE:
+        if (!await diseasemu(mtmp.data))
+            tmp = 0;
+        break;
+    case AD_DREN:
+        /* AC magic cancellation doesn't help when engulfed */
+        if (!mtmp.mcan && rn2(4)) /* 75% chance */
+            await drain_en(tmp, false);
+        tmp = 0;
+        break;
+    default:
+        physical_damage = true;
+        tmp = 0;
+        break;
+    }
+
+    if (physical_damage) {
+        /* same damage reduction for AC as in hitmu */
+        if (u.uac < 0)
+            tmp -= rnd(-u.uac);
+        if (tmp < 0)
+            tmp = 1;
+        tmp = Maybe_Half_Phys(tmp);
+    }
+
+    game.mswallower = mtmp; /* match gulpmm() */
+    await mdamageu(mtmp, tmp);
+    game.mswallower = null;
+
+    if (tmp)
+        await stop_occupation();
+
+    if (!u.uswallow) {
+        ; /* life-saving has already expelled swallowed hero */
+    } else if (touch_petrifies(game.youmonst.data) && !resists_ston(mtmp)) {
+        await pline(`${Monnam(mtmp)} very hurriedly ${
+            digests(mtmp.data) ? "regurgitates"
+            : enfolds(mtmp.data) ? "releases"
+              : "expels"} you!`);
+        await expels(mtmp, mtmp.data, false);
+    } else if (!u.uswldtim || game.youmonst.data.msize >= M.MZ_HUGE) {
+        /* As of 3.6.2: u.uswldtim used to be set to 0 by life-saving but it
+           expels now so the !u.uswldtim case is no longer possible;
+           however, polymorphing into a huge form while already
+           swallowed is still possible */
+        await pline(`You get ${digests(mtmp.data) ? "regurgitated"
+                               : enfolds(mtmp.data) ? "released"
+                                 : "expelled"}!`); /* You() */
+        if (game.flags.verbose
+            && (digests(mtmp.data) && uhave(SLOW_DIGESTION)))
+            await pline(`Obviously ${mon_nam(mtmp)} doesn't like your taste.`);
+        await expels(mtmp, mtmp.data, false);
+    }
+    return M_ATTK_HIT;
 }
 
 // C ref: polyself.c ugolemeffects()

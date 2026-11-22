@@ -1082,7 +1082,7 @@ async function menu_drop(retry) {
 
 /* C ref: cmd.c reset_occupations() -- reset_remarm(), reset_pick(),
    reset_trapset(): none of their occupations is ported yet */
-function reset_occupations() {
+export function reset_occupations() {
 }
 
 // C ref: do.c canletgo() -- some common tests when trying to drop or

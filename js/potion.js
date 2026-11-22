@@ -19,6 +19,7 @@
 
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
+import { swallowed } from './display.js';
 import { pline, You, Your, You_feel, pline_The, newsym, see_monsters,
          canseemon, canspotmon, map_invisible, flush_screen, vobj_at,
          glyph_at, glyph_is_invisible, unmap_object, tmp_at, DISP_ALWAYS,
@@ -582,7 +583,7 @@ export async function make_hallucinated(
             eatmupdate();
 
         if (game.u.uswallow) {
-            throw new Error('make_hallucinated(): swallowed() redraw not ported yet');
+            await swallowed(0); /* redraw swallow display */
         } else {
             /* The see_* routines should be called *before* the pline. */
             see_monsters();
