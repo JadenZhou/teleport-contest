@@ -5,8 +5,10 @@
 // stumble_on_door_mimic(), pick_lock() for doors (the autounlock and
 // #apply paths), the picklock() occupation, lock_action(), reset_pick(),
 // maybe_reset_pick(), picking_lock() and picking_at(). Not ported yet:
-// picking a container's lock, the #open direction prompt, #close, #force,
-// the autounlock untrap/kick actions and door traps.
+// picking a container's lock, the #open direction prompt, the autounlock
+// untrap/kick actions and door traps.  Also ported: #force (doforce(),
+// forcelock(), breakchestlock(), u_have_forceable_weapon(),
+// chest_shatter_msg()) and #close (doclose()).
 
 import { game } from './gstate.js';
 import { rn2, rnl } from './rng.js';
@@ -44,6 +46,27 @@ import { OBJ_AT, SDOOR, DOOR, SHOPBASE, Is_rogue_level,
          DEAF } from './const.js';
 import { WAND_CLASS, WAN_OPENING, WAN_LOCKING, WAN_STRIKING, SPE_KNOCK,
          SPE_FORCE_BOLT, SPE_WIZARD_LOCK } from './objects.js';
+import { objects, ICE_BOX, CORPSE, LARGE_BOX, POTION_CLASS, WEAPON_CLASS,
+         TOOL_CLASS, ROCK_CLASS, PAPER, WAX, VEGGY, FLESH, GLASS,
+         WOOD } from './objects.js';
+import { COST_BRKLCK, PASSES_WALLS, DBWALL, BLINDED, P_DAGGER, P_FLAIL,
+         P_LANCE, P_SABER, P_PICK_AXE, isok } from './const.js';
+import { costly_alteration, obj_extract_self, start_corpse_timeout,
+         place_object, is_weptool } from './mkobj.js';
+import { costly_spot, shop_keeper } from './shk.js';
+import { the, surface } from './iactions.js';
+import { xname, singular, an } from './objnam.js';
+import { obfree, useup, stackobj, delobj } from './invent.js';
+import { currency } from './insight.js';
+import { obj_resists } from './dogmove.js';
+import { wake_nearby } from './mon.js';
+import { There } from './display.js';
+import { safe_qbuf } from './pickup.js';
+import { getdir } from './cmd.js';
+import { is_drawbridge_wall } from './dbridge.js';
+import { bottlename, potionbreathe } from './potion.js';
+import { haseyes } from './mondata.js';
+import { M1_BREATHLESS } from './monsters.js';
 
 /* C ref: youprop.h Deaf */
 function Deaf() {
@@ -60,6 +83,7 @@ export const AUTOUNLOCK_FORCE = 8;
 /* C ref: func_tab.h ECMD_OK, ECMD_TIME */
 const ECMD_OK = 0x00;
 const ECMD_TIME = 0x01;
+const ECMD_CANCEL = 0x02;
 
 /* C ref: defsym.h S_vcdoor, S_hcdoor (pchar indices) */
 const S_vcdoor = 15, S_hcdoor = 16;
@@ -716,3 +740,380 @@ export async function doorlock(otmp, x, y) {
     }
     return res;
 }
+
+// C ref: lock.c breakchestlock()
+export async function breakchestlock(box, destroyit) {
+    const u = game.u;
+    if (!destroyit) { /* bill for the box but not for its contents */
+        const hide_contents = box.cobj;
+
+        box.cobj = null;
+        costly_alteration(box, COST_BRKLCK);
+        box.cobj = hide_contents;
+        box.olocked = 0;
+        box.obroken = 1;
+        box.lknown = 1;
+    } else { /* #force has destroyed this box (at <u.ux,u.uy>) */
+        let otmp;
+        const ushops0 = (u.ushops && u.ushops[0]) || 0;
+        const shkp = (ushops0 && costly_spot(u.ux, u.uy))
+                     ? shop_keeper(ushops0) : null;
+        const costly = !!shkp;
+        let loss = 0;
+
+        await pline(`In fact, you've totally destroyed ${the(xname(box))}.`);
+        /* Put the contents on ground at the hero's feet. */
+        while ((otmp = (box.cobj && box.cobj.length) ? box.cobj[0] : null) != null) {
+            obj_extract_self(otmp);
+            if (!rn2(3) || otmp.oclass === POTION_CLASS) {
+                await chest_shatter_msg(otmp);
+                if (costly)
+                    throw new Error('breakchestlock(): stolen_value() not ported yet');
+                if (otmp.quan === 1) {
+                    obfree(otmp, null);
+                    continue;
+                }
+                /* this works because we're sure to have at least 1 left;
+                   otherwise it would fail since otmp is not in inventory */
+                useup(otmp);
+            }
+            if (box.otyp === ICE_BOX && otmp.otyp === CORPSE) {
+                otmp.age = game.moves - otmp.age; /* actual age */
+                start_corpse_timeout(otmp);
+            }
+            place_object(otmp, u.ux, u.uy);
+            stackobj(otmp);
+        }
+        if (costly)
+            throw new Error('breakchestlock(): stolen_value() not ported yet');
+        if (loss)
+            await You(`owe ${loss} ${currency(loss)} for objects destroyed.`);
+        delobj(box);
+    }
+}
+
+/* C ref: hack.h greatest_erosion() */
+function greatest_erosion(otmp) {
+    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
+}
+
+// C ref: lock.c forcelock() -- try to force a locked chest (occupation
+// callback)
+async function forcelock() {
+    const u = game.u;
+    const xl = xlock();
+    const uwep = game.uwep;
+
+    if ((xl.box.ox !== u.ux) || (xl.box.oy !== u.uy))
+        return (xl.usedtime = 0); /* you or it moved */
+
+    if (xl.usedtime++ >= 50 || !uwep || nohands(game.youmonst.data)) {
+        await You("give up your attempt to force the lock.");
+        if (xl.usedtime >= 50) /* you made the effort */
+            exercise((xl.picktyp) ? A_DEX : A_STR, true);
+        return (xl.usedtime = 0);
+    }
+
+    if (xl.picktyp) { /* blade */
+        if (rn2(1000 - (uwep.spe || 0)) > (992 - greatest_erosion(uwep) * 10)
+            && !uwep.cursed && !obj_resists(uwep, 0, 99)) {
+            /* for a +0 weapon, probability that it survives an unsuccessful
+             * attempt to force the lock is (.992)^50 = .67
+             */
+            await pline(`${(uwep.quan > 1) ? "One of y" : "Y"}our ${
+                xname(uwep)} broke!`);
+            useup(uwep);
+            await You("give up your attempt to force the lock.");
+            exercise(A_DEX, true);
+            return (xl.usedtime = 0);
+        }
+    } else             /* blunt */
+        await wake_nearby(false); /* due to hammering on the container */
+
+    if (rn2(100) >= xl.chance)
+        return 1; /* still busy */
+
+    await You("succeed in forcing the lock.");
+    exercise(xl.picktyp ? A_DEX : A_STR, true);
+    /* breakchestlock() might destroy xlock.box; if so, xlock context will
+       be cleared (delobj -> obfree -> maybe_reset_pick); but it might not,
+       so explicitly clear that manually */
+    await breakchestlock(xl.box, (!xl.picktyp && !rn2(3)));
+    reset_pick(); /* lock-picking context is no longer valid */
+
+    return 0;
+}
+
+// C ref: lock.c u_have_forceable_weapon() -- is hero wielding a weapon
+// that can #force?
+export function u_have_forceable_weapon() {
+    const uwep = game.uwep;
+    if (!uwep /* proper type test */
+        || ((uwep.oclass === WEAPON_CLASS || is_weptool(uwep))
+            ? (objects[uwep.otyp].oc_skill < P_DAGGER
+               || objects[uwep.otyp].oc_skill === P_FLAIL
+               || objects[uwep.otyp].oc_skill > P_LANCE)
+            : uwep.oclass !== ROCK_CLASS))
+        return false;
+    return true;
+}
+
+/* C ref: obj.h is_blade(), is_pick(), Is_box() */
+function is_blade(otmp) {
+    return otmp.oclass === WEAPON_CLASS
+           && objects[otmp.otyp].oc_skill >= P_DAGGER
+           && objects[otmp.otyp].oc_skill <= P_SABER;
+}
+function is_pick(otmp) {
+    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
+           && objects[otmp.otyp].oc_skill === P_PICK_AXE;
+}
+function Is_box(o) { return o.otyp === LARGE_BOX || o.otyp === CHEST; }
+
+// C ref: engrave.c cant_reach_floor()
+async function cant_reach_floor(x, y, up, check_pit, wand_engraving) {
+    if (up)
+        throw new Error('cant_reach_floor(): ceiling() not ported yet');
+    await pline(`${wand_engraving
+                   ? "The wand does nothing more, and the tip of the wand"
+                   : "You"} can't reach the ${
+                (check_pit && can_reach_floor(false)) ? "bottom of the pit"
+                                                       : surface(x, y)}.`);
+}
+
+// C ref: lock.c doforce() -- the #force command - try to force a chest
+// with your weapon
+export async function doforce() {
+    const u = game.u;
+    const xl = xlock();
+    const uwep = game.uwep;
+    let c, picktyp;
+
+    /*
+     * TODO?
+     *  allow force with edged weapon to be performed on doors.
+     */
+
+    if (u.uswallow) {
+        await You_cant("force anything from inside here.");
+        return ECMD_OK;
+    }
+    if (!u_have_forceable_weapon()) {
+        const use_plural = uwep && uwep.quan > 1;
+
+        await You_cant(`force anything ${
+            !uwep ? "when not wielding a"
+            : (uwep.oclass !== WEAPON_CLASS && !is_weptool(uwep))
+              ? (use_plural ? "without proper" : "without a proper")
+              : (use_plural ? "with those" : "with that")} weapon${
+            use_plural ? "s" : ""}.`);
+        return ECMD_OK;
+    }
+    if (!can_reach_floor(true)) {
+        await cant_reach_floor(u.ux, u.uy, false, true, false);
+        return ECMD_OK;
+    }
+
+    picktyp = (is_blade(uwep) && !is_pick(uwep)) ? 1 : 0;
+    if (xl.usedtime && xl.box && picktyp === xl.picktyp) {
+        await You("resume your attempt to force the lock.");
+        set_occupation(forcelock, "forcing the lock", 0);
+        return ECMD_TIME;
+    }
+
+    /* A lock is made only for the honest man, the thief will break it. */
+    xl.box = null;
+    /* svl.level.objects[u.ux][u.uy] via ->nexthere: the floor chain
+       (fobj, newest first) filtered to the hero's spot */
+    const here = (game.level.objects || []).filter(
+        o => o.ox === u.ux && o.oy === u.uy && o.where === 'OBJ_FLOOR');
+    for (const otmp of here)
+        if (Is_box(otmp)) {
+            if (otmp.obroken || !otmp.olocked) {
+                /* force doname() to omit known "broken" or "unlocked"
+                   prefix so that the message isn't worded redundantly;
+                   since we're about to set lknown, there's no need to
+                   remember and then reset its current value */
+                otmp.lknown = 0;
+                await There(`is ${doname(otmp)} here, but its lock is already ${
+                    otmp.obroken ? "broken" : "unlocked"}.`);
+                otmp.lknown = 1;
+                continue;
+            }
+            const qbuf = safe_qbuf("There is ", " here; force its lock?",
+                                   otmp, doname, "a box");
+            otmp.lknown = 1;
+
+            c = await ynq(qbuf);
+            if (c === 'q')
+                return ECMD_OK;
+            if (c === 'n')
+                continue;
+
+            if (picktyp)
+                await You(`force ${yname(uwep)} into a crack and pry.`);
+            else
+                await You(`start bashing it with ${yname(uwep)}.`);
+            xl.box = otmp;
+            xl.chance = objects[uwep.otyp].oc_wldam * 2;
+            xl.picktyp = picktyp;
+            xl.magic_key = false;
+            xl.usedtime = 0;
+            break;
+        }
+
+    if (xl.box)
+        set_occupation(forcelock, "forcing the lock", 0);
+    else
+        await You("decide not to force the issue.");
+    return ECMD_TIME;
+}
+
+// C ref: lock.c doclose() -- try to close a door
+export async function doclose() {
+    const u = game.u;
+    let x, y;
+    let res = ECMD_OK;
+
+    if (nohands(game.youmonst.data)) {
+        await You_cant("close anything -- you have no hands!");
+        return ECMD_OK;
+    }
+
+    if (u.utrap && u.utraptype === TT_PIT) {
+        await You_cant("reach over the edge of the pit.");
+        return ECMD_OK;
+    }
+
+    if (!(await getdir(null)))
+        return ECMD_CANCEL;
+
+    x = u.ux + u.dx;
+    y = u.uy + u.dy;
+    if (u.ux === x && u.uy === y && !uhave(PASSES_WALLS)) {
+        await You("are in the way!");
+        return ECMD_TIME;
+    }
+
+    if (!isok(x, y)) {
+        /* goto nodoor */
+        await You(`${Blind() ? "feel" : "see"} no door there.`);
+        return res;
+    }
+
+    if (await stumble_on_door_mimic(x, y))
+        return ECMD_TIME;
+
+    /* when choosing a direction is impaired, use a turn
+       regardless of whether a door is successfully targeted */
+    if (uhave(CONFUSION) || uhave(STUNNED))
+        res = ECMD_TIME;
+
+    const door = game.level.at(x, y);
+    const portcullis = (is_drawbridge_wall(x, y) >= 0);
+    if (Blind())
+        throw new Error('doclose(): feel_location() for a blind hero not ported yet');
+
+    if (portcullis || !IS_DOOR(door.typ)) {
+        /* is_db_wall: closed portcullis */
+        if (door.typ === DBWALL || door.typ === DRAWBRIDGE_UP)
+            await pline_The("drawbridge is already closed.");
+        else if (portcullis || door.typ === DRAWBRIDGE_DOWN)
+            await There("is no obvious way to close the drawbridge.");
+        else {
+            /* nodoor: */
+            await You(`${Blind() ? "feel" : "see"} no door there.`);
+        }
+        return res;
+    }
+
+    if (door.doormask === D_NODOOR) {
+        await pline("This doorway has no door.");
+        return res;
+    } else if (await obstructed(x, y, false)) {
+        return res;
+    } else if (door.doormask === D_BROKEN) {
+        await pline("This door is broken.");
+        return res;
+    } else if (door.doormask & (D_CLOSED | D_LOCKED)) {
+        await pline("This door is already closed.");
+        return res;
+    }
+
+    if (door.doormask === D_ISOPEN) {
+        if (game.youmonst.data.msize < MZ_SMALL /* verysmall() */ && !u.usteed) {
+            await pline("You're too small to push the door closed.");
+            return res;
+        }
+        if (u.usteed
+            || rn2(25) < Math.trunc((acurrstr() + ACURR(A_DEX) + ACURR(A_CON)) / 3)) {
+            await pline_The("door closes.");
+            door.doormask = D_CLOSED;
+            newsym(x, y); /* feel_newsym(): the hero knows she closed it */
+            block_point(x, y); /* vision:  no longer see there */
+        } else {
+            exercise(A_STR, true);
+            await pline_The("door resists!");
+        }
+    }
+
+    return ECMD_TIME;
+}
+
+/* C ref: youprop.h Blind */
+function Blind() {
+    const p = game.u.uprops[BLINDED];
+    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
+}
+
+// C ref: lock.c chest_shatter_msg()
+async function chest_shatter_msg(otmp) {
+    let disposition;
+
+    if (otmp.oclass === POTION_CLASS) {
+        await You(`${Blind() ? "hear" : "see"} ${an(bottlename())} shatter!`);
+        if (!breathless(game.youmonst.data) || haseyes(game.youmonst.data))
+            await potionbreathe(otmp);
+        return;
+    }
+    /* We have functions for distant and singular names, but not one */
+    /* which does _both_... */
+    const bl = game.u.uprops[BLINDED];
+    const save_HBlinded = bl.intrinsic, save_BBlinded = bl.blocked;
+    bl.intrinsic = 1, bl.blocked = 0;
+    const thing = singular(otmp, xname);
+    bl.intrinsic = save_HBlinded, bl.blocked = save_BBlinded;
+    switch (objects[otmp.otyp].oc_material) {
+    case PAPER:
+        disposition = "is torn to shreds";
+        break;
+    case WAX:
+        disposition = "is crushed";
+        break;
+    case VEGGY:
+        disposition = "is pulped";
+        break;
+    case FLESH:
+        disposition = "is mashed";
+        break;
+    case GLASS:
+        disposition = "shatters";
+        break;
+    case WOOD:
+        disposition = "splinters to fragments";
+        break;
+    default:
+        disposition = "is destroyed";
+        break;
+    }
+    await pline(`${An(thing)} ${disposition}!`);
+}
+
+/* C ref: objnam.c An() */
+function An(str) {
+    const s = an(str);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* C ref: mondata.h breathless() */
+function breathless(ptr) { return (ptr.mflags1 & M1_BREATHLESS) !== 0; }

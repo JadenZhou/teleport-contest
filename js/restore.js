@@ -174,7 +174,10 @@ function restobj(nhfp) {
         const buflen = Sfi(nhfp, "obj-omonst_length");
         if (buflen > 0) {
             /* this is actually a monst struct, so we
-               can just defer to restmon() here */
+               can just defer to restmon() here; savemon() wrote its own
+               "monst-monst_length" record ahead of the monst (C's binary
+               save reads that int as the omonst length) */
+            Sfi(nhfp, "monst-monst_length");
             otmp.oextra.omonst = restmon(nhfp);
         }
     } else

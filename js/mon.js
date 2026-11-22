@@ -118,6 +118,7 @@ import { You_hear, growl } from './sounds.js';
 import { is_lightblocker_mappear, does_block, unblock_point,
          couldsee } from './vision.js';
 import { M1_HUMANOID } from './monsters.js';
+import { vtense } from './objnam.js';
 import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
@@ -2928,4 +2929,58 @@ export function maybe_unhide_at(x, y) {
                  || !can_hide_under_obj(vobj_at(x, y)))) /* level.objects[x][y] */
             || (mtmp.data.mlet === S_EEL && !is_pool(x, y))))
         hideunder(mtmp);
+}
+
+// C ref: mon.c angry_guards() -- the town watch turns hostile
+export async function angry_guards(silent) {
+    const is_watch = ptr => ptr === MM.mons[MM.PM_WATCHMAN]
+                            || ptr === MM.mons[MM.PM_WATCH_CAPTAIN];
+    /* C ref: hack.h m_next2u() */
+    const m_next2u = m => dist2(m.mx, m.my, game.u.ux, game.u.uy) < 3;
+    const plur = n => (n === 1 ? "" : "s");
+    let ct = 0, nct = 0, sct = 0, slct = 0;
+
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (DEADMONSTER(mtmp))
+            continue;
+        if (is_watch(mtmp.data) && mtmp.mpeaceful) {
+            ct++;
+            if (canspotmon(mtmp) && mtmp.mcanmove) {
+                if (m_next2u(mtmp))
+                    nct++;
+                else
+                    sct++;
+            }
+            if (mtmp.msleeping || mtmp.mfrozen) {
+                slct++;
+                mtmp.msleeping = mtmp.mfrozen = 0;
+            }
+            mtmp.mpeaceful = 0;
+        }
+    }
+    if (ct) {
+        if (!silent) { /* do we want pline msgs? */
+            let buf;
+
+            if (slct) { /* sleeping guard(s) */
+                buf = `guard${plur(slct)}`;
+                await pline(`The ${buf} ${vtense(buf, "wake")} up.`);
+            }
+
+            if (nct) { /* seen/sensed adjacent guard(s) */
+                buf = `guard${plur(nct)}`;
+                await pline(`The ${buf} ${vtense(buf, "get")} angry!`);
+            } else if (sct) { /* seen/sensed non-adjacent guard(s) */
+                buf = `guard${plur(sct)}`;
+                await pline(`${(sct === 1) ? "An angry" : "Angry"} ${buf} ${
+                    vtense(buf, "are")} approaching!`);
+            } else {
+                buf = (ct === 1) ? "a guard's" : "guards'";
+                /* Soundeffect(se_shrill_whistle, 100) */
+                await You_hear(`the shrill sound of ${buf} whistle${plur(ct)}.`);
+            }
+        }
+        return true;
+    }
+    return false;
 }

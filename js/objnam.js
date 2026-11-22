@@ -53,6 +53,7 @@ import { the as the_article } from './iactions.js';
 import { is_unpaid, unpaid_cost, get_cost_of_shop_item,
          record_price_quote, append_price_quote } from './shk.js';
 import { currency } from './insight.js';
+import { candy_wrapper_text } from './read.js';
 import {
     mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
     is_rustprone, is_crackable, is_corrodeable, is_rottable, is_damageable,
@@ -2947,6 +2948,14 @@ export function xname(obj) {
     return xname_flags(obj, 0);
 }
 
+// C ref: objnam.c cxname()
+/* xname doesn't include monster type for "corpse"; cxname does */
+export function cxname(obj) {
+    if (obj.otyp === O.CORPSE)
+        return corpse_xname(obj, null, CXN_NORMAL);
+    return xname(obj);
+}
+
 // C ref: objnam.c cxname_singular()
 /* like cxname, but ignores quantity */
 export function cxname_singular(obj) {
@@ -3308,8 +3317,24 @@ function xname_flags(obj, cxn_flags) {
         /* if the name should be plural, do that now */
         if (pluralize)
             buf = makeplural(buf);
-        if (game.program_state?.gameover && obj.o_id)
-            xn_not_ported('end-of-game shirt/apron text');
+        /* end-of-game disclosure: readable text on worn/carried items */
+        if (game.program_state?.gameover && obj.o_id) {
+            switch (obj.otyp) {
+            case O.T_SHIRT:
+            case O.ALCHEMY_SMOCK:
+            case O.HAWAIIAN_SHIRT:
+                xn_not_ported('end-of-game shirt/apron text');
+                break;
+            case O.CANDY_BAR: {
+                const lbl = candy_wrapper_text(obj);
+                if (lbl)
+                    buf += ` labeled "${lbl}"`;
+                break;
+            }
+            default:
+                break;
+            }
+        }
     }
 
     if (nameit || (has_oname(obj) && dknown)) {

@@ -516,6 +516,24 @@ export function artifact_name(
     return null;
 }
 
+// C ref: artifact.c discover_artifact() -- add identified artifact to
+// discoveries list
+export function discover_artifact(m) {
+    const artidisco = game.artidisco;
+    let i;
+
+    /* look for this artifact in the discoveries list;
+       if we hit an empty slot then it's not present, so add it */
+    for (i = 0; i < NROFARTIFACTS; i++)
+        if (artidisco[i] === 0 || artidisco[i] === m) {
+            artidisco[i] = m;
+            return;
+        }
+    /* there is one slot per artifact, so we should never reach the
+       end without either finding the artifact or an empty slot... */
+    throw new Error(`impossible: couldn't discover artifact (${m})`);
+}
+
 // C ref: artifact.c exist_artifact()
 export function exist_artifact(otyp, name) {
     const arts = artilist();
@@ -588,23 +606,6 @@ export function find_artifact(otmp) {
         found_artifact(a); /* artiexist[a].found = 1 */
         /* livelog_printf(LL_ARTIFACT, "found %s%s", ...): no livelog */
     }
-}
-
-// C ref: artifact.c discover_artifact()
-/* mark an artifact as 'known' */
-export function discover_artifact(m) {
-    if (!game.artidisco)
-        game.artidisco = new Array(NROFARTIFACTS).fill(0);
-    /* look for this artifact in the discoveries list;
-       if we hit an empty slot then it's not present, so add it */
-    for (let i = 0; i < NROFARTIFACTS; i++)
-        if (game.artidisco[i] === 0 || game.artidisco[i] === m) {
-            game.artidisco[i] = m;
-            return;
-        }
-    /* there is one slot per artifact, so we should never reach the
-       end without either finding the artifact or an empty slot... */
-    console.error(`impossible: couldn't discover artifact (${m})`);
 }
 
 // C ref: artifact.c undiscovered_artifact()

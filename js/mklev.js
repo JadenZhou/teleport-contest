@@ -392,12 +392,13 @@ export async function mklev() {
     if (getbones()) return;
     g.in_mklev = true;
     await makelevel();
-    recount_level_features();
+    count_level_features();
     level_finalize_topology();
     g.in_mklev = false;
 }
 
-function recount_level_features() {
+// C ref: mklev.c count_level_features()
+export function count_level_features() {
     const lvl = game.level;
     if (!lvl?.flags) return;
     let nfountains = 0, nsinks = 0;
@@ -1276,7 +1277,7 @@ async function mktemple() {
 }
 
 // C ref: mkroom.c nexttodoor()
-function nexttodoor(sx, sy) {
+export function nexttodoor(sx, sy) {
     let dx, dy;
     let lev;
 

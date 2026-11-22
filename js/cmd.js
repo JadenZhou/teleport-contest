@@ -60,7 +60,7 @@ import { dopay } from './shk.js';
 import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
 import { dohelp, dowhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
-import { doopen } from './lock.js';
+import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -146,6 +146,8 @@ const cmd_funcs = {
     enhance_weapon_skill: () => enhance_weapon_skill(),
     dohelp: () => dohelp(),
     doopen: () => doopen(),
+    doforce: () => doforce(),
+    doclose: () => doclose(),
     dojump: () => dojump(),
     do_reqmenu: () => do_reqmenu(),
     do_rush: () => do_rush(),

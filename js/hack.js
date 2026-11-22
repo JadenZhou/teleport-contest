@@ -37,7 +37,7 @@ import { m_at, is_pool, is_lava, closed_door, may_passwall, sobj_at, goodpos,
          place_monster, accessible } from './makemon.js';
 import { dig_typ } from './dig.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
-         You_cant, pline_The, There, unmap_invisible, unmap_object,
+         You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible } from './display.js';
 import { vision_recalc, couldsee } from './vision.js';
 import { glyph_at, Norep } from './display.js';
@@ -90,7 +90,8 @@ import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
 import { M1_CLING, PM_SOLDIER, PM_SERGEANT, PM_LIEUTENANT, PM_CAPTAIN } from './monsters.js';
 import { midnight } from './calendar.js';
 import { Hello } from './role.js';
-import { search_special } from './sounds.js';
+import { search_special, You_hear } from './sounds.js';
+import { DEAF } from './const.js';
 import { wake_msg, seemimic } from './mon.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
@@ -2164,7 +2165,12 @@ async function moverock_core(sx, sy) {
                     await pline(`There's ${a_monnam(mtmp)} on the other side.`);
                     deliver_part1 = true;
                 } else {
-                    throw new Error('moverock_core(): You_hear() a monster behind a boulder not ported yet');
+                    /* Soundeffect(se_monster_behind_boulder, 50) */
+                    await You_hear(`a monster behind ${the(xname(otmp))}.`);
+                    const D = game.u.uprops[DEAF];
+                    if (!(D.intrinsic || D.extrinsic || game.u.uroleplay?.deaf)) /* !Deaf */
+                        deliver_part1 = true;
+                    map_invisible(rx, ry);
                 }
                 if (game.flags?.verbose ?? true) {
                     const you_or_steed = game.u.usteed ? y_monnam(game.u.usteed) : "you";

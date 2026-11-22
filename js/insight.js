@@ -46,8 +46,12 @@ import {
 } from './const.js';
 import {
     tty_create_nhwindow, tty_start_menu, add_menu_str, tty_end_menu,
-    tty_select_menu, tty_destroy_nhwindow, tty_yn_function,
+    tty_select_menu, tty_destroy_nhwindow, tty_yn_function, tty_putstr_sync,
+    tty_display_nhwindow, tty_putstr,
 } from './wintty.js';
+import { VANQ_MLVL_MNDX, VANQ_MSTR_MNDX, VANQ_ALPHA_SEP, VANQ_ALPHA_MIX,
+         VANQ_MCLS_HTOL, VANQ_MCLS_LTOH, VANQ_COUNT_H_L,
+         VANQ_COUNT_L_H } from './const.js';
 import {
     objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS, COIN_CLASS,
     GAUNTLETS_OF_POWER, DUNCE_CAP, SHIELD_OF_REFLECTION, TOWEL, CORPSE, TIN,
@@ -626,7 +630,7 @@ function enlght_out(buf) {
     if (game.en_via_menu) {
         add_menu_str(game.en_win, buf);
     } else
-        throw new Error('enlght_out(): putstr() to a text window not ported yet');
+        tty_putstr_sync(game.en_win, 0, buf);
 }
 
 // C ref: insight.c enlght_line()
@@ -883,7 +887,7 @@ export async function enlightenment(mode, /* BASICENLIGHTENMENT | MAGICENLIGHTEN
     enl_msg("Total elapsed playing time ", "is", "was", buf, "");
 
     if (!game.en_via_menu) {
-        throw new Error('enlightenment(): end-of-game text window not ported yet');
+        await tty_display_nhwindow(game.en_win, true);
     } else {
         tty_end_menu(game.en_win, null);
         await tty_select_menu(game.en_win, PICK_NONE);
@@ -2280,8 +2284,62 @@ export function count_achievements() {
     return (game.u.uachieved || []).length;
 }
 
-// C ref: insight.c list_vanquished() -- the question; the list itself
-// isn't ported
+// C ref: insight.c vanqsort_cmp() -- qsort() comparison for the
+// vanquished list, by flags.vanq_sortmode
+function vanqsort_cmp(indx1, indx2) {
+    const sortmode = game.flags.vanq_sortmode || 0;
+    let res;
+
+    switch (sortmode) {
+    default:
+    case VANQ_MLVL_MNDX:
+        /* sort by monster level */
+        res = M.mons[indx2].mlevel - M.mons[indx1].mlevel; /* mlevel high to low */
+        break;
+    case VANQ_MSTR_MNDX:
+        /* sort by monster toughness */
+        res = M.mons[indx2].difficulty - M.mons[indx1].difficulty; /* monstr high to low */
+        break;
+    case VANQ_ALPHA_SEP: {
+        const uniq1 = UniqCritterIndx(indx1) ? 1 : 0,
+              uniq2 = UniqCritterIndx(indx2) ? 1 : 0;
+        if (uniq1 ^ uniq2) { /* one or other uniq, but not both */
+            res = uniq2 - uniq1;
+            break;
+        } /* else both unique or neither unique */
+    }
+    /*FALLTHRU*/
+    case VANQ_ALPHA_MIX: { // eslint-disable-line no-fallthrough
+        /* strcmpi(): caseblind alpha, low to high */
+        const name1 = M.mons[indx1].pmnames[NEUTRAL].toLowerCase(),
+              name2 = M.mons[indx2].pmnames[NEUTRAL].toLowerCase();
+        res = name1 < name2 ? -1 : name1 > name2 ? 1 : 0;
+        break;
+    }
+    case VANQ_MCLS_HTOL:
+    case VANQ_MCLS_LTOH:
+        throw new Error('vanqsort_cmp(): sorting by monster class not ported yet');
+    case VANQ_COUNT_H_L:
+    case VANQ_COUNT_L_H:
+        res = game.mvitals[indx2].died - game.mvitals[indx1].died; /* dead count high to low */
+        if (sortmode === VANQ_COUNT_L_H)
+            res = -res; /* dead count low to high */
+        break;
+    }
+    /* tiebreaker: internal mons[] index */
+    if (res === 0)
+        res = indx1 - indx2; /* mndx low to high */
+    return res;
+}
+
+/* C ref: mondata.h is_rider(), type_is_pname() */
+function is_rider(ptr) {
+    return ptr === M.mons[M.PM_DEATH] || ptr === M.mons[M.PM_FAMINE]
+           || ptr === M.mons[M.PM_PESTILENCE];
+}
+function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
+
+// C ref: insight.c list_vanquished()
 export async function list_vanquished(defquery, ask) {
     let c;
     /* 'A' is only supplied by 'm #vanquished'; 'd' is only supplied by
@@ -2298,10 +2356,14 @@ export async function list_vanquished(defquery, ask) {
 
     /* get totals first */
     let ntypes = 0;
+    let total_killed = 0;
+    const mindx = [];
     for (let i = M.LOW_PM; i < M.NUMMONS; i++) {
-        if (!game.mvitals[i]?.died)
+        let nkilled;
+        if ((nkilled = (game.mvitals[i]?.died || 0)) === 0)
             continue;
-        ntypes++;
+        mindx[ntypes++] = i;
+        total_killed += nkilled;
     }
 
     /* vanquished creatures list;
@@ -2327,10 +2389,80 @@ export async function list_vanquished(defquery, ask) {
 
         if (c === 'q')
             game.program_state.stopprint = (game.program_state.stopprint || 0) + 1;
-        if (c === 'y' || c === 'a')
-            throw new Error('list_vanquished(): the vanquished list not ported yet');
+        if (c === 'y' || c === 'a') {
+            let mlet, prev_mlet = 0; /* used as small integer, not character */
+            let was_uniq = false, special_hdr = false;
+            let buf, buftoo;
+
+            if (c === 'a' && ntypes > 1) /* ask user to choose sort order */
+                throw new Error('list_vanquished(): set_vanq_order() not ported yet');
+            const sortmode = game.flags.vanq_sortmode || 0;
+            const uniq_header = (sortmode === VANQ_ALPHA_SEP);
+            const class_header = ((sortmode === VANQ_MCLS_LTOH
+                                   || sortmode === VANQ_MCLS_HTOL)
+                                  && ntypes > 1);
+
+            const klwin = tty_create_nhwindow(NHW_MENU);
+            await tty_putstr(klwin, 0, "Vanquished creatures:");
+            if (!dumping)
+                await tty_putstr(klwin, 0, "");
+
+            mindx.sort(vanqsort_cmp); /* qsort() */
+            for (let ni = 0; ni < ntypes; ni++) {
+                const i = mindx[ni];
+                const nkilled = game.mvitals[i].died;
+                const Rider = is_rider(M.mons[i]);
+                mlet = M.mons[i].mlet;
+                if (class_header
+                    && (mlet !== prev_mlet || (special_hdr && !Rider))) {
+                    throw new Error('list_vanquished(): class headers (def_monsyms[].explain) not ported yet');
+                }
+                if (UniqCritterIndx(i)) {
+                    buf = `${!type_is_pname(M.mons[i]) ? "the " : ""}${
+                        M.mons[i].pmnames[NEUTRAL]}`;
+                    if (nkilled > 1)
+                        buf += ` (${N_times(nkilled)})`;
+                    was_uniq = true;
+                } else {
+                    if (uniq_header && was_uniq) {
+                        await tty_putstr(klwin, 0, "");
+                        was_uniq = false;
+                    }
+                    /* trolls or undead might have come back,
+                       but we don't keep track of that */
+                    if (nkilled === 1)
+                        buf = an(M.mons[i].pmnames[NEUTRAL]);
+                    else
+                        buf = `${String(nkilled).padStart(3)} ${
+                            makeplural(M.mons[i].pmnames[NEUTRAL])}`;
+                }
+                /* number of leading spaces to match 3 digit prefix */
+                const lc = buf.toLowerCase();
+                let pfx = lc.startsWith("the ") ? 0
+                          : lc.startsWith("an ") ? 1
+                            : lc.startsWith("a ") ? 2
+                              : !(buf[2] >= '0' && buf[2] <= '9') ? 4 : 0;
+                if (class_header)
+                    ++pfx;
+                buftoo = ' '.repeat(pfx) + buf;
+                await tty_putstr(klwin, 0, buftoo);
+            }
+            /*
+             * if (Hallucination)
+             *     putstr(klwin, 0, "and a partridge in a pear tree");
+             */
+            if (ntypes > 1) {
+                if (!dumping)
+                    await tty_putstr(klwin, 0, "");
+                buf = `${total_killed} creatures vanquished.`;
+                await tty_putstr(klwin, 0, buf);
+            }
+            await tty_display_nhwindow(klwin, true);
+            await tty_destroy_nhwindow(klwin);
+        }
     } else if (!game.program_state?.gameover) {
-        throw new Error('list_vanquished(): #vanquished not ported yet');
+        /* #vanquished rather than final disclosure, so pline() is ok */
+        await pline("No creatures have been vanquished.");
     } else if (dumping) {
         throw new Error('list_vanquished(): DUMPLOG not ported yet');
     }
