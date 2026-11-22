@@ -3791,3 +3791,74 @@ function GemStone_x(typ) {
             && typ !== O.BLACK_OPAL && typ !== O.EMERALD
             && typ !== O.OPAL);
 }
+
+// C ref: objnam.c short_oname()
+/* used by safe_qbuf() and dodip() to shorten an object's formatted name */
+export function short_oname(obj,
+                            func,     /* main formatting routine */
+                            altfunc,  /* alternate for shortest result */
+                            lenlimit) {
+    const UNAMEBUFSZ = 12, ONAMEBUFSZ = 12; /* sizeof unamebuf, onamebuf */
+    let unamebuf = null, onamebuf = null;
+
+    let outbuf = func(obj);
+    if (outbuf.length <= lenlimit)
+        return outbuf;
+
+    /* shorten called string to fairly small amount */
+    const save_uname = objects[obj.otyp].oc_uname;
+    if (save_uname && save_uname.length >= UNAMEBUFSZ) {
+        unamebuf = save_uname.slice(0, UNAMEBUFSZ - 4) + "...";
+        objects[obj.otyp].oc_uname = unamebuf;
+        outbuf = func(obj);
+        objects[obj.otyp].oc_uname = save_uname; /* restore called string */
+        if (outbuf.length <= lenlimit)
+            return outbuf;
+    }
+
+    /* shorten named string to fairly small amount */
+    const save_oname = has_oname(obj) ? ONAME(obj) : null;
+    if (save_oname && save_oname.length >= ONAMEBUFSZ) {
+        onamebuf = save_oname.slice(0, ONAMEBUFSZ - 4) + "...";
+        obj.oextra.oname = onamebuf;
+        outbuf = func(obj);
+        obj.oextra.oname = save_oname; /* restore named string */
+        if (outbuf.length <= lenlimit)
+            return outbuf;
+    }
+
+    /* shorten both called and named strings;
+       unamebuf and onamebuf have both already been populated */
+    if (save_uname && save_uname.length >= UNAMEBUFSZ && save_oname
+        && save_oname.length >= ONAMEBUFSZ) {
+        objects[obj.otyp].oc_uname = unamebuf;
+        obj.oextra.oname = onamebuf;
+        outbuf = func(obj);
+        if (outbuf.length <= lenlimit) {
+            objects[obj.otyp].oc_uname = save_uname;
+            obj.oextra.oname = save_oname;
+            return outbuf;
+        }
+    }
+
+    /* still long; strip several name-lengthening attributes;
+       called and named strings are still in truncated form */
+    const save_obj = { ...obj };
+    obj.bknown = obj.rknown = obj.greased = 0;
+    obj.oeroded = obj.oeroded2 = 0;
+    outbuf = func(obj);
+    if (altfunc && outbuf.length > lenlimit) {
+        /* still long; use the alternate function (usually one of
+           the jackets around minimal_xname()) */
+        outbuf = altfunc(obj);
+    }
+    /* restore the object */
+    Object.assign(obj, save_obj);
+    if (save_oname)
+        obj.oextra.oname = save_oname;
+    if (save_uname)
+        objects[obj.otyp].oc_uname = save_uname;
+
+    /* use whatever we've got, whether it's too long or not */
+    return outbuf;
+}
