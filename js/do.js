@@ -16,7 +16,8 @@ import { ACH_HELL } from './const.js';
 import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
     In_hell, builds_up, at_dgn_entrance, level_difficulty,
-    In_W_tower,
+    In_W_tower, recalc_mapseen, recbranch_mapseen, remdun_mapseen,
+    print_level_annotation,
 } from './dungeon.js';
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR } from './const.js';
 import * as O from './objects.js';
@@ -61,7 +62,11 @@ import { doname } from './objnam.js';
 import { place_object } from './mkobj.js';
 import { encumber_msg } from './pickup.js';
 import { rn2, rnd } from './rng.js';
-import { You_cant } from './display.js';
+import { You_cant, Your } from './display.js';
+import { BLINDED, TIMEOUT, FACE } from './const.js';
+import { incr_itimeout, set_itimeout, make_blinded } from './potion.js';
+import { body_part } from './insight.js';
+import { set_occupation } from './allmain.js';
 import { ECMD_OK, LADDER, UNENCUMBERED, SLT_ENCUMBER, TOOKPLUNGE, KILLED_BY,
          TT_PIT, Is_stronghold, RLOC_NOMSG, LEVITATION, FLYING,
          FUMBLING } from './const.js';
@@ -493,7 +498,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     u.uundetected = 0; /* not hidden, even if means are available */
     if (!g.iflags?.nofollowers)
         await keepdogs(false);
-    /* recalc_mapseen(): #overview isn't ported yet */
+    recalc_mapseen(); /* recalculate map overview before we leave the level */
     /* vision_recalc(2): we no longer see anything on the level; the
        vision state is rebuilt by vision_reset() on arrival */
 
@@ -529,7 +534,11 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* Is_rogue_level(newlevel) || Is_rogue_level(&u.uz): assign_graphics():
        the rogue level isn't ported yet */
     /* check_gold_symbol(): display only */
-    /* recbranch_mapseen(): #overview isn't ported yet */
+    /* record this level transition as a potential seen branch unless using
+     * some non-standard means of transportation (level teleport).
+     */
+    if ((at_stairs || falling || portal) && (u.uz.dnum !== newlevel.dnum))
+        recbranch_mapseen(u.uz, newlevel);
     assign_level(u.uz0, u.uz);
     assign_level(u.uz, newlevel);
     assign_level(u.utolev, newlevel);
@@ -774,7 +783,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* save_currentstate(): INSURANCE, no files */
     /* notice_mon_on(); notice_all_mons(TRUE): a11y mon_notices is off */
 
-    /* print_level_annotation(): a new level has no annotation */
+    await print_level_annotation();
     /* give room entrance message, if any */
     await check_special_room(false);
     /* deliver objects traveling with player */
@@ -1262,4 +1271,55 @@ export function u_on_rndspot(upflag) {
     /* might have just left solid rock and unblocked levitation */
     /* switch_terrain(): no rolls; Levitation/Flying blocking by terrain
        isn't ported yet */
+}
+
+// C ref: do.c wipeoff() -- occupation callback for #wipe
+async function wipeoff() {
+    const u = game.u;
+    let udelta = u.ucreamed || 0;
+    let ldelta = uprop(BLINDED).intrinsic & TIMEOUT; /* BlindedTimeout */
+
+    if (udelta > 4)
+        udelta = 4;
+    u.ucreamed -= udelta; /*u.ucreamed -= min(u.ucreamed,4);*/
+    if (ldelta > 4)
+        ldelta = 4;
+    incr_itimeout(BLINDED, -ldelta); /*HBlinded -= min(BlindedTimeout,4L);*/
+
+    if (!uprop(BLINDED).intrinsic) { /* !HBlinded */
+        await pline("You've got the glop off.");
+        u.ucreamed = 0;
+        if (!gulp_blnd_check()) {
+            set_itimeout(BLINDED, 1);
+            await make_blinded(0, true);
+        }
+        return 0;
+    } else if (!u.ucreamed) {
+        await Your(`${body_part(FACE)} feels clean now.`);
+        return 0;
+    }
+    return 1; /* still busy */
+}
+
+// C ref: mhitu.c gulp_blnd_check() -- an engulfer with a blinding
+// engulf attack re-blinds the hero
+function gulp_blnd_check() {
+    /* !Blinded && u.uswallow && attacktype_fordmg(AT_ENGL, AD_BLND) ... */
+    if (!uprop(BLINDED).intrinsic && game.u.uswallow)
+        throw new Error('gulp_blnd_check(): engulfed by a blinder (gulpmu()) not ported yet');
+    return false;
+}
+
+// C ref: do.c dowipe() -- the #wipe command - wipe off your face
+export async function dowipe() {
+    if (game.u.ucreamed) {
+        const buf = `wiping off your ${body_part(FACE)}`;
+        set_occupation(wipeoff, buf, 0);
+        /* Not totally correct; what if they change back after now
+         * but before they're finished wiping?
+         */
+        return ECMD_TIME;
+    }
+    await Your(`${body_part(FACE)} is already clean.`);
+    return ECMD_TIME;
 }

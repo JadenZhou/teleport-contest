@@ -32,6 +32,7 @@ import { P_SKILLED, P_BASIC, ONAME_NO_FLAGS, GETOBJ_EXCLUDE, GETOBJ_SUGGEST,
 import { getobj } from './invent.js';
 import { mksobj, permapoisoned } from './mkobj.js';
 import { oname } from './do_name.js';
+import { obj_shuffle_range } from './o_init.js';
 
 // C ref: artifact.h SPFX_*
 export const SPFX_NONE = 0x00000000;
@@ -532,6 +533,57 @@ export function discover_artifact(m) {
     /* there is one slot per artifact, so we should never reach the
        end without either finding the artifact or an empty slot... */
     throw new Error(`impossible: couldn't discover artifact (${m})`);
+}
+
+// C ref: artifact.c restrict_name()
+/* is 'name' a restricted artifact name for objects of otmp's type? */
+export function restrict_name(otmp, name) {
+    const arts = artilist();
+    let aname, odesc, other;
+    const sametype = new Array(O.objects.length).fill(false);
+    let i, lo, hi;
+    const otyp = otmp.otyp, ocls = O.objects[otyp].oc_class;
+
+    if (!name)
+        return false;
+    if (!strncmpi(name, "the ", 4))
+        name = name.slice(4);
+
+    /* decide what types of objects are the same as otyp;
+       if it's been discovered, then only itself matches;
+       otherwise, include all other undiscovered objects
+       of the same class which have the same description
+       or share the same pool of shuffled descriptions */
+    sametype[otyp] = true;
+    if (!O.objects[otyp].oc_name_known
+        && (odesc = O.OBJ_DESCR(O.objects[otyp])) != null) {
+        ({ lo, hi } = obj_shuffle_range(otyp));
+        for (i = game.bases[ocls]; i < O.objects.length; i++) {
+            if (O.objects[i].oc_class !== ocls)
+                break;
+            if (!O.objects[i].oc_name_known
+                && (other = O.OBJ_DESCR(O.objects[i])) != null
+                && (odesc === other || (i >= lo && i <= hi)))
+                sametype[i] = true;
+        }
+    }
+
+    /* Since almost every artifact is SPFX_RESTR, it doesn't cost
+       us much to do the string comparison before the spfx check.
+       Bug fix:  don't name multiple elven daggers "Sting".
+     */
+    for (let a = 1; arts[a].otyp; a++) {
+        if (!sametype[arts[a].otyp])
+            continue;
+        aname = arts[a].name;
+        if (!strncmpi(aname, "the ", 4))
+            aname = aname.slice(4);
+        if (aname === name)
+            return ((arts[a].spfx & (SPFX_NOGEN | SPFX_RESTR)) !== 0
+                    || otmp.quan > 1);
+    }
+
+    return false;
 }
 
 // C ref: artifact.c exist_artifact()

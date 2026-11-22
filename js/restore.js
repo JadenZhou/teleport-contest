@@ -23,7 +23,7 @@ import { savelev, rest_adjust_levelflags, relative_time_to_moves,
 import { GameMap, makeLocation } from './game.js';
 import { mons, M1_CONCEAL } from './monsters.js';
 import { objects, NUM_OBJECTS, PICK_AXE, GRAPPLING_HOOK } from './objects.js';
-import { ledger_no, assign_level } from './dungeon.js';
+import { ledger_no, assign_level, load_mapseen } from './dungeon.js';
 import { stairway_add } from './mklev.js';
 import { stairway_at } from './display.js';
 import { place_monster, pm_to_cham, hideunder } from './makemon.js';
@@ -522,8 +522,18 @@ function restore_dungeon(nhfp) {
     if (li) g.level_info = li; else delete g.level_info;
     const ip = Sfi(nhfp, "svi.inv_pos");
     if (ip) g.inv_pos = ip;
-    const ms = Sfi(nhfp, "mapseen");
-    if (ms) g.mapseenchn = ms;
+    const count = Sfi(nhfp, "mapseen_count");
+    let curr_ms, last_ms = null;
+    g.mapseenchn = null;
+    for (let i = 0; i < count; i++) {
+        curr_ms = load_mapseen(nhfp);
+        curr_ms.next = null;
+        if (last_ms)
+            last_ms.next = curr_ms;
+        else
+            g.mapseenchn = curr_ms;
+        last_ms = curr_ms;
+    }
 }
 
 // C ref: artifact.c restore_artifacts()

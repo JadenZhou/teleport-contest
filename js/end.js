@@ -50,7 +50,7 @@ import { adjattrib, ACURR, minuhpmax, setuhpmax } from './attrib.js';
 import { init_uhunger } from './eat.js';
 import { paranoid_query } from './cmd.js';
 import { delete_levelfile } from './files.js';
-import { maxledgerno } from './dungeon.js';
+import { maxledgerno, show_overview } from './dungeon.js';
 import { formatkiller, killer, topten } from './topten.js';
 import { genl_outrip } from './rip.js';
 import { nh_terminate } from './save.js';
@@ -348,7 +348,7 @@ async function disclose(how, taken) {
                                         "ynq", defquery)
                 : defquery;
         if (c === 'y')
-            throw new Error('disclose(): show_overview() not ported yet');
+            await show_overview((how >= PANICKED) ? 1 : 2, how);
         if (c === 'q')
             inc_done_stopprint();
     }

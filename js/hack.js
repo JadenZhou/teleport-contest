@@ -53,6 +53,7 @@ import { COIN_CLASS, BOULDER, PICK_AXE, DWARVISH_MATTOCK, STATUE, WEAPON_CLASS,
          TOOL_CLASS, objects, WATER_WALKING_BOOTS } from './objects.js';
 import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { u_on_newpos } from './mklev.js';
+import { room_discovered } from './dungeon.js';
 import { inside_room } from './sp_lev.js';
 import { record_achievement } from './do.js';
 import { doopen_indir } from './lock.js';
@@ -1095,10 +1096,8 @@ export async function check_special_room(newlev) {
             rt = 0;
             break;
         }
-        if (msg_given) {
-            /* room_discovered(roomno): the dungeon overview (mapseen)
-               isn't ported */
-        }
+        if (msg_given)
+            room_discovered(roomno);
 
         if (rt !== 0) {
             rooms[roomno].rtype = OROOM;
