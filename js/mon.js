@@ -88,7 +88,7 @@ import { has_ceiling } from './insight.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, ROOM } from './const.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
-import { relobj } from './steal.js';
+import { relobj, thiefdead } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear, monflee } from './monmove.js';
 import { tele_restrict, rloc } from './teleport.js';
@@ -371,7 +371,7 @@ function m_detach(mtmp, mptr, due_to_death) {
 
     const after_relobj = () => {
         if (game.stealmid && mtmp.m_id === game.stealmid)
-            throw new Error('m_detach(): thiefdead() not ported yet');
+            thiefdead();
         if (mtmp.isshk)
             throw new Error('m_detach(): shkgone() not ported yet');
         if (mtmp.wormno)
@@ -2919,7 +2919,7 @@ export async function m_consume_obj(mtmp, otmp) {
 
 // C ref: mon.c mon_give_prop()
 /* give monster property prop */
-async function mon_give_prop(mtmp, prop) {
+export async function mon_give_prop(mtmp, prop) {
     let msg = null;
     let intrinsic = 0; /* MR_* constant */
 

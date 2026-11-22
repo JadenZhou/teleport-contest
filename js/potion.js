@@ -19,6 +19,7 @@
 
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
+import { swallowed } from './display.js';
 import { pline, You, Your, You_feel, pline_The, newsym, see_monsters,
          canseemon, canspotmon, map_invisible, flush_screen, vobj_at,
          glyph_at, glyph_is_invisible, unmap_object, tmp_at, DISP_ALWAYS,
@@ -81,6 +82,7 @@ import { tty_getlin } from './wintty.js';
 import { safe_qbuf } from './pickup.js';
 import { surface } from './iactions.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
+import { set_bc } from './ball.js';
 import { float_vs_flight } from './polyself.js';
 import { monster_detect } from './detect.js';
 import { drinkfountain, dipfountain, drinksink, dipsink, floating_above,
@@ -481,7 +483,7 @@ export async function make_blinded(xtime, talk) {
         }
         /* Before the hero goes blind, set the ball&chain variables. */
         if (game.uball) /* Punished */
-            throw new Error('make_blinded(): set_bc() not ported yet');
+            set_bc(0);
     } else if (!old && xtime) {
         /* setting temporary blindness without toggling blindness */
         if (talk) {
@@ -581,7 +583,7 @@ export async function make_hallucinated(
             eatmupdate();
 
         if (game.u.uswallow) {
-            throw new Error('make_hallucinated(): swallowed() redraw not ported yet');
+            await swallowed(0); /* redraw swallow display */
         } else {
             /* The see_* routines should be called *before* the pline. */
             see_monsters();

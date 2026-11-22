@@ -2592,7 +2592,7 @@ async function domagictrap() {
 }
 
 // C ref: trap.c drain_en()
-async function drain_en(n, max_already_drained) {
+export async function drain_en(n, max_already_drained) {
     const u = game.u;
     let mesg;
     let punct = max_already_drained ? '!' : '.';

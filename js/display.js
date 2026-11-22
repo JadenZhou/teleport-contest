@@ -1799,6 +1799,13 @@ export function newsym(x, y) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
 
+    /* only permit updating the hero when swallowed */
+    if (game.u?.uswallow) {
+        if (game.u.ux === x && game.u.uy === y)
+            display_self();
+        return;
+    }
+
     /* C ref: display.c newsym(): when the spot can be seen, remember its
        lit condition (not templit, so that temporarily lit spots re-darken
        out of sight), and an engraving there is revealed, even when
@@ -2040,7 +2047,7 @@ export async function docrt_flags(refresh_flags) {
     if (redrawonly) {
         throw new Error('docrt_flags(): redraw_map() not ported yet');
     } else if (u.uswallow) {
-        throw new Error('docrt_flags(): swallowed() not ported yet');
+        await swallowed(1);
     } else if (u.uinwater && !Is_waterlevel(u.uz)) { /* Underwater */
         throw new Error('docrt_flags(): under_water() not ported yet');
     } else if (u.uburied) { /* [not implemented] */
@@ -2493,6 +2500,92 @@ export async function cls() {
     if (display?.clearScreen) display.clearScreen();  /* clear_nhwindow(WIN_MAP) */
     if (game.status_shown !== undefined)
         game.status_shown = false; /* erase_tty_screen() */
+
+    clear_glyph_buffer(); /* force gbuf[][].glyph to unexplored */
+}
+
+// C ref: display.c clear_glyph_buffer() -- the shown map glyphs (gbuf)
+// become the unexplored glyph (blank)
+function clear_glyph_buffer() {
+    if (!game.level?.at)
+        return;
+    for (let x = 1; x < COLNO; x++)
+        for (let y = 0; y < ROWNO; y++)
+            if (game.level.at(x, y))
+                show_glyph_cell(x, y, ' ', NO_COLOR, false);
+}
+
+// C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
+function display_self() {
+    show_glyph_cell(game.u.ux, game.u.uy, '@', CLR_WHITE, false, 0, 'mon');
+}
+
+// C ref: display.c swallowed()
+/*
+ *  Display the hero surrounded by the monster's stomach (S_sw_tl ..
+ *  S_sw_br, shown in the swallower's color).  With symset:DECgraphics the
+ *  top/bottom centers and the sides are the line-drawing characters
+ *  (dat/symbols "DECgraphics": S_sw_tc 'o', S_sw_ml/S_sw_mr 'x', S_sw_bc 's').
+ */
+let swallow_lastx = 0, swallow_lasty = 0; /* last swallowed position */
+export async function swallowed(first) {
+    const u = game.u;
+    let left_ok, rght_ok;
+
+    if (first) {
+        await cls();
+        bot();
+    } else {
+        /* Clear old location */
+        for (let y = swallow_lasty - 1; y <= swallow_lasty + 1; y++)
+            for (let x = swallow_lastx - 1; x <= swallow_lastx + 1; x++)
+                if (isok(x, y))
+                    show_glyph_cell(x, y, ' ', NO_COLOR, false); /* GLYPH_UNEXPLORED */
+    }
+
+    const color = u.ustuck.data.mcolor; /* mon_color(swallower) */
+    const dec = /^decgraphics$/i.test(game.symset_name || '');
+    /* [S_sw_tl, S_sw_tc, S_sw_tr, S_sw_ml, S_sw_mr, S_sw_bl, S_sw_bc,
+       S_sw_br]: { ch, dec } */
+    const sym = dec
+        ? [['/', false], ['o', true], ['\\', false], ['x', true], ['x', true],
+           ['\\', false], ['s', true], ['/', false]]
+        : [['/', false], ['-', false], ['\\', false], ['|', false], ['|', false],
+           ['\\', false], ['-', false], ['/', false]];
+    const show_sw = (x, y, idx) =>
+        show_glyph_cell(x, y, sym[idx][0], color, sym[idx][1]);
+
+    /* assume isok(u.ux,u.uy) */
+    left_ok = isok(u.ux - 1, u.uy);
+    rght_ok = isok(u.ux + 1, u.uy);
+    /*
+     *  Display the hero surrounded by the monster's stomach.
+     */
+    if (isok(u.ux, u.uy - 1)) {
+        if (left_ok)
+            show_sw(u.ux - 1, u.uy - 1, 0); /* S_sw_tl */
+        show_sw(u.ux, u.uy - 1, 1);         /* S_sw_tc */
+        if (rght_ok)
+            show_sw(u.ux + 1, u.uy - 1, 2); /* S_sw_tr */
+    }
+
+    if (left_ok)
+        show_sw(u.ux - 1, u.uy, 3);         /* S_sw_ml */
+    display_self();
+    if (rght_ok)
+        show_sw(u.ux + 1, u.uy, 4);         /* S_sw_mr */
+
+    if (isok(u.ux, u.uy + 1)) {
+        if (left_ok)
+            show_sw(u.ux - 1, u.uy + 1, 5); /* S_sw_bl */
+        show_sw(u.ux, u.uy + 1, 6);         /* S_sw_bc */
+        if (rght_ok)
+            show_sw(u.ux + 1, u.uy + 1, 7); /* S_sw_br */
+    }
+
+    /* Update the swallowed position. */
+    swallow_lastx = u.ux;
+    swallow_lasty = u.uy;
 }
 
 // ── bot ──
@@ -2533,6 +2626,20 @@ export async function pline(msg) {
     if (game.u?.ux)
         await flush_screen(1); /* %% */
     await tty_putstr(game.WIN_MESSAGE, 0, msg);
+    /* this gets cleared after every pline message */
+    if (game.iflags)
+        game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
+}
+
+// C ref: pline.c urgent_pline() -- vpline() with URGENT_MESSAGE: the tty
+// (WC2_URGENT_MESG) gets the line with ATR_URGENT, which overrides a
+// pending ESC at --More-- (WIN_STOP)
+export async function urgent_pline(msg) {
+    if (game.vision_full_recalc)
+        vision_recalc(0);
+    if (game.u?.ux)
+        await flush_screen(1); /* %% */
+    await tty_putstr(game.WIN_MESSAGE, 16 /* ATR_URGENT */, msg);
     /* this gets cleared after every pline message */
     if (game.iflags)
         game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
