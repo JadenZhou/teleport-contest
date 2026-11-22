@@ -78,7 +78,8 @@ import { SCROLL_CLASS, FOOD_CLASS, GLOB_OF_GREEN_SLIME, SCR_FIRE, SPE_FIREBALL,
          WAX_CANDLE } from './objects.js';
 import { nomul } from './hack.js';
 import { stop_occupation } from './allmain.js';
-import { wakeup } from './mon.js';
+import { wakeup, monkilled, killed } from './mon.js';
+import { AD_RBRE } from './monsters.js';
 import { STONE, LAVAWALL, IRONBARS, FOUNTAIN, ICE, STRAT_WAITMASK, WEB,
          IS_ROOM, IS_WALL, In_mines, Is_airlevel, ZAP_POS, SDOOR } from './const.js';
 import { engr_at } from './engrave.js';
@@ -131,13 +132,34 @@ export function learnwand(obj) {
 // of class oclass, taking `damage' (halved if resisted); the synchronous C
 // caller can't await killed()/monkilled(), so a fatal `damage' stops
 export function resist(mtmp, oclass, damage, tell) {
+    const r = resist_core(mtmp, oclass, damage, tell);
+    if (r.dead)
+        throw new Error('resist(): killing the monster (monkilled()/killed()) not ported yet');
+    return r.resisted;
+}
+
+// C ref: zap.c resist() -- for async callers: the fatal-damage path awaits
+// monkilled()/killed()
+export async function resist_async(mtmp, oclass, damage, tell) {
+    const r = resist_core(mtmp, oclass, damage, tell);
+    if (r.dead) {
+        if (game.m_using)
+            await monkilled(mtmp, "", AD_RBRE);
+        else
+            await killed(mtmp);
+    }
+    return r.resisted;
+}
+
+/* resist() up to the DEADMONSTER() check */
+function resist_core(mtmp, oclass, damage, tell) {
     let resisted;
     let alev, dlev;
 
     /* fake players always pass resistance test against Conflict
        (this doesn't guarantee that they're never affected by it) */
     if (oclass === RING_CLASS && !damage && !tell && is_mplayer(mtmp.data))
-        return 1;
+        return { resisted: 1, dead: false };
 
     /* attack level */
     switch (oclass) {
@@ -176,12 +198,12 @@ export function resist(mtmp, oclass, damage, tell) {
         damage = Math.trunc((damage + 1) / 2);
     }
 
+    let dead = false;
     if (damage) {
         mtmp.mhp -= damage;
-        if (mtmp.mhp < 1) /* DEADMONSTER() */
-            throw new Error('resist(): killing the monster (monkilled()/killed()) not ported yet');
+        dead = mtmp.mhp < 1; /* DEADMONSTER() */
     }
-    return resisted ? 1 : 0;
+    return { resisted: resisted ? 1 : 0, dead };
 }
 
 // C ref: zap.c do_enlightenment_effect()

@@ -5,6 +5,8 @@
 // monnear(), mon_allowflags().
 
 import { game } from './gstate.js';
+import { healup_nocure } from './potion.js';
+import { mcureblindness } from './muse.js';
 import { clear_bypasses, bypass_obj } from './worn.js';
 import { rn2, rn1 } from './rng.js';
 import * as MM from './monsters.js';
@@ -2198,7 +2200,11 @@ export function kill_genocided_monsters() {
 /* heal a monster (or the hero); returns amount of hit points restored */
 export function healmon(mtmp, amt, overheal) {
     if (mtmp === game.youmonst) {
-        throw new Error('healmon(): healup() for the hero not ported yet');
+        const u = game.u;
+        const Upolyd = u.umonnum !== u.umonster;
+        const oldhp = Upolyd ? u.mh : u.uhp;
+        healup_nocure(amt, 0); /* healup(amt, 0, 0, 0) */
+        return (Upolyd ? u.mh : u.uhp) - oldhp;
     } else {
         const oldhp = mtmp.mhp;
         if (mtmp.mhp + amt > mtmp.mhpmax + overheal) {
@@ -2278,7 +2284,7 @@ export async function m_consume_obj(mtmp, otmp) {
         if (heal)
             healmon(mtmp, mtmp.mhpmax, 0);
         if ((eyes || heal) && !mtmp.mcansee)
-            throw new Error('m_consume_obj(): mcureblindness() not ported yet');
+            await mcureblindness(mtmp, canseemon(mtmp));
         if (ispet && deadmimic)
             throw new Error('m_consume_obj(): quickmimic() not ported yet');
         if (otyp === EGG && corpsenm === MM.PM_PYROLISK)

@@ -22,7 +22,8 @@ import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { pline, You, Your, You_feel, pline_The, newsym, see_monsters,
          canseemon, canspotmon, map_invisible, flush_screen, vobj_at,
          glyph_at, glyph_is_invisible, unmap_object } from './display.js';
-import { getobj, useup, obfree } from './invent.js';
+import { getobj, useup, obfree, hands_obj } from './invent.js';
+import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { can_reach_floor } from './engrave.js';
 import { GETOBJ_SUGGEST, GETOBJ_EXCLUDE, GETOBJ_EXCLUDE_NONINVENT,
          GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL, ECMD_TIME, STRANGLED,
@@ -43,7 +44,7 @@ import { TIMEOUT, CONFUSION, STUNNED, VOMITING, BLINDED, DEAF, HALLUC,
          ENL_GAMEINPROGRESS, MM_NOMSG, W_SADDLE, NOTELL, SHOPBASE, WEAK,
          LARGEST_INT, MAXULEV, G_GONE, NON_PM, COLNO, ROWNO, ARTICLE_THE,
          SUPPRESS_IT, SUPPRESS_SADDLE, STRAT_WAITFORU, STRAT_APPEARMSG,
-         LOW_PM, FACE, PROT_FROM_SHAPE_CHANGERS, Is_airlevel,
+         LOW_PM, FACE, HAND, PROT_FROM_SHAPE_CHANGERS, Is_airlevel,
          Is_waterlevel } from './const.js';
 import { toggle_blindness } from './do_wear.js';
 import { haseyes, mon_hates_blessings, is_were, is_vampshifter, dmgtype,
@@ -63,7 +64,8 @@ import { nomul, in_rooms } from './hack.js';
 import { fall_asleep } from './timeout.js';
 import { monstseesu, monstunseesu, stagger } from './uhitm.js';
 import { makemon } from './makemon.js';
-import { Tobjnam, makeplural, makesingular, vtense, an, xname } from './objnam.js';
+import { Tobjnam, makeplural, makesingular, vtense, an, xname,
+         doname } from './objnam.js';
 import { mon_nam, Monnam, x_monnam, rndmonnam } from './do_name.js';
 import { s_suffix, dist2, mungspaces } from './hacklib.js';
 import { cansee } from './vision.js';
@@ -76,7 +78,7 @@ import { shop_keeper, subfrombill } from './shk.js';
 import { tty_getlin } from './wintty.js';
 import { safe_qbuf } from './pickup.js';
 import { surface } from './iactions.js';
-import { tty_display_nhwindow } from './wintty.js';
+import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { float_vs_flight } from './polyself.js';
 
 /* C ref: youprop.h -- the property macros used here */
@@ -604,7 +606,7 @@ export async function make_deaf(xtime, talk) {
 
 // C ref: potion.c make_glib() -- set or clear "slippery fingers"
 export function make_glib(xtime) {
-    if (!Glib() !== !xtime)
+    if ((!Glib()) !== (!!xtime))
         game.disp_botl = true; /* disp.botl |= (!Glib ^ !!xtime) */
     set_itimeout(GLIB, xtime);
     /* may change "(being worn)" to "(being worn; slippery)" or vice versa;
@@ -676,14 +678,29 @@ export async function dodrink() {
     if (!game.iflags?.menu_requested) {
         const typ = game.level.at(game.u.ux, game.u.uy).typ;
         /* Is there a fountain to drink from here? */
-        if (IS_FOUNTAIN(typ) && can_reach_floor(false))
-            throw new Error('dodrink(): "Drink from the fountain?" not ported yet');
+        if (IS_FOUNTAIN(typ)
+            /* not as low as floor level but similar restrictions apply */
+            && can_reach_floor(false)) {
+            if ((await tty_yn_function("Drink from the fountain?", "yn", 'n')) === 'y') /* y_n() */
+                throw new Error('dodrink(): drinkfountain() not ported yet');
+            ++drink_ok_extra;
+        }
         /* Or a kitchen sink? */
-        if (IS_SINK(typ) && can_reach_floor(false))
-            throw new Error('dodrink(): "Drink from the sink?" not ported yet');
+        if (IS_SINK(typ)
+            /* not as low as floor level but similar restrictions apply */
+            && can_reach_floor(false)) {
+            if ((await tty_yn_function("Drink from the sink?", "yn", 'n')) === 'y') /* y_n() */
+                throw new Error('dodrink(): drinksink() not ported yet');
+            ++drink_ok_extra;
+        }
         /* Or are you surrounded by water? */
-        if (Underwater() && !game.u.uswallow)
-            throw new Error('dodrink(): drinking the water around you not ported yet');
+        if (Underwater() && !game.u.uswallow) {
+            if ((await tty_yn_function("Drink the water around you?", "yn", 'n')) === 'y') { /* y_n() */
+                await pline("Do you know what lives in this water?");
+                return ECMD_TIME;
+            }
+            ++drink_ok_extra;
+        }
     }
 
     let otmp = await getobj("drink", drink_ok, GETOBJ_NOFLAGS);
@@ -1438,8 +1455,10 @@ export async function peffects(otmp) {
     return -1;
 }
 
-// C ref: potion.c healup()
-export async function healup(nhp, nxtra, curesick, cureblind) {
+// C ref: potion.c healup() -- the hit point part, which is all that
+// healup(n, x, FALSE, FALSE) does besides setting disp.botl; the synchronous
+// C caller healmon() uses it through healup_nocure()
+function healup_hp(nhp, nxtra) {
     const u = game.u;
     if (nhp) {
         if (Upolyd()) {
@@ -1455,6 +1474,16 @@ export async function healup(nhp, nxtra, curesick, cureblind) {
             }
         }
     }
+}
+// C ref: potion.c healup(nhp, nxtra, FALSE, FALSE) -- nothing to await
+export function healup_nocure(nhp, nxtra) {
+    healup_hp(nhp, nxtra);
+    game.disp_botl = true;
+}
+
+// C ref: potion.c healup()
+export async function healup(nhp, nxtra, curesick, cureblind) {
+    healup_hp(nhp, nxtra);
     if (cureblind) {
         /* 3.6.1: it's debatable whether healing magic should clean off
            mundane 'dirt', but if it doesn't, blindness isn't cured */
@@ -2233,5 +2262,74 @@ export async function dodip() {
         return ECMD_CANCEL;
     if (inaccessible_equipment(obj, "dip", false))
         return ECMD_OK;
-    throw new Error('dodip(): dipping (the potion/fountain/pool/sink prompts) not ported yet');
+
+    const is_hands = (obj === hands_obj);
+    const shortestname = (is_hands || dip_is_plural(obj) || dip_pair_of(obj))
+                         ? "them" : "it";
+    drink_ok_extra = 0;
+    /*
+     * Bypass safe_qbuf() since it doesn't handle varying suffix without
+     * an awful lot of support work.  Format the object once.
+     * getobj: "What do you want to dip <the object> into? [xyz or ?*] "
+     */
+    let obuf;
+    if (is_hands) {
+        obuf = `your ${makeplural(body_part(HAND))}`;
+    } else {
+        /* short_oname(obj, doname, thesimpleoname, QBUFSZ - sizeof "What do
+           you want to dip into? [abdeghjkmnpqstvwyzBCEFHIKLNOQRTUWXZ#-# or
+           ?*] ") -- only the case where doname() fits is ported */
+        obuf = doname(obj);
+        if (obuf.length > 128 - 78)
+            throw new Error('dodip(): short_oname() shortening not ported yet');
+    }
+    const verbose = game.flags.verbose;
+
+    /* preceding #dip with 'm' skips the possibility of dipping into pools,
+       fountains, and sinks plus the extra prompting which those entail */
+    if (!game.iflags.menu_requested) {
+        /* Is there a fountain to dip into here? */
+        if (!can_reach_floor(false)) {
+            ; /* can't dip something into fountain or pool if can't reach */
+        } else if (at_fountain) {
+            /* "Dip <the object> into the fountain?" */
+            if ((await tty_yn_function(`Dip ${verbose ? obuf : shortestname
+                                       } into the fountain?`, "yn", 'n')) === 'y') /* y_n() */
+                throw new Error('dodip(): dipfountain() not ported yet');
+            ++drink_ok_extra;
+        } else if (at_sink) {
+            if ((await tty_yn_function(`Dip ${verbose ? obuf : shortestname
+                                       } into the sink?`, "yn", 'n')) === 'y') /* y_n() */
+                throw new Error('dodip(): dipsink() not ported yet');
+            ++drink_ok_extra;
+        } else if (at_pool) {
+            /* waterbody_name(), "Dip <the object> into the {pool, moat, &c}?",
+               wash_hands(), water_damage() */
+            throw new Error('dodip(): dipping into a pool not ported yet');
+        }
+    }
+
+    /* "What do you want to dip <the object> into? [xyz or ?*] " */
+    const potion = await getobj(`dip ${verbose ? obuf : shortestname} into`,
+                                drink_ok, GETOBJ_NOFLAGS);
+    if (!potion)
+        return ECMD_CANCEL;
+    void potion;
+    throw new Error('dodip(): potion_dip() not ported yet');
+}
+
+/* C ref: obj.h is_plural() (undiscovered_artifact() isn't ported),
+   objnam.c pair_of() */
+function dip_is_plural(o) {
+    if (o.quan !== 1)
+        return true;
+    if (o.oartifact === ART_EYES_OF_THE_OVERWORLD)
+        throw new Error('is_plural(): undiscovered_artifact() not ported yet');
+    return false;
+}
+function dip_pair_of(o) {
+    return (o.otyp === O.LENSES
+            || (o.oclass === O.ARMOR_CLASS
+                && (objects[o.otyp].oc_armcat === O.ARM_GLOVES
+                    || objects[o.otyp].oc_armcat === O.ARM_BOOTS)));
 }
