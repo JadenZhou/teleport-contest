@@ -1011,6 +1011,75 @@ export function Ring_on(obj) {
     }
 }
 
+// C ref: do_wear.c Ring_off_or_gone()
+async function Ring_off_or_gone(obj, gone) {
+    const g = game;
+    const mask = (obj.owornmask & W_RING);
+
+    if (g.context.takeoff)
+        g.context.takeoff.mask &= ~mask;
+    /* if (!(u.uprops[objects[obj->otyp].oc_oprop].extrinsic & mask))
+           impossible("Strange... I didn't know you had that ring."); */
+    if (gone)
+        setnotworn_dw(obj);
+    else
+        setworn(null, obj.owornmask);
+
+    switch (obj.otyp) {
+    case O.RIN_TELEPORTATION:
+    case O.RIN_REGENERATION:
+    case O.RIN_SEARCHING:
+    case O.RIN_HUNGER:
+    case O.RIN_AGGRAVATE_MONSTER:
+    case O.RIN_POISON_RESISTANCE:
+    case O.RIN_FIRE_RESISTANCE:
+    case O.RIN_COLD_RESISTANCE:
+    case O.RIN_SHOCK_RESISTANCE:
+    case O.RIN_CONFLICT:
+    case O.RIN_TELEPORT_CONTROL:
+    case O.RIN_POLYMORPH:
+    case O.RIN_POLYMORPH_CONTROL:
+    case O.RIN_FREE_ACTION:
+    case O.RIN_SLOW_DIGESTION:
+    case O.RIN_SUSTAIN_ABILITY:
+    case O.MEAT_RING:
+        break;
+    case O.RIN_STEALTH: {
+        const st = g.u.uprops[STEALTH];
+        await toggle_stealth(obj, ((st ? st.extrinsic : 0) & ~mask), false);
+        break;
+    }
+    case O.RIN_INCREASE_ACCURACY: /* KMH */
+        g.u.uhitinc -= obj.spe;
+        break;
+    case O.RIN_INCREASE_DAMAGE:
+        g.u.udaminc -= obj.spe;
+        break;
+    case O.RIN_PROTECTION: {
+        /* might have been put on while blind and we can now see
+           or perhaps been forgotten due to amnesia */
+        const observable = (obj.spe !== 0);
+        learnring(obj, observable);
+        if (obj.spe)
+            find_ac(); /* updates botl */
+        break;
+    }
+    default:
+        throw new Error('Ring_off_or_gone(): this ring\'s effect is not ported yet');
+    }
+}
+
+// C ref: do_wear.c Ring_off()
+export async function Ring_off(obj) {
+    await Ring_off_or_gone(obj, false);
+}
+
+// C ref: do_wear.c Ring_gone()
+export async function Ring_gone(obj) {
+    await Ring_off_or_gone(obj, true);
+}
+import { setnotworn as setnotworn_dw } from './worn.js';
+
 // C ref: do_wear.c set_wear() -- called in moveloop()'s prologue to set
 // side-effects of worn start-up items; also used by poly_obj() when a
 // worn item gets transformed
@@ -2008,7 +2077,7 @@ async function armor_or_accessory_off(obj) {
          * "being worn".
          */
         await off_msg(obj);
-        throw new Error('armor_or_accessory_off(): Ring_off() not ported yet');
+        await Ring_off(obj);
     } else if (obj === g.uamul) {
         await Amulet_off(); /* does its own off_msg */
     } else if (obj === g.ublindf) {
