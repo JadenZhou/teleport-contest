@@ -52,7 +52,7 @@ import { m_consume_obj } from './mon.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
-import { noteleport_level, tele_restrict, rloc } from './teleport.js';
+import { noteleport_level, tele_restrict, rloc, mnexto } from './teleport.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -1696,8 +1696,15 @@ export async function m_move(mtmp, after) {
     }
 
     /* teleport if that lies in our nature */
-    if (ptr === mons[M.PM_TENGU] && !rn2(5) && !mtmp.mcan)
-        throw new Error('m_move(): tengu rloc() not ported yet');
+    if (ptr === mons[M.PM_TENGU] && !rn2(5) && !mtmp.mcan
+        && !(await tele_restrict(mtmp))) {
+        if (mtmp.mhp < 7 || mtmp.mpeaceful || rn2(2))
+            await rloc(mtmp, RLOC_MSG);
+        else
+            await mnexto(mtmp, RLOC_MSG);
+        return await postmov(mtmp, ptr, omx, omy, MMOVE_MOVED,
+                             seenflgs, can_tunnel, can_unlock, can_open);
+    }
     } /* !mtmp->wormno */
 
     /* not_special: */
