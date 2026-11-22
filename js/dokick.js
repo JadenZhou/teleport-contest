@@ -53,6 +53,10 @@ import { closed_door } from './makemon.js';
 import { Norep, Your, pline_The } from './display.js';
 import { singular, doname, The, distant_name, xname, otense } from './objnam.js';
 import { breakchestlock } from './lock.js';
+import { addtobill } from './shk.js';
+import { flooreffects, impact_disturbs_zombies } from './do.js';
+import { place_object } from './mkobj.js';
+import { stackobj } from './invent.js';
 
 /* C ref: youprop.h -- the hero's properties used by the kick code */
 function uprop(p) {
@@ -667,7 +671,29 @@ async function really_kick_object(x, y) {
                 await pline(`${The(distant_name(kobj, xname))} ${otense(kobj, "do")}n't come loose.`);
             return (!rn2(3) || martial()) ? 1 : 0;
         }
-        throw new Error('really_kick_object(): an embedded object coming loose not ported yet');
+        if (Blind())
+            await pline("It comes loose.");
+        else
+            await pline(`${The(distant_name(kobj, xname))} ${otense(kobj, "come")} loose.`);
+        obj_extract_self(kobj);
+        newsym(x, y);
+        /* strchr(u.urooms, '\0') finds the terminator, so an empty
+           in_rooms() result counts as found */
+        const r0 = in_rooms(x, y, SHOPBASE).charAt(0);
+        if (costly && (!costly_spot(u.ux, u.uy)
+                       || !(r0 === '' || (u.urooms || '').includes(r0)))) {
+            if (!kobj.no_charge)
+                await addtobill(kobj, false, false, false);
+            else /* don't leave no_charge set when outside shop */
+                kobj.no_charge = 0;
+        }
+        if (!(await flooreffects(kobj, u.ux, u.uy, "fall"))) {
+            place_object(kobj, u.ux, u.uy);
+            impact_disturbs_zombies(kobj, true);
+            stackobj(kobj);
+            newsym(u.ux, u.uy);
+        }
+        return 1;
     }
 
     /* a box gets a chance of breaking open here */
