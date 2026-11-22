@@ -42,15 +42,7 @@ import {
     DISCLOSE_PROMPT_DEFAULT_SPECIAL, DISCLOSE_YES_WITHOUT_PROMPT,
     DISCLOSE_NO_WITHOUT_PROMPT, DISCLOSE_SPECIAL_WITHOUT_PROMPT,
 } from './const.js';
-import { lowc, visctrl } from './hacklib.js';
-import { tty_putstr } from './wintty.js';
-import { MENU_SELECT_ALL, MENU_SELECT_PAGE, MENU_INVERT_ALL, MENU_INVERT_PAGE,
-         MENU_UNSELECT_ALL, MENU_UNSELECT_PAGE, MENU_NEXT_PAGE,
-         MENU_PREVIOUS_PAGE, MENU_FIRST_PAGE, MENU_LAST_PAGE,
-         MENU_SEARCH } from './const.js';
-/* C ref: wintype.h MENU_SHIFT_RIGHT, MENU_SHIFT_LEFT */
-const MENU_SHIFT_RIGHT = '}';
-const MENU_SHIFT_LEFT = '{';
+import { lowc } from './hacklib.js';
 import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, add_menu_str,
@@ -2432,96 +2424,4 @@ async function choose_classes_menu(prompt, category, way, class_list, class_sele
         ret = 0;
     }
     return { ret, class_select };
-}
-
-// C ref: options.c get_menu_cmd_key()
-/* Get the key bound to a menu command.  The mapped menu commands come
-   from menu command aliases (add_menu_cmd_alias(), not ported yet:
-   parsebindings() stops before adding one), so the mapping is empty
-   and every menu command is bound to its default key. */
-export function get_menu_cmd_key(ch) {
-    const mapped_menu_op = ''; /* gm.mapped_menu_op */
-    const found = mapped_menu_op.indexOf(ch);
-
-    if (found >= 0)
-        throw new Error('get_menu_cmd_key(): mapped menu commands not ported yet');
-    return ch;
-}
-
-/* C sprintf "%Ns" / "%-Ns" */
-function fmt_r(str, n) { return String(str).padStart(n); }
-function fmt_l(str, n) { return String(str).padEnd(n); }
-
-// C ref: options.c show_menu_controls()
-/* used by both '?i' and '?k' */
-export function show_menu_controls(win, dolist) {
-    const hardcoded = [
-        { key: "Return", desc: "Accept current choice(s) and dismiss menu" },
-        { key: "Enter",  desc: "Same as Return" },
-        { key: "Space",  desc: "If not on last page, advance one page;" },
-        { key: "     ",  desc: "when on last page, treat like Return" },
-        { key: "Escape", desc: "Cancel menu without making any choice(s)" },
-    ];
-    /* mc_fmt[] = "%8s     %-6s %s", mc_altfmt[] = "%9s  %-6s %s" */
-    const mc_fmt = (a, b, c) => `${fmt_r(a, 8)}     ${fmt_l(b, 6)} ${c}`;
-    const mc_altfmt = (a, b, c) => `${fmt_r(a, 9)}  ${fmt_l(b, 6)} ${c}`;
-    let fmt, arg;
-    const has_menu_shift = wc2_supported("menu_shift");
-
-    /*
-     * Relies on spaces to line things up in columns, so must be rendered
-     * with a fixed-width font or will look dreadful.
-     */
-
-    tty_putstr(win, 0, "Menu control keys:");
-    if (dolist) { /* key bindings help: '?i' */
-        throw new Error('show_menu_controls(): key bindings list (default_menu_cmd_info[]) not ported yet');
-    } else { /* menu controls help: '?k' */
-        tty_putstr(win, 0, "");
-        tty_putstr(win, 0, mc_altfmt("", "Whole", "Current"));
-        tty_putstr(win, 0, mc_altfmt("", " Menu", " Page"));
-        tty_putstr(win, 0, mc_fmt("Select",
-                                  visctrl(get_menu_cmd_key(MENU_SELECT_ALL)),
-                                  visctrl(get_menu_cmd_key(MENU_SELECT_PAGE))));
-        tty_putstr(win, 0, mc_fmt("Invert",
-                                  visctrl(get_menu_cmd_key(MENU_INVERT_ALL)),
-                                  visctrl(get_menu_cmd_key(MENU_INVERT_PAGE))));
-        tty_putstr(win, 0, mc_fmt("Deselect",
-                                  visctrl(get_menu_cmd_key(MENU_UNSELECT_ALL)),
-                                  visctrl(get_menu_cmd_key(MENU_UNSELECT_PAGE))));
-        tty_putstr(win, 0, "");
-        tty_putstr(win, 0, mc_fmt("Go to",
-                                  visctrl(get_menu_cmd_key(MENU_NEXT_PAGE)),
-                                  "Next page"));
-        tty_putstr(win, 0, mc_fmt("",
-                                  visctrl(get_menu_cmd_key(MENU_PREVIOUS_PAGE)),
-                                  "Previous page"));
-        tty_putstr(win, 0, mc_fmt("",
-                                  visctrl(get_menu_cmd_key(MENU_FIRST_PAGE)),
-                                  "First page"));
-        tty_putstr(win, 0, mc_fmt("",
-                                  visctrl(get_menu_cmd_key(MENU_LAST_PAGE)),
-                                  "Last page"));
-        if (has_menu_shift) {
-            tty_putstr(win, 0, mc_fmt("Pan view",
-                                      visctrl(get_menu_cmd_key(MENU_SHIFT_RIGHT)),
-                                      "Right (perm_invent only)"));
-            tty_putstr(win, 0, mc_fmt("",
-                                      visctrl(get_menu_cmd_key(MENU_SHIFT_LEFT)),
-                                      "Left"));
-        }
-        tty_putstr(win, 0, "");
-        tty_putstr(win, 0, mc_fmt("Search",
-                                  visctrl(get_menu_cmd_key(MENU_SEARCH)),
-                                  "Exter a target string and invert all matching entries"));
-        /* separator before hardcoded */
-        tty_putstr(win, 0, "");
-        /* fmt = "%9s  %-8s %s" */
-        fmt = (a, b, c) => `${fmt_r(a, 9)}  ${fmt_l(b, 8)} ${c}`;
-        arg = "Other "; /* prefix for first hardcoded[] entry, then reset */
-    }
-    for (const xcp of hardcoded) {
-        tty_putstr(win, 0, fmt(arg, xcp.key, xcp.desc));
-        arg = "";
-    }
 }
