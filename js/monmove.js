@@ -41,7 +41,8 @@ import { find_defensive, find_offensive, find_misc, use_defensive,
 import { mattacku } from './mhitu.js';
 import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
-import { Is_rogue_level } from './const.js';
+import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
+import { mattackm } from './mhitm.js';
 import { obj_resists } from './dogmove.js';
 import { touch_artifact } from './artifact.js';
 import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
@@ -1059,6 +1060,47 @@ export function m_avoid_kicked_loc(mtmp, nx, ny) {
     return false;
 }
 
+// ── C ref: monmove.c m_move_aggress() ──
+/* The part of m_move that deals with a monster attacking another monster
+   (and that monster possibly retaliating).
+   Extracted into its own function so that it can be called with monsters
+   that have special move patterns (shopkeepers, priests, etc) that want
+   to attack other monsters but aren't just roaming freely around the
+   level (so allowing m_move to run fully for them could select an
+   invalid move).
+   x and y are the coordinates mtmp wants to attack.
+   Return values are the same as for m_move, but this function only return
+   MMOVE_DIED or MMOVE_DONE. */
+async function m_move_aggress(mtmp, x, y) {
+    let mtmp2;
+    let mstatus = 0; /* M_ATTK_MISS */
+
+    mtmp2 = m_at(x, y);
+    if (mtmp2) {
+        game.bhitpos = { x, y };
+        game.notonhead = (x !== mtmp2.mx || y !== mtmp2.my);
+        mstatus = await mattackm(mtmp, mtmp2);
+    }
+
+    if ((mstatus & M_ATTK_AGR_DIED) || mtmp.mhp < 1) /* aggressor died */
+        return MMOVE_DIED;
+
+    if ((mstatus & (M_ATTK_HIT | M_ATTK_DEF_DIED)) === M_ATTK_HIT
+        && rn2(4) && mtmp2.movement > rn2(NORMAL_SPEED)) {
+        if (mtmp2.movement > NORMAL_SPEED)
+            mtmp2.movement -= NORMAL_SPEED;
+        else
+            mtmp2.movement = 0;
+        game.bhitpos = { x: mtmp.mx, y: mtmp.my };
+        game.notonhead = false;
+        mstatus = await mattackm(mtmp2, mtmp); /* return attack */
+        /* note: at this point, defender is the original (moving) aggressor */
+        if (mstatus & M_ATTK_DEF_DIED)
+            return MMOVE_DIED;
+    }
+    return MMOVE_DONE;
+}
+
 // ── C ref: mon.c meatmetal() ──
 /* for rust monsters and rock moles: eats the topmost metal object on the
    monster's spot; returns 0 if nothing eaten, 1 if something eaten,
@@ -1953,7 +1995,7 @@ export async function m_move(mtmp, after) {
          */
         if ((mfp.info[chi] & ALLOW_M) !== 0
             || (nix === mtmp.mux && niy === mtmp.muy))
-            throw new Error('m_move(): m_move_aggress() not ported yet');
+            return await m_move_aggress(mtmp, nix, niy);
 
         if ((mfp.info[chi] & ALLOW_MDISP) !== 0)
             throw new Error('m_move(): mdisplacem() not ported yet');
