@@ -37,7 +37,7 @@ import { record_achievement } from './do.js';
 import { can_make_bones, savebones } from './bones.js';
 import { paybill, finish_paybill } from './shk.js';
 import { discover_object } from './o_init.js';
-import { Is_container } from './mkobj.js';
+import { Is_container, place_object } from './mkobj.js';
 import { deepest_lev_reached, depth, dunlev, on_level } from './dungeon.js';
 import { money_cnt } from './u_init.js';
 import { hidden_gold, currency, enlightenment, list_vanquished,
@@ -45,7 +45,7 @@ import { hidden_gold, currency, enlightenment, list_vanquished,
 import { keepdogs } from './dog.js';
 import { Goodbye } from './role.js';
 import { inven_inuse } from './restore.js';
-import { useup, display_inventory, carrying } from './invent.js';
+import { useup, display_inventory, carrying, stackobj } from './invent.js';
 import { adjattrib, ACURR, minuhpmax, setuhpmax } from './attrib.js';
 import { init_uhunger } from './eat.js';
 import { paranoid_query } from './cmd.js';
@@ -441,11 +441,18 @@ export async function done_object_cleanup() {
     ox = u.ux + (u.dx || 0), oy = u.uy + (u.dy || 0);
     if (!isok(ox, oy) || !accessible(ox, oy))
         ox = u.ux, oy = u.uy;
-    void ox; void oy;
-    /* put thrown or kicked object on map (for bones) */
-    if ((g.thrownobj && (!g.thrownobj.where || g.thrownobj.where === 'OBJ_FREE'))
-        || (g.kickedobj && (!g.kickedobj.where || g.kickedobj.where === 'OBJ_FREE')))
-        throw new Error('done_object_cleanup(): placing a thrown/kicked object not ported yet');
+    /* put thrown or kicked object on map (for bones); location might
+       be incorrect (perhaps killed by divine lightning when throwing at
+       a temple priest?) but this should be better than just vanishing
+       (fragile stuff should be taken care of before getting here) */
+    if (g.thrownobj && (!g.thrownobj.where || g.thrownobj.where === 'OBJ_FREE')) {
+        place_object(g.thrownobj, ox, oy);
+        stackobj(g.thrownobj), g.thrownobj = null;
+    }
+    if (g.kickedobj && (!g.kickedobj.where || g.kickedobj.where === 'OBJ_FREE')) {
+        place_object(g.kickedobj, ox, oy);
+        stackobj(g.kickedobj), g.kickedobj = null;
+    }
     /* if Punished hero dies during level change or dies or quits while
        swallowed, uball and uchain will be in limbo; put them on floor
        so bones will have them and object list cleanup finds them */
