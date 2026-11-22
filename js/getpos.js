@@ -305,7 +305,12 @@ export async function getpos(ccp, force, goal) {
                 show_goal_msg = true;
             msg_given = true;
             /* goto nxtc */
-        } else if ("?\x12$\"!*mMoOdDxXaAzZ".includes(ch)) {
+        } else if (c === 0x24) { /* gc.Cmd.spkeys[NHKF_GETPOS_SHOWVALID] '$' */
+            if (gp().hilitefunc)
+                throw new Error('getpos(): getpos_toggle_hilite_state() not ported yet');
+            show_goal_msg = true; /* we're still targeting */
+            /* goto nxtc */
+        } else if ("?\x12\"!*mMoOdDxXaAzZ".includes(ch)) {
             throw new Error(`getpos(): key '${ch}' not ported yet`);
         } else {
             /* !strchr(quitchars, c): the quitchars were handled above */
