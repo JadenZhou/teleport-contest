@@ -10,6 +10,7 @@
 import { game } from './gstate.js';
 import { pline, pline_The, docrt, flush_screen } from './display.js';
 import { You_hear } from './sounds.js';
+import { olfaction } from './mondata.js';
 import { ACH_HELL } from './const.js';
 import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
@@ -736,7 +737,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         }
     }
 
-    temperature_change_msg(prev_temperature);
+    await temperature_change_msg(prev_temperature);
 
     /* this was originally done earlier; moved here to be logged after
        any achievement related to entering a dungeon branch */
@@ -784,10 +785,28 @@ export async function maybe_lvltport_feedback() {
     }
 }
 
+// C ref: do.c hellish_smoke_mesg()
+export async function hellish_smoke_mesg() {
+    const temperature = game.level.flags.temperature || 0;
+    if (temperature)
+        await pline(`It is ${temperature > 0 ? "hot" : "cold"} here.`);
+
+    if (In_hell(game.u.uz) && temperature > 0)
+        await You(`${olfaction(game.youmonst.data) ? "smell" : "sense"} smoke...`);
+}
+
 // C ref: do.c temperature_change_msg()
-function temperature_change_msg(prev_temperature) {
-    if (prev_temperature !== (game.level.flags?.temperature || 0))
-        throw new Error('temperature_change_msg(): hot/cold level messages not ported yet');
+/* give a message when the level temperature is different from previous */
+async function temperature_change_msg(prev_temperature) {
+    const temperature = game.level.flags.temperature || 0;
+    if (prev_temperature !== temperature) {
+        if (temperature)
+            await hellish_smoke_mesg();
+        else if (prev_temperature > 0)
+            await pline_The(`heat ${In_hell(game.u.uz0) ? "and smoke are" : "is"} gone.`);
+        else if (prev_temperature < 0)
+            await You("are out of the cold.");
+    }
 }
 
 // C ref: insight.c record_achievement() -- the achievement list is only

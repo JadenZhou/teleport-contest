@@ -838,3 +838,25 @@ export function get_atkdam_type(adtyp) {
     }
     return adtyp;
 }
+
+// C ref: mondata.c olfaction()
+/*
+ * Returns:
+ *      True if monster is presumed to have a sense of smell.
+ *      False if monster definitely does not have a sense of smell.
+ *
+ * Do not base this on presence of a head or nose, since many
+ * creatures sense smells other ways (feelers, forked-tongues, etc).
+ * We're assuming all insects can smell at a distance too.
+ */
+export function olfaction(mdat) {
+    if (mdat.mlet === M.S_GOLEM /* is_golem(mdat) */
+        || mdat.mlet === M.S_EYE /* spheres  */
+        || mdat.mlet === M.S_JELLY || mdat.mlet === M.S_PUDDING
+        || mdat.mlet === M.S_BLOB || mdat.mlet === M.S_VORTEX
+        || mdat.mlet === M.S_ELEMENTAL
+        || mdat.mlet === M.S_FUNGUS /* mushrooms and fungi */
+        || mdat.mlet === M.S_LIGHT)
+        return false;
+    return true;
+}

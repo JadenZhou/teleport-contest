@@ -65,7 +65,8 @@ import {
     mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
     CORPSTAT_INIT, weight, add_to_container, mk_tt_object,
 } from './mkobj.js';
-import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon } from './makemon.js';
+import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon, is_pool,
+         is_lava } from './makemon.js';
 import { priestini } from './priest.js';
 import { dist2, distmin } from './hacklib.js';
 import { del_engr_at } from './engrave.js';
@@ -2137,12 +2138,16 @@ export function somexy(croom, c) {
 }
 
 // C ref: mklev.c occupied()
-function occupied(x, y) {
-    const typ = game.level.at(x, y).typ;
-    /* invocation_pos(x, y): the invocation level isn't generated yet */
-    return !!(t_at(x, y) || IS_FURNITURE(typ)
-              || typ === LAVAPOOL || typ === LAVAWALL /* is_lava() */
-              || IS_POOL(typ) /* is_pool() */);
+export function occupied(x, y) {
+    return !!(t_at(x, y) || IS_FURNITURE(game.level.at(x, y).typ)
+              || is_lava(x, y) || is_pool(x, y)
+              || invocation_pos(x, y));
+}
+
+// C ref: hack.c invocation_pos()
+export function invocation_pos(x, y) {
+    return (Invocation_lev(game.u.uz)
+            && x === game.inv_pos?.x && y === game.inv_pos?.y);
 }
 
 function somexyspace(croom, c) {
