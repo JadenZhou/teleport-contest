@@ -1774,7 +1774,10 @@ function _statusLine2() {
     /* BL_LEVELDESC: describe_level(buf, 1), with wintty.c's
        tty_status_update() suppressing its trailing blanks */
     const leveldesc = describe_level(1)[1].replace(/ +$/, '');
-    const line = `${leveldesc} $:${Math.min(money_cnt(game.invent), 999999)} HP:${u.uhp || 0}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
+    /* botl.c bot_via_windowport(): BL_HP is u.uhp, but not below 0
+       (gameover sets u.uhp to -1) */
+    const hpval = Math.max(u.uhp || 0, 0);
+    const line = `${leveldesc} $:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
     /* make_things_fit(): shrinking or truncating an overlong line */
     if (line.length > 79)
         throw new Error('_statusLine2(): make_things_fit() shrinking not ported yet');

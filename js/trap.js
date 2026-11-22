@@ -62,6 +62,9 @@ import { linedup } from './monmove.js';
 import { xdir, ydir, N_DIRS, ZAP_POS, is_xport } from './const.js';
 import { mongone, wake_nearto } from './mon.js';
 import { newsym, pline } from './display.js';
+import { done } from './end.js';
+import { killer } from './topten.js';
+import { DIED } from './const.js';
 import { cansee, couldsee } from './vision.js';
 import { m_in_air } from './monmove.js';
 import { canseemon } from './display.js';
@@ -281,10 +284,9 @@ export function Maybe_Half_Phys(dmg) {
 /* C ref: pline.c You_feel() -- Unaware dreaming isn't reached here */
 async function You_feel(line) { await pline(`You feel ${line}`); }
 
-// C ref: hack.c losehp() -- the not-polymorphed, surviving case
+// C ref: hack.c losehp() -- the not-polymorphed case
 export async function losehp(n, knam, k_format) {
     const u = game.u;
-    void knam; void k_format;
     game.disp_botl = true; /* u.uhp or u.mh is changing */
     end_running(true);
     if (Upolyd())
@@ -294,9 +296,13 @@ export async function losehp(n, knam, k_format) {
     /* showdamage(n): the showdamage option isn't ported (default off) */
     if (u.uhp > u.uhpmax)
         u.uhpmax = u.uhp; /* perhaps n was negative */
-    if (u.uhp < 1)
-        throw new Error('losehp(): death (done(DIED)) not ported yet');
-    else if (n > 0 && u.uhp * 10 < u.uhpmax)
+    if (u.uhp < 1) {
+        killer().format = k_format;
+        if (killer().name !== knam) /* the thing that killed you */
+            killer().name = knam ? knam : "";
+        await pline("You die..."); /* urgent_pline() */
+        await done(DIED);
+    } else if (n > 0 && u.uhp * 10 < u.uhpmax)
         throw new Error('losehp(): maybe_wail() not ported yet');
 }
 
