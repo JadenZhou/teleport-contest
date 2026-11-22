@@ -4,6 +4,7 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { poly_gender } from './polyself.js';
 import { stop_occupation } from './allmain.js';
 import { game } from './gstate.js';
 import { rn2, rnd, d, AC_VALUE } from './rng.js';
@@ -151,12 +152,6 @@ function m_next2u(mon) {
 }
 /* C ref: mondata.h gender() / pronoun_gender() subset */
 function gender(mon) { return mon.female ? 1 : 0; }
-/* C ref: polyself.c poly_gender() */
-function poly_gender() {
-    if (Upolyd())
-        throw new Error('poly_gender(): polymorphed hero not ported yet');
-    return game.flags.female ? 1 : 0;
-}
 
 /* C ref: obj.h is_pole(), is_art() */
 function is_art(o, art) { return !!(o && o.oartifact === art); }
