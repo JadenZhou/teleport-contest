@@ -2208,7 +2208,7 @@ export async function selftouch(arg) {
 }
 
 // C ref: trap.c mselftouch()
-async function mselftouch(mon, arg, byplayer) {
+export async function mselftouch(mon, arg, byplayer) {
     const mwep = mon.mw; /* MON_WEP(mon) */
 
     if (mwep && mwep.otyp === CORPSE
