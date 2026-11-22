@@ -28,6 +28,7 @@ import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_M
          M_AP_FURNITURE, WARNCOUNT, def_warnsyms, In_mines, In_sokoban,
          Is_knox_level, M_AP_NOTHING, M_AP_OBJECT, M_AP_MONSTER, M_AP_TYPE,
          PROT_FROM_SHAPE_CHANGERS, MCORPSENM, ACCESSIBLE } from './const.js';
+import { ROGUESET } from './const.js';
 import { visible_region_at, show_region } from './region.js';
 import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
@@ -80,12 +81,53 @@ const DEF_CMAP_FOR_DEC = {
     'u': '|', 't': '|',                     /* S_tlwall, S_trwall */
 };
 
+// C ref: symbols.c assign_graphics() -- gc.currentgraphics; the DECgraphics
+// symset is the primary one, while the Rogue level shows the rogue symset
+// (symbols.c init_rogue_symbols(): no DEC line drawing)
+function dec_symset() {
+    return /^decgraphics$/i.test(game.symset_name || '')
+           && game.currentgraphics !== ROGUESET;
+}
+
+// C ref: drawing.c def_r_oc_syms[] -- object class symbols of the rogue symset
+const def_r_oc_syms = [
+    '\0', ']' /* ILLOBJ_SYM */, ')', ']', /* armor */
+    '=',
+    ',', /* amulet */
+    '(', ':', /* food */
+    '!', '?',
+    '+', '/',
+    '*', /* gold -- yes it's the same as gems */
+    '*', '`',
+    '0', '_', '.',
+];
+
+// C ref: symbols.c init_rogue_symbols() and display.c reset_glyphmap() --
+// on the Rogue level (gc.currentgraphics == ROGUESET) a map cell uses the
+// rogue symset: the default cmap symbols except '+' for doorways and
+// '%' for stairs, def_r_oc_syms[] for objects, and no color (no
+// H_IBM symset handling)
+function rogue_cell_ch(ch, decgfx, kind, gid) {
+    if (kind === 'obj' && gid && gid.otyp !== undefined && gid.otyp !== null)
+        return def_r_oc_syms[objects[gid.otyp].oc_class];
+    if (gid && gid.cmapidx !== undefined && gid.cmapidx !== null) {
+        const i = gid.cmapidx;
+        if (i === 12 || i === 13 || i === 14) /* S_ndoor, S_vodoor, S_hodoor */
+            return '+';
+        if (i === 25 || i === 26) /* S_upstair, S_dnstair */
+            return '%';
+    }
+    if (decgfx)
+        return DEF_CMAP_FOR_DEC[ch] ?? ch;
+    return ch;
+}
+
 // ── Terrain to display character + color + DEC flag ──
 // With symset:DECgraphics the DEC line-drawing glyphs are used;
 // otherwise the default symbols.
 function terrain_glyph(loc, x, y) {
     const tg = terrain_glyph_dec(loc, x, y);
-    if (tg.dec && !/^decgraphics$/i.test(game.symset_name || ''))
+    if (tg.dec && !dec_symset())
         /* the default symset doesn't color the branch wall variants */
         return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch,
                  color: tg.wall ? NO_COLOR : tg.color, dec: false,
@@ -142,7 +184,7 @@ export function cmap_to_glyph(sym) {
     default:
         throw new Error(`cmap_to_glyph(): cmap symbol ${sym} not ported yet`);
     }
-    if (tg.dec && !/^decgraphics$/i.test(game.symset_name || ''))
+    if (tg.dec && !dec_symset())
         tg = { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch,
                color: tg.wall ? NO_COLOR : tg.color, dec: false };
     return { ch: tg.ch, color: tg.color, decgfx: tg.dec, cmap: CMAP_NAMES[sym],
@@ -781,6 +823,11 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
                                 kind = 'cmap', objpile = false, gid = null) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
+    if (game.currentgraphics === ROGUESET) {
+        ch = rogue_cell_ch(ch, decgfx, kind, gid);
+        decgfx = false;
+        color = NO_COLOR;
+    }
     loc.disp_ch = ch;
     loc.disp_color = color;
     loc.disp_decgfx = !!decgfx;
@@ -1700,7 +1747,7 @@ export function zapdir_to_glyph(dx, dy, beam_type) {
         beam_type = 0;
     }
     dx = (dx === dy) ? 2 : (dx && dy) ? 3 : dx ? 1 : 0;
-    const dec = /^decgraphics$/i.test(game.symset_name || '') && dx < 2;
+    const dec = dec_symset() && dx < 2;
     const ch = dec ? ['x', 'q'][dx] : ['|', '-', '\\', '/'][dx];
     return { ch, color: zapcolors[beam_type], decgfx: dec, kind: 'zap',
              cmapidx: 74 /* S_vbeam */ + dx };
@@ -1712,7 +1759,7 @@ export function zapdir_to_glyph(dx, dy, beam_type) {
 export function explosion_to_glyph(expltype, idx) {
     const asc = ['/', '-', '\\', '|', ' ', '|', '\\', '-', '/'];
     const decs = [null, 'o', null, 'x', null, 'x', null, 's', null];
-    const dec = /^decgraphics$/i.test(game.symset_name || '') && !!decs[idx];
+    const dec = dec_symset() && !!decs[idx];
     return { ch: dec ? decs[idx] : asc[idx], color: explodecolors[expltype],
              decgfx: dec, kind: 'explode', cmapidx: 96 /* S_expl_tl */ + idx };
 }
@@ -2301,7 +2348,10 @@ function _statusLine2() {
     /* botl.c bot_via_windowport(): BL_HP is u.uhp, but not below 0
        (gameover sets u.uhp to -1) */
     const hpval = Math.max(u.uhp || 0, 0);
-    const line = `${leveldesc} $:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
+    /* encglyph(objnum_to_glyph(GOLD_PIECE)): the gold symbol of the current
+       symset */
+    const goldsym = (game.currentgraphics === ROGUESET) ? '*' : '$';
+    const line = `${leveldesc} ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
     /* make_things_fit(): shrinking or truncating an overlong line */
     if (line.length > 79)
         throw new Error('_statusLine2(): make_things_fit() shrinking not ported yet');
@@ -2565,7 +2615,7 @@ export async function swallowed(first) {
     }
 
     const color = u.ustuck.data.mcolor; /* mon_color(swallower) */
-    const dec = /^decgraphics$/i.test(game.symset_name || '');
+    const dec = dec_symset();
     /* [S_sw_tl, S_sw_tc, S_sw_tr, S_sw_ml, S_sw_mr, S_sw_bl, S_sw_bc,
        S_sw_br]: { ch, dec } */
     const sym = dec

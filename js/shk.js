@@ -11,6 +11,8 @@ import {
     REPAIR_DELAY, INVIS, DISPLACED, CONFLICT, DEAF, FAST, PASSES_WALLS,
     BLINDED, TELEPAT, DETECT_MONSTERS, M_AP_NOTHING, M_AP_MONSTER, u_at,
 } from './const.js';
+import { ANY_SHOP } from './const.js';
+import { search_special } from './sounds.js';
 import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
 import { PICK_AXE, DWARVISH_MATTOCK } from './objects.js';
@@ -484,6 +486,64 @@ export function inhishop(shkp) {
         return false;
     const shkrooms = in_rooms(shkp.mx, shkp.my, SHOPBASE);
     return shkrooms.includes(String.fromCharCode(eshkp.shoproom));
+}
+
+// C ref: shk.c shkgone()
+/* called in mon.c */
+export function shkgone(mtmp) {
+    const u = game.u;
+    const eshk = mtmp.mextra.eshk;
+    const sroom = game.level.rooms[eshk.shoproom - ROOMOFFSET];
+
+    /* [BUG: some of this should be done on the shop level */
+    /*       even when the shk dies on a different level.] */
+    if (on_level(eshk.shoplevel, u.uz)) {
+        discard_damage_owned_by(mtmp);
+        sroom.resident = null;
+        if (!search_special(ANY_SHOP))
+            game.level.flags.has_shop = 0;
+
+        /* items on shop floor revert to ordinary objects */
+        for (let sx = sroom.lx; sx <= sroom.hx; sx++)
+            for (let sy = sroom.ly; sy <= sroom.hy; sy++)
+                for (const otmp of game.level.objects || [])
+                    if (otmp.where === 'OBJ_FLOOR' && otmp.ox === sx && otmp.oy === sy)
+                        otmp.no_charge = 0;
+
+        /* Make sure bill is set only when the
+           dead shk is the resident shk. */
+        const ushops = u.ushops || '';
+        const p = ushops.indexOf(String.fromCharCode(eshk.shoproom));
+        if (p >= 0) {
+            setpaid(mtmp);
+            eshk.bill_p = null;
+            /* remove eshk->shoproom from u.ushops */
+            u.ushops = ushops.slice(0, p) + ushops.slice(p + 1);
+        }
+    }
+}
+
+// C ref: shk.c discard_damage_owned_by()
+function discard_damage_owned_by(shkp) {
+    let dam = game.level.damagelist, dam2, prevdam = null;
+
+    while (dam) {
+        const x = dam.place.x, y = dam.place.y;
+
+        if (in_rooms(x, y, SHOPBASE).includes(
+                String.fromCharCode(shkp.mextra.eshk.shoproom))) {
+            dam2 = dam.next;
+            if (prevdam)
+                prevdam.next = dam2;
+            if (dam === game.level.damagelist)
+                game.level.damagelist = dam2;
+        } else {
+            prevdam = dam;
+            dam2 = dam.next;
+        }
+
+        dam = dam2;
+    }
 }
 
 // C ref: shk.c shop_keeper()

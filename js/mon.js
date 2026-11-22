@@ -88,11 +88,13 @@ import { has_ceiling } from './insight.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, ROOM } from './const.js';
 import { dead_species } from './mkobj.js';
 import { kill_egg } from './timeout.js';
-import { relobj, thiefdead } from './steal.js';
+import { relobj, thiefdead, mdrop_special_objs, discard_minvent } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear, monflee } from './monmove.js';
 import { tele_restrict, rloc } from './teleport.js';
-import { can_teleport } from './mondata.js';
+import { can_teleport, resists_fire } from './mondata.js';
+import { on_fire } from './uhitm.js';
+import { m_in_air } from './monmove.js';
 import { FOUNTAIN, FLYING, LEVITATION, RLOC_MSG } from './const.js';
 import { canseemon, sensemon } from './display.js';
 import { UNICORN_HORN, WORM_TOOTH } from './objects.js';
@@ -224,19 +226,22 @@ async function m_calcdistress(mtmp) {
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 
-// C ref: mon.c mongone() -- the parts reached so far (level creation):
-// unstuck(), mdrop_special_objs() and the vault guard case are not ported.
+// C ref: mon.c mongone() -- the vault guard case is not ported; unstuck()
+// is checked in mon_leaving_level().
 /* remove a monster from the game without leaving a corpse */
 export function mongone(mdef) {
     mdef.mhp = 0; /* can skip some inventory bookkeeping */
 
+    /* dead vault guard is actually kept at coordinate <0,0> until
+       his temporary corridor to/from the vault has been removed */
     if (mdef.isgd)
         throw new Error('mongone: vault guards are not ported yet');
+    /* stuck to you? release: unstuck(mdef) -- see mon_leaving_level() */
+    /* drop special items like the Amulet so that a dismissed Kop or nurse
+       can't remove them from the game */
+    mdrop_special_objs(mdef);
     /* release rest of monster's inventory--it is removed from game */
-    /* discard_minvent(mdef, FALSE): obfree() each; nothing to free in JS */
-    for (const o of mdef.minvent || [])
-        o.where = 'OBJ_DELETED';
-    mdef.minvent = null;
+    discard_minvent(mdef, false);
     m_detach(mdef, mdef.data, false);
 }
 
@@ -373,7 +378,7 @@ function m_detach(mtmp, mptr, due_to_death) {
         if (game.stealmid && mtmp.m_id === game.stealmid)
             thiefdead();
         if (mtmp.isshk)
-            throw new Error('m_detach(): shkgone() not ported yet');
+            shkgone(mtmp);
         if (mtmp.wormno)
             wormgone(mtmp);
         /* In_endgame(&u.uz): MON_ENDGAME_FREE -- the endgame isn't reached */
@@ -1335,8 +1340,50 @@ async function minliquid_core(mtmp) {
          */
         if (!is_clinger(ptr)
             && !(ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER])) {
-            /* likes_lava() */
-            throw new Error('minliquid(): monster in lava not ported yet');
+            /* !likes_lava() */
+            /* not fair...?  hero doesn't automatically teleport away
+               from lava, just from water */
+            if (can_teleport(ptr) && !(await tele_restrict(mtmp))) {
+                if (await rloc(mtmp, RLOC_MSG))
+                    return 0;
+            }
+            if (!resists_fire(mtmp)) {
+                if (cansee(mtmp.mx, mtmp.my)) {
+                    const dummy = ptr.mattk[0];
+                    const how = on_fire(ptr, dummy);
+
+                    await pline(`${Monnam(mtmp)} ${how === "boiling" ? "boils away"
+                                 : how === "melting" ? "melts away"
+                                   : "burns to a crisp"}.`); /* pline_mon() */
+                }
+                /* unlike fire -> melt ice -> pool, there's no way for the
+                   hero to create lava beneath a monster, so the !mon_moving
+                   case is not expected to happen */
+                if (game.context.mon_moving)
+                    await mondead(mtmp); /* no corpse */
+                else
+                    await xkilled(mtmp, XKILL_NOMSG);
+            } else {
+                mtmp.mhp -= 1;
+                if (DEADMONSTER(mtmp)) {
+                    if (cansee(mtmp.mx, mtmp.my)) /* pline_mon() */
+                        await pline(`${Monnam(mtmp)} surrenders to the fire.`);
+                    await mondead(mtmp); /* no corpse */
+                } else if (cansee(mtmp.mx, mtmp.my)) {
+                    await pline(`${Monnam(mtmp)} burns slightly.`);
+                }
+            }
+            if (!DEADMONSTER(mtmp)) {
+                if (m_in_air(mtmp)) {
+                    ; /* vampshifter in wolf form can revert to vampire lord
+                       * and become a flyer so not need to teleport */
+                } else {
+                    /* (likes_lava case is hypothetical) */
+                    throw new Error('minliquid(): fire_damage_chain() not ported yet');
+                }
+                return 0;
+            }
+            return 1;
         }
     } else if (inpool || waterwall) {
         /* Most monsters drown in pools.  flooreffects() will take care of
@@ -2339,8 +2386,8 @@ function may_dig(x, y) {
 }
 /* C ref: hack.c bad_rock() */
 export function bad_rock(mdat, x, y) {
-    return (/* (Sokoban && sobj_at(BOULDER, x, y)) || */
-            (IS_OBSTRUCTED(game.level.at(x, y).typ)
+    return ((game.level.flags.sokoban_rules && sobj_at(BOULDER, x, y))
+            || (IS_OBSTRUCTED(game.level.at(x, y).typ)
              && (!tunnels(mdat) || needspick(mdat) || !may_dig(x, y))
              && !(passes_walls(mdat) && may_passwall(x, y))));
 }
@@ -3177,3 +3224,4 @@ import { STOMACH as STOMACH_MN, KILLED_BY_AN as KILLED_BY_AN_MN } from './const.
 import { killer as killer_mn } from './topten.js';
 import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
 import { mon_explodes } from './explode.js';
+import { shkgone } from './shk.js';

@@ -67,7 +67,7 @@ import { xname, an, singular, The, Tobjnam } from './objnam.js';
 import { the, surface } from './iactions.js';
 import { doname, otense } from './objnam.js';
 import { dropy, dropz } from './do.js';
-import { IS_ALTAR, PIT, SPIKED_PIT, HOLE, TRAPDOOR } from './const.js';
+import { IS_ALTAR, PIT, SPIKED_PIT, HOLE, TRAPDOOR, is_pit, is_hole } from './const.js';
 import { BRK_FROM_INV, BRK_KNOWN2BREAK, BRK_KNOWN2NOTBREAK, BRK_KNOWN_OUTCOME } from './const.js';
 import { cansee } from './vision.js';
 import { obj_resists } from './dogmove.js';
@@ -1354,7 +1354,10 @@ export async function hurtle_step(arg, x, y) {
         && bad_rock(game.youmonst.data, u.ux, y)
         && bad_rock(game.youmonst.data, x, u.uy)) {
         /* Move at a diagonal. */
-        /* Sokoban: "You come to an abrupt halt!" -- Sokoban isn't ported */
+        if (game.level.flags.sokoban_rules) { /* Sokoban */
+            await You("come to an abrupt halt!");
+            return false;
+        }
     }
 
     /* caller has already determined that dragging the ball is allowed;
@@ -1396,8 +1399,10 @@ export async function hurtle_step(arg, x, y) {
         } else if (ttmp.ttyp === MAGIC_PORTAL || ttmp.ttyp === VIBRATING_SQUARE
                    || ttmp.ttyp === FIRE_TRAP) {
             throw new Error('hurtle_step(): dotrap() not ported yet');
+        } else if ((is_pit(ttmp.ttyp) || is_hole(ttmp.ttyp))
+                   && game.level.flags.sokoban_rules) { /* Sokoban */
+            throw new Error('hurtle_step(): Sokoban air currents dotrap() not ported yet');
         } else {
-            /* (is_pit() || is_hole()) && Sokoban: Sokoban isn't ported */
             if (ttmp.tseen)
                 throw new Error('hurtle_step(): "You pass right over" trapname() not ported yet');
         }

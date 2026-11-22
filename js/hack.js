@@ -43,7 +43,7 @@ import { vision_recalc, couldsee } from './vision.js';
 import { glyph_at, Norep, feel_location } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
-import { u_at } from './const.js';
+import { u_at, Is_rogue_level } from './const.js';
 import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap } from './trap.js';
 import { TT_BEARTRAP, TT_PIT, TT_WEB, TT_LAVA, TT_INFLOOR, TT_BURIEDBALL, TT_NONE } from './const.js';
 import { ART_STING } from './artilist.js';
@@ -69,7 +69,7 @@ import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
 import { curr_mon_load } from './dogmove.js';
 import { bad_rock, passes_bars, minliquid } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
-import { an, xname } from './objnam.js';
+import { an, xname, The } from './objnam.js';
 import { the } from './iactions.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
@@ -956,8 +956,8 @@ function Underwater() { return !!game.u.uinwater; }
 function Levitation() { return uhave(LEVITATION); }
 function Flying() { return uhave(FLYING); }
 function Punished() { return !!game.uball; }
-/* C ref: dungeon.h Sokoban -- the Sokoban branch isn't ported */
-function Sokoban() { return false; }
+/* C ref: rm.h Sokoban -- svl.level.flags.sokoban_rules */
+function Sokoban() { return !!game.level.flags.sokoban_rules; }
 /* C ref: mondata.h tunnels(), needspick(), amorphous(), verysmall(),
    bigmonst(), hides_under(), is_hider(), is_whirly(), slithy(),
    noncorporeal(), NODIAG() */
@@ -1568,7 +1568,10 @@ function doorless_door(x, y) {
 
     if (!IS_DOOR(lev_p.typ))
         return false;
-    /* Is_rogue_level(&u.uz): the Rogue level isn't ported */
+    /* all rogue level doors are doorless but disallow diagonal access, so
+       we treat them as if their non-existent doors were actually present */
+    if (Is_rogue_level(game.u.uz))
+        return false;
     return !(lev_p.doormask & ~(D_NODOOR | D_BROKEN));
 }
 
@@ -2175,8 +2178,7 @@ async function cannot_push_msg(otmp, sx, sy) {
     else
         await You(`try to move ${what}, but in vain.`);
     if (Blind())
-        throw new Error('cannot_push_msg(): feel_location() not ported yet');
-    void sx, sy;
+        feel_location(sx, sy);
 }
 
 // C ref: hack.c cannot_push()
@@ -2241,7 +2243,8 @@ async function dopush(sx, sy, rx, ry, otmp, costly) {
     otmp.next_boulder = 0;
     movobj(otmp, rx, ry); /* does newsym(rx,ry) */
     if (Blind()) {
-        throw new Error('dopush(): feel_location() not ported yet');
+        feel_location(rx, ry);
+        feel_location(sx, sy);
     } else {
         newsym(sx, sy);
     }
@@ -2303,8 +2306,12 @@ async function moverock_core(sx, sy) {
                         && shop_keeper(first_shop_rno(sx, sy)));
 
             /* KMH -- Sokoban doesn't let you push boulders diagonally */
-            if (Sokoban() && game.u.dx && game.u.dy)
-                throw new Error('moverock_core(): Sokoban diagonal push not ported yet');
+            if (Sokoban() && game.u.dx && game.u.dy) {
+                if (Blind())
+                    feel_location(sx, sy);
+                await pline(`${The(xname(otmp))} won't roll diagonally on this ${surface(sx, sy)}.`);
+                return await cannot_push(otmp, sx, sy);
+            }
 
             /* revive_nasty(rx, ry, "You sense movement on the other side.") */
             if ((game.level.objects || []).some(
