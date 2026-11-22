@@ -2835,14 +2835,6 @@ export async function mon_spell_hits_spot(
          mon_spell_hits_spot.", adtyp) */
 }
 
-/* C ref: obj.h ignitable() */
-function ignitable(otmp) {
-    return otmp.otyp === BRASS_LANTERN || otmp.otyp === OIL_LAMP
-        || (otmp.otyp === MAGIC_LAMP && otmp.spe > 0)
-        || otmp.otyp === CANDELABRUM_OF_INVOCATION
-        || otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE
-        || otmp.otyp === POT_OIL;
-}
 
 // C ref: zap.c burn_floor_objects() -- burn scrolls and spellbooks on
 // floor at position x,y; return the number of scrolls and spellbooks burned
@@ -2866,27 +2858,40 @@ export async function burn_floor_objects(
                 if (!rn2(3))
                     delquan++;
             if (delquan) {
-                if (give_feedback)
-                    throw new Error('burn_floor_objects(): feedback messages not ported yet');
+                let buf1, buf2;
+                /* save name before potential delobj() */
+                if (give_feedback) {
+                    obj.quan = 1;
+                    buf1 = u_at(x, y) ? xname(obj) : distant_name(obj, xname);
+                    obj.quan = 2;
+                    buf2 = u_at(x, y) ? xname(obj) : distant_name(obj, xname);
+                    obj.quan = scrquan;
+                }
                 /* useupf(), which charges, only if hero caused damage */
                 if (u_caused)
-                    throw new Error('burn_floor_objects(): useupf() not ported yet');
+                    useupf_zp(obj, delquan);
                 else if (delquan < scrquan) {
                     obj.quan -= delquan;
                     obj.owt = weight(obj);
                 } else
                     delobj(obj);
                 cnt += delquan;
+                if (give_feedback) {
+                    if (delquan > 1)
+                        await pline(`${delquan} ${buf2} burn.`);
+                    else
+                        await pline(`${An_zp(buf1)} burns.`);
+                }
             }
         }
     }
     /* This also ignites floor items, but does not change cnt
        because they weren't consumed. */
-    /* ignite_items(svl.level.objects[x][y]) -> catch_lit() */
+    /* ignite_items(svl.level.objects[x][y]), along the nexthere chain */
     for (const obj of (game.level.objects || []).filter(o => o.ox === x
                                                         && o.oy === y))
-        if (!obj.lamplit && !obj.in_use && ignitable(obj))
-            throw new Error('burn_floor_objects(): catch_lit() not ported yet');
+        if (!obj.lamplit && !obj.in_use)
+            await catch_lit_zp(obj);
     return cnt;
 }
 
@@ -3015,3 +3020,6 @@ import { recalc_block_point as recalc_block_point_zp } from './vision.js';
 import { in_rooms as in_rooms_zp } from './hack.js';
 import { You_hear as You_hear_zp } from './sounds.js';
 import { picking_at as picking_at_zp, reset_pick as reset_pick_zp } from './lock.js';
+import { catch_lit as catch_lit_zp } from './trap.js';
+import { useupf as useupf_zp } from './invent.js';
+import { An as An_zp } from './objnam.js';
