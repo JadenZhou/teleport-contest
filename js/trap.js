@@ -521,7 +521,7 @@ export async function climb_pit() {
 
 // C ref: defsym.h trap PCHAR() explanations, indexed by
 // trap_to_defsym(ttyp) - S_arrow_trap (rm.h: S_arrow_trap + ttyp - 1)
-const trap_explanations = [
+export const trap_explanations = [
     "arrow trap", "dart trap", "falling rock trap", "squeaky board",
     "bear trap", "land mine", "rolling boulder trap", "sleeping gas trap",
     "rust trap", "fire trap", "pit", "spiked pit", "hole", "trap door",

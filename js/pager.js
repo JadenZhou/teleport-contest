@@ -455,8 +455,8 @@ function cmap_lookat(symidx, x, y) {
     case S_water:
     case S_lava:
     case S_lavawall:
-    case S_ice:
-        throw new Error('lookat(): waterbody_name() not ported yet');
+    case S_ice: /* for hallucination; otherwise defsyms[] would be fine */
+        return waterbody_name(x, y);
     case S_stone:
         if (!lev.seenv)
             return "unexplored";

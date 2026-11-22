@@ -22,10 +22,10 @@ import {
     In_W_tower, recalc_mapseen, recbranch_mapseen, remdun_mapseen,
     print_level_annotation,
 } from './dungeon.js';
-import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR } from './const.js';
+import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR, MAGIC_PORTAL, Is_qstart } from './const.js';
 import * as O from './objects.js';
 import { is_pool, is_lava, u_at } from './makemon.js';
-import { t_at, is_pit, is_hole, set_utrap } from './trap.js';
+import { t_at, is_pit, is_hole, set_utrap, seetrap } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
@@ -624,7 +624,30 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
 
     if (portal && !In_endgame(u.uz)) {
         /* find the portal on the new level */
-        throw new Error('goto_level(): portal arrival not ported yet');
+        let ttrap = null;
+
+        for (const t of (g.level.traps || []))
+            if (t.ttyp === MAGIC_PORTAL) {
+                ttrap = t;
+                break;
+            }
+
+        if (!ttrap) {
+            if (u.uevent.qexpelled
+                && (Is_qstart(u.uz0) || Is_qstart(u.uz))) {
+                /* we're coming back from or going into the quest home level,
+                   after already getting expelled once. The portal back
+                   doesn't exist anymore - see expulsion(). */
+                u_on_rndspot(0);
+            } else {
+                /* !iflags.debug_fuzzer */
+                console.error('impossible: goto_level: no corresponding portal!');
+                u_on_rndspot(0);
+            }
+        } else {
+            seetrap(ttrap);
+            u_on_newpos(ttrap.tx, ttrap.ty);
+        }
     } else if (at_stairs && !In_endgame(u.uz)) {
         if (up) {
             const stway = stairway_find_from(u.uz0, g.at_ladder);

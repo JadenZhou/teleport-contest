@@ -769,6 +769,59 @@ export function get_artifact(obj) {
     return arts[ART_NONARTIFACT];
 }
 
+// C ref: artifact.c defends()
+/* used to check whether a monster is getting reflection/magic resistance
+   from its wielded weapon or worn dragon scales */
+export function defends(adtyp, otmp) {
+    let weap;
+
+    if (!otmp)
+        return false;
+    if ((weap = get_artifact(otmp)) !== artilist()[ART_NONARTIFACT])
+        return weap.defn.adtyp === adtyp;
+    if ((otmp.otyp >= O.GRAY_DRAGON_SCALES && otmp.otyp <= O.YELLOW_DRAGON_SCALES)
+        || (otmp.otyp >= O.GRAY_DRAGON_SCALE_MAIL
+            && otmp.otyp <= O.YELLOW_DRAGON_SCALE_MAIL)) { /* Is_dragon_armor() */
+        let otyp = otmp.otyp;
+
+        /* convert mail to scales to simplify testing */
+        if (otyp >= O.GRAY_DRAGON_SCALE_MAIL && otyp <= O.YELLOW_DRAGON_SCALE_MAIL)
+            otyp += O.GRAY_DRAGON_SCALES - O.GRAY_DRAGON_SCALE_MAIL;
+
+        switch (adtyp) {
+        case M.AD_MAGM: /* magic missiles => general magic resistance */
+            return (otyp === O.GRAY_DRAGON_SCALES);
+        case M.AD_HALU: /* confers hallucination resistance */
+            return (otyp === O.GOLD_DRAGON_SCALES);
+        case M.AD_FIRE:
+      /*case AD_BLND: -- gives infravision but does not prevent blindness */
+            return (otyp === O.RED_DRAGON_SCALES); /* red but not gold */
+        case M.AD_COLD:
+      /*case AD_FAMN: -- slows digestion but does not override Famine */
+            return (otyp === O.WHITE_DRAGON_SCALES); /* white but not silver */
+        case M.AD_DRST: /* drain strength => poison */
+        case M.AD_DISE: /* blocks disease but not slime */
+            return (otyp === O.GREEN_DRAGON_SCALES);
+        case M.AD_SLEE: /* sleep */
+        case M.AD_PLYS: /* paralysis => free action */
+            return (otyp === O.ORANGE_DRAGON_SCALES);
+        case M.AD_DISN: /* disintegration */
+        case M.AD_DRLI: /* level drain resistance */
+            return (otyp === O.BLACK_DRAGON_SCALES);
+        case M.AD_ELEC: /* electricity == lightning */
+        case M.AD_SLOW: /* confers speed so blocks speed removal */
+            return (otyp === O.BLUE_DRAGON_SCALES);
+        case M.AD_ACID:
+        case M.AD_STON: /* petrification resistance */
+            return (otyp === O.YELLOW_DRAGON_SCALES);
+        default:
+            /* SILVER_DRAGON_SCALES don't resist any particular attack type */
+            break;
+        }
+    }
+    return false;
+}
+
 // C ref: artifact.c spec_m2()
 /* return the M2 flags of monster that an artifact's special attacks apply
  * against */
