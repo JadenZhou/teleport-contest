@@ -2598,8 +2598,118 @@ export async function dobuzz(
     g.bhitpos = save_bhitpos;
 }
 
-// C ref: zap.c zap_over_floor() -- melting/freezing water, ice and lava,
-// dissolving iron bars and boiling pools aren't ported yet
+// C ref: zap.c melt_ice()
+export async function melt_ice(x, y, msg) {
+    const g = game;
+    const lev = g.level.at(x, y);
+    let otmp, mtmp;
+
+    if (!msg)
+        msg = "The ice crackles and melts.";
+    if (lev.typ === DRAWBRIDGE_UP_ZP || lev.typ === DRAWBRIDGE_DOWN_ZP) {
+        lev.drawbridgemask &= ~DB_ICE_ZP; /* revert to DB_MOAT */
+    } else { /* lev->typ == ICE */
+        lev.typ = (lev.icedpool === ICED_POOL_ZP ? POOL_ZP : MOAT_ZP);
+        lev.icedpool = 0;
+    }
+    spot_stop_timers_zp(x, y, MELT_ICE_AWAY_ZP); /* no more ice to melt away */
+    if (t_at(x, y))
+        throw new Error('melt_ice(): trap_ice_effects() not ported yet');
+    obj_ice_effects_zp(x, y, false);
+    unearth_objs_zp(x, y);
+    if (g.u.uinwater) /* Underwater */
+        throw new Error('melt_ice(): vision_recalc() while Underwater not ported yet');
+    newsym(x, y);
+    if (cansee(x, y) || u_at(x, y))
+        await Norep_zp(msg);
+    if ((otmp = sobj_at(O_zy.BOULDER, x, y)) !== null && otmp !== undefined)
+        throw new Error('melt_ice(): a boulder settling into the pool (boulder_hits_pool()) not ported yet');
+    if (u_at(x, y))
+        await spoteffects_zp(true); /* possibly drown, notice objects */
+    else if (is_pool(x, y) && (mtmp = m_at(x, y)) !== null && mtmp !== undefined)
+        await minliquid_zp(mtmp);
+}
+
+// C ref: zap.c start_melt_ice_timeout()
+/*
+ * Usually start a melt_ice timer; sometimes the ice will become
+ * permanent instead.
+ */
+export function start_melt_ice_timeout(x, y,
+                                       min_time) { /* <x,y>'s old melt timeout (deleted by time we get here) */
+    const MIN_ICE_TIME = 50, MAX_ICE_TIME = 2000;
+    let when = min_time;
+
+    if (when < MIN_ICE_TIME - 1)
+        when = MIN_ICE_TIME - 1;
+
+    /* random timeout; surrounding ice locations ought to be a factor... */
+    while (++when <= MAX_ICE_TIME)
+        if (!rn2((MAX_ICE_TIME - when) + MIN_ICE_TIME))
+            break;
+
+    /* if we're within MAX_ICE_TIME, install a melt timer;
+       otherwise, omit it to leave this ice permanent */
+    if (when <= MAX_ICE_TIME) {
+        /* start_timer(when, TIMER_LEVEL, MELT_ICE_AWAY, long_to_any(where));
+           the timer queue isn't ported: like nhlua.js, the location keeps
+           its pending timer, with its absolute expiry */
+        game.level.at(x, y).timer = { when, action: MELT_ICE_AWAY_ZP,
+                                      timeout: game.moves + when };
+    }
+}
+
+// C ref: timeout.c spot_time_left() -- the location's pending level timer
+function spot_time_left_zp(x, y, func_index) {
+    const t = game.level.at(x, y).timer;
+    if (!t || t.action !== func_index)
+        return 0;
+    if (t.timeout === undefined)
+        throw new Error('spot_time_left(): a timer started by a level script not ported yet');
+    const expires = t.timeout;
+    return (expires > 0) ? expires - game.moves : 0;
+}
+
+// C ref: timeout.c spot_stop_timers()
+function spot_stop_timers_zp(x, y, func_index) {
+    const lev = game.level.at(x, y);
+    if (lev.timer && lev.timer.action === func_index)
+        lev.timer = null; /* no cleanup function for MELT_ICE_AWAY */
+}
+
+// C ref: dig.c bury_objs()
+function bury_objs_zp(x, y) {
+    const here = (game.level.objects || []).filter(
+        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    if (here.length)
+        throw new Error('bury_objs(): burying objects under new ice or rock not ported yet');
+    /* don't expect any engravings here, but just in case */
+    del_engr_at_zp(x, y);
+    newsym(x, y);
+    maybe_unhide_at_zp(x, y);
+}
+
+// C ref: dig.c unearth_objs()
+function unearth_objs_zp(x, y) {
+    if ((game.level.buriedobjlist || []).some(o => o.ox === x && o.oy === y))
+        throw new Error('unearth_objs(): unearthing buried objects not ported yet');
+    del_engr_at_zp(x, y);
+    newsym(x, y);
+}
+
+// C ref: mkobj.c obj_ice_effects()
+function obj_ice_effects_zp(x, y, do_buried) {
+    for (const o of game.level.objects || [])
+        if (o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR' && o.timer)
+            throw new Error('obj_ice_effects(): obj_timer_checks() not ported yet');
+    if (do_buried) {
+        for (const o of game.level.buriedobjlist || [])
+            if (o.ox === x && o.oy === y && o.timer)
+                throw new Error('obj_ice_effects(): obj_timer_checks() not ported yet');
+    }
+}
+
+// C ref: zap.c zap_over_floor()
 export async function zap_over_floor(
     x, y,              /* location */
     type,              /* damage type plus {wand|spell|breath} info */
@@ -2632,9 +2742,65 @@ export async function zap_over_floor(
                 newsym(x, y);
         }
         if (is_ice_zp(x, y)) {
-            throw new Error('zap_over_floor(): melt_ice() not ported yet');
+            await melt_ice(x, y, null);
         } else if (is_pool(x, y)) {
-            throw new Error('zap_over_floor(): fire boiling a pool not ported yet');
+            const on_water_level = Is_waterlevel_zp(g.u.uz);
+            let msggiven = false;
+            let msgtxt = (!Deaf_zp())
+                         ? "You hear hissing gas." /* Deaf-aware */
+                         : (type >= 0)
+                           ? "That seemed remarkably uneventful."
+                           : null;
+
+            /* don't create steam clouds on Plane of Water; air bubble
+               movement and gas regions don't understand each other */
+            if (!on_water_level) {
+                await create_gas_cloud_zp(x, y, rnd(5), 0); /* 1..5, no damg */
+                if (g.iflags.last_msg === PLNMSG_ENVELOPED_IN_GAS_ZP)
+                    msggiven = true;
+            }
+
+            if (lev.typ !== POOL_ZP) { /* MOAT or DRAWBRIDGE_UP or WATER */
+                t = null;
+                if (on_water_level)
+                    msgtxt = (see_it || !Deaf_zp()) ? "Some water boils." : null;
+                else if (see_it)
+                    msgtxt = "Some water evaporates.";
+            } else {
+                rangemod -= 3;
+                lev.typ = ROOM_ZP, lev.flags = 0;
+                t = maketrap_zp(x, y, PIT);
+                /*if (t) -- this was before the vapor cloud was added --
+                      t->tseen = 1;*/
+                if (see_it)
+                    msgtxt = "The water evaporates.";
+            }
+            if (msgtxt && !msggiven)
+                await Norep_zp(msgtxt);
+
+            if (lev.typ === ROOM_ZP) { /* POOL changed to ROOM above */
+                let mon;
+                if ((mon = m_at(x, y)) !== null && mon !== undefined) {
+                    /* probably ought to do some hefty damage to any
+                       creature caught in boiling water;
+                       at a minimum, eels are forced out of hiding */
+                    if (is_swimmer_zp(mon.data) && mon.mundetected) {
+                        mon.mundetected = 0;
+                    }
+                } else {
+                    mon = null;
+                }
+                newsym(x, y);
+                if (t) {
+                    /* if water walking/swimming/magical breathing, maybe fall
+                       into the new pit (after the water evaporation message);
+                       if flying or levitating, nothing will happen */
+                    if (u_at(x, y))
+                        await dotrap_zp(t, NO_TRAP_FLAGS_ZP);
+                    else if (mon)
+                        await mintrap_zp(mon, NO_TRAP_FLAGS_ZP);
+                }
+            }
         } else if (lev.typ === FOUNTAIN) { /* IS_FOUNTAIN() */
             await create_gas_cloud_zp(x, y, rnd(3), 0); /* 1..3, no damage */
             if (see_it)
@@ -2645,10 +2811,87 @@ export async function zap_over_floor(
         break; /* ZT_FIRE */
 
     case ZT_COLD:
-        if (is_pool(x, y) || is_lava(x, y) || lavawall)
-            throw new Error('zap_over_floor(): cold freezing water/lava not ported yet');
-        else if (is_ice_zp(x, y))
-            throw new Error('zap_over_floor(): cold firming up ice (melt timers) not ported yet');
+        if (is_pool(x, y) || is_lava(x, y) || lavawall) {
+            const lava = (is_lava(x, y) || lavawall),
+                  moat = is_moat_zp(x, y);
+            const chance = Math.max(2, 5 + (g.level.flags.temperature || 0) * 10);
+
+            if (IS_WATERWALL_ZP(lev.typ) || (lavawall && rn2(chance))) {
+                /* For now, don't let WATER freeze. */
+                /* Soundeffect(se_soft_crackling, 100); */
+                if (see_it)
+                    await pline_The(`${hliquid_zp(lavawall ? "lava" : "water")} freezes for a moment.`);
+                else
+                    await You_hear_zp("a soft crackling.");
+                rangemod -= 1000; /* stop */
+            } else {
+                const buf = waterbody_name_zp(x, y); /* for MOAT */
+                rangemod -= 3;
+                if (lev.typ === DRAWBRIDGE_UP_ZP) {
+                    lev.drawbridgemask &= ~DB_UNDER_ZP; /* clear lava */
+                    lev.drawbridgemask |= (lava ? DB_FLOOR_ZP : DB_ICE_ZP);
+                } else {
+                    lev.icedpool = lava ? 0
+                                        : (lev.typ === POOL_ZP) ? ICED_POOL_ZP
+                                                                : ICED_MOAT_ZP;
+                    if (lavawall) {
+                        if ((isok_zp(x, y - 1) && IS_WALL(g.level.at(x, y - 1).typ))
+                            || (isok_zp(x, y + 1) && IS_WALL(g.level.at(x, y + 1).typ)))
+                            lev.typ = VWALL_ZP;
+                        else
+                            lev.typ = HWALL_ZP;
+                        fix_wall_spines_zp(Math.max(0, x - 1), Math.max(0, y - 1),
+                                           Math.min(COLNO_ZP - 1, x + 1),
+                                           Math.min(ROWNO_ZP - 1, y + 1));
+                    } else {
+                        lev.typ = lava ? ROOM_ZP : ICE;
+                    }
+                }
+                bury_objs_zp(x, y);
+                /* if (!lava) Soundeffect(se_soft_crackling, 30); */
+                if (see_it) {
+                    if (lava)
+                        await Norep_zp(`The ${hliquid_zp("lava")} cools and solidifies.`);
+                    else if (moat)
+                        await Norep_zp(`The ${buf} is bridged with ice!`);
+                    else
+                        await Norep_zp(`The ${hliquid_zp("water")} freezes.`);
+                    newsym(x, y);
+                } else if (!lava) {
+                    await You_hear_zp("a crackling sound.");
+                }
+                let mon;
+                if (u_at(x, y)) {
+                    if (g.u.uinwater) { /* not just `if (Underwater)' */
+                        throw new Error('zap_over_floor(): freezing the water the hero is in (set_uinwater()) not ported yet');
+                    } else if (g.u.utrap && g.u.utraptype === TT_LAVA_ZP) {
+                        throw new Error('zap_over_floor(): hero stuck in cooling lava not ported yet');
+                    }
+                } else if ((mon = m_at(x, y)) !== null && mon !== undefined) {
+                    /* probably ought to do some hefty damage to any
+                       non-ice creature caught in freezing water;
+                       at a minimum, eels are forced out of hiding */
+                    if (is_swimmer_zp(mon.data) && mon.mundetected) {
+                        mon.mundetected = 0;
+                        newsym(x, y);
+                    }
+                }
+                if (!lava) {
+                    start_melt_ice_timeout(x, y, 0);
+                    obj_ice_effects_zp(x, y, true);
+                }
+            } /* ?WATER */
+
+        } else if (is_ice_zp(x, y)) {
+            let melt_time;
+
+            /* Already ice here, so just firm it up. */
+            /* Now ensure that only ice that is already timed is affected */
+            if ((melt_time = spot_time_left_zp(x, y, MELT_ICE_AWAY_ZP)) !== 0) {
+                spot_stop_timers_zp(x, y, MELT_ICE_AWAY_ZP);
+                start_melt_ice_timeout(x, y, melt_time);
+            }
+        }
         break; /* ZT_COLD */
 
     case ZT_POISON_GAS:
@@ -2670,7 +2913,13 @@ export async function zap_over_floor(
                         (damgtype === ZT_ACID) ? "corrode" : "melt"} somewhat but remain intact.`);
                 /* but nothing actually happens... */
             } else {
-                throw new Error('zap_over_floor(): dissolve_bars() not ported yet');
+                rangemod -= 3;
+                if (see_it)
+                    await Norep_zp(`The iron bars ${
+                        (damgtype === ZT_ACID) ? "corrode away" : "melt"}.`);
+                await dissolve_bars(x, y);
+                if (in_rooms_zp(x, y, SHOPBASE_ZP).length)
+                    throw new Error('zap_over_floor(): add_damage() for shop bars not ported yet');
             }
         }
         break; /* ZT_ACID */
@@ -3024,5 +3273,30 @@ import { catch_lit as catch_lit_zp } from './trap.js';
 import { useupf as useupf_zp } from './invent.js';
 import { An as An_zp } from './objnam.js';
 import { erode_armor as erode_armor_zp } from './uhitm.js';
+import { POOL as POOL_ZP, ROOM as ROOM_ZP,
+         NO_TRAP_FLAGS as NO_TRAP_FLAGS_ZP, DEAF as DEAF_ZP,
+         PLNMSG_ENVELOPED_IN_GAS as PLNMSG_ENVELOPED_IN_GAS_ZP,
+         Is_waterlevel as Is_waterlevel_zp } from './const.js';
+import { maketrap as maketrap_zp, dotrap as dotrap_zp,
+         mintrap as mintrap_zp } from './trap.js';
+import { is_swimmer as is_swimmer_zp } from './mondata.js';
+import { dissolve_bars } from './monmove.js';
+/* C ref: youprop.h Deaf */
+function Deaf_zp() {
+    const q = game.u.uprops[DEAF_ZP];
+    return !!(q && (q.intrinsic || q.extrinsic)) || !!game.u.uroleplay?.deaf;
+}
 /* C ref: hack.h ERODE_CORRODE */
 const ERODE_CORRODE_ZP = 3;
+import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_ZP, DRAWBRIDGE_DOWN as DRAWBRIDGE_DOWN_ZP,
+         DB_ICE as DB_ICE_ZP, DB_UNDER as DB_UNDER_ZP, DB_FLOOR as DB_FLOOR_ZP,
+         ICED_POOL as ICED_POOL_ZP, ICED_MOAT as ICED_MOAT_ZP, MOAT as MOAT_ZP,
+         VWALL as VWALL_ZP, HWALL as HWALL_ZP, TT_LAVA as TT_LAVA_ZP,
+         MELT_ICE_AWAY as MELT_ICE_AWAY_ZP, COLNO as COLNO_ZP, ROWNO as ROWNO_ZP,
+         isok as isok_zp, IS_WATERWALL as IS_WATERWALL_ZP } from './const.js';
+import { waterbody_name as waterbody_name_zp } from './pager.js';
+import { fix_wall_spines as fix_wall_spines_zp } from './mklev.js';
+import { del_engr_at as del_engr_at_zp } from './engrave.js';
+import { maybe_unhide_at as maybe_unhide_at_zp, minliquid as minliquid_zp } from './mon.js';
+import { spoteffects as spoteffects_zp } from './hack.js';
+import { is_moat as is_moat_zp } from './makemon.js';

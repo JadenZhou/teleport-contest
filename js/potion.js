@@ -81,6 +81,8 @@ import { shop_keeper, subfrombill } from './shk.js';
 import { tty_getlin } from './wintty.js';
 import { safe_qbuf } from './pickup.js';
 import { surface } from './iactions.js';
+import { thesimpleoname as thesimpleoname_pt } from './iactions.js';
+import { short_oname as short_oname_pt } from './objnam.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { set_bc } from './ball.js';
 import { float_vs_flight } from './polyself.js';
@@ -2314,12 +2316,11 @@ export async function dodip() {
     if (is_hands) {
         obuf = `your ${makeplural(body_part(HAND))}`;
     } else {
-        /* short_oname(obj, doname, thesimpleoname, QBUFSZ - sizeof "What do
-           you want to dip into? [abdeghjkmnpqstvwyzBCEFHIKLNOQRTUWXZ#-# or
-           ?*] ") -- only the case where doname() fits is ported */
-        obuf = doname(obj);
-        if (obuf.length > 128 - 78)
-            throw new Error('dodip(): short_oname() shortening not ported yet');
+        obuf = short_oname_pt(obj, doname, thesimpleoname_pt,
+                              /* 128 - (24 + 54 + 1) leaves 49 for
+                                 <object> */
+                              128 /* QBUFSZ */ - 78 /* sizeof "What do you want to dip\
+ into? [abdeghjkmnpqstvwyzBCEFHIKLNOQRTUWXZ#-# or ?*] " */);
     }
     const verbose = game.flags.verbose;
 

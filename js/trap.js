@@ -3479,3 +3479,70 @@ export async function chest_trap(obj, bodypart, disarm) {
     obj.tknown = 1; /* hero knows chest is no longer trapped */
     return false;
 }
+
+// C ref: trap.c dountrap() -- the #untrap command
+export async function dountrap() {
+    if (!(await could_untrap(true, false)))
+        return ECMD_OK_TR;
+
+    return (await untrap(false, 0, 0, null)) ? ECMD_TIME_TR : ECMD_OK_TR;
+}
+
+// C ref: trap.c could_untrap()
+/* preliminary checks for dountrap(); also used for autounlock */
+export async function could_untrap(verbosely, check_floor) {
+    let buf = '';
+    const ptr = game.youmonst.data;
+
+    if (near_capacity_tr() >= HVY_ENCUMBER_TR) {
+        buf = "You're too strained to do that.";
+    } else if ((nohands_tr(ptr) && !webmaker_tr(ptr)) || !ptr.mmove) {
+        buf = "And just how do you expect to do that?";
+    } else if (game.u.ustuck && sticks_tr(ptr)) {
+        buf = `You'll have to let go of ${mon_nam_tr(game.u.ustuck)} first.`;
+    } else if (game.u.ustuck || (welded_tr(game.uwep) && bimanual_tr(game.uwep))) {
+        buf = `Your ${makeplural_tr(body_part_tr(HAND_TR))} seem to be too busy for that.`;
+    } else if (check_floor && !can_reach_floor_tr(false)) {
+        /* only checked here for autounlock of chest/box and that will
+           be !verbosely so precise details of the message don't matter */
+        buf = `You can't reach the ${surface_tr(game.u.ux, game.u.uy)}.`;
+    }
+    if (buf) {
+        if (verbosely)
+            await pline(buf);
+        return 0;
+    }
+    return 1;
+}
+
+// C ref: trap.c untrap() -- only the usual case's direction prompt is
+// ported; the rest stops explicitly
+export async function untrap(force, rx, ry, container) {
+    /* 'force' is true for #invoke; if carrying MKoT, make it be true
+       for #untrap or autounlock (has_magic_key()) */
+    void force;
+    if (!rx && !container) {
+        /* usual case */
+        if (!(await getdir_tr(null)))
+            return 0;
+        throw new Error('untrap(): untrapping in a direction not ported yet');
+    }
+    throw new Error('untrap(): autounlock untrap not ported yet');
+}
+import { ECMD_OK as ECMD_OK_TR, ECMD_TIME as ECMD_TIME_TR,
+         HVY_ENCUMBER as HVY_ENCUMBER_TR, HAND as HAND_TR } from './const.js';
+import { near_capacity as near_capacity_tr } from './hack.js';
+import { getdir as getdir_tr } from './cmd.js';
+import { sticks as sticks_tr, can_reach_floor as can_reach_floor_tr } from './engrave.js';
+import { welded as welded_tr, bimanual as bimanual_tr } from './wield.js';
+import { makeplural as makeplural_tr } from './objnam.js';
+import { body_part as body_part_tr } from './insight.js';
+import { mon_nam as mon_nam_tr } from './do_name.js';
+import { surface as surface_tr } from './iactions.js';
+import { M1_NOHANDS as M1_NOHANDS_TR, mons as mons_tr, PM_CAVE_SPIDER as PM_CAVE_SPIDER_TR,
+         PM_GIANT_SPIDER as PM_GIANT_SPIDER_TR } from './monsters.js';
+/* C ref: mondata.h nohands(), webmaker() */
+function nohands_tr(ptr) { return (ptr.mflags1 & M1_NOHANDS_TR) !== 0; }
+function webmaker_tr(ptr) {
+    return ptr === mons_tr[PM_CAVE_SPIDER_TR] || ptr === mons_tr[PM_GIANT_SPIDER_TR];
+}
