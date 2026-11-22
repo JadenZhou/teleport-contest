@@ -3055,7 +3055,7 @@ const ART_ORB_OF_DETECTION_ID = 21;
 function xname_flags(obj, cxn_flags) {
     const typ = obj.otyp;
     const ocl = objects[typ];
-    const nn = ocl.oc_name_known;
+    let nn = ocl.oc_name_known;
     const omndx = obj.corpsenm;
     let actualn = OBJ_NAME(ocl);
     let dn = OBJ_DESCR(ocl);
@@ -3082,10 +3082,15 @@ function xname_flags(obj, cxn_flags) {
     if (Role_if_x(M.PM_CLERIC))
         obj.bknown = 1;
 
-    /* iflags.override_ID (wizard-mode ^I) is not ported */
-    const known = obj.known;
-    const dknown = obj.dknown;
-    const bknown = obj.bknown;
+    let known, dknown, bknown;
+    if (game.iflags?.override_ID) {
+        known = dknown = bknown = true;
+        nn = 1;
+    } else {
+        known = obj.known;
+        dknown = obj.dknown;
+        bknown = obj.bknown;
+    }
 
     /*
      * Maybe find a previously unseen artifact.
@@ -3361,7 +3366,7 @@ function xname_flags(obj, cxn_flags) {
 export function obj_is_pname(obj) {
     if (!obj.oartifact || !has_oname(obj))
         return false;
-    if (!game.program_state?.gameover /* && !iflags.override_ID */) {
+    if (!game.program_state?.gameover && !game.iflags?.override_ID) {
         if (not_fully_identified(obj))
             return false;
     }
@@ -3396,9 +3401,9 @@ export function not_fully_identified(otmp) {
 // C ref: objnam.c the_unique_obj()
 /* used for naming "the unique_item" instead of "a unique_item" */
 export function the_unique_obj(obj) {
-    const known = obj.known; /* || iflags.override_ID */
+    const known = (obj.known || game.iflags?.override_ID);
 
-    if (!obj.dknown /* && !iflags.override_ID */)
+    if (!obj.dknown && !game.iflags?.override_ID)
         return false;
     else if (obj.otyp === O.FAKE_AMULET_OF_YENDOR && !known)
         return true; /* lie */
@@ -3411,8 +3416,7 @@ export function the_unique_obj(obj) {
 // (C appends to its prefix buffer in place)
 function add_erosion_words(obj, prefix) {
     const iscrys = (obj.otyp === O.CRYSKNIFE);
-    /* iflags.override_ID (wizard-mode ^I) is not ported */
-    const rknown = obj.rknown;
+    const rknown = !game.iflags?.override_ID ? obj.rknown : true;
 
     if (!is_damageable(obj) && !iscrys)
         return prefix;
@@ -3477,9 +3481,16 @@ function doname_base(obj, doname_flags) {
     let prefix = '';
     let bp = xname(obj);
 
-    /* iflags.override_ID is not ported */
-    const known = obj.known, dknown = obj.dknown, cknown = obj.cknown,
-          bknown = obj.bknown, lknown = obj.lknown;
+    let known, dknown, cknown, bknown, lknown;
+    if (game.iflags?.override_ID) {
+        known = dknown = cknown = bknown = lknown = true;
+    } else {
+        known = obj.known;
+        dknown = obj.dknown;
+        cknown = obj.cknown;
+        bknown = obj.bknown;
+        lknown = obj.lknown;
+    }
 
     if (bp.startsWith("poisoned ") && obj.opoisoned) {
         bp = bp.slice(9);

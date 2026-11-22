@@ -281,7 +281,7 @@ export async function wiz_identify() {
            if ^I invokes some other command--what matters is that
            display_pickinv() and xname() see override_ID as nonzero */
         if (!g.iflags.override_ID)
-            g.iflags.override_ID = '\x09'; /* C('I') */
+            g.iflags.override_ID = 0x09; /* C('I') */
         await display_inventory(null, false);
         g.iflags.override_ID = 0;
     } else
@@ -426,3 +426,45 @@ export async function wiz_intrinsic() {
         await pline("Unavailable command 'wizintrinsic'."); /* unavailcmd */
     return 0; /* ECMD_OK */
 }
+
+// C ref: wizcmds.c wiz_map() -- #wizmap, ^F
+/* the #wizmap command - reveal the level map
+   and any traps or engravings on it */
+export async function wiz_map() {
+    const g = game;
+    if (g.flags?.debug) {
+        const up = g.u.uprops;
+        const save_Hconf = up[CONFUSION].intrinsic,
+              save_Hhallu = up[HALLUC].intrinsic;
+
+        /* notice_mon_off(): a11y mon_notices isn't ported (off by default) */
+        up[CONFUSION].intrinsic = up[HALLUC].intrinsic = 0;
+        for (const t of g.level.traps || []) { /* gf.ftrap */
+            t.tseen = 1;
+            map_trap(t, true);
+        }
+        for (let ep = g.level.head_engr || null; ep; ep = ep.nxt_engr) {
+            map_engraving(ep, true);
+        }
+        await do_mapping();
+        /* notice_mon_on() */
+        up[CONFUSION].intrinsic = save_Hconf;
+        up[HALLUC].intrinsic = save_Hhallu;
+    } else
+        await pline("Unavailable command 'wizmap'."); /* unavailcmd */
+    return 0; /* ECMD_OK */
+}
+
+// C ref: wizcmds.c wiz_detect() -- #wizdetect, ^E
+/* the #wizdetect command - detect secret doors, traps, hidden monsters */
+export async function wiz_detect() {
+    if (game.flags?.debug)
+        await findit();
+    else
+        await pline("Unavailable command 'wizdetect'."); /* unavailcmd */
+    return 0; /* ECMD_OK */
+}
+
+import { CONFUSION } from './const.js';
+import { map_trap, map_engraving } from './display.js';
+import { do_mapping, findit } from './detect.js';

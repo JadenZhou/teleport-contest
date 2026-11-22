@@ -98,7 +98,7 @@ function terrain_glyph(loc, x, y) {
 // branch's wall glyphs (cmap_walls_to_glyph()); S_altar is
 // altar_to_glyph(AM_NEUTRAL).
 const CMAP_NAMES = { 1: 'S_vwall', 2: 'S_hwall', 15: 'S_vcdoor', 16: 'S_hcdoor',
-    25: 'S_upstair', 26: 'S_dnstair', 33: 'S_altar', 34: 'S_grave',
+    22: 'S_corr', 25: 'S_upstair', 26: 'S_dnstair', 33: 'S_altar', 34: 'S_grave',
     35: 'S_throne', 36: 'S_sink', 37: 'S_fountain' };
 export function cmap_to_glyph(sym) {
     let tg;
@@ -133,6 +133,9 @@ export function cmap_to_glyph(sym) {
         break;
     case 37: /* S_fountain */
         tg = { ch: '{', color: CLR_BRIGHT_BLUE, dec: false };
+        break;
+    case 22: /* S_corr */
+        tg = { ch: '#', color: CLR_GRAY, dec: false };
         break;
     default:
         throw new Error(`cmap_to_glyph(): cmap symbol ${sym} not ported yet`);
@@ -1399,6 +1402,112 @@ export function unmap_object(x, y) {
     }
 }
 
+// C ref: display.c magic_map_background()
+/*
+ * This function is similar to map_background (see below) except we pay
+ * attention to and correct unexplored, lit ROOM and CORR spots.
+ */
+export function magic_map_background(x, y, show) {
+    let glyph = back_to_glyph(x, y); /* assumes hero can see x,y */
+    const lev = game.level.at(x, y);
+
+    /*
+     * Correct for out of sight lit corridors and rooms that the hero
+     * doesn't remember as lit.
+     */
+    if (!cansee(x, y) && !lev.waslit) {
+        /* Floor spaces are dark if unlit.  Corridors are dark if unlit. */
+        if (lev.typ === ROOM && glyph.cmap === 'S_room')
+            /* cmap_to_glyph(DARKROOMSYM): JS remembers S_darkroom spots
+               as S_room (see newsym()) */
+            glyph = (game.flags.dark_room !== false
+                     && game.iflags.wc_color !== false)
+                        ? glyph
+                        : GLYPH_NOTHING;
+        else if (lev.typ === CORR && glyph.cmap === 'S_litcorr')
+            glyph = rememb_glyph(S_corr_g);
+    }
+    if (game.level.flags?.hero_memory
+        /* glyph_is_unexplored(lev->glyph) || glyph_is_cmap(lev->glyph) */
+        && glyph_kind(lev.remembered_glyph) === 'cmap')
+        lev.remembered_glyph = glyph;
+    if (show)
+        show_glyph(x, y, glyph);
+
+    update_lastseentyp(x, y);
+}
+
+/* GLYPH_NOTHING, shown as blank */
+const GLYPH_NOTHING = { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'nothing' };
+/* GLYPH_INVISIBLE in the remembered-glyph form: S_invisible 'I',
+   invis_color() NO_COLOR */
+export const GLYPH_INVISIBLE = { ch: 'I', color: NO_COLOR, decgfx: false,
+                                 invisible: true };
+
+// C ref: display.h mon_to_glyph() -- in the glyph_at() form; 'rng' is
+// used by what_mon() when hallucinating
+export function mon_to_glyph(mon, rng) {
+    const mndx = Hallucination() ? rng(NUMMONS) /* random_monster(rng) */
+                                 : mon.data.pmidx;
+    const ptr = mons[mndx];
+    return { ch: def_monsyms[ptr.mlet] ?? '?', color: ptr.mcolor ?? NO_COLOR,
+             decgfx: false, kind: 'mon', mndx };
+}
+
+// C ref: display.c flash_glyph_at()
+/*
+ * flash_glyph_at(x, y, glyph, repeatcount)
+ *
+ * Briefly flash between the passed glyph and the glyph that's
+ * meant to be at the location.
+ */
+export async function flash_glyph_at(x, y, tg, rpt) {
+    const glyph = [];
+
+    rpt *= 2; /* two loop iterations per 'count' */
+    glyph[0] = tg;
+    glyph[1] = (game.level.flags?.hero_memory)
+               ? (game.level.at(x, y).remembered_glyph
+                  ?? { ch: ' ', color: NO_COLOR, decgfx: false }) /* unexplored */
+               : back_to_glyph(x, y);
+    /* even iteration count (guaranteed) ends with glyph[1] showing;
+       caller might want to override that, but no newsym() calls here
+       in case caller has tinkered with location visibility */
+    for (let i = 0; i < rpt; i++) {
+        show_glyph(x, y, glyph[i % 2]);
+        await flush_screen(1);
+        /* nh_delay_output(): display timing only */
+    }
+}
+
+/* a glyph_at() glyph in the remembered-glyph form (lev->glyph = glyph) */
+export function glyph_at_to_remembered(glyph) {
+    const rg = { ch: glyph.ch, color: glyph.color, decgfx: glyph.decgfx };
+    switch (glyph.kind) {
+    case 'obj':
+        rg.obj = true;
+        rg.piletop = glyph.piletop;
+        rg.otyp = glyph.otyp;
+        if (glyph.corpsenm !== undefined)
+            rg.corpsenm = glyph.corpsenm;
+        break;
+    case 'trap':
+        rg.trap = true;
+        break;
+    case 'invisible':
+        rg.invisible = true;
+        break;
+    case 'engr':
+        rg.engr = true;
+        break;
+    default:
+        if (glyph.cmapidx !== undefined)
+            rg.cmapidx = glyph.cmapidx;
+        break;
+    }
+    return rg;
+}
+
 // C ref: display.c map_background()
 export function map_background(x, y, show) {
     const loc = game.level.at(x, y);
@@ -1468,7 +1577,7 @@ function spot_shows_engravings(x, y) {
 /*
  * Map the engraving and print it out if directed.
  */
-function map_engraving(ep, show) {
+export function map_engraving(ep, show) {
     const x = ep.engr_x, y = ep.engr_y;
     /* engraving_to_glyph(ep): engrave.h engraving_to_defsym() is
        S_engrcorr on a corridor, else S_engroom; DECgraphics doesn't
