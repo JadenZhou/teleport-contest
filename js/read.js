@@ -1623,10 +1623,11 @@ async function seffect_fire(sobjp) {
             await burn_away_slime();
         }
     }
-    /* explode(cc.x, cc.y, ZT_SPELL_O_FIRE, dam, SCROLL_CLASS, EXPL_FIERY) */
-    void dam;
-    throw new Error('seffect_fire(): explode() not ported yet');
+    const ZT_SPELL_O_FIRE = 11; /* explained in splatter_burning_oil(explode.c) */
+    await explode_rd(cc.x, cc.y, ZT_SPELL_O_FIRE, dam, O.SCROLL_CLASS, EXPL_FIERY_RD);
 }
+import { explode as explode_rd } from './explode.js';
+import { EXPL_FIERY as EXPL_FIERY_RD } from './const.js';
 const PLNMSG_TOWER_OF_FLAME = 3; /* C ref: hack.h enum plnmsg_types */
 
 // C ref: read.c seffect_earth()

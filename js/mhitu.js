@@ -551,7 +551,7 @@ export async function mattacku(mtmp) {
 
         case AT_EXPL: /* automatic hit if next to, and aimed at you */
             if (!v.range2)
-                throw new Error('mattacku(): explmu() not ported yet');
+                sum[i] = await explmu(mtmp, mattk, v.foundyou);
             break;
 
         case AT_ENGL:
@@ -764,6 +764,91 @@ async function showdamage(dmg) {
 
     await pline(`[HP ${-dmg}, ${Upolyd() ? game.u.mh : game.u.uhp} left]`);
 }
+
+// C ref: mhitu.c explmu()
+/* monster explodes in your face */
+async function explmu(
+    mtmp,
+    mattk,
+    ufound) {
+    let kill_agr = true;
+    let not_affected;
+    let tmp;
+
+    if (mtmp.mcan)
+        return M_ATTK_MISS;
+
+    tmp = d(mattk.damn, mattk.damd);
+    not_affected = defended_mu(mtmp, mattk.adtyp);
+
+    if (!ufound) {
+        const wx = mtmp.mux, wy = mtmp.muy;
+        await pline(`${canseemon(mtmp) ? Monnam(mtmp) : "It"} explodes at a spot in ${
+            (isok_mu(wx, wy) && game.level.at(wx, wy).typ === WATER_MU) /* is_waterwall() */
+                ? "empty water" : "thin air"}!`);
+    } else {
+        await hitmsg(mtmp, mattk);
+    }
+
+    switch (mattk.adtyp) {
+    case M.AD_COLD:
+    case M.AD_FIRE:
+    case M.AD_ELEC:
+        await mon_explodes_mu(mtmp, mattk);
+        if (!DEADMONSTER(mtmp))
+            kill_agr = false; /* lifesaving? */
+        break;
+    case M.AD_BLND:
+        not_affected = resists_blnd_mu(game.youmonst);
+        if (ufound && !not_affected) {
+            /* sometimes you're affected even if it's invisible */
+            if (mon_visible(mtmp) || (rnd(tmp = Math.trunc(tmp / 2)) > game.u.ulevel)) {
+                await You("are blinded by a blast of light!");
+                await make_blinded_mu(tmp, false);
+                if (!Blind())
+                    await Your("vision quickly clears."); /* Your1(vision_clears) */
+            } else if (game.flags.verbose)
+                await You("get the impression it was not terribly bright.");
+        }
+        break;
+    case M.AD_HALU:
+        not_affected = not_affected || Blind()
+                       || (game.u.umonnum === M.PM_BLACK_LIGHT
+                           || game.u.umonnum === M.PM_VIOLET_FUNGUS
+                           || dmgtype(game.youmonst.data, M.AD_STUN));
+        if (ufound && !not_affected) {
+            let chg;
+            if (!uhave(HALLUC_MU))
+                await You("are caught in a blast of kaleidoscopic light!");
+            /* avoid hallucinating the black light as it dies */
+            await mondead_mu(mtmp); /* remove it from map now */
+            kill_agr = false; /* already killed (maybe lifesaved) */
+            chg = await make_hallucinated_mu(
+                game.u.uprops[HALLUC_MU].intrinsic + tmp, false, 0);
+            await You(`${chg ? "are freaked out" : "seem unaffected"}.`);
+        }
+        break;
+    default:
+        /* impossible("unknown exploder damage type %d", mattk->adtyp) */
+        break;
+    }
+    if (not_affected) {
+        await You("seem unaffected by it.");
+        await ugolemeffects_mu(mattk.adtyp, tmp);
+    }
+    if (kill_agr && !DEADMONSTER(mtmp))
+        await mondead_mu(mtmp);
+    await wake_nearto_mu(mtmp.mx, mtmp.my, 7 * 7);
+    return (!DEADMONSTER(mtmp)) ? M_ATTK_MISS : M_ATTK_AGR_DIED;
+}
+import { defended as defended_mu, resists_blnd as resists_blnd_mu } from './mondata.js';
+import { You, Your } from './display.js';
+import { isok as isok_mu, WATER as WATER_MU, HALLUC as HALLUC_MU } from './const.js';
+import { mon_explodes as mon_explodes_mu } from './explode.js';
+import { make_blinded as make_blinded_mu,
+         make_hallucinated as make_hallucinated_mu } from './potion.js';
+import { ugolemeffects as ugolemeffects_mu } from './polyself.js';
+import { mondead as mondead_mu, wake_nearto as wake_nearto_mu } from './mon.js';
 
 // C ref: mhitu.c mdamageu()
 /* mtmp hits you for n points damage */

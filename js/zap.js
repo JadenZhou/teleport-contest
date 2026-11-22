@@ -2598,8 +2598,8 @@ export async function dobuzz(
     g.bhitpos = save_bhitpos;
 }
 
-// C ref: zap.c zap_over_floor() -- the cases with no terrain/object
-// effects; everything else throws until ported
+// C ref: zap.c zap_over_floor() -- melting/freezing water, ice and lava,
+// dissolving iron bars and boiling pools aren't ported yet
 export async function zap_over_floor(
     x, y,              /* location */
     type,              /* damage type plus {wand|spell|breath} info */
@@ -2613,7 +2613,7 @@ export async function zap_over_floor(
     let rangemod = 0;
     const damgtype = zaptype(type) % 10;
     const lavawall = (lev.typ === LAVAWALL);
-    void shopdamage;
+    let t;
 
     if (type === PHYS_EXPL_TYPE) {
         /* this won't have any effect on the floor */
@@ -2621,28 +2621,58 @@ export async function zap_over_floor(
     }
 
     switch (damgtype) {
-    case ZT_FIRE: {
-        const t = t_at(x, y);
-        if (t && t.ttyp === WEB)
-            throw new Error('zap_over_floor(): burning a web not ported yet');
-        if (lev.typ === ICE || is_pool(x, y) || lev.typ === FOUNTAIN)
-            throw new Error('zap_over_floor(): fire over ice/water/fountain not ported yet');
+    case ZT_FIRE:
+        t = t_at(x, y);
+        if (t && t.ttyp === WEB) {
+            /* a burning web is too flimsy to notice if you can't see it */
+            if (see_it)
+                await Norep_zp("A web bursts into flames!");
+            await delfloortrap_zp(t), t = null;
+            if (see_it)
+                newsym(x, y);
+        }
+        if (is_ice_zp(x, y)) {
+            throw new Error('zap_over_floor(): melt_ice() not ported yet');
+        } else if (is_pool(x, y)) {
+            throw new Error('zap_over_floor(): fire boiling a pool not ported yet');
+        } else if (lev.typ === FOUNTAIN) { /* IS_FOUNTAIN() */
+            await create_gas_cloud_zp(x, y, rnd(3), 0); /* 1..3, no damage */
+            if (see_it)
+                await pline("Steam billows from the fountain.");
+            rangemod -= 1;
+            await dryup_zp(x, y, type > 0);
+        }
         break; /* ZT_FIRE */
-    }
+
     case ZT_COLD:
-        if (is_pool(x, y) || is_lava(x, y) || lavawall || lev.typ === ICE)
-            throw new Error('zap_over_floor(): cold over water/lava/ice not ported yet');
+        if (is_pool(x, y) || is_lava(x, y) || lavawall)
+            throw new Error('zap_over_floor(): cold freezing water/lava not ported yet');
+        else if (is_ice_zp(x, y))
+            throw new Error('zap_over_floor(): cold firming up ice (melt timers) not ported yet');
         break; /* ZT_COLD */
 
     case ZT_POISON_GAS:
+        /* poison gas with range 1: green dragon/iron golem breath (AD_DRST);
+           caller is placing a series of 1x1 clouds along the zap's path;
+           <x,y> for wall locations might be included--reject those */
         if (ZAP_POS(lev.typ))
-            throw new Error('zap_over_floor(): create_gas_cloud() not ported yet');
+            await create_gas_cloud_zp(x, y, 1, 8);
         break;
 
     case ZT_LIGHTNING:
-    case ZT_ACID:
-        if (lev.typ === IRONBARS)
-            throw new Error('zap_over_floor(): ray hitting iron bars not ported yet');
+    case ZT_ACID: // eslint-disable-line no-fallthrough
+        if (lev.typ === IRONBARS) {
+            if (damgtype === ZT_LIGHTNING && rn2(10))
+                break;
+            if ((lev.wall_info & W_NONDIGGABLE_ZP) !== 0) {
+                if (see_it)
+                    await Norep_zp(`The iron bars ${
+                        (damgtype === ZT_ACID) ? "corrode" : "melt"} somewhat but remain intact.`);
+                /* but nothing actually happens... */
+            } else {
+                throw new Error('zap_over_floor(): dissolve_bars() not ported yet');
+            }
+        }
         break; /* ZT_ACID */
 
     default:
@@ -2660,38 +2690,101 @@ export async function zap_over_floor(
             zapverb = "bolt"; /* wand zap */
         else if (ztype < ZT_BREATH(0))
             zapverb = "spell";
-    } else {
-        throw new Error('zap_over_floor(): exploding wand/oil not ported yet');
+    } else if (exploding_wand_typ === POT_OIL
+               || exploding_wand_typ === SCR_FIRE) {
+        /* breakobj() -> explode_oil() -> splatter_burning_oil()
+           -> explode(ZT_SPELL(ZT_FIRE), BURNING_OIL)
+           -> zap_over_floor(ZT_SPELL(ZT_FIRE), POT_OIL) */
+        /* leave zapverb as "blast"; exploding_wand_typ was nonzero, so
+           'yourzap' is FALSE and the result will be "the blast" */
+        exploding_wand_typ = 0; /* not actually an exploding wand */
     }
 
     /* secret door gets revealed, converted into regular door */
-    if (lev.typ === SDOOR)
-        throw new Error('zap_over_floor(): revealing a secret door not ported yet');
+    if (lev.typ === SDOOR) {
+        cvt_sdoor_to_door_zp(lev); /* .typ = DOOR */
+        recalc_block_point_zp(x, y);
+        /* target spot will now pass closed_door() test below
+           (except on rogue level) */
+        newsym(x, y);
+        if (see_it)
+            await pline(`${yourzap ? "Your" : "The"} ${zapverb} reveals a secret door.`);
+        else if (Is_rogue_level_zp(g.u.uz))
+            throw new Error('zap_over_floor(): draft_message() not ported yet');
+    }
 
     /* regular door absorbs remaining zap range, possibly gets destroyed */
     if (closed_door(x, y)) {
+        let new_doormask = -1;
+        let see_txt = null, sense_txt = null, hear_txt = null;
+
         rangemod = -1000;
+        let def_case = false;
         switch (damgtype) {
         case ZT_FIRE:
+            new_doormask = D_NODOOR_ZP;
+            see_txt = "The door is consumed in flames!";
+            sense_txt = "smell smoke.";
+            break;
         case ZT_COLD:
-        case ZT_LIGHTNING:
-            throw new Error('zap_over_floor(): ray destroying a door not ported yet');
+            new_doormask = D_NODOOR_ZP;
+            see_txt = "The door freezes and shatters!";
+            hear_txt = "a deep cracking sound.";
+            break;
         case ZT_DEATH:
             /* death spells/wands don't disintegrate */
-            if (Math.abs(type) === ZT_BREATH(ZT_DEATH))
-                throw new Error('zap_over_floor(): ray destroying a door not ported yet');
-            /* goto def_case */
-            // eslint-disable-next-line no-fallthrough
+            if (Math.abs(type) !== ZT_BREATH(ZT_DEATH)) {
+                def_case = true; /* goto def_case */
+                break;
+            }
+            new_doormask = D_NODOOR_ZP;
+            see_txt = "The door disintegrates!";
+            hear_txt = "crashing wood.";
+            break;
+        case ZT_LIGHTNING:
+            new_doormask = D_BROKEN_ZP;
+            see_txt = "The door splinters!";
+            hear_txt = "crackling.";
+            break;
         default:
-            /* def_case: (exploding_wand_typ is 0 here) */
-            if (see_it) {
+            def_case = true;
+            break;
+        }
+        if (def_case) {
+            /* def_case: */
+            if (exploding_wand_typ > 0
+                /* Magical explosion from misc exploding wand */
+                && exploding_wand_typ === O_zy.WAN_STRIKING) {
+                new_doormask = D_BROKEN_ZP;
+                see_txt = "The door crashes open!";
+                sense_txt = "feel a burst of cool air.";
+            } else if (see_it) {
                 /* "the door absorbs the blast" would be
                    inaccurate for an exploding wand since
                    other adjacent locations still get hit */
-                await pline_The(`door absorbs ${yourzap ? "your" : "the"} ${zapverb}!`);
+                if (exploding_wand_typ)
+                    await pline_The("door remains intact.");
+                else
+                    await pline_The(`door absorbs ${yourzap ? "your" : "the"} ${zapverb}!`);
             } else
-                await You("feel vibrations."); /* You_feel() */
-            break;
+                await You_feel("vibrations.");
+        }
+        if (new_doormask >= 0) { /* door gets broken */
+            if (in_rooms_zp(x, y, SHOPBASE_ZP).length)
+                throw new Error('zap_over_floor(): add_damage() for a shop door not ported yet');
+            lev.doormask = new_doormask;
+            recalc_block_point_zp(x, y); /* vision */
+            if (see_it) {
+                await pline(see_txt);
+                newsym(x, y);
+            } else if (sense_txt) {
+                await You(sense_txt);
+            } else if (hear_txt)
+                await You_hear_zp(hear_txt);
+            if (picking_at_zp(x, y)) {
+                await stop_occupation();
+                reset_pick_zp();
+            }
         }
     }
 
@@ -2909,3 +3002,16 @@ import { explode } from './explode.js';
 import { losexp as losexp_zp } from './exper.js';
 import { tele as tele_zp } from './teleport.js';
 import { LOW_PM as LOW_PM_ZP } from './monsters.js';
+import { Norep as Norep_zp } from './display.js';
+import { delfloortrap as delfloortrap_zp } from './trap.js';
+import { is_ice as is_ice_zp } from './dig.js';
+import { create_gas_cloud as create_gas_cloud_zp } from './region.js';
+import { dryup as dryup_zp } from './fountain.js';
+import { W_NONDIGGABLE as W_NONDIGGABLE_ZP, D_NODOOR as D_NODOOR_ZP,
+         D_BROKEN as D_BROKEN_ZP, SHOPBASE as SHOPBASE_ZP,
+         Is_rogue_level as Is_rogue_level_zp } from './const.js';
+import { cvt_sdoor_to_door as cvt_sdoor_to_door_zp } from './detect.js';
+import { recalc_block_point as recalc_block_point_zp } from './vision.js';
+import { in_rooms as in_rooms_zp } from './hack.js';
+import { You_hear as You_hear_zp } from './sounds.js';
+import { picking_at as picking_at_zp, reset_pick as reset_pick_zp } from './lock.js';
