@@ -53,7 +53,7 @@ import { costly_spot, shop_keeper, inside_shop, inhishop, next_shkp, onbill,
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
     tty_select_menu, tty_message_menu, tty_yn_function, tty_display_nhwindow,
-    tty_putstr, tty_destroy_nhwindow,
+    tty_putstr, tty_destroy_nhwindow, add_menu_str,
 } from './wintty.js';
 
 const invlet_basic = 52;
@@ -281,8 +281,8 @@ function sortloot_invent(sortpack) {
 
 // C ref: invent.c display_pickinv() -- internal function used by
 // display_inventory and getobj that can display inventory and return a
-// count as well as a letter (no wizard identify, no perm_invent, no
-// in-use-only listing)
+// count as well as a letter (wizard identify only when everything is
+// identified already; no perm_invent, no in-use-only listing)
 async function display_pickinv(lets, /* non-compacted list of invlet values */
                                xtra_choice, /* non-object "bare hands" or "fingers" */
                                query, /* optional; prompt string for menu */
@@ -298,8 +298,7 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
     if (lets && !lets.length)
         lets = null; /* simplify tests: (lets) instead of (lets && *lets) */
 
-    if (game.iflags?.override_ID && game.flags?.debug)
-        throw new Error('display_pickinv(): wizid is not ported yet');
+    const wizid = !!(game.flags?.debug && game.iflags?.override_ID);
 
     /* partial inventory in perm_invent setting; don't operate on
        full inventory window, use an alternate one instead; create
@@ -312,9 +311,9 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
     n = lets ? lets.length
              : !game.invent ? 0 : !game.invent.nobj ? 1 : 2;
     /* for xtra_choice, there's another 'item' not included in initial 'n';
-       for !lets (full invent), skip message_menu handling of single item
-       even if item count was 1 */
-    if (usextra || (n === 1 && !lets))
+       for !lets (full invent) and for override_ID (wizard mode identify),
+       skip message_menu handling of single item even if item count was 1 */
+    if (usextra || (n === 1 && (!lets || wizid)))
         ++n;
     if (n === 0) {
         await pline("Not carrying anything.");
@@ -353,7 +352,23 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
         throw new Error('display_pickinv(): in-use/sortloot menus are not ported yet');
     const sortedinvent = sortloot_invent(sortpack);
     tty_start_menu(win, MENU_BEHAVE_STANDARD);
-    if (usextra) {
+    if (wizid) {
+        let prompt;
+        const unid_cnt = count_unidentified(game.invent);
+
+        prompt = "Debug Identify"; /* 'title' rather than 'prompt' */
+        if (unid_cnt)
+            prompt += ` -- unidentified or partially identified item${unid_cnt !== 1 ? "s" : ""}`;
+        add_menu_str(win, prompt);
+        if (!unid_cnt) {
+            add_menu_str(win,
+                         "(all items are permanently identified already)");
+        } else {
+            /* the '_' select-all entry, and the item names shown with
+               override_ID (objnam.c) */
+            throw new Error('display_pickinv(): wizard identify of unidentified items not ported yet');
+        }
+    } else if (usextra) {
         if (sortpack)
             add_menu_heading(win, "Miscellaneous");
         tty_add_menu(win, null, HANDS_SYM, HANDS_SYM, '', ATR_NONE, clr,
@@ -369,6 +384,8 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
             if (lets && !lets.includes(otmp.invlet))
                 continue;
             if (!sortpack || otmp.oclass === def_inv_order[invlet]) {
+                if (wizid && !not_fully_identified_iv(otmp))
+                    continue;
                 /* maybe insert a class header */
                 if (sortpack && !classcount) {
                     const withsym = (want_reply && game.iflags?.menu_head_objsym);
@@ -396,9 +413,12 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
         throw new Error('display_pickinv(): force_invmenu is not ported yet');
 
     tty_end_menu(win, (query && query[0]) ? query : null);
-    const res = await tty_select_menu(win, want_reply ? PICK_ONE : PICK_NONE);
+    const res = await tty_select_menu(win, wizid ? PICK_ANY
+                                           : want_reply ? PICK_ONE : PICK_NONE);
     n = res.n;
-    if (n > 0) {
+    if (n > 0 && wizid) {
+        throw new Error('display_pickinv(): wizard identify selection not ported yet');
+    } else if (n > 0) {
         ret = res.selected[0].item;
         if (out_cnt)
             out_cnt.v = res.selected[0].count;

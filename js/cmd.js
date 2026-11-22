@@ -26,7 +26,7 @@ import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
 import { strcmpi, strncmpi, highc, visctrl, strstri } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele, dotelecmd } from './teleport.js';
-import { wiz_level_change, wiz_wish } from './wizcmds.js';
+import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
          doprtool, add_menu_heading } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
@@ -175,6 +175,8 @@ const cmd_funcs = {
     doturn: () => doturn(),
     dosacrifice: () => dosacrifice(),
     enter_explore_mode: () => enter_explore_mode(),
+    wiz_identify: () => wiz_identify(),
+    wiz_intrinsic: () => wiz_intrinsic(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */
 ["west", "northwest", "north", "northeast", "east", "southeast", "south",

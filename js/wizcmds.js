@@ -2,7 +2,8 @@
 // C ref: wizcmds.c
 //
 // Ported so far: #levelchange (wiz_level_change(), with exper.c losexp()
-// and pluslvl()) and the ^W wish (wiz_wish(), zap.c makewish()); most of
+// and pluslvl()), ^I (wiz_identify()), #wizintrinsic (wiz_intrinsic())
+// and the ^W wish (wiz_wish(), zap.c makewish()); most of
 // hold_another_object() (merging, inventory letters, prinv()) is not
 // ported yet.
 
@@ -23,6 +24,24 @@ import { losexp, pluslvl } from './exper.js';
 import { near_capacity, inv_cnt } from './hack.js';
 import { encumber_msg } from './pickup.js';
 import { MOD_ENCUMBER } from './const.js';
+import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ANY, TIMEOUT,
+         HALLUC_RES, FIRE_RES, SICK, SLIMED, STONED, BLINDED, DEAF, HALLUC,
+         STUNNED, VOMITING, WARN_OF_MON, GLIB, LEVITATION, FLYING,
+         PROT_FROM_SHAPE_CHANGERS, WWALKING, SICK_VOMITABLE, SICK_NONVOMITABLE,
+         KILLED_BY } from './const.js';
+import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { rn2 } from './rng.js';
+import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
+         tty_select_menu, tty_destroy_nhwindow, add_menu_str } from './wintty.js';
+import { property_by_index } from './timeout.js';
+import { make_blinded, make_deaf, make_hallucinated, make_sick, make_slimed,
+         make_stoned, make_stunned, make_vomiting, make_glib,
+         incr_itimeout } from './potion.js';
+import { float_vs_flight } from './polyself.js';
+import { pooleffects } from './hack.js';
+import { docrt } from './display.js';
+import { display_inventory } from './invent.js';
+import { cmd_from_func } from './cmd.js';
 
 // C ref: wizcmds.c wiz_level_change() -- #levelchange
 export async function wiz_level_change() {
@@ -248,5 +267,162 @@ export async function wiz_wish() {
         /* encumber_msg() -- not ported yet */
     } else
         await pline("Unavailable command 'wizwish'."); /* unavailcmd */
+    return 0; /* ECMD_OK */
+}
+
+// C ref: wizcmds.c wiz_identify() -- ^I, #wizidentify
+export async function wiz_identify() {
+    const g = game;
+    if (g.flags?.debug) {
+        g.iflags.override_ID = cmd_from_func("wiz_identify");
+        /* command remapping might leave #wizidentify as the only way
+           to invoke us, in which case cmd_from_func() will yield NUL;
+           it won't matter to display_inventory()/display_pickinv()
+           if ^I invokes some other command--what matters is that
+           display_pickinv() and xname() see override_ID as nonzero */
+        if (!g.iflags.override_ID)
+            g.iflags.override_ID = '\x09'; /* C('I') */
+        await display_inventory(null, false);
+        g.iflags.override_ID = 0;
+    } else
+        await pline("Unavailable command 'wizidentify'."); /* unavailcmd */
+    return 0; /* ECMD_OK */
+}
+
+/* C ref: wizcmds.c DEFAULT_TIMEOUT_INCR */
+const DEFAULT_TIMEOUT_INCR = 30;
+
+// C ref: wizcmds.c wiz_intrinsic() -- #wizintrinsic
+export async function wiz_intrinsic() {
+    const g = game, u = g.u;
+    if (g.flags?.debug) {
+        const wizintrinsic = "#wizintrinsic";
+        const fmt = (still, what) => `You are${still} ${what}.`;
+        let buf;
+        let i, j, n, amt, typ;
+        const p = { v: 0 };
+        let oldtimeout, newtimeout;
+        let propname;
+        const clr = NO_COLOR;
+        const intrinsic = (prop) => (u.uprops[prop]?.intrinsic || 0);
+
+        const win = tty_create_nhwindow(NHW_MENU);
+        tty_start_menu(win, MENU_BEHAVE_STANDARD);
+        if (g.iflags.cmdassist) {
+            /* start menu with a subtitle */
+            buf = `[Precede any selection with a count to increment by other than ${DEFAULT_TIMEOUT_INCR}.]`;
+            add_menu_str(win, buf);
+        }
+        for (i = 0; (propname = property_by_index(i, p)) != null; ++i) {
+            if (p.v === HALLUC_RES) {
+                /* Grayswandir vs hallucination; ought to be redone to
+                   use u.uprops[HALLUC].blocked instead of being treated
+                   as a separate property; letting in be manually toggled
+                   even only in wizard mode would be asking for trouble... */
+                continue;
+            }
+            if (p.v === FIRE_RES) {
+                /* FIRE_RES and properties beyond it (in the propertynames[]
+                   ordering, not their numerical PROP values), can only be
+                   set to timed values here so show a separator */
+                add_menu_str(win, "--");
+            }
+            /* any.a_int = i + 1: +1 avoids 0 */
+            oldtimeout = intrinsic(p.v) & TIMEOUT;
+            if (oldtimeout)
+                buf = `${propname.padEnd(27)} [${oldtimeout}]`;
+            else
+                buf = propname;
+            tty_add_menu(win, null, i + 1, 0, 0, ATR_NONE, clr, buf,
+                         MENU_ITEMFLAGS_NONE);
+        }
+        tty_end_menu(win, "Which intrinsics?");
+        const res = await tty_select_menu(win, PICK_ANY);
+        n = res.n;
+        await tty_destroy_nhwindow(win);
+
+        for (j = 0; j < n; ++j) {
+            i = res.selected[j].item - 1; /* -1: reverse +1 above */
+            propname = property_by_index(i, p);
+            oldtimeout = intrinsic(p.v) & TIMEOUT;
+            amt = (res.selected[j].count === -1) ? DEFAULT_TIMEOUT_INCR
+                                                 : res.selected[j].count;
+            if (amt <= 0) /* paranoia */
+                continue;
+            newtimeout = oldtimeout + amt;
+
+            switch (p.v) {
+            case SICK:
+            case SLIMED:
+            case STONED:
+                if (oldtimeout > 0 && newtimeout > oldtimeout)
+                    newtimeout = oldtimeout;
+                break;
+            }
+
+            let def_feedback = false;
+            switch (p.v) {
+            case BLINDED:
+                await make_blinded(newtimeout, true);
+                break;
+            case DEAF:
+                await make_deaf(newtimeout, true);
+                break;
+            case HALLUC:
+                await make_hallucinated(newtimeout, true, 0);
+                break;
+            case SICK:
+                typ = !rn2(2) ? SICK_VOMITABLE : SICK_NONVOMITABLE;
+                await make_sick(newtimeout, wizintrinsic, true, typ);
+                break;
+            case SLIMED:
+                buf = fmt(!intrinsic(SLIMED) ? "" : " still", "turning into slime");
+                await make_slimed(newtimeout, buf);
+                break;
+            case STONED:
+                buf = fmt(!intrinsic(STONED) ? "" : " still", "turning into stone");
+                await make_stoned(newtimeout, buf, KILLED_BY, wizintrinsic);
+                break;
+            case STUNNED:
+                await make_stunned(newtimeout, true);
+                break;
+            case VOMITING:
+                buf = fmt(!intrinsic(VOMITING) ? "" : " still", "vomiting");
+                await make_vomiting(newtimeout, false);
+                await pline(buf);
+                break;
+            case WARN_OF_MON:
+                /* if (!Warn_of_mon): context.warntype.species = PM_GRID_BUG */
+                throw new Error('wiz_intrinsic(): warn_of_mon species not ported yet');
+            case GLIB:
+                /* slippery fingers might need a persistent inventory update
+                   so needs more than simple incr_itimeout() but we want
+                   the pline() issued with that */
+                make_glib(newtimeout);
+                def_feedback = true; /* FALLTHRU */
+                break;
+            default:
+                def_feedback = true;
+                break;
+            }
+            if (def_feedback) { /* def_feedback: */
+                if (p.v !== GLIB)
+                    incr_itimeout(p.v, amt);
+                g.disp_botl = true; /* have pline() do a status update */
+                await pline(`Timeout for ${propname} ${oldtimeout ? "increased by" : "set to"} ${amt}.`);
+            }
+            /* this has to be after incr_itimeout() */
+            if (p.v === LEVITATION || p.v === FLYING)
+                float_vs_flight();
+            else if (p.v === PROT_FROM_SHAPE_CHANGERS)
+                throw new Error('wiz_intrinsic(): rescham() not ported yet');
+            if (p.v === WWALKING || p.v === LEVITATION || p.v === FLYING) {
+                if (u.uinwater)
+                    await pooleffects(false);
+            }
+        }
+        await docrt();
+    } else
+        await pline("Unavailable command 'wizintrinsic'."); /* unavailcmd */
     return 0; /* ECMD_OK */
 }
