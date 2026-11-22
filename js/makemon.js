@@ -76,6 +76,8 @@ import { mpickobj } from './steal.js';
 import { add_to_minv } from './mkobj.js';
 import { m_dowear, which_armor, mon_adjust_speed_sync } from './worn.js';
 import { def_monsyms } from './drawing.js';
+import { get_wormno, initworm, count_wsegs, place_worm_tail_randomly,
+         wseg_mon_at } from './worm.js';
 import { Is_waterlevel, Is_firelevel, Is_airlevel, G_GENOD,
          G_EXTINCT } from './const.js';
 import { is_flyer } from './mondata.js';
@@ -617,12 +619,13 @@ function Is_earthlevel() { return on_lev(game.dungeon_topology.d_earth_level); }
 // C ref: hack.h u_at()
 export function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
 // C ref: display.h m_at(); MON_AT() -- level monsters are kept in
-// game.level.monsters (C keeps a grid; a list with mx/my is equivalent)
+// game.level.monsters (C keeps a grid; a list with mx/my is equivalent);
+// a long worm's tail segments are its grid cells kept in game.level.wsegs
 export function m_at(x, y) {
     const lst = game.level.monsters || [];
     for (const m of lst)
         if (m.mx === x && m.my === y && !m.dead) return m;
-    return null;
+    return wseg_mon_at(x, y);
 }
 export function MON_AT(x, y) { return !!m_at(x, y); }
 // C ref: mon.c place_monster()
@@ -1931,7 +1934,7 @@ export function makemon(ptr, x, y, mmflags) {
     if (mndx === M.PM_LONG_WORM && (mtmp.wormno = get_wormno()) !== 0) {
         initworm(mtmp, allowtail ? rn2(5) : 0);
         if (count_wsegs(mtmp))
-            throw new Error('makemon(): place_worm_tail_randomly() not ported yet');
+            place_worm_tail_randomly(mtmp, x, y);
     }
     /* it's possible to create an ordinary monster of some special
        types; make sure their extended data is initialized to
@@ -2431,31 +2434,6 @@ function* hideunder_core(mtmp) {
     if (undetected !== oldundetctd)
         newsym(x, y);
     return undetected;
-}
-// C ref: worm.c get_wormno()
-function get_wormno() {
-    if (!game.wheads) game.wheads = new Array(32).fill(null);
-    let new_wormno = 1;
-    while (new_wormno < 32) {
-        if (!game.wheads[new_wormno])
-            return new_wormno; /* found an empty wtails[] slot at new_wormno */
-        new_wormno++;
-    }
-    return 0; /* level infested with worms */
-}
-// C ref: worm.c initworm()
-/* the port keeps only the head (game.wheads[]) of a worm with no tail;
-   tail segments (create_worm_tail()) are not ported yet */
-function initworm(worm, wseg_count) {
-    if (wseg_count)
-        throw new Error('initworm(): create_worm_tail() not ported yet');
-    game.wheads[worm.wormno] = worm;
-}
-// C ref: worm.c count_wsegs()
-/* count the number of segments this worm has; the port's worms have
-   none (see initworm()) */
-function count_wsegs(mtmp) {
-    return 0;
 }
 // C ref: steed.c put_saddle_on_mon()
 export function put_saddle_on_mon(saddle, mtmp) {

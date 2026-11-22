@@ -27,6 +27,7 @@ import {
     NON_PM, MALE, FEMALE, NEUTRAL, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG,
     BLINDED, HALLUC, Has_contents, has_oname, ONAME,
     W_ARMOR, W_AMUL, W_WEP, W_SWAPWEP, W_QUIVER, W_RINGL, W_RINGR, ONAME_WISH, GLIB,
+    W_BALL, W_CHAIN,
     COST_CONTENTS,
 } from './const.js';
 import * as M from './monsters.js';
@@ -3644,6 +3645,8 @@ function doname_base(obj, doname_flags) {
     case O.BALL_CLASS:
     case O.CHAIN_CLASS:
         prefix = add_erosion_words(obj, prefix);
+        if (obj.owornmask & (W_BALL | W_CHAIN))
+            bp += ` (${(obj.owornmask & W_BALL) ? "chained" : "attached"} to you)`;
         break;
     }
 
@@ -3705,7 +3708,7 @@ function doname_base(obj, doname_flags) {
                     : "at the ready"})`;
     }
     if ((obj.owornmask & ~(W_ARMOR | W_AMUL | W_WEP | W_SWAPWEP | W_QUIVER
-                           | W_RINGL | W_RINGR))
+                           | W_RINGL | W_RINGR | W_BALL | W_CHAIN))
         || ((obj.owornmask & (W_RINGL | W_RINGR)) && obj.oclass !== O.RING_CLASS))
         xn_not_ported('meat ring/tool/leash worn suffixes');
 

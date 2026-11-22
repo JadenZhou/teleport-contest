@@ -11,7 +11,7 @@ import { mons, PM_HIGH_CLERIC, PM_ALIGNED_CLERIC } from './monsters.js';
 import { AMULET_OF_YENDOR } from './objects.js';
 import {
     A_NONE, A_LAWFUL, A_CHAOTIC, A_NEUTRAL, N_DIRS, ROOMOFFSET, ALL_TRAPS,
-    MM_EPRI, RLOC_NOMSG, W_ARMC, Amask2align,
+    MM_EPRI, RLOC_NOMSG, W_ARMC, Amask2align, MM_ADJACENTOK, MM_EMIN,
 } from './const.js';
 import { on_level, assign_level } from './dungeon.js';
 import { makemon, mongets, set_malign, m_at, MON_AT } from './makemon.js';
@@ -501,6 +501,32 @@ function is_minion(ptr) { return (ptr.mflags2 & M2_MINION) !== 0; }
 function is_rider(ptr) {
     return ptr === mons[PM_DEATH] || ptr === mons[PM_FAMINE]
            || ptr === mons[PM_PESTILENCE];
+}
+
+// C ref: priest.c mk_roamer()
+/* synchronous, as sp_lev.c create_monster() calls it while making a level;
+   uses rloc_mklev() for the "insurance" rloc() */
+export function mk_roamer(ptr, alignment, x, y, peaceful) {
+    let roamer;
+    const coaligned = (game.u.ualign.type === alignment);
+
+    if (MON_AT(x, y))
+        rloc_mklev(m_at(x, y), RLOC_NOMSG); /* insurance */
+
+    if (!(roamer = makemon(ptr, x, y, MM_ADJACENTOK | MM_EMIN | MM_NOMSG)))
+        return null;
+
+    roamer.emin.min_align = alignment;
+    roamer.emin.renegade = (coaligned && !peaceful) ? 1 : 0;
+    roamer.ispriest = 0;
+    roamer.isminion = 1;
+    mon_learns_traps(roamer, ALL_TRAPS); /* traps are known */
+    roamer.mpeaceful = peaceful ? 1 : 0;
+    roamer.msleeping = 0;
+    set_malign(roamer); /* peaceful may have changed */
+
+    /* MORE TO COME */
+    return roamer;
 }
 
 // C ref: priest.c in_your_sanctuary()

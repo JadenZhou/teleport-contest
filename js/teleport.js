@@ -6,6 +6,7 @@
 // teleport.c.
 
 import { game } from './gstate.js';
+import { remove_worm, place_worm_tail_randomly } from './worm.js';
 import { rn2, rnl } from './rng.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
@@ -1080,7 +1081,15 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
         }
 
         if (mtmp.wormno) {
-            throw new Error('rloc_to_core(): remove_worm() not ported yet');
+            const lst = game.level.monsters || [];
+            const idx = lst.indexOf(mtmp);
+
+            remove_worm(mtmp);
+            /* remove_worm() took the head off the list too; keep its place
+               in the list, off the map as for remove_monster() below */
+            if (idx >= 0 && !lst.includes(mtmp))
+                lst.splice(idx, 0, mtmp);
+            mtmp.mx = 0, mtmp.my = 0;
         } else {
             /* remove_monster(oldx, oldy): game.level.monsters is keyed by
                mx/my, so moving the monster below is enough */
@@ -1092,6 +1101,9 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
     mon_track_clear(mtmp);
     place_monster(mtmp, x, y); /* put monster down */
     update_monster_region(mtmp);
+
+    if (mtmp.wormno) /* now put down tail */
+        place_worm_tail_randomly(mtmp, x, y);
 
     if (u.ustuck === mtmp)
         throw new Error('rloc_to_core(): u.ustuck teleporting not ported yet');

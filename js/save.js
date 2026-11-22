@@ -29,6 +29,7 @@ import { pline, There, docrt } from './display.js';
 import { tty_clear_nhwindow, tty_yn_function, tty_display_nhwindow,
          tty_exit_nhwindows, tty_getmsghistory } from './wintty.js';
 import { nomul } from './hack.js';
+import { save_worm } from './worm.js';
 import { vision_recalc } from './vision.js';
 import { change_luck } from './attrib.js';
 import { monsndx } from './mondata.js';
@@ -458,6 +459,7 @@ const LEVEL_SAVED_FIELDS = new Set([
     'nroom', 'subrooms', 'nsubroom', 'monsters', 'traps', 'objects',
     'buriedobjlist', 'head_engr', 'damagelist', 'regions', 'bonesinfo',
     'timer_base', 'light_base',
+    'wsegs', /* worm tail cells of level.monsters[][]: rebuilt by getlev() */
 ]);
 
 // C ref: save.c savelev_core()
@@ -644,10 +646,6 @@ function save_rooms(nhfp) {
         "room-mkroom");
 }
 
-// C ref: worm.c save_worm() -- long worms aren't ported
-function save_worm(nhfp) {
-    Sfo(nhfp, game.level?.worms ?? null, "worm");
-}
 
 // C ref: engrave.c save_engravings()
 function save_engravings(nhfp) {

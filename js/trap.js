@@ -57,7 +57,8 @@ import { bimanual } from './wield.js';
 /* C ref: mondata.h resists_ston() */
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
 import { rndmonnum_adj, mkcorpstat, add_to_container, weight } from './mkobj.js';
-import { makemon, sobj_at, is_pool, is_lava, closed_door } from './makemon.js';
+import { makemon, sobj_at, is_pool, is_lava, closed_door, goodpos } from './makemon.js';
+import { crawl_destination } from './hack.js';
 import { linedup } from './monmove.js';
 import { xdir, ydir, N_DIRS, ZAP_POS, is_xport } from './const.js';
 import { mongone, wake_nearto } from './mon.js';
@@ -2946,4 +2947,34 @@ export function maketrap(x, y, typ) {
         ftraps().unshift(ttmp);
     }
     return ttmp;
+}
+
+// C ref: trap.c rnd_nextto_goodpos()
+/* pick a random goodpos() next to x,y and write its coordinates to xy;
+   returns TRUE if found, FALSE if not */
+export function rnd_nextto_goodpos(xy, mtmp) {
+    let i, j;
+    const is_u = (mtmp === game.youmonst);
+    let nx, ny, k;
+    const dirs = new Array(N_DIRS);
+
+    for (i = 0; i < N_DIRS; ++i)
+        dirs[i] = i;
+    for (i = N_DIRS; i > 0; --i) {
+        j = rn2(i);
+        k = dirs[j];
+        dirs[j] = dirs[i - 1];
+        dirs[i - 1] = k;
+    }
+    for (i = 0; i < N_DIRS; ++i) {
+        nx = xy.x + xdir[dirs[i]];
+        ny = xy.y + ydir[dirs[i]];
+        /* crawl_destination and goodpos both include an isok() check */
+        if (is_u ? crawl_destination(nx, ny) : goodpos(nx, ny, mtmp, 0)) {
+            xy.x = nx;
+            xy.y = ny;
+            return true;
+        }
+    }
+    return false;
 }
