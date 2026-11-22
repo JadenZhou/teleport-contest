@@ -92,7 +92,9 @@ import { relobj, thiefdead, mdrop_special_objs, discard_minvent } from './steal.
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear, monflee } from './monmove.js';
 import { tele_restrict, rloc } from './teleport.js';
-import { can_teleport } from './mondata.js';
+import { can_teleport, resists_fire } from './mondata.js';
+import { on_fire } from './uhitm.js';
+import { m_in_air } from './monmove.js';
 import { FOUNTAIN, FLYING, LEVITATION, RLOC_MSG } from './const.js';
 import { canseemon, sensemon } from './display.js';
 import { UNICORN_HORN, WORM_TOOTH } from './objects.js';
@@ -1338,8 +1340,50 @@ async function minliquid_core(mtmp) {
          */
         if (!is_clinger(ptr)
             && !(ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER])) {
-            /* likes_lava() */
-            throw new Error('minliquid(): monster in lava not ported yet');
+            /* !likes_lava() */
+            /* not fair...?  hero doesn't automatically teleport away
+               from lava, just from water */
+            if (can_teleport(ptr) && !(await tele_restrict(mtmp))) {
+                if (await rloc(mtmp, RLOC_MSG))
+                    return 0;
+            }
+            if (!resists_fire(mtmp)) {
+                if (cansee(mtmp.mx, mtmp.my)) {
+                    const dummy = ptr.mattk[0];
+                    const how = on_fire(ptr, dummy);
+
+                    await pline(`${Monnam(mtmp)} ${how === "boiling" ? "boils away"
+                                 : how === "melting" ? "melts away"
+                                   : "burns to a crisp"}.`); /* pline_mon() */
+                }
+                /* unlike fire -> melt ice -> pool, there's no way for the
+                   hero to create lava beneath a monster, so the !mon_moving
+                   case is not expected to happen */
+                if (game.context.mon_moving)
+                    await mondead(mtmp); /* no corpse */
+                else
+                    await xkilled(mtmp, XKILL_NOMSG);
+            } else {
+                mtmp.mhp -= 1;
+                if (DEADMONSTER(mtmp)) {
+                    if (cansee(mtmp.mx, mtmp.my)) /* pline_mon() */
+                        await pline(`${Monnam(mtmp)} surrenders to the fire.`);
+                    await mondead(mtmp); /* no corpse */
+                } else if (cansee(mtmp.mx, mtmp.my)) {
+                    await pline(`${Monnam(mtmp)} burns slightly.`);
+                }
+            }
+            if (!DEADMONSTER(mtmp)) {
+                if (m_in_air(mtmp)) {
+                    ; /* vampshifter in wolf form can revert to vampire lord
+                       * and become a flyer so not need to teleport */
+                } else {
+                    /* (likes_lava case is hypothetical) */
+                    throw new Error('minliquid(): fire_damage_chain() not ported yet');
+                }
+                return 0;
+            }
+            return 1;
         }
     } else if (inpool || waterwall) {
         /* Most monsters drown in pools.  flooreffects() will take care of
