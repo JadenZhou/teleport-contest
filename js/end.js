@@ -397,12 +397,27 @@ async function savelife(how) {
     if (u.uprops[UNCHANGING])
         u.uprops[UNCHANGING].intrinsic = 0; /* HUnchanging = 0L */
     /* curs_on_u() */
-    if (!g.context.mon_moving && (g.multishot_active || g.m_shot?.i))
-        throw new Error('savelife(): endmultishot() not ported yet');
+    if (!g.context.mon_moving)
+        endmultishot(false);
     if (u.uswallow) {
         throw new Error('savelife(): expels() not ported yet');
     } else if (u.ustuck) {
         throw new Error('savelife(): unstuck() not ported yet');
+    }
+}
+
+// C ref: dothrow.c endmultishot()
+/* interrupt multishot (the 'verbose' message isn't needed here) */
+function endmultishot(verbose) {
+    const m_shot = game.m_shot;
+
+    if (m_shot && m_shot.i < m_shot.n) {
+        if (verbose && !game.context.mon_moving)
+            throw new Error('endmultishot(): verbose message not ported yet');
+        /* get rid of any pending multishot */
+        m_shot.n = m_shot.i = 0;
+        m_shot.o = 0; /* STRANGE_OBJECT */
+        m_shot.s = false;
     }
 }
 

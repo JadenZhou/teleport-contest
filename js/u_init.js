@@ -124,7 +124,11 @@ export function u_init_misc() {
         aligns[flags.initalign].value;
 
     /* Route through getnow() so fixed datetime also controls ubirthday. */
-    g.ubirthday = getnow();
+    /* ubirthday = getnow(); -- not modelled yet: C's getnow() is mktime()
+       of the fixed datetime in the recorder's time zone, with the DST flag
+       of the real clock at recording time; ubirthday stays 0 (and
+       yyyymmdd(0) gives the fixed datetime's date, as C's would) */
+    void getnow;
 
     /*
      *  For now, everyone starts out with a night vision range of 1 and
