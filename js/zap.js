@@ -23,7 +23,8 @@ import { mon_nam } from './do_name.js';
 import { resists_blnd, resists_blnd_by_arti } from './mondata.js';
 import { make_blinded } from './potion.js';
 import { body_part } from './insight.js';
-import { ARM } from './const.js';
+import { ARM, POLY_NOFLAGS } from './const.js';
+import { polyself } from './polyself.js';
 import { fall_asleep } from './timeout.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { bhit } from './dothrow.js';
@@ -1006,7 +1007,7 @@ export async function zapyourself(obj, ordinary) {
     case O_zy.SPE_POLYMORPH:
         if (!uhave_zp(UNCHANGING_ZP)) { /* !Unchanging */
             learn_it = true;
-            throw new Error('zapyourself(): polyself() not ported yet');
+            await polyself(POLY_NOFLAGS);
         }
         break;
 

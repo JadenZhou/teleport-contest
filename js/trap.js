@@ -7,6 +7,7 @@
 // set_levltyp()'s object/timer side effects, unearth_objs(),
 // recalc_block_point(), Sokoban bookkeeping.
 
+import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
 import { thitu } from './mthrowu.js';
 import { obfree } from './invent.js';
@@ -18,7 +19,7 @@ import { the } from './iactions.js';
 import { xname } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { poisoned } from './attrib.js';
-import { A_CON } from './const.js';
+import { A_CON, UNCHANGING } from './const.js';
 import { TELEPORT, POISON_RES, COLD_RES, SHOCK_RES, DISINT_RES, TELEPORT_CONTROL,
          STEALTH, FAST, INTRINSIC } from './const.js';
 import { PM_WIZARD, PM_ELF, PM_VALKYRIE } from './monsters.js';
@@ -325,8 +326,19 @@ export async function losehp(n, knam, k_format) {
     const u = game.u;
     game.disp_botl = true; /* u.uhp or u.mh is changing */
     end_running(true);
-    if (Upolyd())
-        throw new Error('losehp(): polymorphed hero not ported yet');
+    if (Upolyd()) {
+        u.mh -= n;
+        /* showdamage(n): the showdamage option isn't ported (default off) */
+        if (u.mhmax < u.mh)
+            u.mhmax = u.mh;
+        if (u.mh < 1)
+            await rehumanize();
+        else if (n > 0 && u.mh * 10 < u.mhmax
+                 && (u.uprops[UNCHANGING].intrinsic
+                     || u.uprops[UNCHANGING].extrinsic)) /* Unchanging */
+            await maybe_wail();
+        return;
+    }
 
     u.uhp -= n;
     /* showdamage(n): the showdamage option isn't ported (default off) */
@@ -2209,7 +2221,7 @@ export async function selftouch(arg) {
 }
 
 // C ref: trap.c mselftouch()
-async function mselftouch(mon, arg, byplayer) {
+export async function mselftouch(mon, arg, byplayer) {
     const mwep = mon.mw; /* MON_WEP(mon) */
 
     if (mwep && mwep.otyp === CORPSE

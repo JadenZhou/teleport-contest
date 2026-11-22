@@ -36,6 +36,7 @@ import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL, FIRST_OBJECT,
 } from './objects.js';
+import { pmname } from './do_name.js';
 import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS, S_EEL, M1_FLY,
          PM_TENGU, PM_LONG_WORM_TAIL, M1_SEE_INVIS } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
@@ -1905,7 +1906,7 @@ export function newsym(x, y) {
                 && !loc.waslit)
                 loc.remembered_glyph = rememb_glyph(S_corr_g);
         }
-        show_glyph_cell(x, y, '@', CLR_WHITE, false, 0, 'mon');
+        display_self();
         return;
     }
 
@@ -2315,7 +2316,19 @@ function _statusLine1() {
     /* C ref: botl.c do_statusline1(): plname with its first letter capitalized */
     const pn = game.plname || 'Hero';
     const name = ('a' <= pn[0] && pn[0] <= 'z') ? pn[0].toUpperCase() + pn.slice(1) : pn;
-    const role = game.urole?.rank ? rank() : 'Adventurer'; // C ref: botl.c rank()
+    const Upolyd = (u.umonnum !== u.umonster);
+    /* C ref: botl.c do_statusline1(): titl = !Upolyd ? rank()
+       : pmname(&mons[u.umonnum], Ugender); when poly'd, capitalize
+       each word of the monster name */
+    let role;
+    if (Upolyd) {
+        const Ugender = (Upolyd ? u.mfemale : game.flags.female) ? 1 : 0;
+        const titl = pmname(mons[u.umonnum], Ugender);
+        role = titl.split('').map((c, i) =>
+            (i === 0 || titl[i - 1] === ' ') ? c.toUpperCase() : c).join('');
+    } else {
+        role = game.urole?.rank ? rank() : 'Adventurer'; // C ref: botl.c rank()
+    }
     const title = `${name} the ${role}`;
     /* C ref: botl.c do_statusline1(): ACURR() of each attribute, in
        A_STR, A_DEX, A_CON, A_INT, A_WIS, A_CHA display order */
@@ -2333,8 +2346,11 @@ function _statusLine2() {
     if (!u) return '';
     /* C ref: botl.c do_statusline2(): experience is "Xp:N/pts" only with
        the showexp option, and the turn counter is shown only with time */
-    const expr = game.flags?.showexp ? `Xp:${u.ulevel || 1}/${u.uexp || 0}`
-                                     : `Xp:${u.ulevel || 1}`;
+    const Upolyd = (u.umonnum !== u.umonster);
+    /* BL_HD replaces BL_XP and BL_EXP while polymorphed */
+    const expr = Upolyd ? `HD:${mons[u.umonnum].mlevel}`
+                 : game.flags?.showexp ? `Xp:${u.ulevel || 1}/${u.uexp || 0}`
+                                       : `Xp:${u.ulevel || 1}`;
     const tmmv = game.flags?.time ? ` T:${game.moves}` : '';
     /* BL_HUNGER and BL_CAP (wintty.c status_fieldfmt " %s", with the
        hunger text's trailing blanks suppressed), then BL_CONDITION */
@@ -2347,11 +2363,12 @@ function _statusLine2() {
     const leveldesc = describe_level(1)[1].replace(/ +$/, '');
     /* botl.c bot_via_windowport(): BL_HP is u.uhp, but not below 0
        (gameover sets u.uhp to -1) */
-    const hpval = Math.max(u.uhp || 0, 0);
+    const hpval = Math.max((Upolyd ? u.mh : u.uhp) || 0, 0);
+    const hpmax = (Upolyd ? u.mhmax : u.uhpmax) || 0;
     /* encglyph(objnum_to_glyph(GOLD_PIECE)): the gold symbol of the current
        symset */
     const goldsym = (game.currentgraphics === ROGUESET) ? '*' : '$';
-    const line = `${leveldesc} ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${u.uhpmax || 0}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
+    const line = `${leveldesc} ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${hpmax}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
     /* make_things_fit(): shrinking or truncating an overlong line */
     if (line.length > 79)
         throw new Error('_statusLine2(): make_things_fit() shrinking not ported yet');
@@ -2588,7 +2605,16 @@ function clear_glyph_buffer() {
 
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
 function display_self() {
-    show_glyph_cell(game.u.ux, game.u.uy, '@', CLR_WHITE, false, 0, 'mon');
+    const u = game.u;
+    /* hero_glyph: monnum_to_glyph((Upolyd || !flags.showrace) ? u.umonnum
+       : gu.urace.mnum, Ugender); a polymorphed hero shows the monster */
+    if (u.umonnum !== u.umonster) { /* Upolyd */
+        const ptr = mons[u.umonnum];
+        show_glyph_cell(u.ux, u.uy, def_monsyms[ptr.mlet] ?? '?',
+                        ptr.mcolor ?? NO_COLOR, false, 0, 'mon');
+        return;
+    }
+    show_glyph_cell(u.ux, u.uy, '@', CLR_WHITE, false, 0, 'mon');
 }
 
 // C ref: display.c swallowed()
