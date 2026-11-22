@@ -2947,6 +2947,14 @@ export function xname(obj) {
     return xname_flags(obj, 0);
 }
 
+// C ref: objnam.c cxname()
+/* xname doesn't include monster type for "corpse"; cxname does */
+export function cxname(obj) {
+    if (obj.otyp === O.CORPSE)
+        return corpse_xname(obj, null, CXN_NORMAL);
+    return xname(obj);
+}
+
 // C ref: objnam.c cxname_singular()
 /* like cxname, but ignores quantity */
 export function cxname_singular(obj) {

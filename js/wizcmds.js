@@ -133,7 +133,7 @@ export async function hold_another_object(obj, drop_fmt, drop_arg, hold_msg) {
 }
 
 // C ref: zap.c makewish()
-async function makewish() {
+export async function makewish() {
     const g = game;
     const u = g.u;
     let buf;

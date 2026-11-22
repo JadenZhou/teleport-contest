@@ -169,7 +169,7 @@ async function oracle_sound(mtmp) {
 
 // C ref: mon.c get_iter_mons()
 /* iterate all living monsters on the level until bfunc returns TRUE */
-async function get_iter_mons(bfunc) {
+export async function get_iter_mons(bfunc) {
     let mtmp, mtmp2;
 
     for (mtmp = game.fmon; mtmp; mtmp = mtmp2) {
