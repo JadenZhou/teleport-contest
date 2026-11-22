@@ -54,7 +54,7 @@ import { xname } from './objnam.js';
 import { is_mplayer } from './makemon.js';
 import { mon_aligntyp } from './priest.js';
 import { A_WIS } from './const.js';
-import { KILLED_BY, A_CON, ECMD_OK, ECMD_TIME } from './const.js';
+import { KILLED_BY, A_CON, ECMD_OK, ECMD_TIME, nothing_happens } from './const.js';
 import { getrumor } from './rumors.js';
 import { bcsign } from './mkobj.js';
 import { pline } from './display.js';
@@ -1561,11 +1561,30 @@ function invoke_ok(obj) {
     return GETOBJ_EXCLUDE;
 }
 
-// C ref: artifact.c doinvoke() -- the #invoke command (M-i); invoking
-// the chosen object (retouch_object(), arti_invoke()) isn't ported
+// C ref: artifact.c doinvoke() -- the #invoke command (M-i)
 export async function doinvoke() {
     const obj = await getobj("invoke", invoke_ok, GETOBJ_PROMPT);
     if (!obj)
         return ECMD_CANCEL;
-    throw new Error('doinvoke(): retouch_object(), arti_invoke() not ported yet');
+    if (!await retouch_object(obj, false))
+        return ECMD_TIME;
+    return await arti_invoke(obj);
+}
+
+// C ref: artifact.c arti_invoke() -- objects without an invoke power;
+// the invoke powers themselves aren't ported yet
+async function arti_invoke(obj) {
+    if (!obj)
+        throw new Error('arti_invoke without obj'); /* impossible() */
+    const oart = get_artifact(obj);
+    if (oart === artilist()[ART_NONARTIFACT] || !oart.inv_prop) {
+        if (obj.otyp === O.CRYSTAL_BALL)
+            throw new Error('arti_invoke(): use_crystal_ball() not ported yet');
+        else
+            await pline(nothing_happens);
+        return ECMD_TIME;
+    }
+
+    /* It's a special power, not "just" a property */
+    throw new Error('arti_invoke(): artifact invoke powers (arti_invoke_cost(), invoke_*()) not ported yet');
 }
