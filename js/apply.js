@@ -260,6 +260,55 @@ async function flip_through_book(obj) {
     return ECMD_TIME;
 }
 
+// C ref: apply.c use_cream_pie()
+async function use_cream_pie(obj) {
+    const u = game.u;
+    const wasblind = Blind();
+    const wascreamed = u.ucreamed;
+    let several = false;
+
+    if (obj.quan > 1) {
+        several = true;
+        obj = splitobj_ap(obj, 1);
+    }
+    if (Hallucination())
+        await You("give yourself a facial.");
+    else
+        await You(`immerse your ${body_part(FACE_AP)} in ${
+            several ? "one of " : ""}${
+            several ? makeplural_ap(the_ap(xname_ap(obj))) : the_ap(xname_ap(obj))}.`);
+    if (can_blnd_ap(null, game.youmonst, AT_WEAP_AP, obj)) {
+        const blindinc = rnd(25);
+
+        u.ucreamed = (u.ucreamed || 0) + blindinc;
+        await make_blinded_ap((u.uprops[BLINDED_AP].intrinsic & TIMEOUT_AP) /* BlindedTimeout */
+                              + blindinc, false);
+        if (!Blind() || (Blind() && wasblind))
+            await pline(`There's ${wascreamed ? "more " : ""}sticky goop all over your ${
+                body_part(FACE_AP)}.`);
+        else /* Blind  && !wasblind */
+            await You_cant(`see through all the sticky goop on your ${body_part(FACE_AP)}.`);
+    }
+
+    setnotworn_ap(obj);
+    /* useup() is appropriate, but we want costly_alteration()'s message */
+    costly_alteration_ap(obj, COST_SPLAT_AP);
+    obj_extract_self_ap(obj);
+    delobj_ap(obj);
+    return ECMD_OK;
+}
+import { splitobj as splitobj_ap, costly_alteration as costly_alteration_ap,
+         obj_extract_self as obj_extract_self_ap } from './mkobj.js';
+import { makeplural as makeplural_ap, xname as xname_ap } from './objnam.js';
+import { the as the_ap } from './iactions.js';
+import { can_blnd as can_blnd_ap } from './mondata.js';
+import { AT_WEAP as AT_WEAP_AP } from './monsters.js';
+import { make_blinded as make_blinded_ap } from './potion.js';
+import { setnotworn as setnotworn_ap } from './worn.js';
+import { delobj as delobj_ap } from './invent.js';
+import { FACE as FACE_AP, BLINDED as BLINDED_AP, TIMEOUT as TIMEOUT_AP,
+         COST_SPLAT as COST_SPLAT_AP } from './const.js';
+
 // C ref: apply.c rub_ok() -- getobj callback for object to rub
 function rub_ok(obj) {
     if (!obj)
@@ -434,7 +483,8 @@ export async function doapply() {
     case O.LENSES:
         throw new Error('doapply(): Blindf_on()/Blindf_off() not ported yet');
     case CREAM_PIE:
-        throw new Error('doapply(): use_cream_pie() not ported yet');
+        res = await use_cream_pie(obj);
+        break;
     case LUMP_OF_ROYAL_JELLY:
         throw new Error('doapply(): use_royal_jelly() not ported yet');
     case BULLWHIP:
