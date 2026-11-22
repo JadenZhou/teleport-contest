@@ -203,6 +203,12 @@ export function an(str) {
     return just_an(str) + str;
 }
 
+// C ref: objnam.c An()
+export function An(str) {
+    const tmp = an(str);
+    return highc(tmp[0]) + tmp.slice(1);
+}
+
 // C ref: objnam.c BSTRCMPI(), BSTRNCMPI() — 'off' is the offset of C's
 // 'ptr' within 'base' (negative when ptr would precede base)
 function BSTRCMPI(base, off, str) {

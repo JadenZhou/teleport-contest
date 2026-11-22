@@ -1682,11 +1682,46 @@ export const DISP_BEAM = -1, DISP_ALL = -2, DISP_TETHER = -3, DISP_FLASH = -4,
 const TMP_AT_MAX_GLYPHS = 80 * 2; /* COLNO * 2 */
 let tmp_at_glyph = null; /* static struct tmp_glyph *tglyph */
 
+/* C ref: display.h enum zap_colors, display.c zapcolors[] */
+const zapcolors = [ CLR_BRIGHT_BLUE /* HI_ZAP */, CLR_ORANGE, CLR_WHITE,
+    CLR_BRIGHT_BLUE /* HI_ZAP */, CLR_BLACK, CLR_WHITE, CLR_GREEN,
+    CLR_YELLOW ];
+/* C ref: display.h enum explode_colors, display.c explodecolors[] */
+const explodecolors = [ CLR_BLACK, CLR_GREEN, CLR_BROWN, CLR_BLUE,
+    CLR_MAGENTA, CLR_ORANGE, CLR_WHITE ];
+const NUM_ZAP = 8;
+
+// C ref: display.c zapdir_to_glyph() -- the S_vbeam, S_hbeam, S_lslant or
+// S_rslant symbol (defsym.h; DECgraphics draws the first two as line
+// drawing characters) in the color of the beam type
+export function zapdir_to_glyph(dx, dy, beam_type) {
+    if (beam_type >= NUM_ZAP) {
+        /* impossible("zapdir_to_glyph:  illegal beam type") */
+        beam_type = 0;
+    }
+    dx = (dx === dy) ? 2 : (dx && dy) ? 3 : dx ? 1 : 0;
+    const dec = /^decgraphics$/i.test(game.symset_name || '') && dx < 2;
+    const ch = dec ? ['x', 'q'][dx] : ['|', '-', '\\', '/'][dx];
+    return { ch, color: zapcolors[beam_type], decgfx: dec, kind: 'zap',
+             cmapidx: 74 /* S_vbeam */ + dx };
+}
+
+// C ref: display.h explosion_to_glyph() -- the S_expl_tl..S_expl_br symbol
+// idx (0..8, defsym.h; DECgraphics replaces four of them) in the color of
+// the explosion type
+export function explosion_to_glyph(expltype, idx) {
+    const asc = ['/', '-', '\\', '|', ' ', '|', '\\', '-', '/'];
+    const decs = [null, 'o', null, 'x', null, 'x', null, 's', null];
+    const dec = /^decgraphics$/i.test(game.symset_name || '') && !!decs[idx];
+    return { ch: dec ? decs[idx] : asc[idx], color: explodecolors[expltype],
+             decgfx: dec, kind: 'explode', cmapidx: 96 /* S_expl_tl */ + idx };
+}
+
 // C ref: display.c tmp_at() -- DISP_BEAM, DISP_ALL, DISP_FLASH and
-// DISP_ALWAYS (DISP_TETHER isn't ported yet).  The transient beam glyphs
-// aren't drawn (no screen is captured while they show), but the spots the
-// beam covered are remembered and newsym()'d by DISP_END, which redraws
-// terrain the beam changed (e.g. a wall dug by a zap).  A flashed glyph
+// DISP_ALWAYS (DISP_TETHER isn't ported yet).  A beam's glyphs are drawn
+// (a --More-- during a zap shows them) and the spots the beam covered are
+// remembered and newsym()'d by DISP_END, which also redraws terrain the
+// beam changed (e.g. a wall dug by a zap).  A flashed glyph
 // (a missile in flight) is drawn at its one spot; the next pline()'s
 // flush_screen(1) shows it, as C's flush_screen(0) here would.
 export function tmp_at(x, y) {
@@ -1735,7 +1770,10 @@ export function tmp_at(x, y) {
                 break; /* too many locations */
             /* save pos for later erasing */
             tglyph.saved.push({ x, y });
-            /* show_glyph(x, y, tglyph->glyph): transient, not drawn */
+            /* show_glyph(x, y, tglyph->glyph): callers whose beam glyph
+               isn't ported yet pass 0 and nothing is drawn */
+            if (tglyph.glyph)
+                show_glyph(x, y, tglyph.glyph); /* show it */
         } else { /* DISP_FLASH/ALWAYS */
             if (tglyph.saved.length) { /* not first call, so reset previous pos */
                 newsym(tglyph.saved[0].x, tglyph.saved[0].y);

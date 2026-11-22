@@ -1503,7 +1503,10 @@ async function explmu(mtmp, mattk, ufound) {
     case AD_COLD:
     case M.AD_FIRE:
     case M.AD_ELEC:
-        throw new Error('explmu(): mon_explodes() (explode()) not ported yet');
+        await mon_explodes(mtmp, mattk);
+        if (!DEADMONSTER(mtmp))
+            kill_agr = false; /* lifesaving? */
+        break;
     case M.AD_BLND:
         not_affected = resists_blnd(game.youmonst);
         if (ufound && !not_affected) {
@@ -1968,3 +1971,4 @@ async function passiveum(olduasmon, mtmp, mattk) {
 }
 
 void mon_currwep; void Blind; void AT_GAZE;
+import { mon_explodes } from './explode.js';
