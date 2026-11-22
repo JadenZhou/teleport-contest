@@ -1,39 +1,39 @@
 {
- "when": "2026-11-22T17:48:24.976Z",
+ "when": "2026-11-22T18:04:36.741Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
    "total": 27158,
-   "jsTotal": 19167,
+   "jsTotal": 27050,
    "totalScreens": 595,
-   "valuePrefix": 19167,
-   "rulePrefix": 19167,
-   "screens": 350,
-   "honestScreens": 350,
+   "valuePrefix": 27050,
+   "rulePrefix": 27050,
+   "screens": 565,
+   "honestScreens": 565,
    "firstScreenMiss": 221,
    "first": {
-    "index": 19167,
-    "step": 359,
-    "c": "rnd(2)=1 @ next_ident(mkobj.c:521)",
+    "index": 27050,
+    "step": 569,
+    "c": "rn2(2)=0 @ do_improvisation(music.c:535)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "next_ident",
+    "cCaller": "do_improvisation",
     "jsCaller": null,
     "context": [
-     "rn2(200)=74 @ dosounds(sounds.c:313)",
-     "rn2(20)=16 @ gethungry(eat.c:3191)",
-     "rn2(61)=8 @ moveloop_core(allmain.c:360)",
-     "rnd(2)=1 @ next_ident(mkobj.c:521)",
-     "rn2(5)=3 @ distfleeck(monmove.c:538)",
-     "rn2(100)=53 @ obj_resists(zap.c:1469)"
+     "rn2(300)=175 @ dosounds(sounds.c:220)",
+     "rn2(20)=19 @ gethungry(eat.c:3191)",
+     "rn2(61)=20 @ moveloop_core(allmain.c:360)",
+     "rn2(2)=0 @ do_improvisation(music.c:535)",
+     "rnd(5)=5 @ improvised_notes(music.c:742)",
+     "rn2(7)=4 @ improvised_notes(music.c:745)"
     ]
    },
-   "error": "Error: dopay(): make_itemized_bill()/pay_billed_items() not ported yet |     at dopay (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/shk.js:1729:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/allmain.js:708:9)"
+   "error": "Error: doapply(): do_play_instrument() not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/apply.js:624:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/allmain.js:721:9)"
   },
   {
    "session": "seed0004-feeding-pony.session.json",
    "total": 12084,
-   "jsTotal": 10462,
+   "jsTotal": 10477,
    "totalScreens": 409,
    "valuePrefix": 9738,
    "rulePrefix": 9738,
@@ -57,7 +57,7 @@
      "rn2(5)=3 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: throw_obj(): unsplitobj() not ported yet |     at throw_obj (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:398:15) |     at async dothrow (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:1079:18) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:932:19)"
+   "error": "Error: throwit_mon_hit(): thitmonst() not ported yet |     at throwit_mon_hit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:531:15) |     at throwit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:687:15) |     at async throw_obj (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:386:13)"
   },
   {
    "session": "seed0006-wizard-water-demon.session.json",
@@ -70,7 +70,7 @@
    "honestScreens": 118,
    "firstScreenMiss": 118,
    "first": null,
-   "error": "Error: disclose(): show_conduct() not ported yet |     at disclose (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/end.js:351:19) |     at async really_done (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/end.js:813:13) |     at async done (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/end.js:630:5)"
+   "error": "Error: disclose(): show_conduct() not ported yet |     at disclose (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/end.js:351:19) |     at async really_done (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/end.js:813:13) |     at async done (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/end.js:630:5)"
   },
   {
    "session": "seed0007-rogue-snake-swamp.session.json",
@@ -112,7 +112,7 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/allmain.js:789:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/jsmain.js:227:13) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/jsmain.js:329:9)"
+   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/allmain.js:802:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/jsmain.js:227:13) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/jsmain.js:329:9)"
   },
   {
    "session": "seed0012-monk-vault-escort.session.json",
@@ -141,7 +141,7 @@
      "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: monster_detect(): monster display and browse_map() not ported yet |     at monster_detect (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/fountain.js:534:11) |     at drinkfountain (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/fountain.js:475:23) |     at dodrink (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/potion.js:699:23)"
+   "error": "Error: monster_detect(): monster display and browse_map() not ported yet |     at monster_detect (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/fountain.js:534:11) |     at drinkfountain (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/fountain.js:475:23) |     at dodrink (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/potion.js:699:23)"
   },
   {
    "session": "seed0013-friday13-save-then-fullmoon-restore.session.json",
@@ -196,7 +196,7 @@
      "rn2(25)=1 @ hmon_hitmon_misc_obj(uhitm.c:1295)"
     ]
    },
-   "error": "Error: throwit_mon_hit(): thitmonst() not ported yet |     at throwit_mon_hit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:447:15) |     at throwit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:603:15) |     at async throw_obj (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:378:13)"
+   "error": "Error: throwit_mon_hit(): thitmonst() not ported yet |     at throwit_mon_hit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:531:15) |     at throwit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:687:15) |     at async throw_obj (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:386:13)"
   },
   {
    "session": "seed0015-valk-level2-pit-dog-wait.session.json",
@@ -264,7 +264,7 @@
      "rn2(3)=1 @ set_apparxy(monmove.c:2251)"
     ]
    },
-   "error": "Error: getlev(): bones branch level fixup not ported yet |     at getlev (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/restore.js:1036:19) |     at getbones (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/bones.js:778:19) |     at mklev (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/mklev.js:393:15)"
+   "error": "Error: getlev(): bones branch level fixup not ported yet |     at getlev (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/restore.js:1036:19) |     at getbones (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/bones.js:778:19) |     at mklev (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/mklev.js:393:15)"
   },
   {
    "session": "seed0060-orc-rogue-kick-search.session.json",
@@ -345,7 +345,7 @@
      "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: mount_steed(): mounting (maybewakesteed() ...) not ported yet |     at mount_steed (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/steed.js:186:11) |     at async doride (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/steed.js:75:17) |     at async doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:239:18)"
+   "error": "Error: mount_steed(): mounting (maybewakesteed() ...) not ported yet |     at mount_steed (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/steed.js:186:11) |     at async doride (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/steed.js:75:17) |     at async doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:239:18)"
   },
   {
    "session": "seed0104-knight-ride-combat.session.json",
@@ -374,7 +374,7 @@
      "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: mount_steed(): mounting (maybewakesteed() ...) not ported yet |     at mount_steed (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/steed.js:186:11) |     at async doride (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/steed.js:75:17) |     at async doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:239:18)"
+   "error": "Error: mount_steed(): mounting (maybewakesteed() ...) not ported yet |     at mount_steed (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/steed.js:186:11) |     at async doride (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/steed.js:75:17) |     at async doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:239:18)"
   },
   {
    "session": "seed0105-valk-chat-lamp-ration.session.json",
@@ -416,7 +416,7 @@
      "rn2(5)=2 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: doextcmd(): unported command doextversion not ported yet |     at doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:238:19) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/allmain.js:708:9)"
+   "error": "Error: doextcmd(): unported command doextversion not ported yet |     at doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:238:19) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/allmain.js:721:9)"
   },
   {
    "session": "seed0107-samurai-twoweapon-enhance.session.json",
@@ -458,7 +458,7 @@
      "rn2(2)=0 @ dog_invent(dogmove.c:418)"
     ]
    },
-   "error": "Error: autokey(): quest artifact unlocking tools not ported yet |     at autokey (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/lock.js:596:19) |     at do_loot_cont (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/pickup.js:1811:35) |     at async doloot_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/pickup.js:1943:43)"
+   "error": "Error: autokey(): quest artifact unlocking tools not ported yet |     at autokey (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/lock.js:596:19) |     at do_loot_cont (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/pickup.js:1811:35) |     at async doloot_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/pickup.js:1943:43)"
   },
   {
    "session": "seed0116-wizard-wear-shop.session.json",
@@ -513,7 +513,7 @@
      "rn2(3)=2 @ m_move(monmove.c:1871)"
     ]
    },
-   "error": "Error: rhack(): unported command doquickwhatis not ported yet |     at rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:923:23) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/allmain.js:708:9) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/jsmain.js:341:13)"
+   "error": "Error: rhack(): unported command doquickwhatis not ported yet |     at rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:923:23) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/allmain.js:721:9) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/jsmain.js:341:13)"
   },
   {
    "session": "seed0361-archeologist-tour.session.json",
@@ -542,7 +542,7 @@
      "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: trapeffect_selector(): trap type 7 not ported yet |     at trapeffect_selector (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/trap.js:2893:15) |     at dotrap (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/trap.js:855:11) |     at spoteffects (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/hack.js:1499:27)"
+   "error": "Error: trapeffect_selector(): trap type 7 not ported yet |     at trapeffect_selector (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/trap.js:2893:15) |     at dotrap (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/trap.js:855:11) |     at spoteffects (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/hack.js:1499:27)"
   },
   {
    "session": "seed0367-priest-quest-tour.session.json",
@@ -584,36 +584,36 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: goto_level(): endgame/tutorial entry not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/do.js:475:19) |     at deferred_goto (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/do.js:393:15) |     at moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/allmain.js:712:15)"
+   "error": "Error: goto_level(): endgame/tutorial entry not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/do.js:475:19) |     at deferred_goto (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/do.js:393:15) |     at moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/allmain.js:725:15)"
   },
   {
    "session": "seed0383-wizard-hallucinate.session.json",
    "total": 16915,
-   "jsTotal": 10916,
+   "jsTotal": 11471,
    "totalScreens": 219,
-   "valuePrefix": 10916,
-   "rulePrefix": 10916,
-   "screens": 64,
-   "honestScreens": 64,
+   "valuePrefix": 11471,
+   "rulePrefix": 11471,
+   "screens": 72,
+   "honestScreens": 72,
    "firstScreenMiss": 42,
    "first": {
-    "index": 10916,
-    "step": 172,
-    "c": "rnd(2)=1 @ unstuck(mon.c:3465)",
+    "index": 11471,
+    "step": 184,
+    "c": "rn2(5)=4 @ destroy_items(zap.c:5998)",
     "js": "(none: JS log ended)",
     "kind": "value",
-    "cCaller": "unstuck",
+    "cCaller": "destroy_items",
     "jsCaller": null,
     "context": [
-     "rnd(2)=2 @ mattacku(mhitu.c:709)",
-     "d(1,6)=6 @ gulpmu(mhitu.c:1292)",
-     "rn2(2)=0 @ gulpmu(mhitu.c:1503)",
-     "rnd(2)=1 @ unstuck(mon.c:3465)",
-     "rn2(8)=0 @ collect_coords(teleport.c:700)",
-     "rn2(7)=2 @ collect_coords(teleport.c:700)"
+     "d(1,6)=2 @ hitmu(mhitu.c:1187)",
+     "rn2(10)=2 @ mhitm_mgc_atk_negated(uhitm.c:87)",
+     "rn2(20)=2 @ mhitm_ad_cold(uhitm.c:2660)",
+     "rn2(5)=4 @ destroy_items(zap.c:5998)",
+     "rn2(3)=2 @ mhitm_knockback(uhitm.c:5258)",
+     "rn2(6)=1 @ mhitm_knockback(uhitm.c:5269)"
     ]
    },
-   "error": "Error: newsym_rn2(): rn2_on_display_rng not ported yet |     at newsym_rn2 (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/display.js:1234:11) |     at obj_to_glyph (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/display.js:1283:26) |     at map_object (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/display.js:1325:17)"
+   "error": "Error: mhitm_ad_cold(): destroy_items() not ported yet |     at mhitm_ad_cold (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/uhitm.js:937:23) |     at async mhitm_adtyping (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/uhitm.js:1658:21) |     at async hitmu (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/mhitu.js:944:5)"
   },
   {
    "session": "seed0398-wizard-wandpoly-pile.session.json",
@@ -655,7 +655,7 @@
      "rn2(100)=13 @ obj_resists(zap.c:1469)"
     ]
    },
-   "error": "Error: throwit_mon_hit(): thitmonst() not ported yet |     at throwit_mon_hit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:447:15) |     at throwit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:603:15) |     at async throw_obj (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/dothrow.js:378:13)"
+   "error": "Error: throwit_mon_hit(): thitmonst() not ported yet |     at throwit_mon_hit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:531:15) |     at throwit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:687:15) |     at async throw_obj (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/dothrow.js:386:13)"
   },
   {
    "session": "seed0501-priest-cast-read-turn.session.json",
@@ -762,7 +762,7 @@
      "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: do_look(): describing a picked spot (putmixed(), checkfile()) not ported yet |     at do_look (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/pager.js:877:23) |     at async dowhatis (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/pager.js:890:12) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:932:19)"
+   "error": "Error: do_look(): describing a picked spot (putmixed(), checkfile()) not ported yet |     at do_look (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/pager.js:877:23) |     at async dowhatis (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/pager.js:890:12) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:932:19)"
   },
   {
    "session": "seed2600-wizard-custom-binds.session.json",
@@ -804,7 +804,7 @@
      "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: dosearch0(): feel_location() not ported yet |     at dosearch0 (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/detect.js:152:27) |     at dosearch (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/detect.js:237:19) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:932:19)"
+   "error": "Error: dosearch0(): feel_location() not ported yet |     at dosearch0 (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/detect.js:152:27) |     at dosearch (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/detect.js:237:19) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:932:19)"
   },
   {
    "session": "seed5002-wizard-coverage-pair.session.json",
@@ -833,7 +833,7 @@
      "rnd(20)=3 @ hitum(uhitm.c:780)"
     ]
    },
-   "error": "Error: doapply(): dowrite() not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/apply.js:607:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a187e0fb4c567fd3c/js/allmain.js:708:9)"
+   "error": "Error: doapply(): dowrite() not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/apply.js:607:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ad3e516e79cf79d59/js/allmain.js:721:9)"
   },
   {
    "session": "seed5006-tourist-stress-disaster.session.json",
@@ -864,11 +864,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 652305,
-  "value": 652305,
+  "rule": 660743,
+  "value": 660743,
   "rolls": 792838,
-  "honestScreens": 8678,
-  "screens": 8678,
+  "honestScreens": 8901,
+  "screens": 8901,
   "totalScreens": 11405
  },
  "todo": [
@@ -913,15 +913,6 @@
    ]
   },
   {
-   "fn": "next_ident",
-   "sessions": 1,
-   "blockedRolls": 7991,
-   "blockedScreens": 245,
-   "examples": [
-    "seed0002-healer-reflection-drummer @19167: C \"rnd(2)=1 @ next_ident(mkobj.c:521)\" / JS \"(none: JS log ended)\""
-   ]
-  },
-  {
    "fn": "gethungry",
    "sessions": 1,
    "blockedRolls": 524,
@@ -958,12 +949,12 @@
    ]
   },
   {
-   "fn": "unstuck",
+   "fn": "destroy_items",
    "sessions": 1,
-   "blockedRolls": 5999,
-   "blockedScreens": 155,
+   "blockedRolls": 5444,
+   "blockedScreens": 147,
    "examples": [
-    "seed0383-wizard-hallucinate @10916: C \"rnd(2)=1 @ unstuck(mon.c:3465)\" / JS \"(none: JS log ended)\""
+    "seed0383-wizard-hallucinate @11471: C \"rn2(5)=4 @ destroy_items(zap.c:5998)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
@@ -974,6 +965,15 @@
    "examples": [
     "seed0009-swimmer-mforce @3337: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"(none: JS log ended)\"",
     "seed0373-barbarian-quest-tour @30064: C \"rn2(3)=2 @ getbones(bones.c:645)\" / JS \"(none: JS log ended)\""
+   ]
+  },
+  {
+   "fn": "do_improvisation",
+   "sessions": 1,
+   "blockedRolls": 108,
+   "blockedScreens": 30,
+   "examples": [
+    "seed0002-healer-reflection-drummer @27050: C \"rn2(2)=0 @ do_improvisation(music.c:535)\" / JS \"(none: JS log ended)\""
    ]
   }
  ],
