@@ -33,11 +33,17 @@ import { A_STR, A_DEX, A_CON, IS_DOOR, D_CLOSED, D_BROKEN, D_NODOOR,
          TT_PIT, CONFUSION, STUNNED, PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { SKELETON_KEY, LOCK_PICK, CREDIT_CARD } from './objects.js';
 import { M1_NOHANDS, MZ_SMALL } from './monsters.js';
-import { canspotmon, map_invisible } from './display.js';
+import { canspotmon, map_invisible, feel_location } from './display.js';
+import { obj_typename } from './objnam.js';
+import { ansimpleoname } from './iactions.js';
+import { hliquid } from './potion.js';
+import { is_pool, is_lava } from './makemon.js';
+import { LEVITATION } from './const.js';
 import { Some_Monnam } from './do_name.js';
 import { s_suffix } from './hacklib.js';
 import { cansee, block_point, vision_recalc } from './vision.js';
-import { t_at } from './trap.js';
+import { t_at, chest_trap } from './trap.js';
+import { FINGER } from './const.js';
 import { Unaware } from './eat.js';
 import { You_hear } from './sounds.js';
 import { wake_nearto } from './mon.js';
@@ -73,6 +79,14 @@ import { M1_BREATHLESS } from './monsters.js';
 function Deaf() {
     const p = game.u.uprops[DEAF];
     return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
+}
+
+/* C ref: pline.c verbalize() -- SetVoice() only matters for speech
+   output, which the tty doesn't do */
+async function verbalize(line) {
+    if (Deaf())
+        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
+    await pline(`"${line}"`);
 }
 
 /* C ref: flag.h AUTOUNLOCK_* */
@@ -213,7 +227,7 @@ async function picklock() {
         xl.box.olocked = !xl.box.olocked;
         xl.box.lknown = 1;
         if (xl.box.otrapped)
-            throw new Error('picklock(): chest_trap() not ported yet');
+            await chest_trap(xl.box, FINGER, false);
     }
     exercise(A_DEX, true);
     return (xl.usedtime = 0);
@@ -262,9 +276,12 @@ export async function pick_lock(pick, rx, ry, container) {
     const cc = { x: 0, y: 0 };
     const autounlock = (rx !== 0 || container != null);
 
+    let dummypick = null;
     /* 'pick' might be Null [called by do_loot_cont() for AUTOUNLOCK_UNTRAP] */
-    if (!pick)
-        throw new Error('pick_lock(): dummypick (AUTOUNLOCK_UNTRAP) not ported yet');
+    if (!pick) {
+        dummypick = { otyp: 0, oclass: 0, quan: 1 }; /* cg.zeroobj */
+        pick = dummypick; /* pick->otyp will be STRANGE_OBJECT */
+    }
     picktyp = pick.otyp;
 
     /* check whether we're resuming an interrupted previous attempt */
@@ -295,11 +312,13 @@ export async function pick_lock(pick, rx, ry, container) {
         await You_cant(`hold ${doname(pick)} -- you have no hands!`);
         return PICKLOCK_DID_NOTHING;
     } else if (u.uswallow) {
-        throw new Error('pick_lock(): swallowed not ported yet');
+        await You_cant(`${(picktyp === CREDIT_CARD) ? "" : "lock or "}unlock ${
+            mon_nam(u.ustuck)}.`);
+        return PICKLOCK_DID_NOTHING;
     }
 
-    if (picktyp !== SKELETON_KEY && picktyp !== LOCK_PICK
-        && picktyp !== CREDIT_CARD) {
+    if (pick !== dummypick && picktyp !== SKELETON_KEY
+        && picktyp !== LOCK_PICK && picktyp !== CREDIT_CARD) {
         impossible(`picking lock with object ${picktyp}?`);
         return PICKLOCK_DID_NOTHING;
     }
@@ -314,7 +333,106 @@ export async function pick_lock(pick, rx, ry, container) {
     }
 
     if (u.ux === cc.x && u.uy === cc.y) { /* pick lock on a container */
-        throw new Error('pick_lock(): picking the lock of a container not ported yet');
+        let verb;
+        let it;
+        let count;
+
+        if (u.dz < 0 && !autounlock) { /* beware stale u.dz value */
+            await There(`isn't any sort of lock up ${
+                lk_Levitation() ? "here" : "there"}.`);
+            return PICKLOCK_LEARNED_SOMETHING;
+        } else if (is_lava(u.ux, u.uy)) {
+            await pline(`Doing that would probably melt ${yname(pick)}.`);
+            return PICKLOCK_LEARNED_SOMETHING;
+        } else if (is_pool(u.ux, u.uy) && !u.uinwater /* !Underwater */) {
+            await pline_The(`${hliquid("water")} has no lock.`);
+            return PICKLOCK_LEARNED_SOMETHING;
+        }
+
+        count = 0;
+        c = 'n'; /* in case there are no boxes here */
+        for (const otmp of lk_objects_at(cc.x, cc.y)) {
+            /* autounlock on boxes: only the one that was just discovered to
+               be locked; don't include any other boxes which might be here */
+            if (autounlock && otmp !== container)
+                continue;
+            if (Is_box(otmp)) {
+                ++count;
+                if (!can_reach_floor(true)) {
+                    await You_cant(`reach ${the(xname(otmp))} from up here.`);
+                    return PICKLOCK_LEARNED_SOMETHING;
+                }
+                it = false;
+                if (otmp.obroken)
+                    verb = "fix";
+                else if (!otmp.olocked)
+                    verb = "lock", it = true;
+                else if (picktyp !== LOCK_PICK)
+                    verb = "unlock", it = true;
+                else
+                    verb = "pick";
+
+                const autounlock_flags = game.flags.autounlock ?? AUTOUNLOCK_APPLY_KEY;
+                if (autounlock && (autounlock_flags & AUTOUNLOCK_UNTRAP) !== 0) {
+                    throw new Error('pick_lock(): could_untrap()/untrap() of a box not ported yet');
+                } else if (autounlock
+                           && (autounlock_flags & AUTOUNLOCK_APPLY_KEY) !== 0) {
+                    c = 'q';
+                    if (pick !== dummypick)
+                        c = await ynq(`Unlock it with ${yname(pick)}?`);
+                    if (c !== 'y')
+                        return PICKLOCK_DID_NOTHING;
+                } else {
+                    /* "There is <a box> here; <verb> <it|its lock>?" */
+                    const qsfx = ` here; ${verb} ${it ? "it" : "its lock"}?`;
+                    const qbuf = safe_qbuf("There is ", qsfx, otmp, doname,
+                                           "a box");
+                    otmp.lknown = 1;
+
+                    c = await ynq(qbuf);
+                    if (c === 'q')
+                        return PICKLOCK_DID_NOTHING;
+                    if (c === 'n')
+                        continue; /* try next box */
+                }
+
+                if (otmp.obroken) {
+                    await You_cant(`fix its broken lock with ${ansimpleoname(pick)}.`);
+                    return PICKLOCK_LEARNED_SOMETHING;
+                } else if (picktyp === CREDIT_CARD && !otmp.olocked) {
+                    /* credit cards are only good for unlocking */
+                    await You_cant(`do that with ${an(simple_typename(picktyp))}.`);
+                    return PICKLOCK_LEARNED_SOMETHING;
+                } else if (autounlock && pick.oartifact) {
+                    /* note: for !autounlock, apply already did touch check */
+                    throw new Error('pick_lock(): touch_artifact() not ported yet');
+                }
+                switch (picktyp) {
+                case CREDIT_CARD:
+                    ch = ACURR(A_DEX) + 20 * (game.urole.mnum === PM_ROGUE ? 1 : 0);
+                    break;
+                case LOCK_PICK:
+                    ch = 4 * ACURR(A_DEX) + 25 * (game.urole.mnum === PM_ROGUE ? 1 : 0);
+                    break;
+                case SKELETON_KEY:
+                    ch = 75 + ACURR(A_DEX);
+                    break;
+                default:
+                    ch = 0;
+                }
+                if (otmp.cursed)
+                    ch = Math.trunc(ch / 2);
+
+                xl.box = otmp;
+                xl.door = null;
+                break;
+            }
+        }
+        if (c !== 'y') {
+            if (!count)
+                await There("doesn't seem to be any sort of lock here.");
+            return PICKLOCK_LEARNED_SOMETHING; /* decided against all boxes */
+        }
 
     /* not the hero's location; pick the lock in an adjacent door */
     } else {
@@ -330,9 +448,12 @@ export async function pick_lock(pick, rx, ry, container) {
         if (mtmp && canseemon(mtmp) && mtmp.m_ap_type !== M_AP_FURNITURE
             && mtmp.m_ap_type !== M_AP_OBJECT) {
             if (picktyp === CREDIT_CARD
-                && (mtmp.isshk || mtmp.data === mons[PM_ORACLE]))
-                throw new Error('pick_lock(): verbalize() not ported yet');
-            await pline(`I don't think ${mon_nam(mtmp)} would appreciate that.`);
+                && (mtmp.isshk || mtmp.data === mons[PM_ORACLE])) {
+                /* SetVoice(mtmp, 0, 80, 0); */
+                await verbalize("No checks, no credit, no problem.");
+            } else {
+                await pline(`I don't think ${mon_nam(mtmp)} would appreciate that.`);
+            }
             return PICKLOCK_LEARNED_SOMETHING;
         } else if (mtmp && is_door_mappear(mtmp)) {
             /* "The door actually was a <mimic>!" */
@@ -340,8 +461,23 @@ export async function pick_lock(pick, rx, ry, container) {
             /* mimic might keep the key (50% chance, 10% for PYEC or MKoT) */
             throw new Error('pick_lock(): maybe_absorb_item() not ported yet');
         }
-        if (!IS_DOOR(door.typ))
-            throw new Error('pick_lock(): picking a non-door not ported yet');
+        if (!IS_DOOR(door.typ)) {
+            let res = PICKLOCK_DID_NOTHING;
+            const oldglyph = door.remembered_glyph;
+            const oldlastseentyp = update_mapseen_for(cc.x, cc.y);
+
+            /* this is probably only relevant when blind */
+            feel_location(cc.x, cc.y);
+            if (!same_glyph(door.remembered_glyph, oldglyph)
+                || (game.level.lastseentyp?.[cc.x]?.[cc.y] ?? 0) !== oldlastseentyp)
+                res = PICKLOCK_LEARNED_SOMETHING;
+
+            if (is_drawbridge_wall(cc.x, cc.y) >= 0)
+                await You(`${Blind() ? "feel" : "see"} no lock on the drawbridge.`);
+            else
+                await You(`${Blind() ? "feel" : "see"} no door there.`);
+            return res;
+        }
         switch (door.doormask) {
         case D_NODOOR:
             await pline("This doorway has no door.");
@@ -397,6 +533,41 @@ export async function pick_lock(pick, rx, ry, container) {
     xl.usedtime = 0;
     set_occupation(picklock, lock_action(), 0);
     return PICKLOCK_DID_SOMETHING;
+}
+
+/* C ref: youprop.h Levitation */
+function lk_Levitation() {
+    const p = game.u?.uprops?.[LEVITATION];
+    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
+}
+
+/* C ref: display.h level.objects[x][y] -- the pile at <x,y>, top first */
+function lk_objects_at(x, y) {
+    return (game.level?.objects || []).filter(
+        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+}
+
+/* C ref: objnam.c simple_typename() -- obj_typename() without the
+   user-assigned name or the appended description */
+function simple_typename(otyp) {
+    const save_uname = objects[otyp].oc_uname;
+    objects[otyp].oc_uname = null; /* suppress any name given by user */
+    let bufp = obj_typename(otyp);
+    objects[otyp].oc_uname = save_uname;
+    const pp = bufp.indexOf(" (");
+    if (pp >= 0)
+        bufp = bufp.slice(0, pp); /* strip the appended description */
+    return bufp;
+}
+
+/* lev->glyph comparison for the remembered-glyph objects JS keeps */
+function same_glyph(a, b) {
+    if (!a || !b)
+        return a === b;
+    return a.ch === b.ch && a.color === b.color && !!a.decgfx === !!b.decgfx
+        && a.cmap === b.cmap && a.otyp === b.otyp && a.mndx === b.mndx
+        && a.corpsenm === b.corpsenm && !!a.trap === !!b.trap
+        && a.kind === b.kind;
 }
 
 /* C ref: hack.h ynq() */

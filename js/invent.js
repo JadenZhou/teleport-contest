@@ -1259,7 +1259,7 @@ export function count_unpaid(list) {
 
 /* an object chain as an array: JS keeps invent as an nobj chain and
    floor piles, minvent and container contents as arrays */
-function objchain_items(list) {
+export function objchain_items(list) {
     if (Array.isArray(list))
         return list;
     const res = [];
