@@ -41,6 +41,7 @@ import { find_defensive, find_offensive, find_misc, use_defensive,
 import { mattacku } from './mhitu.js';
 import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
+import { Is_rogue_level } from './const.js';
 import { an, xname } from './objnam.js';
 import { delobj } from './invent.js';
 import { grow_up } from './makemon.js';
@@ -1576,8 +1577,8 @@ export async function m_digweapon_check(mtmp, nix, niy) {
     let can_tunnel = false;
     const mw_tmp = mtmp.mw; /* MON_WEP(mtmp) */
 
-    /* if (!Is_rogue_level(&u.uz)): the rogue level isn't ported yet */
-    can_tunnel = tunnels(mtmp.data);
+    if (!Is_rogue_level(game.u.uz))
+        can_tunnel = tunnels(mtmp.data);
 
     if (can_tunnel && needspick(mtmp.data) && !mwelded(mw_tmp)
         && (may_dig(nix, niy) || closed_door(nix, niy))) {
@@ -1654,8 +1655,8 @@ export async function m_move(mtmp, after) {
        from this file, but needed for other calls of m_move(). */
     set_apparxy(mtmp); /* set mtmp->mux, mtmp->muy */
 
-    /* if (!Is_rogue_level(&u.uz)): the rogue level isn't ported yet */
-    can_tunnel = tunnels(ptr);
+    if (!Is_rogue_level(game.u.uz))
+        can_tunnel = tunnels(ptr);
     can_open = !(nohands(ptr) || verysmall(ptr));
     can_unlock = ((can_open && monhaskey(mtmp, true))
                   || mtmp.iswiz || is_rider(ptr));
@@ -1742,7 +1743,7 @@ export async function m_move(mtmp, after) {
         }
     }
 
-    if ((!mtmp.mpeaceful || !rn2(10)) /* && (!Is_rogue_level(&u.uz)) */) {
+    if ((!mtmp.mpeaceful || !rn2(10)) && (!Is_rogue_level(game.u.uz))) {
         const in_line = (lined_up(mtmp)
              && (distmin(mtmp.mx, mtmp.my, mtmp.mux, mtmp.muy)
                  <= (throws_rocks(game.youmonst.data) ? 20

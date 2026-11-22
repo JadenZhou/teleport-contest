@@ -82,6 +82,7 @@ import {
     IS_THRONE, THRONE, IS_ROOM, OBJ_AT, AM_SHRINE, MM_ASLEEP, A_NONE, NON_PM,
 } from './const.js';
 import { MACE, LUMP_OF_ROYAL_JELLY } from './objects.js';
+import { makeroguerooms, makerogueghost } from './extralev.js';
 import { add_to_buried } from './dig.js';
 import { shtypes } from './shknam.js';
 import {
@@ -500,8 +501,8 @@ async function makelevel() {
         const u_depth = depth_of_level(g.u.uz);
 
         if (Is_rogue_level(g.u.uz)) {
-            /* makeroguerooms(); makerogueghost(); */
-            throw new Error('makelevel(): makeroguerooms() not ported yet');
+            makeroguerooms();
+            makerogueghost();
         } else {
             await makerooms();
         }
@@ -512,7 +513,9 @@ async function makelevel() {
         const branchp = Is_branchlev(g.u.uz); /* possible dungeon branch */
         let room_threshold = branchp ? 4 : 3; /* minimum number of rooms needed
                                                 to allow a random special room */
-
+        skip0: { /* the block ends at C's skip0 label */
+        if (Is_rogue_level(g.u.uz))
+            break skip0; /* goto skip0 */
         makecorridors();
         await make_niches();
 
@@ -579,6 +582,7 @@ async function makelevel() {
         else if (u_depth > 16 && !rn2(8)
                  && !(g.mvitals[PM_COCKATRICE].mvflags & G_GONE))
             await do_mkroom(COCKNEST);
+        } /* skip0 */
 
         /* skip0: */
         const prevstairs = game.stairs; /* used to test for place_branch() success */
@@ -1957,6 +1961,12 @@ function dosdoor(x, y, aroom, type) {
         } else {
             loc.flags = shdoor ? D_ISOPEN : D_NODOOR;
         }
+
+        /* also done in roguecorr(); doing it here first prevents
+           making mimics in place of trapped doors on rogue level */
+        if (Is_rogue_level(game.u.uz))
+            loc.flags = D_NODOOR;
+
         if (loc.flags & D_TRAPPED) {
             if (level_difficulty() >= 9 && !rn2(5)) {
                 loc.flags = D_NODOOR;
@@ -1971,7 +1981,7 @@ function dosdoor(x, y, aroom, type) {
     add_door(x, y, aroom);
 }
 
-function dodoor(x, y, aroom) {
+export function dodoor(x, y, aroom) {
     dosdoor(x, y, aroom, maybe_sdoor(8) ? SDOOR : DOOR);
 }
 

@@ -16,6 +16,7 @@ import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
 import { olfaction } from './mondata.js';
 import { ACH_HELL, ACH_MINE, ACH_SOKO, ACH_BGRM } from './const.js';
+import { Is_rogue_level, ROGUESET, PRIMARYSET } from './const.js';
 import {
     depth, dunlev, dunlevs_in_dungeon, ledger_no, on_level, assign_level,
     In_hell, builds_up, at_dgn_entrance, level_difficulty,
@@ -561,8 +562,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* if (cant_go_back): discarding unreachable levels is only reachable
        via the endgame/tutorial entry, which throws above */
 
-    /* Is_rogue_level(newlevel) || Is_rogue_level(&u.uz): assign_graphics():
-       the rogue level isn't ported yet */
+    if (Is_rogue_level(newlevel) || Is_rogue_level(u.uz))
+        game.currentgraphics = Is_rogue_level(newlevel) ? ROGUESET : PRIMARYSET; /* assign_graphics() */
     /* check_gold_symbol(): display only */
     /* record this level transition as a potential seen branch unless using
      * some non-standard means of transportation (level teleport).
@@ -796,7 +797,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     } else {
         if (new_ && topo.d_rogue_level?.dlevel
             && on_level(u.uz, topo.d_rogue_level)) { /* Is_rogue_level() */
-            throw new Error('goto_level(): the rogue level not ported yet');
+            await You("enter what seems to be an older, more primitive world.");
         } else if (new_ && topo.d_bigroom_level?.dlevel
                    && on_level(u.uz, topo.d_bigroom_level)) { /* Is_bigroom() */
             record_achievement(ACH_BGRM);

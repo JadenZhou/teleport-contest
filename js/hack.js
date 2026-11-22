@@ -43,7 +43,7 @@ import { vision_recalc, couldsee } from './vision.js';
 import { glyph_at, Norep, feel_location } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
-import { u_at } from './const.js';
+import { u_at, Is_rogue_level } from './const.js';
 import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap } from './trap.js';
 import { TT_BEARTRAP, TT_PIT, TT_WEB, TT_LAVA, TT_INFLOOR, TT_BURIEDBALL, TT_NONE } from './const.js';
 import { ART_STING } from './artilist.js';
@@ -1568,7 +1568,10 @@ function doorless_door(x, y) {
 
     if (!IS_DOOR(lev_p.typ))
         return false;
-    /* Is_rogue_level(&u.uz): the Rogue level isn't ported */
+    /* all rogue level doors are doorless but disallow diagonal access, so
+       we treat them as if their non-existent doors were actually present */
+    if (Is_rogue_level(game.u.uz))
+        return false;
     return !(lev_p.doormask & ~(D_NODOOR | D_BROKEN));
 }
 
