@@ -1035,7 +1035,7 @@ function rloc_pos_ok(x, y, /* coordinates of candidate location */
  * a value because mtmp is a migrating_mon.  Worm tails are always
  * placed randomly around the head of the worm.
  */
-async function rloc_to_core(mtmp, x, y, rlocflags) {
+export async function rloc_to_core(mtmp, x, y, rlocflags) {
     const u = game.u;
     const oldx = mtmp.mx, oldy = mtmp.my;
     const preventmsg = (rlocflags & RLOC_NOMSG) !== 0;

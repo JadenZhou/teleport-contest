@@ -67,7 +67,8 @@ import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES } from './const.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
-import { grow_up } from './makemon.js';
+import { grow_up, goodpos } from './makemon.js';
+import { enexto, rloc_to_core } from './teleport.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
 import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE, WT_TOOMUCH_DIAGONAL } from './const.js';
@@ -250,6 +251,47 @@ function mon_leaving_level(mon) {
         /* fill_pit(mx, my): boulders dropping into pits not ported */
         newsym(mx, my);
     }
+}
+
+// C ref: mon.c mnearto()
+/* make monster mtmp next to you (if possible);
+   might place monst on far side of a wall or boulder */
+/* returns 0: couldn't place; 1: placed (maybe at an alternate spot);
+   2: placed and moved another monster out of the way */
+export async function mnearto(
+    mtmp,
+    x,
+    y,
+    move_other, /* make sure mtmp gets to x, y! so move m_at(x, y) */
+    rlocflags)
+{
+    let othermon = null;
+    let newx, newy;
+    const mm = { x: 0, y: 0 };
+    let res = 1;
+
+    if (mtmp.mx === x && mtmp.my === y && m_at(x, y) === mtmp)
+        return res;
+
+    if (move_other && (othermon = m_at(x, y)) !== null)
+        throw new Error('mnearto(): moving another monster out of the way not ported yet');
+
+    newx = x;
+    newy = y;
+    if (!goodpos(newx, newy, mtmp, 0)) {
+        /* Actually we have real problems if enexto ever fails.
+         * Migrating_mons that need to be placed will cause
+         * no end of trouble.
+         */
+        if (!enexto(mm, newx, newy, mtmp.data) || !isok(mm.x, mm.y))
+            return 0;
+        newx = mm.x;
+        newy = mm.y;
+    }
+    /* [this doesn't honor the 'montelecontrol' option] */
+    await rloc_to_core(mtmp, newx, newy, rlocflags); /* rloc_to_flag() */
+
+    return res;
 }
 
 // C ref: mon.c relmon()

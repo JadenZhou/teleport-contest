@@ -20,7 +20,17 @@ import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
 import { on_level, ledger_to_dnum, ledger_to_dlev, depth,
          In_W_tower } from './dungeon.js';
-import { relmon } from './mon.js';
+import { relmon, mnearto, healmon } from './mon.js';
+import { stairway_find_from, stairway_find, somexy } from './mklev.js';
+import { in_rooms } from './hack.js';
+import { rloc } from './teleport.js';
+import { regenerates } from './mondata.js';
+import { rn1 } from './rng.js';
+import { MIGR_APPROX_XY, MIGR_WITH_HERO, MIGR_STAIRS_UP, MIGR_STAIRS_DOWN,
+         MIGR_LADDER_UP, MIGR_LADDER_DOWN, MIGR_SSTAIRS, MIGR_PORTAL,
+         MIGR_RANDOM, MIGR_LEFTOVERS, ROOMOFFSET, COLNO, ROWNO,
+         M_AP_NOTHING } from './const.js';
+import { S_MIMIC, M1_CARNIVORE, M1_HERBIVORE } from './monsters.js';
 import { vision_recalc } from './vision.js';
 import { PM_FLAMING_SPHERE, PM_SHOCKING_SPHERE, PM_BABY_GOLD_DRAGON,
          PM_FIRE_VORTEX, PM_FIRE_ELEMENTAL, PM_GOLD_DRAGON,
@@ -521,9 +531,8 @@ export async function losedogs() {
 }
 
 // C ref: dog.c mon_arrive()
-// Only arrival with the hero (With_you) is ported; monsters migrating
-// independently (mon_catchup_elapsed_time(), the MIGR_* placement switch)
-// and long worm tails are not ported yet.
+// Long worm tails, portal arrivals and failed arrivals (m_into_limbo())
+// are not ported yet.
 export async function mon_arrive(mtmp, when) {
     const g = game;
     const u = g.u;
@@ -550,8 +559,13 @@ export async function mon_arrive(mtmp, when) {
 
     /* make sure mnexto(rloc_to(set_apparxy())) doesn't use stale data */
     mtmp.mux = u.ux, mtmp.muy = u.uy;
-    /* xyloc/xyflags/xlocale/ylocale/fromdlev come from mtrack[0..2];
-       only used for independent arrivals, not ported yet */
+    if (!mtmp.mtrack)
+        mon_track_clear(mtmp);
+    const xyloc = mtmp.mtrack[0].x;
+    const xyflags = mtmp.mtrack[0].y;
+    let xlocale = mtmp.mtrack[1].x;
+    let ylocale = mtmp.mtrack[1].y;
+    const fromdlev = { dnum: mtmp.mtrack[2].x, dlevel: mtmp.mtrack[2].y };
     mon_track_clear(mtmp);
     /* restore_cham(mtmp) */
     if (u.uprops?.[PROT_FROM_SHAPE_CHANGERS]?.intrinsic
@@ -576,8 +590,214 @@ export async function mon_arrive(mtmp, when) {
         mtmp.mstate &= ~MON_STILL_ARRIVING;
         return;
     }
+    /* (when == Wiz_arrive: the Wizard's resurrect() isn't ported) */
     /*
      * The monster arrived on this level independently of the player.
+     * Its coordinate fields were overloaded for use as flags that
+     * specify its final destination.
      */
-    throw new Error('mon_arrive(): independent arrival (mon_catchup_elapsed_time(), MIGR_* placement) not ported yet');
+    let wander, stway;
+
+    if (mtmp.mlstmv < g.moves - 1) {
+        /* heal monster for time spent in limbo */
+        const nmv = g.moves - 1 - mtmp.mlstmv;
+
+        mon_catchup_elapsed_time(mtmp, nmv);
+
+        /* let monster move a bit on new level (see placement code below) */
+        wander = Math.min(nmv, 8);
+    } else
+        wander = 0;
+
+    switch (xyloc) {
+    case MIGR_APPROX_XY: /* {x,y}locale set above */
+        break;
+    case MIGR_EXACT_XY:
+        wander = 0;
+        break;
+    case MIGR_WITH_HERO:
+        xlocale = u.ux, ylocale = u.uy;
+        break;
+    case MIGR_STAIRS_UP:
+        if ((stway = stairway_find_from(fromdlev, false)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_STAIRS_DOWN:
+        if ((stway = stairway_find_from(fromdlev, false)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_LADDER_UP:
+        if ((stway = stairway_find_from(fromdlev, true)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_LADDER_DOWN:
+        if ((stway = stairway_find_from(fromdlev, true)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_SSTAIRS:
+        if ((stway = stairway_find(fromdlev)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_PORTAL:
+        throw new Error('mon_arrive(): MIGR_PORTAL arrival not ported yet');
+    default:
+    case MIGR_RANDOM:
+        xlocale = ylocale = 0;
+        break;
+    }
+
+    if (((mtmp.migflags || 0) & MIGR_LEFTOVERS) !== 0) {
+        /* Pick up the rest of the MIGR_TO_SPECIES objects */
+        if (g.migrating_objs)
+            throw new Error('mon_arrive(): deliver_obj_to_mon() not ported yet');
+    }
+
+    if (xlocale && wander) {
+        /* monster moved a bit; pick a nearby location */
+        /* mnearto() deals w/stone, et al */
+        const r = in_rooms(xlocale, ylocale, 0);
+
+        if (r && r.length) {
+            const c = { x: 0, y: 0 };
+
+            /* somexy() handles irregular rooms */
+            if (somexy(g.level.rooms[r.charCodeAt(0) - ROOMOFFSET], c))
+                xlocale = c.x, ylocale = c.y;
+            else
+                xlocale = ylocale = 0;
+        } else { /* not in a room */
+            let i, j;
+
+            i = Math.max(1, xlocale - wander);
+            j = Math.min(COLNO - 1, xlocale + wander);
+            xlocale = rn1(j - i, i);
+            i = Math.max(0, ylocale - wander);
+            j = Math.min(ROWNO - 1, ylocale + wander);
+            ylocale = rn1(j - i, i);
+        }
+    } /* moved a bit */
+
+    mtmp.mx = 0; /*(already is 0)*/
+    mtmp.my = xyflags;
+
+    let failed_to_place;
+    if (xlocale)
+        failed_to_place = !(await mnearto(mtmp, xlocale, ylocale, false,
+                                          RLOC_NOMSG));
+    else
+        failed_to_place = !(await rloc(mtmp, RLOC_NOMSG));
+
+    if (failed_to_place)
+        /* relmon(mtmp, &failed_arrivals): losedogs() would deal with it */
+        throw new Error('mon_arrive(): failed arrival (m_into_limbo()) not ported yet');
+    mtmp.mstate &= ~MON_STILL_ARRIVING;
+}
+
+// C ref: dog.c mon_catchup_elapsed_time()
+/* heal monster for time spent elsewhere */
+export function mon_catchup_elapsed_time(
+    mtmp,
+    nmv) /* number of moves */
+{
+    let imv = 0; /* avoid zillions of casts and lint warnings */
+    const LARGEST_INT = 32767;
+
+    if (nmv >= LARGEST_INT) /* paranoia */
+        imv = LARGEST_INT - 1;
+    else
+        imv = nmv;
+
+    /* might stop being afraid, blind or frozen */
+    /* set to 1 and allow final decrement in movemon() */
+    if (mtmp.mblinded) {
+        if (imv >= mtmp.mblinded)
+            mtmp.mblinded = 1;
+        else
+            mtmp.mblinded -= imv;
+    }
+    if (mtmp.mfrozen) {
+        if (imv >= mtmp.mfrozen)
+            mtmp.mfrozen = 1;
+        else
+            mtmp.mfrozen -= imv;
+    }
+    if (mtmp.mfleetim) {
+        if (imv >= mtmp.mfleetim)
+            mtmp.mfleetim = 1;
+        else
+            mtmp.mfleetim -= imv;
+    }
+
+    /* might recover from temporary trouble */
+    if (mtmp.mtrapped && rn2(imv + 1) > Math.trunc(40 / 2))
+        mtmp.mtrapped = 0;
+    if (mtmp.mconf && rn2(imv + 1) > Math.trunc(50 / 2))
+        mtmp.mconf = 0;
+    if (mtmp.mstun && rn2(imv + 1) > Math.trunc(10 / 2))
+        mtmp.mstun = 0;
+
+    /* might finish eating or be able to use special ability again */
+    if (mtmp.meating) {
+        if (imv > mtmp.meating) {
+            /* finish_meating(mtmp) */
+            mtmp.meating = 0;
+            if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING
+                && mtmp.data.mlet !== S_MIMIC) {
+                /* was eating a mimic and now appearance needs resetting */
+                mtmp.m_ap_type = M_AP_NOTHING;
+                mtmp.mappearance = 0;
+                newsym(mtmp.mx, mtmp.my);
+            }
+        } else
+            mtmp.meating -= imv;
+    }
+    if (imv > (mtmp.mspec_used || 0))
+        mtmp.mspec_used = 0;
+    else
+        mtmp.mspec_used -= imv;
+
+    /* reduce tameness for every 150 moves you are separated */
+    if (mtmp.mtame) {
+        const wilder = Math.trunc((imv + 75) / 150);
+        if (mtmp.mtame > wilder)
+            mtmp.mtame -= wilder; /* less tame */
+        else if (mtmp.mtame > rn2(wilder))
+            mtmp.mtame = 0; /* untame */
+        else
+            mtmp.mtame = mtmp.mpeaceful = 0; /* hostile! */
+    }
+    /* check to see if it would have died as a pet; if so, go wild instead
+     * of dying the next time we call dog_move()
+     */
+    if (mtmp.mtame && !mtmp.isminion
+        && ((mtmp.data.mflags1 & M1_CARNIVORE) /* carnivorous() */
+            || (mtmp.data.mflags1 & M1_HERBIVORE))) { /* herbivorous() */
+        const edog = mtmp.edog;
+
+        if ((game.moves > edog.hungrytime + 500 && mtmp.mhp < 3)
+            || (game.moves > edog.hungrytime + 750))
+            mtmp.mtame = mtmp.mpeaceful = 0;
+    }
+
+    if (!mtmp.mtame && mtmp.mleashed)
+        /* leashed monsters should always be with hero, consequently
+           never losing any time to be accounted for later */
+        throw new Error('mon_catchup_elapsed_time(): m_unleash() not ported yet');
+
+    /* recover lost hit points */
+    if (!regenerates(mtmp.data))
+        imv = Math.trunc(imv / 20);
+    healmon(mtmp, imv, 0);
+
+    mtmp.mlstmv = game.moves; /* set_mon_lastmove() */
 }
