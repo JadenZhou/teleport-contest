@@ -7,6 +7,7 @@
 // are not ported yet.
 
 import { game } from './gstate.js';
+import { drag_ball, move_bc, drop_ball } from './ball.js';
 import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
@@ -659,7 +660,7 @@ async function throwit(obj,
 
         stackobj(obj);
         if (obj === g.uball)
-            throw new Error('throwit(): drop_ball() not ported yet');
+            await drop_ball(bx, by);
         if (cansee(bx, by))
             newsym(bx, by);
         /* if (obj_sheds_light(obj)) vision_full_recalc = 1: lit objects
@@ -1283,9 +1284,15 @@ export async function hurtle_step(arg, x, y) {
         /* Sokoban: "You come to an abrupt halt!" -- Sokoban isn't ported */
     }
 
-    /* caller has already determined that dragging the ball is allowed */
-    if (game.uball)
-        throw new Error('hurtle_step(): drag_ball() not ported yet');
+    /* caller has already determined that dragging the ball is allowed;
+       if ball is carried we might still need to drag the chain */
+    if (game.uball) { /* Punished */
+        const bc = { bc_control: 0, ballx: 0, bally: 0, chainx: 0, chainy: 0,
+                     cause_delay: false };
+
+        if (await drag_ball(x, y, bc, true))
+            move_bc(0, bc.bc_control, bc.ballx, bc.bally, bc.chainx, bc.chainy);
+    }
 
     ox = u.ux;
     oy = u.uy;

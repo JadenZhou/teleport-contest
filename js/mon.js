@@ -74,6 +74,7 @@ import { attacktype_fordmg, resists_poison } from './mondata.js';
 import { visible_region_at, cmap_to_glyph, S_poisoncloud, create_gas_cloud } from './region.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
+import { unpunish } from './read.js';
 import { grow_up, goodpos, place_monster } from './makemon.js';
 import { enexto, rloc_to_core } from './teleport.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
@@ -2698,8 +2699,11 @@ export async function m_consume_obj(mtmp, otmp) {
     }
     if (otmp.cobj && otmp.cobj.length) /* Has_contents(otmp) */
         throw new Error('m_consume_obj(): meatbox() not ported yet');
-    if (otmp === game.uball || otmp === game.uchain) {
-        throw new Error('m_consume_obj(): unpunish() not ported yet');
+    if (otmp === game.uball) {
+        await unpunish();
+        delobj(otmp);
+    } else if (otmp === game.uchain) {
+        await unpunish(); /* frees uchain */
     } else {
         const vis = canseemon(mtmp);
         const corpsenm = (otmp.otyp === CORPSE ? otmp.corpsenm : NON_PM);

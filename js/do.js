@@ -54,6 +54,7 @@ import { MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION, UNPAID_TYPES,
 import { GETOBJ_PROMPT, GETOBJ_ALLOWCNT, ECMD_FAIL, ECMD_TIME, W_ARMOR,
          W_ACCESSORY, W_SADDLE, IS_SINK, LOST_DROPPED } from './const.js';
 import { welded, setuwep, setuqwep, setuswapwep } from './wield.js';
+import { placebc, unplacebc, drag_down, ballrelease, drop_ball } from './ball.js';
 import { You, newsym, stairway_at } from './display.js';
 import { can_reach_floor } from './engrave.js';
 import { doname } from './objnam.js';
@@ -478,7 +479,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         throw new Error('goto_level(): impact_drop() not ported yet');
 
     await check_special_room(true); /* probably was a trap door */
-    /* if (Punished) unplacebc(): punishment not ported */
+    if (Punished())
+        unplacebc();
     /* reset_utrap(FALSE) */
     u.utrap = 0;
     u.utraptype = 0;
@@ -620,8 +622,11 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
             } else if (near_capacity() > UNENCUMBERED
                        || Punished() || Fumbling()) {
                 await You(`fall down the ${g.at_ladder ? "ladder" : "stairs"}.`);
-                if (Punished())
-                    throw new Error('goto_level(): drag_down() not ported yet');
+                if (Punished()) {
+                    await drag_down();
+                    if (!welded(g.uball))
+                        await ballrelease(false);
+                }
                 /* falling off steed has its own losehp() call */
                 if (u.usteed)
                     throw new Error('goto_level(): dismount_steed(DISMOUNT_FELL) not ported yet');
@@ -643,7 +648,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
             throw new Error('goto_level(): falling arrival not ported yet');
     }
 
-    /* if (Punished) placebc(): punishment not ported */
+    if (Punished())
+        await placebc();
     /* obj_delivery(FALSE) */
     if (g.migrating_objs)
         throw new Error('goto_level(): obj_delivery() not ported yet');
@@ -1155,7 +1161,7 @@ export async function dropz(obj, with_impact) {
             throw new Error('dropz(): container_impact_dmg() not ported yet');
         impact_disturbs_zombies(obj, with_impact);
         if (obj === game.uball)
-            throw new Error('dropz(): drop_ball() not ported yet');
+            await drop_ball(game.u.ux, game.u.uy);
         else if (game.level.flags?.has_shop)
             await sellobj(obj, game.u.ux, game.u.uy);
         stackobj(obj);

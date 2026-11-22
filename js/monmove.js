@@ -8,6 +8,8 @@
 
 import { game } from './gstate.js';
 import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
+import { picking_lock } from './lock.js';
+import { is_digging, watch_dig } from './dig.js';
 import { rn2, rnd, d } from './rng.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc,
@@ -81,7 +83,7 @@ import { ART_EXCALIBUR, ART_SNICKERSNEE } from './artilist.js';
 import { In_hell } from './dungeon.js';
 import { stop_occupation } from './allmain.js';
 import { shk_move, costly_spot, after_shk_move, inhishop } from './shk.js';
-import { in_rooms } from './hack.js';
+import { in_rooms, in_town } from './hack.js';
 import { pri_move, in_your_sanctuary } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
 
@@ -252,6 +254,25 @@ function monhaskey(mon, for_unlocking) {
     if (for_unlocking && m_carrying(mon, CREDIT_CARD))
         return true;
     return !!(m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK));
+}
+
+// C ref: monmove.c watch_on_duty()
+async function watch_on_duty(mtmp) {
+    const u = game.u;
+    const cc = { x: 0, y: 0 };
+
+    if (mtmp.mpeaceful && in_town(u.ux + u.dx, u.uy + u.dy)
+        && mtmp.mcansee && m_canseeu(mtmp) && !rn2(3)) {
+        if (picking_lock(cc) && IS_DOOR(game.level.at(cc.x, cc.y).typ)
+            && (game.level.at(cc.x, cc.y).doormask & D_LOCKED)) {
+            if (couldsee(mtmp.mx, mtmp.my))
+                throw new Error('watch_on_duty(): mon_yells()/angry_guards() not ported yet');
+        } else if (is_digging()) {
+            /* chewing, wand/spell of digging are checked elsewhere */
+            watch_dig(mtmp, game.context.digging.pos.x,
+                      game.context.digging.pos.y, false);
+        }
+    }
 }
 
 // ── C ref: monmove.c dochugw() ──
@@ -751,7 +772,7 @@ export async function dochug(mtmp) {
 
     /* the watch will look around and see if you are up to no good :-) */
     if (is_watch(mdat)) {
-        throw new Error('watch_on_duty() not ported yet');
+        await watch_on_duty(mtmp);
     /* mind flayers can make psychic attacks! */
     } else if (is_mind_flayer(mdat) && !rn2(20)) {
         throw new Error('mind_blast() not ported yet');

@@ -97,7 +97,8 @@ import { induced_align } from './dungeon.js';
 import { nhl_push_obj } from './nhlobj.js';
 import { bury_an_obj } from './dig.js';
 import { stock_room } from './shknam.js';
-import { priestini } from './priest.js';
+import { priestini, mk_roamer } from './priest.js';
+import { Amask2align } from './const.js';
 import { make_engr_at, engr_at, del_engr_at } from './engrave.js';
 import { DUST, ENGRAVE, BURN, MARK, ENGR_BLOOD, Is_waterlevel } from './const.js';
 import {
@@ -2126,7 +2127,7 @@ function create_monster(m, croom) {
         return;
 
     if (m.sp_amask !== AM_SPLEV_RANDOM)
-        nhl_error(null, 'create_monster: mk_roamer() is not ported yet');
+        mtmp = mk_roamer(pm, Amask2align(amask), x, y, m.peaceful);
     else if (PM_ARCHEOLOGIST <= m.id && m.id <= PM_WIZARD)
         nhl_error(null, 'create_monster: mk_mplayer() is not ported yet');
     else
