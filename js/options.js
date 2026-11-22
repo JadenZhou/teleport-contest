@@ -2481,38 +2481,38 @@ export function show_menu_controls(win, dolist) {
         tty_putstr(win, 0, mc_altfmt("", "Whole", "Current"));
         tty_putstr(win, 0, mc_altfmt("", " Menu", " Page"));
         tty_putstr(win, 0, mc_fmt("Select",
-                                  visctrl(get_menu_cmd_key(MENU_SELECT_ALL)),
-                                  visctrl(get_menu_cmd_key(MENU_SELECT_PAGE))));
+                                  visctrl(get_menu_cmd_key(MENU_SELECT_ALL).charCodeAt(0)),
+                                  visctrl(get_menu_cmd_key(MENU_SELECT_PAGE).charCodeAt(0))));
         tty_putstr(win, 0, mc_fmt("Invert",
-                                  visctrl(get_menu_cmd_key(MENU_INVERT_ALL)),
-                                  visctrl(get_menu_cmd_key(MENU_INVERT_PAGE))));
+                                  visctrl(get_menu_cmd_key(MENU_INVERT_ALL).charCodeAt(0)),
+                                  visctrl(get_menu_cmd_key(MENU_INVERT_PAGE).charCodeAt(0))));
         tty_putstr(win, 0, mc_fmt("Deselect",
-                                  visctrl(get_menu_cmd_key(MENU_UNSELECT_ALL)),
-                                  visctrl(get_menu_cmd_key(MENU_UNSELECT_PAGE))));
+                                  visctrl(get_menu_cmd_key(MENU_UNSELECT_ALL).charCodeAt(0)),
+                                  visctrl(get_menu_cmd_key(MENU_UNSELECT_PAGE).charCodeAt(0))));
         tty_putstr(win, 0, "");
         tty_putstr(win, 0, mc_fmt("Go to",
-                                  visctrl(get_menu_cmd_key(MENU_NEXT_PAGE)),
+                                  visctrl(get_menu_cmd_key(MENU_NEXT_PAGE).charCodeAt(0)),
                                   "Next page"));
         tty_putstr(win, 0, mc_fmt("",
-                                  visctrl(get_menu_cmd_key(MENU_PREVIOUS_PAGE)),
+                                  visctrl(get_menu_cmd_key(MENU_PREVIOUS_PAGE).charCodeAt(0)),
                                   "Previous page"));
         tty_putstr(win, 0, mc_fmt("",
-                                  visctrl(get_menu_cmd_key(MENU_FIRST_PAGE)),
+                                  visctrl(get_menu_cmd_key(MENU_FIRST_PAGE).charCodeAt(0)),
                                   "First page"));
         tty_putstr(win, 0, mc_fmt("",
-                                  visctrl(get_menu_cmd_key(MENU_LAST_PAGE)),
+                                  visctrl(get_menu_cmd_key(MENU_LAST_PAGE).charCodeAt(0)),
                                   "Last page"));
         if (has_menu_shift) {
             tty_putstr(win, 0, mc_fmt("Pan view",
-                                      visctrl(get_menu_cmd_key(MENU_SHIFT_RIGHT)),
+                                      visctrl(get_menu_cmd_key(MENU_SHIFT_RIGHT).charCodeAt(0)),
                                       "Right (perm_invent only)"));
             tty_putstr(win, 0, mc_fmt("",
-                                      visctrl(get_menu_cmd_key(MENU_SHIFT_LEFT)),
+                                      visctrl(get_menu_cmd_key(MENU_SHIFT_LEFT).charCodeAt(0)),
                                       "Left"));
         }
         tty_putstr(win, 0, "");
         tty_putstr(win, 0, mc_fmt("Search",
-                                  visctrl(get_menu_cmd_key(MENU_SEARCH)),
+                                  visctrl(get_menu_cmd_key(MENU_SEARCH).charCodeAt(0)),
                                   "Exter a target string and invert all matching entries"));
         /* separator before hardcoded */
         tty_putstr(win, 0, "");
