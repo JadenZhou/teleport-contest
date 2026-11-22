@@ -42,6 +42,12 @@ import { mattacku } from './mhitu.js';
 import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level } from './const.js';
+import { obj_resists } from './dogmove.js';
+import { touch_artifact } from './artifact.js';
+import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
+         RIN_SLOW_DIGESTION } from './objects.js';
+import { resists_poison } from './mondata.js';
+import { mksobj_at } from './mkobj.js';
 import { an, xname } from './objnam.js';
 import { delobj } from './invent.js';
 import { grow_up } from './makemon.js';
@@ -1051,6 +1057,75 @@ export function m_avoid_kicked_loc(mtmp, nx, ny) {
         && Math.abs(nx - game.u.ux) <= 1 && Math.abs(ny - game.u.uy) <= 1)
         return true;
     return false;
+}
+
+// ── C ref: mon.c meatmetal() ──
+/* for rust monsters and rock moles: eats the topmost metal object on the
+   monster's spot; returns 0 if nothing eaten, 1 if something eaten,
+   2 if the monster died */
+async function meatmetal(mtmp) {
+    let otmpname;
+    const vis = canseemon(mtmp);
+
+    /* If a pet, eating is handled separately, in dog.c */
+    if (mtmp.mtame)
+        return 0;
+
+    /* Eats topmost metal object if it is there; the pile at <mx,my> is
+       read from fobj (newest first), like svl.level.objects[x][y] */
+    const pile = (game.level.objects || []).filter(
+        o => o.where === 'OBJ_FLOOR' && o.ox === mtmp.mx && o.oy === mtmp.my);
+    for (const otmp of pile) {
+        /* Don't eat indigestible/choking/inappropriate objects */
+        if ((mtmp.data === mons[M.PM_RUST_MONSTER] && !is_rustprone(otmp))
+            || (otmp.otyp === AMULET_OF_STRANGULATION
+                || otmp.otyp === RIN_SLOW_DIGESTION)
+            || (otmp.opoisoned && !resists_poison(mtmp)))
+            continue;
+        if (is_metallic(otmp) && !obj_resists(otmp, 5, 95)
+            && await touch_artifact(otmp, mtmp)) {
+            if (mtmp.data === mons[M.PM_RUST_MONSTER] && otmp.oerodeproof) {
+                if (vis) {
+                    /* call distant_name() for its side-effects even when
+                       !verbose so won't be printed */
+                    otmpname = distant_name(otmp, doname);
+                    if (game.flags.verbose) /* pline_mon() */
+                        await pline(`${Monnam(mtmp)} eats ${otmpname}!`);
+                }
+                /* The object's rustproofing is gone now */
+                otmp.oerodeproof = 0;
+                mtmp.mstun = 1;
+                if (vis) {
+                    /* (see above; format even if it won't be printed) */
+                    otmpname = distant_name(otmp, doname);
+                    if (game.flags.verbose)
+                        await pline(`${Monnam(mtmp)} spits ${otmpname} out in disgust!`);
+                }
+            } else {
+                if (cansee(mtmp.mx, mtmp.my)) {
+                    /* (see above; format even if it won't be printed) */
+                    otmpname = distant_name(otmp, doname);
+                    if (game.flags.verbose)
+                        await pline(`${Monnam(mtmp)} eats ${otmpname}!`);
+                } else {
+                    if (game.flags.verbose) {
+                        /* Soundeffect(se_crunching_sound, 50) */
+                        await You_hear("a crunching sound.");
+                    }
+                }
+                mtmp.meating = Math.trunc(otmp.owt / 2) + 1;
+                await m_consume_obj(mtmp, otmp);
+                if (mtmp.mhp < 1) /* DEADMONSTER() */
+                    return 2;
+                /* Left behind a pile? */
+                if (rnd(25) < 3)
+                    mksobj_at(ROCK, mtmp.mx, mtmp.my, true, false);
+                newsym(mtmp.mx, mtmp.my);
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 // ── C ref: monmove.c m_avoid_soko_push_loc() ──
@@ -2088,8 +2163,10 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
     if (mmoved === MMOVE_MOVED || mmoved === MMOVE_DONE) {
         if (OBJ_AT(mtmp.mx, mtmp.my) && mtmp.mcanmove) {
             /* Maybe a rock mole just ate some metal object */
-            if (metallivorous(ptr))
-                throw new Error('postmov(): meatmetal() not ported yet');
+            if (metallivorous(ptr)) {
+                if (await meatmetal(mtmp) === 2)
+                    return MMOVE_DIED; /* it died */
+            }
             /* Maybe a cube ate just about anything */
             if (ptr === mons[M.PM_GELATINOUS_CUBE])
                 throw new Error('postmov(): meatobj() not ported yet');
