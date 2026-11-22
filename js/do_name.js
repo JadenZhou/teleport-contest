@@ -805,3 +805,38 @@ export function monverbself(mon, monnamtext, verb, othertext) {
     monnamtext += " " + selfbuf;
     return monnamtext;
 }
+
+// C ref: do_name.c hcolors[]
+const hcolors = [
+    "ultraviolet", "infrared", "bluish-orange", "reddish-green", "dark white",
+    "light black", "sky blue-pink", "pinkish-cyan", "indigo-chartreuse",
+    "salty", "sweet", "sour", "bitter", "umami", /* basic tastes */
+    "striped", "spiral", "swirly", "plaid", "checkered", "argyle", "paisley",
+    "blotchy", "guernsey-spotted", "polka-dotted", "square", "round",
+    "triangular", "cabernet", "sangria", "fuchsia", "wisteria", "lemon-lime",
+    "strawberry-banana", "peppermint", "romantic", "incandescent",
+    "octarine", /* Discworld: the Colour of Magic */
+    "excitingly dull", "mauve", "electric",
+    "neon", "fluorescent", "phosphorescent", "translucent", "opaque",
+    "psychedelic", "iridescent", "rainbow-colored", "polychromatic",
+    "colorless", "colorless green",
+    "dancing", "singing", "loving", "loudy", "noisy", "clattery", "silent",
+    "apocyan", "infra-pink", "opalescent", "violant", "tuneless",
+    "viridian", "aureolin", "cinnabar", "purpurin", "gamboge", "madder",
+    "bistre", "ecru", "fulvous", "tekhelet", "selective yellow",
+];
+
+// C ref: do_name.c hcolor()
+export function hcolor(colorpref) {
+    return (Hallucination_dn() || !colorpref)
+        ? hcolors[rn2_on_display_rng(hcolors.length)]
+        : colorpref;
+}
+
+/* C ref: youprop.h Hallucination */
+function Hallucination_dn() {
+    const p = game.u.uprops;
+    return !!(p[HALLUC_DN].intrinsic
+              && !(p[HALLUC_RES_DN].intrinsic || p[HALLUC_RES_DN].extrinsic));
+}
+import { HALLUC as HALLUC_DN, HALLUC_RES as HALLUC_RES_DN } from './const.js';

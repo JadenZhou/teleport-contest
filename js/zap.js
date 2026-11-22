@@ -887,9 +887,60 @@ function Sleep_resistance() {
 // C ref: zap.c zapyourself() -- the cases sessions reach so far
 export async function zapyourself(obj, ordinary) {
     let learn_it = false;
-    const damage = 0;
+    let damage = 0;
+    const u = game.u;
 
     switch (obj.otyp) {
+    case O_zy.WAN_STRIKING:
+    case O_zy.SPE_FORCE_BOLT:
+        learn_it = true;
+        if (u.uprops[ANTIMAGIC_ZY].intrinsic || u.uprops[ANTIMAGIC_ZY].extrinsic) {
+            /* shieldeff(u.ux, u.uy): transient display only */
+            await pline("Boing!");
+            monstseesu(M_SEEN_MAGR_ZY);
+        } else {
+            if (ordinary) {
+                await You("bash yourself!");
+                damage = d(2, 12);
+            } else
+                damage = d(1 + obj.spe, 6);
+            exercise(A_STR_ZY, false);
+            monstunseesu(M_SEEN_MAGR_ZY);
+        }
+        break;
+
+    case O_zy.WAN_DEATH:
+    case O_zy.SPE_FINGER_OF_DEATH: {
+        const ptr = game.youmonst.data;
+        if (nonliving_zy(ptr) || (ptr.mflags2 & M2_DEMON_ZY) /* is_demon() */) {
+            await pline((obj.otyp === O_zy.WAN_DEATH)
+                        ? "The wand shoots an apparently harmless beam at you."
+                        : "You seem no deader than before.");
+            break;
+        }
+        learn_it = true;
+        killer_zy().name = `shot ${uhim_zy()}self with a death ray`;
+        killer_zy().format = NO_KILLER_PREFIX_ZY;
+        /* probably don't need these to be urgent; player just gave input
+           without subsequent opportunity to dismiss --More-- with ESC */
+        await pline("You irradiate yourself with pure energy!"); /* urgent_pline() */
+        await pline("You die."); /* urgent_pline() */
+        /* They might survive with an amulet of life saving */
+        await done_zy(DIED_ZY);
+        break;
+    }
+    case O_zy.SPE_HEALING:
+    case O_zy.SPE_EXTRA_HEALING:
+        learn_it = true; /* (no effect for spells...) */
+        await healup_zy(d(6, obj.otyp === O_zy.SPE_EXTRA_HEALING ? 8 : 4), 0, false,
+                        !!(obj.blessed || obj.otyp === O_zy.SPE_EXTRA_HEALING));
+        await You_feel(`${obj.otyp === O_zy.SPE_EXTRA_HEALING ? "much " : ""}better.`);
+        break;
+    case O_zy.EXPENSIVE_CAMERA:
+    case O_zy.WAN_DIGGING:
+    case O_zy.SPE_DIG:
+    case O_zy.SPE_DETECT_UNSEEN:
+        break;
     case WAN_SLEEP:
     case SPE_SLEEP:
         learn_it = true;
@@ -920,6 +971,27 @@ export async function zapyourself(obj, ordinary) {
     if (learn_it)
         learnwand(obj);
     return damage;
+}
+
+import * as O_zy from './objects.js';
+import { ANTIMAGIC as ANTIMAGIC_ZY, M_SEEN_MAGR as M_SEEN_MAGR_ZY,
+         A_STR as A_STR_ZY, NO_KILLER_PREFIX as NO_KILLER_PREFIX_ZY,
+         DIED as DIED_ZY } from './const.js';
+import { M2_DEMON as M2_DEMON_ZY, M2_UNDEAD as M2_UNDEAD_ZY,
+         S_GOLEM as S_GOLEM_ZY,
+         S_VORTEX as S_VORTEX_ZY, mons as mons_zy,
+         PM_MANES as PM_MANES_ZY } from './monsters.js';
+import { killer as killer_zy } from './topten.js';
+import { done as done_zy } from './end.js';
+import { healup as healup_zy } from './potion.js';
+/* C ref: mondata.h nonliving() */
+function nonliving_zy(ptr) {
+    return (ptr.mflags2 & M2_UNDEAD_ZY) !== 0 || ptr === mons_zy[PM_MANES_ZY]
+           || ptr.mlet === S_GOLEM_ZY || ptr.mlet === S_VORTEX_ZY;
+}
+/* C ref: you.h uhim() -- genders[flags.female ? 1 : 0].him */
+function uhim_zy() {
+    return game.flags.female ? "her" : "him";
 }
 
 // C ref: zap.c zapsetup() -- used by do_break_wand() was well as by weffects()

@@ -484,3 +484,344 @@ export function premap_detect() {
         map_trap(ttmp, 1);
     }
 }
+
+/* C ref: obj.h Has_contents(), SchroedingersBox() */
+function Has_contents(o) { return !!o.cobj; }
+function SchroedingersBox(o) { return o.otyp === LARGE_BOX_DT && o.spe === 1; }
+
+// C ref: detect.c o_in()
+/* Recursively search obj for an object in class oclass and return 1st found */
+export function o_in(obj, oclass) {
+    let otmp, temp;
+
+    if (obj.oclass === oclass)
+        return obj;
+    /*
+     * Note:  we exclude SchroedingersBox because the corpse it contains
+     * isn't necessarily a corpse yet.  Resolving the status would lead
+     * to complications if it turns out to be a live cat.  We know that
+     * that Box can't contain anything else because putting something in
+     * would resolve the cat/corpse situation and convert to ordinary box.
+     */
+    if (Has_contents(obj) && !SchroedingersBox(obj)) {
+        for (otmp = obj.cobj; otmp; otmp = otmp.nobj)
+            if (otmp.oclass === oclass)
+                return otmp;
+            else if (Has_contents(otmp) && (temp = o_in(otmp, oclass)) != null)
+                return temp;
+    }
+    return null;
+}
+
+/* C ref: display.h glyph_is_object(), glyph_to_obj() for the JS glyph
+   form: obj_to_glyph() keeps the objects[] index in 'otyp' */
+function glyph_is_object_dt(glyph) { return !!glyph && g_kind(glyph) === 'obj'; }
+
+/* C ref: level.objects[x][y] -- the floor objects at a spot */
+function objects_at_dt(x, y) {
+    return (game.level.objects || []).filter(o => o.ox === x && o.oy === y
+                                               && o.where === 'OBJ_FLOOR');
+}
+
+// C ref: detect.c check_map_spot() -- the material (gold) case isn't
+// ported yet
+/* Check whether the location has an outdated object displayed on it. */
+function check_map_spot(x, y, oclass, material) {
+    let mtmp;
+
+    const glyph = glyph_at(x, y);
+    if (glyph_is_object_dt(glyph)) {
+        /* there's some object shown here */
+        if (oclass === ALL_CLASSES_DT) {
+            return !(objects_at_dt(x, y).length /* stale if nothing here */
+                     || ((mtmp = m_at(x, y)) != null && mtmp.minvent));
+        } else {
+            if (material)
+                throw new Error('check_map_spot(): o_material() not ported yet');
+            if (oclass && objects_dt[glyph.otyp].oc_class === oclass) {
+                /* obj shown here is of interest because its class matches */
+                for (const otmp of objects_at_dt(x, y))
+                    if (o_in(otmp, oclass))
+                        return false;
+                /* didn't find it; perhaps a monster is carrying it */
+                if ((mtmp = m_at(x, y)) != null) {
+                    for (let otmp = mtmp.minvent; otmp; otmp = otmp.nobj)
+                        if (o_in(otmp, oclass))
+                            return false;
+                }
+                /* detection indicates removal of this object from the map */
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// C ref: detect.c clear_stale_map()
+/*
+ * When doing detection, remove stale data from the map display (corpses
+ * rotted away, objects carried away by monsters, etc) so that it won't
+ * reappear after the detection has completed.  Return true if noticeable
+ * change occurs.
+ */
+function clear_stale_map(oclass, material) {
+    let zx, zy;
+    let change_made = false;
+
+    for (zx = 1; zx < COLNO; zx++)
+        for (zy = 0; zy < ROWNO; zy++)
+            if (check_map_spot(zx, zy, oclass, material)) {
+                unmap_object(zx, zy);
+                change_made = true;
+            }
+
+    return change_made;
+}
+
+// C ref: detect.c gold_detect() -- not ported yet
+export async function gold_detect(sobj) {
+    void sobj;
+    throw new Error('gold_detect() not ported yet');
+}
+
+// C ref: detect.c food_detect()
+/* returns 1 if nothing was detected, 0 if something was detected */
+export async function food_detect(sobj) {
+    const g = game, u = g.u;
+    let ct = 0, ctu = 0;
+    const confused = !!(Confusion_dt() || (sobj && sobj.cursed));
+    const oclass = confused ? POTION_CLASS_DT : FOOD_CLASS_DT;
+    const what = confused ? "something" : "food";
+
+    const stale = clear_stale_map(oclass, 0);
+    if (u.usteed) /* some situations leave steed with stale coordinates */
+        u.usteed.mx = u.ux, u.usteed.my = u.uy;
+
+    for (const obj of g.level.objects || [])
+        if (obj.where === 'OBJ_FLOOR' && o_in(obj, oclass)) {
+            if (obj.ox === u.ux && obj.oy === u.uy)
+                ctu++;
+            else
+                ct++;
+        }
+    for (let mtmp = g.fmon; mtmp && (!ct || !ctu); mtmp = mtmp.nmon) {
+        if (mtmp.mhp < 1 || (mtmp.isgd && !mtmp.mx))
+            continue;
+        for (let obj = mtmp.minvent; obj; obj = obj.nobj)
+            if (o_in(obj, oclass)) {
+                if (mtmp.mx === u.ux && mtmp.my === u.uy)
+                    ctu++; /* steed or an engulfer with inventory */
+                else
+                    ct++;
+                break;
+            }
+    }
+
+    if (!ct && !ctu) {
+        g.known = stale && !confused;
+        if (stale) {
+            await docrt();
+            await pline(`You sense a lack of ${what} nearby.`);
+            if (sobj && sobj.blessed) {
+                if (!u.uedibility)
+                    await pline(`Your ${body_part_dt(NOSE_DT)} starts to tingle.`);
+                u.uedibility = 1;
+            }
+        } else if (sobj) {
+            const buf = `Your ${body_part_dt(NOSE_DT)} twitches${
+                (sobj.blessed && !u.uedibility) ? " then starts to tingle" : ""}.`;
+            if (sobj.blessed && !u.uedibility) {
+                const savebeginner = g.flags.beginner;
+
+                g.flags.beginner = false; /* prevent non-delivery of message */
+                await strange_feeling_dt(sobj, buf);
+                g.flags.beginner = savebeginner;
+                u.uedibility = 1;
+            } else
+                await strange_feeling_dt(sobj, buf);
+        }
+        return !stale ? 1 : 0;
+    } else if (!ct) {
+        g.known = true;
+        await pline(`You ${sobj ? "smell" : "sense"} ${what} nearby.`);
+        if (sobj && sobj.blessed) {
+            if (!u.uedibility)
+                await pline(`Your ${body_part_dt(NOSE_DT)} starts to tingle.`);
+            u.uedibility = 1;
+        }
+    } else {
+        let temp;
+        let ter_typ = TER_DETECT_DT | TER_OBJ;
+
+        g.known = true;
+        await cls_dt();
+        unconstrain_map();
+        for (const obj of g.level.objects || [])
+            if (obj.where === 'OBJ_FLOOR' && (temp = o_in(obj, oclass)) != null) {
+                if (temp !== obj) {
+                    temp.ox = obj.ox;
+                    temp.oy = obj.oy;
+                }
+                map_object(temp, 1);
+            }
+        for (let mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
+            if (mtmp.mhp < 1 || (mtmp.isgd && !mtmp.mx))
+                continue;
+            for (let obj = mtmp.minvent; obj; obj = obj.nobj)
+                if ((temp = o_in(obj, oclass)) != null) {
+                    temp.ox = mtmp.mx;
+                    temp.oy = mtmp.my;
+                    map_object(temp, 1);
+                    break; /* skip rest of this monster's inventory */
+                }
+        }
+        if (!ctu) {
+            newsym(u.ux, u.uy);
+            ter_typ |= TER_MON; /* for autodescribe of self */
+        }
+        if (sobj) {
+            if (sobj.blessed) {
+                await pline(`Your ${body_part_dt(NOSE_DT)} ${
+                    u.uedibility ? "continues" : "starts"} to tingle and you smell ${what}.`);
+                u.uedibility = 1;
+            } else
+                await pline(`Your ${body_part_dt(NOSE_DT)} tingles and you smell ${what}.`);
+        } else
+            await pline(`You sense ${what}.`);
+        exercise(A_WIS_DT, true);
+
+        await browse_map(ter_typ, "food");
+
+        await map_redisplay();
+    }
+    return 0;
+}
+
+// C ref: detect.c map_monst()
+/* show a monster on the map (for detection) */
+function map_monst(mtmp, showtail) {
+    const g = game;
+    if (def_monsyms_dt[mtmp.data.mlet] === ' ')
+        throw new Error('map_monst(): detected_mon_to_glyph() not ported yet');
+    /* mtmp->mtame ? pet_to_glyph(mtmp, newsym_rn2)
+                   : mon_to_glyph(mtmp, newsym_rn2) */
+    const ptr = Hallucination_dt() ? mons_dt[rn2_on_display_rng_dt(NUMMONS_DT)]
+                                   : mtmp.data;
+    const attr = (mtmp.mtame && !Hallucination_dt() && g.iflags?.wc_hilite_pet)
+                 ? g.iflags.wc2_petattr : 0;
+    show_glyph_cell_dt(mtmp.mx, mtmp.my, def_monsyms_dt[ptr.mlet] ?? '?',
+                       ptr.mcolor ?? NO_COLOR, false, attr, 'mon', false,
+                       { mndx: ptr.pmidx });
+
+    if (showtail && mtmp.data === mons_dt[PM_LONG_WORM_DT] && mtmp.wormno)
+        throw new Error('map_monst(): detect_wsegs() not ported yet');
+}
+
+// C ref: detect.c monster_detect()
+/*
+ * Used by: crystal balls, potions, fountains
+ *
+ * Returns 1 if nothing was detected.
+ * Returns 0 if something was detected.
+ */
+export async function monster_detect(otmp, /* detecting object (if any) */
+                                     mclass) { /* monster class, 0 for all */
+    const g = game, u = g.u;
+    let mtmp;
+    let mcnt = 0;
+
+    /* Note: This used to just check fmon for a non-zero value
+     * but in versions since 3.3.0 fmon can test TRUE due to the
+     * presence of dmons, so we have to find at least one
+     * with positive hit-points to know for sure.
+     */
+    for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
+        if (mtmp.mhp < 1 || (mtmp.isgd && !mtmp.mx))
+            continue;
+        ++mcnt;
+        break; /* no need for full count, just 1 or more vs 0 */
+    }
+
+    if (!mcnt) {
+        if (otmp)
+            await strange_feeling_dt(otmp, Hallucination_dt()
+                                           ? "You get the heebie jeebies."
+                                           : "You feel threatened.");
+        return 1;
+    } else {
+        let woken = false;
+        const swallowed = u.uswallow; /* before unconstrain_map() */
+
+        await cls_dt();
+        const unconstrained = unconstrain_map();
+        for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
+            if (mtmp.mhp < 1 || (mtmp.isgd && !mtmp.mx))
+                continue;
+            if (!mclass || mtmp.data.mlet === mclass
+                || (mtmp.data === mons_dt[PM_LONG_WORM_DT]
+                    && mclass === S_WORM_TAIL_DT))
+                map_monst(mtmp, true);
+
+            if (otmp && otmp.cursed
+                && (mtmp.msleeping || !mtmp.mcanmove)) { /* helpless() */
+                mtmp.msleeping = mtmp.mfrozen = 0;
+                mtmp.mcanmove = 1;
+                woken = true;
+            }
+        }
+        if (!swallowed) /* display_self() */
+            show_glyph_cell_dt(u.ux, u.uy, '@', CLR_WHITE_DT, false, 0, 'mon');
+        await pline("You sense the presence of monsters.");
+        if (woken)
+            await pline("Monsters sense the presence of you.");
+
+        if ((otmp && otmp.blessed) && !unconstrained) {
+            /* persistent detection--just show updated map */
+            throw new Error('monster_detect(): display_nhwindow(WIN_MAP, TRUE) not ported yet');
+        } else {
+            /* one-shot detection--allow player to move cursor around and
+               get autodescribe feedback */
+            const p = u.uprops[DETECT_MONSTERS_DT];
+            p.extrinsic |= I_SPECIAL_DT;
+            await browse_map(TER_DETECT_DT | TER_MON, "monster of interest");
+            p.extrinsic &= ~I_SPECIAL_DT;
+        }
+
+        await map_redisplay();
+    }
+    return 0;
+}
+
+import { show_glyph_cell as show_glyph_cell_dt,
+         Hallucination as Hallucination_dt } from './display.js';
+import { rn2_on_display_rng as rn2_on_display_rng_dt } from './rng.js';
+import { mons as mons_dt, NUMMONS as NUMMONS_DT, PM_LONG_WORM as PM_LONG_WORM_DT,
+         S_WORM_TAIL as S_WORM_TAIL_DT } from './monsters.js';
+import { def_monsyms as def_monsyms_dt } from './drawing.js';
+import { CLR_WHITE as CLR_WHITE_DT } from './terminal.js';
+import { DETECT_MONSTERS as DETECT_MONSTERS_DT,
+         I_SPECIAL as I_SPECIAL_DT } from './const.js';
+
+// C ref: detect.c trap_detect() -- not ported yet
+export async function trap_detect(sobj) {
+    void sobj;
+    throw new Error('trap_detect() not ported yet');
+}
+
+// C ref: detect.c do_mapping() -- magic_map_background() isn't ported yet
+export async function do_mapping() {
+    throw new Error('do_mapping(): show_map_spot()/magic_map_background() not ported yet');
+}
+
+import { unmap_object, cls as cls_dt } from './display.js';
+import { objects as objects_dt, POTION_CLASS as POTION_CLASS_DT,
+         FOOD_CLASS as FOOD_CLASS_DT, LARGE_BOX as LARGE_BOX_DT } from './objects.js';
+const ALL_CLASSES_DT = 0; /* C ref: objclass.h ALL_CLASSES */
+import { CONFUSION as CONFUSION_DT,
+         NOSE as NOSE_DT, A_WIS as A_WIS_DT, TER_DETECT as TER_DETECT_DT } from './const.js';
+import { body_part as body_part_dt } from './insight.js';
+import { strange_feeling as strange_feeling_dt } from './potion.js';
+function Confusion_dt() {
+    const p = game.u.uprops[CONFUSION_DT];
+    return !!(p.intrinsic || p.extrinsic);
+}

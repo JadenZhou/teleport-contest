@@ -2747,7 +2747,7 @@ function xcalled(pfx, sfx) {
 
 /* C ref: do_wear.c hard_helmet(); obj.h is_helmet(); objclass.h
    is_metallic() */
-function hard_helmet(obj) {
+export function hard_helmet(obj) {
     if (!obj || !(obj.oclass === O.ARMOR_CLASS
                   && objects[obj.otyp].oc_armcat === O.ARM_HELM))
         return false;
@@ -2995,6 +2995,51 @@ export function yname(obj) {
         throw new Error('yname(): shk_owns()/mon_owns() not ported yet');
     return `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
 }
+
+// C ref: objnam.c Yname2()
+/* capitalized variant of yname() */
+export function Yname2(obj) {
+    const s = yname(obj);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// C ref: objnam.c aobjnam()
+/* format the object name with a count (for plural) and a verb */
+export function aobjnam(otmp, verb) {
+    let bp = (otmp.otyp === O.CORPSE) ? corpse_xname(otmp, null, CXN_NORMAL)
+                                      : xname(otmp); /* cxname() */
+    if (otmp.quan !== 1)
+        bp = `${otmp.quan} ${bp}`;
+    if (verb)
+        bp += ` ${otense(otmp, verb)}`;
+    return bp;
+}
+
+// C ref: objnam.c yobjnam() -- shk_your() for shop and monster ownership
+// isn't ported yet (see yname())
+export function yobjnam(obj, verb) {
+    let s = aobjnam(obj, verb);
+
+    /* leave off "your" for most of your artifacts, but prepend
+     * "your" for unique objects and "foo of bar" quest artifacts */
+    if (obj.where !== 'OBJ_INVENT' || !obj_is_pname(obj)
+        || obj.oartifact >= ART_ORB_OF_DETECTION_ID) {
+        if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
+            throw new Error('yobjnam(): shk_owns()/mon_owns() not ported yet');
+        s = `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
+    }
+    return s;
+}
+
+// C ref: objnam.c Yobjnam2()
+/* capitalized variant of yobjnam() */
+export function Yobjnam2(obj, verb) {
+    const s = yobjnam(obj, verb);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* C ref: artilist.h ART_ORB_OF_DETECTION (first quest artifact) */
+const ART_ORB_OF_DETECTION_ID = 21;
 
 // C ref: objnam.c xname_flags()
 function xname_flags(obj, cxn_flags) {

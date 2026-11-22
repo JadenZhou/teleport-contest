@@ -62,6 +62,7 @@ import { ACURR } from './attrib.js';
 import { check_capacity } from './hack.js';
 import { morehungry } from './eat.js';
 import { in_out_region, update_player_regions, update_monster_region } from './region.js';
+import { learnscroll } from './read.js';
 
 /* C ref: mondata.h is_rider() */
 function is_rider(ptr) {
@@ -473,7 +474,7 @@ export async function scrolltele(scroll) {
     if (noteleport_level(game.youmonst) && !game.flags?.debug) {
         await pline("A mysterious force prevents you from teleporting!");
         if (scroll)
-            throw new Error('scrolltele(): learnscroll() not ported yet');
+            learnscroll(scroll);
         return;
     }
 
@@ -497,7 +498,7 @@ export async function scrolltele(scroll) {
                 whobuf += ` and ${mon_nam(u.usteed)}`;
             await pline(`Where do ${whobuf} want to be teleported?`);
             if (scroll)
-                throw new Error('scrolltele(): learnscroll() not ported yet');
+                learnscroll(scroll);
             let cc = { x: u.ux, y: u.uy };
             const iflags = game.iflags;
             if (!iflags.travelcc)
@@ -527,7 +528,7 @@ export async function scrolltele(scroll) {
        "materialize" message regardless of how far you teleported so
        discovery of scroll type is unconditional */
     if (scroll)
-        throw new Error('scrolltele(): learnscroll() not ported yet');
+        learnscroll(scroll);
 
     await safe_teleds(TELEDS_TELEPORT);
 }
@@ -780,6 +781,7 @@ export async function level_tele() {
     let buf = '';
     const newlevel = { dnum: 0, dlevel: 0 };
     let force_dest = false;
+    let random_levtport = false; /* C: goto random_levtport */
 
     if ((u.uhave?.amulet || In_endgame(u.uz) /* || In_sokoban(&u.uz) */)
         && !wizard) {
@@ -805,10 +807,12 @@ export async function level_tele() {
             }
             buf = await tty_getlin(qbuf);
             if (buf === "*") {
-                return; /* goto random_levtport -- not ported yet */
+                random_levtport = true; /* goto random_levtport */
+                break;
             } else if (Confusion && rnl(5)) {
                 await pline("Oops...");
-                return; /* goto random_levtport -- not ported yet */
+                random_levtport = true; /* goto random_levtport */
+                break;
             } else if (buf === "\x1b") { /* cancelled */
                 return;
             }
@@ -826,21 +830,27 @@ export async function level_tele() {
                 force_dest = true;
             } else {
                 if (!/^-?\d+$/.test(buf))
-                    return; /* lev_by_name() -- not ported yet */
+                    throw new Error('level_tele(): lev_by_name() not ported yet');
                 newlev = parseInt(buf, 10); /* atoi() */
             }
         } while (!newlev && !digit(buf[0])
                  && (buf[0] !== '-' || !digit(buf[1])) && trycnt < 10);
 
         /* no dungeon escape via this route */
-        if (newlev === 0)
-            throw new Error('level_tele(): "Go to Nowhere" not ported yet');
+        if (random_levtport)
+            ; /* goto random_levtport (below) */
+        else if (newlev === 0) {
+            if (trycnt >= 10)
+                random_levtport = true; /* goto random_levtport */
+            else
+                throw new Error('level_tele(): "Go to Nowhere" not ported yet');
+        }
 
         /* if in Knox and the requested level > 0, stay put.
          * we let negative values requests fall into the "heaven" loop.
          */
         /* single_level_branch(): Is_knox() */
-        if (g.dungeon_topology.d_knox_level
+        if (!random_levtport && g.dungeon_topology.d_knox_level
             && on_level(u.uz, g.dungeon_topology.d_knox_level) && newlev > 0
             && !force_dest)
             throw new Error('level_tele(): single_level_branch() not ported yet');
@@ -852,11 +862,18 @@ export async function level_tele() {
          *
          * we let negative values requests fall into the "heaven" handling.
          */
-        if (In_quest(u.uz) && newlev > 0)
+        if (!random_levtport && In_quest(u.uz) && newlev > 0)
             newlev = newlev + g.dungeons[u.uz.dnum].depth_start - 1;
     } else { /* involuntary level tele */
-        /* random_levtport: random_teleport_level() -- not ported yet */
-        throw new Error('level_tele(): random_levtport not ported yet');
+        random_levtport = true;
+    }
+    if (random_levtport) {
+        /* random_levtport: */
+        newlev = random_teleport_level();
+        if (newlev === depth(u.uz)) {
+            await pline("You shudder for a moment."); /* You1(shudder_for_moment) */
+            return;
+        }
     }
 
     /* u.utrap && u.utraptype == TT_BURIEDBALL: punishment not ported */

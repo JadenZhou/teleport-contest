@@ -80,6 +80,7 @@ import { safe_qbuf } from './pickup.js';
 import { surface } from './iactions.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { float_vs_flight } from './polyself.js';
+import { monster_detect } from './detect.js';
 
 /* C ref: youprop.h -- the property macros used here */
 function uprop(p) { return game.u.uprops[p]; }
@@ -1086,7 +1087,10 @@ async function peffect_monster_detection(otmp) {
             return 0;
         }
     }
-    throw new Error('peffect_monster_detection(): monster_detect() not ported yet');
+    if (await monster_detect(otmp, 0))
+        return 1; /* nothing detected */
+    exercise(A_WIS, true);
+    return 0;
 }
 
 // C ref: potion.c peffect_object_detection()
