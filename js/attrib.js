@@ -43,7 +43,9 @@ import { losehp } from './trap.js';
 import { d } from './rng.js';
 import { strncmpi } from './hacklib.js';
 import { name_to_mon } from './mondata.js';
-import { KILLED_BY, KILLED_BY_AN } from './const.js';
+import { KILLED_BY, KILLED_BY_AN, DIED, POISONING } from './const.js';
+import { done } from './end.js';
+import { killer } from './topten.js';
 import { mons, G_UNIQ, M2_PNAME, PM_ERINYS, M1_SEE_INVIS, M1_AMPHIBIOUS, M1_FLY,
          M1_REGEN, M1_TPORT_CNTRL, M1_TPORT, AT_WEAP, AD_DRST, AT_MAGC,
          AD_SPEL } from './monsters.js';
@@ -727,9 +729,12 @@ export async function poisoned(
             await poisontell(typ, true);
     }
 
-    if (u.uhp < 1)
-        /* svk.killer = { kprefix, pkiller }; done(POISONING or DIED) */
-        throw new Error('poisoned(): death (done()) not ported yet');
+    if (u.uhp < 1) {
+        killer().format = kprefix;
+        killer().name = pkiller;
+        /* "Poisoned by a poisoned ___" is redundant */
+        await done((strstri(pkiller, "poison") >= 0) ? DIED : POISONING);
+    }
     await encumber_msg();
 }
 /* C ref: youprop.h Half_gas_damage -- a worn towel (ublindf) */
