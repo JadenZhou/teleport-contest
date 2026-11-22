@@ -342,7 +342,7 @@ export async function remove_worn_item(obj,
     } else if (obj.owornmask & W_AMUL) {
         await Amulet_off();
     } else if (obj.owornmask & W_RING) {
-        throw new Error('remove_worn_item(): Ring_gone() not ported yet');
+        await Ring_gone_st(obj);
     } else if (obj.owornmask & W_TOOL) {
         await Blindf_off(obj);
     } else if (obj.owornmask & W_WEAPONS) {
@@ -943,3 +943,5 @@ export async function relobj(mtmp, show,
     if (show && cansee(omx, omy))
         newsym(omx, omy);
 }
+
+import { Ring_gone as Ring_gone_st } from './do_wear.js';

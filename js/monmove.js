@@ -816,8 +816,12 @@ export async function dochug(mtmp) {
         mtmp.mstun = 0;
 
     /* Some monsters teleport. Teleportation costs a turn. */
-    if (mtmp.mflee && !rn2(40) && can_teleport(mdat) && !mtmp.iswiz)
-        throw new Error('dochug(): rloc() not ported yet');
+    if (mtmp.mflee && !rn2(40) && can_teleport(mdat) && !mtmp.iswiz
+        && !noteleport_level(mtmp)) {
+        if (await rloc(mtmp, RLOC_MSG))
+            await leppie_stash(mtmp);
+        return 0;
+    }
 
     /* some monsters have special abilities */
     m_respond(mtmp);
@@ -2161,3 +2165,46 @@ async function mpickstuff(mtmp) {
 function webmaker(ptr) {
     return ptr === mons[M.PM_CAVE_SPIDER] || ptr === mons[M.PM_GIANT_SPIDER];
 }
+
+// C ref: monmove.c dissolve_bars()
+export async function dissolve_bars(x, y) {
+    const lev = game.level.at(x, y);
+    lev.typ = lev.edge /* edge == 1 */ ? DOOR_MM
+        : (Is_special_mm(game.u.uz) || in_rooms(x, y, 0).length) ? ROOM_MM
+          : CORR_MM;
+    lev.flags = 0; /* doormask = D_NODOOR */
+    newsym(x, y);
+    if (u_at(x, y))
+        await switch_terrain_mm();
+}
+import { DOOR as DOOR_MM, ROOM as ROOM_MM, CORR as CORR_MM } from './const.js';
+import { Is_special as Is_special_mm } from './dungeon.js';
+import { switch_terrain as switch_terrain_mm } from './hack.js';
+
+// C ref: monmove.c leppie_stash()
+/* leprechaun might bury its gold after teleporting away */
+async function leppie_stash(mtmp) {
+    let gold;
+
+    if (mtmp.data === mons_mm[PM_LEPRECHAUN_MM]
+        && !(mtmp.mhp < 1) /* !DEADMONSTER(mtmp) */
+        && !m_canseeu(mtmp)
+        && !in_rooms(mtmp.mx, mtmp.my, SHOPBASE).length
+        && game.level.at(mtmp.mx, mtmp.my).typ === ROOM_MM
+        && !t_at_mm(mtmp.mx, mtmp.my)
+        && rn2(4)
+        && (gold = findgold_mm(mtmp.minvent)) != null) {
+        await mdrop_obj_mm(mtmp, gold, false);
+        /* gold = g_at(mtmp->mx, mtmp->my) */
+        gold = (game.level.objects || []).find(o => o.ox === mtmp.mx && o.oy === mtmp.my
+                                                && o.where === 'OBJ_FLOOR'
+                                                && o.oclass === COIN_CLASS_MM) || null;
+        if (gold)
+            bury_an_obj_mm(gold, null);
+    }
+}
+import { mons as mons_mm, PM_LEPRECHAUN as PM_LEPRECHAUN_MM } from './monsters.js';
+import { t_at as t_at_mm } from './trap.js';
+import { findgold as findgold_mm, mdrop_obj as mdrop_obj_mm } from './steal.js';
+import { bury_an_obj as bury_an_obj_mm } from './dig.js';
+import { COIN_CLASS as COIN_CLASS_MM } from './objects.js';

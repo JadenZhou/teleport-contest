@@ -54,6 +54,7 @@ import { dokick } from './dokick.js';
 import { doswapweapon, dowieldquiver, dowield, dotwoweapon } from './wield.js';
 import { enhance_weapon_skill } from './weapon.js';
 import { doapply, dorub, dojump } from './apply.js';
+import { dountrap } from './trap.js';
 import { doeat } from './eat.js';
 import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
 import { dodrink, dodip, aggravate } from './potion.js';
@@ -139,6 +140,7 @@ const cmd_funcs = {
     dowieldquiver: () => dowieldquiver(),
     doapply: () => doapply(),
     dorub: () => dorub(),
+    dountrap: () => dountrap(),
     doeat: () => doeat(),
     dowear: () => dowear(),
     doputon: () => doputon(),

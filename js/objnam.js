@@ -3610,8 +3610,15 @@ function doname_base(obj, doname_flags) {
             xn_not_ported('candelabrum suffix');
         } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
                    || obj.otyp === O.BRASS_LANTERN || Is_candle_x(obj)) {
-            if (Is_candle_x(obj))
-                xn_not_ported('partly used candles');
+            if (Is_candle_x(obj)) {
+                const full_burn_time = 20 * objects[obj.otyp].oc_cost;
+                const turns_left = obj.age;
+
+                if (obj.lamplit)
+                    xn_not_ported('partly used lit candles (peek_timer(BURN_OBJECT))');
+                if (turns_left < full_burn_time)
+                    prefix += "partly used ";
+            }
             if (obj.lamplit)
                 bp += " (lit)";
             break;
@@ -3783,4 +3790,75 @@ function GemStone_x(typ) {
             && typ !== O.DIAMOND && typ !== O.SAPPHIRE
             && typ !== O.BLACK_OPAL && typ !== O.EMERALD
             && typ !== O.OPAL);
+}
+
+// C ref: objnam.c short_oname()
+/* used by safe_qbuf() and dodip() to shorten an object's formatted name */
+export function short_oname(obj,
+                            func,     /* main formatting routine */
+                            altfunc,  /* alternate for shortest result */
+                            lenlimit) {
+    const UNAMEBUFSZ = 12, ONAMEBUFSZ = 12; /* sizeof unamebuf, onamebuf */
+    let unamebuf = null, onamebuf = null;
+
+    let outbuf = func(obj);
+    if (outbuf.length <= lenlimit)
+        return outbuf;
+
+    /* shorten called string to fairly small amount */
+    const save_uname = objects[obj.otyp].oc_uname;
+    if (save_uname && save_uname.length >= UNAMEBUFSZ) {
+        unamebuf = save_uname.slice(0, UNAMEBUFSZ - 4) + "...";
+        objects[obj.otyp].oc_uname = unamebuf;
+        outbuf = func(obj);
+        objects[obj.otyp].oc_uname = save_uname; /* restore called string */
+        if (outbuf.length <= lenlimit)
+            return outbuf;
+    }
+
+    /* shorten named string to fairly small amount */
+    const save_oname = has_oname(obj) ? ONAME(obj) : null;
+    if (save_oname && save_oname.length >= ONAMEBUFSZ) {
+        onamebuf = save_oname.slice(0, ONAMEBUFSZ - 4) + "...";
+        obj.oextra.oname = onamebuf;
+        outbuf = func(obj);
+        obj.oextra.oname = save_oname; /* restore named string */
+        if (outbuf.length <= lenlimit)
+            return outbuf;
+    }
+
+    /* shorten both called and named strings;
+       unamebuf and onamebuf have both already been populated */
+    if (save_uname && save_uname.length >= UNAMEBUFSZ && save_oname
+        && save_oname.length >= ONAMEBUFSZ) {
+        objects[obj.otyp].oc_uname = unamebuf;
+        obj.oextra.oname = onamebuf;
+        outbuf = func(obj);
+        if (outbuf.length <= lenlimit) {
+            objects[obj.otyp].oc_uname = save_uname;
+            obj.oextra.oname = save_oname;
+            return outbuf;
+        }
+    }
+
+    /* still long; strip several name-lengthening attributes;
+       called and named strings are still in truncated form */
+    const save_obj = { ...obj };
+    obj.bknown = obj.rknown = obj.greased = 0;
+    obj.oeroded = obj.oeroded2 = 0;
+    outbuf = func(obj);
+    if (altfunc && outbuf.length > lenlimit) {
+        /* still long; use the alternate function (usually one of
+           the jackets around minimal_xname()) */
+        outbuf = altfunc(obj);
+    }
+    /* restore the object */
+    Object.assign(obj, save_obj);
+    if (save_oname)
+        obj.oextra.oname = save_oname;
+    if (save_uname)
+        objects[obj.otyp].oc_uname = save_uname;
+
+    /* use whatever we've got, whether it's too long or not */
+    return outbuf;
 }

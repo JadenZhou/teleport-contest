@@ -40,7 +40,7 @@ import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible } from './display.js';
 import { vision_recalc, couldsee } from './vision.js';
-import { glyph_at, Norep } from './display.js';
+import { glyph_at, Norep, feel_location } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
 import { u_at } from './const.js';
@@ -1898,7 +1898,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
      */
     if (IS_OBSTRUCTED(tmpr.typ) || tmpr.typ === IRONBARS) {
         if (Blind() && mode === DO_MOVE)
-            throw new Error('test_move(): feel_location() not ported yet');
+            feel_location(x, y);
         if (Passes_walls() && may_passwall(x, y)) {
             ; /* do nothing */
         } else if (Underwater()) {
@@ -1960,7 +1960,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
     } else if (IS_DOOR(tmpr.typ)) {
         if (closed_door(x, y)) {
             if (Blind() && mode === DO_MOVE)
-                throw new Error('test_move(): feel_location() not ported yet');
+                feel_location(x, y);
             if (Passes_walls()) {
                 ; /* do nothing */
             } else if (amorphous(game.youmonst.data) && !game.invent) {
@@ -2027,7 +2027,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
                 /* Diagonal moves into a door are not allowed. */
                 if (mode === DO_MOVE) {
                     if (Blind())
-                        throw new Error('test_move(): feel_location() not ported yet');
+                        feel_location(x, y);
                     if (Underwater() || game.flags.mention_walls)
                         await You_cant("move diagonally into an intact doorway.");
                 }
