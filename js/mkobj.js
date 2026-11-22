@@ -699,6 +699,14 @@ export function obj_extract_self(obj) {
         obj.ocontainer = null;
         break;
     }
+    case 'OBJ_BURIED': { /* extract_nobj(obj, &svl.level.buriedobjlist) */
+        const blist = game.level.buriedobjlist || [];
+        const i = blist.indexOf(obj);
+        if (i >= 0)
+            blist.splice(i, 1);
+        obj.where = 'OBJ_FREE';
+        break;
+    }
     default:
         throw new Error(`obj_extract_self: where=${obj.where} is not ported yet`);
     }

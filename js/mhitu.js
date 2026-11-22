@@ -4,6 +4,7 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { stop_occupation } from './allmain.js';
 import { game } from './gstate.js';
 import { rn2, rnd, d, AC_VALUE } from './rng.js';
 import { cansee } from './vision.js';
@@ -149,16 +150,6 @@ async function mswings(
     }
 }
 
-// C ref: allmain.c stop_occupation()
-function stop_occupation() {
-    if (game.occupation) {
-        throw new Error('stop_occupation(): occupations not ported yet');
-    } else if (game.multi >= 0) {
-        nomul(0);
-    }
-    /* cmdq_clear(CQ_CANNED): the command queue isn't ported yet */
-}
-
 // C ref: mhitu.c mpoisons_subj()
 /* return how a poison attack was delivered */
 export function mpoisons_subj(mtmp, mattk) {
@@ -242,7 +233,7 @@ async function missmu(mtmp, nearmiss, mattk) {
     else
         await pline(`${Monnam(mtmp)} ${(nearmiss && game.flags.verbose) ? 'just ' : ''}misses!`);
 
-    stop_occupation();
+    await stop_occupation();
 }
 
 // C ref: mhitu.c wildmiss()
@@ -762,7 +753,7 @@ async function hitmu(mtmp, mattk) {
         res = await passiveum(olduasmon, mtmp, mattk);
     else
         res = M_ATTK_HIT;
-    stop_occupation();
+    await stop_occupation();
     return res;
 }
 
