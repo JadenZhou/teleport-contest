@@ -25,7 +25,7 @@ import { LARGEST_INT, M_AP_NOTHING } from './const.js';
 import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
 import { on_level, ledger_to_dnum, ledger_to_dlev, depth,
-         In_W_tower } from './dungeon.js';
+         In_W_tower, ledger_no } from './dungeon.js';
 import { relmon, mnearto } from './mon.js';
 import { stairway_find_from, stairway_find, somexy } from './mklev.js';
 import { in_rooms } from './hack.js';
@@ -399,7 +399,8 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
                priest, vault guard) who have level data in mon->mextra
                in case #wizmakemap is used to replace their home level
                while they're away from it */
-            throw new Error('keepdogs(): migrate_to_level() not ported yet');
+            migrate_to_level(mtmp, ledger_no(g.u.uz), MIGR_EXACT_XY,
+                             null);
         } else if (mtmp.mleashed) {
             throw new Error('keepdogs(): leash goes slack not ported yet');
         }
