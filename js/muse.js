@@ -109,7 +109,8 @@ import { xdir, ydir, N_DIRS, OBJ_AT, W_ARMH, Is_rogue_level,
 import { MITHRIL, GLASS, ARM_HELM } from './objects.js';
 import { doorlock } from './lock.js';
 import { in_rooms } from './hack.js';
-import { D_BROKEN, SHOPBASE } from './const.js';
+import { D_BROKEN, SHOPBASE, TEMPLE } from './const.js';
+import { tele } from './teleport.js';
 
 const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
 const QBUFSZ = 128; /* global.h */
@@ -1878,7 +1879,7 @@ export async function use_misc(mtmp) {
         if (oseen)
             makeknown(POT_GAIN_LEVEL);
         m_useup(mtmp, otmp);
-        if (!grow_up(mtmp, null))
+        if (!(await grow_up(mtmp, null)))
             return 1;
         /* grew into genocided monster */
         return 2;
@@ -2475,6 +2476,7 @@ async function mbhitm(mtmp, otmp) {
             tmp = d(2, 12);
             await hit("wand", mtmp, exclam(tmp));
             await resist_async(mtmp, otmp.oclass, tmp, TELL);
+            learnit = true;
         } else {
             await miss("wand", mtmp);
         }
@@ -2485,15 +2487,27 @@ async function mbhitm(mtmp, otmp) {
             makeknown(WAN_STRIKING);
         break;
     case WAN_TELEPORTATION:
-        if (hits_you)
-            throw new Error('mbhitm(): tele() not ported yet');
-        else
-            throw new Error('mbhitm(): teleporting a monster (rloc()) not ported yet');
+        if (hits_you) {
+            await tele();
+            if (game.zap_oseen)
+                makeknown(WAN_TELEPORTATION);
+        } else {
+            /* for consistency with zap.c, don't identify */
+            if (mtmp.ispriest && in_rooms(mtmp.mx, mtmp.my, TEMPLE).length) {
+                if (cansee(mtmp.mx, mtmp.my)) /* pline_mon() */
+                    await pline(`${Monnam(mtmp)} resists the magic!`);
+            } else if (!(await tele_restrict(mtmp)))
+                await rloc(mtmp, RLOC_MSG);
+        }
+        break;
     case WAN_CANCELLATION:
     case SPE_CANCELLATION:
         throw new Error('mbhitm(): cancel_monst() not ported yet');
     case WAN_UNDEAD_TURNING:
-        throw new Error('mbhitm(): undead turning not ported yet');
+        if (hits_you)
+            throw new Error('mbhitm(): unturn_you() not ported yet');
+        else
+            throw new Error('mbhitm(): unturn_dead() not ported yet');
     default:
         break;
     }

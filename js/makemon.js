@@ -10,7 +10,11 @@
 // Not ported yet: newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm tail segments.
 
-import { christen_monst, rndghostname, Amonnam, y_monnam } from './do_name.js';
+import { christen_monst, rndghostname, Amonnam, y_monnam, mon_nam, pmname,
+         Mgender, YMonnam, pronoun_gender, PRONOUN_HALLU } from './do_name.js';
+import { genders } from './role.js';
+import { canspotmon } from './display.js';
+import { mondied } from './mon.js';
 import { in_town } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -2474,9 +2478,9 @@ export function put_saddle_on_mon(saddle, mtmp) {
 // C ref: makemon.c grow_up()
 /* monster earned experience and will gain some hit points; it might also
    grow into a bigger monster (baby to adult, soldier to officer, etc) */
-export function grow_up(mtmp, victim) {
+export async function grow_up(mtmp, victim) {
     let max_increase, cur_increase, lev_limit, hp_threshold;
-    const ptr = mtmp.data;
+    let ptr = mtmp.data;
 
     /* monster died after killing enemy but before calling this function */
     /* currently possible if killing a gas spore */
@@ -2526,8 +2530,48 @@ export function grow_up(mtmp, victim) {
     else if (lev_limit > 49)
         lev_limit = (ptr.mlevel > 49 ? 50 : 49);
 
-    if (++mtmp.m_lev >= mons[newtype].mlevel && newtype !== oldtype)
-        throw new Error('grow_up(): growing into a new form not ported yet');
+    if (++mtmp.m_lev >= mons[newtype].mlevel && newtype !== oldtype) {
+        ptr = mons[newtype];
+        /* new form might force gender change */
+        const fem = is_male(ptr) ? 0 : is_female(ptr) ? 1
+                                                            : (mtmp.female ? 1 : 0);
+
+        if (game.mvitals[newtype].mvflags & G_GENOD) { /* allow G_EXTINCT */
+            if (canspotmon(mtmp))
+                await pline(`As ${mon_nam(mtmp)} grows up into ${
+                    an(pmname(ptr, Mgender(mtmp)))}, ${
+                    genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he} ${ /* mhe() */
+                    nonliving(ptr) ? "expires" : "dies"}!`);
+            set_mon_data(mtmp, ptr); /* keep svm.mvitals[] accurate */
+            await mondied(mtmp);
+            return null;
+        } else if (canspotmon(mtmp)) {
+            /* 3.6.1:
+             * Temporary (?) hack to fix growing into opposite gender.
+             */
+            const buf = `${
+                /* deal with female gnome becoming a gnome lord */
+                (mtmp.female && !fem) ? "male "
+                    /* or a male gnome becoming a gnome lady
+                       (can't happen with 3.6.0 mons[], but perhaps
+                       slightly less sexist if prepared for it...) */
+                  : (fem && !mtmp.female) ? "female " : ""}${pmname(ptr, fem)}`;
+            /* pline_mon() */
+            await pline(`${YMonnam(mtmp)} ${
+                (fem !== (mtmp.female ? 1 : 0)) ? "changes into"
+                : (ptr.mflags1 & M.M1_HUMANOID) ? "becomes" /* humanoid() */
+                  : "grows up into"} ${an(buf)}.`);
+        }
+        set_mon_data(mtmp, ptr);
+        if (mtmp.cham === oldtype && (ptr.mflags2 & M.M2_SHAPESHIFTER))
+            mtmp.cham = newtype; /* vampire growing into vampire lord */
+        newsym(mtmp.mx, mtmp.my);    /* color may change */
+        lev_limit = mtmp.m_lev; /* never undo increment */
+
+        mtmp.female = fem; /* gender might be changing */
+        /* if 'mtmp' is leashed, persistent inventory window needs updating:
+           update_inventory() -- no persistent inventory window in tty */
+    }
 
     /* sanity checks */
     if (mtmp.m_lev > lev_limit) {

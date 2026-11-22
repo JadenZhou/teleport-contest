@@ -2381,7 +2381,7 @@ export async function m_consume_obj(mtmp, otmp) {
         if (grow) {
             if ((ispet && mtmp.m_lev < mtmp.data.mlevel + 15)
                 || !ispet)
-                grow_up(mtmp, null);
+                await grow_up(mtmp, null);
         }
         if (mstone)
             throw new Error('m_consume_obj(): monster stoning not ported yet');
