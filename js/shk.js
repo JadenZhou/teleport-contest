@@ -1094,7 +1094,7 @@ export async function paybill(
         mtmp2 = mtmp.nmon;
         eshkp = mtmp.mextra.eshk;
         local = on_level(eshkp.shoplevel, g.u.uz);
-        if (local && (g.u.ushops || '').includes(eshkp.shoproom)) {
+        if (local && (g.u.ushops || '').includes(String.fromCharCode(eshkp.shoproom))) {
             /* inside this shk's shop [there might be more than one
                resident shk if hero is standing in a breech of a shared
                wall, so give priority to one who's also owed money] */
@@ -1153,7 +1153,7 @@ async function inherits(shkp, numsk, croaked, silently) {
     let umoney;
     const eshkp = shkp.mextra.eshk;
     let take = false, taken = false;
-    const uinshop = (g.u.ushops || '').includes(eshkp.shoproom);
+    const uinshop = (g.u.ushops || '').includes(String.fromCharCode(eshkp.shoproom));
     let takes;
 
     /* not strictly consistent; affects messages and prevents next player
@@ -1273,7 +1273,8 @@ function set_repo_loc(shkp) {
     /* if you're not in this shk's shop room, or if you're in its doorway
        or entry spot or one of its walls (temporary gap or Passes_walls),
        then your gear gets dumped all the way inside */
-    if (!(u.ushops || '').includes(eshkp.shoproom) || costly_adjacent(shkp, ox, oy)) {
+    if (!(u.ushops || '').includes(String.fromCharCode(eshkp.shoproom))
+        || costly_adjacent(shkp, ox, oy)) {
         /* shk.x,shk.y is the position immediately in front of the door;
            move in one more space */
         ox = eshkp.shk.x;
