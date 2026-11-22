@@ -1220,11 +1220,11 @@ export async function wakeup(mtmp, via_attack) {
 }
 
 /* C ref: mondata.h completelyburns(), completelyrusts(), completelyrots() */
-function completelyburns(ptr) {
+export function completelyburns(ptr) {
     return ptr === mons[PM_PAPER_GOLEM] || ptr === mons[PM_STRAW_GOLEM];
 }
-function completelyrusts(ptr) { return ptr === mons[PM_IRON_GOLEM]; }
-function completelyrots(ptr) {
+export function completelyrusts(ptr) { return ptr === mons[PM_IRON_GOLEM]; }
+export function completelyrots(ptr) {
     return ptr === mons[PM_WOOD_GOLEM] || ptr === mons[PM_LEATHER_GOLEM];
 }
 

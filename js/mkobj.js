@@ -632,6 +632,10 @@ export function splitobj(obj, num) {
         /* hero's inventory is a linked chain (gi.invent) */
         otmp.nobj = obj.nobj;
         obj.nobj = otmp;
+    } else if (obj.where === 'OBJ_CONTAINED') {
+        /* container contents are kept head of C's chain first */
+        const cobj = obj.ocontainer.cobj;
+        cobj.splice(cobj.indexOf(obj) + 1, 0, otmp);
     } else if (obj.where !== 'OBJ_FREE' && obj.where !== 'OBJ_LUAFREE') {
         throw new Error(`splitobj(): where=${obj.where} not ported yet`);
     }
@@ -966,8 +970,20 @@ function Is_mbag(otmp) {
 }
 
 // C ref: mkobj.c add_to_container() -- container chains are kept as a
-// plain array on the box (no merging yet)
+// plain array on the box, head of C's chain first
 export function add_to_container(container, obj) {
+    if (obj.where !== 'OBJ_FREE')
+        throw new Error(`add_to_container: obj where=${obj.where}, not free`);
+    if (container.where !== 'OBJ_INVENT' && container.where !== 'OBJ_MINVENT')
+        obj_no_longer_held(obj);
+
+    /* merge if possible */
+    for (const otmp of (container.cobj || []).slice()) {
+        const r = { otmp, obj };
+        if (merged(r))
+            return r.otmp;
+    }
+
     obj.where = 'OBJ_CONTAINED';
     obj.ocontainer = container;
     if (!container.cobj) container.cobj = [];
@@ -1490,9 +1506,7 @@ function mksobj_init(otmp, artif) {
             otmp.corpsenm = rndmonnum();
             if (!verysmall(mons[otmp.corpsenm])
                 && rn2(Math.trunc(level_difficulty() / 2) + 10) > 10) {
-                /* add_to_container(): containers are not ported yet */
-                const book = mkobj(SPBOOK_no_NOVEL, false);
-                (otmp.contents || (otmp.contents = [])).push(book);
+                add_to_container(otmp, mkobj(SPBOOK_no_NOVEL, false));
             }
         }
         /* boulder init'd below in the 'regardless of !init' code */

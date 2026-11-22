@@ -73,7 +73,7 @@ import { set_apparxy, dochugw } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham_sync } from './mon.js';
 import { mpickobj } from './steal.js';
-import { add_to_minv } from './mkobj.js';
+import { add_to_minv, weight } from './mkobj.js';
 import { m_dowear, which_armor, mon_adjust_speed_sync } from './worn.js';
 import { def_monsyms } from './drawing.js';
 import { get_wormno, initworm, count_wsegs, place_worm_tail_randomly,
@@ -818,12 +818,6 @@ function findgold(chain) {
     for (const o of chain || [])
         if (o.otyp === O.GOLD_PIECE) return o;
     return null;
-}
-// C ref: mkobj.c weight() -- simple objects only (no containers/corpses)
-function weight(otmp) {
-    if (otmp.oclass === O.COIN_CLASS)
-        return Math.trunc((otmp.quan + 50) / 100);
-    return objects[otmp.otyp].oc_weight * (otmp.quan || 1);
 }
 
 // C ref: makemon.c m_initthrow()

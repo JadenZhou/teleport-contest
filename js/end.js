@@ -39,6 +39,11 @@ import { record_achievement } from './do.js';
 import { can_make_bones, savebones } from './bones.js';
 import { paybill, finish_paybill } from './shk.js';
 import { discover_object } from './o_init.js';
+import { sortloot } from './pickup.js';
+import { the, thesimpleoname } from './iactions.js';
+import { xname, doname_with_price } from './objnam.js';
+import { NHW_MENU, SORTLOOT_LOOT, SORTLOOT_PACK } from './const.js';
+import { BAG_OF_TRICKS } from './objects.js';
 import { Is_container, place_object, mk_named_object } from './mkobj.js';
 import { make_grave } from './engrave.js';
 import { deepest_lev_reached, depth, dunlev, on_level } from './dungeon.js';
@@ -109,6 +114,8 @@ function Role_if(pm) { return game.urole.mnum === pm; }
 function Lifesaved() { return !!game.u.uprops[LIFESAVED]?.extrinsic; }
 /* C ref: obj.h SchroedingersBox() */
 function SchroedingersBox(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
+/* C ref: hacklib.c upstart() */
+function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, false, true); }
 /* C ref: integer.h nowrap_add() */
@@ -994,12 +1001,78 @@ async function dump_forward_putstr(win, attr, str, no_forward) {
 
 // C ref: end.c container_contents()
 /* used for disclosure and for the ':' choice when looting a container */
+/* 'list' is an object chain: the hero's invent (linked by nobj) or a
+   container's cobj array */
 export async function container_contents(list, identified, all_containers,
                                          reportempty) {
-    void identified; void reportempty;
-    for (let box = list; box; box = box.nobj) {
-        if (Is_container(box) || box.otyp === STATUE)
-            throw new Error('container_contents(): not ported yet');
+    let buf;
+    let cat;
+    const dumping = !!game.iflags?.in_dumplog;
+    const boxes = Array.isArray(list) ? list.slice() : [];
+    if (!Array.isArray(list))
+        for (let o = list; o; o = o.nobj)
+            boxes.push(o);
+
+    for (const box of boxes) {
+        if (Is_container(box) || box.otyp === STATUE) {
+            if (!box.cknown || (identified && !box.lknown)) {
+                box.cknown = 1; /* we're looking at the contents now */
+                if (identified)
+                    box.lknown = 1;
+                /* update_inventory(): no perm_invent window */
+            }
+            if (box.otyp === BAG_OF_TRICKS) {
+                continue; /* wrong type of container */
+            } else if (box.cobj && box.cobj.length) {
+                const tmpwin = tty_create_nhwindow(NHW_MENU);
+
+                /* at this stage, the SchroedingerBox() flag is only set
+                   if the cat inside the box is alive; the box actually
+                   contains a cat corpse that we'll pretend is not there;
+                   for dead cat, the flag will be clear and there'll be
+                   a cat corpse inside the box; either way, inventory
+                   reports the box as containing "1 item" */
+                cat = SchroedingersBox(box);
+
+                buf = `Contents of ${the(xname(box))}:`;
+                await tty_putstr(tmpwin, 0, buf);
+                if (!dumping)
+                    await tty_putstr(tmpwin, 0, "");
+                if (box.cobj.length && !cat) {
+                    const sortloot_opt = game.flags.sortloot ?? 'l';
+                    const sortflags = (((sortloot_opt === 'l'
+                                         || sortloot_opt === 'f')
+                                        ? SORTLOOT_LOOT : 0)
+                                       | ((game.flags.sortpack ?? true)
+                                          ? SORTLOOT_PACK : 0));
+                    const sortedcobj = sortloot(box.cobj, sortflags, false,
+                                                null);
+                    for (const srtc of sortedcobj) {
+                        const obj = srtc.obj;
+                        if (identified) {
+                            discover_object(obj.otyp, true, true, false);
+                            obj.dknown = 1; /* observe_object unnecessary */
+                            obj.known = obj.bknown = obj.rknown = 1;
+                            if (Is_container(obj) || obj.otyp === STATUE)
+                                obj.cknown = obj.lknown = 1;
+                        }
+                        await tty_putstr(tmpwin, 0, `  ${doname_with_price(obj)}`);
+                    }
+                } else if (cat) {
+                    await tty_putstr(tmpwin, 0, "  Schroedinger's cat!");
+                }
+                if (dumping)
+                    await tty_putstr(0, 0, "");
+                await tty_display_nhwindow(tmpwin, true);
+                tty_destroy_nhwindow(tmpwin);
+                if (all_containers)
+                    await container_contents(box.cobj, identified, true,
+                                             reportempty);
+            } else if (reportempty) {
+                await pline(`${upstart(thesimpleoname(box))} is empty.`);
+                await tty_display_nhwindow(game.WIN_MESSAGE, false);
+            }
+        }
         if (!all_containers)
             break;
     }
