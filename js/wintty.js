@@ -975,7 +975,7 @@ export async function tty_yn_function(query, resp, def) {
         /* not pline("%s ", prompt);
            trailing space is wanted here in case of reprompt */
         prompt += ' ';
-        await update_topl(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
+        await custompline(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
 
         do { /* loop until we get valid input */
             q = await readchar();
@@ -1007,7 +1007,7 @@ export async function tty_yn_function(query, resp, def) {
     } else {
         /* no restriction on allowed response, so always preserve case */
         prompt = `${query} `;
-        await update_topl(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
+        await custompline(prompt); /* custompline(OVERRIDE_MSGTYPE | SUPPRESS_HISTORY) */
         q = await readchar();
     }
     /* clean_up: addtopl(rtmp); -- rewrite gt.toplines instead */

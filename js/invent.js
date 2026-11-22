@@ -2022,3 +2022,149 @@ export function useupf(obj, numused) {
         && (game.youmonst.data.mflags1 & M.M1_CONCEAL) !== 0) /* hides_under() */
         throw new Error('useupf(): hideunder() not ported yet');
 }
+
+// C ref: invent.c set_cknown_lknown()
+/* set obj->{cknown,lknown} if applicable */
+export function set_cknown_lknown(obj) {
+    if (Is_container_iv(obj) || obj.otyp === O.STATUE)
+        obj.cknown = obj.lknown = 1;
+    else if (obj.otyp === O.TIN)
+        obj.cknown = 1;
+    /* TODO? cknown might be extended to candy bar, where it would mean that
+       wrapper's text was known which in turn indicates candy bar's content */
+    return;
+}
+
+// C ref: invent.c fully_identify_obj()
+/* make an object actually be identified; no display updating */
+export function fully_identify_obj(otmp) {
+    discover_object_iv(otmp.otyp, true, true, true); /* makeknown() */
+    if (otmp.oartifact)
+        discover_artifact(otmp.oartifact);
+    observe_object_iv(otmp, Hallucination_iv());
+    otmp.known = otmp.bknown = otmp.rknown = 1;
+    set_cknown_lknown(otmp); /* set otmp->{cknown,lknown} if applicable */
+    if (otmp.otyp === O.EGG && otmp.corpsenm !== NON_PM) {
+        /* C ref: timeout.c learn_egg_type() */
+        /* baby monsters hatch from grown-up eggs */
+        const mnum = little_to_big(otmp.corpsenm);
+        game.mvitals[mnum].mvflags |= MV_KNOWS_EGG;
+        /* we might have just learned about other eggs being carried */
+        /* update_inventory(): no perm_invent */
+    }
+}
+
+// C ref: invent.c identify()
+/* ggetobj callback routine; identify an object and give immediate feedback */
+export async function identify(otmp) {
+    fully_identify_obj(otmp);
+    await prinv(null, otmp, 0);
+    return 1;
+}
+
+// C ref: invent.c menu_identify()
+/* menu of unidentified objects; select and identify up to id_limit of them */
+async function menu_identify(id_limit) {
+    let n, i, first = 1, tryct = 5;
+    /* assumptions:  id_limit > 0 and at least one unID'd item is present */
+
+    while (id_limit) {
+        const buf = `What would you like to identify ${first ? "first" : "next"}?`;
+        const olist = [];
+        for (let o = game.invent; o; o = o.nobj)
+            olist.push(o);
+        const pick_list = [];
+        n = await query_objlist_iv(buf, olist, (SIGNAL_NOMENU | SIGNAL_ESCAPE
+                                                 | USE_INVLET | INVORDER_SORT),
+                                   pick_list, PICK_ANY, not_fully_identified_iv);
+
+        if (n > 0) {
+            if (n > id_limit)
+                n = id_limit;
+            for (i = 0; i < n; i++, id_limit--)
+                await identify(pick_list[i].obj);
+            if (id_limit)
+                wait_synch_iv(); /* Before we loop to pop open another menu */
+            first = 0;
+        } else if (n === -2) { /* player used ESC to quit menu */
+            break;
+        } else if (n === -1) { /* no eligible items found */
+            await pline("That was all.");
+            break;
+        } else if (!--tryct) { /* stop re-prompting */
+            await pline(thats_enough_tries);
+            break;
+        } else { /* try again */
+            await pline("Choose an item; use ESC to decline.");
+        }
+    }
+}
+
+// C ref: invent.c count_unidentified()
+/* count the unidentified items */
+export function count_unidentified(objchn) {
+    let unid_cnt = 0;
+
+    for (let obj = objchn; obj; obj = obj.nobj)
+        if (not_fully_identified_iv(obj))
+            ++unid_cnt;
+    return unid_cnt;
+}
+
+// C ref: invent.c identify_pack()
+/* dialog with user to identify a given number of items; 0 means all */
+export async function identify_pack(id_limit,
+                                    learning_id) { /* T: just read unknown identify scroll */
+    let obj;
+    let n, unid_cnt = count_unidentified(game.invent);
+
+    if (!unid_cnt) {
+        await You(`have already identified ${!learning_id ? "all" : "the rest"} of your possessions.`);
+    } else if (!id_limit || id_limit >= unid_cnt) {
+        /* identify everything */
+        /* TODO:  use fully_identify_obj and cornline/menu/whatever here */
+        for (obj = game.invent; obj; obj = obj.nobj) {
+            if (not_fully_identified_iv(obj)) {
+                await identify(obj);
+                if (--unid_cnt < 1)
+                    break;
+            }
+        }
+    } else {
+        /* identify up to `id_limit' items */
+        n = 0;
+        if ((game.flags.menu_style ?? MENU_FULL_IV) === MENU_TRADITIONAL_IV)
+            throw new Error('identify_pack(): ggetobj() (menustyle:traditional) not ported yet');
+        if (n === 0 || n < -1)
+            await menu_identify(id_limit);
+    }
+    /* update_inventory(): no perm_invent */
+}
+
+/* C ref: wintty.c tty_wait_synch() -- the map window is up and no raw
+   output is pending, so this only flushes the (unbuffered) screen */
+function wait_synch_iv() {
+    if (game.ttyDisplay?.rawprint)
+        throw new Error('wait_synch(): getret() not ported yet');
+}
+/* C ref: youprop.h Hallucination */
+function Hallucination_iv() {
+    const p = game.u.uprops;
+    return !!(p[HALLUC_IV].intrinsic
+              && !(p[HALLUC_RES_IV].intrinsic || p[HALLUC_RES_IV].extrinsic));
+}
+/* C ref: obj.h Is_container() */
+function Is_container_iv(otmp) {
+    return otmp.otyp >= O.LARGE_BOX && otmp.otyp <= O.BAG_OF_TRICKS;
+}
+
+import { discover_object as discover_object_iv,
+         observe_object as observe_object_iv } from './o_init.js';
+import { discover_artifact } from './artifact.js';
+import { not_fully_identified as not_fully_identified_iv } from './objnam.js';
+import { query_objlist as query_objlist_iv } from './pickup.js';
+import { little_to_big } from './mondata.js';
+import { MV_KNOWS_EGG, SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
+         INVORDER_SORT, PICK_ANY, thats_enough_tries,
+         MENU_TRADITIONAL as MENU_TRADITIONAL_IV, MENU_FULL as MENU_FULL_IV,
+         HALLUC as HALLUC_IV, HALLUC_RES as HALLUC_RES_IV } from './const.js';

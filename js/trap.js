@@ -1251,7 +1251,7 @@ const MAX_ERODE = 3;
 
 // C ref: trap.c erode_obj() -- the rust case, as reached from water_damage()
 /* returns ER_DAMAGED, ER_GREASED, ER_NOTHING or ER_DESTROYED */
-async function erode_obj(otmp, ostr, type, ef_flags) {
+export async function erode_obj(otmp, ostr, type, ef_flags) {
     const ER_NOTHING = 0, ER_DAMAGED = 2;
     const action = ["smoulder", "rust", "rot", "corrode", "crack"],
           bythe = ["heat", "oxidation", "decay", "corrosion", "impact"];
