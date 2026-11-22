@@ -13,6 +13,7 @@ import * as MM from './monsters.js';
 import { SPECIAL_PM, NUMMONS } from './monsters.js';
 import { pick_nasty } from './wizard.js';
 import { tt_doppel } from './topten.js';
+import { were_change } from './were.js';
 import {
     MSLOW, MFAST, NORMAL_SPEED, LOW_PM, I_SPECIAL, CONFLICT, INVIS,
     DISPLACED, COLNO, ROWNO, IS_OBSTRUCTED, IS_TREE, IS_WATERWALL, IS_DOOR,
@@ -100,7 +101,9 @@ import { XKILL_GIVEMSG, XKILL_NOMSG, XKILL_NOCORPSE, XKILL_NOCONDUCT,
          TEMPLE } from './const.js';
 import { Hallucination, canspotmon, see_monsters } from './display.js';
 import { mon_nam, x_monnam, ARTICLE_NONE, ARTICLE_THE,
-         SUPPRESS_SADDLE } from './do_name.js';
+         SUPPRESS_SADDLE, ARTICLE_A, ARTICLE_YOUR, noname_monnam } from './do_name.js';
+import { olfaction, is_orc } from './mondata.js';
+import { highc } from './hacklib.js';
 import { mkobj, place_object } from './mkobj.js';
 import { RANDOM_CLASS, FOOD_CLASS, FIGURINE } from './objects.js';
 import { flooreffects } from './do.js';
@@ -169,14 +172,14 @@ export function mcalcmove(mon,
 }
 
 // ── C ref: mon.c mcalcdistress() / m_calcdistress() ──
-export function mcalcdistress() {
+export async function mcalcdistress() {
     for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
         if (DEADMONSTER(mtmp)) continue; /* iter_mons() */
-        m_calcdistress(mtmp);
+        await m_calcdistress(mtmp);
     }
 }
 
-function m_calcdistress(mtmp) {
+async function m_calcdistress(mtmp) {
     /* must check non-moving monsters once/turn in case they managed
        to end up in water or lava; note: when not in liquid they regen,
        shape-shift, timeout temporary maladies just like other monsters */
@@ -192,9 +195,9 @@ function m_calcdistress(mtmp) {
 
     /* possibly polymorph shapechangers and lycanthropes */
     if (mtmp.cham !== undefined && mtmp.cham >= LOW_PM) /* ismnum() */
-        decide_to_shapeshift(mtmp);
+        await decide_to_shapeshift(mtmp);
     if (is_were(mtmp.data))
-        throw new Error('m_calcdistress(): were_change() not ported yet');
+        await were_change(mtmp);
 
     /* gradually time out temporary problems */
     if (mtmp.mblinded && !--mtmp.mblinded)
@@ -1402,7 +1405,7 @@ export function mgender_from_permonst(mtmp, mdat) {
 }
 
 // C ref: mon.c decide_to_shapeshift()
-export function decide_to_shapeshift(mon) {
+export async function decide_to_shapeshift(mon) {
     let ptr = null;
     let mndx;
     const was_female = mon.female;
@@ -1454,7 +1457,7 @@ export function decide_to_shapeshift(mon) {
         }
     }
     if (dochng) {
-        if (newcham(mon, ptr, NC_SHOW_MSG)) {
+        if (await newcham(mon, ptr, NC_SHOW_MSG)) {
             /* for vampshift, override the 10% chance for sex change
                (by forcing original gender in case that occurred) */
             if (is_vampshifter(mon)) {
@@ -1470,17 +1473,30 @@ export function decide_to_shapeshift(mon) {
 /* make a chameleon take on another shape, or a polymorph target
    (possibly self-inflicted) become a different monster;
    returns 1 if it actually changes form */
-export function newcham(mtmp, mdat, ncflags) {
+export async function newcham(mtmp, mdat, ncflags) {
+    const gen = newcham_g(mtmp, mdat, ncflags);
+    let r;
+    while (!(r = gen.next()).done)
+        await pline(r.value); /* pline_mon() */
+    return r.value;
+}
+/* newcham() from a synchronous caller (makemon(), level creation), which
+   never asks for messages */
+export function newcham_sync(mtmp, mdat, ncflags) {
+    const r = newcham_g(mtmp, mdat, ncflags).next();
+    if (!r.done)
+        throw new Error(`newcham(): message from a synchronous caller not ported yet: ${r.value}`);
+    return r.value;
+}
+/* the body of newcham(); yields the messages it gives */
+function* newcham_g(mtmp, mdat, ncflags) {
     const polyspot = ((ncflags & NC_VIA_WAND_OR_SPELL) !== 0);
     /* "The oldmon turns into a newmon!" */
-    const msg = ((ncflags & NC_SHOW_MSG) !== 0);
+    let msg = ((ncflags & NC_SHOW_MSG) !== 0);
+    const seenorsensed = canspotmon(mtmp);
     let hpn, hpd, mndx, tryct;
     const olddata = mtmp.data;
-
-    /* seenorsensed = canspotmon(mtmp), oldname and l_oldname are only
-       used by the messages below, which aren't ported yet */
-    if (msg)
-        throw new Error('newcham(): NC_SHOW_MSG messages not ported yet');
+    let oldname = '';
 
     /* Riders are immune to polymorph and green slime
        (but apparent Rider might actually be a doppelganger) */
@@ -1499,6 +1515,15 @@ export function newcham(mtmp, mdat, ncflags) {
                 mtmp.mcan = 0;
         }
     }
+
+    if (msg) {
+        oldname = /* like YMonnam() but never mention saddle */
+            x_monnam(mtmp, mtmp.mtame ? ARTICLE_YOUR : ARTICLE_THE,
+                     null, SUPPRESS_SADDLE, false);
+        oldname = highc(oldname[0]) + oldname.slice(1);
+    }
+    /* we need this one whether msg is true or not: l_oldname is only
+       used by the engulfing case, which isn't ported yet */
 
     /* mdat = 0 -> caller wants a random monster shape */
     if (!mdat) {
@@ -1579,6 +1604,24 @@ export function newcham(mtmp, mdat, ncflags) {
                          * display_monster() may change it right back */
     newsym(mtmp.mx, mtmp.my);
 
+    if (msg) {
+        /* oldname is capitalized and might be an assigned name */
+        if (!canspotmon(mtmp)) { /* can't see or sense it now */
+            if (seenorsensed) /* could see or sense it before */
+                yield `${oldname} disappears!`;
+            /* (void) */ yield* usmellmon_g(mdat);
+        } else if (!seenorsensed) { /* couldn't see/sense before, can now */
+            const mnm = x_monnam(mtmp, mtmp.mtame ? ARTICLE_YOUR : ARTICLE_A,
+                                 null, 0, false);
+
+            yield `${highc(mnm[0]) + mnm.slice(1)} appears!`; /* upstart() */
+        } else { /* saw/sensed it before, still see/sense it now */
+            yield `${oldname} turns into ${
+                /* "a <monster type>" even if it has a name assigned */
+                noname_monnam(mtmp, ARTICLE_A)}!`;
+        }
+    }
+
     /* when polymorph trap/wand/potion produces a vampire, turn in into
        a full-fledged vampshifter unless shape-changing is blocked */
     if (mtmp.cham === NON_PM && mdat.mlet === MM.S_VAMPIRE
@@ -1605,6 +1648,121 @@ export function newcham(mtmp, mdat, ncflags) {
 
     return 1;
 }
+// C ref: mon.c usmellmon()
+export async function usmellmon(mdat) {
+    const gen = usmellmon_g(mdat);
+    let r;
+    while (!(r = gen.next()).done)
+        await pline(r.value);
+    return r.value;
+}
+/* the body of usmellmon(); yields the messages it gives */
+function* usmellmon_g(mdat) {
+    let mndx;
+    let nonspecific = false;
+    let msg_given = false;
+    const u = game.u;
+
+    if (mdat) {
+        if (!olfaction(game.youmonst.data))
+            return false;
+        mndx = monsndx(mdat);
+        switch (mndx) {
+        case MM.PM_ROTHE:
+        case MM.PM_MINOTAUR:
+            yield "You notice a bovine smell.";
+            msg_given = true;
+            break;
+        case MM.PM_CAVE_DWELLER:
+        case MM.PM_BARBARIAN:
+        case MM.PM_NEANDERTHAL:
+            yield "You smell body odor.";
+            msg_given = true;
+            break;
+        case MM.PM_HORNED_DEVIL:
+        case MM.PM_BALROG:
+        case MM.PM_ASMODEUS:
+        case MM.PM_DISPATER:
+        case MM.PM_YEENOGHU:
+        case MM.PM_ORCUS:
+            break;
+        case MM.PM_HUMAN_WEREJACKAL:
+        case MM.PM_HUMAN_WERERAT:
+        case MM.PM_HUMAN_WEREWOLF:
+        case MM.PM_WEREJACKAL:
+        case MM.PM_WERERAT:
+        case MM.PM_WEREWOLF:
+        case MM.PM_OWLBEAR:
+            yield "You detect an odor reminiscent of an animal's den.";
+            msg_given = true;
+            break;
+        case MM.PM_STEAM_VORTEX:
+            yield "You smell steam.";
+            msg_given = true;
+            break;
+        case MM.PM_GREEN_SLIME:
+            yield "Something stinks.";
+            msg_given = true;
+            break;
+        case MM.PM_VIOLET_FUNGUS:
+        case MM.PM_SHRIEKER:
+            yield "You smell mushrooms.";
+            msg_given = true;
+            break;
+        /* These are here to avoid triggering the
+           nonspecific treatment through the default case below*/
+        case MM.PM_WHITE_UNICORN:
+        case MM.PM_GRAY_UNICORN:
+        case MM.PM_BLACK_UNICORN:
+        case MM.PM_JELLYFISH:
+            break;
+        default:
+            nonspecific = true;
+            break;
+        }
+
+        if (nonspecific)
+            switch (mdat.mlet) {
+            case MM.S_DOG:
+                yield "You notice a dog smell.";
+                msg_given = true;
+                break;
+            case MM.S_DRAGON:
+                yield "You smell a dragon!";
+                msg_given = true;
+                break;
+            case MM.S_FUNGUS:
+                yield "Something smells moldy.";
+                msg_given = true;
+                break;
+            case MM.S_UNICORN:
+                yield `You detect a${(mndx === MM.PM_PONY) ? "n" : " strong"} odor reminiscent of a stable.`;
+                msg_given = true;
+                break;
+            case MM.S_ZOMBIE:
+                yield "You smell rotting flesh.";
+                msg_given = true;
+                break;
+            case MM.S_EEL:
+                yield "You smell fish.";
+                msg_given = true;
+                break;
+            case MM.S_ORC:
+                /* maybe_polyd(is_orc(youmonst.data), Race_if(PM_ORC)) */
+                if ((u.umonnum !== u.umonster) ? is_orc(game.youmonst.data)
+                                                : game.urace.mnum === MM.PM_ORC)
+                    yield "You notice an attractive smell.";
+                else
+                    yield "A foul stench makes you feel a little nauseated.";
+                msg_given = true;
+                break;
+            default:
+                break;
+            }
+    }
+    return msg_given ? true : false;
+}
+
 // C ref: mon.c check_gear_next_turn()
 /* setting misc_worn_check's I_SPECIAL bit flags a monster to reassess
    and potentially re-equip gear at the start of its next move */
@@ -2347,7 +2505,7 @@ export async function m_consume_obj(mtmp, otmp) {
         if (poly || slimer) {
             const ptr = slimer ? mons[MM.PM_GREEN_SLIME] : null;
 
-            newcham(mtmp, ptr, vis ? NC_SHOW_MSG : NO_NC_FLAGS);
+            await newcham(mtmp, ptr, vis ? NC_SHOW_MSG : NO_NC_FLAGS);
         }
         if (grow) {
             if ((ispet && mtmp.m_lev < mtmp.data.mlevel + 15)

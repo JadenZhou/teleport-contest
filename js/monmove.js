@@ -39,6 +39,7 @@ import { mattacku } from './mhitu.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
+import { noteleport_level, tele_restrict, rloc } from './teleport.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -63,7 +64,7 @@ import { objects, BOULDER, ROCK, SCR_SCARE_MONSTER, GOLD_PIECE, CORPSE,
          CREDIT_CARD, SKELETON_KEY, LOCK_PICK } from './objects.js';
 import {
     MMOVE_NOTHING, MMOVE_MOVED, MMOVE_DIED, MMOVE_DONE, MMOVE_NOMOVES,
-    ALLOW_U, ALLOW_M, ALLOW_MDISP, ALLOW_ROCK, NOTONL, MTSZ, BOLT_LIM,
+    ALLOW_U, ALLOW_M, ALLOW_MDISP, ALLOW_ROCK, NOTONL, MTSZ, BOLT_LIM, RLOC_MSG,
     STRAT_ARRIVE, STRAT_WAITFORU, STRAT_WAITMASK, STRAT_CLOSE,
     INVIS, STEALTH, AGGRAVATE_MONSTER, CONFLICT, W_ARTI, M_AP_FURNITURE,
     M_AP_OBJECT, NON_PM, IS_DOOR, IS_ALTAR, IRONBARS, isok, SHOPBASE,
@@ -1609,8 +1610,12 @@ export async function m_move(mtmp, after) {
         if (!mtmp.mpeaceful && game.level.flags?.shortsighted
             && nidist > (couldsee(nix, niy) ? 144 : 36) && appr === 1)
             appr = 0;
-        if (is_unicorn(ptr))
-            throw new Error('m_move(): unicorns not ported yet');
+        if (is_unicorn(ptr) && noteleport_level(mtmp)) {
+            /* on noteleport levels, perhaps we cannot avoid hero */
+            for (let i = 0; i < cnt; i++)
+                if (!(mfp.info[i] & NOTONL))
+                    avoid = true;
+        }
         better_with_displacing = should_displace(mtmp, mfp, ggx, ggy);
         for (let i = 0; i < cnt; i++) {
             if (avoid && (mfp.info[i] & NOTONL))
@@ -1704,7 +1709,15 @@ export async function m_move(mtmp, after) {
 
         mon_track_add(mtmp, omx, omy);
     } else {
-        /* (is_unicorn handled above); long worms aren't ported yet */
+        if (is_unicorn(ptr) && rn2(2) && !(await tele_restrict(mtmp))) {
+            await rloc(mtmp, RLOC_MSG);
+            return MMOVE_MOVED;
+        }
+        /* for a long worm, shrink it (by discarding end of tail) when
+           it has failed to move: worm_nomove(): long worms aren't
+           ported yet */
+        if (mtmp.wormno)
+            throw new Error('m_move(): worm_nomove() not ported yet');
     }
     return await postmov(mtmp, ptr, omx, omy, mmoved,
                    seenflgs, can_tunnel, can_unlock, can_open);

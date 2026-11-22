@@ -469,7 +469,7 @@ export async function moveloop_core() {
 
                 /* set up for a new turn */
                 g.were_changes = 0;
-                mcalcdistress(); /* adjust monsters' trap, blind, etc */
+                await mcalcdistress(); /* adjust monsters' trap, blind, etc */
 
                 /* reallocate movement rations to monsters; don't need
                    to skip dead monsters here because they will have
