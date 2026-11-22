@@ -1252,7 +1252,7 @@ function unbless(otmp) {
 }
 
 // C ref: trap.c fill_pit()
-async function fill_pit(x, y) {
+export async function fill_pit(x, y) {
     let otmp;
     const t = t_at(x, y);
 

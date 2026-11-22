@@ -92,7 +92,8 @@ import { midnight } from './calendar.js';
 import { Hello } from './role.js';
 import { search_special, You_hear } from './sounds.js';
 import { DEAF } from './const.js';
-import { wake_msg, seemimic } from './mon.js';
+import { wake_msg, seemimic, maybe_unhide_at } from './mon.js';
+import { drag_ball, move_bc } from './ball.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
@@ -1456,7 +1457,7 @@ function can_ooze_u() {
 
 // C ref: hack.c crawl_destination() -- used by findtravelpath() when the
 // destination is one step away
-function crawl_destination(x, y) {
+export function crawl_destination(x, y) {
     const u = game.u;
     /* is location ok in general? */
     if (!goodpos(x, y, game.youmonst, 0))
@@ -2000,12 +2001,10 @@ async function test_move_rest(ux, uy, dx, dy, mode, x, y) {
 function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: hack.c movobj()
-function movobj(obj, ox, oy) {
+export function movobj(obj, ox, oy) {
     /* optimize by leaving on the fobj chain? */
     obj_extract_self(obj); /* remove_object() */
-    const mtmp = m_at(obj.ox, obj.oy);
-    if (mtmp && mtmp.mundetected)
-        throw new Error('movobj(): maybe_unhide_at() not ported yet');
+    maybe_unhide_at(obj.ox, obj.oy);
     newsym(obj.ox, obj.oy);
     place_object(obj, ox, oy);
     newsym(ox, oy);
@@ -2731,6 +2730,10 @@ async function domove_core() {
     const ctx = game.context;
     let mtmp;
     let x, y;
+    /* ball&chain new positions, control for ball&chain, and
+       cause_delay: dragging ball will skip a move */
+    const bc = { chainx: 0, chainy: 0, ballx: 0, bally: 0,
+                 bc_control: 0, cause_delay: false };
     const displaceu = { val: false }; /* involuntary swap */
 
     if (ctx.travel) {
@@ -2857,7 +2860,8 @@ async function domove_core() {
 
     /* Move ball and chain.  */
     if (Punished())
-        throw new Error('domove_core(): drag_ball() not ported yet');
+        if (!await drag_ball(x, y, bc, true))
+            return;
 
     /* Check regions entering/leaving */
     if (!(await in_out_region(x, y)))
@@ -2926,13 +2930,19 @@ async function domove_core() {
         /* invocation_message(): only on the vibrating square level */
     }
 
-    /* if (Punished) move_bc(...): Punished throws above */
+    if (Punished()) /* put back ball and chain */
+        move_bc(0, bc.bc_control, bc.ballx, bc.bally, bc.chainx, bc.chainy);
 
     if (u.umoved)
         await spoteffects(true);
 
-    /* delay next move because of ball dragging: cause_delay is only set
-       by drag_ball(), which isn't ported */
+    /* delay next move because of ball dragging */
+    /* must come after we finished picking up, in spoteffects() */
+    if (bc.cause_delay) {
+        nomul(-2);
+        game.multi_reason = "dragging an iron ball";
+        game.nomovemsg = "";
+    }
 
     /* runmode_delay_output(): display timing only */
 }

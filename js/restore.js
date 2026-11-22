@@ -27,6 +27,7 @@ import { ledger_no, assign_level } from './dungeon.js';
 import { stairway_add } from './mklev.js';
 import { stairway_at } from './display.js';
 import { place_monster, pm_to_cham, hideunder } from './makemon.js';
+import { rest_worm, place_wsegs } from './worm.js';
 import { set_ustuck } from './uhitm.js';
 import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
@@ -882,6 +883,7 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
 
     /* reset level.monsters for new level */
     L.monsters = [];
+    L.wsegs = new Map(); /* worm tail cells, placed by place_wsegs() */
     for (let mtmp = g.fmon; mtmp; mtmp = mtmp.nmon) {
         if (mtmp.isshk)
             throw new Error('getlev(): set_residency() not ported yet');
@@ -896,7 +898,7 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
             }
             place_monster(mtmp, mtmp.mx, mtmp.my);
             if (mtmp.wormno)
-                throw new Error('getlev(): place_wsegs() not ported yet');
+                place_wsegs(mtmp, null);
             if ((mtmp.data.mflags1 & M1_CONCEAL) && mtmp.mundetected) /* hides_under() */
                 hideunder(mtmp);
         }
@@ -943,12 +945,6 @@ export function restore_cham(mon) {
         /* chameleon doesn't change shape here, just gets allowed to do so */
         mon.cham = pm_to_cham(monsndx(mon.data));
     }
-}
-
-// C ref: worm.c rest_worm()
-function rest_worm(nhfp) {
-    const w = Sfi(nhfp, "worm");
-    if (w !== null && w !== undefined) game.level.worms = w;
 }
 
 // C ref: engrave.c rest_engravings()

@@ -2,6 +2,7 @@
 // C ref: display.c — newsym, show_glyph, docrt, cls, flush_screen.
 
 import { game } from './gstate.js';
+import { wseg_mon_at, worm_known, see_wsegs } from './worm.js';
 import { money_cnt } from './u_init.js';
 import { cansee, couldsee, vision_recalc } from './vision.js';
 import { tty_putstr, tty_display_nhwindow } from './wintty.js';
@@ -35,7 +36,7 @@ import {
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL, FIRST_OBJECT,
 } from './objects.js';
 import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS, S_EEL, M1_FLY,
-         PM_TENGU } from './monsters.js';
+         PM_TENGU, PM_LONG_WORM_TAIL } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
 import { is_pool, is_lava } from './makemon.js';
@@ -897,7 +898,7 @@ const def_monsyms = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@ '&;:
 function mon_at_loc(x, y) {
     for (const m of game.level?.monsters || [])
         if (m.mx === x && m.my === y && !m.dead) return m;
-    return null;
+    return wseg_mon_at(x, y); /* a long worm's tail segment */
 }
 
 // C ref: display.h mon_visible(): not invisible (or hero sees invisible)
@@ -928,9 +929,8 @@ function see_with_infrared(mon) {
 
 // C ref: display.h _canseemon()
 export function canseemon(mon) {
-    if (mon.wormno)
-        throw new Error('canseemon(): worm_known() not ported yet');
-    return (cansee(mon.mx, mon.my) || see_with_infrared(mon))
+    return (mon.wormno ? worm_known(mon)
+                       : (cansee(mon.mx, mon.my) || see_with_infrared(mon)))
            && mon_visible(mon);
 }
 
@@ -1050,7 +1050,8 @@ const PHYSICALLY_SEEN = 1, DETECTED = 2;
 // C ref: display.c display_monster()
 // The monster's own glyph is shown as before this port: mon_to_glyph(),
 // in its mons[] color, with pet_to_glyph()'s MG_PET attribute; detected
-// glyphs and worm tails show the same way (not ported separately).
+// glyphs show the same way (not ported separately); worm tails show as
+// PM_LONG_WORM_TAIL.
 function display_monster(
     x, y,        /* display position */
     mon,         /* monster to display */
@@ -1061,7 +1062,6 @@ function display_monster(
     const sensed = (mon_mimic && (uprop(PROT_FROM_SHAPE_CHANGERS)
                                   || sensemon(mon)));
 
-    void worm_tail;
     /*
      * We must do the mimic check first.  If the mimic is mimicking something,
      * and the location is in sight, we have to change the hero's memory
@@ -1126,7 +1126,11 @@ function display_monster(
 
     /* If mimic is unsuccessfully mimicking something, display the monster. */
     if (!mon_mimic || sensed) {
-        const ptr = mon.data;
+        /* a worm tail shows as PM_LONG_WORM_TAIL (petnum_to_glyph() or
+           monnum_to_glyph(what_mon(PM_LONG_WORM_TAIL, ...))) */
+        if (worm_tail && Hallucination())
+            throw new Error('display_monster(): hallucinatory worm tail (what_mon()) not ported yet');
+        const ptr = worm_tail ? mons[PM_LONG_WORM_TAIL] : mon.data;
         const ch = def_monsyms[ptr.mlet] ?? '?';
         /* a tame monster gets pet_to_glyph() (mon->mtame && !Hallucination),
            whose glyphs have MG_PET; wintty.c tty_print_glyph() shows those
@@ -1812,7 +1816,6 @@ export async function docrt_flags(refresh_flags) {
 }
 
 // C ref: display.c see_monsters()
-// see_wsegs() has nothing to draw: initworm() makes no tail segments yet
 export function see_monsters() {
     const u = game.u;
     let new_warn_obj_cnt = 0;
@@ -1836,7 +1839,8 @@ export function see_monsters() {
         if (((mon.mstate || 0) & MON_STILL_ARRIVING) !== 0)
             continue;
         newsym(mon.mx, mon.my);
-        /* if (mon->wormno) see_wsegs(mon): no segments (see above) */
+        if (mon.wormno)
+            see_wsegs(mon);
         if (uprop(WARN_OF_MON)
             && ((game.context.warntype?.obj ?? 0) & mon.data.mflags2) !== 0)
             new_warn_obj_cnt++;
