@@ -608,23 +608,6 @@ export function find_artifact(otmp) {
     }
 }
 
-// C ref: artifact.c discover_artifact()
-/* mark an artifact as 'known' */
-export function discover_artifact(m) {
-    if (!game.artidisco)
-        game.artidisco = new Array(NROFARTIFACTS).fill(0);
-    /* look for this artifact in the discoveries list;
-       if we hit an empty slot then it's not present, so add it */
-    for (let i = 0; i < NROFARTIFACTS; i++)
-        if (game.artidisco[i] === 0 || game.artidisco[i] === m) {
-            game.artidisco[i] = m;
-            return;
-        }
-    /* there is one slot per artifact, so we should never reach the
-       end without either finding the artifact or an empty slot... */
-    console.error(`impossible: couldn't discover artifact (${m})`);
-}
-
 // C ref: artifact.c undiscovered_artifact()
 /* used to decide whether an artifact has been fully identified */
 export function undiscovered_artifact(m) {
