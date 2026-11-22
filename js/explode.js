@@ -37,7 +37,7 @@ import { seemimic, xkilled, monkilled, setmangry, wake_nearto, mondead,
 import { destroy_items, zap_over_floor, resist_async } from './zap.js';
 import { burnarmor, Maybe_Half_Phys, ignite_items } from './trap.js';
 import { burn_away_slime } from './potion.js';
-import { ugolemeffects } from './polyself.js';
+import { ugolemeffects } from './mhitu.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { cvt_adtyp_to_mseenres } from './mondata.js';
 import { exercise } from './attrib.js';

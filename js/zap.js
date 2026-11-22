@@ -1708,7 +1708,7 @@ async function zhitm(
         if (!rn2(6))
             await acid_damage_zp(mon.mw); /* MON_WEP(mon) */
         if (!rn2(6))
-            throw new Error('zhitm(): erode_armor() not ported yet');
+            await erode_armor_zp(mon, ERODE_CORRODE_ZP);
         break;
     }
     /* if (sho_shieldeff) shieldeff(mon->mx, mon->my): transient display */
@@ -1873,7 +1873,7 @@ async function zhitu(
         if (u.twoweap && !rn2(3))
             await acid_damage_zp(g.uswapwep);
         if (!rn2(6))
-            throw new Error('zhitu(): erode_armor() not ported yet');
+            await erode_armor_zp(game.youmonst, ERODE_CORRODE_ZP);
         break;
     }
 
@@ -2980,7 +2980,7 @@ import { which_armor as which_armor_zp, setnotworn as setnotworn_zp,
          bypass_objlist as bypass_objlist_zp,
          nxt_unbypassed_obj as nxt_unbypassed_obj_zp } from './worn.js';
 import { m_useup } from './mthrowu.js';
-import { ugolemeffects as ugolemeffects_zp } from './polyself.js';
+import { ugolemeffects as ugolemeffects_zp } from './mhitu.js';
 import { burn_away_slime as burn_away_slime_zp,
          hliquid as hliquid_zp, potionbreathe as potionbreathe_zp,
          make_stunned as make_stunned_zp, incr_itimeout as incr_itimeout_zp,
@@ -3023,3 +3023,6 @@ import { picking_at as picking_at_zp, reset_pick as reset_pick_zp } from './lock
 import { catch_lit as catch_lit_zp } from './trap.js';
 import { useupf as useupf_zp } from './invent.js';
 import { An as An_zp } from './objnam.js';
+import { erode_armor as erode_armor_zp } from './uhitm.js';
+/* C ref: hack.h ERODE_CORRODE */
+const ERODE_CORRODE_ZP = 3;
