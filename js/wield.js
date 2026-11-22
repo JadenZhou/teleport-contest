@@ -280,7 +280,20 @@ export async function ready_weapon(wep) {
         /* Weapon WILL be wielded after this point */
         res = ECMD_TIME;
         if (will_weld(wep)) {
-            throw new Error('ready_weapon(): welding message not ported yet');
+            let tmp = xname_wl(wep);
+            const thestr = "The ";
+
+            if (!tmp.startsWith(thestr) && The_wl(tmp).startsWith(thestr))
+                tmp = thestr;
+            else
+                tmp = "";
+            await pline(`${tmp}${aobjnam_wl(wep, "weld")} ${
+                (wep.quan === 1) ? "itself" : "themselves"} to your ${ /* a3 */
+                bimanual(wep) ? ""
+                    : (!game.u.uhandedness /* URIGHTY */ ? "dominant right "
+                                                         : "dominant left ")}${
+                bimanual(wep) ? makeplural(body_part(HAND)) : body_part(HAND)}!`);
+            wep.bknown = 1; /* set_bknown(wep, 1) */
         } else {
             /* The message must be printed before setuwep (since
              * you might die and be revived from changing weapons),
@@ -767,4 +780,5 @@ export async function wield_tool(obj,
         game.unweapon = true;
     return true;
 }
-import { xname as xname_wl, yname as yname_wl, doname as doname_wl } from './objnam.js';
+import { xname as xname_wl, yname as yname_wl, doname as doname_wl,
+         The as The_wl, aobjnam as aobjnam_wl } from './objnam.js';
