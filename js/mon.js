@@ -412,7 +412,7 @@ function m_detach(mtmp, mptr, due_to_death) {
 
 // C ref: mon.c mlifesaver()
 /* find the worn amulet of life saving which will save a monster */
-function mlifesaver(mon) {
+export function mlifesaver(mon) {
     if (!nonliving(mon.data) || is_vampshifter(mon)) {
         const otmp = which_armor(mon, W_AMUL);
 
@@ -491,8 +491,9 @@ export async function mondead(mtmp) {
 
 // C ref: mon.c corpse_chance()
 /* TRUE if corpse might be dropped, magr may die if mon was swallowed */
-export function corpse_chance(mon, magr, was_swallowed) {
+export async function corpse_chance(mon, magr, was_swallowed) {
     const mdat = mon.data;
+    let tmp;
 
     if (!magr && game.mswallower)
         throw new Error('corpse_chance(): engulfer explosions not ported yet');
@@ -502,10 +503,40 @@ export function corpse_chance(mon, magr, was_swallowed) {
 
     /* Gas spores always explode upon death */
     for (let i = 0; i < NATTK; i++) {
-        if (mdat.mattk[i].aatyp === AT_BOOM)
-            throw new Error('corpse_chance(): mon_explodes() not ported yet');
+        if (mdat.mattk[i].aatyp === AT_BOOM) {
+            if (mdat.mattk[i].damn)
+                tmp = d(mdat.mattk[i].damn, mdat.mattk[i].damd);
+            else if (mdat.mattk[i].damd)
+                tmp = d(mdat.mlevel + 1, mdat.mattk[i].damd);
+            else
+                tmp = 0;
+
+            if (was_swallowed && magr) {
+                /* mdef is a gas spore (AT_BOOM) that is exploding inside an
+                   engulfer; suppress usual explosion since it's contained */
+                if (magr === game.youmonst) {
+                    await There_mn(`is an explosion in your ${body_part_mn(STOMACH_MN)}!`);
+                    killer_mn().name = `${s_suffix(pmname(mdat, mon.female ? 1 : 0))} explosion`;
+                    await losehp_mn(Maybe_Half_Phys_mn(tmp), killer_mn().name,
+                                    KILLED_BY_AN_MN);
+                } else {
+                    await You_hear("an explosion.");
+                    magr.mhp -= tmp;
+                    if (DEADMONSTER(magr))
+                        await mondied(magr);
+                    if (DEADMONSTER(magr)) { /* maybe lifesaved */
+                        if (canspotmon(magr))
+                            await pline(`${Monnam(magr)} rips open!`);
+                    } else if (canseemon(magr))
+                        await pline(`${Monnam(magr)} seems to have indigestion.`);
+                }
+                return false;
+            }
+
+            await mon_explodes(mon, mdat.mattk[i]);
+            return false;
+        }
     }
-    void was_swallowed;
 
     /* must duplicate this below check in xkilled() since it results in
      * creating no objects as well as no corpse
@@ -519,7 +550,7 @@ export function corpse_chance(mon, magr, was_swallowed) {
     if (((bigmonst(mdat) || mdat === mons[PM_LIZARD]) && !mon.mcloned)
         || is_golem(mdat) || is_mplayer(mdat) || is_rider(mdat) || mon.isshk)
         return true;
-    const tmp = 2 + ((mdat.geno & G_FREQ) < 2 ? 1 : 0) + (verysmall(mdat) ? 1 : 0);
+    tmp = 2 + ((mdat.geno & G_FREQ) < 2 ? 1 : 0) + (verysmall(mdat) ? 1 : 0);
     return !rn2(tmp);
 }
 
@@ -703,7 +734,7 @@ export async function mondied(mdef) {
         return; /* lifesaved */
 
     /* this assumes that the dead monster's map coordinates remain accurate */
-    if (corpse_chance(mdef, null, false)
+    if (await corpse_chance(mdef, null, false)
         && (accessible(mdef.mx, mdef.my) || is_pool(mdef.mx, mdef.my)))
         make_corpse(mdef, CORPSTAT_NONE);
 }
@@ -888,7 +919,7 @@ export async function xkilled(
                 }
             }
             /* corpse--none if hero was inside the monster */
-            if (!wasinside && corpse_chance(mtmp, null, false)) {
+            if (!wasinside && await corpse_chance(mtmp, null, false)) {
                 game.zombify = (!game.thrownobj && !game.stoned && !game.uwep
                                 && zombie_maker(game.youmonst)
                                 && zombie_form(mtmp.data) !== NON_PM);
@@ -2775,6 +2806,39 @@ export function healmon(mtmp, amt, overheal) {
     }
 }
 
+// C ref: mon.c golemeffects()
+/* Called when a monster is hit by an elemental attack */
+export async function golemeffects(mon, damtype, dam) {
+    let heal = 0, slow = 0;
+
+    if (mon.data === mons[PM_FLESH_GOLEM]) {
+        if (damtype === AD_ELEC_MN)
+            heal = Math.trunc((dam + 5) / 6);
+        else if (damtype === AD_FIRE_MN || damtype === AD_COLD_MN)
+            slow = 1;
+    } else if (mon.data === mons[PM_IRON_GOLEM]) {
+        if (damtype === AD_ELEC_MN)
+            slow = 1;
+        else if (damtype === AD_FIRE_MN)
+            heal = dam;
+    } else {
+        return;
+    }
+    if (slow) {
+        if (mon.mspeed !== MSLOW)
+            await mon_adjust_speed_mn(mon, -1, null);
+    }
+    if (heal) {
+        if (healmon(mon, heal, 0)) {
+            if (cansee(mon.mx, mon.my))
+                await pline(`${Monnam(mon)} seems healthier.`);
+        }
+    }
+}
+import { AD_ELEC as AD_ELEC_MN, AD_FIRE as AD_FIRE_MN,
+         AD_COLD as AD_COLD_MN } from './monsters.js';
+import { mon_adjust_speed as mon_adjust_speed_mn } from './worn.js';
+
 /* C ref: obj.h ofood(), polyfood(), mlevelgain(), mhealup();
    mon.c mstoning(); mondata.h flesh_petrifies() */
 function ofood(o) {
@@ -3102,3 +3166,11 @@ export async function angry_guards(silent) {
     }
     return false;
 }
+import { d } from './rng.js';
+import { pmname } from './do_name.js';
+import { There as There_mn } from './display.js';
+import { body_part as body_part_mn } from './insight.js';
+import { STOMACH as STOMACH_MN, KILLED_BY_AN as KILLED_BY_AN_MN } from './const.js';
+import { killer as killer_mn } from './topten.js';
+import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
+import { mon_explodes } from './explode.js';

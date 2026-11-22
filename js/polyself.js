@@ -202,3 +202,38 @@ function polysense() {
         u.uprops[WARN_OF_MON].intrinsic |= FROMRACE;
     }
 }
+
+// C ref: polyself.c ugolemeffects()
+export async function ugolemeffects(damtype, dam) {
+    const u = game.u;
+    let heal = 0;
+
+    /* We won't bother with "slow"/"haste" since players do not
+     * have a monster-specific slow/haste so there is no way to
+     * restore the old velocity once they are back to human.
+     */
+    if (u.umonnum !== PM_FLESH_GOLEM && u.umonnum !== PM_IRON_GOLEM)
+        return;
+    switch (damtype) {
+    case AD_ELEC:
+        if (u.umonnum === PM_FLESH_GOLEM)
+            heal = Math.trunc((dam + 5) / 6); /* Approx 1 per die */
+        break;
+    case AD_FIRE:
+        if (u.umonnum === PM_IRON_GOLEM)
+            heal = dam;
+        break;
+    }
+    if (heal && (u.mh < u.mhmax)) {
+        u.mh += heal;
+        if (u.mh > u.mhmax)
+            u.mh = u.mhmax;
+        game.disp_botl = true;
+        await pline_ps("Strangely, you feel better than before.");
+        exercise_ps(A_STR_PS, true);
+    }
+}
+import { PM_FLESH_GOLEM, PM_IRON_GOLEM, AD_ELEC, AD_FIRE } from './monsters.js';
+import { pline as pline_ps } from './display.js';
+import { exercise as exercise_ps } from './attrib.js';
+import { A_STR as A_STR_PS } from './const.js';

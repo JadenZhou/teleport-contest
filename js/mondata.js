@@ -427,6 +427,7 @@ export function resists_poison(mon) { return Resists_Elem(mon, POISON_RES); }
 export function resists_cold(mon) { return Resists_Elem(mon, COLD_RES); }
 export function resists_elec(mon) { return Resists_Elem(mon, SHOCK_RES); }
 export function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
+export function resists_disint(mon) { return Resists_Elem(mon, DISINT_RES); }
 
 /* hero inventory is a nobj chain; monster minvent is an array in pickup
    order (C prepends, so walk it newest first) */
