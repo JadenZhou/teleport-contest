@@ -26,7 +26,8 @@ import {
 import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT,
          M_AP_FURNITURE, WARNCOUNT, def_warnsyms, In_mines, In_sokoban,
          Is_knox_level, M_AP_NOTHING, M_AP_OBJECT, M_AP_MONSTER, M_AP_TYPE,
-         PROT_FROM_SHAPE_CHANGERS, MCORPSENM } from './const.js';
+         PROT_FROM_SHAPE_CHANGERS, MCORPSENM, ACCESSIBLE } from './const.js';
+import { visible_region_at, show_region } from './region.js';
 import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
 import {
@@ -37,7 +38,7 @@ import { mons, NUMMONS, M3_INFRAVISIBLE, M1_MINDLESS, S_EEL, M1_FLY,
          PM_TENGU } from './monsters.js';
 import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
-import { is_pool } from './makemon.js';
+import { is_pool, is_lava } from './makemon.js';
 import { t_at } from './trap.js';
 import { engr_at, sticks } from './engrave.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
@@ -1481,8 +1482,47 @@ function _map_location(x, y, show) {
     }
 
     update_lastseentyp(x, y);
-    /* if (show && !Blind && visible_region_at(x, y)) show_region():
-       gas regions aren't shown yet */
+    let ml_reg;
+    if (show && !Blind() && (ml_reg = visible_region_at(x, y)) != null)
+        show_region(ml_reg, x, y);
+}
+
+// C ref: display.c mon_overrides_region()
+/* used by newsym() to decide whether to show a monster or a visible gas
+   cloud region when both are at the same spot; caller deals with region */
+function mon_overrides_region(
+    mon, /* might be Null */
+    mx, my) /* won't match mon->mx,my if long worm's tail */
+{
+    const u = game.u;
+    let r;
+
+    /* this is redundant because newsym() doesn't call us when swallowed */
+    if (u.uswallow && (!mon || mon !== u.ustuck))
+        return false;
+
+    if (mon) {
+        /* when not a worm tail, show mon if sensed rather than seen */
+        if (mx === mon.mx && my === mon.my
+            && (sensemon(mon) || mon_warning(mon)))
+            return true;
+
+        /* even if worm tail;
+           check whether the spot is adjacent and 'mon' would be visible
+           there if the gas cloud wasn't interfering with normal vision;
+           _mon_visible() handles mon->mundetected; don't need to check
+           infravision when monster is adjacent */
+        r = ((u.xray_range || 0) > 1) ? u.xray_range : 1;
+        if (!Blind() && mon_visible(mon)
+            && mon.m_ap_type !== M_AP_FURNITURE
+            && mon.m_ap_type !== M_AP_OBJECT
+            && ((mx - u.ux) ** 2 + (my - u.uy) ** 2) <= r * (r + 1))
+            return true;
+    }
+
+    /* if not overriding region for current mon, propagate "remembered,
+       unseen monster" */
+    return glyph_is_invisible(game.level.at(mx, my).remembered_glyph) ? true : false;
 }
 
 // C ref: display.c newsym_force() -- newsym() plus marking the spot as
@@ -1584,10 +1624,28 @@ export function newsym(x, y) {
        out of sight), and an engraving there is revealed, even when
        covered by objects or a monster */
     if (cansee(x, y)) {
+        const reg = visible_region_at(x, y);
         loc.waslit = (loc.lit ? 1 : 0); /* remember lit condition */
+        const rmon = mon_at_loc(x, y);
         const ep = engr_at(x, y);
         if (ep)
             ep.erevealed = 1;
+        /*
+         * Normal region shown only on accessible positions, but
+         * poison clouds and steam clouds also shown above lava,
+         * pools and moats.
+         * However, sensed monsters (via detection or telepathy or
+         * warning) take precedence over all regions.
+         * Adjacent monsters also take precedence if they would be
+         * seen when there's no gas region.
+         */
+        if (reg && (ACCESSIBLE(loc.typ)
+                    || (reg.visible && (is_pool(x, y) || is_lava(x, y))))) {
+            if (!mon_overrides_region(rmon, x, y)) {
+                show_region(reg, x, y);
+                return;
+            }
+        }
     }
 
     if (game.u?.ux === x && game.u?.uy === y) {

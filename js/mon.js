@@ -65,7 +65,10 @@ import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
          YELLOW_DRAGON_SCALE_MAIL, TIN, GLOB_OF_GREEN_SLIME, CARROT,
          objects } from './objects.js';
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
-         POISON_RES, STONE_RES } from './const.js';
+         POISON_RES, STONE_RES, M_POISONGAS_OK, M_POISONGAS_MINOR, M_POISONGAS_BAD,
+         MAGICAL_BREATHING, Is_waterlevel } from './const.js';
+import { attacktype_fordmg, resists_poison } from './mondata.js';
+import { visible_region_at, cmap_to_glyph, S_poisoncloud, create_gas_cloud } from './region.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
 import { grow_up } from './makemon.js';
@@ -301,7 +304,7 @@ function m_detach(mtmp, mptr, due_to_death) {
                 /* The Archeologist, Caveman, and Priest quest texts describe
                    the nemesis's body creating noxious fumes/gas when killed. */
                 if (await stinky_nemesis(mtmp))
-                    nemesis_stinks(mx, my);
+                    await nemesis_stinks(mx, my);
             }
             if (mtmp.data.msound === MS_LEADER)
                 leaddead();
@@ -354,7 +357,7 @@ export async function mondead(mtmp) {
         await pline('You have a sad feeling for a moment, then it passes.');
 
     if (mtmp.data === mons[PM_STEAM_VORTEX])
-        throw new Error('mondead(): create_gas_cloud() not ported yet');
+        await create_gas_cloud(mtmp.mx, mtmp.my, rn2(10) + 5, 0); /* harmless */
 
     if (mtmp.isgd)
         throw new Error('mondead(): grddead() not ported yet');
@@ -1063,7 +1066,7 @@ async function movemon_singlemon(mtmp) {
 
     /* monster isn't on this map anymore: migration isn't ported yet */
 
-    m_everyturn_effect(mtmp);
+    await m_everyturn_effect(mtmp);
 
     /* Find a monster that we have not treated yet. */
     if (mtmp.movement < NORMAL_SPEED)
@@ -1987,9 +1990,10 @@ export function mfndpos(mon, data, flag) {
     if (mdat === mons[PM_FLOATING_EYE]) /* prefers to avoid heat */
         lavaok = false;
     let thrudoor = ((flag & (ALLOW_WALL | BUSTDOOR)) !== 0);
-    /* poison gas regions: visible_region_at() is not ported yet; the
-       only regions so far are harmless clouds (S_cloud), which mfndpos()
-       does not avoid */
+    const poisongas_ok = (m_poisongas_ok(mon) === M_POISONGAS_OK);
+    const gas_glyph = cmap_to_glyph(S_poisoncloud);
+    const gas_reg0 = visible_region_at(x, y);
+    const in_poisongas = (gas_reg0 != null && gas_reg0.glyph === gas_glyph);
 
     if (flag & ALLOW_DIG) {
         let mw_tmp;
@@ -2058,6 +2062,12 @@ export function mfndpos(mon, data, flag) {
                     && ((((nloc.doormask ?? 0) & D_CLOSED) && !(flag & OPENDOOR))
                         || (((nloc.doormask ?? 0) & D_LOCKED)
                             && !(flag & UNLOCKDOOR))) && !thrudoor)
+                    continue;
+                /* avoid poison gas? */
+                let gas_reg;
+                if (!poisongas_ok && !in_poisongas
+                    && (gas_reg = visible_region_at(nx, ny)) != null
+                    && gas_reg.glyph === gas_glyph)
                     continue;
                 /* first diagonal checks (tight squeezes handled below) */
                 if (nx !== x && ny !== y
@@ -2426,6 +2436,45 @@ export async function mon_givit(mtmp, ptr) {
         return; /* failed die roll */
 
     await mon_give_prop(mtmp, prop);
+}
+
+// C ref: mon.c m_poisongas_ok()
+/* check whether a monster is tolerant of poison gas */
+export function m_poisongas_ok(mtmp) {
+    let px, py;
+    const is_you = (mtmp === game.youmonst);
+    const u = game.u;
+    const uhas = (p) => !!(u.uprops[p]?.intrinsic || u.uprops[p]?.extrinsic);
+    const breathless = (ptr) => (ptr.mflags1 & MM.M1_BREATHLESS) !== 0;
+
+    /* Non living, non breathing, immune monsters are not concerned */
+    if (nonliving(mtmp.data) || is_vampshifter(mtmp)
+        || breathless(mtmp.data)
+        /* immune_poisongas() */
+        || mtmp.data === mons[MM.PM_HEZROU] || mtmp.data === mons[MM.PM_VROCK])
+        return M_POISONGAS_OK;
+    /* not is_swimmer(); assume that non-fish are swimming on
+       the surface and breathing the air above it periodically
+       unless located at water spot on plane of water */
+    px = is_you ? u.ux : mtmp.mx;
+    py = is_you ? u.uy : mtmp.my;
+    if ((mtmp.data.mlet === S_EEL || Is_waterlevel(u.uz))
+        && is_pool(px, py))
+        return M_POISONGAS_OK;
+    /* exclude monsters with poison gas breath attack:
+       adult green dragon and Chromatic Dragon (and iron golem,
+       but nonliving() and breathless() tests also catch that) */
+    if (attacktype_fordmg(mtmp.data, MM.AT_BREA, MM.AD_DRST)
+        || attacktype_fordmg(mtmp.data, MM.AT_BREA, MM.AD_RBRE))
+        return M_POISONGAS_OK;
+    if (is_you && (u.uinvulnerable
+                   /* Breathless */
+                   || uhas(MAGICAL_BREATHING) || breathless(game.youmonst.data)
+                   || u.uinwater /* Underwater */))
+        return M_POISONGAS_OK;
+    if (is_you ? uhas(POISON_RES) : resists_poison(mtmp))
+        return M_POISONGAS_MINOR;
+    return M_POISONGAS_BAD;
 }
 
 // C ref: mon.c hide_monst()

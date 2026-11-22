@@ -32,6 +32,7 @@ import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
 import { hide_monst } from './mon.js';
 import { mon_catchup_elapsed_time } from './dog.js';
+import { rest_regions_data } from './region.js';
 import { role_init } from './role.js';
 import { set_playmode } from './options.js';
 import { set_uasmon } from './polyself.js';
@@ -955,8 +956,8 @@ function rest_engravings(nhfp) {
 
 // C ref: region.c rest_regions()
 function rest_regions(nhfp) {
-    const r = Sfi(nhfp, "regions");
-    game.level.regions = (r !== null && r !== undefined) ? r : [];
+    const ghostly = (nhfp.ftype === NHF_BONESFILE);
+    rest_regions_data(Sfi(nhfp, "regions"), ghostly);
 }
 
 // C ref: restore.c rest_bubbles()

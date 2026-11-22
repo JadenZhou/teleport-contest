@@ -35,6 +35,7 @@ import { savelev } from './save.js';
 import { create_levelfile, level_info, open_levelfile } from './files.js';
 import { getlev } from './restore.js';
 import { oinit } from './o_init.js';
+import { in_out_region } from './region.js';
 import { close_nhfile } from './sfbase.js';
 import { LFILE_EXISTS, VISITED, WRITING, FREEING } from './const.js';
 import { m_at } from './makemon.js';
@@ -419,9 +420,9 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     let up = (depth(newlevel) < depth(u.uz));
     const newdungeon = (u.uz.dnum !== newlevel.dnum);
     let leaving_tutorial = false;
-    /* familiar, new: a level is always new here (returning to a saved
-       level isn't ported) and never familiar (no bones files);
+    /* familiar: never set (no bones files);
        dist, do_fall_dmg: falling isn't ported */
+    let new_ = false;
     const prev_temperature = g.level.flags?.temperature || 0;
     const was_in_W_tower = In_W_tower(u.ux, u.uy, u.uz);
 
@@ -555,7 +556,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
             level_info(new_ledger).flags &= ~VISITED;
         }
         await mklev();
-        /* new = TRUE; familiar = bones_include_name(svp.plname) */
+        new_ = true; /* made the level */
+        /* familiar = bones_include_name(svp.plname): no bones files */
     } else {
         /* returning to previously visited level; reload it */
         const whynot = { v: '' };
@@ -570,8 +572,8 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         close_nhfile(lnhfp);
         oinit(); /* reassign level dependent obj probabilities */
     }
-    /* reglyph_darkroom(): only changes remembered dark corridor glyphs,
-       and a new level has none yet */
+    /* reglyph_darkroom(): JS remembers no S_darkroom glyphs, and lit
+       corridors out of sight are remembered dark by newsym() */
     /* set_uinwater(0) */
     u.uinwater = 0;
     /* do this prior to level-change pline messages */
@@ -724,10 +726,10 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         if (newdungeon)
             record_achievement('ACH_SOKO');
     } else {
-        if (topo.d_rogue_level?.dlevel
-            && on_level(u.uz, topo.d_rogue_level)) { /* new && Is_rogue_level() */
+        if (new_ && topo.d_rogue_level?.dlevel
+            && on_level(u.uz, topo.d_rogue_level)) { /* Is_rogue_level() */
             throw new Error('goto_level(): the rogue level not ported yet');
-        } else if (topo.d_bigroom_level?.dlevel
+        } else if (new_ && topo.d_bigroom_level?.dlevel
                    && on_level(u.uz, topo.d_bigroom_level)) { /* Is_bigroom() */
             record_achievement('ACH_BGRM');
         }
@@ -754,7 +756,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
 
     /* this was originally done earlier; moved here to be logged after
        any achievement related to entering a dungeon branch */
-    {   /* if (new): always, since returning to a level isn't ported */
+    if (new_) {
         /* describe_level(dloc, 2); livelog_printf(...): no livelog */
         if (g.urole.mnum === PM_TOURIST) {
             more_experienced(level_difficulty(), 0);
@@ -775,10 +777,13 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         throw new Error('goto_level(): obj_delivery() not ported yet');
 
     /* assume this will always return TRUE when changing level */
-    /* (void) in_out_region(u.ux, u.uy): regions aren't ported yet */
-    if (g.regions && g.regions.length)
-        throw new Error('goto_level(): in_out_region() not ported yet');
-    /* if (!new) fix_shop_damage(): the level is always new */
+    /* (void) */ await in_out_region(u.ux, u.uy);
+    if (!new_) {
+        /* fix_shop_damage(): if this level has no shop damage, there's
+           nothing to do; shop repair isn't ported */
+        if (g.level.damagelist)
+            throw new Error('goto_level(): fix_shop_damage() not ported yet');
+    }
 
     /* fall damage? do_fall_dmg is set only when falling, which
        throws above */

@@ -48,7 +48,7 @@ import { t_at, VIBRATING_SQUARE, is_pit, WEB } from './trap.js';
 import { dist2, distmin } from './hacklib.js';
 import { selection_new, selection_free, selection_getpoint,
          selection_setpoint } from './selvar.js';
-import { onscary } from './monmove.js';
+import { onscary, m_postmove_effect } from './monmove.js';
 import { COIN_CLASS, BOULDER, PICK_AXE, DWARVISH_MATTOCK, STATUE, WEAPON_CLASS,
          TOOL_CLASS, objects, WATER_WALKING_BOOTS } from './objects.js';
 import { back_to_cmap, defsyms_explanation } from './pager.js';
@@ -83,7 +83,7 @@ import { dotrap } from './trap.js';
 import { immune_to_trap, into_vs_onto, u_locomotion, trapname,
          TRAPNUM } from './trap.js';
 import { TRAP_CLEARLY_IMMUNE } from './const.js';
-import { visible_region_at } from './region.js';
+import { visible_region_at, reg_damg, in_out_region } from './region.js';
 import { paranoid_query } from './cmd.js';
 import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
          IS_SINK } from './const.js';
@@ -2403,6 +2403,7 @@ async function avoid_trap_andor_region(x, y) {
     const u = game.u;
     const ctx = game.context;
     let trap = null;
+    let newreg, oldreg;
     const Hallucination = uhave(HALLUC);
 
     /* treat entering a visible gas cloud region like entering a trap */
@@ -2410,8 +2411,25 @@ async function avoid_trap_andor_region(x, y) {
         /* skip if player used 'm' prefix or is moving recklessly */
         && (!ctx.nopick || ctx.run)
         /* check for region(s) */
-        && visible_region_at(x, y))
-        throw new Error('avoid_trap_andor_region(): entering a visible region (reg_damg) not ported yet');
+        && (newreg = visible_region_at(x, y)) != null
+        && ((oldreg = visible_region_at(u.ux, u.uy)) == null
+            /* if moving from one region into another, only ask for
+               confirmation if the one potentially being entered inflicts
+               damage (poison gas) and the one being exited doesn't (vapor) */
+            || (reg_damg(newreg) > 0 && reg_damg(oldreg) === 0))
+        /* check whether attempted move will be viable */
+        && await test_move(u.ux, u.uy, u.dx, u.dy, TEST_MOVE)
+        /* we don't override confirmation for poison resistance since the
+           region also hinders hero's vision even if/when no damage is done */
+    ) {
+        const qbuf = `${u_locomotion("step")} into that ${
+            (reg_damg(newreg) > 0) ? "poison gas" : "vapor"} cloud?`;
+        if (!await paranoid_query(ParanoidConfirm(), upstart(qbuf))) {
+            nomul(0);
+            ctx.move = 0;
+            return true;
+        }
+    }
 
     /* maybe ask player for confirmation before walking into known trap */
     if (ParanoidTrap() && !Stunned() && !Confusion()
@@ -2835,8 +2853,9 @@ async function domove_core() {
     if (Punished())
         throw new Error('domove_core(): drag_ball() not ported yet');
 
-    /* Check regions entering/leaving: in_out_region() -- regions aren't
-       ported */
+    /* Check regions entering/leaving */
+    if (!(await in_out_region(x, y)))
+        return;
 
     mtmp = m_at(x, y);
     /* mtmp can be null at this point */
@@ -2845,7 +2864,7 @@ async function domove_core() {
     u.ux += u.dx;
     u.uy += u.dy;
 
-    /* m_postmove_effect(&youmonst): only for poison-trail forms */
+    await m_postmove_effect(game.youmonst);
 
     if (mtmp) {
         if (displaceu.val) {

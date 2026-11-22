@@ -38,7 +38,7 @@ import { find_defensive, find_offensive, find_misc,
 import { mattacku } from './mhitu.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
-import { visible_region_at, create_gas_cloud } from './region.js';
+import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
 import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
@@ -431,8 +431,10 @@ export async function monflee(mtmp, fleetime, first, fleemsg) {
             }
         }
 
-        if (mtmp.data === mons[M.PM_VROCK] && !mtmp.mspec_used)
-            throw new Error('monflee(): vrock create_gas_cloud() not ported yet');
+        if (mtmp.data === mons[M.PM_VROCK] && !mtmp.mspec_used) {
+            mtmp.mspec_used = 75 + rn2(25);
+            await create_gas_cloud(mtmp.mx, mtmp.my, 5, 8);
+        }
 
         mtmp.mflee = 1;
     }
@@ -1684,14 +1686,13 @@ export async function m_move(mtmp, after) {
         if ((mfp.info[chi] & ALLOW_MDISP) !== 0)
             throw new Error('m_move(): mdisplacem() not ported yet');
 
-        /* if (!m_in_out_region(mtmp, nix, niy)) return MMOVE_DONE:
-           m_in_out_region() is not ported yet; gas clouds, the only
-           regions so far, have no can_enter/can_leave callbacks */
+        if (!(await m_in_out_region(mtmp, nix, niy)))
+            return MMOVE_DONE;
 
         if ((mfp.info[chi] & ALLOW_ROCK) && m_can_break_boulder(mtmp))
             throw new Error('m_move(): m_break_boulder() not ported yet');
 
-        m_postmove_effect(mtmp);
+        await m_postmove_effect(mtmp);
 
         /* move a normal monster */
         /* remove_monster(omx, omy): game.level.monsters is a list keyed
@@ -1718,13 +1719,25 @@ function m_can_break_boulder(mtmp) {
 }
 
 // C ref: monmove.c m_postmove_effect()
-function m_postmove_effect(mtmp) {
-    if (mtmp.data === mons[M.PM_HEZROU]
-        || (mtmp.data === mons[M.PM_STEAM_VORTEX] && !mtmp.mcan))
-        throw new Error('m_postmove_effect(): create_gas_cloud() not ported yet');
+/* do whatever effects monster has after moving.
+   called for both monsters and polyed hero.
+   for hero, called after location changes,
+   to prevent spam messages for hero getting enveloped in a cloud.
+   for monsters, called before location changes,
+   because monsters don't have "previous location" field */
+export async function m_postmove_effect(mtmp) {
+    const is_u = (mtmp === game.youmonst);
+    const x = is_u ? game.u.ux0 : mtmp.mx,
+          y = is_u ? game.u.uy0 : mtmp.my;
+
+    /* Hezrous create clouds of stench. This does not cost a move. */
+    if (mtmp.data === mons[M.PM_HEZROU]) /* stench */
+        await create_gas_cloud(x, y, 1, 8);
+    else if (mtmp.data === mons[M.PM_STEAM_VORTEX] && !mtmp.mcan)
+        await create_gas_cloud(x, y, 1, 0); /* harmless vapor */
 }
 // C ref: monmove.c m_everyturn_effect()
-export function m_everyturn_effect(mtmp) {
+export async function m_everyturn_effect(mtmp) {
     const is_u = (mtmp === game.youmonst);
     const x = is_u ? game.u.ux : mtmp.mx,
           y = is_u ? game.u.uy : mtmp.my;
@@ -1734,7 +1747,7 @@ export function m_everyturn_effect(mtmp) {
            present, or when flowing under closed doors so that visibility
            changes aren't mixed with messages about doing such */
         if (!closed_door(x, y) && !visible_region_at(x, y))
-            create_gas_cloud(x, y, 1, 0); /* harmless vapor */
+            await create_gas_cloud(x, y, 1, 0); /* harmless vapor */
     }
 }
 
