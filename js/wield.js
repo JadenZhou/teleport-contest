@@ -693,3 +693,78 @@ export function freehand() {
     return (!uwep || !welded(uwep)
             || (!bimanual(uwep) && (!uarms || !uarms.cursed)));
 }
+
+// C ref: wield.c wield_tool()
+/* used for #rub and for applying pick-axe, whip, grappling hook or polearm */
+export async function wield_tool(obj,
+                                 verb) { /* "rub",&c */
+    if (game.uwep && obj === game.uwep)
+        return true; /* nothing to do if already wielding it */
+
+    if (!verb)
+        verb = "wield";
+    const what = xname_wl(obj);
+    let more_than_1 = (obj.quan > 1 || what.includes("pair of ")
+                       || what.includes("s of "));
+
+    if (obj.owornmask & (W_ARMOR | W_ACCESSORY)) {
+        await You_cant(`${verb} ${yname_wl(obj)} while wearing ${
+            more_than_1 ? "them" : "it"}.`);
+        return false;
+    }
+    if (game.uwep && welded(game.uwep)) {
+        if (game.flags.verbose) {
+            let hand = body_part(HAND);
+
+            if (bimanual(game.uwep))
+                hand = makeplural(hand);
+            if (what.includes("pair of "))
+                more_than_1 = false;
+            await pline(`Since your weapon is welded to your ${hand}, you cannot ${
+                verb} ${more_than_1 ? "those" : "that"} ${xname_wl(obj)}.`);
+        } else {
+            await You_cant("do that.");
+        }
+        return false;
+    }
+    if (cantwield(game.youmonst.data)) {
+        await You_cant(`hold ${more_than_1 ? "them" : "it"} strongly enough.`);
+        return false;
+    }
+    /* check shield */
+    if (game.uarms && bimanual(obj)) {
+        await You(`cannot ${verb} a two-handed ${
+            (obj.oclass === WEAPON_CLASS) ? "weapon" : "tool"} while wearing a shield.`);
+        return false;
+    }
+
+    if (game.uquiver === obj)
+        setuqwep(null);
+    if (game.uswapwep === obj) {
+        await doswapweapon();
+        /* doswapweapon might fail */
+        if (game.uswapwep === obj)
+            return false;
+    } else {
+        const oldwep = game.uwep;
+
+        if (will_weld(obj)) {
+            /* hope none of ready_weapon()'s early returns apply here... */
+            await ready_weapon(obj);
+        } else {
+            await You(`now wield ${doname_wl(obj)}.`);
+            setuwep(obj);
+        }
+        if (game.flags.pushweapon && oldwep && game.uwep !== oldwep)
+            setuswapwep(oldwep);
+    }
+    if (game.uwep && game.uwep !== obj)
+        return false; /* rewielded old object after dying */
+    /* applying weapon or tool that gets wielded ends two-weapon combat */
+    if (game.u.twoweap)
+        await untwoweapon();
+    if (obj.oclass !== WEAPON_CLASS)
+        game.unweapon = true;
+    return true;
+}
+import { xname as xname_wl, yname as yname_wl, doname as doname_wl } from './objnam.js';

@@ -282,8 +282,64 @@ export async function dorub() {
     const obj = await getobj("rub", rub_ok, GETOBJ_NOFLAGS);
     if (!obj)
         return ECMD_CANCEL;
-    throw new Error('dorub(): rubbing (wield_tool()/dorub effects) not ported yet');
+    if (obj.oclass === O.GEM_CLASS || obj.oclass === O.FOOD_CLASS) {
+        if (is_graystone(obj)) {
+            throw new Error('dorub(): use_stone() not ported yet');
+        } else if (obj.otyp === O.LUMP_OF_ROYAL_JELLY) {
+            throw new Error('dorub(): use_royal_jelly() not ported yet');
+        } else {
+            await pline("Sorry, I don't know how to use that.");
+            return ECMD_OK;
+        }
+    }
+    if (obj !== game.uwep) {
+        if (await wield_tool_ap(obj, "rub")) {
+            /* cmdq_add_ec(CQ_CANNED, dorub);
+               cmdq_add_key(CQ_CANNED, obj->invlet); */
+            if (!game.cmdq) game.cmdq = [];
+            game.cmdq.push({ typ: 'ec', fn: 'dorub' });
+            game.cmdq.push({ typ: 'key', key: obj.invlet });
+            return ECMD_TIME;
+        }
+        return ECMD_OK;
+    }
+
+    /* now uwep is obj */
+    const uwep = game.uwep;
+    if (uwep.otyp === MAGIC_LAMP) {
+        if (uwep.spe > 0 && !rn2(3)) {
+            /* check_unpaid_usage(uwep, TRUE): unusual item use */
+            if (uwep.unpaid && game.u.ushops && game.u.ushops[0])
+                throw new Error('dorub(): check_unpaid_usage() not ported yet');
+            /* bones preparation:  perform the lamp transformation
+               before releasing the djinni in case the latter turns out
+               to be fatal (a hostile djinni has no chance to attack yet,
+               but an indebted one who grants a wish might bestow an
+               artifact which blasts the hero with lethal results) */
+            uwep.otyp = OIL_LAMP;
+            uwep.spe = 0; /* for safety */
+            uwep.age = rn1_ap(500, 1000);
+            if (uwep.lamplit)
+                throw new Error('dorub(): begin_burn() of a lit lamp not ported yet');
+            await djinni_from_bottle_ap(uwep);
+            discover_object(MAGIC_LAMP, true, true, true); /* makeknown() */
+            /* update_inventory(): no perm_invent */
+        } else if (rn2(2)) {
+            await You(`${!Blind() ? "see a puff of" : "smell"} smoke.`);
+        } else
+            await pline(nothing_happens_ap);
+    } else if (obj.otyp === BRASS_LANTERN) {
+        /* message from Adventure */
+        await pline("Rubbing the electric lamp is not particularly rewarding.");
+        await pline("Anyway, nothing exciting happens.");
+    } else
+        await pline(nothing_happens_ap);
+    return ECMD_TIME;
 }
+import { wield_tool as wield_tool_ap } from './wield.js';
+import { rn1 as rn1_ap } from './rng.js';
+import { djinni_from_bottle as djinni_from_bottle_ap } from './potion.js';
+import { nothing_happens as nothing_happens_ap } from './const.js';
 
 // C ref: apply.c apply_ok() -- getobj callback for object to apply
 function apply_ok(obj) {
