@@ -22,7 +22,7 @@ import {
     ALLOW_U, ALLOW_M, ALLOW_TM, ALLOW_ALL, ALLOW_MDISP, ALLOW_TRAPS,
     ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
     NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
-    M_AP_MONSTER, MON_DETACH, W_AMUL, NON_PM, NATTK, Is_rogue_level,
+    M_AP_MONSTER, MON_DETACH, MON_MIGRATING, W_AMUL, NON_PM, NATTK, Is_rogue_level,
     G_GENOD, STRAT_WAITMASK, STRAT_WAITFORU, BOLT_LIM, W_ARM,
 } from './const.js';
 import { dist2 } from './hacklib.js';
@@ -72,7 +72,8 @@ import { attacktype_fordmg, resists_poison } from './mondata.js';
 import { visible_region_at, cmap_to_glyph, S_poisoncloud, create_gas_cloud } from './region.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
-import { grow_up } from './makemon.js';
+import { grow_up, goodpos } from './makemon.js';
+import { enexto, rloc_to_core } from './teleport.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
 import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE, WT_TOOMUCH_DIAGONAL } from './const.js';
@@ -259,6 +260,84 @@ function mon_leaving_level(mon) {
             seemimic(mon);
         /* fill_pit(mx, my): boulders dropping into pits not ported */
         newsym(mx, my);
+    }
+}
+
+// C ref: mon.c mnearto()
+/* make monster mtmp next to you (if possible);
+   might place monst on far side of a wall or boulder */
+/* returns 0: couldn't place; 1: placed (maybe at an alternate spot);
+   2: placed and moved another monster out of the way */
+export async function mnearto(
+    mtmp,
+    x,
+    y,
+    move_other, /* make sure mtmp gets to x, y! so move m_at(x, y) */
+    rlocflags)
+{
+    let othermon = null;
+    let newx, newy;
+    const mm = { x: 0, y: 0 };
+    let res = 1;
+
+    if (mtmp.mx === x && mtmp.my === y && m_at(x, y) === mtmp)
+        return res;
+
+    if (move_other && (othermon = m_at(x, y)) !== null)
+        throw new Error('mnearto(): moving another monster out of the way not ported yet');
+
+    newx = x;
+    newy = y;
+    if (!goodpos(newx, newy, mtmp, 0)) {
+        /* Actually we have real problems if enexto ever fails.
+         * Migrating_mons that need to be placed will cause
+         * no end of trouble.
+         */
+        if (!enexto(mm, newx, newy, mtmp.data) || !isok(mm.x, mm.y))
+            return 0;
+        newx = mm.x;
+        newy = mm.y;
+    }
+    /* [this doesn't honor the 'montelecontrol' option] */
+    await rloc_to_core(mtmp, newx, newy, rlocflags); /* rloc_to_flag() */
+
+    return res;
+}
+
+// C ref: mon.c relmon()
+/* remove a monster from the fmon list (and the map); 'list' is the name
+   of the game list to put it on ('migrating_mons' or 'mydogs') or null */
+export function relmon(mon, list) {
+    const g = game;
+
+    if (!g.fmon)
+        throw new Error('relmon: no fmon available.'); /* panic() */
+
+    /* take 'mon' off the map */
+    mon_leaving_level(mon);
+
+    /* remove 'mon' from the 'fmon' list */
+    if (mon === g.fmon) {
+        g.fmon = g.fmon.nmon;
+    } else {
+        let mtmp;
+
+        for (mtmp = g.fmon; mtmp; mtmp = mtmp.nmon)
+            if (mtmp.nmon === mon) {
+                mtmp.nmon = mon.nmon;
+                break;
+            }
+        if (!mtmp)
+            throw new Error('relmon: mon not in list.'); /* panic() */
+    }
+
+    if (list) {
+        /* insert into gm.mydogs or gm.migrating_mons */
+        mon.nmon = g[list] || null;
+        g[list] = mon;
+    } else {
+        /* orphan has no next monster */
+        mon.nmon = null;
     }
 }
 
@@ -1188,12 +1267,14 @@ async function movemon_singlemon(mtmp) {
     }
 
     /* one dead monster needs to perform a move after death: vault guard */
-    if (mtmp.isgd && !mtmp.mx)
+    if (mtmp.isgd && !mtmp.mx && !((mtmp.mstate || 0) & MON_MIGRATING))
         throw new Error('movemon_singlemon(): gd_move() not ported yet');
     if (DEADMONSTER(mtmp))
         return false;
 
-    /* monster isn't on this map anymore: migration isn't ported yet */
+    /* monster isn't on this map anymore */
+    if (mtmp.mstate) /* mon_offmap(): mstate != MON_FLOOR */
+        return false;
 
     await m_everyturn_effect(mtmp);
 
@@ -2636,7 +2717,7 @@ export async function m_consume_obj(mtmp, otmp) {
         if (grow) {
             if ((ispet && mtmp.m_lev < mtmp.data.mlevel + 15)
                 || !ispet)
-                grow_up(mtmp, null);
+                await grow_up(mtmp, null);
         }
         if (mstone)
             throw new Error('m_consume_obj(): monster stoning not ported yet');

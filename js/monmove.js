@@ -33,8 +33,8 @@ import { splitobj, obj_extract_self } from './mkobj.js';
 import { distant_name, doname } from './objnam.js';
 import { mpickobj } from './steal.js';
 import { You_hear } from './sounds.js';
-import { find_defensive, find_offensive, find_misc,
-         cures_stoning, mcould_eat_tin } from './muse.js';
+import { find_defensive, find_offensive, find_misc, use_defensive,
+         use_misc, cures_stoning, mcould_eat_tin } from './muse.js';
 import { mattacku } from './mhitu.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
@@ -735,10 +735,12 @@ export async function dochug(mtmp) {
     await distfleeck(mtmp, d);
 
     /* search for and potentially use defensive or miscellaneous items. */
-    if (find_defensive(mtmp, false)) {
-        throw new Error('use_defensive() not ported yet');
-    } else if (find_misc(mtmp)) {
-        throw new Error('use_misc() not ported yet');
+    if (await find_defensive(mtmp, false)) {
+        if (await use_defensive(mtmp) !== 0)
+            return 1;
+    } else if (await find_misc(mtmp)) {
+        if (await use_misc(mtmp) !== 0)
+            return 1;
     }
 
     /* Demonic Blackmail! */
@@ -804,7 +806,8 @@ export async function dochug(mtmp) {
 
         if (!status)
             status = await m_move(mtmp, 0);
-        /* if (mon_offmap(mtmp)) return 1: migration isn't ported yet */
+        if (mon_offmap(mtmp))
+            return 1;
         if (status !== MMOVE_DIED)
             await distfleeck(mtmp, d); /* recalc */
 
@@ -983,6 +986,37 @@ export function linedup(ax, ay, bx, by, boulderhandling) {
     }
     return false;
 }
+// C ref: mthrowu.c linedup_callback()
+/* Return TRUE if fnc returns TRUE for any location between <ax,ay> and
+   <bx,by> (excluding <bx,by> itself, including <ax,ay>) */
+export function linedup_callback(ax, ay, bx, by, fnc) {
+    let dx, dy;
+
+    /* These two values are set for use after successful return. */
+    game.tbx = ax - bx;
+    game.tby = ay - by;
+
+    /* sometimes displacement makes a monster think that you're at its
+       own location; prevent it from throwing and zapping in that case */
+    if (!game.tbx && !game.tby)
+        return false;
+
+    /* straight line, orthogonal to the map or diagonal */
+    if ((!game.tbx || !game.tby || Math.abs(game.tbx) === Math.abs(game.tby))
+        && distmin(game.tbx, game.tby, 0, 0) < BOLT_LIM) {
+        dx = Math.sign(ax - bx), dy = Math.sign(ay - by);
+        do {
+            /* <bx,by> is guaranteed to eventually converge with <ax,ay> */
+            bx += dx, by += dy;
+            if (blocking_terrain(bx, by))
+                return false;
+            if (fnc(bx, by))
+                return true;
+        } while (bx !== ax || by !== ay);
+    }
+    return false;
+}
+
 // C ref: mthrowu.c blocking_terrain()
 function blocking_terrain(x, y) {
     if (!isok(x, y) || IS_OBSTRUCTED(game.level.at(x, y).typ)
@@ -1064,7 +1098,7 @@ const magical = [AMULET_CLASS, POTION_CLASS, SCROLL_CLASS, WAND_CLASS,
                  RING_CLASS, SPBOOK_CLASS];
 
 // ── C ref: monmove.c mon_would_take_item() ──
-function mon_would_take_item(mtmp, otmp) {
+export function mon_would_take_item(mtmp, otmp) {
     /* pctload = (curr_mon_load(mtmp) * 100) / max_mon_load(mtmp) */
     const pctload = () => Math.trunc((curr_mon_load(mtmp) * 100)
                                      / max_mon_load(mtmp));
@@ -1598,8 +1632,8 @@ export async function m_move(mtmp, after) {
 
         const cnt = mfndpos(mtmp, mfp, flag);
         if (cnt === 0 && !is_unicorn(mtmp.data)) {
-            if (find_defensive(mtmp, true))
-                throw new Error('m_move(): use_defensive() not ported yet');
+            if (await find_defensive(mtmp, true) && await use_defensive(mtmp))
+                return MMOVE_DONE;
             return MMOVE_NOMOVES;
         }
         chcnt = 0;

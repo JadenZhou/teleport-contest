@@ -21,7 +21,21 @@ import { M1_CARNIVORE, M1_HERBIVORE, S_MIMIC } from './monsters.js';
 import { LARGEST_INT, M_AP_NOTHING } from './const.js';
 import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
-import { on_level } from './dungeon.js';
+import { on_level, ledger_to_dnum, ledger_to_dlev, depth,
+         In_W_tower } from './dungeon.js';
+import { relmon, mnearto } from './mon.js';
+import { stairway_find_from, stairway_find, somexy } from './mklev.js';
+import { in_rooms } from './hack.js';
+import { rloc } from './teleport.js';
+import { rn1 } from './rng.js';
+import { MIGR_APPROX_XY, MIGR_WITH_HERO, MIGR_STAIRS_UP, MIGR_STAIRS_DOWN,
+         MIGR_LADDER_UP, MIGR_LADDER_DOWN, MIGR_SSTAIRS, MIGR_PORTAL,
+         MIGR_RANDOM, MIGR_LEFTOVERS, ROOMOFFSET, COLNO, ROWNO,
+         } from './const.js';
+import { vision_recalc } from './vision.js';
+import { PM_FLAMING_SPHERE, PM_SHOCKING_SPHERE, PM_BABY_GOLD_DRAGON,
+         PM_FIRE_VORTEX, PM_FIRE_ELEMENTAL, PM_GOLD_DRAGON,
+         S_LIGHT } from './monsters.js';
 import { mintrap } from './trap.js';
 import { NO_TRAP_FLAGS } from './const.js';
 import { pline, canseemon, newsym } from './display.js';
@@ -233,7 +247,7 @@ function levl_follower(mtmp) {
 }
 
 // C ref: steal.c mon_has_amulet()
-function mon_has_amulet(mtmp) {
+export function mon_has_amulet(mtmp) {
     for (const otmp of mtmp.minvent || [])
         if (otmp.otyp === AMULET_OF_YENDOR)
             return true;
@@ -378,6 +392,66 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
     }
 }
 
+/* C ref: mondata.h emits_light() */
+function emits_light(ptr) {
+    return (ptr.mlet === S_LIGHT || ptr === mons[PM_FLAMING_SPHERE]
+            || ptr === mons[PM_SHOCKING_SPHERE]
+            || ptr === mons[PM_BABY_GOLD_DRAGON]
+            || ptr === mons[PM_FIRE_VORTEX])
+        ? 1
+        : (ptr === mons[PM_FIRE_ELEMENTAL]
+           || ptr === mons[PM_GOLD_DRAGON]) ? 1 : 0;
+}
+
+// C ref: dog.c migrate_to_level()
+export function migrate_to_level(
+    mtmp,
+    tolev, /* destination level */
+    xyloc, /* MIGR_xxx destination xy location: */
+    cc)    /* optional destination coordinates */
+{
+    const u = game.u;
+    const new_lev = { dnum: 0, dlevel: 0 };
+    let xyflags;
+    const mx = mtmp.mx, my = mtmp.my; /* <mx,my> needed below */
+
+    if (mtmp.mleashed)
+        throw new Error('migrate_to_level(): m_unleash() not ported yet');
+
+    /* prepare to take mtmp off the map */
+    const num_segs = mon_leave(mtmp);
+    /* take off map and move mtmp from fmon list to migrating_mons */
+    relmon(mtmp, 'migrating_mons'); /* mtmp->mx,my retain their value */
+    mtmp.mstate = (mtmp.mstate || 0) | MON_MIGRATING;
+
+    new_lev.dnum = ledger_to_dnum(tolev);
+    new_lev.dlevel = ledger_to_dlev(tolev);
+    /* overload mtmp->[mx,my], mtmp->[mux,muy], and mtmp->mtrack[] as
+       destination codes */
+    xyflags = (depth(new_lev) < depth(u.uz)) ? 1 : 0; /* 1 => up */
+    if (In_W_tower(mx, my, u.uz))
+        xyflags |= 2;
+    mtmp.wormno = num_segs;
+    mtmp.mlstmv = game.moves;
+    if (!mtmp.mtrack)
+        mon_track_clear(mtmp);
+    /* (mtrack[] entries are replaced rather than modified: JS shares the
+       coordinate objects that mon_track_add() shifts along) */
+    mtmp.mtrack[2] = { x: u.uz.dnum,  /* migrating from this dungeon */
+                       y: u.uz.dlevel }; /* migrating from this dungeon level */
+    mtmp.mtrack[1] = { x: cc ? cc.x : mx,
+                       y: cc ? cc.y : my };
+    mtmp.mtrack[0] = { x: xyloc, y: xyflags };
+    mtmp.mux = new_lev.dnum;
+    mtmp.muy = new_lev.dlevel;
+    mtmp.mx = mtmp.my = 0; /* mx==0 implies migrating */
+
+    /* don't extinguish a mobile light; it still exists but has changed
+       from local (monst->mx > 0) to global (mx==0, not on this level) */
+    if (emits_light(mtmp.data))
+        vision_recalc(0);
+}
+
 /* note: always reset when used so doesn't need to be part of struct 'g' */
 let failed_arrivals = null;
 
@@ -458,9 +532,8 @@ export async function losedogs() {
 }
 
 // C ref: dog.c mon_arrive()
-// Only arrival with the hero (With_you) is ported; monsters migrating
-// independently (mon_catchup_elapsed_time(), the MIGR_* placement switch)
-// and long worm tails are not ported yet.
+// Long worm tails, portal arrivals and failed arrivals (m_into_limbo())
+// are not ported yet.
 export async function mon_arrive(mtmp, when) {
     const g = game;
     const u = g.u;
@@ -487,8 +560,13 @@ export async function mon_arrive(mtmp, when) {
 
     /* make sure mnexto(rloc_to(set_apparxy())) doesn't use stale data */
     mtmp.mux = u.ux, mtmp.muy = u.uy;
-    /* xyloc/xyflags/xlocale/ylocale/fromdlev come from mtrack[0..2];
-       only used for independent arrivals, not ported yet */
+    if (!mtmp.mtrack)
+        mon_track_clear(mtmp);
+    const xyloc = mtmp.mtrack[0].x;
+    const xyflags = mtmp.mtrack[0].y;
+    let xlocale = mtmp.mtrack[1].x;
+    let ylocale = mtmp.mtrack[1].y;
+    const fromdlev = { dnum: mtmp.mtrack[2].x, dlevel: mtmp.mtrack[2].y };
     mon_track_clear(mtmp);
     /* restore_cham(mtmp) */
     if (u.uprops?.[PROT_FROM_SHAPE_CHANGERS]?.intrinsic
@@ -513,10 +591,117 @@ export async function mon_arrive(mtmp, when) {
         mtmp.mstate &= ~MON_STILL_ARRIVING;
         return;
     }
+    /* (when == Wiz_arrive: the Wizard's resurrect() isn't ported) */
     /*
      * The monster arrived on this level independently of the player.
+     * Its coordinate fields were overloaded for use as flags that
+     * specify its final destination.
      */
-    throw new Error('mon_arrive(): independent arrival (mon_catchup_elapsed_time(), MIGR_* placement) not ported yet');
+    let wander, stway;
+
+    if (mtmp.mlstmv < g.moves - 1) {
+        /* heal monster for time spent in limbo */
+        const nmv = g.moves - 1 - mtmp.mlstmv;
+
+        mon_catchup_elapsed_time(mtmp, nmv);
+
+        /* let monster move a bit on new level (see placement code below) */
+        wander = Math.min(nmv, 8);
+    } else
+        wander = 0;
+
+    switch (xyloc) {
+    case MIGR_APPROX_XY: /* {x,y}locale set above */
+        break;
+    case MIGR_EXACT_XY:
+        wander = 0;
+        break;
+    case MIGR_WITH_HERO:
+        xlocale = u.ux, ylocale = u.uy;
+        break;
+    case MIGR_STAIRS_UP:
+        if ((stway = stairway_find_from(fromdlev, false)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_STAIRS_DOWN:
+        if ((stway = stairway_find_from(fromdlev, false)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_LADDER_UP:
+        if ((stway = stairway_find_from(fromdlev, true)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_LADDER_DOWN:
+        if ((stway = stairway_find_from(fromdlev, true)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_SSTAIRS:
+        if ((stway = stairway_find(fromdlev)) !== null) {
+            xlocale = stway.sx;
+            ylocale = stway.sy;
+        }
+        break;
+    case MIGR_PORTAL:
+        throw new Error('mon_arrive(): MIGR_PORTAL arrival not ported yet');
+    default:
+    case MIGR_RANDOM:
+        xlocale = ylocale = 0;
+        break;
+    }
+
+    if (((mtmp.migflags || 0) & MIGR_LEFTOVERS) !== 0) {
+        /* Pick up the rest of the MIGR_TO_SPECIES objects */
+        if (g.migrating_objs)
+            throw new Error('mon_arrive(): deliver_obj_to_mon() not ported yet');
+    }
+
+    if (xlocale && wander) {
+        /* monster moved a bit; pick a nearby location */
+        /* mnearto() deals w/stone, et al */
+        const r = in_rooms(xlocale, ylocale, 0);
+
+        if (r && r.length) {
+            const c = { x: 0, y: 0 };
+
+            /* somexy() handles irregular rooms */
+            if (somexy(g.level.rooms[r.charCodeAt(0) - ROOMOFFSET], c))
+                xlocale = c.x, ylocale = c.y;
+            else
+                xlocale = ylocale = 0;
+        } else { /* not in a room */
+            let i, j;
+
+            i = Math.max(1, xlocale - wander);
+            j = Math.min(COLNO - 1, xlocale + wander);
+            xlocale = rn1(j - i, i);
+            i = Math.max(0, ylocale - wander);
+            j = Math.min(ROWNO - 1, ylocale + wander);
+            ylocale = rn1(j - i, i);
+        }
+    } /* moved a bit */
+
+    mtmp.mx = 0; /*(already is 0)*/
+    mtmp.my = xyflags;
+
+    let failed_to_place;
+    if (xlocale)
+        failed_to_place = !(await mnearto(mtmp, xlocale, ylocale, false,
+                                          RLOC_NOMSG));
+    else
+        failed_to_place = !(await rloc(mtmp, RLOC_NOMSG));
+
+    if (failed_to_place)
+        /* relmon(mtmp, &failed_arrivals): losedogs() would deal with it */
+        throw new Error('mon_arrive(): failed arrival (m_into_limbo()) not ported yet');
+    mtmp.mstate &= ~MON_STILL_ARRIVING;
 }
 
 // C ref: dog.c mon_catchup_elapsed_time()

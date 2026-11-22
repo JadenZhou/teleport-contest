@@ -12,7 +12,7 @@ import { m_at, grow_up } from './makemon.js';
 import { monkilled, zombie_maker, monnear, seemimic } from './mon.js';
 import { thrwmm, spitmm, breamm } from './mthrowu.js';
 import { canspotmon, newsym, pline, map_invisible } from './display.js';
-import { Monnam, mon_nam_too } from './do_name.js';
+import { Monnam, mon_nam, mon_nam_too } from './do_name.js';
 import { is_elf, is_orc } from './mondata.js';
 import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC, W_SADDLE, W_ARMG,
@@ -654,7 +654,7 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
         /* caveat: above digestion handling doesn't keep `pa' up to date */
 
         return (M_ATTK_DEF_DIED
-                | (grow_up(magr, mdef) ? 0 : M_ATTK_AGR_DIED));
+                | ((await grow_up(magr, mdef)) ? 0 : M_ATTK_AGR_DIED));
     }
     return (mhm.hitflags === M_ATTK_AGR_DIED) ? M_ATTK_AGR_DIED : M_ATTK_HIT;
 }

@@ -871,3 +871,121 @@ export function olfaction(mdat) {
         return false;
     return true;
 }
+
+// C ref: mondata.c same_race()
+/* returns True if monster can be considered the same race as another */
+export function same_race(pm1, pm2) {
+    const let1 = pm1.mlet, let2 = pm2.mlet;
+    const is_giant = ptr => (ptr.mflags2 & M.M2_GIANT) !== 0;
+    const is_golem = ptr => ptr.mlet === M.S_GOLEM;
+    const is_mind_flayer = ptr => (ptr === M.mons[M.PM_MIND_FLAYER]
+                                   || ptr === M.mons[M.PM_MASTER_MIND_FLAYER]);
+    const is_unicorn = ptr => (ptr.mlet === M.S_UNICORN
+                               && (ptr.mflags2 & M.M2_JEWELS) !== 0);
+    const is_rider = ptr => (ptr === M.mons[M.PM_DEATH]
+                             || ptr === M.mons[M.PM_FAMINE]
+                             || ptr === M.mons[M.PM_PESTILENCE]);
+    const is_minion = ptr => (ptr.mflags2 & M.M2_MINION) !== 0;
+    const is_longworm = ptr => (ptr === M.mons[M.PM_BABY_LONG_WORM]
+                                || ptr === M.mons[M.PM_LONG_WORM]
+                                || ptr === M.mons[M.PM_LONG_WORM_TAIL]);
+
+    if (pm1 === pm2)
+        return true; /* exact match */
+    /* player races have their own predicates */
+    if (is_human(pm1))
+        return is_human(pm2);
+    if (is_elf(pm1))
+        return is_elf(pm2);
+    if (is_dwarf(pm1))
+        return is_dwarf(pm2);
+    if (is_gnome(pm1))
+        return is_gnome(pm2);
+    if (is_orc(pm1))
+        return is_orc(pm2);
+    /* other creatures are less precise */
+    if (is_giant(pm1))
+        return is_giant(pm2); /* open to quibbling here */
+    if (is_golem(pm1))
+        return is_golem(pm2); /* even moreso... */
+    if (is_mind_flayer(pm1))
+        return is_mind_flayer(pm2);
+    if (let1 === M.S_KOBOLD || pm1 === M.mons[M.PM_KOBOLD_ZOMBIE]
+        || pm1 === M.mons[M.PM_KOBOLD_MUMMY])
+        return (let2 === M.S_KOBOLD || pm2 === M.mons[M.PM_KOBOLD_ZOMBIE]
+                || pm2 === M.mons[M.PM_KOBOLD_MUMMY]);
+    if (let1 === M.S_OGRE)
+        return (let2 === M.S_OGRE);
+    if (let1 === M.S_NYMPH)
+        return (let2 === M.S_NYMPH);
+    if (let1 === M.S_CENTAUR)
+        return (let2 === M.S_CENTAUR);
+    if (is_unicorn(pm1))
+        return is_unicorn(pm2);
+    if (let1 === M.S_DRAGON)
+        return (let2 === M.S_DRAGON);
+    if (let1 === M.S_NAGA)
+        return (let2 === M.S_NAGA);
+    /* other critters get steadily messier */
+    if (is_rider(pm1))
+        return is_rider(pm2); /* debatable */
+    if (is_minion(pm1))
+        return is_minion(pm2); /* [needs work?] */
+    /* tengu don't match imps (first test handled case of both being tengu) */
+    if (pm1 === M.mons[M.PM_TENGU] || pm2 === M.mons[M.PM_TENGU])
+        return false;
+    if (let1 === M.S_IMP)
+        return (let2 === M.S_IMP);
+    /* and minor demons (imps) don't match major demons */
+    else if (let2 === M.S_IMP)
+        return false;
+    if (is_demon(pm1))
+        return is_demon(pm2);
+    if (is_undead(pm1)) {
+        if (let1 === M.S_ZOMBIE)
+            return (let2 === M.S_ZOMBIE);
+        if (let1 === M.S_MUMMY)
+            return (let2 === M.S_MUMMY);
+        if (let1 === M.S_VAMPIRE)
+            return (let2 === M.S_VAMPIRE);
+        if (let1 === M.S_LICH)
+            return (let2 === M.S_LICH);
+        if (let1 === M.S_WRAITH)
+            return (let2 === M.S_WRAITH);
+        if (let1 === M.S_GHOST)
+            return (let2 === M.S_GHOST);
+    } else if (is_undead(pm2))
+        return false;
+
+    /* check for monsters which grow into more mature forms */
+    if (let1 === let2) {
+        const m1 = monsndx(pm1), m2 = monsndx(pm2);
+        let prv, nxt;
+
+        /* we know m1 != m2 (very first check above); test all smaller
+           forms of m1 against m2, then all larger ones; don't need to
+           make the corresponding tests for variants of m2 against m1 */
+        for (prv = m1, nxt = big_to_little(m1); nxt !== prv;
+             prv = nxt, nxt = big_to_little(nxt))
+            if (nxt === m2)
+                return true;
+        for (prv = m1, nxt = little_to_big(m1); nxt !== prv;
+             prv = nxt, nxt = little_to_big(nxt))
+            if (nxt === m2)
+                return true;
+    }
+    /* not caught by little/big handling */
+    if (pm1 === M.mons[M.PM_GARGOYLE] || pm1 === M.mons[M.PM_WINGED_GARGOYLE])
+        return (pm2 === M.mons[M.PM_GARGOYLE]
+                || pm2 === M.mons[M.PM_WINGED_GARGOYLE]);
+    if (pm1 === M.mons[M.PM_KILLER_BEE] || pm1 === M.mons[M.PM_QUEEN_BEE])
+        return (pm2 === M.mons[M.PM_KILLER_BEE]
+                || pm2 === M.mons[M.PM_QUEEN_BEE]);
+
+    if (is_longworm(pm1))
+        return is_longworm(pm2); /* handles tail */
+    /* [currently there's no reason to bother matching up
+        assorted bugs and blobs with their closest variants] */
+    /* didn't match */
+    return false;
+}

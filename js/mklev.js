@@ -119,6 +119,19 @@ export function stairway_find_from(fromdlev, isladder) {
     return null;
 }
 
+// C ref: stairs.c stairway_find()
+export function stairway_find(fromdlev) {
+    let stway = game.stairs;
+
+    while (stway) {
+        if (stway.tolev.dnum === fromdlev.dnum
+            && stway.tolev.dlevel === fromdlev.dlevel)
+            break;
+        stway = stway.next;
+    }
+    return stway || null;
+}
+
 // C ref: stairs.c stairway_find_dir()
 export function stairway_find_dir(up) {
     for (let s = game.stairs; s; s = s.next)
