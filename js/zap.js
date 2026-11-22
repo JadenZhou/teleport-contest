@@ -501,7 +501,7 @@ export async function poly_obj(obj, id) {
 
     /* no box contents --KAA */
     if (Has_contents(otmp) && otmp.cobj.length)
-        throw new Error('poly_obj(): delete_contents() not ported yet');
+        delete_contents(otmp);
 
     /* 'n' merged objects may be fused into 1 object */
     if (otmp.quan > 1 && (!objects[otmp.otyp].oc_merge
@@ -1004,6 +1004,7 @@ import { M2_DEMON as M2_DEMON_ZY, M2_UNDEAD as M2_UNDEAD_ZY,
 import { killer as killer_zy } from './topten.js';
 import { done as done_zy } from './end.js';
 import { healup as healup_zy } from './potion.js';
+import { delete_contents } from './invent.js';
 /* C ref: mondata.h nonliving() */
 function nonliving_zy(ptr) {
     return (ptr.mflags2 & M2_UNDEAD_ZY) !== 0 || ptr === mons_zy[PM_MANES_ZY]

@@ -1311,7 +1311,7 @@ function set_repo_loc(shkp) {
 
 // C ref: shk.c costly_adjacent()
 /* is <x,y> in shkp's shop's doorway or entry spot or one of its walls? */
-function costly_adjacent(shkp, x, y) {
+export function costly_adjacent(shkp, x, y) {
     if (!shkp || !inhishop(shkp) || !isok(x, y))
         return false;
     const eshkp = shkp.mextra.eshk;

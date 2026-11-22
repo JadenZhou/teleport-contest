@@ -10,6 +10,12 @@
 import { game } from './gstate.js';
 import { thitu } from './mthrowu.js';
 import { obfree } from './invent.js';
+import { get_obj_location } from './shk.js';
+import { tty_display_nhwindow } from './wintty.js';
+import { create_gas_cloud } from './region.js';
+import { A_STR, FREE_ACTION } from './const.js';
+import { the } from './iactions.js';
+import { xname } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { poisoned } from './attrib.js';
 import { A_CON } from './const.js';
@@ -3003,5 +3009,117 @@ export function rnd_nextto_goodpos(xy, mtmp) {
             return true;
         }
     }
+    return false;
+}
+
+// C ref: trap.c chest_trap()
+/* only called when the player is doing something to the chest directly;
+   returns True if chest is destroyed, False if it remains in play */
+export async function chest_trap(obj, bodypart, disarm) {
+    const u = game.u;
+    let otmp = obj;
+    let msg;
+
+    const loc = get_obj_location(obj, 0); /* might be carried */
+    if (loc)
+        obj.ox = loc[0], obj.oy = loc[1];
+
+    otmp.tknown = 0;   /* for xname(); will be set to 1 below */
+    otmp.otrapped = 0; /* trap is one-shot; clear flag first in case
+                        * chest kills you and ends up in bones file */
+    await You(disarm ? "set it off!" : "trigger a trap!");
+    await tty_display_nhwindow(game.WIN_MESSAGE, false);
+    if (Luck() > -13 && rn2(13 + Luck()) > 7) { /* saved by luck */
+        /* trap went off, but good luck prevents damage */
+        switch (rn2(13)) {
+        case 12:
+        case 11:
+            msg = "explosive charge is a dud";
+            break;
+        case 10:
+        case 9:
+            msg = "electric charge is grounded";
+            break;
+        case 8:
+        case 7:
+            msg = "flame fizzles out";
+            break;
+        case 6:
+        case 5:
+        case 4:
+            msg = "poisoned needle misses";
+            break;
+        case 3:
+        case 2:
+        case 1:
+        case 0:
+            msg = "gas cloud blows away";
+            break;
+        default:
+            msg = null;
+            break;
+        }
+        if (msg)
+            await pline(`But luckily the ${msg}!`);
+    } else {
+        switch (rn2(20) ? ((Luck() >= 13) ? 0 : rn2(13 - Luck())) : rn2(26)) {
+        case 25:
+        case 24:
+        case 23:
+        case 22:
+        case 21:
+            throw new Error('chest_trap(): exploding chest not ported yet');
+        case 20:
+        case 19:
+        case 18:
+        case 17:
+            await pline(`A cloud of noxious gas billows from ${the(xname(obj))}.`);
+            if (rn2(3))
+                await poisoned("gas cloud", A_STR, "cloud of poison gas", 15,
+                               false);
+            else
+                await create_gas_cloud(obj.ox, obj.oy, 1, 8);
+            exercise(A_CON, false);
+            break;
+        case 16:
+        case 15:
+        case 14:
+        case 13:
+            await You_feel(`a needle prick your ${body_part(bodypart)}.`);
+            await poisoned("needle", A_CON, "poisoned needle", 10, false);
+            exercise(A_CON, false);
+            break;
+        case 12:
+        case 11:
+        case 10:
+        case 9:
+            throw new Error('chest_trap(): dofiretrap() not ported yet');
+        case 8:
+        case 7:
+        case 6:
+            throw new Error('chest_trap(): electric shock (destroy_items()) not ported yet');
+        case 5:
+        case 4:
+        case 3:
+            if (!(uprop(FREE_ACTION).intrinsic || uprop(FREE_ACTION).extrinsic)) {
+                await pline("Suddenly you are frozen in place!");
+                nomul(-d(5, 6));
+                game.multi_reason = "frozen by a trap";
+                exercise(A_DEX, false);
+                game.nomovemsg = "You can move again."; /* You_can_move_again */
+            } else
+                await You("momentarily stiffen.");
+            break;
+        case 2:
+        case 1:
+        case 0:
+            throw new Error('chest_trap(): stunning gas (rndcolor()) not ported yet');
+        default:
+            break;
+        }
+        game.disp_botl = true; /* bot(): to get immediate botl re-display */
+    }
+
+    obj.tknown = 1; /* hero knows chest is no longer trapped */
     return false;
 }

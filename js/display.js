@@ -41,7 +41,8 @@ import { def_oc_syms } from './drawing.js';
 import { observe_object } from './o_init.js';
 import { is_pool, is_lava } from './makemon.js';
 import { t_at } from './trap.js';
-import { engr_at, sticks } from './engrave.js';
+import { engr_at, sticks, can_reach_floor } from './engrave.js';
+import { ENGRAVE, BURN, HEADSTONE } from './const.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
          CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE, ATR_INVERSE } from './terminal.js';
@@ -1876,6 +1877,93 @@ export function newsym(x, y) {
         /* show_mem: never seen, the unexplored glyph (blank) */
         show_glyph_cell(x, y, ' ', NO_COLOR, false);
     }
+}
+
+// C ref: display.c set_seenv() -- mark the side of the spot seen from
+// <x0,y0> (vision.c seenv_matrix[][])
+const fl_seenv_matrix = [[SV2, SV1, SV0], [SV3, 0xFF, SV7], [SV4, SV5, SV6]];
+function set_seenv(lev, x0, y0, x, y) {
+    const dx = x - x0, dy = y0 - y;
+    lev.seenv = (lev.seenv || 0) | fl_seenv_matrix[Math.sign(dy) + 1][Math.sign(dx) + 1];
+}
+
+// C ref: engrave.c engr_can_be_felt()
+function engr_can_be_felt(ep) {
+    switch (ep.engr_type) {
+    case ENGRAVE:
+    case HEADSTONE:
+    case BURN:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// C ref: display.c feel_location()
+/*
+ * Feel the given location.  This assumes that the hero is blind and that
+ * the given position is either the hero's or one of the eight squares
+ * adjacent to the hero (except for a boulder push).
+ */
+export function feel_location(x, y) {
+    const u = game.u;
+    let mon;
+
+    /* replicate safeguards used by newsym(); might not be required here */
+    if (game.in_mklev) /* _suppress_map_output() */
+        return;
+    if (!isok(x, y))
+        return;
+    const lev = game.level.at(x, y);
+    /* If hero's memory of an invisible monster is accurate, we want to keep
+     * him from detecting the same monster over and over again on each turn.
+     * We must return (so we don't erase the monster).
+     */
+    if (glyph_is_invisible(lev.remembered_glyph) && mon_at_loc(x, y))
+        return;
+
+    /* The hero can't feel non pool locations while under water
+       except for lava and ice. */
+    if (u.uinwater)
+        throw new Error('feel_location(): Underwater not ported yet');
+
+    /* Set the seen vector as if the hero had seen it.
+       It doesn't matter if the hero is levitating or not. */
+    set_seenv(lev, u.ux, u.uy, x, y);
+
+    if (!can_reach_floor(false)) {
+        throw new Error('feel_location(): levitation rules not ported yet');
+    } else {
+        const ep = engr_at(x, y);
+        if (ep && engr_can_be_felt(ep))
+            ep.erevealed = 1;
+
+        _map_location(x, y, true);
+
+        if (game.uball || game.uchain) /* Punished */
+            throw new Error('feel_location(): ball and chain (bc_felt) not ported yet');
+
+        /* Floor spaces are dark if unlit.  Corridors are dark if unlit.
+           (JS remembers no S_darkroom glyphs; see newsym()) */
+        if (lev.typ === ROOM && lev.remembered_glyph?.cmap === 'S_room'
+            && (!lev.waslit || (game.flags.dark_room !== false
+                                && game.iflags.wc_color !== false))) {
+            lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
+                                     cmap: 'S_stone' };
+            show_glyph(x, y, lev.remembered_glyph);
+        } else if (lev.typ === CORR && lev.remembered_glyph?.cmap === 'S_litcorr'
+                   && !lev.waslit) {
+            lev.remembered_glyph = rememb_glyph(S_corr_g);
+            show_glyph(x, y, lev.remembered_glyph);
+        }
+    }
+    /* draw monster on top if we can sense it */
+    if (!(u.ux === x && u.uy === y) && (mon = mon_at_loc(x, y)) !== null
+        && sensemon(mon))
+        display_monster(x, y, mon,
+                        (tp_sensemon(mon) || MATCH_WARN_OF_MON(mon))
+                            ? PHYSICALLY_SEEN : DETECTED,
+                        is_worm_tail(mon, x, y));
 }
 
 /* a terrain glyph in the remembered-glyph form (lev->glyph) */
