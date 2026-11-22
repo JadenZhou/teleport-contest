@@ -2634,7 +2634,63 @@ export async function zap_over_floor(
         if (is_ice_zp(x, y)) {
             throw new Error('zap_over_floor(): melt_ice() not ported yet');
         } else if (is_pool(x, y)) {
-            throw new Error('zap_over_floor(): fire boiling a pool not ported yet');
+            const on_water_level = Is_waterlevel_zp(g.u.uz);
+            let msggiven = false;
+            let msgtxt = (!Deaf_zp())
+                         ? "You hear hissing gas." /* Deaf-aware */
+                         : (type >= 0)
+                           ? "That seemed remarkably uneventful."
+                           : null;
+
+            /* don't create steam clouds on Plane of Water; air bubble
+               movement and gas regions don't understand each other */
+            if (!on_water_level) {
+                await create_gas_cloud_zp(x, y, rnd(5), 0); /* 1..5, no damg */
+                if (g.iflags.last_msg === PLNMSG_ENVELOPED_IN_GAS_ZP)
+                    msggiven = true;
+            }
+
+            if (lev.typ !== POOL_ZP) { /* MOAT or DRAWBRIDGE_UP or WATER */
+                t = null;
+                if (on_water_level)
+                    msgtxt = (see_it || !Deaf_zp()) ? "Some water boils." : null;
+                else if (see_it)
+                    msgtxt = "Some water evaporates.";
+            } else {
+                rangemod -= 3;
+                lev.typ = ROOM_ZP, lev.flags = 0;
+                t = maketrap_zp(x, y, PIT);
+                /*if (t) -- this was before the vapor cloud was added --
+                      t->tseen = 1;*/
+                if (see_it)
+                    msgtxt = "The water evaporates.";
+            }
+            if (msgtxt && !msggiven)
+                await Norep_zp(msgtxt);
+
+            if (lev.typ === ROOM_ZP) { /* POOL changed to ROOM above */
+                let mon;
+                if ((mon = m_at(x, y)) !== null && mon !== undefined) {
+                    /* probably ought to do some hefty damage to any
+                       creature caught in boiling water;
+                       at a minimum, eels are forced out of hiding */
+                    if (is_swimmer_zp(mon.data) && mon.mundetected) {
+                        mon.mundetected = 0;
+                    }
+                } else {
+                    mon = null;
+                }
+                newsym(x, y);
+                if (t) {
+                    /* if water walking/swimming/magical breathing, maybe fall
+                       into the new pit (after the water evaporation message);
+                       if flying or levitating, nothing will happen */
+                    if (u_at(x, y))
+                        await dotrap_zp(t, NO_TRAP_FLAGS_ZP);
+                    else if (mon)
+                        await mintrap_zp(mon, NO_TRAP_FLAGS_ZP);
+                }
+            }
         } else if (lev.typ === FOUNTAIN) { /* IS_FOUNTAIN() */
             await create_gas_cloud_zp(x, y, rnd(3), 0); /* 1..3, no damage */
             if (see_it)
@@ -2670,7 +2726,13 @@ export async function zap_over_floor(
                         (damgtype === ZT_ACID) ? "corrode" : "melt"} somewhat but remain intact.`);
                 /* but nothing actually happens... */
             } else {
-                throw new Error('zap_over_floor(): dissolve_bars() not ported yet');
+                rangemod -= 3;
+                if (see_it)
+                    await Norep_zp(`The iron bars ${
+                        (damgtype === ZT_ACID) ? "corrode away" : "melt"}.`);
+                await dissolve_bars(x, y);
+                if (in_rooms_zp(x, y, SHOPBASE_ZP).length)
+                    throw new Error('zap_over_floor(): add_damage() for shop bars not ported yet');
             }
         }
         break; /* ZT_ACID */
@@ -3024,5 +3086,18 @@ import { catch_lit as catch_lit_zp } from './trap.js';
 import { useupf as useupf_zp } from './invent.js';
 import { An as An_zp } from './objnam.js';
 import { erode_armor as erode_armor_zp } from './uhitm.js';
+import { POOL as POOL_ZP, ROOM as ROOM_ZP,
+         NO_TRAP_FLAGS as NO_TRAP_FLAGS_ZP, DEAF as DEAF_ZP,
+         PLNMSG_ENVELOPED_IN_GAS as PLNMSG_ENVELOPED_IN_GAS_ZP,
+         Is_waterlevel as Is_waterlevel_zp } from './const.js';
+import { maketrap as maketrap_zp, dotrap as dotrap_zp,
+         mintrap as mintrap_zp } from './trap.js';
+import { is_swimmer as is_swimmer_zp } from './mondata.js';
+import { dissolve_bars } from './monmove.js';
+/* C ref: youprop.h Deaf */
+function Deaf_zp() {
+    const q = game.u.uprops[DEAF_ZP];
+    return !!(q && (q.intrinsic || q.extrinsic)) || !!game.u.uroleplay?.deaf;
+}
 /* C ref: hack.h ERODE_CORRODE */
 const ERODE_CORRODE_ZP = 3;

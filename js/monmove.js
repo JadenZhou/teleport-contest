@@ -2161,3 +2161,18 @@ async function mpickstuff(mtmp) {
 function webmaker(ptr) {
     return ptr === mons[M.PM_CAVE_SPIDER] || ptr === mons[M.PM_GIANT_SPIDER];
 }
+
+// C ref: monmove.c dissolve_bars()
+export async function dissolve_bars(x, y) {
+    const lev = game.level.at(x, y);
+    lev.typ = lev.edge /* edge == 1 */ ? DOOR_MM
+        : (Is_special_mm(game.u.uz) || in_rooms(x, y, 0).length) ? ROOM_MM
+          : CORR_MM;
+    lev.flags = 0; /* doormask = D_NODOOR */
+    newsym(x, y);
+    if (u_at(x, y))
+        await switch_terrain_mm();
+}
+import { DOOR as DOOR_MM, ROOM as ROOM_MM, CORR as CORR_MM } from './const.js';
+import { Is_special as Is_special_mm } from './dungeon.js';
+import { switch_terrain as switch_terrain_mm } from './hack.js';
