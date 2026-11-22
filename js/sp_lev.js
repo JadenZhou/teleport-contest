@@ -111,7 +111,9 @@ import {
     get_level_extends, Can_dig_down, Can_fall_thru,
 } from './mklev.js';
 import { fixup_special, create_maze, walkfrom, pick_vibrasquare_location } from './mkmaze.js';
-import { deltrap, maketrap, is_pit, is_hole } from './trap.js';
+import { deltrap, maketrap, is_pit, is_hole, trap_explanations } from './trap.js';
+import { defsyms_explanation } from './pager.js';
+import { mk_mplayer } from './mplayer.js';
 import { obj_extract_self } from './mkobj.js';
 import { del_engr } from './engrave.js';
 import { vision_reset } from './vision.js';
@@ -1562,6 +1564,24 @@ function get_table_coords_or_region(tbl) {
     return { dx1, dy1, dx2, dy2 };
 }
 
+// C ref: sp_lev.c create_monster() M_AP_FURNITURE lookup:
+//   for (i = 0; i < MAXPCHARS; i++)
+//       if (!strcmp(defsyms[i].explanation, m->appear_as.str)) break;
+// defsyms[] (defsym.h) is the map features (pager.js defsyms_explanation,
+// S_stone..S_water) followed by the traps (trap.js trap_explanations,
+// S_arrow_trap..S_trapped_chest); the special effects after them are not
+// tabled here, so a name found in neither stops explicitly.
+const MAXPCHARS = 105; /* defsym.h */
+function defsym_by_explanation(str) {
+    let i = defsyms_explanation.indexOf(str);
+    if (i >= 0)
+        return i;
+    i = trap_explanations.indexOf(str);
+    if (i >= 0)
+        return defsyms_explanation.length + i; /* S_arrow_trap + i */
+    throw new Error(`create_monster: defsyms[] effect explanation "${str}" not ported yet`);
+}
+
 // C ref: sp_lev.c light_region()
 function light_region(tmpregion) {
     const litstate = tmpregion.rlit ? true : false;
@@ -2152,7 +2172,7 @@ function create_monster(m, croom) {
     if (m.sp_amask !== AM_SPLEV_RANDOM)
         mtmp = mk_roamer(pm, Amask2align(amask), x, y, m.peaceful);
     else if (PM_ARCHEOLOGIST <= m.id && m.id <= PM_WIZARD)
-        nhl_error(null, 'create_monster: mk_mplayer() is not ported yet');
+        mtmp = mk_mplayer(pm, x, y, FALSE);
     else
         mtmp = makemon(pm, x, y, m.mm_flags);
 
@@ -2182,8 +2202,13 @@ function create_monster(m, croom) {
                 break;
 
             case M_AP_FURNITURE:
-                /* defsyms[].explanation lookup: not ported yet */
-                nhl_error(null, 'create_monster: furniture appear_as is not ported yet');
+                i = defsym_by_explanation(m.appear_as);
+                if (i === MAXPCHARS) {
+                    impossible(`create_monster: can't find feature "${m.appear_as}"`);
+                } else {
+                    mtmp.m_ap_type = M_AP_FURNITURE;
+                    mtmp.mappearance = i;
+                }
                 break;
 
             case M_AP_OBJECT:
@@ -4133,6 +4158,27 @@ function splev_initlev(linit) {
     }
 }
 
+// C ref: sp_lev.c lspo_message()
+/* des.message("You arrive on the Astral Plane!"): appended to the level's
+   arrival message, which deliver_splev_message() (questpgr.c) shows */
+function lspo_message(...args) {
+    const argc = args.length;
+
+    if (argc < 1) {
+        nhl_error(null, 'Wrong parameters');
+        /*NOTREACHED*/
+        return 0;
+    }
+
+    create_des_coder();
+
+    const msg = luaL_checkstring(args[0]);
+
+    /* old message, a newline, then the new one */
+    game.lev_message = game.lev_message ? `${game.lev_message}\n${msg}` : msg;
+    return 0;
+}
+
 // C ref: sp_lev.c lspo_level_flags()
 export function lspo_level_flags(...args) {
     const argc = args.length;
@@ -4904,6 +4950,7 @@ export function l_register_des(L) {
     const des = {};
     for (const name of sp_lev_des_names)
         des[name] = des_not_ported(name);
+    des.message = lspo_message;
     des.room = lspo_room;
     des.map = lspo_map;
     des.region = lspo_region;
