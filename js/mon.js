@@ -11,6 +11,7 @@ import { clear_bypasses, bypass_obj } from './worn.js';
 import { rn2, rn1 } from './rng.js';
 import * as MM from './monsters.js';
 import { SPECIAL_PM, NUMMONS } from './monsters.js';
+import { pick_nasty } from './wizard.js';
 import {
     MSLOW, MFAST, NORMAL_SPEED, LOW_PM, I_SPECIAL, CONFLICT, INVIS,
     DISPLACED, COLNO, ROWNO, IS_OBSTRUCTED, IS_TREE, IS_WATERWALL, IS_DOOR,
@@ -1156,6 +1157,46 @@ export function dmonsfree() {
 
 /* mondata.h */
 function polyok(ptr) { return (ptr.mflags2 & MM.M2_NOPOLY) === 0; }
+function humanoid(ptr) { return (ptr.mflags1 & MM.M1_HUMANOID) !== 0; }
+function is_animal(ptr) { return (ptr.mflags1 & MM.M1_ANIMAL) !== 0; }
+
+// C ref: mon.c mon_animal_list()
+export function mon_animal_list(construct) {
+    if (construct) {
+        const animal_temp = [];
+        let i, n;
+
+        /* if (animal_list) impossible("animal_list already exists"); */
+
+        for (n = 0, i = LOW_PM; i < SPECIAL_PM; i++)
+            if (is_animal(mons[i]))
+                animal_temp[n++] = i;
+        /* if (n == 0) animal_temp[n++] = NON_PM; */
+
+        game.animal_list = animal_temp.slice(0, n);
+        game.animal_list_count = n;
+    } else { /* release */
+        if (game.animal_list)
+            game.animal_list = null;
+        game.animal_list_count = 0;
+    }
+}
+
+// C ref: mon.c pick_animal()
+function pick_animal() {
+    let res;
+
+    if (!game.animal_list)
+        mon_animal_list(true);
+    /* assert(ga.animal_list != 0); */
+    res = game.animal_list[rn2(game.animal_list_count)];
+    /* rogue level should use monsters represented by uppercase letters
+       only, but since chameleons aren't generated there (not uppercase!)
+       we don't perform a lot of retries */
+    if (Is_rogue_level(game.u.uz) && !isupper_monsym(mons[res]))
+        res = game.animal_list[rn2(game.animal_list_count)];
+    return res;
+}
 function is_shapeshifter(ptr) { return (ptr.mflags2 & MM.M2_SHAPESHIFTER) !== 0; }
 function notake(ptr) { return (ptr.mflags1 & MM.M1_NOTAKE) !== 0; }
 function has_head(ptr) { return (ptr.mflags1 & MM.M1_NOHEAD) === 0; }
@@ -1241,13 +1282,34 @@ export function select_newcham_form(mon) {
     switch (mon.cham) {
     case MM.PM_SANDESTIN:
         if (rn2(7))
-            throw new Error('select_newcham_form(): pick_nasty() not ported yet');
+            mndx = pick_nasty(mons[MM.PM_ARCHON].difficulty - 1);
         break;
     case MM.PM_DOPPELGANGER:
-        throw new Error('select_newcham_form(): doppelganger forms not ported yet');
+        if (!rn2(7)) {
+            mndx = pick_nasty(mons[MM.PM_JABBERWOCK].difficulty - 1);
+        } else if (rn2(3)) { /* role monsters */
+            /* mndx = tt_doppel(mon): topten.c is ported separately */
+            throw new Error('select_newcham_form(): tt_doppel() (topten.c) not ported yet');
+        } else if (!rn2(3)) { /* quest guardians */
+            mndx = rn1(MM.PM_APPRENTICE - MM.PM_STUDENT + 1, MM.PM_STUDENT);
+            /* avoid own role's guardian */
+            if (mndx === game.urole.guardnum)
+                mndx = NON_PM;
+        } else { /* general humanoids */
+            tryct = 5;
+            do {
+                mndx = rn1(SPECIAL_PM - LOW_PM, LOW_PM);
+                /* assert(ismnum(mndx)); */
+                if (humanoid(mons[mndx]) && polyok(mons[mndx]))
+                    break;
+            } while (--tryct > 0);
+            if (!tryct)
+                mndx = NON_PM;
+        }
+        break;
     case MM.PM_CHAMELEON:
         if (!rn2(3))
-            throw new Error('select_newcham_form(): pick_animal() not ported yet');
+            mndx = pick_animal();
         break;
     case MM.PM_VLAD_THE_IMPALER:
     case MM.PM_VAMPIRE_LEADER:
@@ -1647,7 +1709,7 @@ function monhaskey(mon, for_unlocking) {
     return !!(m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK));
 }
 /* C ref: mondata.c passes_bars() */
-function passes_bars(mptr) {
+export function passes_bars(mptr) {
     return (passes_walls(mptr) || amorphous(mptr)
             || (mptr.mflags1 & M1_UNSOLID) !== 0
             || is_whirly(mptr) || verysmall(mptr)

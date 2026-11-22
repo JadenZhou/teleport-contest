@@ -107,7 +107,7 @@ import {
     wallification, fix_wall_spines, makecorridors, mkstairs, stairway_add,
     get_level_extends, Can_dig_down, Can_fall_thru,
 } from './mklev.js';
-import { fixup_special, create_maze, walkfrom } from './mkmaze.js';
+import { fixup_special, create_maze, walkfrom, pick_vibrasquare_location } from './mkmaze.js';
 import { deltrap, maketrap, is_pit, is_hole } from './trap.js';
 import { obj_extract_self } from './mkobj.js';
 import { del_engr } from './engrave.js';
@@ -1135,6 +1135,7 @@ export function lspo_replace_terrain(...args) {
     if (lua_type(tbl) !== LUA_TTABLE)
         nhl_error(null, 'Wrong parameters'); /* lcheck_param_table() */
 
+    let mf = null;
     const totyp = get_table_mapchr(tbl, 'toterrain');
 
     if (totyp >= MAX_TYPE)
@@ -1143,9 +1144,14 @@ export function lspo_replace_terrain(...args) {
     const fromtyp = get_table_mapchr_opt(tbl, 'fromterrain', INVALID_TYPE);
 
     if (fromtyp === INVALID_TYPE) {
-        /* mapfragment matching (mapfrag_error, mapfrag_match): not
-           ported yet */
-        nhl_error(null, 'des.replace_terrain: mapfragment is not ported yet');
+        let err;
+        const tmpstr = get_table_str(tbl, 'mapfragment');
+        mf = mapfrag_fromstr(tmpstr);
+
+        if ((err = mapfrag_error(mf)) !== null) {
+            nhl_error(null, err);
+            /*NOTREACHED*/
+        }
     }
 
     const chance = get_table_int_opt(tbl, 'chance', 100);
@@ -1186,13 +1192,19 @@ export function lspo_replace_terrain(...args) {
     for (let x = Math.max(1, rect.lx); x <= rect.hx; x++)
         for (let y = rect.ly; y <= rect.hy; y++)
             if (selection_getpoint(x, y, sel)) {
-                const typ = game.level.at(x, y).typ;
-                if (((fromtyp === MATCH_WALL && IS_STWALL(typ))
-                     || typ === fromtyp)
-                    && rn2(100) < chance)
-                    set_levltyp_lit(x, y, totyp, tolit);
+                if (mf) {
+                    if (mapfrag_match(mf, x, y) && (rn2(100)) < chance)
+                        set_levltyp_lit(x, y, totyp, tolit);
+                } else {
+                    const typ = game.level.at(x, y).typ;
+                    if (((fromtyp === MATCH_WALL && IS_STWALL(typ))
+                         || typ === fromtyp)
+                        && rn2(100) < chance)
+                        set_levltyp_lit(x, y, totyp, tolit);
+                }
             }
 
+    /* mapfrag_free(&mf) */
     return 0;
 }
 
@@ -2484,8 +2496,9 @@ function create_trap(t, croom) {
     let mktrap_flags = MKTRAP_MAZEFLAG;
 
     if (t.type === VIBRATING_SQUARE) {
-        /* pick_vibrasquare_location() is not ported yet */
-        nhl_error(null, 'create_trap: vibrating square is not ported yet');
+        pick_vibrasquare_location();
+        maketrap(game.inv_pos.x, game.inv_pos.y, VIBRATING_SQUARE);
+        return;
     } else if (croom) {
         get_free_room_loc(c, croom, t.coord);
     } else {
@@ -3189,6 +3202,61 @@ export function lspo_object(...args) {
         spo_pop_container();
 
     return nhl_push_obj(otmp);
+}
+
+// C ref: sp_lev.c lspo_gold()
+/* gold(500, 3,5); */
+/* gold(500, {5, 6}); */
+/* gold({ amount = 500, x = 2, y = 5 });*/
+/* gold({ amount = 500, coord = {2, 5} });*/
+/* gold(); */
+export function lspo_gold(...args) {
+    const argc = args.length;
+    let x, y;
+    let amount;
+    let gcoord;
+    let gldx, gldy;
+
+    create_des_coder();
+
+    if (argc === 3) {
+        amount = luaL_checkinteger(args[0]);
+        x = gldx = luaL_checkinteger(args[1]);
+        y = gldy = luaL_checkinteger(args[2]);
+    } else if (argc === 2 && lua_type(args[1]) === LUA_TTABLE) {
+        amount = luaL_checkinteger(args[0]);
+        /* (void) get_coord(L, 2, &gldx, &gldy) */
+        const c = get_coord(args[1]);
+        if (c) {
+            gldx = c.x;
+            gldy = c.y;
+        }
+        x = gldx;
+        y = gldy;
+    } else if (argc === 0 || (argc === 1 && lua_type(args[0]) === LUA_TTABLE)) {
+        const tbl = lcheck_param_table(args);
+
+        amount = get_table_int_opt(tbl, 'amount', -1);
+        ({ x: gldx, y: gldy } = get_table_xy_or_coord(tbl));
+        x = gldx, y = gldy;
+    } else {
+        nhl_error(null, 'Wrong parameters');
+        /*NOTREACHED*/
+        return 0;
+    }
+
+    if (x === -1 && y === -1)
+        gcoord = SP_COORD_PACK_RANDOM(0);
+    else
+        gcoord = SP_COORD_PACK(gldx, gldy);
+
+    const c = { x, y };
+    get_location_coord(c, DRY, game.coder.croom, gcoord);
+    if (amount < 0)
+        amount = rnd(200);
+    mkgold(amount, c.x, c.y);
+
+    return 0;
 }
 
 // C ref: sp_lev.c lspo_exclusion()
@@ -4832,5 +4900,6 @@ export function l_register_des(L) {
     des.wall_property = lspo_wall_property;
     des.non_diggable = lspo_non_diggable;
     des.non_passwall = lspo_non_passwall;
+    des.gold = lspo_gold;
     L.globals.des = des;
 }

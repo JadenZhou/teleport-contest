@@ -56,7 +56,7 @@ import { do_attack } from './uhitm.js';
 import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
          ARTICLE_YOUR, SUPPRESS_SADDLE } from './do_name.js';
 import { curr_mon_load } from './dogmove.js';
-import { bad_rock } from './mon.js';
+import { bad_rock, passes_bars } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
 import { an, xname } from './objnam.js';
 import { the } from './iactions.js';
@@ -65,11 +65,11 @@ import { a_monnam, y_monnam } from './do_name.js';
 import { set_ustuck } from './uhitm.js';
 import { CONFLICT, HVY_ENCUMBER } from './const.js';
 import { gethungry } from './eat.js';
-import { AT_ENGL, AT_HUGS, AD_STCK } from './monsters.js';
+import { AT_ENGL, AT_HUGS, AD_STCK, AD_RUST, AD_CORR, M1_METALLIVORE } from './monsters.js';
 import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
          LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
 import { CORPSE } from './objects.js';
-import { is_flyer, is_floater } from './mondata.js';
+import { is_flyer, is_floater, dmgtype } from './mondata.js';
 import { float_vs_flight } from './polyself.js';
 import { pickup } from './pickup.js';
 import { shop_keeper, u_left_shop, u_entered_shop } from './shk.js';
@@ -1670,7 +1670,18 @@ export async function test_move(ux, uy, dx, dy, mode) {
                 await There("is an obstacle there.");
             return false;
         } else if (tmpr.typ === IRONBARS) {
-            throw new Error('test_move(): iron bars not ported yet');
+            const ydat = game.youmonst.data;
+            if (mode === DO_MOVE
+                && (dmgtype(ydat, AD_RUST)
+                    || dmgtype(ydat, AD_CORR)
+                    || (ydat.mflags1 & M1_METALLIVORE) !== 0)) /* metallivorous() */
+                /* && still_chewing(x, y): return FALSE */
+                throw new Error('test_move(): still_chewing() of iron bars not ported yet');
+            if (!(Passes_walls() || passes_bars(ydat))) {
+                if (mode === DO_MOVE && game.flags.mention_walls)
+                    await You("cannot pass through the bars.");
+                return false;
+            }
         } else if (tunnels(game.youmonst.data)
                    && !needspick(game.youmonst.data)) {
             /* Eat the rock. */

@@ -21,7 +21,7 @@ import { initrack, settrack } from './track.js';
 import { m_at, makemon, makemon_flush_msg } from './makemon.js';
 import { mnexto } from './teleport.js';
 import { makedog } from './dog.js';
-import { deferred_goto } from './do.js';
+import { deferred_goto, hellish_smoke_mesg } from './do.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
 import { init_objects } from './o_init.js';
@@ -188,16 +188,6 @@ export async function welcome(new_game) /* false => restoring an old game */ {
            print_level_annotation() -- level annotations (#annotate,
            mapseen) aren't ported, so there is none to print */
     }
-}
-
-// C ref: do.c hellish_smoke_mesg()
-async function hellish_smoke_mesg() {
-    const temperature = game.level.flags.temperature;
-    if (temperature)
-        await pline(`It is ${temperature > 0 ? "hot" : "cold"} here.`);
-
-    if (In_hell(game.u.uz) && temperature > 0)
-        throw new Error('hellish_smoke_mesg(): olfaction() not ported yet');
 }
 
 // C ref: allmain.c maybe_generate_rnd_mon()

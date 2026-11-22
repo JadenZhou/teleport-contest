@@ -63,7 +63,7 @@ import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon, You_see } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
 import { Resists_Elem } from './mondata.js';
-import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER } from './const.js';
+import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level } from './const.js';
 import { set_apparxy, dochugw } from './monmove.js';
 import { noteleport_level } from './teleport.js';
 import { newcham } from './mon.js';
@@ -634,20 +634,31 @@ export function sobj_at(otyp, x, y) {
         if (o.otyp === otyp && o.ox === x && o.oy === y) return o;
     return null;
 }
-// C ref: dbridge.c is_pool(), is_lava()
+// C ref: dbridge.c is_pool()
 export function is_pool(x, y) {
     if (!isok(x, y)) return false;
     const typ = game.level.at(x, y).typ;
-    return typ === POOL || typ === MOAT || typ === WATER
-           || (typ === DRAWBRIDGE_UP
-               && ((game.level.at(x, y).drawbridgemask ?? 0) & 0x07) === 0x01);
+    /* The ltyp == MOAT is not redundant with is_moat, because the
+     * Juiblex level does not have moats, although it has MOATs. There
+     * is probably a better way to express this. */
+    return typ === POOL || typ === MOAT || typ === WATER || is_moat(x, y);
 }
+// C ref: dbridge.c is_lava()
 export function is_lava(x, y) {
     if (!isok(x, y)) return false;
     const typ = game.level.at(x, y).typ;
     return typ === LAVAPOOL || typ === LAVAWALL
            || (typ === DRAWBRIDGE_UP
-               && ((game.level.at(x, y).drawbridgemask ?? 0) & 0x07) === 0x02);
+               && ((game.level.at(x, y).drawbridgemask ?? 0) & DB_UNDER) === DB_LAVA);
+}
+// C ref: dbridge.c is_moat()
+function is_moat(x, y) {
+    if (!isok(x, y)) return false;
+    const typ = game.level.at(x, y).typ;
+    return !Is_juiblex_level(game.u.uz)
+           && (typ === MOAT
+               || (typ === DRAWBRIDGE_UP
+                   && ((game.level.at(x, y).drawbridgemask ?? 0) & DB_UNDER) === DB_MOAT));
 }
 // C ref: dbridge.c db_under_typ()
 function db_under_typ(mask) {

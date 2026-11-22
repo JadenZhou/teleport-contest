@@ -65,7 +65,8 @@ import {
     mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
     CORPSTAT_INIT, weight, add_to_container, mk_tt_object,
 } from './mkobj.js';
-import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon } from './makemon.js';
+import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon, is_pool,
+         is_lava } from './makemon.js';
 import { priestini } from './priest.js';
 import { dist2, distmin } from './hacklib.js';
 import { del_engr_at } from './engrave.js';
@@ -88,7 +89,7 @@ import {
     ROLLING_BOULDER_TRAP, SLP_GAS_TRAP, RUST_TRAP, FIRE_TRAP, PIT, SPIKED_PIT,
     HOLE, TRAPDOOR, TELEP_TRAP, LEVEL_TELEP, MAGIC_PORTAL, WEB, STATUE_TRAP,
     MAGIC_TRAP, POLY_TRAP, VIBRATING_SQUARE, TRAPPED_DOOR, TRAPPED_CHEST,
-    BEAR_TRAP, is_hole, is_pit, maketrap, t_at,
+    BEAR_TRAP, is_hole, is_pit, maketrap, t_at, deltrap, undestroyable_trap,
 } from './trap.js';
 
 const XLIM = 4;
@@ -263,8 +264,11 @@ function put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, oneshot, lev) {
                It might still fail if there's a dungeon feature here. */
             const t = t_at(x, y);
 
-            if (t)
-                throw new Error('put_lregion_here(): deltrap() not ported yet');
+            if (t && !undestroyable_trap(t.ttyp)) {
+                if (((mtmp = m_at(x, y)) != null) && mtmp.mtrapped)
+                    mtmp.mtrapped = 0;
+                deltrap(t);
+            }
             if (bad_location(x, y, nlx, nly, nhx, nhy)
                 || is_exclusion_zone(rtype, x, y))
                 return false;
@@ -2137,12 +2141,16 @@ export function somexy(croom, c) {
 }
 
 // C ref: mklev.c occupied()
-function occupied(x, y) {
-    const typ = game.level.at(x, y).typ;
-    /* invocation_pos(x, y): the invocation level isn't generated yet */
-    return !!(t_at(x, y) || IS_FURNITURE(typ)
-              || typ === LAVAPOOL || typ === LAVAWALL /* is_lava() */
-              || IS_POOL(typ) /* is_pool() */);
+export function occupied(x, y) {
+    return !!(t_at(x, y) || IS_FURNITURE(game.level.at(x, y).typ)
+              || is_lava(x, y) || is_pool(x, y)
+              || invocation_pos(x, y));
+}
+
+// C ref: hack.c invocation_pos()
+export function invocation_pos(x, y) {
+    return (Invocation_lev(game.u.uz)
+            && x === game.inv_pos?.x && y === game.inv_pos?.y);
 }
 
 function somexyspace(croom, c) {
