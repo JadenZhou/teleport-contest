@@ -38,7 +38,48 @@ import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
 import { mon_wield_item, hitval } from './weapon.js';
 import { thrwmu, spitmu, breamu } from './mthrowu.js';
 import { castmu, buzzmu } from './mcastu.js';
-import { Is_rogue_level, DIED } from './const.js';
+import { Is_rogue_level, DIED, DEAF } from './const.js';
+import { stop_occupation } from './allmain.js';
+import { yyyymmdd } from './calendar.js';
+import { PRONOUN_NO_IT, Mgender, mon_nam, noit_mon_nam,
+         noit_Monnam } from './do_name.js';
+import { ARMOR_CLASS, ARM_GLOVES, RIN_ADORNMENT } from './objects.js';
+import { discover_object, observe_object } from './o_init.js';
+import { FEMALE, A_CHA, A_INT, A_CON, A_WIS, A_DEX, A_STR, HAND, HAIR,
+         RIGHT_RING, LEFT_RING, RLOC_MSG, A_CHAOTIC,
+         KILLED_BY } from './const.js';
+import { unresponsive, remove_worn_item, mpickobj } from './steal.js';
+import { stop_donning, Ring_on } from './do_wear.js';
+import { welded } from './wield.js';
+import { ACURR, adjattrib, exercise, adjalign } from './attrib.js';
+import { safe_qbuf } from './pickup.js';
+import { tty_yn_function } from './wintty.js';
+import { yname, cloak_simple_name, suit_simple_name,
+         helm_simple_name } from './objnam.js';
+import { freeinv, prinv } from './invent.js';
+import { the } from './iactions.js';
+import { body_part } from './insight.js';
+import { setworn } from './worn.js';
+import { urgent_pline } from './display.js';
+import { tele_restrict, rloc } from './teleport.js';
+import { rn1 } from './rng.js';
+import { resists_drli } from './mondata.js';
+import { losexp, pluslvl } from './exper.js';
+import { losehp, Maybe_Half_Phys } from './trap.js';
+import { money_cnt } from './u_init.js';
+import { currency } from './insight.js';
+import { money2mon } from './shk.js';
+
+import { FAST, SICK_RES, SICK, NEUTRAL, SICK_NONVOMITABLE } from './const.js';
+import { OILSKIN_CLOAK } from './objects.js';
+import { make_sick, make_blinded, make_hallucinated } from './potion.js';
+import { Hallucination } from './display.js';
+import { resists_blnd, defended } from './mondata.js';
+import { mondead, wake_nearto } from './mon.js';
+import { WATER } from './const.js';
+
+/* C ref: global.h LARGEST_INT */
+const LARGEST_INT = 32767;
 import { done_in_by } from './end.js';
 import { ART_SNICKERSNEE } from './artilist.js';
 import { genders } from './role.js';
@@ -149,14 +190,71 @@ async function mswings(
     }
 }
 
-// C ref: allmain.c stop_occupation()
-function stop_occupation() {
-    if (game.occupation) {
-        throw new Error('stop_occupation(): occupations not ported yet');
-    } else if (game.multi >= 0) {
-        nomul(0);
+/* C ref: youprop.h Deaf */
+function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
+
+// C ref: mhitu.c u_slow_down()
+/* called when your intrinsic speed is taken away */
+export async function u_slow_down() {
+    game.u.uprops[FAST].intrinsic = 0; /* HFast = 0L */
+    if (!uhave(FAST))
+        await pline("You slow down."); /* You() */
+    else /* speed boots */
+        await pline("Your quickness feels less natural."); /* Your() */
+    exercise(A_DEX, false);
+}
+
+// C ref: mhitu.c diseasemu()
+export async function diseasemu(mdat) {
+    const u = game.u;
+    if (uhave(SICK_RES)) {
+        await You_feel("a slight illness.");
+        return false;
+    } else {
+        const Sick = u.uprops[SICK].intrinsic;
+        await make_sick(Sick ? Math.trunc(Sick / 3) + 1 : rn1(ACURR(A_CON), 20),
+                        mdat.pmnames[NEUTRAL], true, SICK_NONVOMITABLE);
+        return true;
     }
-    /* cmdq_clear(CQ_CANNED): the command queue isn't ported yet */
+}
+
+// C ref: mhitu.c u_slip_free()
+/* check whether slippery clothing protects from hug or wrap attack */
+export async function u_slip_free(mtmp, mattk) {
+    let obj;
+
+    /* greased armor does not protect against AT_ENGL+AD_WRAP */
+    if (mattk.aatyp === AT_ENGL)
+        return false;
+
+    obj = (game.uarmc ? game.uarmc : game.uarm);
+    if (!obj)
+        obj = game.uarmu;
+    if (mattk.adtyp === AD_DRIN)
+        obj = game.uarmh;
+
+    /* if your cloak/armor is greased, monster slips off; this
+       protection might fail (33% chance) when the armor is cursed */
+    if (obj && (obj.greased || obj.otyp === OILSKIN_CLOAK)
+        && (!obj.cursed || rn2(3))) {
+        await pline(`${Monnam(mtmp)} ${
+            (mattk.adtyp === M.AD_WRAP) ? "slips off of"
+                                        : "grabs you, but cannot hold onto"} your ${
+            obj.greased ? "greased" : "slippery"} ${
+            /* avoid "slippery slippery cloak"
+               for undiscovered oilskin cloak */
+            (obj.greased || objects[obj.otyp].oc_name_known)
+                ? xname(obj)
+                : cloak_simple_name(obj)}!`); /* pline_mon() */
+
+        if (obj.greased && !rn2(2)) {
+            await pline("The grease wears off."); /* pline_The() */
+            obj.greased = 0;
+            /* update_inventory() -- no perm_invent window */
+        }
+        return true;
+    }
+    return false;
 }
 
 // C ref: mhitu.c mpoisons_subj()
@@ -185,7 +283,9 @@ export async function hitmsg(mtmp, mattk) {
        if same gender, "engagingly" for nymph, normal msg for others. */
     if ((compat = could_seduce(mtmp, game.youmonst, mattk)) !== 0
         && !mtmp.mcan && !mtmp.mspec_used) {
-        throw new Error('hitmsg(): seduction message not ported yet');
+        await pline(`${Monst_name} ${
+            !Blind() ? "smiles at" : !Deaf() ? "talks to" : "touches"} you ${
+            (compat === 2) ? "engagingly" : "seductively"}.`); /* pline_mon() */
     } else {
         switch (mattk.aatyp) {
         case AT_BITE:
@@ -242,7 +342,7 @@ async function missmu(mtmp, nearmiss, mattk) {
     else
         await pline(`${Monnam(mtmp)} ${(nearmiss && game.flags.verbose) ? 'just ' : ''}misses!`);
 
-    stop_occupation();
+    await stop_occupation();
 }
 
 // C ref: mhitu.c wildmiss()
@@ -560,7 +660,7 @@ export async function mattacku(mtmp) {
 
         case AT_EXPL: /* automatic hit if next to, and aimed at you */
             if (!v.range2)
-                throw new Error('mattacku(): explmu() not ported yet');
+                sum[i] = await explmu(mtmp, mattk, v.foundyou);
             break;
 
         case AT_ENGL:
@@ -762,7 +862,7 @@ async function hitmu(mtmp, mattk) {
         res = await passiveum(olduasmon, mtmp, mattk);
     else
         res = M_ATTK_HIT;
-    stop_occupation();
+    await stop_occupation();
     return res;
 }
 
@@ -848,6 +948,490 @@ export function could_seduce(magr, mdef, mattk) {
         return 0;
 
     return (genagr === 1 - gendef) ? 1 : (pagr.mlet === M.S_NYMPH) ? 2 : 0;
+}
+
+// C ref: polyself.c ugolemeffects()
+export async function ugolemeffects(damtype, dam) {
+    const u = game.u;
+    let heal = 0;
+
+    /* We won't bother with "slow"/"haste" since players do not
+     * have a monster-specific slow/haste so there is no way to
+     * restore the old velocity once they are back to human.
+     */
+    if (u.umonnum !== M.PM_FLESH_GOLEM && u.umonnum !== M.PM_IRON_GOLEM)
+        return;
+    switch (damtype) {
+    case M.AD_ELEC:
+        if (u.umonnum === M.PM_FLESH_GOLEM)
+            heal = Math.trunc((dam + 5) / 6); /* Approx 1 per die */
+        break;
+    case M.AD_FIRE:
+        if (u.umonnum === M.PM_IRON_GOLEM)
+            heal = dam;
+        break;
+    }
+    if (heal && (u.mh < u.mhmax)) {
+        u.mh += heal;
+        if (u.mh > u.mhmax)
+            u.mh = u.mhmax;
+        game.disp_botl = true;
+        await pline("Strangely, you feel better than before.");
+        exercise(A_STR, true);
+    }
+}
+
+// C ref: mhitu.c explmu()
+/* monster explodes in your face */
+async function explmu(mtmp, mattk, ufound) {
+    const u = game.u;
+    let kill_agr = true;
+    let not_affected;
+    let tmp;
+
+    if (mtmp.mcan)
+        return M_ATTK_MISS;
+
+    tmp = d(mattk.damn, mattk.damd);
+    not_affected = defended(mtmp, mattk.adtyp);
+    if (!ufound) {
+        await pline(`${canseemon(mtmp) ? Monnam(mtmp) : "It"} explodes at a spot in ${
+            (game.level.at(mtmp.mux, mtmp.muy).typ === WATER) /* is_waterwall() */
+                ? "empty water" : "thin air"}!`);
+    } else {
+        await hitmsg(mtmp, mattk);
+    }
+
+    switch (mattk.adtyp) {
+    case AD_COLD:
+    case M.AD_FIRE:
+    case M.AD_ELEC:
+        throw new Error('explmu(): mon_explodes() (explode()) not ported yet');
+    case M.AD_BLND:
+        not_affected = resists_blnd(game.youmonst);
+        if (ufound && !not_affected) {
+            /* sometimes you're affected even if it's invisible */
+            if (mon_visible(mtmp) || (rnd(tmp = Math.trunc(tmp / 2)) > u.ulevel)) {
+                await pline("You are blinded by a blast of light!"); /* You() */
+                await make_blinded(tmp, false);
+                if (!Blind())
+                    await pline("Your vision quickly clears."); /* Your1(vision_clears) */
+            } else if (game.flags.verbose)
+                await pline("You get the impression it was not terribly bright."); /* You() */
+        }
+        break;
+    case M.AD_HALU:
+        not_affected = not_affected
+                       || Blind() || (u.umonnum === M.PM_BLACK_LIGHT
+                                      || u.umonnum === M.PM_VIOLET_FUNGUS
+                                      || dmgtype(game.youmonst.data, M.AD_STUN));
+        if (ufound && !not_affected) {
+            let chg;
+            if (!Hallucination())
+                await pline("You are caught in a blast of kaleidoscopic light!"); /* You() */
+            /* avoid hallucinating the black light as it dies */
+            await mondead(mtmp);    /* remove it from map now */
+            kill_agr = false; /* already killed (maybe lifesaved) */
+            chg = await make_hallucinated(game.u.uprops[HALLUC].intrinsic + tmp, false, 0);
+            await pline(`You ${chg ? "are freaked out" : "seem unaffected"}.`); /* You() */
+        }
+        break;
+    default:
+        /* impossible("unknown exploder damage type %d", mattk->adtyp) */
+        break;
+    }
+    if (not_affected) {
+        await pline("You seem unaffected by it."); /* You() */
+        await ugolemeffects(mattk.adtyp, tmp);
+    }
+    if (kill_agr && !DEADMONSTER(mtmp))
+        await mondead(mtmp);
+    await wake_nearto(mtmp.mx, mtmp.my, 7 * 7);
+    return (!DEADMONSTER(mtmp)) ? M_ATTK_MISS : M_ATTK_AGR_DIED;
+}
+
+/* C ref: mhitu.c ld() -- leap day */
+function ld() { return (yyyymmdd(0) - (getyear() * 10000)) === 0xe5; }
+/* C ref: calendar.c getyear() */
+function getyear() { return Math.trunc(yyyymmdd(0) / 10000); }
+/* C ref: you.h mhe(), noit_mhim() */
+function mhe(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he; }
+function noit_mhim(mtmp) {
+    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].him;
+}
+/* C ref: pline.c verbalize() */
+async function verbalize(line) {
+    if (Deaf())
+        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
+    await pline(`"${line}"`);
+}
+/* C ref: invent.c u_carried_gloves() */
+function u_carried_gloves() {
+    let otmp, gloves = null;
+
+    if (game.uarmg) {
+        gloves = game.uarmg;
+    } else {
+        for (otmp = game.invent; otmp; otmp = otmp.nobj)
+            if (otmp.oclass === ARMOR_CLASS
+                && objects[otmp.otyp].oc_armcat === ARM_GLOVES) { /* is_gloves() */
+                gloves = otmp;
+                break;
+            }
+    }
+    return gloves;
+}
+/* C ref: hack.h makeknown() */
+function makeknown(x) { discover_object(x, true, true, true); }
+
+// C ref: mhitu.c doseduce()
+/* Returns 1 if monster teleported (or hero leaves monster's vicinity) */
+export async function doseduce(mon) {
+    const u = game.u;
+    let ring, nring;
+    const fem = (mon.data === mons[M.PM_AMOROUS_DEMON]
+                 && Mgender(mon) === FEMALE); /* otherwise incubus */
+    let seewho, naked; /* True iff no armor */
+    let attr_tot, tried_gloves = 0;
+    let qbuf, Who;
+
+    if (mon.mcan || mon.mspec_used) {
+        await pline(`${Monnam(mon)} acts as though ${mhe(mon)} has got a ${
+            mon.mcan ? "severe " : ""}headache.`); /* pline_mon() */
+        return 0;
+    }
+    if (unresponsive()) {
+        await pline(`${Monnam(mon)} seems dismayed at your lack of response.`);
+        return 0;
+    }
+
+    seewho = canseemon(mon);
+    if (!seewho)
+        await pline("Someone caresses you...");
+    else
+        await You_feel(`very attracted to ${mon_nam(mon)}.`);
+    /* cache the seducer's name in a local buffer */
+    Who = (!seewho ? (fem ? "She" : "He") : Monnam(mon));
+
+    /* if in the process of putting armor on or taking armor off,
+       interrupt that activity now */
+    await stop_donning(null);
+    /* don't try to take off gloves if cursed weapon blocks them */
+    if (welded(game.uwep))
+        tried_gloves = 1;
+
+    for (ring = game.invent; ring; ring = nring) {
+        nring = ring.nobj;
+        if (ring.otyp !== RIN_ADORNMENT)
+            continue;
+        if (fem) {
+            if (ring.owornmask && game.uarmg) {
+                /* don't take off worn ring if gloves are in the way */
+                if (!tried_gloves++)
+                    await mayberem(mon, Who, game.uarmg, "gloves");
+                if (game.uarmg)
+                    continue; /* next ring might not be worn */
+            }
+            /* confirmation prompt when charisma is high bypassed if deaf */
+            if (!Deaf() && rn2(20) < ACURR(A_CHA)) {
+                qbuf = safe_qbuf("\"That ", " looks pretty.  May I have it?\"",
+                                 ring, xname, "ring");
+                makeknown(RIN_ADORNMENT);
+                /* SetVoice(mon, 0, 80, 0); */
+                if (await tty_yn_function(qbuf, "yn", 'n') === 'n') /* y_n() */
+                    continue;
+            } else
+                await pline(`${Who} decides she'd like ${yname(ring)}, and takes it.`);
+            makeknown(RIN_ADORNMENT);
+            /* might be in left or right ring slot or weapon/alt-wep/quiver */
+            if (ring.owornmask)
+                await remove_worn_item(ring, false);
+            freeinv(ring);
+            mpickobj(mon, ring);
+        } else {
+            if (game.uleft && game.uright && game.uleft.otyp === RIN_ADORNMENT
+                && game.uright.otyp === RIN_ADORNMENT)
+                break;
+            if (ring === game.uleft || ring === game.uright)
+                continue;
+            if (game.uarmg) {
+                /* don't put on ring if gloves are in the way */
+                if (!tried_gloves++)
+                    await mayberem(mon, Who, game.uarmg, "gloves");
+                if (game.uarmg)
+                    break; /* no point trying further rings */
+            }
+            /* confirmation prompt when charisma is high bypassed if deaf */
+            if (!Deaf() && rn2(20) < ACURR(A_CHA)) {
+                qbuf = safe_qbuf("\"That ",
+                                 " looks pretty.  Would you wear it for me?\"",
+                                 ring, xname, "ring");
+                makeknown(RIN_ADORNMENT);
+                /* SetVoice(mon, 0, 80, 0); */
+                if (await tty_yn_function(qbuf, "yn", 'n') === 'n') /* y_n() */
+                    continue;
+            } else {
+                await pline(`${Who} decides you'd look prettier wearing ${yname(ring)},`);
+                await pline("and puts it on your finger.");
+            }
+            makeknown(RIN_ADORNMENT);
+            if (!game.uright) {
+                await pline(`${Who} puts ${the(xname(ring))} on your right ${body_part(HAND)}.`);
+                setworn(ring, RIGHT_RING);
+            } else if (!game.uleft) {
+                await pline(`${Who} puts ${the(xname(ring))} on your left ${body_part(HAND)}.`);
+                setworn(ring, LEFT_RING);
+            } else if (game.uright && game.uright.otyp !== RIN_ADORNMENT) {
+                /* note: the "replaces" message might be inaccurate if
+                   hero's location changes and the process gets interrupted,
+                   but trying to figure that out in advance in order to use
+                   alternate wording is not worth the effort */
+                await pline(`${Who} replaces ${yname(game.uright)} with ${yname(ring)}.`);
+                throw new Error('doseduce(): Ring_gone() not ported yet');
+            } else if (game.uleft && game.uleft.otyp !== RIN_ADORNMENT) {
+                /* see "replaces" note above */
+                await pline(`${Who} replaces ${yname(game.uleft)} with ${yname(ring)}.`);
+                throw new Error('doseduce(): Ring_gone() not ported yet');
+            } else {
+                /* impossible("ring replacement") */
+            }
+            await Ring_on(ring);
+            await prinv(null, ring, 0);
+        }
+    }
+
+    naked = (!game.uarmc && !game.uarmf && !game.uarmg && !game.uarms
+             && !game.uarmh && !game.uarmu);
+    await urgent_pline(`${Who} ${
+        Deaf() ? "seems to murmur into your ear"
+        : naked ? "murmurs sweet nothings into your ear"
+          : "murmurs in your ear"}${
+        naked ? "" : ", while helping you undress"}.`);
+    await mayberem(mon, Who, game.uarmc, cloak_simple_name(game.uarmc));
+    if (!game.uarmc)
+        await mayberem(mon, Who, game.uarm, suit_simple_name(game.uarm));
+    await mayberem(mon, Who, game.uarmf, "boots");
+    if (!tried_gloves)
+        await mayberem(mon, Who, game.uarmg, "gloves");
+    await mayberem(mon, Who, game.uarms, "shield");
+    await mayberem(mon, Who, game.uarmh, helm_simple_name(game.uarmh));
+    if (!game.uarmc && !game.uarm)
+        await mayberem(mon, Who, game.uarmu, "shirt");
+
+    /* removing armor (levitation boots, or levitation ring to make
+       room for adornment ring with incubus case) might result in the
+       hero falling through a trap door or landing on a teleport trap
+       and changing location, so hero might not be adjacent to seducer
+       any more (mayberem() has its own adjacency test so we don't need
+       to check after each potential removal) */
+    if (u.utotype || !m_next2u(mon))
+        return 1;
+
+    if (game.uarm || game.uarmc) {
+        if (!Deaf()) {
+            if (!(ld() && mon.female)) {
+                /* SetVoice(mon, 0, 80, 0); */
+                await verbalize(`You're such a ${
+                    game.flags.female ? "sweet lady" : "nice guy"}; I wish...`);
+            } else {
+                const yourgloves = u_carried_gloves();
+
+                /* have her call your gloves by their correct
+                   name, possibly revealing them to you */
+                if (yourgloves)
+                    observe_object(yourgloves);
+                await verbalize(`Well, then you owe me ${
+                    yourgloves ? yname(yourgloves) : "twelve pairs of gloves"}${
+                    yourgloves ? " and eleven more pairs of gloves" : ""}!`);
+            }
+        } else if (seewho)
+            await pline(`${Monnam(mon)} appears to sigh.`); /* pline_mon() */
+        /* else no regret message if can't see or hear seducer */
+
+        if (!await tele_restrict(mon))
+            await rloc(mon, RLOC_MSG);
+        return 1;
+    }
+    if (u.ualign.type === A_CHAOTIC)
+        adjalign(1);
+
+    /* by this point you have discovered mon's identity, blind or not... */
+    await urgent_pline(
+        `Time stands still while you and ${noit_mon_nam(mon)} lie in each other's arms...`);
+    /* 3.6.1: a combined total for charisma plus intelligence of 35-1
+       used to guarantee successful outcome; now total maxes out at 32
+       as far as deciding what will happen; chance for bad outcome when
+       Cha+Int is 32 or more is 2/35, a bit over 5.7% */
+    attr_tot = ACURR(A_CHA) + ACURR(A_INT);
+    if (rn2(35) > Math.min(attr_tot, 32)) {
+        /* Don't bother with mspec_used here... it didn't get tired! */
+        await pline(`${noit_Monnam(mon)} seems to have enjoyed it more than you...`);
+        switch (rn2(5)) {
+        case 0:
+            await You_feel("drained of energy.");
+            u.uen = 0;
+            u.uenmax -= rnd(Half_physical_damage() ? 5 : 10);
+            exercise(A_CON, false);
+            if (u.uenmax < 0)
+                u.uenmax = 0;
+            break;
+        case 1:
+            await pline("You are down in the dumps."); /* You() */
+            await adjattrib(A_CON, -1, true);
+            exercise(A_CON, false);
+            game.disp_botl = true;
+            break;
+        case 2:
+            await pline("Your senses are dulled."); /* Your() */
+            await adjattrib(A_WIS, -1, true);
+            exercise(A_WIS, false);
+            game.disp_botl = true;
+            break;
+        case 3:
+            if (!resists_drli(game.youmonst)) {
+                await You_feel("out of shape.");
+                await losexp("overexertion");
+            } else {
+                await pline("You have a curious feeling..."); /* You() */
+            }
+            exercise(A_CON, false);
+            exercise(A_DEX, false);
+            exercise(A_WIS, false);
+            break;
+        case 4: {
+            let tmp;
+
+            await You_feel("exhausted.");
+            exercise(A_STR, false);
+            tmp = rn1(10, 6);
+            await losehp(Maybe_Half_Phys(tmp), "exhaustion", KILLED_BY);
+            break;
+        } /* case 4 */
+        } /* switch */
+    } else {
+        mon.mspec_used = rnd(100); /* monster is worn out */
+        await pline(`You seem to have enjoyed it more than ${noit_mon_nam(mon)}...`); /* You() */
+        switch (rn2(5)) {
+        case 0:
+            await You_feel("raised to your full potential.");
+            exercise(A_CON, true);
+            u.uen = (u.uenmax += rnd(5));
+            if (u.uenmax > (u.uenpeak || 0))
+                u.uenpeak = u.uenmax;
+            break;
+        case 1:
+            await You_feel("good enough to do it again.");
+            await adjattrib(A_CON, 1, true);
+            exercise(A_CON, true);
+            game.disp_botl = true;
+            break;
+        case 2:
+            await pline(`You will always remember ${noit_mon_nam(mon)}...`); /* You() */
+            await adjattrib(A_WIS, 1, true);
+            exercise(A_WIS, true);
+            game.disp_botl = true;
+            break;
+        case 3:
+            await pline("That was a very educational experience.");
+            await pluslvl(false);
+            exercise(A_WIS, true);
+            break;
+        case 4:
+            await You_feel("restored to health!");
+            u.uhp = u.uhpmax;
+            if (Upolyd())
+                u.mh = u.mhmax;
+            exercise(A_STR, true);
+            game.disp_botl = true;
+            break;
+        }
+    }
+
+    if (mon.mtame) { /* don't charge */
+        ;
+    } else if (rn2(20) < ACURR(A_CHA)) {
+        await pline(`${noit_Monnam(mon)} demands that you pay ${
+            noit_mhim(mon)}, but you refuse...`);
+    } else if (u.umonnum === M.PM_LEPRECHAUN) {
+        await pline(`${noit_Monnam(mon)} tries to take your gold, but fails...`);
+    } else {
+        let cost;
+        const umoney = money_cnt(game.invent);
+
+        if (umoney > LARGEST_INT - 10)
+            cost = rnd(LARGEST_INT) + 500;
+        else
+            cost = rnd(umoney + 10) + 500;
+        if (mon.mpeaceful) {
+            cost = Math.trunc(cost / 5);
+            if (!cost)
+                cost = 1;
+        }
+        if (cost > umoney)
+            cost = umoney;
+        if (!cost) {
+            if (!Deaf()) {
+                /* SetVoice(mon, 0, 80, 0); */
+                await verbalize("It's on the house!");
+            } else {
+                await pline("No charge.");
+            }
+        } else {
+            await pline(`${noit_Monnam(mon)} takes ${cost} ${
+                currency(cost)} for services rendered!`); /* pline_mon() */
+            money2mon(mon, cost);
+            game.disp_botl = true;
+        }
+    }
+    if (!rn2(25))
+        mon.mcan = 1; /* monster is worn out */
+    if (!await tele_restrict(mon))
+        await rloc(mon, RLOC_MSG);
+    return 1;
+}
+
+// C ref: mhitu.c mayberem()
+/* 'mon' tries to remove a piece of hero's armor */
+async function mayberem(mon,
+                        seducer, /* only used for alternate message */
+                        obj, str) {
+    let qbuf;
+
+    if (!obj || !obj.owornmask)
+        return;
+    /* removal of a previous item might have sent the hero elsewhere
+       (loss of levitation that leads to landing on a transport trap) */
+    if (game.u.utotype || !m_next2u(mon))
+        return;
+
+    /* being deaf overrides confirmation prompt for high charisma */
+    if (Deaf()) {
+        await pline(`${seducer} takes off your ${str}.`);
+    } else if (rn2(20) < ACURR(A_CHA)) {
+        /* SetVoice(mon, 0, 80, 0); -- y_n aka yn_function is set up for this */
+        qbuf = `"Shall I remove your ${str}, ${
+            (!rn2(2) ? "lover" : !rn2(2) ? "dear" : "sweetheart")}?"`;
+        if (await tty_yn_function(qbuf, "yn", 'n') === 'n') /* y_n() */
+            return;
+    } else {
+        const hairbuf = `let me run my fingers through your ${body_part(HAIR)}`;
+
+        /* SetVoice(mon, 0, 80, 0); */
+        await verbalize(`Take off your ${str}; ${
+            (obj === game.uarm)
+               ? "let's get a little closer"
+               : (obj === game.uarmc || obj === game.uarms)
+                  ? "it's in the way"
+                  : (obj === game.uarmf)
+                     ? "let me rub your feet"
+                     : (obj === game.uarmg)
+                        ? "they're too clumsy"
+                        : (obj === game.uarmu)
+                           ? "let me massage you"
+                           /* obj == uarmh */
+                           : hairbuf}.`);
+    }
+    await remove_worn_item(obj, true);
 }
 
 // C ref: mhitu.c passiveum()

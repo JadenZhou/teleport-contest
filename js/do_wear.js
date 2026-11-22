@@ -52,7 +52,7 @@ import { You_cant } from './display.js';
 import { doname, cloak_simple_name, suit_simple_name, helm_simple_name,
          gloves_simple_name, boots_simple_name, shield_simple_name,
          shirt_simple_name } from './objnam.js';
-import { the } from './iactions.js';
+import { the, thesimpleoname } from './iactions.js';
 import { change_luck } from './attrib.js';
 import { nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
@@ -975,7 +975,7 @@ export async function Blindf_off(otmp) {
 
 // C ref: do_wear.c Ring_on() -- rings whose effect is only the
 // extrinsic property so far
-function Ring_on(obj) {
+export function Ring_on(obj) {
     /* make sure ring isn't wielded; can't use remove_worn_item()
        here because it has already been set worn in a ring slot */
     if (obj === game.uwep)
@@ -1879,6 +1879,48 @@ export function cancel_don() {
     g.multi = 0;
     tk.delay = 0;
     tk.what = 0;
+}
+
+// C ref: do_wear.c stop_donning()
+/* called by steal() during theft from hero; interrupt donning/doffing */
+export async function stop_donning(
+    stolenobj) /* no mesg if stolenobj is already being doffed */ {
+    const g = game;
+    let buf;
+    let otmp;
+    let putting_on;
+    let result = 0;
+
+    for (otmp = g.invent; otmp; otmp = otmp.nobj)
+        if ((otmp.owornmask & W_ARMOR) && donning(otmp))
+            break;
+    /* at most one item will pass donning() test at any given time */
+    if (!otmp)
+        return 0;
+
+    /* donning() returns True when doffing too; doffing() is more specific */
+    putting_on = !doffing(otmp);
+    /* cancel_don() looks at afternmv; it can also cancel doffing */
+    cancel_don();
+    /* don't want <armor>_on() or <armor>_off() being called
+       by unmul() since the on or off action isn't completing */
+    g.afternmv = null;
+    if (putting_on || otmp !== stolenobj) {
+        buf = `You stop ${putting_on ? "putting on" : "taking off"} ${
+            thesimpleoname(otmp)}.`;
+    } else {
+        buf = "";   /* silently stop doffing stolenobj */
+        result = -g.multi; /* remember this before calling unmul() */
+    }
+    await unmul(buf);
+    /* while putting on, item becomes worn immediately but side-effects are
+       deferred until the delay expires; when interrupted, make it unworn
+       (while taking off, item stays worn until the delay expires; when
+       interrupted, leave it worn) */
+    if (putting_on)
+        await remove_worn_item(otmp, false);
+
+    return result;
 }
 
 // C ref: do_wear.c count_worn_stuff()

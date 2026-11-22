@@ -81,6 +81,7 @@ import { tty_getlin } from './wintty.js';
 import { safe_qbuf } from './pickup.js';
 import { surface } from './iactions.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
+import { set_bc } from './ball.js';
 import { float_vs_flight } from './polyself.js';
 import { monster_detect } from './detect.js';
 import { drinkfountain, dipfountain, drinksink, dipsink, floating_above,
@@ -481,7 +482,7 @@ export async function make_blinded(xtime, talk) {
         }
         /* Before the hero goes blind, set the ball&chain variables. */
         if (game.uball) /* Punished */
-            throw new Error('make_blinded(): set_bc() not ported yet');
+            set_bc(0);
     } else if (!old && xtime) {
         /* setting temporary blindness without toggling blindness */
         if (talk) {

@@ -2500,6 +2500,20 @@ export async function pline(msg) {
         game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
 }
 
+// C ref: pline.c urgent_pline() -- vpline() with URGENT_MESSAGE: the tty
+// (WC2_URGENT_MESG) gets the line with ATR_URGENT, which overrides a
+// pending ESC at --More-- (WIN_STOP)
+export async function urgent_pline(msg) {
+    if (game.vision_full_recalc)
+        vision_recalc(0);
+    if (game.u?.ux)
+        await flush_screen(1); /* %% */
+    await tty_putstr(game.WIN_MESSAGE, 16 /* ATR_URGENT */, msg);
+    /* this gets cleared after every pline message */
+    if (game.iflags)
+        game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
+}
+
 // C ref: pline.c Norep() -- pline() with PLINE_NOREPEAT: msgtype_type()
 // gives MSGTYP_NOREP (no MSGTYPE patterns are set), and vpline() skips a
 // line that is the same as gp.prevmsg

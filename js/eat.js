@@ -212,7 +212,7 @@ export function init_uhunger() {
 }
 
 // C ref: eat.c is_fainted()
-function is_fainted() {
+export function is_fainted() {
     return game.u.uhs === FAINTED;
 }
 
@@ -222,7 +222,7 @@ export function Unaware() {
 }
 
 // C ref: trap.c unconscious()
-function unconscious() {
+export function unconscious() {
     const g = game;
     if (g.multi >= 0)
         return false;
