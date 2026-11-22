@@ -2265,8 +2265,8 @@ export function see_monsters() {
     if (u.ustuck)
         u.ustuck.meverseen = 1;
 
-    /* loop through level.monsters (aka fmon) */
-    for (const mon of game.level?.monsters || []) {
+    /* loop through level.monsters (aka fmon), in fmon order */
+    for (let mon = game.fmon; mon; mon = mon.nmon) {
         if (mon.dead || mon.mhp < 1) /* DEADMONSTER(mon) */
             continue;
         if (((mon.mstate || 0) & MON_STILL_ARRIVING) !== 0)
