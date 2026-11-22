@@ -61,6 +61,7 @@ import {
     is_poisonable, permapoisoned, Is_candle, is_weptool, rnd_class,
     Is_container,
 } from './mkobj.js';
+import { delete_contents } from './invent.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -2442,7 +2443,7 @@ export function readobjnam(bp, no_wish) {
         case O.STATUE:
             d.otmp.corpsenm = d.mntmp;
             if (Has_contents(d.otmp) && verysmall(mons[d.mntmp]))
-                not_ported('readobjnam() statue delete_contents()');
+                delete_contents(d.otmp); /* no spellbook */
             break;
         case O.SCALE_MAIL:
             /* Dragon mail - depends on the order of objects & dragons. */
@@ -2509,7 +2510,7 @@ export function readobjnam(bp, no_wish) {
             if (d.otmp.spe > 0)
                 d.otmp.spe = 0;
         } else if (d.otmp.cobj && d.otmp.cobj.length) { /* Has_contents() */
-            not_ported('delete_contents()');
+            delete_contents(d.otmp);
         }
     }
     /* set locked/unlocked/broken */
