@@ -1945,8 +1945,8 @@ export async function use_misc(mtmp) {
         if (!otmp)
             throw new Error(MissingMiscellaneousItem("wand of polymorph"));
         await mzapwand(mtmp, otmp, true);
-        newcham(mtmp, muse_newcham_mon(mtmp),
-                NC_VIA_WAND_OR_SPELL | NC_SHOW_MSG);
+        await newcham(mtmp, muse_newcham_mon(mtmp),
+                      NC_VIA_WAND_OR_SPELL | NC_SHOW_MSG);
         if (oseen)
             makeknown(WAN_POLYMORPH);
         return 2;
@@ -1957,7 +1957,7 @@ export async function use_misc(mtmp) {
         m_useup(mtmp, otmp);
         if (vismon) /* pline_mon() */
             await pline(`${Monnam(mtmp)} suddenly mutates!`);
-        newcham(mtmp, muse_newcham_mon(mtmp), NC_SHOW_MSG);
+        await newcham(mtmp, muse_newcham_mon(mtmp), NC_SHOW_MSG);
         if (oseen)
             makeknown(POT_POLYMORPH);
         return 2;
@@ -1986,7 +1986,7 @@ export async function use_misc(mtmp) {
             throw new Error('use_misc(): worm_move() not ported yet');
         newsym(game.trapx, game.trapy);
 
-        newcham(mtmp, null, NC_SHOW_MSG);
+        await newcham(mtmp, null, NC_SHOW_MSG);
         return 2;
     }
     case MUSE_BAG:

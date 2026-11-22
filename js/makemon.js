@@ -71,7 +71,7 @@ import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
          SEE_INVIS } from './const.js';
 import { set_apparxy, dochugw } from './monmove.js';
 import { noteleport_level } from './teleport.js';
-import { newcham } from './mon.js';
+import { newcham_sync } from './mon.js';
 import { mpickobj } from './steal.js';
 import { add_to_minv } from './mkobj.js';
 import { m_dowear, which_armor, mon_adjust_speed_sync } from './worn.js';
@@ -1890,7 +1890,7 @@ export function makemon(ptr, x, y, mmflags) {
         /* Vlad stays in his normal shape so he can carry the Candelabrum */
         if (mndx !== M.PM_VLAD_THE_IMPALER
             /* Let newcham() pick the shape. */
-            && newcham(mtmp, null, 0 /* NO_NC_FLAGS */))
+            && newcham_sync(mtmp, null, 0 /* NO_NC_FLAGS */))
             allow_minvent = false;
     } else if (mndx === M.PM_WIZARD_OF_YENDOR) {
         mtmp.iswiz = true;

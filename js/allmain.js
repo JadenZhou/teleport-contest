@@ -57,6 +57,8 @@ import { u_wipe_engr } from './engrave.js';
 import { dosearch0, warnreveal } from './detect.js';
 import { set_uasmon } from './polyself.js';
 import { init_artifacts } from './artifact.js';
+import { run_regions } from './region.js';
+import { m_everyturn_effect } from './monmove.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -467,7 +469,7 @@ export async function moveloop_core() {
 
                 /* set up for a new turn */
                 g.were_changes = 0;
-                mcalcdistress(); /* adjust monsters' trap, blind, etc */
+                await mcalcdistress(); /* adjust monsters' trap, blind, etc */
 
                 /* reallocate movement rations to monsters; don't need
                    to skip dead monsters here because they will have
@@ -501,10 +503,7 @@ export async function moveloop_core() {
                 if (P[GLIB].intrinsic) /* Glib */
                     throw new Error('moveloop_core(): glibr() not ported yet');
                 await nh_timeout();
-                /* run_regions(): not ported yet (region.js). The only regions
-                   so far are the themed Cloud room's harmless permanent gas
-                   clouds; run_regions() rolls no dice for those (it only
-                   ages/expires them and prints dissipation messages). */
+                await run_regions();
 
                 if (u.ublesscnt)
                     u.ublesscnt--;
@@ -657,6 +656,8 @@ export async function moveloop_core() {
     }
     await bot();
     await flush_screen(1);
+
+    await m_everyturn_effect(g.youmonst);
 
     g.context.move = 1;
 

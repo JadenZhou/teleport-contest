@@ -15,22 +15,23 @@ import { mons, PM_LITTLE_DOG, PM_KITTEN, PM_PONY, PM_CAVE_DWELLER,
 import { AMULET_OF_YENDOR } from './objects.js';
 import { makemon, is_domestic, set_malign, put_saddle_on_mon,
          m_at, pm_to_cham } from './makemon.js';
-import { monsndx } from './mondata.js';
+import { monsndx, regenerates } from './mondata.js';
+import { healmon } from './mon.js';
+import { M1_CARNIVORE, M1_HERBIVORE, S_MIMIC } from './monsters.js';
+import { LARGEST_INT, M_AP_NOTHING } from './const.js';
 import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
 import { on_level, ledger_to_dnum, ledger_to_dlev, depth,
          In_W_tower } from './dungeon.js';
-import { relmon, mnearto, healmon } from './mon.js';
+import { relmon, mnearto } from './mon.js';
 import { stairway_find_from, stairway_find, somexy } from './mklev.js';
 import { in_rooms } from './hack.js';
 import { rloc } from './teleport.js';
-import { regenerates } from './mondata.js';
 import { rn1 } from './rng.js';
 import { MIGR_APPROX_XY, MIGR_WITH_HERO, MIGR_STAIRS_UP, MIGR_STAIRS_DOWN,
          MIGR_LADDER_UP, MIGR_LADDER_DOWN, MIGR_SSTAIRS, MIGR_PORTAL,
          MIGR_RANDOM, MIGR_LEFTOVERS, ROOMOFFSET, COLNO, ROWNO,
-         M_AP_NOTHING } from './const.js';
-import { S_MIMIC, M1_CARNIVORE, M1_HERBIVORE } from './monsters.js';
+         } from './const.js';
 import { vision_recalc } from './vision.js';
 import { PM_FLAMING_SPHERE, PM_SHOCKING_SPHERE, PM_BABY_GOLD_DRAGON,
          PM_FIRE_VORTEX, PM_FIRE_ELEMENTAL, PM_GOLD_DRAGON,
@@ -710,9 +711,13 @@ export function mon_catchup_elapsed_time(
     nmv) /* number of moves */
 {
     let imv = 0; /* avoid zillions of casts and lint warnings */
-    const LARGEST_INT = 32767;
 
-    if (nmv >= LARGEST_INT) /* paranoia */
+    /* NH_DEVEL_STATUS != NH_STATUS_RELEASED in this build */
+    if (nmv < 0) { /* crash likely... */
+        throw new Error('panic: catchup from future time?');
+    } else if (nmv === 0) { /* safe, but shouldn't happen */
+        /* impossible("catchup from now?") */
+    } else if (nmv >= LARGEST_INT) /* paranoia */
         imv = LARGEST_INT - 1;
     else
         imv = nmv;
@@ -739,26 +744,18 @@ export function mon_catchup_elapsed_time(
     }
 
     /* might recover from temporary trouble */
-    if (mtmp.mtrapped && rn2(imv + 1) > Math.trunc(40 / 2))
+    if (mtmp.mtrapped && rn2(imv + 1) > (40 / 2 | 0))
         mtmp.mtrapped = 0;
-    if (mtmp.mconf && rn2(imv + 1) > Math.trunc(50 / 2))
+    if (mtmp.mconf && rn2(imv + 1) > (50 / 2 | 0))
         mtmp.mconf = 0;
-    if (mtmp.mstun && rn2(imv + 1) > Math.trunc(10 / 2))
+    if (mtmp.mstun && rn2(imv + 1) > (10 / 2 | 0))
         mtmp.mstun = 0;
 
     /* might finish eating or be able to use special ability again */
     if (mtmp.meating) {
-        if (imv > mtmp.meating) {
-            /* finish_meating(mtmp) */
-            mtmp.meating = 0;
-            if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING
-                && mtmp.data.mlet !== S_MIMIC) {
-                /* was eating a mimic and now appearance needs resetting */
-                mtmp.m_ap_type = M_AP_NOTHING;
-                mtmp.mappearance = 0;
-                newsym(mtmp.mx, mtmp.my);
-            }
-        } else
+        if (imv > mtmp.meating)
+            finish_meating(mtmp);
+        else
             mtmp.meating -= imv;
     }
     if (imv > (mtmp.mspec_used || 0))
@@ -789,15 +786,29 @@ export function mon_catchup_elapsed_time(
             mtmp.mtame = mtmp.mpeaceful = 0;
     }
 
-    if (!mtmp.mtame && mtmp.mleashed)
+    if (!mtmp.mtame && mtmp.mleashed) {
         /* leashed monsters should always be with hero, consequently
            never losing any time to be accounted for later */
+        /* impossible("catching up for leashed monster?") */
         throw new Error('mon_catchup_elapsed_time(): m_unleash() not ported yet');
+    }
 
     /* recover lost hit points */
     if (!regenerates(mtmp.data))
         imv = Math.trunc(imv / 20);
     healmon(mtmp, imv, 0);
 
-    mtmp.mlstmv = game.moves; /* set_mon_lastmove() */
+    /* set_mon_lastmove(mtmp) */
+    mtmp.mlstmv = game.moves;
+}
+
+// C ref: dogmove.c finish_meating()
+function finish_meating(mtmp) {
+    mtmp.meating = 0;
+    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== S_MIMIC) {
+        /* was eating a mimic and now appearance needs resetting */
+        mtmp.m_ap_type = M_AP_NOTHING;
+        mtmp.mappearance = 0;
+        newsym(mtmp.mx, mtmp.my);
+    }
 }

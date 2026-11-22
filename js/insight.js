@@ -84,7 +84,7 @@ import { carrying } from './invent.js';
 import { u_adtyp_resistance_obj, item_what } from './zap.js';
 import { shield_simple_name } from './iactions.js';
 import { pline } from './display.js';
-import { visible_region_at } from './region.js';
+import { visible_region_at, reg_damg } from './region.js';
 import { find_mac } from './worn.js';
 import { x_monnam, ARTICLE_YOUR, SUPPRESS_IT, SUPPRESS_INVISIBLE } from './do_name.js';
 import { STRAT_WAITMASK, MFAST, MSLOW } from './const.js';
@@ -2239,8 +2239,10 @@ export async function ustatusline() {
         info += ", invisible";
     if (u.ustuck)
         throw new Error('ustatusline(): u.ustuck text not ported yet');
-    if (!u.uswallow && visible_region_at(u.ux, u.uy))
-        throw new Error('ustatusline(): region text (reg_damg()) not ported yet');
+    let reg;
+    if (!u.uswallow
+        && (reg = visible_region_at(u.ux, u.uy)) != null)
+        info += `, in a cloud of ${reg_damg(reg) ? "poison gas" : "vapor"}`;
 
     const Upolyd = (u.umonnum !== u.umonster);
     await pline(`Status of ${game.plname} (${piousness(false, align_str(u.ualign.type))}):  `
