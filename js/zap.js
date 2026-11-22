@@ -763,9 +763,20 @@ export async function zapnodir(obj) {
 
     switch (obj.otyp) {
     case WAN_LIGHT:
-        throw new Error('zapnodir(): wand of light (litroom()) not ported yet');
+    case SPE_LIGHT_ZN:
+        /* FIXME? wand of light becoming discovered should be contingent upon
+           seeing at least one previously unlit spot become lit */
+        known = !!(obj.dknown && !Blind());
+        await litroom(true, obj);
+        await lightdamage(obj, true, 5);
+        break;
     case WAN_SECRET_DOOR_DETECTION:
-        throw new Error('zapnodir(): secret door detection (findit()) not ported yet');
+    case SPE_DETECT_UNSEEN_ZN:
+        /* findit() gives sufficient feedback to discover the wand even when
+           blinded or when it fails to find anything */
+        known = !!obj.dknown;
+        await findit();
+        break;
     case WAN_STASIS: {
         const tmp_until = game.moves + rn1(21, 10);
 
@@ -779,7 +790,16 @@ export async function zapnodir(obj) {
     case WAN_CREATE_MONSTER:
         throw new Error('zapnodir(): wand of create monster (create_critters()) not ported yet');
     case WAN_WISHING:
-        throw new Error('zapnodir(): wand of wishing (makewish()) not ported yet');
+        if ((game.u.uluck || 0) + (game.u.moreluck || 0) + rn2(5) < 0) { /* Luck */
+            await pline("Unfortunately, nothing happens.");
+            known = false;
+        } else {
+            known = !!obj.dknown;
+            /* wand of wishing asks player what to wish for so always becomes
+               discovered (unless it hasn't been seen) */
+            await makewish();
+        }
+        break;
     case WAN_ENLIGHTENMENT:
         known = !!obj.dknown;
         /* do_enlightenmnt_effect() always describes enlightenment */
@@ -1659,3 +1679,9 @@ async function burn_floor_objects(
             throw new Error('burn_floor_objects(): catch_lit() not ported yet');
     return cnt;
 }
+
+import { findit } from './detect.js';
+import { makewish } from './wizcmds.js';
+import { SPE_LIGHT as SPE_LIGHT_ZN,
+         SPE_DETECT_UNSEEN as SPE_DETECT_UNSEEN_ZN } from './objects.js';
+import { litroom, lightdamage } from './read.js';

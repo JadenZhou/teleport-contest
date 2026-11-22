@@ -1471,7 +1471,7 @@ async function seffect_light(sobjp) {
 
 // C ref: zap.c lightdamage() -- light shining on a hero polymorphed
 // into a gremlin; a hero in normal form takes no damage
-async function lightdamage(obj, ordinary, amt) {
+export async function lightdamage(obj, ordinary, amt) {
     void obj, ordinary, amt;
     if (game.youmonst.data === mons[PM_GREMLIN])
         throw new Error('lightdamage(): light hurting a gremlin hero not ported yet');

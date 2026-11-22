@@ -88,8 +88,9 @@ function terrain_glyph(loc, x, y) {
         /* the default symset doesn't color the branch wall variants */
         return { ch: tg.asc ?? DEF_CMAP_FOR_DEC[tg.ch] ?? tg.ch,
                  color: tg.wall ? NO_COLOR : tg.color, dec: false,
-                 cmap: tg.cmap };
-    return { ch: tg.ch, color: tg.color, dec: tg.dec, cmap: tg.cmap };
+                 cmap: tg.cmap, cmapidx: tg.cmapidx };
+    return { ch: tg.ch, color: tg.color, dec: tg.dec, cmap: tg.cmap,
+             cmapidx: tg.cmapidx };
 }
 
 // C ref: display.h cmap_to_glyph() -- for the S_* symbols set_mimic_sym()
@@ -98,7 +99,7 @@ function terrain_glyph(loc, x, y) {
 // branch's wall glyphs (cmap_walls_to_glyph()); S_altar is
 // altar_to_glyph(AM_NEUTRAL).
 const CMAP_NAMES = { 1: 'S_vwall', 2: 'S_hwall', 15: 'S_vcdoor', 16: 'S_hcdoor',
-    25: 'S_upstair', 26: 'S_dnstair', 33: 'S_altar', 34: 'S_grave',
+    22: 'S_corr', 25: 'S_upstair', 26: 'S_dnstair', 33: 'S_altar', 34: 'S_grave',
     35: 'S_throne', 36: 'S_sink', 37: 'S_fountain' };
 export function cmap_to_glyph(sym) {
     let tg;
@@ -133,6 +134,9 @@ export function cmap_to_glyph(sym) {
         break;
     case 37: /* S_fountain */
         tg = { ch: '{', color: CLR_BRIGHT_BLUE, dec: false };
+        break;
+    case 22: /* S_corr */
+        tg = { ch: '#', color: CLR_GRAY, dec: false };
         break;
     default:
         throw new Error(`cmap_to_glyph(): cmap symbol ${sym} not ported yet`);
@@ -625,8 +629,9 @@ function wall_angle(lev) {
    DECgraphics symsets) it is shown in CLR_WHITE to tell them apart.
    'cmap' lets newsym() and feel_location() recognize the remembered
    glyph (lev->glyph == cmap_to_glyph(S_litcorr)). */
-const S_corr_g = { ch: '#', color: CLR_GRAY, dec: false, cmap: 'S_corr' };
-const S_litcorr_g = { ch: '#', color: CLR_WHITE, dec: false, cmap: 'S_litcorr' };
+const S_corr_g = { ch: '#', color: CLR_GRAY, dec: false, cmap: 'S_corr', cmapidx: 22 };
+const S_litcorr_g = { ch: '#', color: CLR_WHITE, dec: false, cmap: 'S_litcorr',
+                      cmapidx: 23 };
 
 // C ref: display.h cmap_walls_to_glyph() + display.c reset_glyphmap()
 // wall_color(): the color of the hero's branch's wall glyphs under the
@@ -650,12 +655,13 @@ function dec_wall_color() {
 function terrain_glyph_dec(loc, x, y) {
     const typ = loc.typ;
     const arboreal = !!game.level?.flags?.arboreal;
-    const S_stone = { ch: ' ', color: NO_COLOR, dec: false };
-    const S_tree = { ch: 'g', color: CLR_GREEN, dec: true, asc: '#' };
-    const S_room = { ch: '~', color: NO_COLOR, dec: true, cmap: 'S_room' }; /* '.' */
-    const S_ndoor = { ch: '~', color: CLR_GRAY, dec: true };   /* '.' */
-    const S_hwall = { ch: 'q', color: NO_COLOR, dec: true };   /* '-' */
-    const S_vwall = { ch: 'x', color: NO_COLOR, dec: true };   /* '|' */
+    /* cmapidx: the defsym.h S_* index (glyph_to_cmap()) */
+    const S_stone = { ch: ' ', color: NO_COLOR, dec: false, cmapidx: 0 };
+    const S_tree = { ch: 'g', color: CLR_GREEN, dec: true, asc: '#', cmapidx: 18 };
+    const S_room = { ch: '~', color: NO_COLOR, dec: true, cmap: 'S_room', cmapidx: 19 }; /* '.' */
+    const S_ndoor = { ch: '~', color: CLR_GRAY, dec: true, cmapidx: 12 };   /* '.' */
+    const S_hwall = { ch: 'q', color: NO_COLOR, dec: true, cmapidx: 2 };   /* '-' */
+    const S_vwall = { ch: 'x', color: NO_COLOR, dec: true, cmapidx: 1 };   /* '|' */
     switch (typ) {
     case SCORR:
     case STONE:     return arboreal ? S_tree : S_stone;
@@ -686,15 +692,15 @@ function terrain_glyph_dec(loc, x, y) {
         case 'S_tree':   return S_tree;
         case 'S_hwall':  return { ...S_hwall, color: wc, wall: true };    // ─
         case 'S_vwall':  return { ...S_vwall, color: wc, wall: true };    // │
-        case 'S_tlcorn': return { ch: 'l', color: wc, dec: true, wall: true };  // ┌
-        case 'S_trcorn': return { ch: 'k', color: wc, dec: true, wall: true };  // ┐
-        case 'S_blcorn': return { ch: 'm', color: wc, dec: true, wall: true };  // └
-        case 'S_brcorn': return { ch: 'j', color: wc, dec: true, wall: true };  // ┘
-        case 'S_crwall': return { ch: 'n', color: wc, dec: true, wall: true };  // ┼
-        case 'S_tuwall': return { ch: 'v', color: wc, dec: true, wall: true };  // ┴
-        case 'S_tdwall': return { ch: 'w', color: wc, dec: true, wall: true };  // ┬
-        case 'S_tlwall': return { ch: 'u', color: wc, dec: true, wall: true };  // ┤
-        case 'S_trwall': return { ch: 't', color: wc, dec: true, wall: true };  // ├
+        case 'S_tlcorn': return { ch: 'l', color: wc, dec: true, wall: true, cmapidx: 3 };  // ┌
+        case 'S_trcorn': return { ch: 'k', color: wc, dec: true, wall: true, cmapidx: 4 };  // ┐
+        case 'S_blcorn': return { ch: 'm', color: wc, dec: true, wall: true, cmapidx: 5 };  // └
+        case 'S_brcorn': return { ch: 'j', color: wc, dec: true, wall: true, cmapidx: 6 };  // ┘
+        case 'S_crwall': return { ch: 'n', color: wc, dec: true, wall: true, cmapidx: 7 };  // ┼
+        case 'S_tuwall': return { ch: 'v', color: wc, dec: true, wall: true, cmapidx: 8 };  // ┴
+        case 'S_tdwall': return { ch: 'w', color: wc, dec: true, wall: true, cmapidx: 9 };  // ┬
+        case 'S_tlwall': return { ch: 'u', color: wc, dec: true, wall: true, cmapidx: 10 };  // ┤
+        case 'S_trwall': return { ch: 't', color: wc, dec: true, wall: true, cmapidx: 11 };  // ├
         default:         return S_stone;
         }
     }
@@ -703,15 +709,17 @@ function terrain_glyph_dec(loc, x, y) {
             if (loc.doormask & D_BROKEN)
                 return S_ndoor;
             else if (loc.doormask & D_ISOPEN) /* S_hodoor '|' / S_vodoor '-' */
-                return { ch: 'a', color: CLR_BROWN, dec: true, asc: loc.horizontal ? '|' : '-' };
+                return { ch: 'a', color: CLR_BROWN, dec: true, asc: loc.horizontal ? '|' : '-',
+                         cmapidx: loc.horizontal ? 14 : 13 };
             else /* else is closed: S_hcdoor / S_vcdoor */
-                return { ch: '+', color: CLR_BROWN, dec: false };
+                return { ch: '+', color: CLR_BROWN, dec: false,
+                         cmapidx: loc.horizontal ? 16 : 15 };
         }
         return S_ndoor;
-    case IRONBARS:  return { ch: '|', color: CLR_CYAN, dec: true, asc: '#' };  /* S_bars */
+    case IRONBARS:  return { ch: '|', color: CLR_CYAN, dec: true, asc: '#', cmapidx: 17 };  /* S_bars */
     case TREE:      return S_tree;
     case POOL:
-    case MOAT:      return { ch: '`', color: CLR_BLUE, dec: true, asc: '}' };  /* S_pool */
+    case MOAT:      return { ch: '`', color: CLR_BLUE, dec: true, asc: '}', cmapidx: 38 };  /* S_pool */
     case STAIRS:
     case LADDER: {
         let down;
@@ -719,25 +727,31 @@ function terrain_glyph_dec(loc, x, y) {
         else down = !(game.level?.upstair?.x === x && game.level?.upstair?.y === y);
         /* S_brupstair/S_brdnstair (and ladders) for known branch stairs */
         const br = known_branch_stairs(stairway_at(x, y));
+        /* S_upstair 25, S_dnstair 26, S_upladder 27, S_dnladder 28,
+           S_brupstair 29 .. S_brdnladder 32 */
+        const cmapidx = (br ? 29 : 25) + (typ === LADDER ? 2 : 0) + (down ? 1 : 0);
         if (typ === LADDER)
             return { ch: down ? 'z' : 'y', color: br ? CLR_YELLOW : CLR_BROWN,
-                     dec: true, asc: down ? '>' : '<' };
-        return { ch: down ? '>' : '<', color: br ? CLR_YELLOW : CLR_GRAY, dec: false };
+                     dec: true, asc: down ? '>' : '<', cmapidx };
+        return { ch: down ? '>' : '<', color: br ? CLR_YELLOW : CLR_GRAY, dec: false,
+                 cmapidx };
     }
-    case FOUNTAIN:  return { ch: '{', color: CLR_BRIGHT_BLUE, dec: false };
-    case SINK:      return { ch: '{', color: CLR_WHITE, dec: false };
-    case ALTAR:     return { ch: '{', color: CLR_GRAY, dec: true, asc: '_' };  /* S_altar */
-    case GRAVE:     return { ch: '|', color: CLR_WHITE, dec: false };
-    case THRONE:    return { ch: '\\', color: CLR_YELLOW, dec: false };
-    case LAVAPOOL:  return { ch: '`', color: CLR_RED, dec: true, asc: '}' };
-    case LAVAWALL:  return { ch: '`', color: CLR_ORANGE, dec: true, asc: '}' };
-    case ICE:       return { ch: '~', color: CLR_CYAN, dec: true, asc: '.' };
-    case AIR:       return { ch: ' ', color: CLR_CYAN, dec: false };
-    case CLOUD:     return { ch: '#', color: CLR_GRAY, dec: false };
-    case WATER:     return { ch: '`', color: CLR_BLUE, dec: true, asc: '}' };
-    case DBWALL:    return { ch: '#', color: CLR_BROWN, dec: false };
+    case FOUNTAIN:  return { ch: '{', color: CLR_BRIGHT_BLUE, dec: false, cmapidx: 37 };
+    case SINK:      return { ch: '{', color: CLR_WHITE, dec: false, cmapidx: 36 };
+    case ALTAR:     return { ch: '{', color: CLR_GRAY, dec: true, asc: '_', cmapidx: 33 };  /* S_altar */
+    case GRAVE:     return { ch: '|', color: CLR_WHITE, dec: false, cmapidx: 34 };
+    case THRONE:    return { ch: '\\', color: CLR_YELLOW, dec: false, cmapidx: 35 };
+    case LAVAPOOL:  return { ch: '`', color: CLR_RED, dec: true, asc: '}', cmapidx: 40 };
+    case LAVAWALL:  return { ch: '`', color: CLR_ORANGE, dec: true, asc: '}', cmapidx: 41 };
+    case ICE:       return { ch: '~', color: CLR_CYAN, dec: true, asc: '.', cmapidx: 39 };
+    case AIR:       return { ch: ' ', color: CLR_CYAN, dec: false, cmapidx: 46 };
+    case CLOUD:     return { ch: '#', color: CLR_GRAY, dec: false, cmapidx: 47 };
+    case WATER:     return { ch: '`', color: CLR_BLUE, dec: true, asc: '}', cmapidx: 48 };
+    case DBWALL:    return { ch: '#', color: CLR_BROWN, dec: false,
+                             cmapidx: loc.horizontal ? 45 : 44 };
     case DRAWBRIDGE_UP: return S_room;
-    case DRAWBRIDGE_DOWN: return { ch: '~', color: CLR_BROWN, dec: true, asc: '#' };
+    case DRAWBRIDGE_DOWN: return { ch: '~', color: CLR_BROWN, dec: true, asc: '#',
+                                   cmapidx: loc.horizontal ? 43 : 42 };
     default:        return S_room;
     }
 }
@@ -1399,15 +1413,122 @@ export function unmap_object(x, y) {
     }
 }
 
+// C ref: display.c magic_map_background()
+/*
+ * This function is similar to map_background (see below) except we pay
+ * attention to and correct unexplored, lit ROOM and CORR spots.
+ */
+export function magic_map_background(x, y, show) {
+    let glyph = back_to_glyph(x, y); /* assumes hero can see x,y */
+    const lev = game.level.at(x, y);
+
+    /*
+     * Correct for out of sight lit corridors and rooms that the hero
+     * doesn't remember as lit.
+     */
+    if (!cansee(x, y) && !lev.waslit) {
+        /* Floor spaces are dark if unlit.  Corridors are dark if unlit. */
+        if (lev.typ === ROOM && glyph.cmap === 'S_room')
+            /* cmap_to_glyph(DARKROOMSYM): JS remembers S_darkroom spots
+               as S_room (see newsym()) */
+            glyph = (game.flags.dark_room !== false
+                     && game.iflags.wc_color !== false)
+                        ? glyph
+                        : GLYPH_NOTHING;
+        else if (lev.typ === CORR && glyph.cmap === 'S_litcorr')
+            glyph = rememb_glyph(S_corr_g);
+    }
+    if (game.level.flags?.hero_memory
+        /* glyph_is_unexplored(lev->glyph) || glyph_is_cmap(lev->glyph) */
+        && glyph_kind(lev.remembered_glyph) === 'cmap')
+        lev.remembered_glyph = glyph;
+    if (show)
+        show_glyph(x, y, glyph);
+
+    update_lastseentyp(x, y);
+}
+
+/* GLYPH_NOTHING, shown as blank */
+const GLYPH_NOTHING = { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'nothing' };
+/* GLYPH_INVISIBLE in the remembered-glyph form: S_invisible 'I',
+   invis_color() NO_COLOR */
+export const GLYPH_INVISIBLE = { ch: 'I', color: NO_COLOR, decgfx: false,
+                                 invisible: true };
+
+// C ref: display.h mon_to_glyph() -- in the glyph_at() form; 'rng' is
+// used by what_mon() when hallucinating
+export function mon_to_glyph(mon, rng) {
+    const mndx = Hallucination() ? rng(NUMMONS) /* random_monster(rng) */
+                                 : mon.data.pmidx;
+    const ptr = mons[mndx];
+    return { ch: def_monsyms[ptr.mlet] ?? '?', color: ptr.mcolor ?? NO_COLOR,
+             decgfx: false, kind: 'mon', mndx };
+}
+
+// C ref: display.c flash_glyph_at()
+/*
+ * flash_glyph_at(x, y, glyph, repeatcount)
+ *
+ * Briefly flash between the passed glyph and the glyph that's
+ * meant to be at the location.
+ */
+export async function flash_glyph_at(x, y, tg, rpt) {
+    const glyph = [];
+
+    rpt *= 2; /* two loop iterations per 'count' */
+    glyph[0] = tg;
+    glyph[1] = (game.level.flags?.hero_memory)
+               ? (game.level.at(x, y).remembered_glyph
+                  ?? { ch: ' ', color: NO_COLOR, decgfx: false }) /* unexplored */
+               : back_to_glyph(x, y);
+    /* even iteration count (guaranteed) ends with glyph[1] showing;
+       caller might want to override that, but no newsym() calls here
+       in case caller has tinkered with location visibility */
+    for (let i = 0; i < rpt; i++) {
+        show_glyph(x, y, glyph[i % 2]);
+        await flush_screen(1);
+        /* nh_delay_output(): display timing only */
+    }
+}
+
+/* a glyph_at() glyph in the remembered-glyph form (lev->glyph = glyph) */
+export function glyph_at_to_remembered(glyph) {
+    const rg = { ch: glyph.ch, color: glyph.color, decgfx: glyph.decgfx };
+    switch (glyph.kind) {
+    case 'obj':
+        rg.obj = true;
+        rg.piletop = glyph.piletop;
+        rg.otyp = glyph.otyp;
+        if (glyph.corpsenm !== undefined)
+            rg.corpsenm = glyph.corpsenm;
+        break;
+    case 'trap':
+        rg.trap = true;
+        break;
+    case 'invisible':
+        rg.invisible = true;
+        break;
+    case 'engr':
+        rg.engr = true;
+        break;
+    default:
+        if (glyph.cmapidx !== undefined)
+            rg.cmapidx = glyph.cmapidx;
+        break;
+    }
+    return rg;
+}
+
 // C ref: display.c map_background()
 export function map_background(x, y, show) {
     const loc = game.level.at(x, y);
     const tg = terrain_glyph(loc, x, y);
     if (game.level.flags?.hero_memory)
         loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
-                                 cmap: tg.cmap };
+                                 cmap: tg.cmap, cmapidx: tg.cmapidx };
     if (show)
-        show_glyph_cell(x, y, tg.ch, tg.color, tg.dec);
+        show_glyph_cell(x, y, tg.ch, tg.color, tg.dec, 0, 'cmap', false,
+                        tg.cmapidx !== undefined ? { cmapidx: tg.cmapidx } : null);
 }
 
 // C ref: defsym.h trap PCHAR()s, S_arrow_trap .. S_trapped_chest: the
@@ -1468,7 +1589,7 @@ function spot_shows_engravings(x, y) {
 /*
  * Map the engraving and print it out if directed.
  */
-function map_engraving(ep, show) {
+export function map_engraving(ep, show) {
     const x = ep.engr_x, y = ep.engr_y;
     /* engraving_to_glyph(ep): engrave.h engraving_to_defsym() is
        S_engrcorr on a corridor, else S_engroom; DECgraphics doesn't
@@ -1684,7 +1805,7 @@ export function newsym(x, y) {
                 throw new Error('newsym(): feel_location() of an unseen hero spot not ported yet');
             const tg = terrain_glyph(loc, x, y);
             loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
-                                     cmap: tg.cmap };
+                                     cmap: tg.cmap, cmapidx: tg.cmapidx };
             /* C ref: display.c feel_location(): Corridors are never felt
                as lit (unless remembered that way) (lit_corridor only). */
             if (loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr'
@@ -1759,7 +1880,8 @@ export function newsym(x, y) {
 
 /* a terrain glyph in the remembered-glyph form (lev->glyph) */
 function rememb_glyph(tg) {
-    return { ch: tg.ch, color: tg.color, decgfx: tg.dec, cmap: tg.cmap };
+    return { ch: tg.ch, color: tg.color, decgfx: tg.dec, cmap: tg.cmap,
+             cmapidx: tg.cmapidx };
 }
 
 // C ref: display.h enum docrt_flags_bits

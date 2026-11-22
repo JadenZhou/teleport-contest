@@ -2528,3 +2528,41 @@ export async function dogenocided() {
     await list_genocided(game.iflags.menu_requested ? 'a' : 'y', false);
     return 0; /* ECMD_OK */
 }
+
+// C ref: insight.c trap_predicament()
+/* describe u.utraptype; used by status_enlightenment() and self_lookat() */
+export function trap_predicament(final, wizxtra) {
+    const u = game.u;
+    let outbuf;
+    let t;
+
+    /* caller has verified u.utrap */
+    switch (u.utraptype) {
+    case TT_BURIEDBALL_IS:
+        outbuf = "tethered to something buried";
+        break;
+    case TT_LAVA_IS:
+        outbuf = `sinking into ${final ? "lava" : hliquid_is("lava")}`;
+        break;
+    case TT_INFLOOR_IS:
+        outbuf = `stuck in ${the_is(surface_is(u.ux, u.uy))}`;
+        break;
+    default: /* TT_BEARTRAP, TT_PIT, or TT_WEB */
+        outbuf = "trapped";
+        if ((t = t_at_is(u.ux, u.uy)) != null) /* should never be null */
+            outbuf += ` in ${an(trapname_is(t.ttyp, false))}`;
+        break;
+    }
+    if (wizxtra) { /* give extra information for wizard mode enlightenment */
+        /* curly braces: u.utrap is an escape attempt counter rather than a
+           turn timer so use different ornamentation than usual parentheses */
+        outbuf += ` {${u.utrap}}`;
+    }
+    return outbuf;
+}
+
+import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
+         TT_INFLOOR as TT_INFLOOR_IS } from './const.js';
+import { hliquid as hliquid_is } from './potion.js';
+import { the as the_is, surface as surface_is } from './iactions.js';
+import { t_at as t_at_is, trapname as trapname_is } from './trap.js';

@@ -8,7 +8,8 @@ import { obj_resists } from './dogmove.js';
 import { maybe_unhide_at } from './mon.js';
 import { doname, doname_with_price, makeplural } from './objnam.js';
 import { rn2 } from './rng.js';
-import { ing_suffix } from './hacklib.js';
+import { ing_suffix, visctrl } from './hacklib.js';
+import { def_oc_syms } from './drawing.js';
 import { body_part, hidden_gold, currency, empty_handed } from './insight.js';
 import { money_cnt } from './u_init.js';
 import { welded } from './wield.js';
@@ -25,7 +26,7 @@ import * as O from './objects.js';
 import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
 import {
     NHW_MENU, WIN_ERR, PICK_NONE, PICK_ONE, MENU_BEHAVE_STANDARD,
-    MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SKIPMENUCOLORS,
+    MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SKIPMENUCOLORS, MENU_ITEMFLAGS_SKIPINVERT,
     LOST_NONE, LOST_THROWN, LOST_EXPLODING, BLINDED, HALLUC,
     ONAME, has_oname,
     GETOBJ_EXCLUDE, GETOBJ_DOWNPLAY, GETOBJ_SUGGEST, GETOBJ_EXCLUDE_INACCESS,
@@ -354,6 +355,7 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
         throw new Error('display_pickinv(): in-use/sortloot menus are not ported yet');
     const sortedinvent = sortloot_invent(sortpack);
     tty_start_menu(win, MENU_BEHAVE_STANDARD);
+    const wizid_fakeobj = { wizid_fakeobj: true }; /* struct obj wizid_fakeobj */
     if (wizid) {
         let prompt;
         const unid_cnt = count_unidentified(game.invent);
@@ -366,9 +368,16 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
             add_menu_str(win,
                          "(all items are permanently identified already)");
         } else {
-            /* the '_' select-all entry, and the item names shown with
-               override_ID (objnam.c) */
-            throw new Error('display_pickinv(): wizard identify of unidentified items not ported yet');
+            prompt = `select ${(unid_cnt === 1) ? "it" : "any or all of them"} to permanently identify`;
+            /* wiz_identify stuffed the wiz_identify command character (^I)
+               into iflags.override_ID for our use as an accelerator;
+               it could be ambiguous if player has assigned a letter to
+               the #wizidentify command, so include it as a group accelerator
+               but use '_' as the primary selector */
+            if (unid_cnt > 1)
+                prompt += ` (${visctrl(game.iflags.override_ID)} for all)`;
+            tty_add_menu(win, null, wizid_fakeobj, '_',
+                         String.fromCharCode(game.iflags.override_ID), ATR_NONE, clr, prompt, MENU_ITEMFLAGS_SKIPINVERT);
         }
     } else if (usextra) {
         if (sortpack)
@@ -396,10 +405,12 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
                     classcount++;
                 }
                 const ilet = otmp.invlet;
-                /* obj_to_glyph()/map_glyphinfo(): tty menus don't show
+                /* any.a_obj = otmp (wizid) or any.a_char = ilet;
+                   obj_to_glyph()/map_glyphinfo(): tty menus don't show
                    the glyph */
-                tty_add_menu(win, null, ilet, ilet, '', ATR_NONE, clr,
-                             doname(otmp), MENU_ITEMFLAGS_NONE);
+                tty_add_menu(win, null, wizid ? otmp : ilet, ilet,
+                             wizid ? def_oc_syms[otmp.oclass] : '',
+                             ATR_NONE, clr, doname(otmp), MENU_ITEMFLAGS_NONE);
             }
         }
         if (!sortpack)
@@ -419,7 +430,28 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
                                            : want_reply ? PICK_ONE : PICK_NONE);
     n = res.n;
     if (n > 0 && wizid) {
-        throw new Error('display_pickinv(): wizard identify selection not ported yet');
+        let all_id = false;
+
+        /* identifying items will update perm_invent, calling this
+           routine recursively, and we don't want the nested call
+           to filter on unID'd items */
+        game.iflags.override_ID = 0;
+        ret = '\0';
+        for (let i = 0; i < n; ++i) {
+            const otmp = res.selected[i].item;
+            if (otmp === wizid_fakeobj) {
+                await identify_pack(0, false);
+                /* identify_pack() performs update_inventory() */
+                all_id = true;
+                break;
+            } else {
+                if (not_fully_identified_iv(otmp))
+                    await identify(otmp);
+                /* identify() does not perform update_inventory() */
+            }
+        }
+        /* if (!all_id) update_inventory(): no perm_invent */
+        void all_id;
     } else if (n > 0) {
         ret = res.selected[0].item;
         if (out_cnt)
