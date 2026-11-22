@@ -2339,8 +2339,8 @@ function may_dig(x, y) {
 }
 /* C ref: hack.c bad_rock() */
 export function bad_rock(mdat, x, y) {
-    return (/* (Sokoban && sobj_at(BOULDER, x, y)) || */
-            (IS_OBSTRUCTED(game.level.at(x, y).typ)
+    return ((game.level.flags.sokoban_rules && sobj_at(BOULDER, x, y))
+            || (IS_OBSTRUCTED(game.level.at(x, y).typ)
              && (!tunnels(mdat) || needspick(mdat) || !may_dig(x, y))
              && !(passes_walls(mdat) && may_passwall(x, y))));
 }

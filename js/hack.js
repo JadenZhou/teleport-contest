@@ -40,7 +40,7 @@ import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible } from './display.js';
 import { vision_recalc, couldsee } from './vision.js';
-import { glyph_at, Norep } from './display.js';
+import { glyph_at, Norep, feel_location } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
 import { u_at } from './const.js';
@@ -69,7 +69,7 @@ import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
 import { curr_mon_load } from './dogmove.js';
 import { bad_rock, passes_bars, minliquid } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
-import { an, xname } from './objnam.js';
+import { an, xname, The } from './objnam.js';
 import { the } from './iactions.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
@@ -956,8 +956,8 @@ function Underwater() { return !!game.u.uinwater; }
 function Levitation() { return uhave(LEVITATION); }
 function Flying() { return uhave(FLYING); }
 function Punished() { return !!game.uball; }
-/* C ref: dungeon.h Sokoban -- the Sokoban branch isn't ported */
-function Sokoban() { return false; }
+/* C ref: rm.h Sokoban -- svl.level.flags.sokoban_rules */
+function Sokoban() { return !!game.level.flags.sokoban_rules; }
 /* C ref: mondata.h tunnels(), needspick(), amorphous(), verysmall(),
    bigmonst(), hides_under(), is_hider(), is_whirly(), slithy(),
    noncorporeal(), NODIAG() */
@@ -1898,7 +1898,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
      */
     if (IS_OBSTRUCTED(tmpr.typ) || tmpr.typ === IRONBARS) {
         if (Blind() && mode === DO_MOVE)
-            throw new Error('test_move(): feel_location() not ported yet');
+            feel_location(x, y);
         if (Passes_walls() && may_passwall(x, y)) {
             ; /* do nothing */
         } else if (Underwater()) {
@@ -1960,7 +1960,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
     } else if (IS_DOOR(tmpr.typ)) {
         if (closed_door(x, y)) {
             if (Blind() && mode === DO_MOVE)
-                throw new Error('test_move(): feel_location() not ported yet');
+                feel_location(x, y);
             if (Passes_walls()) {
                 ; /* do nothing */
             } else if (amorphous(game.youmonst.data) && !game.invent) {
@@ -2027,7 +2027,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
                 /* Diagonal moves into a door are not allowed. */
                 if (mode === DO_MOVE) {
                     if (Blind())
-                        throw new Error('test_move(): feel_location() not ported yet');
+                        feel_location(x, y);
                     if (Underwater() || game.flags.mention_walls)
                         await You_cant("move diagonally into an intact doorway.");
                 }
@@ -2175,8 +2175,7 @@ async function cannot_push_msg(otmp, sx, sy) {
     else
         await You(`try to move ${what}, but in vain.`);
     if (Blind())
-        throw new Error('cannot_push_msg(): feel_location() not ported yet');
-    void sx, sy;
+        feel_location(sx, sy);
 }
 
 // C ref: hack.c cannot_push()
@@ -2241,7 +2240,8 @@ async function dopush(sx, sy, rx, ry, otmp, costly) {
     otmp.next_boulder = 0;
     movobj(otmp, rx, ry); /* does newsym(rx,ry) */
     if (Blind()) {
-        throw new Error('dopush(): feel_location() not ported yet');
+        feel_location(rx, ry);
+        feel_location(sx, sy);
     } else {
         newsym(sx, sy);
     }
@@ -2303,8 +2303,12 @@ async function moverock_core(sx, sy) {
                         && shop_keeper(first_shop_rno(sx, sy)));
 
             /* KMH -- Sokoban doesn't let you push boulders diagonally */
-            if (Sokoban() && game.u.dx && game.u.dy)
-                throw new Error('moverock_core(): Sokoban diagonal push not ported yet');
+            if (Sokoban() && game.u.dx && game.u.dy) {
+                if (Blind())
+                    feel_location(sx, sy);
+                await pline(`${The(xname(otmp))} won't roll diagonally on this ${surface(sx, sy)}.`);
+                return await cannot_push(otmp, sx, sy);
+            }
 
             /* revive_nasty(rx, ry, "You sense movement on the other side.") */
             if ((game.level.objects || []).some(

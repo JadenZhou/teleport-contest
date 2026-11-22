@@ -1052,6 +1052,21 @@ export function m_avoid_kicked_loc(mtmp, nx, ny) {
     return false;
 }
 
+// ── C ref: monmove.c m_avoid_soko_push_loc() ──
+/* return TRUE if monster shouldn't move to (nx,ny) to avoid pushing boulder
+   in sokoban: if hero is 2 squares away, and there's a boulder between the
+   location and hero */
+export function m_avoid_soko_push_loc(mtmp, nx, ny) {
+    if (game.level.flags.sokoban_rules /* Sokoban */
+        && (mtmp.mpeaceful || mtmp.mtame)
+        && !mtmp.mconf && !mtmp.mstun
+        && !Conflict()
+        && (dist2(nx, ny, game.u.ux, game.u.uy) === 4)
+        && sobj_at(BOULDER, nx + Math.sign(game.u.ux - nx), ny + Math.sign(game.u.uy - ny)))
+        return true;
+    return false;
+}
+
 // ── C ref: monmove.c should_displace() ──
 export function should_displace(mtmp, mfp, ggx, ggy) {
     let shortest_with_displacing = -1;
@@ -1259,7 +1274,7 @@ export function mon_would_take_item(mtmp, otmp) {
         && pctload() < 85)
         return true;
     if (throws_rocks(mtmp.data) && otmp.otyp === BOULDER
-        && pctload() < 50 /* && !Sokoban */)
+        && pctload() < 50 && !game.level.flags.sokoban_rules)
         return true;
     if (mtmp.data === mons[M.PM_GELATINOUS_CUBE]
         && otmp.oclass !== ROCK_CLASS && otmp.oclass !== BALL_CLASS)
