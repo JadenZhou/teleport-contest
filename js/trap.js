@@ -173,7 +173,7 @@ export const TRAPNUM = 26;
 export function is_pit(ttyp) { return ttyp === PIT || ttyp === SPIKED_PIT; }
 export function is_hole(ttyp) { return ttyp === HOLE || ttyp === TRAPDOOR; }
 function unhideable_trap(ttyp) { return ttyp === HOLE; }
-function undestroyable_trap(ttyp) {
+export function undestroyable_trap(ttyp) {
     return ttyp === MAGIC_PORTAL || ttyp === VIBRATING_SQUARE;
 }
 

@@ -89,7 +89,7 @@ import {
     ROLLING_BOULDER_TRAP, SLP_GAS_TRAP, RUST_TRAP, FIRE_TRAP, PIT, SPIKED_PIT,
     HOLE, TRAPDOOR, TELEP_TRAP, LEVEL_TELEP, MAGIC_PORTAL, WEB, STATUE_TRAP,
     MAGIC_TRAP, POLY_TRAP, VIBRATING_SQUARE, TRAPPED_DOOR, TRAPPED_CHEST,
-    BEAR_TRAP, is_hole, is_pit, maketrap, t_at,
+    BEAR_TRAP, is_hole, is_pit, maketrap, t_at, deltrap, undestroyable_trap,
 } from './trap.js';
 
 const XLIM = 4;
@@ -264,8 +264,11 @@ function put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, oneshot, lev) {
                It might still fail if there's a dungeon feature here. */
             const t = t_at(x, y);
 
-            if (t)
-                throw new Error('put_lregion_here(): deltrap() not ported yet');
+            if (t && !undestroyable_trap(t.ttyp)) {
+                if (((mtmp = m_at(x, y)) != null) && mtmp.mtrapped)
+                    mtmp.mtrapped = 0;
+                deltrap(t);
+            }
             if (bad_location(x, y, nlx, nly, nhx, nhy)
                 || is_exclusion_zone(rtype, x, y))
                 return false;
