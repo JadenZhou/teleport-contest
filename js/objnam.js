@@ -3696,8 +3696,8 @@ function doname_base(obj, doname_flags) {
         }
     }
     if (obj.owornmask & W_SWAPWEP) {
-        if (game.u?.twoweap)
-            xn_not_ported('twoweapon swap weapon suffix');
+        if (game.u?.twoweap) /* URIGHTY; body_part(HAND) for an unpolymorphed hero */
+            bp += ` (wielded in ${(game.u?.uhandedness ?? 0) === 0 ? "left" : "right"} hand)`;
         else
             bp += ` (alternate weapon${obj.quan === 1 ? "" : "s"}; not wielded)`;
     }
