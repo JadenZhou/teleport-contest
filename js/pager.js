@@ -17,6 +17,9 @@
 // (glyph_at()): hero, seen monster, seen object, seen trap, or the
 // background (back_to_glyph()).
 
+import { show_menu_controls } from './options.js';
+import { tty_display_nhwindow } from './wintty.js';
+import { NHW_TEXT } from './const.js';
 import { game } from './gstate.js';
 import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
          tty_select_menu, tty_destroy_nhwindow, add_menu_str,
@@ -531,6 +534,16 @@ function hmenu_not_ported(fn) {
     return () => { throw new Error(`dohelp(): ${fn}() not ported yet`); };
 }
 
+// C ref: pager.c domenucontrols()
+/* show menu controls */
+async function domenucontrols() {
+    const cwin = tty_create_nhwindow(NHW_TEXT);
+
+    show_menu_controls(cwin, false);
+    await tty_display_nhwindow(cwin, false);
+    await tty_destroy_nhwindow(cwin);
+}
+
 // C ref: pager.c help_menu_items[] -- data for dohelp(); the PORT_HELP
 // entry isn't compiled into the unix build
 const help_menu_items = [
@@ -638,6 +651,8 @@ export async function dohelp() {
         const f = help_menu_items[sel].f;
         if (f === 'hmenu_dowhatis')
             await hmenu_dowhatis();
+        else if (f === 'domenucontrols')
+            await domenucontrols();
         else
             hmenu_not_ported(f)();
     }
