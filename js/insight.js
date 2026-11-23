@@ -95,7 +95,7 @@ import { magic_negation } from './mhitu.js';
 import { stone_luck } from './attrib.js';
 import { carrying } from './invent.js';
 import { u_adtyp_resistance_obj, item_what } from './zap.js';
-import { shield_simple_name } from './iactions.js';
+import { shield_simple_name, ansimpleoname } from './iactions.js';
 import { pline, livelog_printf } from './display.js';
 import { NHW_TEXT, LL_WISH, LL_ACHIEVE, LL_UMONST, LL_DIVINEGIFT, LL_LIFESAVE,
          LL_ARTIFACT, LL_GENOCIDE, LL_DUMP, LL_SPOILER, LL_MINORAC } from './const.js';
@@ -1597,10 +1597,23 @@ function status_enlightenment(mode, final) {
         you_are("deaf", from_what(DEAF));
 
     /* external troubles, more or less */
-    if (Punished())
-        throw new Error('status_enlightenment(): punishment not ported yet');
-    if (u.utrap)
-        throw new Error('status_enlightenment(): trap_predicament() not ported yet');
+    if (Punished()) {
+        if (game.uball) {
+            buf = `chained to ${ansimpleoname(game.uball)}`;
+        } else {
+            /* impossible("Punished without uball?") */
+            buf = "punished";
+        }
+        you_are(buf, "");
+    }
+    if (u.utrap) {
+        const predicament = trap_predicament(final, wizard());
+
+        if (u.usteed) /* not `Riding' here */
+            throw new Error('status_enlightenment(): trapped steed not ported yet');
+        else
+            you_are(predicament, "");
+    } /* (u.utrap) */
     if (u.ustuck) /* includes u.uswallow */
         throw new Error('status_enlightenment(): held/engulfed hero not ported yet');
     if (Wounded_legs()) {
