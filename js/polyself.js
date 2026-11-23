@@ -6,7 +6,7 @@
 // uunstick(), skinback().  newman() is not ported yet.
 
 import { game } from './gstate.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, urgent_pline } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import {
     NON_PM, FROMFORM, I_SPECIAL, TT_PIT, FIRE_RES, COLD_RES, SLEEP_RES,
@@ -471,7 +471,7 @@ async function polyman(fmt, arg) {
 
     newsym(u.ux, u.uy);
 
-    await pline(fmt.replace('%s', arg)); /* urgent_pline() */
+    await urgent_pline(fmt.replace("%s", arg));
     /* check whether player foolishly genocided self while poly'd */
     if (game.mvitals && (game.mvitals[u.umonster]?.mvflags & G_GENOD))
         throw new Error('polyman(): self-genocide while polymorphed not ported yet');
