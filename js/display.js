@@ -2184,6 +2184,23 @@ export async function docrt() {
     await docrt_flags(docrtRecalc);
 }
 
+// C ref: display.c redraw_map() -- redraw the map from the glyph buffer
+// (glyph_at(), not levl[x][y].glyph); the JS map cells keep their shown
+// glyph (disp_*), which row_refresh() prints
+async function redraw_map(cursor_on_u) {
+    const u = game.u;
+
+    /* !u.ux: display isn't ready yet; (restoring || !on_level()): was part
+       of cliparound() but interface shouldn't access this much internals */
+    if (!u.ux || game.in_mklev /* suppress_map_output() */
+        || (u.uz0 && (u.uz0.dnum !== u.uz.dnum || u.uz0.dlevel !== u.uz.dlevel)))
+        return;
+
+    for (let y = 0; y < ROWNO; ++y)
+        row_refresh(1, COLNO - 1, y); /* print_glyph() of each spot */
+    await flush_screen(cursor_on_u);
+}
+
 // C ref: display.c docrt_flags()
 /* docrt() with finer control */
 export async function docrt_flags(refresh_flags) {
@@ -2199,7 +2216,7 @@ export async function docrt_flags(refresh_flags) {
     game.program_state.in_docrt = true;
 
     if (redrawonly) {
-        throw new Error('docrt_flags(): redraw_map() not ported yet');
+        await redraw_map(false);
     } else if (u.uswallow) {
         await swallowed(1);
     } else if (u.uinwater && !Is_waterlevel(u.uz)) { /* Underwater */
