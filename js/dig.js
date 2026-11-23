@@ -39,6 +39,10 @@ import { reset_utrap } from './trap.js';
 import { del_engr_at } from './engrave.js';
 import { punish } from './read.js';
 import { obj_extract_self as mkobj_obj_extract_self } from './mkobj.js';
+import { ROWNO as ROWNO_DG, LAVAPOOL as LAVAPOOL_DG, MOAT as MOAT_DG,
+         POOL as POOL_DG } from './const.js';
+import { is_moat as is_moat_dg, is_pool as is_pool_dg,
+         is_lava as is_lava_dg } from './makemon.js';
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -212,6 +216,41 @@ export function may_dig(x, y) {
              && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
 }
 
+
+// C ref: dig.c fillholetyp()
+/* When digging a hole or exploding a land mine next to liquid, the
+   hole may fill in */
+export function fillholetyp(x, y,
+                            fill_if_any) { /* force filling if it exists at all */
+    let x1, y1;
+    const lo_x = Math.max(1, x - 1), hi_x = Math.min(x + 1, COLNO - 1),
+          lo_y = Math.max(0, y - 1), hi_y = Math.min(y + 1, ROWNO_DG - 1);
+    let pool_cnt = 0, moat_cnt = 0, lava_cnt = 0;
+
+    for (x1 = lo_x; x1 <= hi_x; x1++)
+        for (y1 = lo_y; y1 <= hi_y; y1++)
+            if (is_moat_dg(x1, y1))
+                moat_cnt++;
+            else if (is_pool_dg(x1, y1))
+                /* This must come after is_moat since moats are pools
+                 * but not vice-versa. */
+                pool_cnt++;
+            else if (is_lava_dg(x1, y1))
+                lava_cnt++;
+
+    if (!fill_if_any)
+        pool_cnt = Math.trunc(pool_cnt / 3); /* not as much liquid as the others */
+
+    if ((lava_cnt > moat_cnt + pool_cnt && rn2(lava_cnt + 1))
+        || (lava_cnt && fill_if_any))
+        return LAVAPOOL_DG;
+    else if ((moat_cnt > 0 && rn2(moat_cnt + 1)) || (moat_cnt && fill_if_any))
+        return MOAT_DG;
+    else if ((pool_cnt > 0 && rn2(pool_cnt + 1)) || (pool_cnt && fill_if_any))
+        return POOL_DG;
+    else
+        return ROOM;
+}
 
 // C ref: dig.c is_digging()
 /* the hero's occupation is the dig() occupation */

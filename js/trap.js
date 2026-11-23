@@ -132,6 +132,18 @@ import { stop_occupation as stop_occupation_l } from './allmain.js';
 import { down_gate as down_gate_l, ship_object as ship_object_l,
          flooreffects as flooreffects_l } from './do.js';
 import { recalc_block_point as recalc_block_point_l } from './vision.js';
+import { scatter as scatter_l } from './explode.js';
+import { MAY_DESTROY as MAY_DESTROY_L, MAY_HIT as MAY_HIT_L,
+         MAY_FRACTURE as MAY_FRACTURE_L, VIS_EFFECTS as VIS_EFFECTS_L,
+         IS_DOOR as IS_DOOR_L, DRAWBRIDGE_DOWN as DRAWBRIDGE_DOWN_L,
+         DRAWBRIDGE_UP as DRAWBRIDGE_UP_L, ICE as ICE_L,
+         Is_waterlevel as Is_waterlevel_l, Is_airlevel as Is_airlevel_l
+       } from './const.js';
+import { del_engr_at as del_engr_at_l } from './engrave.js';
+import { is_drawbridge_wall as is_drawbridge_wall_l } from './dbridge.js';
+import { find_drawbridge as find_drawbridge_l } from './zap.js';
+import { fillholetyp as fillholetyp_l } from './dig.js';
+import { unconscious as unconscious_l } from './eat.js';
 import { M1_SLITHY, M1_NOLIMBS } from './monsters.js';
 import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
          GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL, GRAY_DRAGON_SCALES,
@@ -2826,6 +2838,8 @@ async function trapeffect_landmine(mtmp, trap, trflags) {
         throw new Error('trapeffect_landmine(): hero branch not ported yet');
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
+        const tx = trap.tx, ty = trap.ty;
+        let trapkilled = false;
 
         /* heavier monsters are more likely to set off a land mine; on the
            other hand, any mon lighter than the trigger weight is immune */
@@ -2853,8 +2867,78 @@ async function trapeffect_landmine(mtmp, trap, trflags) {
         }
         if (!in_sight && !Deaf())
             await pline("Kaablamm!  You hear an explosion in the distance!");
-        throw new Error('trapeffect_landmine(): blow_up_landmine() not ported yet');
+        await blow_up_landmine(trap);
+        /* explosion might have destroyed a drawbridge; don't
+           dish out more damage if monster is already dead */
+        if (mtmp.mhp < 1 /* DEADMONSTER(mtmp) */
+            || await thitm(0, mtmp, null, damage, false)) {
+            trapkilled = true;
+        } else {
+            /* monsters recursively fall into new pit */
+            if (await mintrap(mtmp, trflags | FORCETRAP) === Trap_Killed_Mon)
+                trapkilled = true;
+        }
+        /* a boulder may fill the new pit, crushing monster */
+        await fill_pit(tx, ty); /* thitm may have already destroyed the trap */
+        if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+            trapkilled = true;
+        if (unconscious_l()) {
+            game.multi = -1;
+            game.nomovemsg = "The explosion awakens you!";
+        }
+        return trapkilled ? Trap_Killed_Mon : mtmp.mtrapped
+            ? Trap_Caught_Mon : Trap_Effect_Finished;
     }
+}
+
+// C ref: trap.c blow_up_landmine()
+export async function blow_up_landmine(trap) {
+    const g = game;
+    const x = trap.tx, y = trap.ty;
+    const lev = g.level.at(x, y);
+    let typ;
+
+    const old_typ = lev.typ;
+    await scatter_l(x, y, 4,
+                    MAY_DESTROY_L | MAY_HIT_L | MAY_FRACTURE_L | VIS_EFFECTS_L,
+                    null);
+    del_engr_at_l(x, y);
+    await wake_nearto(x, y, 400);
+    if (IS_DOOR_L(lev.typ))
+        lev.doormask = D_BROKEN_L;
+    /* destroy drawbridge if present */
+    if (lev.typ === DRAWBRIDGE_DOWN_L || is_drawbridge_wall_l(x, y) >= 0) {
+        /* if under the portcullis, the bridge is adjacent */
+        if (find_drawbridge_l(x, y))
+            throw new Error('blow_up_landmine(): destroy_drawbridge() not ported yet');
+    }
+    trap = t_at(x, y); /* expected to be null after destruction */
+    /* or could be null if scatter blew up oil which melted ice */
+    /* convert landmine into pit */
+    if (trap) {
+        if (Is_waterlevel_l(g.u.uz) || Is_airlevel_l(g.u.uz)) {
+            /* no pits here */
+            deltrap(trap);
+        } else {
+            /* fill pit with water, if applicable */
+            typ = fillholetyp_l(x, y, false);
+            if (typ !== ROOM) {
+                throw new Error('blow_up_landmine(): liquid_flow() not ported yet');
+            } else {
+                trap.ttyp = PIT;       /* explosion creates a pit */
+                trap.madeby_u = 0;     /* resulting pit isn't yours */
+                seetrap(trap);         /* and it isn't concealed */
+            }
+        }
+    }
+    await fill_pit(x, y);
+    /* maybe_dunk_boulders(x, y) */
+    if ((is_pool(x, y) || is_lava(x, y)) && sobj_at(BOULDER, x, y))
+        throw new Error('blow_up_landmine(): maybe_dunk_boulders() not ported yet');
+    recalc_block_point_l(x, y);
+    /* spot_checks(x, y, old_typ) */
+    if (old_typ === DRAWBRIDGE_UP_L || old_typ === ICE_L)
+        throw new Error('blow_up_landmine(): spot_checks() for ice not ported yet');
 }
 
 // C ref: trap.c clamp_hole_destination()
