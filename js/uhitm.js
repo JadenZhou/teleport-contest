@@ -143,7 +143,7 @@ import { drain_weapon_skill } from './weapon.js';
 import { helm_simple_name } from './objnam.js';
 import { urgent_pline, You_feel } from './display.js';
 import { Some_Monnam } from './do_name.js';
-import { fall_asleep } from './timeout.js';
+import { fall_asleep, obj_stop_timers } from './timeout.js';
 import { some_armor } from './do_wear.js';
 import { touch_of_death } from './mcastu.js';
 import { set_uasmon } from './polyself.js';
@@ -3052,7 +3052,7 @@ async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {
                 await pline_The(`egg${plur(cnt)} ${
                     (cnt === 1) ? "isn't" : "aren't"} alive any more...`);
                 if (obj.timed)
-                    throw new Error('hmon_hitmon_misc_obj(): obj_stop_timers() not ported yet');
+                    obj_stop_timers(obj);
                 obj.otyp = ROCK;
                 obj.oclass = GEM_CLASS;
                 obj.oartifact = 0;

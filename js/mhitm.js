@@ -6,6 +6,8 @@
 
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
+import { ACURR as ACURR_mm } from './attrib.js';
+import { A_CHA as A_CHA_mm, NORMAL_SPEED as NORMAL_SPEED_mm } from './const.js';
 import { distmin, isok } from './hacklib.js';
 import { cansee } from './vision.js';
 import { m_at, grow_up } from './makemon.js';
@@ -229,6 +231,80 @@ async function missmm(magr, mdef, mattk) {
     } else {
         await noises(magr, mattk);
     }
+}
+
+// C ref: mondata.c resist_conflict()
+export function resist_conflict(mtmp) {
+    /* always a small chance at 19 */
+    const resist_chance = Math.min(19, (ACURR_mm(A_CHA_mm) - mtmp.m_lev
+                                        + game.u.ulevel));
+
+    return (rnd(20) > resist_chance);
+}
+
+// C ref: mhitm.c fightm()
+/* have monsters fight each other */
+export async function fightm(mtmp) {
+    const u = game.u;
+    let mon, nmon;
+    let result, has_u_swallowed;
+    /* perhaps the monster will resist Conflict */
+    if (resist_conflict(mtmp))
+        return 0;
+
+    if (u.ustuck === mtmp) {
+        /* perhaps we're holding it... */
+        throw new Error('fightm(): itsstuck() not ported yet');
+    }
+    has_u_swallowed = !!(u.uswallow && u.ustuck === mtmp); /* engulfing_u() */
+
+    for (mon = game.fmon; mon; mon = nmon) {
+        nmon = mon.nmon;
+        if (nmon === mtmp)
+            nmon = mtmp.nmon;
+        /* Be careful to ignore monsters that are already dead, since we
+         * might be calling this before we've cleaned them up.  This can
+         * happen if the monster attacked a cockatrice bare-handedly, for
+         * instance.
+         */
+        if (mon !== mtmp && !(mon.mhp < 1)) { /* !DEADMONSTER(mon) */
+            if (monnear(mtmp, mon.mx, mon.my)) {
+                if (!u.uswallow && (mtmp === u.ustuck)) {
+                    throw new Error('fightm(): releasing a held hero not ported yet');
+                }
+
+                /* mtmp can be killed */
+                game.bhitpos = { x: mon.mx, y: mon.my };
+                game.notonhead = false;
+                result = await mattackm(mtmp, mon);
+
+                if (result & M_ATTK_AGR_DIED)
+                    return 1; /* mtmp died */
+                /*
+                 * If mtmp has the hero swallowed, lie and say there
+                 * was no attack (this allows mtmp to digest the hero).
+                 */
+                if (has_u_swallowed)
+                    return 0;
+
+                /* allow attacked monsters a chance to hit back, primarily
+                   to allow monsters that resist conflict to respond */
+                if ((result & (M_ATTK_HIT | M_ATTK_DEF_DIED)) === M_ATTK_HIT
+                    && rn2(4) && mon.movement > rn2(NORMAL_SPEED_mm)) {
+                    if (mon.movement > NORMAL_SPEED_mm)
+                        mon.movement -= NORMAL_SPEED_mm;
+                    else
+                        mon.movement = 0;
+                    game.bhitpos = { x: mtmp.mx, y: mtmp.my };
+                    game.notonhead = false;
+                    await mattackm(mon, mtmp); /* return attack */
+                }
+
+                return (result & M_ATTK_HIT) ? 1 : 0;
+            }
+        }
+    }
+    return 0;
 }
 
 // C ref: mhitm.c mattackm()

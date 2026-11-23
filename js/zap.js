@@ -2655,30 +2655,11 @@ export function start_melt_ice_timeout(x, y,
     /* if we're within MAX_ICE_TIME, install a melt timer;
        otherwise, omit it to leave this ice permanent */
     if (when <= MAX_ICE_TIME) {
-        /* start_timer(when, TIMER_LEVEL, MELT_ICE_AWAY, long_to_any(where));
-           the timer queue isn't ported: like nhlua.js, the location keeps
-           its pending timer, with its absolute expiry */
-        game.level.at(x, y).timer = { when, action: MELT_ICE_AWAY_ZP,
-                                      timeout: game.moves + when };
+        const where = (x << 16) | y;
+
+        start_timer_zp(when, TIMER_LEVEL_ZP, MELT_ICE_AWAY_ZP,
+                       long_to_any_zp(where));
     }
-}
-
-// C ref: timeout.c spot_time_left() -- the location's pending level timer
-function spot_time_left_zp(x, y, func_index) {
-    const t = game.level.at(x, y).timer;
-    if (!t || t.action !== func_index)
-        return 0;
-    if (t.timeout === undefined)
-        throw new Error('spot_time_left(): a timer started by a level script not ported yet');
-    const expires = t.timeout;
-    return (expires > 0) ? expires - game.moves : 0;
-}
-
-// C ref: timeout.c spot_stop_timers()
-function spot_stop_timers_zp(x, y, func_index) {
-    const lev = game.level.at(x, y);
-    if (lev.timer && lev.timer.action === func_index)
-        lev.timer = null; /* no cleanup function for MELT_ICE_AWAY */
 }
 
 // C ref: dig.c bury_objs()
@@ -2699,18 +2680,6 @@ function unearth_objs_zp(x, y) {
         throw new Error('unearth_objs(): unearthing buried objects not ported yet');
     del_engr_at_zp(x, y);
     newsym(x, y);
-}
-
-// C ref: mkobj.c obj_ice_effects()
-function obj_ice_effects_zp(x, y, do_buried) {
-    for (const o of game.level.objects || [])
-        if (o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR' && o.timer)
-            throw new Error('obj_ice_effects(): obj_timer_checks() not ported yet');
-    if (do_buried) {
-        for (const o of game.level.buriedobjlist || [])
-            if (o.ox === x && o.oy === y && o.timer)
-                throw new Error('obj_ice_effects(): obj_timer_checks() not ported yet');
-    }
 }
 
 // C ref: zap.c zap_over_floor()
@@ -3304,3 +3273,25 @@ import { del_engr_at as del_engr_at_zp } from './engrave.js';
 import { maybe_unhide_at as maybe_unhide_at_zp, minliquid as minliquid_zp } from './mon.js';
 import { spoteffects as spoteffects_zp } from './hack.js';
 import { is_moat as is_moat_zp } from './makemon.js';
+import { start_timer as start_timer_zp, long_to_any as long_to_any_zp,
+         spot_time_left as spot_time_left_zp, spot_stop_timers as spot_stop_timers_zp } from './timeout.js';
+import { TIMER_LEVEL as TIMER_LEVEL_ZP } from './const.js';
+import { obj_ice_effects as obj_ice_effects_zp } from './mkobj.js';
+
+// C ref: zap.c revive_mon()
+/* timer callback routine: turn a corpse back into a monster */
+export async function revive_mon(arg, timeout) {
+    throw new Error('revive_mon() not ported yet');
+}
+
+// C ref: zap.c zombify_mon()
+/* timer callback routine: turn a corpse into a zombie */
+export async function zombify_mon(arg, timeout) {
+    throw new Error('zombify_mon() not ported yet');
+}
+
+// C ref: zap.c melt_ice_away()
+/* timer callback routine: melt ice at a location */
+export async function melt_ice_away(arg, timeout) {
+    throw new Error('melt_ice_away() not ported yet');
+}
