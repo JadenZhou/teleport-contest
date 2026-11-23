@@ -43,6 +43,7 @@ import { align_str } from './insight.js';
 import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED, NO_MM_FLAGS,
          FAST, INTRINSIC, UNENCUMBERED, SLT_ENCUMBER, MOD_ENCUMBER, HVY_ENCUMBER,
          EXT_ENCUMBER, GLIB, TELEPORT, POLYMORPH, UNCHANGING, SEARCHING, WARNING,
+         TELEPAT, WARN_OF_MON,
          CLAIRVOYANT, ENERGY_REGENERATION, MAGICAL_BREATHING, REGENERATION,
          SLEEPY, MAXULEV, A_WIS, A_INT, A_CON, A_DEX, NON_PM, ROOMOFFSET, VAULT,
          TT_LAVA, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL, DRAWBRIDGE_UP,
@@ -59,7 +60,7 @@ import { u_wipe_engr } from './engrave.js';
 import { dosearch0, warnreveal } from './detect.js';
 import { set_uasmon } from './polyself.js';
 import { init_artifacts } from './artifact.js';
-import { run_regions } from './region.js';
+import { run_regions, any_visible_region } from './region.js';
 import { m_everyturn_effect } from './monmove.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
@@ -670,9 +671,18 @@ export async function moveloop_core() {
             see_traps();
             if (u.uswallow)
                 await swallowed(0);
+        } else if (u.uprops[TELEPAT]?.extrinsic /* Unblind_telepat */
+                   || u.uprops[WARNING]?.intrinsic
+                   || u.uprops[WARNING]?.extrinsic /* Warning */
+                   || u.uprops[WARN_OF_MON]?.intrinsic
+                   || u.uprops[WARN_OF_MON]?.extrinsic /* Warn_of_mon */
+                   /* this is needed for the case where you saw a monster
+                      due to being next to it while it's in a gas cloud
+                      and then you moved away; it should no longer be seen
+                      when that happens, even if it hasn't moved */
+                   || any_visible_region()) { /* TODO: optimize this */
+            see_monsters();
         }
-        /* else if (Unblind_telepat || Warning || Warn_of_mon
-                    || any_visible_region()) see_monsters(): not ported */
     }
     // Vision + display
     if (g.vision_full_recalc) {

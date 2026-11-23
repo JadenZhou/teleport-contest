@@ -1980,16 +1980,10 @@ export function newsym(x, y) {
             if (!see_self)
                 return;
         } else {
+            feel_location(game.u.ux, game.u.uy); /* forces an update */
+
             if (!canspotself())
-                throw new Error('newsym(): feel_location() of an unseen hero spot not ported yet');
-            const tg = terrain_glyph(loc, x, y);
-            loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
-                                     cmap: tg.cmap, cmapidx: tg.cmapidx };
-            /* C ref: display.c feel_location(): Corridors are never felt
-               as lit (unless remembered that way) (lit_corridor only). */
-            if (loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr'
-                && !loc.waslit)
-                loc.remembered_glyph = rememb_glyph(S_corr_g);
+                return;
         }
         display_self();
         return;
@@ -2077,6 +2071,19 @@ function engr_can_be_felt(ep) {
     }
 }
 
+// C ref: display.c feel_newsym()
+/*
+ * feel_newsym()
+ *
+ * When hero knows what happened to location, even when blind.
+ */
+export function feel_newsym(x, y) {
+    if (Blind())
+        feel_location(x, y);
+    else
+        newsym(x, y);
+}
+
 // C ref: display.c feel_location()
 /*
  * Feel the given location.  This assumes that the hero is blind and that
@@ -2143,12 +2150,14 @@ export function feel_location(x, y) {
         }
 
         /* Floor spaces are dark if unlit.  Corridors are dark if unlit.
-           (JS remembers no S_darkroom glyphs; see newsym()) */
+           (cmap_to_glyph(flags.dark_room ? S_darkroom : S_stone): JS
+           remembers S_darkroom spots as S_room; see newsym()) */
         if (lev.typ === ROOM && lev.remembered_glyph?.cmap === 'S_room'
             && (!lev.waslit || (game.flags.dark_room !== false
                                 && game.iflags.wc_color !== false))) {
-            lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
-                                     cmap: 'S_stone' };
+            if (game.flags.dark_room === false)
+                lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
+                                         cmap: 'S_stone' };
             show_glyph(x, y, lev.remembered_glyph);
         } else if (lev.typ === CORR && lev.remembered_glyph?.cmap === 'S_litcorr'
                    && !lev.waslit) {

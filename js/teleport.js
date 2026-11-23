@@ -6,6 +6,7 @@
 // teleport.c.
 
 import { game } from './gstate.js';
+import { make_blinded } from './potion.js';
 import { remove_worm, place_worm_tail_randomly } from './worm.js';
 import { rn2, rnl } from './rng.js';
 import { pline } from './display.js';
@@ -555,10 +556,8 @@ export async function scrolltele(scroll) {
     }
 
     /* don't show trap if "Sorry..." */
-    /* if (!Blinded) make_blinded(0L, FALSE): with Blinded already 0 this
-       changes nothing (no timeout to clear, no blindness toggle) */
-    if (tp_prop(BLINDED).intrinsic)
-        throw new Error('scrolltele(): make_blinded() not ported yet');
+    if (!tp_prop(BLINDED).intrinsic) /* !Blinded */
+        await make_blinded(0, false);
 
     if ((u.uhave?.amulet || On_W_tower_level(u.uz)) && !rn2(3))
         throw new Error('scrolltele(): "You feel disoriented for a moment." not ported yet');

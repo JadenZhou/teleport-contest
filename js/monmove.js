@@ -57,6 +57,7 @@ import { is_organic } from './objects.js';
 import { eaten_stat } from './eat.js';
 import { extract_from_minvent } from './steal.js';
 import { m_consume_obj } from './mon.js';
+import { cuss } from './wizard.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
@@ -1024,7 +1025,7 @@ export async function dochug(mtmp) {
     /* extra emotional attack for vile monsters */
     if (d.inrange && mtmp.data.msound === M.MS_CUSS && !mtmp.mpeaceful
         && couldsee(mtmp.mx, mtmp.my) && !mtmp.minvis && !rn2(5))
-        throw new Error('cuss() not ported yet');
+        await cuss(mtmp);
 
     /* note: can't get here when monster is dead, so this always returns 0 */
     return (status === MMOVE_DIED) ? 1 : 0;
