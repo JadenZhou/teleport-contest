@@ -39,7 +39,7 @@ import { obj_no_longer_held } from './do.js';
 import { block_point, recalc_block_point } from './vision.js';
 import { vobj_at } from './display.js';
 import { attach_egg_hatch_timeout, attach_fig_transform_timeout, start_timer, stop_timer, obj_stop_timers, obj_split_timers, obj_to_any } from './timeout.js';
-import { ROT_CORPSE, REVIVE_MON, ZOMBIFY_MON, HATCH_EGG, SHRINK_GLOB, FIG_TRANSFORM, TIMER_OBJECT } from './const.js';
+import { ROT_CORPSE, REVIVE_MON, ZOMBIFY_MON, HATCH_EGG, SHRINK_GLOB, FIG_TRANSFORM, TIMER_OBJECT, LS_OBJECT } from './const.js';
 import { tt_oname } from './topten.js';
 import { zombie_form } from './mon.js';
 import { forget_temple_entry } from './priest.js';
@@ -52,6 +52,7 @@ import { book_cursed_sync } from './spell.js';
 import { eaten_stat, tin_variety, tintxt_fodder, vegetarian } from './eat.js';
 import { costly_spot } from './insight.js';
 import { is_ice } from './dig.js';
+import { obj_sheds_light, obj_split_light_source, del_light_source } from './light.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -751,8 +752,8 @@ export function splitobj(obj, num) {
         delete otmp.omid; /* free_omid(): only one association with m_id */
     if (obj.timed)
         obj_split_timers(obj, otmp);
-    if (obj.lamplit)
-        throw new Error('splitobj(): obj_split_light_source() not ported yet');
+    if (obj_sheds_light(obj))
+        obj_split_light_source(obj, otmp);
     return otmp;
 }
 
@@ -1906,8 +1907,10 @@ export function dealloc_obj(obj) {
     /*
      * Free up any light sources attached to the object.
      */
-    if (obj.lamplit) /* obj_sheds_light(obj) */
-        throw new Error('dealloc_obj(): del_light_source() not ported yet');
+    if (obj_sheds_light(obj)) {
+        del_light_source(LS_OBJECT, obj_to_any(obj));
+        obj.lamplit = 0;
+    }
 
     if (obj === game.thrownobj)
         game.thrownobj = null;

@@ -446,6 +446,15 @@ import { wield_tool as wield_tool_ap } from './wield.js';
 import { rn1 as rn1_ap } from './rng.js';
 import { djinni_from_bottle as djinni_from_bottle_ap } from './potion.js';
 import { nothing_happens as nothing_happens_ap } from './const.js';
+import { nothing_seems_to_happen as nothing_seems_to_happen_lp, GLIB as GLIB_LP } from './const.js';
+import { Shk_Your as Shk_Your_lp } from './wield.js';
+import { yname as yname_lp, Tobjnam as Tobjnam_lp, otense as otense_lp } from './objnam.js';
+import { Your as Your_lp } from './display.js';
+import { begin_burn as begin_burn_lp, end_burn as end_burn_lp } from './timeout.js';
+import { make_glib as make_glib_lp } from './potion.js';
+import { fingers_or_gloves as fingers_or_gloves_lp } from './do_wear.js';
+import { d as d_lp } from './rng.js';
+import { check_unpaid as check_unpaid_lp } from './zap.js';
 
 // C ref: apply.c apply_ok() -- getobj callback for object to apply
 function apply_ok(obj) {
@@ -596,7 +605,8 @@ export async function doapply() {
     case OIL_LAMP:
     case MAGIC_LAMP:
     case BRASS_LANTERN:
-        throw new Error('doapply(): use_lamp() not ported yet');
+        await use_lamp(obj);
+        break;
     case POT_OIL:
         throw new Error('doapply(): light_cocktail() not ported yet');
     case O.EXPENSIVE_CAMERA:
@@ -908,6 +918,67 @@ export async function jump(magic) {
         game.nomovemsg = "";
         await morehungry(rnd(25));
         return ECMD_TIME;
+    }
+}
+
+// C ref: apply.c use_lamp()
+async function use_lamp(obj) {
+    const u = game.u;
+    const lamp = (obj.otyp === OIL_LAMP
+                  || obj.otyp === MAGIC_LAMP) ? "lamp"
+                 : (obj.otyp === BRASS_LANTERN) ? "lantern"
+                   : null;
+    const Is_candle = (obj.otyp === O.TALLOW_CANDLE || obj.otyp === O.WAX_CANDLE);
+
+    /*
+     * When blind, lamps' and candles' on/off state can be distinguished
+     * by heat.  For brass lantern assume that there is an on/off switch
+     * that can be felt.
+     */
+
+    if (obj.lamplit) {
+        if (lamp) /* lamp or lantern */
+            await pline(`${Shk_Your_lp(obj)}${lamp} is now off.`);
+        else
+            await You(`snuff out ${yname_lp(obj)}.`);
+        end_burn_lp(obj, true);
+        return;
+    }
+    if (u.uinwater) { /* Underwater */
+        await pline(`${!Is_candle ? "This is not a diving lamp"
+                                  : "Sorry, fire and water don't mix"}.`);
+        return;
+    }
+    /* magic lamps with an spe == 0 (wished for) cannot be lit */
+    if ((!Is_candle && obj.age === 0)
+        || (obj.otyp === MAGIC_LAMP && obj.spe === 0)) {
+        if (obj.otyp === BRASS_LANTERN) {
+            if (!Blind())
+                await Your_lp("lantern is out of power.");
+            else
+                await pline(nothing_seems_to_happen_lp);
+        } else {
+            await pline(`This ${xname_ap(obj)} has no oil.`);
+        }
+        return;
+    }
+    if (obj.cursed && !rn2(2)) {
+        if ((obj.otyp === OIL_LAMP || obj.otyp === MAGIC_LAMP) && !rn2(3)) {
+            await pline_The(`lamp spills and covers your ${fingers_or_gloves_lp(true)} with oil.`);
+            make_glib_lp((u.uprops[GLIB_LP].intrinsic & TIMEOUT_AP) + d_lp(2, 10));
+        } else if (!Blind()) {
+            await pline(`${Tobjnam_lp(obj, "flicker")} for a moment, then ${otense_lp(obj, "die")}.`);
+        } else {
+            await pline(nothing_seems_to_happen_lp);
+        }
+    } else {
+        if (lamp) { /* lamp or lantern */
+            check_unpaid_lp(obj);
+            await pline(`${Shk_Your_lp(obj)}${lamp} is now on.`);
+        } else { /* candle(s) */
+            throw new Error('use_lamp(): lighting candles not ported yet');
+        }
+        begin_burn_lp(obj, false);
     }
 }
 

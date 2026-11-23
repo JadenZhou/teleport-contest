@@ -55,6 +55,7 @@ import { ART_MJOLLNIR } from './artilist.js';
 import { is_missile, is_ammo, setuqwep } from './wield.js';
 import { confers_luck, stop_timer, obj_stop_timers, obj_to_any, attach_fig_transform_timeout } from './timeout.js';
 import { FIG_TRANSFORM } from './const.js';
+import { obj_merge_light_sources } from './light.js';
 import { set_moreluck } from './attrib.js';
 import { setnotworn, setworn } from './worn.js';
 import { oname } from './do_name.js';
@@ -2092,7 +2093,7 @@ export function merged(r) {
             otmp.pickup_prev = 1;
         /* really should merge the timeouts */
         if (obj.lamplit)
-            throw new Error('merged(): obj_merge_light_sources() not ported yet');
+            obj_merge_light_sources(obj, otmp);
         if (obj.timed)
             obj_stop_timers(obj); /* follows lights */
 

@@ -36,6 +36,7 @@ import { monsndx } from './mondata.js';
 import { objects, NUM_OBJECTS } from './objects.js';
 import { getlev } from './restore.js';
 import { save_timers as save_timers_to } from './timeout.js';
+import { save_light_sources as save_light_sources_to } from './light.js';
 import { RANGE_GLOBAL, RANGE_LEVEL } from './const.js';
 import { GameMap } from './game.js';
 import { setworn } from './worn.js';
@@ -338,11 +339,9 @@ function save_timers(nhfp, range) {
     save_timers_to(nhfp, (range === 'global') ? RANGE_GLOBAL : RANGE_LEVEL);
 }
 
-// C ref: light.c save_light_sources() -- light sources aren't ported
+/* save_light_sources(): light.js */
 function save_light_sources(nhfp, range) {
-    Sfo(nhfp, (range === 'global') ? (game.light_base_global ?? null)
-                                   : (game.level?.light_base ?? null),
-        "lightsources");
+    save_light_sources_to(nhfp, (range === 'global') ? RANGE_GLOBAL : RANGE_LEVEL);
 }
 
 // C ref: dungeon.c save_dungeon()

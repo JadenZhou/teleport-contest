@@ -26,6 +26,13 @@ import { TIMER_NONE, TIMER_LEVEL, TIMER_GLOBAL, TIMER_OBJECT, TIMER_MONSTER,
          NUM_TIME_FUNCS, RANGE_LEVEL, RANGE_GLOBAL, COUNTING, WRITING, FREEING,
          NHF_BONESFILE } from './const.js';
 import { Sfo, Sfi } from './sfbase.js';
+import { new_light_source, del_light_source, candle_light_range } from './light.js';
+import { artifact_light } from './worn.js';
+import { get_obj_location } from './shk.js';
+import { LS_OBJECT, CONTAINED_TOO, BURIED_TOO } from './const.js';
+import { MAGIC_LAMP as O_MAGIC_LAMP, POT_OIL as O_POT_OIL, BRASS_LANTERN as O_BRASS_LANTERN,
+         OIL_LAMP as O_OIL_LAMP, CANDELABRUM_OF_INVOCATION as O_CANDELABRUM_OF_INVOCATION,
+         TALLOW_CANDLE as O_TALLOW_CANDLE, WAX_CANDLE as O_WAX_CANDLE } from './objects.js';
 import { rot_organic, rot_corpse } from './dig.js';
 import { revive_mon, zombify_mon, melt_ice_away } from './zap.js';
 import { shrink_glob } from './mkobj.js';
@@ -1462,8 +1469,162 @@ async function burn_object(arg, timeout) {
     throw new Error('burn_object() not ported yet');
 }
 
+// C ref: timeout.c begin_burn()
+/*
+ * Start a burn timeout on the given object. If not "already lit" then
+ * create a light source for the vision system.  There had better not
+ * be a burn already running on the object.
+ *
+ * Magic lamps stay lit as long as there's a genie inside, so don't start
+ * a timer.
+ *
+ * Burn rules:
+ *      potions of oil, lamps & candles:
+ *              age = # of turns of fuel left
+ *              spe = <unused>
+ *      magic lamps:
+ *              age = <unused>
+ *              spe = 0 not lightable, 1 lightable forever
+ *      candelabrum:
+ *              age = # of turns of fuel left
+ *              spe = # of candles
+ *
+ * Once the burn begins, the age will be set to the amount of fuel
+ * remaining _once_the_burn_finishes_.  If the burn is terminated
+ * early then fuel is added back.
+ *
+ * This use of age differs from the use of age for corpses and eggs.
+ * For the latter items, age is when the object was created, so we
+ * know when it becomes "bad".
+ *
+ * This is a "silent" routine - it should not print anything out.
+ */
+export function begin_burn(obj, already_lit) {
+    let radius = 3;
+    let turns = 0;
+    let do_timer = true;
+
+    if (obj.age === 0 && obj.otyp !== O_MAGIC_LAMP && !artifact_light(obj))
+        return;
+
+    switch (obj.otyp) {
+    case O_MAGIC_LAMP:
+        obj.lamplit = 1;
+        do_timer = false;
+        break;
+
+    case O_POT_OIL:
+        turns = obj.age;
+        if (obj.odiluted)
+            turns = Math.trunc((3 * turns + 2) / 4);
+        radius = 1; /* very dim light */
+        break;
+
+    case O_BRASS_LANTERN:
+    case O_OIL_LAMP:
+        /* magic times are 150, 100, 50, 25, and 0 */
+        if (obj.age > 150)
+            turns = obj.age - 150;
+        else if (obj.age > 100)
+            turns = obj.age - 100;
+        else if (obj.age > 50)
+            turns = obj.age - 50;
+        else if (obj.age > 25)
+            turns = obj.age - 25;
+        else
+            turns = obj.age;
+        break;
+
+    case O_CANDELABRUM_OF_INVOCATION:
+    case O_TALLOW_CANDLE:
+    case O_WAX_CANDLE:
+        /* magic times are 75, 15, and 0 */
+        if (obj.age > 75)
+            turns = obj.age - 75;
+        else if (obj.age > 15)
+            turns = obj.age - 15;
+        else
+            turns = obj.age;
+        radius = candle_light_range(obj);
+        break;
+
+    default:
+        /* [ALI] Support artifact light sources */
+        if (artifact_light(obj)) {
+            obj.lamplit = 1;
+            do_timer = false;
+            throw new Error('begin_burn(): arti_light_radius() not ported yet');
+        } else {
+            /* impossible("begin burn: unexpected %s", xname(obj)) */
+            console.error(`impossible: begin burn: unexpected ${obj.otyp}`);
+            turns = obj.age;
+        }
+        break;
+    }
+
+    if (do_timer) {
+        if (start_timer(turns, TIMER_OBJECT, BURN_OBJECT, obj_to_any(obj))) {
+            obj.lamplit = 1;
+            obj.age -= turns;
+            /* if (carried(obj) && !already_lit) update_inventory(): no
+               perm_invent window */
+        } else {
+            obj.lamplit = 0;
+        }
+    } else {
+        /* if (carried(obj) && !already_lit) update_inventory() */
+    }
+
+    if (obj.lamplit && !already_lit) {
+        const loc = get_obj_location(obj, CONTAINED_TOO | BURIED_TOO);
+
+        if (loc)
+            new_light_source(loc[0], loc[1], radius, LS_OBJECT, obj_to_any(obj));
+        else
+            console.error('impossible: begin_burn: can\'t get obj position');
+    }
+}
+
+// C ref: timeout.c end_burn()
+/*
+ * Stop a burn timeout on the given object if timer attached.  Darken
+ * light source.
+ */
+export function end_burn(obj, timer_attached) {
+    if (!obj.lamplit) {
+        /* impossible("end_burn: obj %s not lit", xname(obj)) */
+        console.error(`impossible: end_burn: obj ${obj.otyp} not lit`);
+        return;
+    }
+
+    if (obj.otyp === O_MAGIC_LAMP || artifact_light(obj))
+        timer_attached = false;
+
+    if (!timer_attached) {
+        /* [DS] Cleanup explicitly, since timer cleanup won't happen */
+        del_light_source(LS_OBJECT, obj_to_any(obj));
+        obj.lamplit = 0;
+        /* if (obj->where == OBJ_INVENT) update_inventory() */
+    } else if (!stop_timer(BURN_OBJECT, obj_to_any(obj)))
+        console.error(`impossible: end_burn: obj ${obj.otyp} not timed!`);
+}
+
 // C ref: timeout.c cleanup_burn()
-/* Stop a burn timeout, called from stop_timer() and obj_stop_timers() */
+/*
+ * Cleanup a burning object if timer stopped.
+ */
 function cleanup_burn(arg, expire_time) {
-    throw new Error('cleanup_burn() not ported yet');
+    const obj = arg.a_obj;
+
+    if (!obj.lamplit) {
+        console.error('impossible: cleanup_burn: obj not lit');
+        return;
+    }
+
+    del_light_source(LS_OBJECT, obj_to_any(obj));
+    /* restore unused time */
+    obj.age += expire_time - game.moves;
+    obj.lamplit = 0;
+
+    /* if (obj->where == OBJ_INVENT) update_inventory() */
 }

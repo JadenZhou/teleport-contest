@@ -524,7 +524,7 @@ function pair_of(o) {
 
 // C ref: shk.c Shk_Your()/shk_your() -- the hero's own (unpaid-free,
 // carried) objects
-function Shk_Your(obj) {
+export function Shk_Your(obj) {
     let buf;
     if (obj.otyp === CORPSE)
         throw new Error('shk_your(): corpse ownership not ported yet');

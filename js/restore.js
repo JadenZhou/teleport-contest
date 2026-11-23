@@ -19,6 +19,7 @@ import { restshk, set_residency } from './shk.js';
 import { restpriest } from './priest.js';
 import { Sfi, Sf_eof, rewind_nhfile, close_nhfile } from './sfbase.js';
 import { restore_timers as restore_timers_from, run_timers, relink_timers } from './timeout.js';
+import { restore_light_sources as restore_light_sources_from, relink_light_sources } from './light.js';
 import { RANGE_GLOBAL, RANGE_LEVEL } from './const.js';
 import { create_levelfile, delete_savefile, get_freeing_nhfile, validate,
          HACK_UID } from './files.js';
@@ -565,13 +566,9 @@ function restore_timers(nhfp, range, adjust = 0) {
                         adjust);
 }
 
-// C ref: light.c restore_light_sources()
+/* restore_light_sources(): light.js */
 function restore_light_sources(nhfp, range) {
-    const ls = Sfi(nhfp, "lightsources");
-    if (range === 'global') {
-        if (ls !== null && ls !== undefined) game.light_base_global = ls;
-    } else if (ls !== null && ls !== undefined)
-        game.level.light_base = ls;
+    restore_light_sources_from(nhfp);
 }
 
 // C ref: dungeon.c restore_dungeon()
@@ -758,6 +755,7 @@ export async function dorecover(nhfp) {
     /* now link the game state to the restored level */
     resolve_saved_ids(nhfp, 0);
     relink_timers(false);
+    relink_light_sources(false);
     close_nhfile(nhfp);
     restlevelstate();
     g.program_state.something_worth_saving = 1; /* useful data now exists */
@@ -1037,10 +1035,11 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
         }
     }
     /* must come after all mons & objs are restored:
-       relink_timers(ghostly), relink_light_sources(ghostly) -- light
-       sources aren't ported */
+       relink_timers(ghostly), relink_light_sources(ghostly), once the
+       id links are resolved */
     resolve_saved_ids(nhfp, from);
     relink_timers(ghostly);
+    relink_light_sources(ghostly);
     reset_oattached_mids(ghostly);
 
     if (ghostly)
