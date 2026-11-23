@@ -272,6 +272,27 @@ export async function mnexto(mtmp, rlocflags) {
     return;
 }
 
+// C ref: mon.c maybe_mnexto()
+/* like mnexto() but requires destination to be directly accessible */
+export async function maybe_mnexto(mtmp) {
+    const mm = { x: 0, y: 0 };
+    const ptr = mtmp.data;
+    const diagok = !(ptr === mons[PM_GRID_BUG]); /* !NODIAG(ptr - mons) */
+    let tryct = 20;
+
+    do {
+        if (!enexto(mm, game.u.ux, game.u.uy, ptr))
+            return;
+        if (couldsee(mm.x, mm.y)
+            /* don't move grid bugs diagonally */
+            && (diagok || mm.x === mtmp.mx || mm.y === mtmp.my)) {
+            /* [this doesn't honor the 'montelecontrol' option] */
+            await rloc_to(mtmp, mm.x, mm.y);
+            return;
+        }
+    } while (--tryct > 0);
+}
+
 // C ref: teleport.c rloc_to()
 export async function rloc_to(mtmp, x, y) {
     await rloc_to_core(mtmp, x, y, RLOC_NOMSG);

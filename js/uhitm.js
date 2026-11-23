@@ -144,6 +144,27 @@ import { fall_asleep } from './timeout.js';
 import { some_armor } from './do_wear.js';
 import { touch_of_death } from './mcastu.js';
 import { set_uasmon } from './polyself.js';
+import { splitobj, weight, place_object } from './mkobj.js';
+import { setuwep } from './wield.js';
+import { freeinv, useup, useupall, obfree } from './invent.js';
+import { potionhit } from './potion.js';
+import { POTHIT_HERO_BASH, POTHIT_HERO_THROW, CXN_PFX_THE, CXN_ARTICLE,
+         NEUTRAL, FACE, EXPL_FIERY, ismnum } from './const.js';
+import { breaktest } from './dothrow.js';
+import { ysimple_name } from './iactions.js';
+import { change_luck } from './attrib.js';
+import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
+         VEGGY, PAPER, SPBOOK_CLASS } from './objects.js';
+import { corpse_xname, An, singular } from './objnam.js';
+import { observe_object } from './o_init.js';
+import { munstone } from './muse.js';
+import { stale_egg } from './eat.js';
+import { explode } from './explode.js';
+import { is_vampshifter, haseyes, resists_acid,
+         mon_hates_blessings } from './mondata.js';
+import { AT_SPIT } from './monsters.js';
+import { mbodypart } from './shk.js';
+import { setmangry } from './mon.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -182,6 +203,8 @@ function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
+/* C ref: mondata.h resists_ston() */
+function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
 /* C ref: youprop.h Half_physical_damage, Hate_silver */
 function Half_physical_damage() {
     const p = game.u.uprops[HALF_PHDAM];
@@ -2757,6 +2780,269 @@ async function hmon_hitmon_weapon(hmd, mon, obj) /* obj is not NULL */ {
     }
 }
 
+// C ref: uhitm.c hmon_hitmon_potion()
+async function hmon_hitmon_potion(hmd, mon, obj) /* obj is not NULL */ {
+    if (obj.quan > 1)
+        obj = splitobj(obj, 1);
+    else
+        setuwep(null);
+    freeinv(obj);
+    await potionhit(mon, obj,
+                    hmd.hand_to_hand ? POTHIT_HERO_BASH : POTHIT_HERO_THROW);
+    if (DEADMONSTER(mon)) {
+        hmd.doreturn = true;
+        hmd.retval = false; /* killed */
+        return;
+    }
+    hmd.hittxt = true;
+    /* in case potion effect causes transformation */
+    hmd.mdat = mon.data;
+    hmd.dmg = (hmd.mdat === mons[M.PM_SHADE]) ? 0 : 1;
+}
+
+/* C ref: hacklib.c plur() */
+function plur(x) { return (x === 1) ? "" : "s"; }
+
+// C ref: uhitm.c hmon_hitmon_misc_obj()
+async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {
+    switch (obj.otyp) {
+    case BOULDER:         /* 1d20 */
+    case HEAVY_IRON_BALL: /* 1d25 */
+    case IRON_CHAIN:      /* 1d4+1 */
+        hmd.dmg = dmgval(obj, mon);
+        break;
+    case MIRROR:
+        if (breaktest(obj)) {
+            await You(`break ${ysimple_name(obj)}.  That's bad luck!`);
+            change_luck(-2);
+            useup(obj);
+            obj = null;
+            hmd.unarmed = false; /* avoid obj==0 confusion */
+            hmd.get_dmg_bonus = false;
+            hmd.hittxt = true;
+        }
+        hmd.dmg = 1;
+        break;
+    case EXPENSIVE_CAMERA:
+        throw new Error('hmon_hitmon_misc_obj(): release_camera_demon() not ported yet');
+    case CORPSE: /* fixed by polder@cs.vu.nl */
+        if (touch_petrifies(mons[obj.corpsenm])) {
+            hmd.dmg = 1;
+            hmd.hittxt = true;
+            await You(`hit ${mon_nam(mon)} with ${corpse_xname(obj, null,
+                obj.dknown ? CXN_PFX_THE : CXN_ARTICLE)}.`);
+            observe_object(obj, Hallucination());
+            if (!await munstone(mon, true))
+                throw new Error('hmon_hitmon_misc_obj(): minstapetrify() not ported yet');
+            if (resists_ston(mon))
+                break;
+            /* note: hp may be <= 0 even if munstoned==TRUE */
+            hmd.doreturn = true;
+            hmd.retval = !DEADMONSTER(mon);
+            return;
+        }
+        hmd.dmg = (ismnum(obj.corpsenm) ? mons[obj.corpsenm].msize
+                   : 0) + 1;
+        break;
+    case EGG: {
+        const cnt = obj.quan;
+        /* C's useup_eggs(o) macro */
+        const useup_eggs = (o) => {
+            if (hmd.thrown)
+                obfree(o, null);
+            else
+                useupall(o);
+        };
+
+        hmd.dmg = 1; /* nominal physical damage */
+        hmd.get_dmg_bonus = false;
+        hmd.hittxt = true; /* message always given */
+        /* egg is always either used up or transformed, so next
+           hand-to-hand attack should yield a "bashing" mesg */
+        if (obj === game.uwep)
+            game.unweapon = true;
+        if (obj.spe && ismnum(obj.corpsenm)) {
+            if (obj.quan < 5)
+                change_luck(-(obj.quan));
+            else
+                change_luck(-5);
+        }
+
+        if (ismnum(obj.corpsenm)
+            && touch_petrifies(mons[obj.corpsenm])) {
+            /*learn_egg_type(obj->corpsenm);*/
+            await pline(`Splat!  You hit ${mon_nam(mon)} with ${
+                obj.known ? "the" : cnt > 1 ? "some" : "a"} ${
+                obj.known ? mons[obj.corpsenm].pmnames[NEUTRAL]
+                : "petrifying"} egg${plur(cnt)}!`);
+            obj.known = 1; /* (not much point...) */
+            useup_eggs(obj);
+            obj = null;
+            if (!await munstone(mon, true))
+                throw new Error('hmon_hitmon_misc_obj(): minstapetrify() not ported yet');
+            if (resists_ston(mon))
+                break;
+            hmd.doreturn = true;
+            hmd.retval = !DEADMONSTER(mon);
+            return;
+        } else { /* ordinary egg(s) */
+            const mnum = obj.corpsenm;
+            const eggp =
+                (ismnum(mnum) && obj.known)
+                    ? the(mons[mnum].pmnames[NEUTRAL])
+                    : (cnt > 1) ? "some" : "an";
+
+            await You(`hit ${mon_nam(mon)} with ${eggp} egg${plur(cnt)}.`);
+            if (touch_petrifies(hmd.mdat) && !stale_egg(obj)) {
+                await pline_The(`egg${plur(cnt)} ${
+                    (cnt === 1) ? "isn't" : "aren't"} alive any more...`);
+                if (obj.timed)
+                    throw new Error('hmon_hitmon_misc_obj(): obj_stop_timers() not ported yet');
+                obj.otyp = ROCK;
+                obj.oclass = GEM_CLASS;
+                obj.oartifact = 0;
+                obj.spe = 0;
+                obj.known = obj.dknown = obj.bknown = 0;
+                obj.owt = weight(obj);
+                if (hmd.thrown)
+                    place_object(obj, mon.mx, mon.my);
+            } else if (obj.corpsenm === M.PM_PYROLISK) {
+                useup_eggs(obj);
+                obj = null;
+                await explode(mon.mx, mon.my, -11, d(3, 6), 0, EXPL_FIERY);
+                hmd.doreturn = true;
+                hmd.retval = !DEADMONSTER(mon);
+                return;
+            } else {
+                await pline("Splat!");
+                useup_eggs(obj);
+                obj = null;
+                exercise(A_WIS, false);
+            }
+        }
+        break;
+    }
+    case CLOVE_OF_GARLIC: /* no effect against demons */
+        if (is_undead(hmd.mdat) || is_vampshifter(mon)) {
+            await monflee(mon, d(2, 4), false, true);
+        }
+        hmd.dmg = 1;
+        break;
+    case CREAM_PIE:
+    case BLINDING_VENOM:
+        mon.msleeping = 0;
+        if (can_blnd(game.youmonst, mon,
+                     (obj.otyp === BLINDING_VENOM) ? AT_SPIT : AT_WEAP,
+                     obj)) {
+            if (Blind()) {
+                await pline(obj.otyp === CREAM_PIE ? "Splat!" : "Splash!");
+            } else if (obj.otyp === BLINDING_VENOM) {
+                await pline_The(`venom blinds ${mon_nam(mon)}${
+                    mon.mcansee ? "" : " further"}!`);
+            } else {
+                let whom = mon_nam(mon);
+                let what = The(xname(obj));
+
+                if (!hmd.thrown && obj.quan > 1)
+                    what = An(singular(obj, xname));
+                /* note: s_suffix returns a modifiable buffer */
+                if (haseyes(hmd.mdat)
+                    && hmd.mdat !== mons[M.PM_FLOATING_EYE])
+                    whom = `${s_suffix(whom)} ${mbodypart(mon, FACE)}`;
+                await pline(`${what} ${vtense(what, "splash")} over ${whom}!`);
+            }
+            await setmangry(mon, true);
+            mon.mcansee = 0;
+            hmd.dmg = rn1(25, 21);
+            if ((mon.mblinded || 0) + hmd.dmg > 127)
+                mon.mblinded = 127;
+            else
+                mon.mblinded = (mon.mblinded || 0) + hmd.dmg;
+        } else {
+            await pline(obj.otyp === CREAM_PIE ? "Splat!" : "Splash!");
+            await setmangry(mon, true);
+        }
+        {
+            const more_than_1 = (obj.quan > 1);
+
+            if (hmd.thrown)
+                obfree(obj, null);
+            else
+                useup(obj);
+
+            if (!more_than_1)
+                obj = null;
+        }
+        hmd.hittxt = true;
+        hmd.get_dmg_bonus = false;
+        hmd.dmg = 0;
+        break;
+    case ACID_VENOM: /* thrown (or spit) */
+        if (resists_acid(mon)) {
+            await Your(`venom hits ${mon_nam(mon)} harmlessly.`);
+            hmd.dmg = 0;
+        } else {
+            await Your(`venom burns ${mon_nam(mon)}!`);
+            hmd.dmg = dmgval(obj, mon);
+        }
+        {
+            const more_than_1 = (obj.quan > 1);
+
+            if (hmd.thrown)
+                obfree(obj, null);
+            else
+                useup(obj);
+
+            if (!more_than_1)
+                obj = null;
+        }
+        hmd.hittxt = true;
+        hmd.get_dmg_bonus = false;
+        break;
+    default:
+        if ((objects[obj.otyp].oc_material === VEGGY
+             || objects[obj.otyp].oc_material === PAPER)
+            && obj.oclass !== SPBOOK_CLASS) {
+            /* vegetables (and similar) do no damage, because they
+               aren't rigid enough; paper objects also do no damage,
+               except for books */
+            hmd.dmg = 0;
+            hmd.get_dmg_bonus = false;
+            break;
+        }
+        /* non-weapons can damage because of their weight */
+        /* (but not too much) */
+        hmd.dmg = Math.trunc((obj.owt + 99) / 100);
+        hmd.dmg = (hmd.dmg <= 1) ? 1 : rnd(hmd.dmg);
+        if (hmd.dmg > 6)
+            hmd.dmg = 6;
+        /* wet towel has modest damage bonus beyond its weight,
+           based on its wetness */
+        if (is_wet_towel(obj)) {
+            const doubld = (mon.data === mons[M.PM_IRON_GOLEM]);
+
+            /* wielded wet towel should probably use whip skill
+               (but not by setting objects[TOWEL].oc_skill==P_WHIP
+               because that would turn towel into a weptool);
+               due to low weight, tmp always starts at 1 here, and
+               due to wet towel's definition, obj->spe is 1..7 */
+            hmd.dmg += obj.spe * (doubld ? 2 : 1);
+            hmd.dmg = rnd(hmd.dmg); /* wet towel damage not capped at 6 */
+            /* usually lose some wetness but defer doing so
+               until after hit message */
+            hmd.dryit = (rn2(obj.spe + 1) > 0);
+        }
+        /* things like silver wands can arrive here so we
+           need another silver check; blessed check too */
+        if (hmd.material === SILVER && mon_hates_silver(mon)) {
+            hmd.dmg += rnd(20);
+            hmd.silvermsg = hmd.silverobj = true;
+        }
+        if (obj.blessed && mon_hates_blessings(mon))
+            hmd.dmg += rnd(4);
+    }
+}
+
 // C ref: uhitm.c hmon_hitmon_do_hit()
 /* do the actual hitting monster with obj/fists */
 async function hmon_hitmon_do_hit(hmd, mon, obj) /* obj can be NULL */ {
@@ -2783,12 +3069,14 @@ async function hmon_hitmon_do_hit(hmd, mon, obj) /* obj can be NULL */ {
                 return;
         /* attacking with non-weapons */
         } else if (obj.oclass === POTION_CLASS) {
-            throw new Error('hmon_hitmon_do_hit(): hmon_hitmon_potion() not ported yet');
+            await hmon_hitmon_potion(hmd, mon, obj);
+            if (hmd.doreturn)
+                return;
         } else {
             if (hmd.mdat === mons[M.PM_SHADE] && !shade_aware(obj)) {
                 hmd.dmg = 0;
             } else {
-                throw new Error('hmon_hitmon_do_hit(): hmon_hitmon_misc_obj() not ported yet');
+                await hmon_hitmon_misc_obj(hmd, mon, obj);
             }
         }
     }
