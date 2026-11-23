@@ -17,7 +17,7 @@ import { canspotmon } from './display.js';
 import { mondied } from './mon.js';
 import { in_town } from './hack.js';
 import { game } from './gstate.js';
-import { stop_timer, obj_to_any } from './timeout.js';
+import { stop_timer, obj_to_any, begin_burn } from './timeout.js';
 import { ROT_CORPSE } from './const.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
@@ -1468,7 +1468,7 @@ function m_initinv(mtmp) {
             otmp.quan = 1;
             otmp.owt = weight(otmp);
             if (!mpickobj(mtmp, otmp) && !game.level.at(mtmp.mx, mtmp.my).lit) {
-                /* begin_burn(otmp, FALSE): light sources not ported yet */
+                begin_burn(otmp, false);
             }
         }
         break;

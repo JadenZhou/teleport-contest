@@ -29,6 +29,16 @@ import { Sfo, Sfi } from './sfbase.js';
 import { new_light_source, del_light_source, candle_light_range } from './light.js';
 import { artifact_light } from './worn.js';
 import { get_obj_location } from './shk.js';
+import { Yname2 as Yname2_to, xname as xname_to, an as an_to } from './objnam.js';
+import { You_see as You_see_to, Your as Your_to } from './display.js';
+import { s_suffix as s_suffix_to } from './hacklib.js';
+import { Monnam as Monnam_to } from './do_name.js';
+import { cansee as cansee_to } from './vision.js';
+import { Shk_Your as Shk_Your_to } from './wield.js';
+import { weight as weight_to, obj_extract_self as obj_extract_self_to } from './mkobj.js';
+import { m_at as m_at_to } from './makemon.js';
+import { obfree as obfree_to, useupall as useupall_to } from './invent.js';
+import { maybe_unhide_at as maybe_unhide_at_to } from './mon.js';
 import { LS_OBJECT, CONTAINED_TOO, BURIED_TOO } from './const.js';
 import { MAGIC_LAMP as O_MAGIC_LAMP, POT_OIL as O_POT_OIL, BRASS_LANTERN as O_BRASS_LANTERN,
          OIL_LAMP as O_OIL_LAMP, CANDELABRUM_OF_INVOCATION as O_CANDELABRUM_OF_INVOCATION,
@@ -1464,9 +1474,297 @@ async function hatch_egg(arg, timeout) {
     throw new Error('hatch_egg() not ported yet');
 }
 
+// C ref: timeout.c see_lamp_flicker()
+/* Print a lamp flicker message with tailer.  Only called if seen. */
+async function see_lamp_flicker(obj, tailer) {
+    switch (obj.where) {
+    case 'OBJ_INVENT':
+    case 'OBJ_MINVENT':
+        await pline(`${Yname2_to(obj)} flickers${tailer}.`);
+        break;
+    case 'OBJ_FLOOR':
+        await You_see_to(`${an_to(xname_to(obj))} flicker${tailer}.`);
+        break;
+    }
+}
+
+// C ref: timeout.c lantern_message()
+/* Print a dimming message for brass lanterns.  Only called if seen. */
+async function lantern_message(obj) {
+    /* from adventure */
+    switch (obj.where) {
+    case 'OBJ_INVENT':
+        await Your_to("lantern is getting dim.");
+        if (Hallucination_to())
+            await pline("Batteries have not been invented yet.");
+        break;
+    case 'OBJ_FLOOR':
+        await You_see_to("a lantern getting dim.");
+        break;
+    case 'OBJ_MINVENT':
+        await pline(`${s_suffix_to(Monnam_to(obj.ocarry))} lantern is getting dim.`);
+        break;
+    }
+}
+
 // C ref: timeout.c burn_object()
+/*
+ * Timeout callback for objects that are burning. E.g. lamps, candles.
+ * See begin_burn() for meanings of obj->age and obj->spe.
+ */
 async function burn_object(arg, timeout) {
-    throw new Error('burn_object() not ported yet');
+    let obj = arg.a_obj;
+    let canseeit, need_newsym, need_invupdate, bytouch;
+    let x = 0, y = 0;
+    let whose = "";
+
+    const menorah = obj.otyp === O_CANDELABRUM_OF_INVOCATION;
+    const many = menorah ? obj.spe > 1 : obj.quan > 1;
+
+    /* timeout while away */
+    if (timeout !== game.moves) {
+        const how_long = game.moves - timeout;
+
+        if (how_long >= obj.age) {
+            obj.age = 0;
+            end_burn(obj, false);
+
+            if (menorah) {
+                obj.spe = 0; /* no more candles */
+                obj.owt = weight_to(obj);
+            } else if (obj.otyp === O_TALLOW_CANDLE || obj.otyp === O_WAX_CANDLE
+                       || obj.otyp === O_POT_OIL) {
+                let mtmp = null;
+
+                if (obj.where === 'OBJ_FLOOR')
+                    mtmp = m_at_to(obj.ox, obj.oy);
+                /* get rid of candles and burning oil potions;
+                   we know this object isn't carried by hero,
+                   nor is it migrating */
+                obj_extract_self_to(obj);
+                obfree_to(obj, null);
+                obj = null;
+                if (mtmp)
+                    maybe_unhide_at_to(mtmp.mx, mtmp.my);
+            }
+
+        } else {
+            obj.age -= how_long;
+            begin_burn(obj, true);
+        }
+        return;
+    }
+
+    /* only interested in INVENT, FLOOR, and MINVENT */
+    const loc = get_obj_location(obj, 0);
+    if (loc) {
+        x = loc[0], y = loc[1];
+        canseeit = !Blind() && cansee_to(x, y);
+        /* set `whose[]' to be "Your " or "Fred's " or "The goblin's " */
+        whose = Shk_Your_to(obj);
+    } else {
+        canseeit = false;
+    }
+    /* when carrying the light source, you can feel the heat from lit lamp
+       or candle so you'll be notified when it burns out even if blind at
+       the time; brass lantern doesn't radiate sufficient heat for that
+       (however, inventory formatting drops "(lit)" so player can tell) */
+    bytouch = (obj.where === 'OBJ_INVENT' && obj.otyp !== O_BRASS_LANTERN);
+    need_newsym = need_invupdate = false;
+
+    /* obj->age is the age remaining at this point.  */
+    switch (obj.otyp) {
+    case O_POT_OIL:
+        throw new Error('burn_object(): burning potion of oil not ported yet');
+
+    case O_BRASS_LANTERN:
+    case O_OIL_LAMP:
+        switch (obj.age) {
+        case 150:
+        case 100:
+        case 50:
+            if (canseeit) {
+                if (obj.otyp === O_BRASS_LANTERN)
+                    await lantern_message(obj);
+                else
+                    await see_lamp_flicker(obj,
+                                           obj.age === 50 ? " considerably" : "");
+            }
+            break;
+
+        case 25:
+            if (canseeit) {
+                if (obj.otyp === O_BRASS_LANTERN) {
+                    await lantern_message(obj);
+                } else {
+                    switch (obj.where) {
+                    case 'OBJ_INVENT':
+                    case 'OBJ_MINVENT':
+                        await pline(`${Yname2_to(obj)} seems about to go out.`);
+                        break;
+                    case 'OBJ_FLOOR':
+                        await You_see_to(`${an_to(xname_to(obj))} about to go out.`);
+                        break;
+                    }
+                }
+            }
+            break;
+
+        case 0:
+            /* even if blind you'll know if holding it */
+            if (canseeit || bytouch) {
+                switch (obj.where) {
+                case 'OBJ_INVENT':
+                case 'OBJ_MINVENT':
+                    if (obj.otyp === O_BRASS_LANTERN)
+                        await pline(`${whose}lantern has run out of power.`);
+                    else
+                        await pline(`${Yname2_to(obj)} has gone out.`);
+                    break;
+                case 'OBJ_FLOOR':
+                    if (obj.otyp === O_BRASS_LANTERN)
+                        await You_see_to("a lantern run out of power.");
+                    else
+                        await You_see_to(`${an_to(xname_to(obj))} go out.`);
+                    break;
+                }
+            }
+            end_burn(obj, false);
+            break;
+
+        default:
+            /*
+             * Someone added fuel to the lamp while it was
+             * lit. Just fall through and let begin_burn()
+             * handle the new age.
+             */
+            break;
+        }
+
+        if (obj.age)
+            begin_burn(obj, true);
+
+        break;
+
+    case O_CANDELABRUM_OF_INVOCATION:
+    case O_TALLOW_CANDLE:
+    case O_WAX_CANDLE:
+        switch (obj.age) {
+        case 75:
+            if (canseeit)
+                switch (obj.where) {
+                case 'OBJ_INVENT':
+                case 'OBJ_MINVENT':
+                    await pline(`${whose}${menorah ? "candelabrum's " : ""}candle${
+                        many ? "s are" : " is"} getting short.`);
+                    break;
+                case 'OBJ_FLOOR':
+                    await You_see_to(`${menorah ? "a candelabrum's " : many ? "some "
+                                                                     : "a "}candle${
+                        many ? "s" : ""} getting short.`);
+                    break;
+                }
+            break;
+
+        case 15:
+            if (canseeit)
+                switch (obj.where) {
+                case 'OBJ_INVENT':
+                case 'OBJ_MINVENT':
+                    await pline(`${whose}${menorah ? "candelabrum's " : ""}candle${
+                        many ? "s'" : "'s"} flame${many ? "s" : ""} flicker${
+                        many ? "" : "s"} low!`);
+                    break;
+                case 'OBJ_FLOOR':
+                    await You_see_to(`${menorah ? "a candelabrum's " : many ? "some "
+                                                                     : "a "}candle${
+                        many ? "s'" : "'s"} flame${many ? "s" : ""} flicker low!`);
+                    break;
+                }
+            break;
+
+        case 0:
+            /* we know even if blind and in our inventory */
+            if (canseeit || bytouch) {
+                if (menorah) {
+                    switch (obj.where) {
+                    case 'OBJ_INVENT':
+                    case 'OBJ_MINVENT':
+                        await pline(`${whose}candelabrum's flame${
+                            many ? "s die" : " dies"}.`);
+                        break;
+                    case 'OBJ_FLOOR':
+                        await You_see_to(`a candelabrum's flame${many ? "s" : ""} die.`);
+                        break;
+                    }
+                } else {
+                    switch (obj.where) {
+                    case 'OBJ_INVENT':
+                    case 'OBJ_MINVENT':
+                        await pline(`${Yname2_to(obj)} ${many ? "are" : "is"} consumed!`);
+                        break;
+                    case 'OBJ_FLOOR':
+                        /*
+                          You see some wax candles consumed!
+                          You see a wax candle consumed!
+                         */
+                        await You_see_to(`${many ? "some " : ""}${
+                            many ? xname_to(obj) : an_to(xname_to(obj))} consumed!`);
+                        need_newsym = true;
+                        break;
+                    }
+
+                    /* post message */
+                    await pline(Hallucination_to()
+                                    ? (many ? "They shriek!" : "It shrieks!")
+                                    : Blind() ? "" : (many ? "Their flames die."
+                                                           : "Its flame dies."));
+                }
+            }
+            end_burn(obj, false);
+
+            if (menorah) {
+                obj.spe = 0; /* no candles */
+                obj.owt = weight_to(obj);
+            } else {
+                if (obj.where === 'OBJ_INVENT') { /* carried(obj) */
+                    await useupall_to(obj);
+                } else {
+                    const onfloor = (obj.where === 'OBJ_FLOOR');
+
+                    /* clear migrating obj's destination code
+                       so obfree won't think this item is worn */
+                    if (obj.where === 'OBJ_MIGRATING')
+                        obj.owornmask = 0;
+                    obj_extract_self_to(obj);
+                    if (onfloor)
+                        maybe_unhide_at_to(x, y);
+                    obfree_to(obj, null);
+                }
+                obj = null;
+            }
+            break; /* case [age ==] 0 */
+
+        default:
+            /*
+             * Someone added fuel (candles) to the menorah while
+             * it was lit. Just fall through and let begin_burn()
+             * handle the new age.
+             */
+            break;
+        }
+
+        if (obj && obj.age)
+            begin_burn(obj, true);
+        break; /* case [otyp ==] candelabrum|tallow_candle|wax_candle */
+
+    default:
+        console.error('impossible: burn_object: unexpected obj');
+        break;
+    }
+    if (need_newsym)
+        newsym(x, y);
+    /* if (need_invupdate) update_inventory(): no perm_invent window */
 }
 
 // C ref: timeout.c begin_burn()
