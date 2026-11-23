@@ -49,7 +49,7 @@ import { close_nhfile } from './sfbase.js';
 import { LFILE_EXISTS, VISITED, WRITING, FREEING } from './const.js';
 import { m_at } from './makemon.js';
 import { mklev, place_lregion } from './mklev.js';
-import { vision_reset } from './vision.js';
+import { vision_reset, vision_recalc } from './vision.js';
 import { LR_UPTELE, LR_DOWNTELE } from './const.js';
 import { getobj, any_obj_ok, freeinv, stackobj } from './invent.js';
 import { query_category, query_objlist, add_valid_menu_class, allow_all,
@@ -534,8 +534,12 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (!g.iflags?.nofollowers)
         await keepdogs(false);
     recalc_mapseen(); /* recalculate map overview before we leave the level */
-    /* vision_recalc(2): we no longer see anything on the level; the
-       vision state is rebuilt by vision_reset() on arrival */
+    /*
+     *  We no longer see anything on the level.  Make sure that this
+     *  follows u.uswallow set to null since uswallow overrides all
+     *  normal vision.
+     */
+    vision_recalc(2);
 
     /*
      * Save the level we're leaving.  If we're entering the endgame,

@@ -790,7 +790,7 @@ function terrain_glyph_dec(loc, x, y) {
     case ICE:       return { ch: '~', color: CLR_CYAN, dec: true, asc: '.', cmapidx: 39 };
     case AIR:       return { ch: ' ', color: CLR_CYAN, dec: false, cmapidx: 46 };
     case CLOUD:     return { ch: '#', color: CLR_GRAY, dec: false, cmapidx: 47 };
-    case WATER:     return { ch: '`', color: CLR_BLUE, dec: true, asc: '}', cmapidx: 48 };
+    case WATER:     return { ch: '`', color: CLR_BRIGHT_BLUE, dec: true, asc: '}', cmapidx: 48 };  /* S_water */
     case DBWALL:    return { ch: '#', color: CLR_BROWN, dec: false,
                              cmapidx: loc.horizontal ? 45 : 44 };
     case DRAWBRIDGE_UP: return S_room;
@@ -2795,6 +2795,8 @@ export async function flush_screen(cursor_on_u) {
     /* get this done now, before we place the cursor on the hero */
     if (game.disp_botl || game.disp_botlx)
         bot();
+    else if (game.disp_time_botl)
+        timebot();
     _buildScreenOutput(cursor_on_u);
 }
 
@@ -2963,7 +2965,20 @@ export function bot() {
             }
         }
     }
-    game.disp_botl = game.disp_botlx = false;
+    game.disp_botl = game.disp_botlx = game.disp_time_botl = false;
+}
+
+// C ref: botl.c timebot() -- special purpose status update: move counter
+// ('time' status) only.  tty's windowport stat_update_time() redraws the
+// status line with only the time field re-evaluated; bot() recomposes
+// every field from current state (C's "old status display" path).
+export function timebot() {
+    if (game.bot_disabled)
+        return;
+    /* iflags.status_updates is always on; suppress_map_output() */
+    if (game.flags?.time && !game.in_mklev && game.u?.ux)
+        bot();
+    game.disp_time_botl = false;
 }
 
 // C ref: pline.c gamelog_add() (CHRONICLE) -- append an event to the

@@ -467,7 +467,7 @@ export async function moveloop_core() {
         u.umovement -= NORMAL_SPEED;
 
         do { /* hero can't move this turn loop */
-            /* encumber_msg(): not ported yet */
+            await encumber_msg();
 
             g.context.mon_moving = 1;
             do {
@@ -506,8 +506,8 @@ export async function moveloop_core() {
                    a value that is distinct every time the hero moves */
                 g.hero_seq = g.moves << 3;
 
-                /* if (flags.time && !context.run) disp.time_botl = TRUE:
-                   the status line redraws its turn counter itself */
+                if (g.flags.time && !g.context.run)
+                    g.disp_time_botl = true; /* 'moves' just changed */
 
                 /********************************/
                 /* once-per-turn things go here */
@@ -625,8 +625,12 @@ export async function moveloop_core() {
 
         g.hero_seq++; /* moves*8 + n for n == 1..7 */
 
-        /* encumber_msg(): messages about encumbrance changes are not
-           ported yet (no rolls) */
+        /* although we checked for encumbrance above, we need to
+           check again for message purposes, as the weight of
+           inventory may have changed in, e.g., nh_timeout(); we do
+           need two checks here so that the player gets feedback
+           immediately if their own action encumbered them */
+        await encumber_msg();
 
         if (g.moves >= g.context.seer_turn) {
             const HC = P[CLAIRVOYANT];

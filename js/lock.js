@@ -10,7 +10,7 @@
 // forcelock(), breakchestlock(), u_have_forceable_weapon(),
 // chest_shatter_msg()) and #close (doclose()).
 
-import { touch_artifact } from './artifact.js';
+import { touch_artifact, is_magic_key } from './artifact.js';
 import { game } from './gstate.js';
 import { rn2, rnl } from './rng.js';
 import { pline, newsym, You, You_cant, pline_The, canseemon } from './display.js';
@@ -256,19 +256,6 @@ export function maybe_reset_pick(container) {
 
 function carried(obj) { return obj.where === 'OBJ_INVENT'; }
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
-
-// C ref: artifact.c is_magic_key()
-/* mon: if null, non-rogue is assumed */
-function is_magic_key(mon, obj) {
-    if (obj && obj.oartifact === ART_MASTER_KEY_OF_THIEVERY) { /* is_art() */
-        if ((mon === game.youmonst) ? (game.urole.mnum === PM_ROGUE)
-                                    : (mon && mon.data === mons[PM_ROGUE]))
-            return !obj.cursed; /* a rogue; non-cursed suffices for magic */
-        /* not a rogue; key must be blessed to behave as a magic one */
-        return !!obj.blessed;
-    }
-    return false;
-}
 
 /* C ref: lock.c PICKLOCK_* */
 const PICKLOCK_LEARNED_SOMETHING = -1; /* time passes */

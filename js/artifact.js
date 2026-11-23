@@ -33,11 +33,11 @@ import { rn2 } from './rng.js';
 import { P_MAX_SKILL } from './weapon.js';
 import { P_SKILLED, P_BASIC, ONAME_NO_FLAGS, GETOBJ_EXCLUDE, GETOBJ_SUGGEST,
          GETOBJ_PROMPT, ECMD_CANCEL } from './const.js';
-import { getobj } from './invent.js';
+import { getobj, nxtobj } from './invent.js';
 import { mksobj, permapoisoned, Is_container } from './mkobj.js';
 import { oname } from './do_name.js';
 import { obj_shuffle_range } from './o_init.js';
-import { ART_SUNSWORD } from './artilist.js';
+import { ART_SUNSWORD, ART_MASTER_KEY_OF_THIEVERY } from './artilist.js';
 import { HALLUC, PROTECTION } from './const.js';
 import { see_monsters } from './display.js';
 import { recalc_telepat_range, clear_bypasses, bypass_obj, nxt_unbypassed_obj,
@@ -1818,4 +1818,32 @@ async function arti_invoke(obj) {
 
     /* It's a special power, not "just" a property */
     throw new Error('arti_invoke(): artifact invoke powers (arti_invoke_cost(), invoke_*()) not ported yet');
+}
+
+// C ref: artifact.c is_magic_key()
+export function is_magic_key(mon, /* if null, non-rogue is assumed */
+                             obj) {
+    if (obj && obj.oartifact === ART_MASTER_KEY_OF_THIEVERY) { /* is_art() */
+        if ((mon === game.youmonst) ? game.urole.mnum === M.PM_ROGUE /* Role_if() */
+                                    : (mon && mon.data === M.mons[M.PM_ROGUE]))
+            return !obj.cursed; /* a rogue; non-cursed suffices for magic */
+        /* not a rogue; key must be blessed to behave as a magic one */
+        return !!obj.blessed;
+    }
+    return false;
+}
+
+// C ref: artifact.c has_magic_key()
+/* figure out whether 'mon' (usually youmonst) is carrying the magic key */
+export function has_magic_key(mon) { /* if null, hero assumed */
+    const key = artilist()[ART_MASTER_KEY_OF_THIEVERY].otyp;
+
+    if (!mon)
+        mon = game.youmonst;
+    for (let o = (mon === game.youmonst) ? game.invent : mon.minvent; o;
+         o = nxtobj(o, key, false)) {
+        if (is_magic_key(mon, o))
+            return o;
+    }
+    return null;
 }
