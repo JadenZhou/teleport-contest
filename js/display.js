@@ -2150,14 +2150,19 @@ export function feel_location(x, y) {
         }
 
         /* Floor spaces are dark if unlit.  Corridors are dark if unlit.
-           (cmap_to_glyph(flags.dark_room ? S_darkroom : S_stone): JS
-           remembers S_darkroom spots as S_room; see newsym()) */
+           cmap_to_glyph(flags.dark_room ? S_darkroom : S_stone); the
+           S_darkroom glyph is a new glyph (lock.c and pager.c tell it
+           apart) but is drawn like the remembered S_room spot, as newsym()
+           draws out-of-sight dark room spots */
         if (lev.typ === ROOM && lev.remembered_glyph?.cmap === 'S_room'
             && (!lev.waslit || (game.flags.dark_room !== false
                                 && game.iflags.wc_color !== false))) {
             if (game.flags.dark_room === false)
                 lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
                                          cmap: 'S_stone' };
+            else
+                lev.remembered_glyph = { ...lev.remembered_glyph,
+                                         cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
             show_glyph(x, y, lev.remembered_glyph);
         } else if (lev.typ === CORR && lev.remembered_glyph?.cmap === 'S_litcorr'
                    && !lev.waslit) {
@@ -2800,7 +2805,10 @@ function clear_glyph_buffer() {
     for (let x = 1; x < COLNO; x++)
         for (let y = 0; y < ROWNO; y++)
             if (game.level.at(x, y))
-                show_glyph_cell(x, y, ' ', NO_COLOR, false);
+                /* GLYPH_UNEXPLORED: glyph_at() reports it as 'unexplored'
+                   until something else is shown there */
+                show_glyph_cell(x, y, ' ', NO_COLOR, false, 0, 'cmap', false,
+                                { unexplored: true });
 }
 
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
