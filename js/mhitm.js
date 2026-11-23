@@ -897,3 +897,52 @@ export async function slept_monst(mon) {
         && !sticks(game.youmonst.data) && !game.u.uswallow)
         throw new Error('slept_monst(): grip relaxes (unstuck()) not ported yet');
 }
+
+// C ref: mhitm.c attk_protection()
+/* "aggressive defense"; what type of armor prevents specified attack
+   from touching its target? */
+export function attk_protection(aatyp) {
+    let w_mask = 0;
+
+    switch (aatyp) {
+    case AT_NONE_AP:
+    case AT_SPIT_AP:
+    case AT_EXPL_AP:
+    case AT_BOOM_AP:
+    case AT_GAZE_AP:
+    case AT_BREA_AP:
+    case AT_MAGC_AP:
+        w_mask = ~0; /* special case; no defense needed */
+        break;
+    case AT_CLAW_AP:
+    case AT_TUCH_AP:
+    case AT_WEAP_AP:
+        w_mask = W_ARMG_AP; /* caller needs to check for weapon */
+        break;
+    case AT_KICK_AP:
+        w_mask = W_ARMF_AP;
+        break;
+    case AT_BUTT_AP:
+        w_mask = W_ARMH_AP;
+        break;
+    case AT_HUGS_AP:
+        w_mask = (W_ARMC_AP | W_ARMG_AP); /* attacker needs both to be protected */
+        break;
+    case AT_BITE_AP:
+    case AT_STNG_AP:
+    case AT_ENGL_AP:
+    case AT_TENT_AP:
+    default:
+        w_mask = 0; /* no defense available */
+        break;
+    }
+    return w_mask;
+}
+import { AT_NONE as AT_NONE_AP, AT_SPIT as AT_SPIT_AP, AT_EXPL as AT_EXPL_AP,
+         AT_BOOM as AT_BOOM_AP, AT_GAZE as AT_GAZE_AP, AT_BREA as AT_BREA_AP,
+         AT_MAGC as AT_MAGC_AP, AT_CLAW as AT_CLAW_AP, AT_TUCH as AT_TUCH_AP,
+         AT_WEAP as AT_WEAP_AP, AT_KICK as AT_KICK_AP, AT_BUTT as AT_BUTT_AP,
+         AT_HUGS as AT_HUGS_AP, AT_BITE as AT_BITE_AP, AT_STNG as AT_STNG_AP,
+         AT_ENGL as AT_ENGL_AP, AT_TENT as AT_TENT_AP } from './monsters.js';
+import { W_ARMG as W_ARMG_AP, W_ARMF as W_ARMF_AP, W_ARMH as W_ARMH_AP,
+         W_ARMC as W_ARMC_AP } from './const.js';

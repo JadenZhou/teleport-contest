@@ -319,6 +319,84 @@ function unpolyable(o) {
         || o.otyp === POT_POLYMORPH || o.otyp === AMULET_OF_UNCHANGING;
 }
 
+// C ref: zap.c drain_item()
+/* Remove a positive enchantment or charge from obj,
+ * possibly carried by you or a monster
+ */
+export function drain_item(obj, by_you) {
+    const u = game.u;
+    let u_ring;
+
+    /* Is this a charged/enchanted object? */
+    if (!obj
+        || (!objects[obj.otyp].oc_charged && obj.oclass !== WEAPON_CLASS
+            && obj.oclass !== ARMOR_CLASS && !is_weptool_di(obj))
+        || obj.spe <= 0)
+        return false;
+    if (defends_di(AD_DRLI_DI, obj) || defends_when_carried_di(AD_DRLI_DI, obj)
+        || obj_resists(obj, 10, 90))
+        return false;
+
+    /* Charge for the cost of the object */
+    if (by_you)
+        costly_alteration_di(obj, COST_DRAIN_DI);
+
+    /* Drain the object and any implied effects */
+    obj.spe--;
+    u_ring = (obj === game.uleft) || (obj === game.uright);
+    switch (obj.otyp) {
+    case RIN_GAIN_STRENGTH_DI:
+        if ((obj.owornmask & W_RING) && u_ring) {
+            u.abon.a[A_STR]--;
+            game.disp_botl = true;
+        }
+        break;
+    case RIN_GAIN_CONSTITUTION_DI:
+        if ((obj.owornmask & W_RING) && u_ring) {
+            u.abon.a[A_CON_DI]--;
+            game.disp_botl = true;
+        }
+        break;
+    case RIN_ADORNMENT_DI:
+        if ((obj.owornmask & W_RING) && u_ring) {
+            u.abon.a[A_CHA_DI]--;
+            game.disp_botl = true;
+        }
+        break;
+    case RIN_INCREASE_ACCURACY_DI:
+        if ((obj.owornmask & W_RING) && u_ring)
+            u.uhitinc--;
+        break;
+    case RIN_INCREASE_DAMAGE_DI:
+        if ((obj.owornmask & W_RING) && u_ring)
+            u.udaminc--;
+        break;
+    case RIN_PROTECTION_DI:
+        if (u_ring)
+            game.disp_botl = true; /* bot() will recalc u.uac */
+        break;
+    case HELM_OF_BRILLIANCE_DI:
+        if ((obj.owornmask & W_ARMH) && (obj === game.uarmh)) {
+            u.abon.a[A_INT_DI]--;
+            u.abon.a[A_WIS]--;
+            game.disp_botl = true;
+        }
+        break;
+    case GAUNTLETS_OF_DEXTERITY_DI:
+        if ((obj.owornmask & W_ARMG) && (obj === game.uarmg)) {
+            u.abon.a[A_DEX_DI]--;
+            game.disp_botl = true;
+        }
+        break;
+    default:
+        break;
+    }
+    if (game.disp_botl)
+        bot_di();
+    /* if (carried(obj)) update_inventory(): no perm_invent */
+    return true;
+}
+
 // C ref: zap.c obj_shudders()
 export function obj_shudders(obj) {
     let zap_odds;
@@ -3295,3 +3373,19 @@ export async function zombify_mon(arg, timeout) {
 export async function melt_ice_away(arg, timeout) {
     throw new Error('melt_ice_away() not ported yet');
 }
+import { defends as defends_di, defends_when_carried as defends_when_carried_di }
+       from './artifact.js';
+import { is_weptool as is_weptool_di, costly_alteration as costly_alteration_di }
+       from './mkobj.js';
+import { bot as bot_di } from './display.js';
+import { COST_DRAIN as COST_DRAIN_DI, A_CON as A_CON_DI, A_CHA as A_CHA_DI,
+         A_INT as A_INT_DI, A_DEX as A_DEX_DI } from './const.js';
+import { AD_DRLI as AD_DRLI_DI } from './monsters.js';
+import { RIN_GAIN_STRENGTH as RIN_GAIN_STRENGTH_DI,
+         RIN_GAIN_CONSTITUTION as RIN_GAIN_CONSTITUTION_DI,
+         RIN_ADORNMENT as RIN_ADORNMENT_DI,
+         RIN_INCREASE_ACCURACY as RIN_INCREASE_ACCURACY_DI,
+         RIN_INCREASE_DAMAGE as RIN_INCREASE_DAMAGE_DI,
+         RIN_PROTECTION as RIN_PROTECTION_DI,
+         HELM_OF_BRILLIANCE as HELM_OF_BRILLIANCE_DI,
+         GAUNTLETS_OF_DEXTERITY as GAUNTLETS_OF_DEXTERITY_DI } from './objects.js';

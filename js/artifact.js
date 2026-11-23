@@ -856,6 +856,16 @@ export function defends(adtyp, otmp) {
     return false;
 }
 
+// C ref: artifact.c defends_when_carried()
+/* used for monsters */
+export function defends_when_carried(adtyp, otmp) {
+    let weap;
+
+    if ((weap = get_artifact(otmp)) !== artilist()[ART_NONARTIFACT])
+        return (weap.cary.adtyp === adtyp);
+    return false;
+}
+
 // C ref: artifact.c spec_m2()
 /* return the M2 flags of monster that an artifact's special attacks apply
  * against */

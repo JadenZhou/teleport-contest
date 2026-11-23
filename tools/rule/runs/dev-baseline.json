@@ -1,5 +1,5 @@
 {
- "when": "2026-11-23T04:16:05.095Z",
+ "when": "2026-11-23T04:40:39.755Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -80,7 +80,7 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/allmain.js:813:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/jsmain.js:227:13) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/jsmain.js:329:9)"
+   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/allmain.js:813:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/jsmain.js:227:13) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/jsmain.js:329:9)"
   },
   {
    "session": "dev81205-monk-vault-escort.session.json",
@@ -424,7 +424,7 @@
      "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: goto_level(): endgame/tutorial entry not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/do.js:479:19) |     at deferred_goto (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/do.js:397:15) |     at moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/allmain.js:736:15)"
+   "error": "Error: goto_level(): endgame/tutorial entry not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/do.js:479:19) |     at deferred_goto (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/do.js:397:15) |     at moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/allmain.js:736:15)"
   },
   {
    "session": "dev82189-wizard-hallucinate.session.json",
@@ -570,7 +570,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: dohelp(): option_help() not ported yet |     at file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/pager.js:1593:26 |     at dohelp (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/pager.js:1726:32) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a15cdd62dbf82e5ed/js/cmd.js:943:19)"
+   "error": "Error: dohelp(): option_help() not ported yet |     at file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/pager.js:1593:26 |     at dohelp (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/pager.js:1726:32) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-ade102bef44ce0847/js/cmd.js:943:19)"
   },
   {
    "session": "dev82599-wizard-custom-binds.session.json",
