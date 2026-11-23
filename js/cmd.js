@@ -42,7 +42,8 @@ import { doinvoke } from './artifact.js';
 import { donamelevel, dooverview, recalc_mapseen } from './dungeon.js';
 import { authorize_explore_mode } from './sys.js';
 import { dodiscovered } from './o_init.js';
-import { doattributes, dogenocided, doconduct, dovanquished } from './insight.js';
+import { doattributes, dogenocided, doconduct, dovanquished,
+         do_gamelog } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
 import { dodrop, doddrop, dodown, doup, dowipe } from './do.js';
 import { dozap } from './zap.js';
@@ -127,6 +128,7 @@ const cmd_funcs = {
     doattributes: () => doattributes(),
     doconduct: () => doconduct(),
     dovanquished: () => dovanquished(),
+    do_gamelog: () => do_gamelog(),
     docast: () => docast(),
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),

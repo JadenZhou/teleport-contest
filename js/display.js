@@ -2936,6 +2936,29 @@ export function bot() {
     game.disp_botl = game.disp_botlx = false;
 }
 
+// C ref: pline.c gamelog_add() (CHRONICLE) -- append an event to the
+// #chronicle log, game.gamelog (gg.gamelog: a list linked through .next)
+export function gamelog_add(glflags, gltime, str) {
+    const tmp = { turn: gltime, flags: glflags, text: str, next: null };
+    let lst = game.gamelog || null;
+
+    while (lst && lst.next)
+        lst = lst.next;
+    if (!lst)
+        game.gamelog = tmp;
+    else
+        lst.next = tmp;
+}
+
+// C ref: pline.c livelog_printf() (CHRONICLE) -- callers pass the
+// formatted text; livelog_add() (the LIVELOG file) isn't written here
+export function livelog_printf(ll_type, line) {
+    const gamelogbuf = line.slice(0, 2 * 256 - 1); /* BUFSZ * 2 */
+
+    gamelog_add(ll_type, game.moves, gamelogbuf);
+    /* strNsubst(gamelogbuf, "\t", "_", 0); livelog_add(ll_type, gamelogbuf) */
+}
+
 // ── pline ──
 // C ref: pline.c vpline() -- the plain message path: bring the map up to
 // date (vision, flush_screen(1)) and put the line in the message window

@@ -8,6 +8,8 @@
 // Paths that reach unported code throw 'not ported yet'.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_ARTIFACT } from './const.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { pline, You, Your, You_feel, You_see, pline_The, newsym,
          canspotmon, glyph_at, Hallucination as Hallucination_d,
@@ -551,7 +553,7 @@ export async function dipfountain(obj) {
         /* once upon a time it was possible to poly N daggers into N swords */
         && obj.quan === 1 && !obj.oartifact
         && !exist_artifact(LONG_SWORD, artiname(ART_EXCALIBUR))) {
-        /* static const char lady[] = "Lady of the Lake"; (livelog only) */
+        const lady = "Lady of the Lake";
 
         if (u.ualign.type !== A_LAWFUL) {
             /* Ha!  Trying to cheat her. */
@@ -563,7 +565,9 @@ export async function dipfountain(obj) {
                 obj.spe--;
             obj.oerodeproof = 0;
             exercise(A_WIS, false);
-            /* livelog_printf(LL_ARTIFACT, ...): no livelog */
+            livelog_printf(LL_ARTIFACT, `was denied ${artiname(ART_EXCALIBUR)}!  The ${
+                               lady} has deemed ${game.flags.female ? "her" : "him" /* uhim() */
+                               } unworthy`);
         } else {
             /* The lady of the lake acts! - Eric Backus */
             /* Be *REAL* nice */
@@ -577,7 +581,7 @@ export async function dipfountain(obj) {
             obj.oeroded = obj.oeroded2 = 0;
             obj.oerodeproof = 1;
             exercise(A_WIS, true);
-            /* livelog_printf(LL_ARTIFACT, ...): no livelog */
+            livelog_printf(LL_ARTIFACT, `was given ${artiname(ART_EXCALIBUR)} by the ${lady}`);
         }
         /* update_inventory(): no perm_invent */
         set_levltyp(u.ux, u.uy, ROOM); /* updates level.flags.nfountains */

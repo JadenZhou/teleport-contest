@@ -96,7 +96,9 @@ import { stone_luck } from './attrib.js';
 import { carrying } from './invent.js';
 import { u_adtyp_resistance_obj, item_what } from './zap.js';
 import { shield_simple_name } from './iactions.js';
-import { pline } from './display.js';
+import { pline, livelog_printf } from './display.js';
+import { NHW_TEXT, LL_WISH, LL_ACHIEVE, LL_UMONST, LL_DIVINEGIFT, LL_LIFESAVE,
+         LL_ARTIFACT, LL_GENOCIDE, LL_DUMP, LL_SPOILER, LL_MINORAC } from './const.js';
 import { visible_region_at, reg_damg } from './region.js';
 import { find_mac } from './worn.js';
 import { x_monnam, ARTICLE_YOUR, SUPPRESS_IT, SUPPRESS_INVISIBLE } from './do_name.js';
@@ -622,6 +624,54 @@ export function can_advance(skill, speedy) {
 
 // ---------------------------------------------------------------------------
 // enlightenment output
+
+/* C ref: insight.c achieve_msg[] -- for livelogging; ordered per
+   'enum achievements' in you.h */
+const achieve_msg = [
+    { llflag: 0, msg: "" }, /* actual achievements are numbered from 1 */
+    { llflag: LL_ACHIEVE, msg: "acquired the Bell of Opening" },
+    { llflag: LL_ACHIEVE, msg: "entered Gehennom" },
+    { llflag: LL_ACHIEVE, msg: "acquired the Candelabrum of Invocation" },
+    { llflag: LL_ACHIEVE, msg: "acquired the Book of the Dead" },
+    { llflag: LL_ACHIEVE, msg: "performed the invocation" },
+    { llflag: LL_ACHIEVE, msg: "acquired The Amulet of Yendor" },
+    { llflag: LL_ACHIEVE, msg: "entered the Elemental Planes" },
+    { llflag: LL_ACHIEVE, msg: "entered the Astral Plane" },
+    { llflag: LL_ACHIEVE, msg: "ascended" },
+    /* if the type of item isn't discovered yet, disclosing the event
+       via #chronicle would be a spoiler (particularly for gray stone);
+       the ID'd name for the type of item will be appended to the next
+       two messages, for display via livelog and/or dumplog */
+    { llflag: LL_ACHIEVE | LL_SPOILER, msg: "acquired the Mines' End" }, /* " luckstone" */
+    { llflag: LL_ACHIEVE | LL_SPOILER, msg: "acquired the Sokoban" }, /* " <item>" */
+    { llflag: LL_ACHIEVE | LL_UMONST, msg: "killed Medusa" },
+     /* these two are not logged */
+    { llflag: 0, msg: "hero was always blond, no, blind" },
+    { llflag: 0, msg: "hero never wore armor" },
+     /* */
+    { llflag: LL_MINORAC | LL_DUMP, msg: "entered the Gnomish Mines" },
+    { llflag: LL_ACHIEVE, msg: "reached Mine Town" }, /* probably minor, but dnh logs it */
+    { llflag: LL_MINORAC, msg: "entered a shop" },
+    { llflag: LL_MINORAC, msg: "entered a temple" },
+    { llflag: LL_ACHIEVE, msg: "consulted the Oracle" }, /* minor, but rare enough */
+    { llflag: LL_MINORAC | LL_DUMP, msg: "read a Discworld novel" }, /* even more so */
+    { llflag: LL_ACHIEVE, msg: "entered Sokoban" }, /* keep as major for turn comparison
+                                                     * with completed sokoban */
+    { llflag: LL_ACHIEVE, msg: "entered the Bigroom" },
+    /* The following 8 are for advancing through the ranks
+       and messages differ by role so are created on the fly;
+       rank 0 (Xp 1 and 2) isn't an achievement */
+    { llflag: LL_MINORAC | LL_DUMP, msg: "" }, /* Xp 3 */
+    { llflag: LL_MINORAC | LL_DUMP, msg: "" }, /* Xp 6 */
+    { llflag: LL_MINORAC | LL_DUMP, msg: "" }, /* Xp 10 */
+    { llflag: LL_ACHIEVE, msg: "" }, /* Xp 14, so able to attempt the quest */
+    { llflag: LL_ACHIEVE, msg: "" }, /* Xp 18 */
+    { llflag: LL_ACHIEVE, msg: "" }, /* Xp 22 */
+    { llflag: LL_ACHIEVE, msg: "" }, /* Xp 26 */
+    { llflag: LL_ACHIEVE, msg: "" }, /* Xp 30 */
+    { llflag: LL_MINORAC, msg: "learned castle drawbridge's tune" }, /* achievement #31 */
+    { llflag: 0, msg: "" }, /* keep this one at the end */
+];
 
 /* C ref: insight.c You_, are, were, have, had, can, could */
 const You_ = "You ", are = "are ", were = "were ",
@@ -2787,7 +2837,33 @@ export function record_achievement(achidx) {
         return; /* already recorded, don't duplicate it */
     u.uachieved[i] = achidx;
 
-    /* livelog_printf(): the livelog isn't shown on the tty */
+    /* avoid livelog for achievements recorded during final disclosure:
+       nudist and blind-from-birth; also ascension which is suppressed
+       by this gets logged separately in really_done() */
+    if (game.program_state?.gameover)
+        return;
+
+    if (absidx >= ACH_RNK1 && absidx <= ACH_RNK8) {
+        livelog_printf(achieve_msg[absidx].llflag,
+                       `attained the rank of ${
+                           rank_of(rank_to_xlev(absidx - (ACH_RNK1 - 1)),
+                                   game.urole.mnum /* Role_switch */,
+                                   (achidx < 0) ? true : false)} (level ${u.ulevel})`);
+    } else if (achidx === ACH_SOKO_PRIZE
+               || achidx === ACH_MINE_PRIZE) {
+        /* need to supply extra information for these two */
+        const otyp = ((achidx === ACH_SOKO_PRIZE)
+                      ? game.context.achieveo.soko_prize_otyp
+                      : game.context.achieveo.mines_prize_otyp);
+
+        /* note: OBJ_NAME() works here because both "bag of holding" and
+           "amulet of reflection" are fully named in their objects[] entry
+           but that's not true in the general case */
+        livelog_printf(achieve_msg[achidx].llflag,
+                       `${achieve_msg[achidx].msg} ${OBJ_NAME(objects[otyp])}`);
+    } else {
+        livelog_printf(achieve_msg[absidx].llflag, achieve_msg[absidx].msg);
+    }
 }
 
 // C ref: insight.c remove_achievement()
@@ -3060,6 +3136,58 @@ export async function list_genocided(defquery, ask) {
 export async function dogenocided() {
     await list_genocided(game.iflags.menu_requested ? 'a' : 'y', false);
     return 0; /* ECMD_OK */
+}
+
+// C ref: insight.c do_gamelog() -- #chronicle command (CHRONICLE is on)
+export async function do_gamelog() {
+    if (game.gamelog) {
+        await show_gamelog(ENL_GAMEINPROGRESS);
+    } else {
+        await pline("No chronicled events.");
+    }
+    return 0; /* ECMD_OK */
+}
+
+/* C ref: insight.c LL_majors, majorevent(), spoilerevent() --
+   'major' events for dumplog */
+const LL_majors = (0
+                   | LL_WISH
+                   | LL_ACHIEVE
+                   | LL_UMONST
+                   | LL_DIVINEGIFT
+                   | LL_LIFESAVE
+                   | LL_ARTIFACT
+                   | LL_GENOCIDE
+                   | LL_DUMP); /* explicitly for dumplog */
+function majorevent(llmsg) { return (llmsg.flags & LL_majors) !== 0; }
+function spoilerevent(llmsg) { return (llmsg.flags & LL_SPOILER) !== 0; }
+
+// C ref: insight.c show_gamelog() -- #chronicle details
+export async function show_gamelog(final) {
+    let llmsg;
+    let buf;
+    let eventcnt = 0;
+
+    const win = tty_create_nhwindow(NHW_TEXT);
+    buf = `${final ? "Major" : "Logged"} events:`;
+    await tty_putstr(win, 0, buf);
+    for (llmsg = game.gamelog; llmsg; llmsg = llmsg.next) {
+        if (final && !majorevent(llmsg))
+            continue;
+        if (!final && !wizard() && spoilerevent(llmsg))
+            continue;
+        if (!eventcnt++)
+            await tty_putstr(win, 0, " Turn");
+        buf = `${String(llmsg.turn).padStart(5)}: ${llmsg.text}`;
+        await tty_putstr(win, 0, buf);
+    }
+    /* since start of game is logged as a major event, 'eventcnt' should
+       never end up as 0; for 'final', end of game is a major event too */
+    if (!eventcnt)
+        await tty_putstr(win, 0, " none");
+
+    await tty_display_nhwindow(win, true);
+    await tty_destroy_nhwindow(win);
 }
 
 // C ref: insight.c dovanquished() -- #vanquished command

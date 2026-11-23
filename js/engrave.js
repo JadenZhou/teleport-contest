@@ -11,6 +11,8 @@
 // engravings.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_CONDUCT } from './const.js';
 import { P_SKILL } from './weapon.js';
 import { P_RIDING, P_BASIC } from './const.js';
 import { rn2, rnd, rn2_fnptr } from './rng.js';
@@ -1236,8 +1238,8 @@ export async function doengrave() {
 
         /* A single `x' is the traditional signature of an illiterate person */
         if (de.len !== 1 || (!de.ebuf.includes('x') && !de.ebuf.includes('X')))
-            u.uconduct.literate = (u.uconduct.literate || 0) + 1;
-            /* livelog_printf(LL_CONDUCT, "became literate ..."): no livelog */
+            if (!u.uconduct.literate++)
+                livelog_printf(LL_CONDUCT, `became literate by engraving "${de.ebuf}"`);
 
         /* Mix up engraving if surface or state of mind is unsound.
            Note: this won't add or remove any spaces. */

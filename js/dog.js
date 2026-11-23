@@ -5,6 +5,10 @@
 // (dogmove.c), keepdogs/losedogs, tamedog and the rest of dog.c.
 
 import { set_residency } from './shk.js';
+import { livelog_printf } from './display.js';
+import { LL_CONDUCT } from './const.js';
+import { an } from './objnam.js';
+import { mon_pmname } from './do_name.js';
 import { game } from './gstate.js';
 import { redraw_worm, count_wsegs, wormgone, get_wormno, initworm,
          MAX_NUM_WORMS } from './worm.js';
@@ -98,8 +102,17 @@ export function initedog(mtmp, everything) {
        already be higher when taming magic affects already tame monst */
     if (edogp.hungrytime < minhungry)
         edogp.hungrytime = minhungry;
-    /* livelog of the first pet (only once in_moveloop): not ported yet */
-    game.u.uconduct.pets = (game.u.uconduct.pets || 0) + 1;
+    /* livelog first pet, but only if you didn't start with one (the starting
+     * pet will be initialized before in_moveloop is true) */
+    if (!game.u.uconduct.pets && game.program_state?.in_moveloop) {
+        /* "obtained" a pet rather than "tamed" it because it might have come
+         * from a figurine or some other method in which it was created tame
+         * using an() is safe unless it somehow becomes possible to tame a
+         * unique monster */
+        livelog_printf(LL_CONDUCT, `obtained ${game.flags.female ? "her" : "his" /* uhis() */
+                                   } first pet (${an(mon_pmname(mtmp))})`);
+    }
+    game.u.uconduct.pets++;
 }
 
 // C ref: dog.c pet_type()

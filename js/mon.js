@@ -5,6 +5,14 @@
 // monnear(), mon_allowflags().
 
 import { game } from './gstate.js';
+import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
+         has_mgivenname, MGIVENNAME } from './const.js';
+import { EXACT_NAME, Mgender } from './do_name.js';
+import { record_achievement } from './insight.js';
+import { shtypes } from './shknam.js';
+import { PM_MEDUSA, PM_HIGH_CLERIC } from './monsters.js';
+import { livelog_printf } from './display.js';
+import { LL_CONDUCT } from './const.js';
 import { remove_worm, wormgone, worm_known, worm_cross, count_wsegs, get_wormno,
          initworm, place_worm_tail_randomly } from './worm.js';
 import { healup_nocure } from './potion.js';
@@ -484,7 +492,8 @@ export async function mondead(mtmp) {
     if (mtmp.data.mlet === S_KOP)
         throw new Error('mondead(): dead Kops returning not ported yet');
 
-    /* logdeadmon(mtmp, mndx): achievements/livelog have no game effect here */
+    /* achievement and/or livelog */
+    logdeadmon(mtmp, mndx);
 
     if (glyph_is_invisible(game.level.at(mtmp.mx, mtmp.my).remembered_glyph))
         unmap_object(mtmp.mx, mtmp.my);
@@ -816,9 +825,8 @@ export async function xkilled(
 
     mtmp.mhp = 0; /* caller will usually have already done this */
     if (!noconduct) { /* KMH, conduct */
-        /* livelog_printf(LL_CONDUCT, "killed for the first time") has no
-           game effect */
-        u.uconduct.killer = (u.uconduct.killer || 0) + 1;
+        if (!u.uconduct.killer++)
+            livelog_printf(LL_CONDUCT, "killed for the first time");
     }
     if (!nomsg) {
         const namedpet = !!mtmp.mgivenname && !Hallucination();
@@ -1002,7 +1010,13 @@ export async function xkilled(
         } else {
             await You_hear('the studio audience applaud!');
         }
-        /* livelog_printf(LL_KILLEDPET, ...) has no game effect */
+        if (!((mdat.geno & G_UNIQ) !== 0)) { /* !unique_corpstat(mdat) */
+            const mname = has_mgivenname(mtmp);
+
+            livelog_printf(LL_KILLEDPET, `murdered ${mname ? MGIVENNAME(mtmp) : ""}${
+                               mname ? ", " : ""}${game.flags.female ? "her" : "his" /* uhis() */
+                               } faithful ${pmname(mdat, Mgender(mtmp))}`);
+        }
     } else if (mtmp.mpeaceful)
         adjalign(-5);
 
@@ -3138,6 +3152,92 @@ function restrap(mtmp) {
     }
 
     return false;
+}
+
+/* C ref: mon.c livelog_mon_nam() -- specific combination of x_monnam
+   flags for livelogging; show what was actually killed even when unseen
+   or hallucinated to be something else */
+function livelog_mon_nam(mtmp) {
+    return x_monnam(mtmp, ARTICLE_THE, null, EXACT_NAME, false);
+}
+
+// C ref: mon.c logdeadmon()
+/* when a mon has died, maybe record an achievement or issue livelog message;
+   moved into separate routine to unclutter mondead() */
+function logdeadmon(mtmp, mndx) {
+    let howmany = game.mvitals[mndx].died;
+
+    if (mndx === PM_MEDUSA && howmany === 1) {
+        record_achievement(ACH_MEDU); /* also generates a livelog event */
+    } else if ((((mtmp.data.geno & G_UNIQ) !== 0) /* unique_corpstat() */
+                && (mndx !== PM_HIGH_CLERIC || !mtmp.mrevived))
+               || (mtmp.isshk && !mtmp.mrevived)) {
+        let shkdetail;
+        let mkilled;
+        const herodidit = !game.context.mon_moving;
+
+        /*
+         * livelog event; unique_corpstat() includes the Wizard and
+         * any High Priest even though they aren't actually unique.
+         *
+         * Shopkeeper kills are logged, but only the first time per
+         * shopkeeper, since their shared kill counter wouldn't work
+         * for this purpose (and it wouldn't account for polymorphed
+         * shopkeepers either).
+         */
+        shkdetail = '';
+        if (mtmp.isshk) {
+            howmany = 1;
+            /* ", the <shoptype> proprietor" needs a trailing comma for
+               the alternate phrasing "<shk>, shkdetails, has been killed"
+               when hero isn't directly responsible */
+            shkdetail = `, the ${shtypes[mtmp.mextra.eshk.shoptype - SHOPBASE].name} ${
+                         /* in case shk name doesn't include Mr or Ms honorific */
+                         mtmp.female ? "proprietrix" : "proprietor"}${herodidit ? "" : ","}`;
+        } else if (mndx === PM_HIGH_CLERIC) {
+            /* the high priest[ess] monster is not unique; we know that
+               this is the first death for this particular high priest
+               (because of the !mtmp->mrevived test above) */
+            howmany = 1;
+        }
+
+        /* killing a unique more than once doesn't get logged every time;
+           the Wizard and the Riders can be killed more than once
+           "naturally", others require deliberate player action such as
+           use of undead turning to revive a corpse or petrification plus
+           stone-to-flesh to create and revive a statue */
+        if (howmany <= 3 || howmany === 5 || howmany === 10 || howmany === 25
+            || (howmany % 50) === 0) { /* 50, 100, 150, 200, 250 */
+            let xtra; /* space for " (Nth time)" when N > 1 */
+            let llevent_type = LL_UMONST;
+
+            /* the first kill of any unique monster is a major event;
+               all kills of the Wizard and the Riders are major when
+               they're logged but they still don't get logged every time */
+            if (howmany === 1 || mtmp.iswiz || is_rider(mtmp.data))
+                llevent_type |= LL_ACHIEVE;
+            xtra = '';
+            if (howmany > 1) /* "(2nd time)" or "(50th time)" */
+                xtra = ` (${howmany}${ordin_ld(howmany)} time)`;
+
+            mkilled = nonliving(mtmp.data) ? "destroyed" : "killed";
+            /* hero is responsible: "killed <monst>" */
+            if (herodidit)
+                livelog_printf(llevent_type,
+                               `${mkilled} ${livelog_mon_nam(mtmp)}${shkdetail}${xtra}`);
+            else /* trap, pet, conflict:  "<monst> has been killed" */
+                livelog_printf(llevent_type,
+                               `${livelog_mon_nam(mtmp)}${shkdetail} has been ${mkilled}${xtra}`);
+        }
+    }
+}
+
+/* C ref: hacklib.c ordin() */
+function ordin_ld(n) { /* note: should be non-negative */
+    const dd = n % 10;
+
+    return (dd === 0 || dd > 3 || Math.trunc((n % 100) / 10) === 1) ? "th"
+           : (dd === 1) ? "st" : (dd === 2) ? "nd" : "rd";
 }
 
 /* C ref: hack.h m_next2u() */

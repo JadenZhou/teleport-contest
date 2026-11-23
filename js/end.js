@@ -9,6 +9,8 @@
 // HANGUPHANDLING's done_hup never happens in a recorded session.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_LIFESAVE } from './const.js';
 import { pline, You, Your, bot, Hallucination, canspotmon, Blind } from './display.js';
 import { accessible } from './makemon.js';
 import {
@@ -608,8 +610,8 @@ export async function done(how) {
         if (how === GENOCIDED) {
             await pline("Unfortunately you are still genocided...");
         } else {
-            /* formatkiller(); livelog_printf(LL_LIFESAVE, "averted death
-               (%s)", killbuf): livelog isn't kept */
+            const killbuf = formatkiller(256 /* BUFSZ */, how, false);
+            livelog_printf(LL_LIFESAVE, `averted death (${killbuf})`);
             survive = true;
         }
     }
