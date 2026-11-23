@@ -57,6 +57,9 @@ import { is_organic } from './objects.js';
 import { eaten_stat } from './eat.js';
 import { extract_from_minvent } from './steal.js';
 import { m_consume_obj, mondied, wake_nearto, disturb_buried_zombies } from './mon.js';
+import { newcham } from './mon.js';
+import { PROT_FROM_SHAPE_CHANGERS, NC_SHOW_MSG, NO_NC_FLAGS } from './const.js';
+import { tty_display_nhwindow } from './wintty.js';
 import { mon_learns_traps } from './mondata.js';
 import { Unaware } from './eat.js';
 import { TRAPPED_DOOR } from './const.js';
@@ -677,10 +680,31 @@ function stuff_prevents_passage(mtmp) {
     return false;
 }
 // C ref: monmove.c can_fog()
-function can_fog(mtmp) {
-    if ((mtmp.data.mflags2 & M.M2_SHAPESHIFTER) !== 0 && is_vampshifter(mtmp))
-        throw new Error('can_fog(): vampshifters not ported yet');
+export function can_fog(mtmp) {
+    if (!(game.mvitals[M.PM_FOG_CLOUD].mvflags & G_GENOD) && is_vampshifter(mtmp)
+        && !uhave(PROT_FROM_SHAPE_CHANGERS) /* !Protection_from_shape_changers */
+        && !stuff_prevents_passage(mtmp))
+        return true;
     return false;
+}
+
+// C ref: monmove.c vamp_shift()
+/* this is called when a vampire turns into a fog cloud in order to move
+   under a closed door; if it was sensed via telepathy or seen via
+   infravision, its new fog cloud shape will disappear */
+async function vamp_shift(mon, ptr, domsg) {
+    let reslt = 0;
+
+    if (mon.data === ptr) {
+        /* already right shape */
+        reslt = 1;
+    } else if (is_vampshifter(mon)) {
+        reslt = await newcham(mon, ptr, domsg ? NC_SHOW_MSG : NO_NC_FLAGS);
+        /* shape-change message is given when vampshifter turns into a
+           fog cloud in order to move under a closed door */
+        await tty_display_nhwindow(game.WIN_MESSAGE, false);
+    }
+    return reslt;
 }
 
 // ── C ref: mhitu.c ranged_attk_available() ──
@@ -2143,8 +2167,22 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
         if (is_vampshifter(mtmp) && !amorphous(mtmp.data)
             && IS_DOOR(lev.at(nix, niy).typ)
             && ((lev.at(nix, niy).doormask & (D_LOCKED | D_CLOSED)) !== 0)
-            && can_fog(mtmp))
-            throw new Error('postmov(): vamp_shift() not ported yet');
+            && can_fog(mtmp)) {
+            /* note: remove_monster()+place_monster is not right for
+               long worms but they won't reach here */
+            if (seenflgs) {
+                place_monster(mtmp, omx, omy); /* remove_monster(nix, niy) */
+                newsym(nix, niy), newsym(omx, omy);
+            }
+            if (await vamp_shift(mtmp, mons[M.PM_FOG_CLOUD],
+                                 ((seenflgs & 1) !== 0) ? true : false)) {
+                ptr = mtmp.data; /* update cached value */
+            }
+            if (seenflgs) {
+                place_monster(mtmp, nix, niy); /* remove_monster(omx, omy) */
+                newsym(omx, omy), newsym(nix, niy);
+            }
+        }
 
         newsym(omx, omy); /* update the old position */
         trapret = await mintrap(mtmp, NO_TRAP_FLAGS);
