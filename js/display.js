@@ -2995,3 +2995,18 @@ export async function You_see(line) {
     else
         await pline(`You see ${line}`);
 }
+
+// C ref: pline.c gamelog_add() (CHRONICLE)
+/* gg.gamelog: the list of logged events, oldest first */
+export function gamelog_add(glflags, gltime, str) {
+    if (!game.gamelog)
+        game.gamelog = [];
+    game.gamelog.push({ turn: gltime, flags: glflags, text: str });
+}
+
+// C ref: pline.c livelog_printf() (CHRONICLE) -- the caller formats the
+// line; livelog_add() writes the external live log file, which this port
+// doesn't keep
+export function livelog_printf(ll_type, line) {
+    gamelog_add(ll_type, game.moves, line);
+}
