@@ -826,23 +826,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* this was originally done earlier; moved here to be logged after
        any achievement related to entering a dungeon branch */
     if (new_) {
-        /* Astral is excluded as a major event here because entry to it
-           is already one such due to that being an achievement;
-           for the quest, listing the start, locate, and goal levels would
-           seem reasonable but all quest levels are included for simplicity--
-           level 2 (or 3 if hero level teleports after obtaining permission
-           to enter) is useful to show since it indicates that hero has
-           actually entered the quest rather than just received permission
-           to do so, and listing the goal level could be used to figure out
-           whether level 5 is the end or there's another level (ESP reveals
-           the same thing, but is part of normal game play as opposed to
-           #chronicle leaking information that hero hasn't discovered yet) */
-        const major = ((In_endgame(u.uz) && !Is_astralevel_do(u.uz))
-                       || In_quest_do(u.uz));
-
-        const [, dloc] = describe_level_do(2);
-        livelog_printf_do(major ? LL_ACHIEVE_do : LL_DEBUG_do, `entered ${dloc}`);
-
+        /* describe_level(dloc, 2); livelog_printf(...): no livelog */
         if (g.urole.mnum === PM_TOURIST) {
             more_experienced(level_difficulty(), 0);
             await newexplevel();
@@ -1392,9 +1376,3 @@ export async function dowipe() {
     await Your(`${body_part(FACE)} is already clean.`);
     return ECMD_TIME;
 }
-
-import { livelog_printf as livelog_printf_do } from './display.js';
-import { LL_ACHIEVE as LL_ACHIEVE_do, LL_DEBUG as LL_DEBUG_do,
-         Is_astralevel as Is_astralevel_do } from './const.js';
-import { In_quest as In_quest_do } from './const.js';
-import { describe_level as describe_level_do } from './botl.js';

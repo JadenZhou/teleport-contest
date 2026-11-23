@@ -11,7 +11,7 @@ import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init } from './nhlua.js';
 import { rhack, domove, enter_explore_mode } from './cmd.js';
-import { docrt, cls, bot, flush_screen, pline, see_monsters, livelog_printf } from './display.js';
+import { docrt, cls, bot, flush_screen, pline, see_monsters } from './display.js';
 import { see_objects, see_traps, Hallucination, Blind, swallowed } from './display.js';
 import { read_engr_at } from './engrave.js';
 import { encumber_msg, pickup } from './pickup.js';
@@ -43,7 +43,7 @@ import { align_str } from './insight.js';
 import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMSG, NORMAL_SPEED, NO_MM_FLAGS,
          FAST, INTRINSIC, UNENCUMBERED, SLT_ENCUMBER, MOD_ENCUMBER, HVY_ENCUMBER,
          EXT_ENCUMBER, GLIB, TELEPORT, POLYMORPH, UNCHANGING, SEARCHING, WARNING,
-         TELEPAT, WARN_OF_MON, LL_ACHIEVE,
+         TELEPAT, WARN_OF_MON,
          CLAIRVOYANT, ENERGY_REGENERATION, MAGICAL_BREATHING, REGENERATION,
          SLEEPY, MAXULEV, A_WIS, A_INT, A_CON, A_DEX, NON_PM, ROOMOFFSET, VAULT,
          TT_LAVA, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL, DRAWBRIDGE_UP,
@@ -183,8 +183,8 @@ export async function welcome(new_game) /* false => restoring an old game */ {
                          : `${Hello(null)} ${g.plname}, the${buf}, welcome back to NetHack!`);
 
     if (new_game) {
-        /* guarantee that 'major' event category is never empty */
-        livelog_printf(LL_ACHIEVE, `${g.plname} the${buf} entered the dungeon`);
+        /* guarantee that 'major' event category is never empty:
+           livelog_printf() -- the live log isn't kept */
     } else {
         /* if restoring in Gehennom, give same hot/smoky message as when
            first entering it */

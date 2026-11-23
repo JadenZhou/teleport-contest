@@ -98,17 +98,7 @@ export function initedog(mtmp, everything) {
        already be higher when taming magic affects already tame monst */
     if (edogp.hungrytime < minhungry)
         edogp.hungrytime = minhungry;
-    /* livelog first pet, but only if you didn't start with one (the starting
-     * pet will be initialized before in_moveloop is true) */
-    if (!game.u.uconduct.pets && game.program_state?.in_moveloop) {
-        /* "obtained" a pet rather than "tamed" it because it might have come
-         * from a figurine or some other method in which it was created tame
-         * using an() is safe unless it somehow becomes possible to tame a
-         * unique monster */
-        livelog_printf_dg(LL_CONDUCT_dg, `obtained ${
-            game.flags.female ? "her" : "his" /* uhis() */} first pet (${
-            an_dg(pmname_dg(mtmp.data, mtmp.female ? FEMALE_dg : MALE_dg))})`);
-    }
+    /* livelog of the first pet (only once in_moveloop): not ported yet */
     game.u.uconduct.pets = (game.u.uconduct.pets || 0) + 1;
 }
 
@@ -865,8 +855,3 @@ function finish_meating(mtmp) {
         newsym(mtmp.mx, mtmp.my);
     }
 }
-
-import { livelog_printf as livelog_printf_dg } from './display.js';
-import { LL_CONDUCT as LL_CONDUCT_dg, FEMALE as FEMALE_dg, MALE as MALE_dg } from './const.js';
-import { an as an_dg } from './objnam.js';
-import { pmname as pmname_dg } from './do_name.js';
