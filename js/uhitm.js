@@ -165,6 +165,11 @@ import { is_vampshifter, haseyes, resists_acid,
 import { AT_SPIT } from './monsters.js';
 import { mbodypart } from './shk.js';
 import { setmangry } from './mon.js';
+import { mlifesaver, golemeffects } from './mon.js';
+import { destroy_items } from './zap.js';
+import { ignite_items } from './trap.js';
+import { resists_fire, resists_cold, resists_elec, defended } from './mondata.js';
+import { XKILL_NOCORPSE } from './const.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -389,8 +394,24 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
 
 // C ref: uhitm.c mhitm_ad_elec()
 async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
+    const orig_dmg = mhm.damage;
+
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_elec(): uhitm branch not ported yet');
+        /* uhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (!Blind())
+            await pline(`${Monnam(mdef)} is zapped!`);
+        if (resists_elec(mdef) || defended(mdef, AD_ELEC)) {
+            if (!Blind())
+                await pline_The(`zap doesn't shock ${mon_nam(mdef)}!`);
+            await golemeffects(mdef, AD_ELEC, mhm.damage);
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_ELEC, orig_dmg);
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -404,7 +425,7 @@ async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
                 monstunseesu(M_SEEN_ELEC);
             }
             if (magr.m_lev > rn2(20))
-                throw new Error('mhitm_ad_elec(): destroy_items() not ported yet');
+                await destroy_items(game.youmonst, AD_ELEC, orig_dmg);
         } else
             mhm.damage = 0;
     } else {
@@ -908,9 +929,41 @@ export function on_fire(mptr, mattk) {
 // C ref: uhitm.c mhitm_ad_fire()
 async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
     const pd = mdef.data;
+    const orig_dmg = mhm.damage; /* damage coming into the function */
 
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_fire(): uhitm branch not ported yet');
+        /* uhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (!Blind())
+            await pline(`${Monnam(mdef)} is ${on_fire(pd, mattk)}!`);
+        if (completelyburns(pd)) { /* paper golem or straw golem */
+            if (!Blind())
+                /* note: the life-saved case is hypothetical because
+                   life-saving doesn't work for golems */
+                await pline(`${Monnam(mdef)} ${
+                    !mlifesaver(mdef) ? "burns completely"
+                                      : "is totally engulfed in flames"}!`);
+            else
+                await You(`smell burning${
+                    (pd === mons[M.PM_PAPER_GOLEM]) ? " paper"
+                      : (pd === mons[M.PM_STRAW_GOLEM]) ? " straw" : ""}.`);
+            await xkilled(mdef, XKILL_NOMSG | XKILL_NOCORPSE);
+            mhm.damage = 0;
+            return;
+            /* Don't return yet; keep hp<1 and mhm.damage=0 for pet msg */
+        }
+        if (resists_fire(mdef) || defended(mdef, AD_FIRE)) {
+            if (!Blind())
+                await pline_The(`fire doesn't heat ${mon_nam(mdef)}!`);
+            await golemeffects(mdef, AD_FIRE, mhm.damage);
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_FIRE, orig_dmg);
+        await ignite_items(mdef.minvent);
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -929,8 +982,10 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
             } else {
                 monstunseesu(M_SEEN_FIRE);
             }
-            if (magr.m_lev > rn2(20))
-                throw new Error('mhitm_ad_fire(): destroy_items()/ignite_items() not ported yet');
+            if (magr.m_lev > rn2(20)) {
+                await destroy_items(game.youmonst, AD_FIRE, orig_dmg);
+                await ignite_items(game.invent);
+            }
             await burn_away_slime();
         } else {
             mhm.damage = 0;
@@ -942,8 +997,24 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
 
 // C ref: uhitm.c mhitm_ad_cold()
 async function mhitm_ad_cold(magr, mattk, mdef, mhm) {
+    const orig_dmg = mhm.damage;
+
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_cold(): uhitm branch not ported yet');
+        /* uhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (!Blind())
+            await pline(`${Monnam(mdef)} is covered in frost!`);
+        if (resists_cold(mdef) || defended(mdef, AD_COLD)) {
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            if (!Blind())
+                await pline_The(`frost doesn't chill ${mon_nam(mdef)}!`);
+            await golemeffects(mdef, AD_COLD, mhm.damage);
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_COLD, orig_dmg);
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -957,7 +1028,7 @@ async function mhitm_ad_cold(magr, mattk, mdef, mhm) {
                 monstunseesu(M_SEEN_COLD);
             }
             if (magr.m_lev > rn2(20))
-                throw new Error('mhitm_ad_cold(): destroy_items() not ported yet');
+                await destroy_items(game.youmonst, AD_COLD, orig_dmg);
         } else
             mhm.damage = 0;
     } else {

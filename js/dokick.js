@@ -67,6 +67,27 @@ import { Monnam, mon_nam } from './do_name.js';
 import { cansee } from './vision.js';
 import { M2_GREEDY, M2_MERC, S_MIMIC } from './monsters.js';
 import { M_AP_NOTHING } from './const.js';
+import { M1_THICK_HIDE, MZ_LARGE, M1_NOHANDS, PM_SHADE, AT_KICK,
+         S_EEL } from './monsters.js';
+import { M_AP_TYPMASK, M_AP_MONSTER, W_ARMF, P_NONE, P_MARTIAL_ARTS,
+         NO_TRAP_FLAGS, engulfing_u } from './const.js';
+import { special_dmgval, use_skill } from './weapon.js';
+import { seemimic, killed } from './mon.js';
+import { check_caitiff, passive } from './uhitm.js';
+import { abuse_dog } from './dog.js';
+import { monflee, set_apparxy } from './monmove.js';
+import { goodpos, place_monster } from './makemon.js';
+import { m_in_out_region } from './region.js';
+import { mintrap, Trap_Killed_Mon } from './trap.js';
+import { is_flyer, is_floater, haseyes, can_teleport } from './mondata.js';
+import { map_invisible, There, glyph_at, show_glyph,
+         glyph_is_invisible } from './display.js';
+import { a_monnam } from './do_name.js';
+import { inv_weight, weight_cap } from './hack.js';
+import { maybe_mnexto, noteleport_level } from './teleport.js';
+
+/* C ref: mondata.h attacktype() */
+function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 /* C ref: youprop.h -- the hero's properties used by the kick code */
 function uprop(p) {
@@ -394,6 +415,218 @@ function finish_meating(mtmp) {
     }
 }
 
+const kick_passes_thru = "kick passes harmlessly through";
+
+/* C ref: mondata.h thick_skinned(), bigmonst(), nohands(), haseyes() */
+function thick_skinned(ptr) { return (ptr.mflags1 & M1_THICK_HIDE) !== 0; }
+function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
+function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
+function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
+function DEADMONSTER(mon) { return mon.mhp < 1; }
+function Fumbling() { return uhave(FUMBLING); }
+
+// C ref: dokick.c kickdmg()
+/* kicking damage when not poly'd into a form with a kick attack */
+async function kickdmg(mon, clumsy) {
+    const u = game.u;
+    let mdx, mdy;
+    let dmg = Math.trunc((acurrstr() + ACURR(A_DEX) + ACURR(A_CON)) / 15);
+    let specialdmg, kick_skill = P_NONE;
+    let trapkilled = false;
+
+    if (game.uarmf && game.uarmf.otyp === KICKING_BOOTS)
+        dmg += 5;
+
+    /* excessive wt affects dex, so it affects dmg */
+    if (clumsy)
+        dmg = Math.trunc(dmg / 2);
+
+    /* kicking a dragon or an elephant will not harm it */
+    if (thick_skinned(mon.data))
+        dmg = 0;
+
+    /* attacking a shade is normally useless */
+    if (mon.data === mons[PM_SHADE])
+        dmg = 0;
+
+    specialdmg = special_dmgval(game.youmonst, mon, W_ARMF, null);
+
+    if (mon.data === mons[PM_SHADE] && !specialdmg) {
+        await pline_The(`${kick_passes_thru}.`);
+        /* doesn't exercise skill or abuse alignment or frighten pet,
+           and shades have no passive counterattack */
+        return;
+    }
+
+    if (M_AP_TYPE(mon))
+        seemimic(mon);
+
+    await check_caitiff(mon);
+
+    /* squeeze some guilt feelings... */
+    if (mon.mtame) {
+        await abuse_dog(mon);
+        if (mon.mtame)
+            await monflee(mon, (dmg ? rnd(dmg) : 1), false, false);
+        else
+            mon.mflee = 0;
+    }
+
+    if (dmg > 0) {
+        /* convert potential damage to actual damage */
+        dmg = rnd(dmg);
+        if (martial()) {
+            if (dmg > 1)
+                kick_skill = P_MARTIAL_ARTS;
+            dmg += rn2(Math.trunc(ACURR(A_DEX) / 2) + 1);
+        }
+        /* a good kick exercises your dex */
+        exercise(A_DEX, true);
+    }
+    dmg += specialdmg; /* for blessed (or hypothetically, silver) boots */
+    if (game.uarmf)
+        dmg += game.uarmf.spe;
+    dmg += u.udaminc || 0; /* add ring(s) of increase damage */
+    if (dmg > 0)
+        mon.mhp -= dmg;
+    if (!DEADMONSTER(mon) && martial() && !bigmonst(mon.data) && !rn2(3)
+        && mon.mcanmove && mon !== u.ustuck && !mon.mtrapped) {
+        /* see if the monster has a place to move into */
+        mdx = mon.mx + u.dx;
+        mdy = mon.my + u.dy;
+        /* TODO: replace with mhurtle? */
+        if (goodpos(mdx, mdy, mon, 0)) {
+            await pline(`${Monnam(mon)} reels from the blow.`);
+            if (await m_in_out_region(mon, mdx, mdy)) {
+                /* remove_monster(mon->mx, mon->my) */
+                newsym(mon.mx, mon.my);
+                place_monster(mon, mdx, mdy);
+                newsym(mon.mx, mon.my);
+                set_apparxy(mon);
+                if (await mintrap(mon, NO_TRAP_FLAGS) === Trap_Killed_Mon)
+                    trapkilled = true;
+            }
+        }
+    }
+
+    await passive(mon, game.uarmf, true, !DEADMONSTER(mon), AT_KICK, false);
+    if (DEADMONSTER(mon) && !trapkilled)
+        await killed(mon);
+
+    /* may bring up a dialog, so put this after all messages */
+    if (kick_skill !== P_NONE) /* exercise proficiency */
+        await use_skill(kick_skill, 1);
+}
+
+// C ref: dokick.c kick_monster()
+async function kick_monster(mon, x, y) {
+    let clumsy = false;
+    let i, j;
+
+    /* anger target even if wild miss will occur */
+    await setmangry(mon, true);
+
+    if (Levitation() && !rn2(3) && verysmall(mon.data)
+        && !is_flyer(mon.data)) {
+        await pline("Floating in the air, you miss wildly!");
+        exercise(A_DEX, false);
+        await passive(mon, game.uarmf, false, 1, AT_KICK, false);
+        return;
+    }
+
+    /* reveal hidden target even if kick ends up missing (note: being
+       hidden doesn't affect chance to hit so neither does this reveal) */
+    if (mon.mundetected
+        || (M_AP_TYPE(mon) && M_AP_TYPE(mon) !== M_AP_MONSTER)) {
+        if (M_AP_TYPE(mon))
+            seemimic(mon);
+        mon.mundetected = 0;
+        if (!canspotmon(mon))
+            map_invisible(x, y);
+        else
+            newsym(x, y);
+        await There(`is ${canspotmon(mon) ? a_monnam(mon) : "something hidden"} here.`);
+    }
+
+    /* Kick attacks by kicking monsters are normal attacks, not special.
+     * If you have >1 kick attack, you get all of them.
+     */
+    if (Upolyd() && attacktype(game.youmonst.data, AT_KICK))
+        throw new Error('kick_monster(): polymorphed hero kick attacks not ported yet');
+
+    i = -inv_weight();
+    j = weight_cap();
+
+    /* What the following confusing if statements mean:
+     * If you are over 70% of carrying capacity, you go through a "deal no
+     * damage" check, and if that fails, a "clumsy kick" check.
+     * At this % of carrycap | Chance of no damage | Chance of clumsiness
+     *             [70%-80%) |                 1/4 |                  1/3
+     *             [80%-90%) |                 1/3 |                  1/2
+     *            [90%-100%) |                 1/2 |                   1
+     */
+    let doit = false;
+    if (i < Math.trunc((j * 3) / 10)) {
+        if (!rn2((i < Math.trunc(j / 10)) ? 2 : (i < Math.trunc(j / 5)) ? 3 : 4)) {
+            if (martial()) {
+                doit = true; /* goto doit; */
+            } else {
+                await Your("clumsy kick does no damage.");
+                await passive(mon, game.uarmf, false, 1, AT_KICK, false);
+                return;
+            }
+        }
+        if (!doit) {
+            if (i < Math.trunc(j / 10))
+                clumsy = true;
+            else if (!rn2((i < Math.trunc(j / 5)) ? 2 : 3))
+                clumsy = true;
+        }
+    }
+
+    if (!doit) {
+        if (Fumbling())
+            clumsy = true;
+
+        else if (game.uarm && objects[game.uarm.otyp].oc_bulky
+                 && ACURR(A_DEX) < rnd(25))
+            clumsy = true;
+    }
+    /* doit: */
+    await You(`kick ${mon_nam(mon)}.`);
+    if (!rn2(clumsy ? 3 : 4) && (clumsy || !bigmonst(mon.data))
+        && mon.mcansee && !mon.mtrapped && !thick_skinned(mon.data)
+        && mon.data.mlet !== S_EEL && haseyes(mon.data) && mon.mcanmove
+        && !mon.mstun && !mon.mconf && !mon.msleeping
+        && mon.data.mmove >= 12) {
+        if (!nohands(mon.data) && !rn2(martial() ? 5 : 3)) {
+            await pline(`${Monnam(mon)} blocks your ${clumsy ? "clumsy " : ""}kick.`);
+            await passive(mon, game.uarmf, false, 1, AT_KICK, false);
+            return;
+        } else {
+            await maybe_mnexto(mon);
+            if (mon.mx !== x || mon.my !== y) {
+                unmap_invisible(x, y);
+                await pline(`${Monnam(mon)} ${
+                    (can_teleport(mon.data) && !noteleport_level(mon))
+                        ? "teleports"
+                        : is_floater(mon.data)
+                              ? "floats"
+                              : is_flyer(mon.data) ? "swoops"
+                                                   : (nolimbs(mon.data)
+                                                      || slithy(mon.data))
+                                                         ? "slides"
+                                                         : "jumps"}, ${
+                    clumsy ? "easily" : "nimbly"} evading your ${
+                    clumsy ? "clumsy " : ""}kick.`);
+                await passive(mon, game.uarmf, false, 1, AT_KICK, false);
+                return;
+            }
+        }
+    }
+    await kickdmg(mon, clumsy);
+}
+
 // C ref: dokick.c maybe_kick_monster()
 async function maybe_kick_monster(mon, x, y) {
     if (mon) {
@@ -418,6 +651,7 @@ export async function dokick() {
     let x, y;
     let avrg_attrib;
     let mtmp;
+    let oldglyph;
     let no_kick = false;
 
     if (nolimbs(g.youmonst.data) || slithy(g.youmonst.data)) {
@@ -499,7 +733,7 @@ export async function dokick() {
        hero passes out due to encumbrance with low hp; svc.context.move
        will be 1 unless player declines to kick peaceful monster */
     if (mtmp) {
-        /* oldglyph = glyph_at(x, y): used after kick_monster() */
+        oldglyph = glyph_at(x, y);
         if (!await maybe_kick_monster(mtmp, x, y))
             return (g.context.move ? ECMD_TIME : ECMD_OK);
     }
@@ -521,7 +755,31 @@ export async function dokick() {
 
     if (mtmp) {
         /* save mtmp->data (for recoil) in case mtmp gets killed */
-        throw new Error('dokick(): kick_monster() not ported yet');
+        const mdat = mtmp.data;
+
+        await kick_monster(mtmp, x, y);
+        const glyph = glyph_at(x, y);
+        /* see comment in attack_checks() */
+        if (DEADMONSTER(mtmp)) { /* DEADMONSTER() */
+            /* if we mapped an invisible monster and immediately
+               killed it, we don't want to forget what we thought
+               was there before the kick */
+            if (glyph !== oldglyph && glyph_is_invisible(glyph))
+                show_glyph(x, y, oldglyph);
+        } else if (!canspotmon(mtmp)
+                   /* check <x,y>; monster that evades kick by jumping
+                      to an unseen square doesn't leave an I behind */
+                   && mtmp.mx === x && mtmp.my === y
+                   && !glyph_is_invisible(glyph)
+                   && !engulfing_u(mtmp)) {
+            map_invisible(x, y);
+        }
+        /* recoil if floating */
+        if ((Is_airlevel(u.uz) || Levitation()) && g.context.move) {
+            void mdat;
+            throw new Error('dokick(): hurtle() recoil not ported yet');
+        }
+        return ECMD_TIME;
     }
 
     unmap_invisible(x, y);
