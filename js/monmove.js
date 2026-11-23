@@ -58,6 +58,7 @@ import { eaten_stat } from './eat.js';
 import { extract_from_minvent } from './steal.js';
 import { m_consume_obj, disturb_buried_zombies } from './mon.js';
 import { has_ceiling } from './insight.js';
+import { resist_conflict } from './mhitm.js';
 import { cuss } from './wizard.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
@@ -1009,7 +1010,7 @@ export async function dochug(mtmp) {
 
     /* Now, attack the player if possible - one attack set per monst */
     if (status !== MMOVE_DONE && (!mtmp.mpeaceful
-                                  || (Conflict() && resist_conflict_nyi()))) {
+                                  || (Conflict() && !resist_conflict(mtmp)))) {
         if (((d.inrange && !d.scared) || panicattk) && !noattacks(mdat)
             /* [is this hp check really needed?] */
             && (Upolyd() ? u.mh : u.uhp) > 0) {
@@ -1037,9 +1038,6 @@ export async function dochug(mtmp) {
     && (findgold(mtmp->minvent) || rn2(2))) */
 function leprechaun_check(mtmp) {
     throw new Error('dochug(): leprechaun findgold() not ported yet');
-}
-function resist_conflict_nyi() {
-    throw new Error('resist_conflict() not ported yet');
 }
 
 // ── C ref: monmove.c mon_track_add() ──

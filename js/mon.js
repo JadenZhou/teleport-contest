@@ -139,6 +139,8 @@ import { vtense } from './objnam.js';
 import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
+import { fightm, resist_conflict } from './mhitm.js';
+import { BOLT_LIM as BOLT_LIM_mn } from './const.js';
 import { in_rooms } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
@@ -1538,8 +1540,21 @@ async function movemon_singlemon(mtmp) {
     }
 
     /* continue if the monster died fighting */
-    if (Conflict() && !mtmp.iswiz)
-        throw new Error('movemon_singlemon(): fightm() not ported yet');
+    if (Conflict() && !mtmp.iswiz && m_canseeu(mtmp)) {
+        /* Note:
+         *  Conflict does not take effect in the first round.
+         *  Therefore, A monster when stepping into the area will
+         *  get to swing at you.
+         *
+         *  The call to fightm() must be _last_.  The monster might
+         *  have died if it returns 1.
+         */
+        if (cansee(mtmp.mx, mtmp.my)
+            && (dist2(mtmp.mx, mtmp.my, game.u.ux, game.u.uy)
+                <= BOLT_LIM_mn * BOLT_LIM_mn) /* mdistu() */
+            && (await fightm(mtmp)))
+            return false; /* mon might have died */
+    }
     await dochugw(mtmp, true); /* otherwise just move the monster */
     return false;
 }
@@ -2346,8 +2361,8 @@ export function mon_allowflags(mtmp) {
         allowflags |= ALLOW_SANCT | ALLOW_SSM;
     else
         allowflags |= ALLOW_U;
-    if (Conflict())
-        throw new Error('mon_allowflags(): resist_conflict() not ported yet');
+    if (Conflict() && !resist_conflict(mtmp))
+        allowflags |= ALLOW_U;
     if (mtmp.isshk)
         allowflags |= ALLOW_SSM;
     if (mtmp.ispriest)
