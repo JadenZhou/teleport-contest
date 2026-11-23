@@ -58,6 +58,18 @@ import { KILLED_BY, A_CON, ECMD_OK, ECMD_TIME, nothing_happens } from './const.j
 import { getrumor } from './rumors.js';
 import { bcsign } from './mkobj.js';
 import { pline } from './display.js';
+import { cansee as cansee_art } from './vision.js';
+import { mon_nam as mon_nam_art } from './do_name.js';
+import { destroy_items as destroy_items_art } from './zap.js';
+import { ignite_items as ignite_items_art } from './trap.js';
+import { wake_nearto as wake_nearto_art } from './mon.js';
+import { ART_TSURUGI_OF_MURAMASA, ART_VORPAL_BLADE } from './artilist.js';
+import { SLIMED as SLIMED_ART } from './const.js';
+import { Blind as Blind_art } from './display.js';
+import { defended, resists_fire, resists_cold, resists_elec, resists_poison,
+         resists_drli, Resists_Elem } from './mondata.js';
+import { STONE_RES } from './const.js';
+import { ART_GRIMTOOTH } from './artilist.js';
 import { Tobjnam } from './objnam.js';
 
 // C ref: artifact.h SPFX_*
@@ -1082,9 +1094,8 @@ export function spec_ability(otmp, abil) {
     return (arti !== artilist()[ART_NONARTIFACT] && (arti.spfx & abil) !== 0);
 }
 
-// C ref: artifact.c spec_applies() -- the SPFX_DBONUS cases (all that
-// bane_applies() can reach); the SPFX_ATTK resistance checks are not
-// ported yet
+// C ref: artifact.c spec_applies()
+/* decide whether an artifact's special attacks apply against mtmp */
 function spec_applies(weap, mtmp) {
     if (!(weap.spfx & (SPFX_DBONUS | SPFX_ATTK)))
         return (weap.attk.adtyp === M.AD_PHYS);
@@ -1111,9 +1122,208 @@ function spec_applies(weap, mtmp) {
                      : (ptr.maligntyp === A_NONE
                         || Math.sign(ptr.maligntyp) !== weap.alignment);
     } else if (weap.spfx & SPFX_ATTK) {
-        throw new Error('spec_applies(): SPFX_ATTK resistance checks are not ported yet');
+        if (defended(mtmp, weap.attk.adtyp))
+            return false;
+
+        switch (weap.attk.adtyp) {
+        case M.AD_FIRE:
+            return !(yours ? uhave_res(FIRE_RES) : resists_fire(mtmp));
+        case M.AD_COLD:
+            return !(yours ? uhave_res(COLD_RES) : resists_cold(mtmp));
+        case M.AD_ELEC:
+            return !(yours ? uhave_res(SHOCK_RES) : resists_elec(mtmp));
+        case M.AD_MAGM:
+        case M.AD_STUN:
+            return !(yours ? Antimagic() : (rn2(100) < ptr.mr));
+        case M.AD_DRST:
+            return !(yours ? uhave_res(POISON_RES) : resists_poison(mtmp));
+        case M.AD_DRLI:
+            return !(yours ? uhave_res(DRAIN_RES) : resists_drli(mtmp));
+        case M.AD_STON:
+            return !(yours ? uhave_res(STONE_RES) : resists_ston_art(mtmp));
+        default:
+            /* impossible("Weird weapon special attack.") */
+            break;
+        }
     }
     return false;
+}
+
+/* C ref: youprop.h Fire_resistance etc. (Hxxx || Exxx) */
+function uhave_res(p) {
+    const r = game.u.uprops[p];
+    return !!(r.intrinsic || r.extrinsic);
+}
+
+/* C ref: mondata.h resists_ston() */
+function resists_ston_art(mon) { return !!Resists_Elem(mon, STONE_RES); }
+
+// C ref: artifact.c spec_abon()
+/* special attack bonus */
+export function spec_abon(otmp, mon) {
+    const weap = get_artifact(otmp);
+
+    /* no need for an extra check for `NO_ATTK' because this will
+       always return 0 for any artifact which has that attribute */
+
+    if (weap !== artilist()[ART_NONARTIFACT]
+        && weap.attk.damn && spec_applies(weap, mon))
+        return rnd(weap.attk.damn);
+    return 0;
+}
+
+// C ref: artifact.c attacks()
+/* used to check whether a monster is getting reflected/resisting an
+   artifact's special attack type */
+export function attacks(adtyp, otmp) {
+    const weap = get_artifact(otmp);
+
+    if (weap !== artilist()[ART_NONARTIFACT])
+        return (weap.attk.adtyp === adtyp);
+    return false;
+}
+
+const MB_MAX_DIEROLL = 8; /* rolls above this aren't magical */
+
+// C ref: artifact.c artifact_hit()
+/* Function used when someone attacks someone else with an artifact
+ * weapon.  Only adds the special (artifact) damage, and returns a 1 if it
+ * did something special (in which case the caller won't print the normal
+ * hit message).  This should be called once upon every artifact attack;
+ * dmgval() no longer takes artifact bonuses into account.  Possible
+ * extension: change the killer so that when an orc kills you with
+ * Stormbringer it's "killed by Stormbringer" instead of "killed by an orc".
+ * C passes the damage by pointer; here dmgp.val is read and updated.
+ */
+export async function artifact_hit(
+    magr,   /* attacker; might be Null if 'mdef' is youmonst */
+    mdef,   /* defender */
+    otmp,   /* artifact weapon */
+    dmgp,   /* { val } -- output */
+    dieroll) { /* needed for Magicbane and vorpal blades */
+    const u = game.u;
+    const youattack = (magr === game.youmonst);
+    const youdefend = (mdef === game.youmonst);
+    const vis = (!youattack && magr && cansee_art(magr.mx, magr.my))
+                || (!youdefend && cansee_art(mdef.mx, mdef.my))
+                || (youattack && u.uswallow && u.ustuck === mdef
+                    && !Blind_art());
+    const hittee = youdefend ? "you" : mon_nam_art(mdef);
+
+    /* The following takes care of most of the damage, but not all--
+     * the exception being for level draining, which is specially
+     * handled.  Messages are done in this function, however.
+     */
+    dmgp.val += spec_dbon(otmp, mdef, dmgp.val);
+
+    if (youattack && youdefend) {
+        /* impossible("attacking yourself with weapon?") */
+        return false;
+    }
+
+    const realizes_damage = (youdefend || vis
+                             /* feel the effect even if not seen */
+                             || (youattack && mdef === u.ustuck));
+
+    /* the four basic attacks: fire, cold, shock and missiles */
+    if (attacks(M.AD_FIRE, otmp)) {
+        if (realizes_damage)
+            await pline(`The fiery blade ${
+                !game.spec_dbon_applies
+                    ? "hits"
+                    : (mdef.data === M.mons[M.PM_WATER_ELEMENTAL])
+                          ? "vaporizes part of"
+                          : "burns"} ${hittee}${
+                !game.spec_dbon_applies ? '.' : '!'}`);
+        if (!rn2(4)) {
+            const itemdmg = await destroy_items_art(mdef, M.AD_FIRE, dmgp.val);
+            if (!youdefend)
+                dmgp.val += itemdmg; /* item destruction dmg */
+            await ignite_items_art(mdef.minvent);
+        }
+        if (youdefend && game.u.uprops[SLIMED_ART].intrinsic)
+            throw new Error('artifact_hit(): burn_away_slime() not ported yet');
+        return realizes_damage;
+    }
+    if (attacks(M.AD_COLD, otmp)) {
+        if (realizes_damage)
+            await pline(`The ice-cold blade ${
+                !game.spec_dbon_applies ? "hits" : "freezes"} ${hittee}${
+                !game.spec_dbon_applies ? '.' : '!'}`);
+        if (!rn2(4)) {
+            const itemdmg = await destroy_items_art(mdef, M.AD_COLD, dmgp.val);
+            if (!youdefend)
+                dmgp.val += itemdmg; /* item destruction dmg */
+        }
+        return realizes_damage;
+    }
+    if (attacks(M.AD_ELEC, otmp)) {
+        if (realizes_damage)
+            await pline(`The massive hammer hits${
+                !game.spec_dbon_applies ? "" : "!  Lightning strikes"} ${
+                hittee}${!game.spec_dbon_applies ? '.' : '!'}`);
+        if (game.spec_dbon_applies)
+            await wake_nearto_art(mdef.mx, mdef.my, 4 * 4);
+        if (!rn2(5)) {
+            const itemdmg = await destroy_items_art(mdef, M.AD_ELEC, dmgp.val);
+            if (!youdefend)
+                dmgp.val += itemdmg; /* item destruction dmg */
+        }
+        return realizes_damage;
+    }
+    if (attacks(M.AD_MAGM, otmp)) {
+        if (realizes_damage)
+            await pline(`The imaginary widget hits${
+                !game.spec_dbon_applies
+                    ? ""
+                    : "!  A hail of magic missiles strikes"} ${
+                hittee}${!game.spec_dbon_applies ? '.' : '!'}`);
+        return realizes_damage;
+    }
+
+    if (attacks(M.AD_STUN, otmp) && dieroll <= MB_MAX_DIEROLL) {
+        /* Magicbane's special attacks (possibly modifies hittee[]) */
+        throw new Error('artifact_hit(): Mb_hit() not ported yet');
+    }
+
+    if (!game.spec_dbon_applies) {
+        /* since damage bonus didn't apply, nothing more to do;
+           no further attacks have side-effects on inventory */
+        return false;
+    }
+
+    /* We really want "on a natural 20" but Nethack does it in */
+    /* reverse from AD&D. */
+    if (spec_ability(otmp, SPFX_BEHEAD)) {
+        if ((otmp.oartifact === ART_TSURUGI_OF_MURAMASA && dieroll === 1)
+            || (otmp.oartifact === ART_VORPAL_BLADE
+                && (dieroll === 1 || mdef.data === M.mons[M.PM_JABBERWOCK])))
+            throw new Error('artifact_hit(): beheading/bisecting not ported yet');
+    }
+    if (spec_ability(otmp, SPFX_DRLI))
+        throw new Error('artifact_hit(): level-draining artifact hit not ported yet');
+    return false;
+}
+
+// C ref: artifact.c spec_dbon()
+/* special damage bonus */
+export function spec_dbon(otmp, mon, tmp) {
+    const weap = get_artifact(otmp);
+
+    if ((weap === artilist()[ART_NONARTIFACT])
+        || (weap.attk.adtyp === M.AD_PHYS /* check for `NO_ATTK' */
+            && weap.attk.damn === 0 && weap.attk.damd === 0))
+        game.spec_dbon_applies = false;
+    else if (otmp.oartifact === ART_GRIMTOOTH)
+        /* Grimtooth has SPFX settings to warn against elves but we want its
+           damage bonus to apply to all targets, so bypass spec_applies() */
+        game.spec_dbon_applies = true;
+    else
+        game.spec_dbon_applies = !!spec_applies(weap, mon);
+
+    if (game.spec_dbon_applies)
+        return weap.attk.damd ? rnd(weap.attk.damd) : Math.max(tmp, 1);
+    return 0;
 }
 
 // C ref: artifact.c bane_applies()
