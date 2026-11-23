@@ -10,6 +10,7 @@
 // are not ported yet.
 
 import { game } from './gstate.js';
+import { obj_stop_timers } from './timeout.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { rn2 } from './rng.js';
@@ -971,7 +972,7 @@ export function food_disappears(obj) {
         clear_victual(); /* victual.piece = 0, .o_id = 0 */
 
     if (obj.timed)
-        throw new Error('food_disappears(): obj_stop_timers() not ported yet');
+        obj_stop_timers(obj);
 }
 
 // C ref: eat.c do_reset_eat()

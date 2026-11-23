@@ -10,6 +10,21 @@ import { canseemon, newsym, pline, Hallucination } from './display.js';
 import { You_hear } from './sounds.js';
 import { mksobj_at } from './mkobj.js';
 import { acurr } from './attrib.js';
+import { start_timer, obj_to_any } from './timeout.js';
+import { TIMER_OBJECT, ROT_ORGANIC, CXN_NO_PFX, OBJ_AT, u_at } from './const.js';
+import { corpse_xname, otense } from './objnam.js';
+import { Your } from './display.js';
+import { remove_worn_item } from './steal.js';
+import { setmnotwielded } from './weapon.js';
+import { hideunder_async as hideunder, m_at } from './makemon.js';
+import { stop_occupation } from './allmain.js';
+import { obfree } from './invent.js';
+import { M1_CONCEAL } from './monsters.js';
+
+/* C ref: mondata.h hides_under() */
+function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
+/* C ref: invent.c update_inventory() -- no perm_invent window */
+function update_inventory() { }
 import { Unaware } from './eat.js';
 import { D_TRAPPED, D_BROKEN, SCORR, A_STR, A_INT, A_WIS, A_DEX, A_CON,
          A_CHA } from './const.js';
@@ -192,12 +207,79 @@ export function bury_an_obj(otmp, dealloced) {
         ; /* should cancel timer if under_ice */
     } else if ((under_ice ? (otmp.oclass === POTION_CLASS) : is_organic(otmp))
                && !obj_resists(otmp, 5, 95)) {
-        /* (void) start_timer(...): timers are not ported yet */
-        otmp.timer = { when: (under_ice ? 0 : 250) + rnd(250),
-                       action: 'ROT_ORGANIC' };
+        start_timer((under_ice ? 0 : 250) + rnd(250),
+                    TIMER_OBJECT, ROT_ORGANIC, obj_to_any(otmp));
     }
     add_to_buried(otmp);
     return otmp2;
+}
+
+// C ref: dig.c rot_organic()
+/*
+ * Called when a buried object has rotted away.
+ */
+export async function rot_organic(arg, timeout) {
+    const obj = arg.a_obj;
+
+    while (obj.cobj && obj.cobj.length) { /* Has_contents(obj) */
+        /* We don't need to place contained object on the floor
+           first, but we do need to update its map coordinates. */
+        obj.cobj[0].ox = obj.ox, obj.cobj[0].oy = obj.oy;
+        /* Everything which can be held in a container can also be
+           buried, so bury_an_obj's use of obj_extract_self insures
+           that Has_contents(obj) will eventually become false. */
+        bury_an_obj(obj.cobj[0], null);
+    }
+    mkobj_obj_extract_self(obj);
+    obfree(obj, null);
+}
+
+// C ref: dig.c rot_corpse()
+/*
+ * Called when a corpse has rotted completely away.
+ */
+export async function rot_corpse(arg, timeout) {
+    let x = 0, y = 0;
+    const obj = arg.a_obj;
+    const on_floor = obj.where === 'OBJ_FLOOR',
+        in_invent = obj.where === 'OBJ_INVENT';
+
+    if (on_floor) {
+        x = obj.ox;
+        y = obj.oy;
+    } else if (in_invent) {
+        if (game.flags.verbose) {
+            const cname = corpse_xname(obj, null, CXN_NO_PFX);
+
+            await Your(`${(obj === game.uwep) ? "wielded " : ""}${cname} ${
+                otense(obj, "rot")} away${(obj === game.uwep) ? '!' : '.'}`);
+        }
+        if (obj.owornmask) {
+            await remove_worn_item(obj, true);
+            await stop_occupation();
+        }
+    } else if (obj.where === 'OBJ_MINVENT') {
+        if (obj.owornmask && obj === obj.ocarry.mw) /* MON_WEP(obj->ocarry) */
+            setmnotwielded(obj.ocarry, obj); /* clears owornmask */
+    } else if (obj.where === 'OBJ_MIGRATING') {
+        /* clear destination flag so that obfree()'s check for
+           freeing a worn object doesn't get a false hit */
+        obj.owornmask = 0;
+    }
+    await rot_organic(arg, timeout);
+    if (on_floor) {
+        const mtmp = m_at(x, y);
+
+        /* a hiding monster may be exposed */
+        if (mtmp && !OBJ_AT(x, y) && mtmp.mundetected
+            && hides_under(mtmp.data)) {
+            mtmp.mundetected = 0;
+        } else if (u_at(x, y)
+                   && game.u.uundetected && hides_under(game.youmonst.data))
+            await hideunder(game.youmonst);
+        newsym(x, y);
+    } else if (in_invent)
+        update_inventory();
 }
 
 // C ref: dig.c holetime()

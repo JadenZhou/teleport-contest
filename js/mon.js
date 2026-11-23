@@ -95,7 +95,8 @@ import { ceiling_hider } from './engrave.js';
 import { has_ceiling } from './insight.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, ROOM } from './const.js';
 import { dead_species } from './mkobj.js';
-import { kill_egg } from './timeout.js';
+import { kill_egg, peek_timer, stop_timer, start_timer, obj_to_any } from './timeout.js';
+import { ZOMBIFY_MON, TIMER_OBJECT } from './const.js';
 import { relobj, thiefdead, mdrop_special_objs, discard_minvent } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear, monflee } from './monmove.js';
@@ -138,6 +139,8 @@ import { vtense } from './objnam.js';
 import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
+import { fightm, resist_conflict } from './mhitm.js';
+import { BOLT_LIM as BOLT_LIM_mn } from './const.js';
 import { in_rooms } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
@@ -1537,8 +1540,21 @@ async function movemon_singlemon(mtmp) {
     }
 
     /* continue if the monster died fighting */
-    if (Conflict() && !mtmp.iswiz)
-        throw new Error('movemon_singlemon(): fightm() not ported yet');
+    if (Conflict() && !mtmp.iswiz && m_canseeu(mtmp)) {
+        /* Note:
+         *  Conflict does not take effect in the first round.
+         *  Therefore, A monster when stepping into the area will
+         *  get to swing at you.
+         *
+         *  The call to fightm() must be _last_.  The monster might
+         *  have died if it returns 1.
+         */
+        if (cansee(mtmp.mx, mtmp.my)
+            && (dist2(mtmp.mx, mtmp.my, game.u.ux, game.u.uy)
+                <= BOLT_LIM_mn * BOLT_LIM_mn) /* mdistu() */
+            && (await fightm(mtmp)))
+            return false; /* mon might have died */
+    }
     await dochugw(mtmp, true); /* otherwise just move the monster */
     return false;
 }
@@ -2245,12 +2261,19 @@ export async function wake_nearby(petcall) {
 }
 
 // C ref: hack.c disturb_buried_zombies()
-function disturb_buried_zombies(x, y) {
-    for (const otmp of game.level.buriedobjlist || []) {
+/* reduce zombification timeout of buried zombies around px, py */
+export function disturb_buried_zombies(x, y) {
+    let t;
+
+    for (const otmp of [...(game.level.buriedobjlist || [])]) {
         if (otmp.otyp === CORPSE && otmp.timed
             && otmp.ox >= x - 1 && otmp.ox <= x + 1
-            && otmp.oy >= y - 1 && otmp.oy <= y + 1)
-            throw new Error('disturb_buried_zombies(): ZOMBIFY_MON timers not ported yet');
+            && otmp.oy >= y - 1 && otmp.oy <= y + 1
+            && (t = peek_timer(ZOMBIFY_MON, obj_to_any(otmp))) > 0) {
+            t = stop_timer(ZOMBIFY_MON, obj_to_any(otmp));
+            start_timer(Math.max(1, Math.trunc(t * 2 / 3)), TIMER_OBJECT,
+                        ZOMBIFY_MON, obj_to_any(otmp));
+        }
     }
 }
 
@@ -2338,8 +2361,8 @@ export function mon_allowflags(mtmp) {
         allowflags |= ALLOW_SANCT | ALLOW_SSM;
     else
         allowflags |= ALLOW_U;
-    if (Conflict())
-        throw new Error('mon_allowflags(): resist_conflict() not ported yet');
+    if (Conflict() && !resist_conflict(mtmp))
+        allowflags |= ALLOW_U;
     if (mtmp.isshk)
         allowflags |= ALLOW_SSM;
     if (mtmp.ispriest)

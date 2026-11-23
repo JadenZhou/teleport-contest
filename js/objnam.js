@@ -16,6 +16,7 @@
 // tins of a monster, lit light sources, novels, ...) raise not_ported().
 
 import { game } from './gstate.js';
+import { ART_ORB_OF_DETECTION as ART_ORB_OF_DETECTION_ON } from './artilist.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import {
     lowc, highc, strncmpi, strcmpi, mungspaces, strstri, fuzzymatch, dist2, s_suffix,
@@ -3004,13 +3005,19 @@ export function Tobjnam(otmp, verb) {
 export function yname(obj) {
     if (obj.otyp === O.CORPSE)
         throw new Error('yname(): corpse_xname() not ported yet');
-    if (obj.oartifact)
-        throw new Error('yname(): artifacts not ported yet');
-    const s = xname(obj); /* cxname(obj) */
-    /* shk_your(): !shk_owns() && !mon_owns() */
-    if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
-        throw new Error('yname(): shk_owns()/mon_owns() not ported yet');
-    return `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
+    const s = cxname(obj);
+
+    /* leave off "your" for most of your artifacts, but prepend
+     * "your" for unique objects and "foo of bar" quest artifacts */
+    if (obj.where !== 'OBJ_INVENT' || !obj_is_pname(obj)
+        || obj.oartifact >= ART_ORB_OF_DETECTION_ON) {
+        /* shk_your(): !shk_owns() && !mon_owns() */
+        if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
+            throw new Error('yname(): shk_owns()/mon_owns() not ported yet');
+        return `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
+    }
+
+    return s;
 }
 
 // C ref: objnam.c Yname2()

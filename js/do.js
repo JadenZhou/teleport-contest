@@ -38,7 +38,8 @@ import { more_experienced, newexplevel } from './exper.js';
 import { check_special_room } from './hack.js';
 import { pickup } from './pickup.js';
 import { keepdogs, losedogs } from './dog.js';
-import { kill_genocided_monsters } from './mon.js';
+import { kill_genocided_monsters, disturb_buried_zombies } from './mon.js';
+import { run_timers } from './timeout.js';
 import { savelev } from './save.js';
 import { create_levelfile, level_info, open_levelfile } from './files.js';
 import { getlev } from './restore.js';
@@ -730,7 +731,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
      * after migrating monsters and objects are delivered
      * (losedogs and obj_delivery).
      */
-    /* run_timers(): the timer queue isn't ported yet (see timeout.js) */
+    await run_timers();
 
     /* hero might be arriving at a spot containing a monster;
        if so, move one or the other to another location */
@@ -1260,10 +1261,12 @@ export async function dropz(obj, with_impact) {
 // C ref: hack.c impact_disturbs_zombies()
 export function impact_disturbs_zombies(obj, violent) {
     /* if object won't make a noticeable impact, let buried zombies rest */
-    if ((obj.owt || 0) < (violent ? 10 : 100) /* || is_flimsy(obj) */)
+    if ((obj.owt || 0) < (violent ? 10 : 100)
+        || O.objects[obj.otyp].oc_material <= O.LEATHER /* is_flimsy(obj) */
+        || obj.otyp === O.RUBBER_HOSE)
         return;
-    if (game.level.buriedobjlist?.some(o => o.otyp === O.CORPSE && o.timed))
-        throw new Error('impact_disturbs_zombies(): disturb_buried_zombies() not ported yet');
+
+    disturb_buried_zombies(obj.ox, obj.oy);
 }
 
 // C ref: dokick.c down_gate()

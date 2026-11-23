@@ -6,6 +6,7 @@
 // Uses the real game PRNG (not a separate layout PRNG) for bit-exact parity.
 
 import { game } from './gstate.js';
+import { begin_burn } from './timeout.js';
 import { GameMap } from './game.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { init_rect, rnd_rect, get_rect, split_rects, within_bounded_area } from './rect.js';
@@ -2749,8 +2750,8 @@ function mktrap_victim(ttmp) {
             otmp.owt = weight(otmp);
             curse(otmp);
             place_object(otmp, x, y);
-            /* begin_burn(otmp, FALSE) for unlit spots: light sources and
-               timers are not ported yet */
+            if (!game.level.at(x, y).lit)
+                begin_burn(otmp, false);
         }
         break;
     default:

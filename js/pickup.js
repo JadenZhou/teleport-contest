@@ -17,7 +17,7 @@ import { look_here } from './invent.js';
 import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
 import { Is_container } from './mkobj.js';
-import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME } from './const.js';
+import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME, ECMD_CANCEL, GETOBJ_DOWNPLAY } from './const.js';
 import { m_at } from './makemon.js';
 import { mon_nam } from './do_name.js';
 import { M1_NOHANDS, M1_NOLIMBS } from './monsters.js';
@@ -100,7 +100,9 @@ import { shop_keeper, sellobj, get_obj_location } from './shk.js';
 import { Norep, pline_The, bot, canspotmon } from './display.js';
 import { welded, setuwep, setuswapwep, setuqwep } from './wield.js';
 import { MZ_LARGE, PM_ICE_TROLL, PM_HOUSECAT } from './monsters.js';
-import { add_to_container, start_corpse_timeout, set_corpsenm } from './mkobj.js';
+import { add_to_container, start_corpse_timeout, set_corpsenm, start_glob_timeout } from './mkobj.js';
+import { stop_timer, obj_to_any } from './timeout.js';
+import { ROT_CORPSE, REVIVE_MON, SHRINK_GLOB } from './const.js';
 import { makemon, set_malign } from './makemon.js';
 import { more_experienced, newexplevel } from './exper.js';
 import { currency } from './insight.js';
@@ -1764,6 +1766,82 @@ function pk_Blind() {
     return !!((up?.intrinsic || up?.extrinsic) && !up?.blocked);
 }
 
+// C ref: pickup.c tip_ok()
+/* getobj callback for #tip */
+function tip_ok(obj) {
+    if (!obj || obj.oclass === COIN_CLASS)
+        return GETOBJ_EXCLUDE;
+
+    if (Is_container(obj)) {
+        return GETOBJ_SUGGEST;
+    }
+
+    /* include horn of plenty if sufficiently discovered */
+    if (obj.otyp === HORN_OF_PLENTY && obj.dknown
+        && objects[obj.otyp].oc_name_known)
+        return GETOBJ_SUGGEST;
+
+    /* allow trying anything else in inventory */
+    return GETOBJ_DOWNPLAY;
+}
+
+// C ref: pickup.c dotip()
+/* #tip command -- empty container contents onto floor */
+export async function dotip() {
+    const u = game.u;
+    let cobj;
+    let boxes;
+    let c;
+    const cc = { x: 0, y: 0 };
+
+    /*
+     * Doesn't require free hands;
+     * limbs are needed to tip floor containers.
+     */
+
+    /* at present, can only tip things at current spot, not adjacent ones */
+    cc.x = u.ux, cc.y = u.uy;
+
+    /* check floor container(s) first; at most one will be accessed */
+    boxes = container_at(cc.x, cc.y, true);
+    /* this is iffy for menustyle:traditional; 'm' prefix is ambiguous
+       for it: skip floor vs handle multiple containers via menu */
+    if (boxes > 0
+        && (!game.iflags.menu_requested
+            || (game.flags.menu_style === MENU_TRADITIONAL && boxes > 1))) {
+        const buf = `You can't tip ${!game.flags.verbose ? "a container"
+                                     : (boxes > 1) ? "one" : "it"} while carrying so much.`;
+        if (!(await check_capacity(buf)) && (await able_to_loot(cc.x, cc.y, false))) {
+            if (boxes > 1) {
+                throw new Error('dotip(): choose_tip_container_menu() not ported yet');
+            } else {
+                for (cobj of objects_at(cc.x, cc.y)) {
+                    if (!Is_container(cobj))
+                        continue;
+                    c = await tty_yn_function(
+                        safe_qbuf("There is ", " here, tip it?", cobj,
+                                  doname, "container"), "ynq", 'q'); /* ynq() */
+                    if (typeof c === 'number')
+                        c = String.fromCharCode(c);
+                    if (c === 'q')
+                        return ECMD_OK;
+                    if (c === 'n')
+                        continue;
+                    throw new Error('dotip(): tipcontainer() not ported yet');
+                }
+            }
+        }
+    }
+
+    /* either no floor container(s) or 'm' prefix was used to ignore such
+       or couldn't tip one or didn't tip any */
+    cobj = await getobj("tip", tip_ok, GETOBJ_PROMPT);
+    if (!cobj)
+        return ECMD_CANCEL;
+
+    throw new Error('dotip(): tipping a carried object not ported yet');
+}
+
 // C ref: pickup.c able_to_loot()
 async function able_to_loot(x, y, looting) { /* loot vs tip */
     const verb = looting ? "loot" : "tip";
@@ -2253,14 +2331,15 @@ async function in_container(obj) {
         obj.age = (game.moves || 0) - obj.age; /* actual age */
         /* stop any corpse timeouts when frozen */
         if (obj.otyp === CORPSE) {
-            if (obj.timer && (obj.timer.action === 'ROT_CORPSE'
-                              || obj.timer.action === 'REVIVE_MON'))
-                obj.timer = null; /* stop_timer(ROT_CORPSE), (REVIVE_MON) */
+            if (obj.timed) {
+                stop_timer(ROT_CORPSE, obj_to_any(obj));
+                stop_timer(REVIVE_MON, obj_to_any(obj));
+            }
             /* if this is the corpse of a cancelled ice troll, uncancel it */
             if (obj.corpsenm === PM_ICE_TROLL && obj.oextra?.omonst)
                 obj.oextra.omonst.mcan = 0;
-        } else if (obj.globby && obj.timer) {
-            throw new Error('in_container(): stop_timer(SHRINK_GLOB) not ported yet');
+        } else if (obj.globby && obj.timed) {
+            stop_timer(SHRINK_GLOB, obj_to_any(obj));
         }
     } else if (Is_mbag(cont) && mbag_explodes(obj, 0)) {
         throw new Error('in_container(): magic bag explosion (do_boh_explosion()) not ported yet');
@@ -2372,7 +2451,7 @@ export function removed_from_icebox(obj) {
             start_corpse_timeout(obj);
         } else if (obj.globby) {
             /* non-frozen globs gradually shrink away to nothing */
-            throw new Error('removed_from_icebox(): start_glob_timeout() not ported yet');
+            start_glob_timeout(obj, 0);
         }
     }
 }
