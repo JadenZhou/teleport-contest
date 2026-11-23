@@ -93,6 +93,7 @@ import { trapname } from './trap.js';
 import { display_inventory } from './invent.js';
 import { data_base } from './data_base.js';
 import { tty_putmixed, tty_getlin } from './wintty.js';
+import { doextversion } from './mdlib.js';
 
 /* C ref: mondata.h digests() */
 function digests(ptr) {
@@ -1579,6 +1580,8 @@ export async function dohelp() {
         const f = help_menu_items[sel].f;
         if (f === 'hmenu_dowhatis')
             await hmenu_dowhatis();
+        else if (f === 'hmenu_doextversion')
+            await hmenu_doextversion();
         else if (f === 'domenucontrols')
             await domenucontrols();
         else
@@ -2483,6 +2486,11 @@ export async function dowhatdoes() {
         await pline(`No such command '${visctrl(q)}', char code ${q} (0${oct} or 0x${hex}).`);
     }
     return ECMD_OK;
+}
+
+// C ref: pager.c hmenu_doextversion()
+async function hmenu_doextversion() {
+    await doextversion();
 }
 
 // C ref: pager.c hmenu_dowhatis()

@@ -65,6 +65,7 @@ import { doread } from './read.js';
 import { doengrave } from './engrave.js';
 import { set_occupation } from './allmain.js';
 import { dohelp, dowhatis, doquickwhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
+import { doextversion } from './mdlib.js';
 import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
 import { done2 } from './end.js';
@@ -178,6 +179,7 @@ const cmd_funcs = {
     doterrain: () => doterrain(),
     dowhatis: () => dowhatis(),
     doquickwhatis: () => doquickwhatis(),
+    doextversion: () => doextversion(),
     dowhatdoes: () => dowhatdoes(),
     dosit: () => dosit(),
     dodip: () => dodip(),
