@@ -716,7 +716,7 @@ export async function thitmonst(mon,
                 tmp += (uwep.spe || 0) - greatest_erosion_dt(uwep);
                 tmp += weapon_hit_bonus_dt(uwep);
                 if (uwep.oartifact)
-                    throw new Error('thitmonst(): spec_abon() not ported yet');
+                    tmp += spec_abon_dt(uwep, mon);
                 /*
                  * Elves and Samurais are highly trained w/bows,
                  * especially their own special types of bow.
@@ -1794,6 +1794,7 @@ export async function hurtle_step(arg, x, y) {
 }
 
 import { hmon as hmon_dt, passive_obj as passive_obj_dt } from './uhitm.js';
+import { spec_abon as spec_abon_dt } from './artifact.js';
 import { find_mac as find_mac_dt } from './worn.js';
 import { weapon_hit_bonus as weapon_hit_bonus_dt } from './weapon.js';
 import { cutworm as cutworm_dt } from './worm.js';

@@ -170,6 +170,7 @@ import { destroy_items } from './zap.js';
 import { ignite_items } from './trap.js';
 import { resists_fire, resists_cold, resists_elec, defended } from './mondata.js';
 import { XKILL_NOCORPSE } from './const.js';
+import { artifact_hit } from './artifact.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -222,10 +223,13 @@ function Hate_silver() {
         || pd === mons[M.PM_SHADE]
         || (pd.mlet === M.S_IMP && pd !== mons[M.PM_TENGU]);
 }
-/* C ref: artifact.c artifact_hit() -- returns !artifact_hit() */
-function artifact_hit_nyi(magr, mdef, otmp, mhm) {
-    void magr; void mdef; void otmp; void mhm;
-    throw new Error('mhitm_ad_phys(): artifact_hit() not ported yet');
+/* C ref: uhitm.c mhitm_ad_phys() -- !artifact_hit(magr, mdef, otmp,
+   &mhm->damage, gm.mhitu_dieroll) */
+async function not_artifact_hit(magr, mdef, otmp, mhm) {
+    const dmgp = { val: mhm.damage };
+    const r = await artifact_hit(magr, mdef, otmp, dmgp, game.mhitu_dieroll);
+    mhm.damage = dmgp.val;
+    return !r;
 }
 /* C ref: mondata.c attacktype() */
 function attacktype(ptr, atyp) {
@@ -351,7 +355,7 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                 if (mhm.damage <= 0)
                     mhm.damage = 1;
                 if (!otmp.oartifact
-                    || artifact_hit_nyi(magr, mdef, otmp, mhm)) {
+                    || await not_artifact_hit(magr, mdef, otmp, mhm)) {
                     await hitmsg(magr, mattk);
                     mhm.hitflags |= M_ATTK_HIT;
                 }
@@ -2798,8 +2802,29 @@ async function hmon_hitmon_weapon_melee(hmd, mon, obj) /* obj is not NULL */ {
         throw new Error('hmon_hitmon_weapon_melee(): shattering the defender\'s weapon not ported yet');
     }
 
-    if (obj.oartifact)
-        throw new Error('hmon_hitmon_weapon_melee(): artifact_hit() not ported yet');
+    if (obj.oartifact) {
+        const dmgp = { val: hmd.dmg };
+        const arthit = await artifact_hit(game.youmonst, mon, obj, dmgp,
+                                          hmd.dieroll);
+        hmd.dmg = dmgp.val;
+        if (arthit) {
+            /* artifact_hit updates 'tmp' but doesn't inflict any
+               damage; however, it might cause carried items to be
+               destroyed and they might do so */
+            if (DEADMONSTER(mon)) { /* artifact killed monster */
+                hmd.doreturn = true;
+                hmd.retval = false;
+                return;
+            }
+            /* perhaps artifact tried to behead a headless monster */
+            if (hmd.dmg === 0) {
+                hmd.doreturn = true;
+                hmd.retval = true;
+                return;
+            }
+            hmd.hittxt = true;
+        }
+    }
     if (hmd.material === SILVER && mon_hates_silver(mon)) {
         hmd.silvermsg = hmd.silverobj = true;
     }
