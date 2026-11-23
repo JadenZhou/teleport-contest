@@ -77,7 +77,7 @@ import { resist } from './zap.js';
 import { monflee } from './monmove.js';
 import { setmangry, killed, mondied, wakeup, wake_nearto } from './mon.js';
 import { m_at, closed_door } from './makemon.js';
-import { initedog } from './dog.js';
+import { initedog, tamedog } from './dog.js';
 import { body_part, has_ceiling } from './insight.js';
 import { which_armor, setworn } from './worn.js';
 import { create_gas_cloud } from './region.js';
@@ -706,7 +706,7 @@ async function maybe_tame(mtmp, sobj) {
         /* for a shopkeeper, tamedog() will call make_happy_shk() but
            not tame the target, so call it even if taming gets resisted */
         if (!resist(mtmp, sobj.oclass, 0, NOTELL) || mtmp.isshk)
-            throw new Error('maybe_tame(): tamedog() not ported yet');
+            await tamedog(mtmp, sobj, false);
 
         if ((!was_peaceful && mtmp.mpeaceful) || was_tame !== mtmp.mtame)
             return 1;
@@ -2661,7 +2661,7 @@ async function create_particular_creation(d) {
             continue;
         }
         if (d.maketame) {
-            throw new Error('create_particular_creation(): tamedog() not ported yet');
+            await tamedog(mtmp, null, false);
         } else if (d.makepeaceful || d.makehostile) {
             throw new Error('create_particular_creation(): set_malign() for peaceful/hostile not ported yet');
         }

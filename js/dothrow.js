@@ -7,6 +7,7 @@
 // are not ported yet.
 
 import { game } from './gstate.js';
+import { tamedog } from './dog.js';
 import { drag_ball, move_bc, drop_ball } from './ball.js';
 import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
@@ -819,7 +820,13 @@ export async function thitmonst(mon,
 
     } else if (befriend_with_obj_dt(mon.data, obj)
                || (mon.mtame && dogfood_dt(mon, obj) <= ACCFOOD_DT)) {
-        throw new Error('thitmonst(): tamedog() not ported yet');
+        if (await tamedog(mon, obj, true)) {
+            return 1; /* obj is gone */
+        } else {
+            await tmiss(obj, mon, false);
+            mon.msleeping = 0;
+            mon.mstrategy &= ~STRAT_WAITMASK;
+        }
     } else if (guaranteed_hit) {
         throw new Error('thitmonst(): object vanishing into an engulfer not ported yet');
     } else {
