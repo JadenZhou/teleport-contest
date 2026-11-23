@@ -87,6 +87,7 @@ import { losehp, Maybe_Half_Phys, chest_trap } from './trap.js';
 import { KILLED_BY_AN, W_SADDLE, ARTICLE_THE, SUPPRESS_SADDLE, SELL_NORMAL, SELL_DELIBERATE, SELL_DONTSELL, NO_MINVENT, MM_ADJACENTOK, MM_NOMSG, ONAME_NO_FLAGS, NHW_TEXT, GETOBJ_EXCLUDE, GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_SUGGEST, GETOBJ_PROMPT, GETOBJ_ALLOWCNT, BUCX_TYPES, MENU_ITEMFLAGS_SELECTED, PICK_ONE, MENU_PARTIAL, FOOT } from './const.js';
 import { pick_lock, u_have_forceable_weapon } from './lock.js';
 import { rnd } from './rng.js';
+import { stagger } from './uhitm.js';
 import { ceiling } from './dungeon.js';
 import { which_armor } from './worn.js';
 import { x_monnam, Monnam, christen_monst, oname, rndmonnam } from './do_name.js';
@@ -1691,7 +1692,8 @@ export async function encumber_msg() {
             await You("rebalance your load.  Movement is difficult.");
             break;
         case 3:
-            throw new Error('encumber_msg(): stagger() not ported yet');
+            await You(`${stagger(game.youmonst.data, "stagger")} under your heavy load.  Movement is very hard.`);
+            break;
         default:
             await You(`${newcap === 4 ? "can barely" : "can't even"} move a handspan with this load!`);
             break;
@@ -1709,7 +1711,8 @@ export async function encumber_msg() {
             await You("rebalance your load.  Movement is still difficult.");
             break;
         case 3:
-            throw new Error('encumber_msg(): stagger() not ported yet');
+            await You(`${stagger(game.youmonst.data, "stagger")} under your load.  Movement is still very hard.`);
+            break;
         }
         game.disp_botl = true;
     }
