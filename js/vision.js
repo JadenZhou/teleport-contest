@@ -858,7 +858,10 @@ export function vision_recalc(control = 0) {
 
     const old_rmin = game._viz_rmin;
     const old_rmax = game._viz_rmax;
-    if (old_array && control !== 2 && game.level) {
+    /* C runs this loop for control == 2 and when swallowed too: the new
+       array is empty, so every spot that was in sight (or could be seen)
+       gets newsym()'d out of sight */
+    if (old_array && game.level) {
         for (let row = 0; row < ROWNO; row++) {
             const old_row = old_array[row];
             const next_row = next[row];
@@ -910,7 +913,9 @@ export function vision_recalc(control = 0) {
                 } else {
                     if ((ov & IN_SIGHT)
                         || ((nv & COULD_SEE) ^ (ov & COULD_SEE))) {
-                        newsym(col, row);
+                        /* C: "TEMPORARY?" -- avoid newsym() for <0,y> */
+                        if (col !== 0)
+                            newsym(col, row);
                     }
                 }
             }

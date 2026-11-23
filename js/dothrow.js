@@ -30,7 +30,7 @@ import { x_monnam, ARTICLE_A, SUPPRESS_SADDLE, AUGMENT_IT } from './do_name.js';
 import { BOULDER } from './objects.js';
 import { isok, IS_DOOR, IS_OBSTRUCTED, D_ISOPEN, IRONBARS, PASSES_WALLS,
          LEVITATION, FLYING, MAGIC_PORTAL, FIRE_TRAP, STRAT_WAITMASK } from './const.js';
-import { rn2, rnd } from './rng.js';
+import { rn2, rnd, rn2_on_display_rng } from './rng.js';
 import { CONFUSION, STUNNED, FUMBLING, BLINDED, HALLUC, HALLUC_RES, STONE_RES, DEAF,
          A_STR, A_DEX, A_CON, STR19, P_SLING, P_SPEAR, P_SHURIKEN,
          P_DAGGER, P_KNIFE, P_DART, P_CROSSBOW, P_SABER, P_SHORT_SWORD,
@@ -80,7 +80,8 @@ import { IS_ALTAR, PIT, SPIKED_PIT, HOLE, TRAPDOOR, is_pit, is_hole } from './co
 import { BRK_FROM_INV, BRK_KNOWN2BREAK, BRK_KNOWN2NOTBREAK, BRK_KNOWN_OUTCOME } from './const.js';
 import { cansee } from './vision.js';
 import { obj_resists } from './dogmove.js';
-import { map_invisible, unmap_object, glyph_is_invisible } from './display.js';
+import { map_invisible, unmap_object, glyph_is_invisible, tmp_at, obj_to_glyph,
+         DISP_FLASH, DISP_END } from './display.js';
 import { in_out_region } from './region.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
@@ -1231,6 +1232,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     let point_blank = true;
     let in_skip = false, allow_skip = false;
     let tethered_weapon = false;
+    let bhit_done = false; /* left the loop by 'goto bhit_done' */
     const skip = { start: 0, end: 0 };
     let skipcount = 0;
     const was_returning = (g.iflags.returning_missile === obj) ? obj : null;
@@ -1251,8 +1253,9 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         tethered_weapon = true;
         weapon = THROWN_WEAPON; /* simplify 'if's that follow below */
         /* tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng)):
-           transient display only */
-    } /* else tmp_at(DISP_FLASH, ...): transient display only */
+           tmp_at()'s tether style isn't ported yet */
+    } else if (weapon !== ZAPPED_WAND) /* && weapon != INVIS_BEAM */
+        tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
 
     while (range-- > 0) {
         g.bhitpos.x += ddx;
@@ -1325,15 +1328,18 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             g.notonhead = (x !== mtmp.mx || y !== mtmp.my);
             if (weapon !== ZAPPED_WAND) {
                 /* THROWN_WEAPON, KICKED_WEAPON */
-                /* if (!tethered_weapon) tmp_at(DISP_END, 0): display only */
+                if (!tethered_weapon)
+                    tmp_at(DISP_END, 0);
                 if (cansee(x, y) && !canspotmon(mtmp))
                     map_invisible(x, y);
                 result = mtmp;
+                bhit_done = true;
                 break; /* goto bhit_done */
             } else {
                 /* ZAPPED_WAND */
                 if (await fhitm(mtmp, obj)) {
                     result = mtmp;
+                    bhit_done = true;
                     break; /* goto bhit_done */
                 }
                 range -= 3;
@@ -1370,7 +1376,9 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
                 unmap_object(x, y);
                 newsym(x, y);
             }
-            /* tmp_at(x, y); nh_delay_output(): transient display only */
+            if (!tethered_weapon) /* tmp_at()'s tether style isn't ported yet */
+                tmp_at(x, y);
+            /* nh_delay_output() */
             if (IS_SINK(typ))
                 break; /* physical objects fall onto sink */
         }
@@ -1383,10 +1391,12 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         point_blank = false; /* affects passing through iron bars */
     }
 
-    /* if ((weapon != ZAPPED_WAND && weapon != INVIS_BEAM && !tethered_weapon)
-           || (was_returning && was_returning != iflags.returning_missile))
-           tmp_at(DISP_END, 0): transient display only */
-    void tethered_weapon; void was_returning;
+    /* (was_returning && was_returning != iflags.returning_missile) would
+       end the tether display, whose tmp_at() style isn't ported yet */
+    if (!bhit_done && weapon !== ZAPPED_WAND /* && weapon != INVIS_BEAM */
+        && !tethered_weapon)
+        tmp_at(DISP_END, 0);
+    void was_returning;
 
     /* bhit_done: */
     /* transient_light_cleanup(): lit objects are refused above */
