@@ -28,7 +28,7 @@ import { strcmpi, strncmpi, highc, visctrl, strstri } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic, wiz_map,
-         wiz_detect, wiz_polyself } from './wizcmds.js';
+         wiz_detect, wiz_polyself, wiz_where } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
          doprtool, add_menu_heading, doorganize, adjust_split } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
@@ -42,7 +42,7 @@ import { doinvoke } from './artifact.js';
 import { donamelevel, dooverview, recalc_mapseen } from './dungeon.js';
 import { authorize_explore_mode } from './sys.js';
 import { dodiscovered } from './o_init.js';
-import { doattributes, dogenocided, doconduct } from './insight.js';
+import { doattributes, dogenocided, doconduct, dovanquished } from './insight.js';
 import { wiz_genesis } from './wizcmds.js';
 import { dodrop, doddrop, dodown, doup, dowipe } from './do.js';
 import { dozap } from './zap.js';
@@ -126,6 +126,7 @@ const cmd_funcs = {
     dodiscovered: () => dodiscovered(),
     doattributes: () => doattributes(),
     doconduct: () => doconduct(),
+    dovanquished: () => dovanquished(),
     docast: () => docast(),
     wiz_genesis: () => wiz_genesis(),
     dodrop: () => dodrop(),
@@ -199,6 +200,7 @@ const cmd_funcs = {
     wiz_intrinsic: () => wiz_intrinsic(),
     wiz_map: () => wiz_map(),
     wiz_detect: () => wiz_detect(),
+    wiz_where: () => wiz_where(),
     wiz_polyself: () => wiz_polyself(),
 };
 /* C ref: cmd.c do_move_<dir>(), do_run_<dir>(), do_rush_<dir>() */

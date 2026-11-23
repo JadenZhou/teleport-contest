@@ -81,7 +81,7 @@ import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
 import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE, WT_TOOMUCH_DIAGONAL } from './const.js';
 import { curr_mon_load } from './dogmove.js';
-import { can_hide_under_obj, set_mimic_sym } from './makemon.js';
+import { can_hide_under_obj, set_mimic_sym, hideunder_async } from './makemon.js';
 import { vobj_at } from './display.js';
 import { ceiling_hider } from './engrave.js';
 import { has_ceiling } from './insight.js';
@@ -1506,8 +1506,14 @@ async function movemon_singlemon(mtmp) {
             return false;
         if (mtmp.mundetected)
             return false;
-    } else if (mtmp.data.mlet === S_EEL && !mtmp.mundetected) {
-        throw new Error('movemon_singlemon(): eel hideunder() not ported yet');
+    } else if (mtmp.data.mlet === S_EEL && !mtmp.mundetected
+               && (mtmp.mflee || !m_next2u(mtmp))
+               && !canseemon(mtmp) && !rn2(4)) {
+        /* some eels end up stuck in isolated pools, where they
+           can't--or at least won't--move, so they never reach
+           their post-move chance to re-hide */
+        if (await hideunder_async(mtmp))
+            return false;
     }
 
     /* continue if the monster died fighting */

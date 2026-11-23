@@ -427,6 +427,15 @@ export async function wiz_intrinsic() {
     return 0; /* ECMD_OK */
 }
 
+// C ref: wizcmds.c wiz_where() -- #wizwhere, ^O in wizard mode
+export async function wiz_where() {
+    if (game.flags?.debug)
+        await print_dungeon(false);
+    else
+        await pline("Unavailable command 'wizwhere'."); /* unavailcmd */
+    return 0; /* ECMD_OK */
+}
+
 // C ref: wizcmds.c wiz_map() -- #wizmap, ^F
 /* the #wizmap command - reveal the level map
    and any traps or engravings on it */
@@ -475,3 +484,4 @@ export async function wiz_detect() {
 import { CONFUSION, POLY_CONTROLLED } from './const.js';
 import { map_trap, map_engraving } from './display.js';
 import { do_mapping, findit } from './detect.js';
+import { print_dungeon } from './dungeon.js';

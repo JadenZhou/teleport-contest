@@ -3062,6 +3062,13 @@ export async function dogenocided() {
     return 0; /* ECMD_OK */
 }
 
+// C ref: insight.c dovanquished() -- #vanquished command
+export async function dovanquished() {
+    await list_vanquished(game.iflags.menu_requested ? 'A' : 'y', false);
+    game.iflags.menu_requested = false;
+    return 0; /* ECMD_OK */
+}
+
 // C ref: insight.c trap_predicament()
 /* describe u.utraptype; used by status_enlightenment() and self_lookat() */
 export function trap_predicament(final, wizxtra) {
