@@ -22,7 +22,7 @@ import {
 } from './wintty.js';
 import { xname, makeplural, makesingular, fruit_from_name, an,
          armor_simple_name } from './objnam.js';
-import { data_base_keys } from './data_base_keys.js';
+import { data_base } from './data_base.js';
 import { is_weptool, Is_container, is_flammable } from './mkobj.js';
 import * as M from './monsters.js';
 import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
@@ -562,7 +562,7 @@ function pmatch(patrn, strng) {
 
 // C ref: pager.c checkfile() -- the chkfilIaCheck | chkfilDontAsk case:
 // is there a data.base entry for 'inp'?  (The entry names come from
-// data_base_keys.js; the entry text is not needed for this check.)
+// data_base.js; the entry text is not needed for this check.)
 function checkfile_iacheck(inp) {
     let dbase_str = inp.toLowerCase();
     let ep, ap, alt = null;
@@ -627,7 +627,7 @@ function checkfile_iacheck(inp) {
 
     for (let pass = (alt === dbase_str) ? 0 : 1; pass >= 0; --pass) {
         const target = pass ? alt : dbase_str;
-        for (const entry of data_base_keys) {
+        for (const { keys: entry } of data_base) {
             for (const key of entry) {
                 const chk_skip = (key[0] === '~') ? 1 : 0;
                 if (pmatch(key.slice(chk_skip), target)) {

@@ -8,7 +8,7 @@ import { BLINDED, SEE_INVIS } from './const.js';
 import {
     COLNO, ROWNO, DOOR, SDOOR,
     D_CLOSED, D_LOCKED, D_TRAPPED,
-    SV0, SV1, SV2, SV3, SV4, SV5, SV6, SV7,
+    SV0, SV1, SV2, SV3, SV4, SV5, SV6, SV7, SVALL,
     IS_WALL, IS_OBSTRUCTED, IS_WATERWALL, TREE, CLOUD, LAVAWALL, MOAT,
     DRAWBRIDGE_UP, DB_UNDER, DB_MOAT, M_AP_TYPMASK, M_AP_OBJECT,
     M_AP_FURNITURE, Is_juiblex_level, isok,
@@ -24,7 +24,7 @@ const IN_SIGHT = 0x2;
 // C ref: vision.c seenv_matrix
 const seenv_matrix = [
     [SV2, SV1, SV0],
-    [SV3, 0,   SV7],
+    [SV3, SVALL, SV7],
     [SV4, SV5, SV6],
 ];
 

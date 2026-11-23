@@ -1001,7 +1001,7 @@ export function Blind() {
 }
 
 // C ref: display.h _see_with_infrared()
-function see_with_infrared(mon) {
+export function see_with_infrared(mon) {
     return !Blind() && uprop(INFRAVISION)
            && (mon.data.mflags3 & M3_INFRAVISIBLE) !== 0
            && couldsee(mon.mx, mon.my);
@@ -1028,7 +1028,7 @@ export function tp_sensemon(mon) {
 }
 
 // C ref: display.h MATCH_WARN_OF_MON()
-function MATCH_WARN_OF_MON(mon) {
+export function MATCH_WARN_OF_MON(mon) {
     const wt = game.context.warntype || {};
     return uprop(WARN_OF_MON)
            && (((wt.obj ?? 0) & mon.data.mflags2) !== 0
@@ -2184,6 +2184,23 @@ export async function docrt() {
     await docrt_flags(docrtRecalc);
 }
 
+// C ref: display.c redraw_map() -- redraw the map from the glyph buffer
+// (glyph_at(), not levl[x][y].glyph); the JS map cells keep their shown
+// glyph (disp_*), which row_refresh() prints
+async function redraw_map(cursor_on_u) {
+    const u = game.u;
+
+    /* !u.ux: display isn't ready yet; (restoring || !on_level()): was part
+       of cliparound() but interface shouldn't access this much internals */
+    if (!u.ux || game.in_mklev /* suppress_map_output() */
+        || (u.uz0 && (u.uz0.dnum !== u.uz.dnum || u.uz0.dlevel !== u.uz.dlevel)))
+        return;
+
+    for (let y = 0; y < ROWNO; ++y)
+        row_refresh(1, COLNO - 1, y); /* print_glyph() of each spot */
+    await flush_screen(cursor_on_u);
+}
+
 // C ref: display.c docrt_flags()
 /* docrt() with finer control */
 export async function docrt_flags(refresh_flags) {
@@ -2199,7 +2216,7 @@ export async function docrt_flags(refresh_flags) {
     game.program_state.in_docrt = true;
 
     if (redrawonly) {
-        throw new Error('docrt_flags(): redraw_map() not ported yet');
+        await redraw_map(false);
     } else if (u.uswallow) {
         await swallowed(1);
     } else if (u.uinwater && !Is_waterlevel(u.uz)) { /* Underwater */
@@ -2313,8 +2330,97 @@ export function row_refresh(start, stop, y) {
 // '|' not-equal, ...) stay as their ASCII letters (frozen/screen-decode.mjs
 // DEC_MAP), so only that subset is converted.
 const DEC_LINE_DRAWING = 'lqkxmjtuwvna~';
-function dec_cell_char(ch) {
+export function dec_cell_char(ch) {
     return DEC_LINE_DRAWING.includes(ch) ? (DEC_TO_UNICODE[ch] || ch) : ch;
+}
+
+// C ref: map_glyphinfo() glyphinfo.ttychar -- the screen symbol a glyph is
+// shown with, as an nhsym: a DECgraphics line-drawing symbol is the meta
+// (high bit set) form of its alternate-charset letter, as dat/symbols
+// gives it (S_room: \xfe for '~')
+export function glyph_ttychar(glyph) {
+    const c = (glyph.ch || ' ').charCodeAt(0);
+    return glyph.decgfx ? (0x80 | c) : c;
+}
+
+/* glyphs encoded by encglyph(), by the number in their "\G" sequence */
+const encoded_glyphs = [];
+let encoded_glyph_next = 0;
+
+// C ref: windows.c encglyph() -- "\GXXXXNNNN": context.rndencode, then the
+// glyph; a JS glyph has no glyph number, so NNNN indexes encoded_glyphs[]
+export function encglyph(glyph) {
+    const n = encoded_glyph_next;
+    encoded_glyph_next = (encoded_glyph_next + 1) & 0xffff;
+    encoded_glyphs[n] = glyph;
+    const hex4 = v => (v & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+    return `\\G${hex4(game.context?.rndencode ?? 0)}${hex4(n)}`;
+}
+
+// C ref: windows.c decode_glyph() -- returns [count of hex digits used,
+// glyph], or [0, null] if the rndencode check fails
+function decode_glyph(str) {
+    let rndchk = 0, dcount = 0, retval = 0, i = 0;
+    const ishex = c => /^[0-9a-fA-F]$/.test(c || '');
+
+    for (; i < str.length && ++dcount <= 4; ++i) {
+        if (ishex(str[i])) {
+            retval++;
+            rndchk = (rndchk * 16) + parseInt(str[i], 16);
+        } else
+            break;
+    }
+    if (rndchk === (game.context?.rndencode ?? 0)) {
+        let gv = 0;
+        dcount = 0;
+        for (; i < str.length && ++dcount <= 4; ++i) {
+            if (ishex(str[i])) {
+                retval++;
+                gv = (gv * 16) + parseInt(str[i], 16);
+            } else
+                break;
+        }
+        return [retval, encoded_glyphs[gv] ?? null];
+    }
+    return [0, null];
+}
+
+// C ref: windows.c decode_mixed() -- replace each encoded glyph with its
+// screen symbol (gs.showsyms[], as a char code that may have the high bit
+// set for a DECgraphics symbol)
+export function decode_mixed(str) {
+    let put = '';
+    let i = 0;
+
+    if (!str)
+        return '';
+    while (i < str.length) {
+        if (str[i] === '\\') {
+            const save_i = i++;
+            switch (str[i]) {
+            case 'G': { /* glyph value \GXXXXNNNN */
+                const [dcount, glyph] = decode_glyph(str.slice(i + 1));
+                if (dcount && glyph) {
+                    i += (dcount + 1);
+                    put += String.fromCharCode(glyph_ttychar(glyph));
+                    continue;
+                } else {
+                    /* possible forgery - leave it the way it is */
+                    i = save_i;
+                }
+                break;
+            }
+            case '\\':
+                break;
+            case undefined:
+                /* String ended with '\\' */
+                i = save_i;
+                break;
+            }
+        }
+        put += str[i++];
+    }
+    return put;
 }
 
 // ── Serialize a map row with DEC line-drawing and ANSI colors ──
