@@ -11,6 +11,8 @@
 // engravings.
 
 import { game } from './gstate.js';
+import { P_SKILL } from './weapon.js';
+import { P_RIDING, P_BASIC } from './const.js';
 import { rn2, rnd, rn2_fnptr } from './rng.js';
 import { DUST, BURN, ENGR_BLOOD, HEADSTONE, N_ENGRAVE, ICE, ROOM, GRAVE } from './const.js';
 import { getrumor, get_rnd_text, ENGRAVEFILE, EPITAPHFILE, MD_PAD_RUMORS } from './rumors.js';
@@ -466,10 +468,8 @@ export function can_reach_floor(check_pit) {
         || (Levitation && !(Is_airlevel(u.uz) || Is_waterlevel(u.uz))))
         return false;
     /* Restricted/unskilled riders can't reach the floor */
-    if (u.usteed) {
-        /* P_SKILL(P_RIDING) < P_BASIC: weapon skills aren't ported yet */
-        throw new Error('can_reach_floor(): P_SKILL() not ported yet');
-    }
+    if (u.usteed && P_SKILL(P_RIDING) < P_BASIC)
+        return false;
     if (u.uundetected && ceiling_hider(g.youmonst.data))
         return false;
 

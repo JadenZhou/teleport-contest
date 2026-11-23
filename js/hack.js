@@ -108,6 +108,7 @@ import { l_nhcore_call } from './nhlua.js';
 import { NUM_TIPS, TIP_ENHANCE, TIP_SWIM, TIP_UNTRAP_MON, TIP_GETPOS,
          NHCORE_GETPOS_TIP } from './const.js';
 import { intemple } from './priest.js';
+import { stucksteed, exercise_steed } from './steed.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -2992,8 +2993,10 @@ async function domove_core() {
 
         unmap_invisible(x, y);
         /* not attacking an animal, so we try to move */
-        if ((u.dx || u.dy) && u.usteed)
-            throw new Error('domove_core(): stucksteed() not ported yet');
+        if ((u.dx || u.dy) && u.usteed && await stucksteed(false)) {
+            nomul(0);
+            return;
+        }
 
         if (await u_rooted())
             return;
@@ -3051,6 +3054,13 @@ async function domove_core() {
     u.uy += u.dy;
 
     await m_postmove_effect(game.youmonst);
+
+    if (u.usteed) {
+        u.usteed.mx = u.ux;
+        u.usteed.my = u.uy;
+        /* [if move attempt ends up being blocked, should training count?] */
+        await exercise_steed(); /* train riding skill */
+    }
 
     if (mtmp) {
         if (displaceu.val) {

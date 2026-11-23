@@ -846,7 +846,7 @@ export function mon_catchup_elapsed_time(
 }
 
 // C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
+export function finish_meating(mtmp) {
     mtmp.meating = 0;
     if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== S_MIMIC) {
         /* was eating a mimic and now appearance needs resetting */

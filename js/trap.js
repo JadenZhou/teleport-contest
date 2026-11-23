@@ -513,6 +513,128 @@ export async function reset_utrap(msg) {
     }
 }
 
+// C ref: trap.c float_down()
+/* stop levitating */
+export async function float_down(
+    hmask,
+    emask) /* might cancel timeout */
+{
+    const u = game.u;
+    const lev = uprop(LEVITATION);
+    let trap = null;
+    let current_dungeon_level;
+    let no_msg = false;
+
+    lev.intrinsic &= ~hmask;
+    lev.extrinsic &= ~emask;
+    if (Levitation())
+        return 0; /* maybe another ring/potion/boots */
+    if (lev.blocked) { /* BLevitation */
+        /* if blocked by terrain, we haven't actually been levitating so
+           we don't give any end-of-levitation feedback or side-effects,
+           but if blocking is solely due to being trapped in/on floor,
+           do give some feedback but skip other float_down() effects */
+        const trapped = (lev.blocked === I_SPECIAL);
+
+        float_vs_flight();
+        if (trapped && u.utrap) /* u.utrap => paranoia */
+            throw new Error('float_down(): no longer trying to float up not ported yet');
+        await encumber_msg(); /* carrying capacity might have changed */
+        return 0;
+    }
+    game.disp_botl = true;
+    nomul(0); /* stop running or resting */
+    if (uprop(FLYING).blocked) { /* BFlying */
+        /* controlled flight no longer overridden by levitation */
+        float_vs_flight(); /* clears BFlying & I_SPECIAL
+                            * unless hero is stuck in floor */
+        if (Flying()) {
+            await You("have stopped levitating and are now flying.");
+            await encumber_msg(); /* carrying capacity might have changed */
+            return 1;
+        }
+    }
+    if (u.uswallow)
+        throw new Error('float_down(): engulfed hero not ported yet');
+
+    if (game.uball && game.uball.where !== 'OBJ_INVENT' /* !carried(uball) */)
+        throw new Error('float_down(): Punished ball in a pool or pit not ported yet');
+    /* check for falling into pool - added by GAN 10/20/86 */
+    if (!Flying()) {
+        if (!u.uswallow && u.ustuck)
+            throw new Error('float_down(): losing hold of u.ustuck not ported yet');
+        /* kludge alert:
+         * drown() and lava_effects() print various messages almost
+         * every time they're called which conflict with the "fall
+         * into" message below.  Thus, we want to avoid printing
+         * confusing, duplicate or out-of-order messages.
+         * Use knowledge of the two routines as a hack -- this
+         * should really be handled differently -dlc
+         */
+        const wwalk = uprop(WWALKING), swim = uprop(SWIMMING);
+        if (is_pool(u.ux, u.uy) && !(wwalk.intrinsic || wwalk.extrinsic)
+            && !(swim.intrinsic || swim.extrinsic) && !u.uinwater)
+            throw new Error('float_down(): drown() not ported yet');
+
+        if (is_lava(u.ux, u.uy) && !game.iflags.in_lava_effects)
+            throw new Error('float_down(): lava_effects() not ported yet');
+    }
+    if (!trap) {
+        trap = t_at(u.ux, u.uy);
+        if (Is_airlevel_l(u.uz)) {
+            await You("begin to tumble in place.");
+        } else if (Is_waterlevel_l(u.uz) && !no_msg) {
+            await pline("You feel heavier."); /* You_feel() */
+        /* u.uinwater msgs already in spoteffects()/drown() */
+        } else if (!u.uinwater && !no_msg) {
+            if (!(emask & W_SADDLE)) {
+                if (game.level.flags.sokoban_rules && trap) { /* Sokoban */
+                    throw new Error('float_down(): Sokoban air currents not ported yet');
+                } else if (u.usteed && (is_floater(u.usteed.data)
+                                        || is_flyer(u.usteed.data))) {
+                    await You("settle more firmly in the saddle.");
+                } else if (Hallucination()) {
+                    await pline(`Bummer!  You've ${is_pool(u.ux, u.uy)
+                                                  ? "splashed down"
+                                                  : "hit the ground"}.`);
+                } else {
+                    await You(`float gently to the ${surface_tr(u.ux, u.uy)}.`);
+                }
+            }
+        }
+    }
+
+    /* levitation gives maximum carrying capacity, so having it end
+       potentially triggers greater encumbrance; do this after
+       'come down' messages, before trap activation or autopickup */
+    await encumber_msg();
+
+    /* can't rely on u.uz0 for detecting trap door-induced level change;
+       it gets changed to reflect the new level before we can check it */
+    current_dungeon_level = { dnum: u.uz.dnum, dlevel: u.uz.dlevel };
+    if (trap) {
+        switch (trap.ttyp) {
+        case STATUE_TRAP:
+            break;
+        case HOLE:
+        case TRAPDOOR:
+            if (!Can_fall_thru(u.uz) || u.ustuck)
+                break;
+            /*FALLTHRU*/
+        default:
+            if (!u.utrap) /* not already in the trap */
+                await dotrap(trap, NO_TRAP_FLAGS);
+        }
+    }
+    if (!Is_airlevel_l(u.uz) && !Is_waterlevel_l(u.uz) && !u.uswallow
+        /* falling through trap door calls goto_level,
+           and goto_level does its own pickup() call */
+        && u.uz.dnum === current_dungeon_level.dnum
+        && u.uz.dlevel === current_dungeon_level.dlevel) /* on_level() */
+        await pickup_tr(1);
+    return 1;
+}
+
 // C ref: trap.c climb_pit()
 /* shared code for climbing out of a pit */
 export async function climb_pit() {
@@ -3985,6 +4107,8 @@ import { makeplural as makeplural_tr } from './objnam.js';
 import { body_part as body_part_tr } from './insight.js';
 import { mon_nam as mon_nam_tr } from './do_name.js';
 import { surface as surface_tr } from './iactions.js';
+import { I_SPECIAL, WWALKING, SWIMMING, W_SADDLE, NO_TRAP_FLAGS } from './const.js';
+import { pickup as pickup_tr } from './pickup.js';
 import { M1_NOHANDS as M1_NOHANDS_TR, mons as mons_tr, PM_CAVE_SPIDER as PM_CAVE_SPIDER_TR,
          PM_GIANT_SPIDER as PM_GIANT_SPIDER_TR } from './monsters.js';
 /* C ref: mondata.h nohands(), webmaker() */
