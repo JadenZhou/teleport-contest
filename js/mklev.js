@@ -2180,7 +2180,8 @@ export function invocation_pos(x, y) {
             && x === game.inv_pos?.x && y === game.inv_pos?.y);
 }
 
-function somexyspace(croom, c) {
+// C ref: mkroom.c somexyspace()
+export function somexyspace(croom, c) {
     let trycnt = 0;
     let okay;
     do {

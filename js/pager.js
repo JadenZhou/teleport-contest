@@ -403,11 +403,123 @@ export function self_lookat() {
         outbuf += `, mounted on ${y_monnam_pg(u.usteed)}`;
     if (u.uundetected || (u.mtimedone && game.youmonst.m_ap_type)
         || visible_region_at_pg(u.ux, u.uy))
-        throw new Error('self_lookat(): mhidden_description() not ported yet');
+        outbuf += mhidden_description(game.youmonst,
+                                      MHID_PREFIX | MHID_ARTICLE | MHID_REGION);
     if (game.uball) /* Punished */
         outbuf += `, chained to ${game.uball ? ansimpleoname_pg(game.uball) : "nothing?"}`;
     if (u.utrap) /* bear trap, pit, web, in-floor, in-lava, tethered */
         outbuf += `, ${trap_predicament(0, false)}`;
+    return outbuf;
+}
+
+// C ref: pager.c mhidden_description()
+/* describe a hidden monster; used for look_at during extended monster
+   detection and for probing; also when looking at self and camera feedback;
+   returns the text C appends to outbuf */
+export function mhidden_description(mon, /* hidden monster to describe */
+                                    mhid_flags) { /* controls optional aspects of description */
+    const u = game.u;
+    let otmp;
+    let what;
+    let reg;
+    const incl_prefix = (mhid_flags & MHID_PREFIX) !== 0,
+        incl_article = (mhid_flags & MHID_ARTICLE) !== 0,
+        show_altmon = (mhid_flags & MHID_ALTMON) !== 0,
+        force_region = (mhid_flags & MHID_REGION) !== 0;
+    const isyou = (mon === game.youmonst);
+    const x = isyou ? u.ux : mon.mx, y = isyou ? u.uy : mon.my;
+    let glyph;
+    if (game.level.flags?.hero_memory && !isyou) {
+        /* levl[x][y].glyph */
+        const rg = game.level.at(x, y).remembered_glyph;
+        glyph = rg ? { ...rg, kind: glyph_kind_pg(rg) } : { ch: ' ', kind: 'cmap' };
+    } else {
+        glyph = glyph_at(x, y);
+    }
+    let outbuf = '';
+    /* objfrommap: */
+    const objfrommap = () => {
+        otmp = null;
+        const res = object_from_map(glyph, x, y);
+        const fakeobj = res.fakeobj;
+        otmp = res.otmp;
+        what = (otmp && otmp.otyp !== STRANGE_OBJECT)
+               ? simpleonames_pg(otmp)
+               : obj_descr[STRANGE_OBJECT].oc_name;
+        if (incl_article && (!otmp || otmp.quan === 1))
+            what = an(what);
+        outbuf += what;
+
+        if (fakeobj && otmp)
+            otmp.where = 'OBJ_FREE'; /* object_from_map set to OBJ_FLOOR;
+                                        dealloc_obj(otmp): has no contents */
+    };
+
+    /* M_AP_TYPE(mon); for the hero, U_AP_TYPE (only while polymorphed) */
+    const ap_type = isyou ? (u.mtimedone ? (game.youmonst.m_ap_type || 0) : 0)
+                          : (mon.m_ap_type || 0);
+    if (ap_type === M_AP_FURNITURE || ap_type === M_AP_OBJECT) {
+        if (incl_prefix)
+            outbuf = ", mimicking ";
+        if (ap_type === M_AP_FURNITURE) {
+            what = defsyms_explanation[mon.mappearance];
+            if (incl_article)
+                what = an(what);
+            outbuf += what;
+        } else if (ap_type === M_AP_OBJECT
+                   /* remembered glyph, not glyph_at() which is 'mon' */
+                   && glyph_is_object(glyph)) {
+            objfrommap();
+        } else {
+            outbuf += "something";
+        }
+    } else if (ap_type === M_AP_MONSTER) {
+        if (show_altmon) {
+            if (incl_prefix)
+                outbuf += ", masquerading as ";
+            what = pmname(mons[mon.mappearance], Mgender_pg(mon));
+            if (incl_prefix)
+                what = an(what);
+            outbuf += what;
+        }
+    } else if (isyou ? u.uundetected : mon.mundetected) {
+        outbuf = ", hiding";
+        if ((mon.data.mflags1 & M1_CONCEAL_PG) !== 0) { /* hides_under() */
+            outbuf += " under ";
+            /* remembered glyph, not glyph_at() which is 'mon' */
+            if (glyph_is_object(glyph))
+                objfrommap();
+            else
+                outbuf += "something";
+        } else if ((mon.data.mflags1 & M1_HIDE_PG) !== 0) { /* is_hider() */
+            outbuf += ` on the ${ceiling_hider_pg(mon.data) ? "ceiling"
+                                 : surface_pg(x, y)}`; /* trapper */
+        } else {
+            if (mon.data.mlet === S_EEL_PG && is_pool(x, y))
+                outbuf += " in murky water";
+        }
+    }
+
+    /* FIXME: <x,y> isn't right when looking at long worm tails */
+    if ((reg = visible_region_at_pg(x, y)) !== null
+        && outbuf.length < BUFSZ_PG - 1) {
+        const r = (u.xray_range > 1) ? u.xray_range : 1;
+
+        /* at present, hero must be next to the monster; being able to see
+           from the hero's spot to the monster's spot would be much better,
+           but a visible region marks all its spots as can't-be-seen, so
+           this monster's spot is !cansee and !couldsee [maybe we need an
+           additional vision bit for "hero's side of edge of gas cloud"?] */
+        if ((x - u.ux) ** 2 + (y - u.uy) ** 2 <= r * (r + 1) /* distu() */
+            || force_region) {
+            const rglyph = reg.glyph;
+            /* glyph_is_cmap(rglyph) && glyph_to_cmap(rglyph) == S_poisoncloud
+               (a JS region glyph is its cmap index) */
+            const poison_gas = (rglyph === S_poisoncloud_pg);
+
+            outbuf += `, in a cloud of ${poison_gas ? "poison gas" : "vapor"}`;
+        }
+    }
     return outbuf;
 }
 
@@ -649,7 +761,7 @@ function look_at_monster(mtmp, x, y, want_monbuf) {
     /* we know the hero sees a monster at this location, but if it's shown
        due to persistent monster detection he might remember something else */
     if (mtmp.mundetected || mtmp.m_ap_type || visible_region_at_pg(x, y))
-        throw new Error('look_at_monster(): mhidden_description() not ported yet');
+        buf += mhidden_description(mtmp, MHID_PREFIX | MHID_ARTICLE | MHID_REGION);
 
     if (want_monbuf) {
         let how_seen = howmonseen(mtmp);
@@ -866,6 +978,15 @@ export function lookat(x, y) {
         buf = def_warnsyms[warnindx].desc;
     } else if (glyph_is_invisible(glyph)) {
         buf = invisexplain; /* redundant; handled by caller */
+    } else if (glyph.unexplored) {
+        /* glyph_is_unexplored(glyph): the glyph buffer was cleared (cls())
+           and nothing has been shown here since */
+        if (u.uinwater && !Is_waterlevel(u.uz))
+            /* "unknown" == previously mapped but not visible when
+               submerged; better terminology appreciated... */
+            buf = next2u_pg(x, y) ? "land" : "unknown";
+        else
+            buf = "unexplored area";
     } else if (cansee(x, y)) {
         /* glyph_is_cmap(glyph): the background the hero sees */
         if (glyph.kind === 'engr')
@@ -2571,3 +2692,13 @@ import { trap_predicament } from './insight.js';
 import { y_monnam as y_monnam_pg } from './do_name.js';
 import { visible_region_at as visible_region_at_pg } from './region.js';
 import { ansimpleoname as ansimpleoname_pg } from './iactions.js';
+
+import { MHID_PREFIX, MHID_ARTICLE, MHID_ALTMON, MHID_REGION, M_AP_FURNITURE,
+         M_AP_MONSTER, BUFSZ as BUFSZ_PG } from './const.js';
+import { glyph_kind as glyph_kind_pg } from './display.js';
+import { simpleonames as simpleonames_pg, surface as surface_pg } from './iactions.js';
+import { Mgender as Mgender_pg } from './do_name.js';
+import { ceiling_hider as ceiling_hider_pg } from './engrave.js';
+import { M1_CONCEAL as M1_CONCEAL_PG, M1_HIDE as M1_HIDE_PG,
+         S_EEL as S_EEL_PG } from './monsters.js';
+import { S_poisoncloud as S_poisoncloud_pg } from './region.js';

@@ -54,6 +54,7 @@ import { TELEDS_NO_FLAGS } from './const.js';
 import { getpos, getpos_sethilite } from './getpos.js';
 import { walk_path, hurtle_jump } from './dothrow.js';
 import { known_spell, spe_Fresh } from './spell.js';
+import { dowrite } from './write.js';
 import { cansee } from './vision.js';
 import { closed_door, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
@@ -605,7 +606,8 @@ export async function doapply() {
     case O.CRYSTAL_BALL:
         throw new Error('doapply(): use_crystal_ball() not ported yet');
     case O.MAGIC_MARKER:
-        throw new Error('doapply(): dowrite() not ported yet');
+        res = await dowrite(obj);
+        break;
     case O.TIN_OPENER:
         throw new Error('doapply(): use_tin_opener() not ported yet');
     case O.FIGURINE:

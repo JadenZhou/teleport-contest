@@ -639,7 +639,7 @@ function findgd() {
     for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
         if (mtmp.mhp < 1) /* DEADMONSTER */
             continue;
-        if (mtmp.isgd && on_level(mtmp.mextra.egd.gdlevel, game.u.uz))
+        if (mtmp.isgd && on_level(mtmp.egd.gdlevel, game.u.uz))
             return mtmp;
     }
     return null;

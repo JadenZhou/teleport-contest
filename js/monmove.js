@@ -57,6 +57,7 @@ import { is_organic } from './objects.js';
 import { eaten_stat } from './eat.js';
 import { extract_from_minvent } from './steal.js';
 import { m_consume_obj } from './mon.js';
+import { cuss } from './wizard.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
@@ -965,8 +966,8 @@ export async function dochug(mtmp) {
         case MMOVE_NOTHING: /* no movement, but it can still attack you */
         case MMOVE_DONE: /* absolutely no movement */
             /* vault guard might have vanished */
-            if (mtmp.isgd)
-                throw new Error('dochug(): vault guards not ported yet');
+            if (mtmp.isgd && (DEADMONSTER_mm(mtmp) || mtmp.mx === 0))
+                return 1; /* behave as if it died */
             /* During hallucination, monster appearance should
              * still change - even if it doesn't move.
              */
@@ -1024,7 +1025,7 @@ export async function dochug(mtmp) {
     /* extra emotional attack for vile monsters */
     if (d.inrange && mtmp.data.msound === M.MS_CUSS && !mtmp.mpeaceful
         && couldsee(mtmp.mx, mtmp.my) && !mtmp.minvis && !rn2(5))
-        throw new Error('cuss() not ported yet');
+        await cuss(mtmp);
 
     /* note: can't get here when monster is dead, so this always returns 0 */
     return (status === MMOVE_DIED) ? 1 : 0;
@@ -1784,10 +1785,9 @@ export async function m_move(mtmp, after) {
 
     /* likewise for shopkeeper, guard, or priest */
     if (mtmp.isshk || mtmp.isgd || mtmp.ispriest) {
-        if (mtmp.isgd)
-            throw new Error('m_move(): gd_move() not ported yet');
         const xm = mtmp.isshk ? await shk_move(mtmp)
-                   : await pri_move(mtmp);
+                   : mtmp.isgd ? await gd_move(mtmp)
+                     : await pri_move(mtmp);
 
         switch (xm) {
         case -2:
@@ -2340,3 +2340,7 @@ import { t_at as t_at_mm } from './trap.js';
 import { findgold as findgold_mm, mdrop_obj as mdrop_obj_mm } from './steal.js';
 import { bury_an_obj as bury_an_obj_mm } from './dig.js';
 import { COIN_CLASS as COIN_CLASS_MM } from './objects.js';
+
+import { gd_move } from './vault.js';
+/* C ref: monst.h DEADMONSTER() */
+function DEADMONSTER_mm(mon) { return mon.mhp < 1; }
