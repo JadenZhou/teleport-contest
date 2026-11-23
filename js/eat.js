@@ -712,7 +712,7 @@ function rounddiv(x, y) {
     return divsgn * r;
 }
 /* C ref: obj.h stale_egg() */
-function stale_egg(egg) {
+export function stale_egg(egg) {
     return (game.moves - egg.age) > (2 * MAX_EGG_HATCH_TIME);
 }
 /* C ref: you.h u.uconduct.x++ -- returns the old count */

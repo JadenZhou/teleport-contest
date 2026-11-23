@@ -144,6 +144,37 @@ import { fall_asleep } from './timeout.js';
 import { some_armor } from './do_wear.js';
 import { touch_of_death } from './mcastu.js';
 import { set_uasmon } from './polyself.js';
+import { splitobj, weight, place_object } from './mkobj.js';
+import { setuwep } from './wield.js';
+import { freeinv, useup, useupall, obfree } from './invent.js';
+import { potionhit } from './potion.js';
+import { POTHIT_HERO_BASH, POTHIT_HERO_THROW, CXN_PFX_THE, CXN_ARTICLE,
+         NEUTRAL, FACE, EXPL_FIERY, ismnum } from './const.js';
+import { breaktest } from './dothrow.js';
+import { ysimple_name } from './iactions.js';
+import { change_luck } from './attrib.js';
+import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
+         VEGGY, PAPER, SPBOOK_CLASS } from './objects.js';
+import { corpse_xname, An, singular } from './objnam.js';
+import { observe_object } from './o_init.js';
+import { munstone } from './muse.js';
+import { stale_egg } from './eat.js';
+import { explode } from './explode.js';
+import { is_vampshifter, haseyes, resists_acid,
+         mon_hates_blessings } from './mondata.js';
+import { AT_SPIT } from './monsters.js';
+import { mbodypart } from './shk.js';
+import { setmangry } from './mon.js';
+import { mlifesaver, golemeffects } from './mon.js';
+import { destroy_items } from './zap.js';
+import { ignite_items } from './trap.js';
+import { resists_fire, resists_cold, resists_elec, defended } from './mondata.js';
+import { XKILL_NOCORPSE } from './const.js';
+import { artifact_hit } from './artifact.js';
+import { will_hurtle, hurtle, mhurtle } from './dothrow.js';
+import { some_mon_nam } from './do_name.js';
+import { unstuck } from './mhitu.js';
+import { set_apparxy } from './monmove.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -182,6 +213,8 @@ function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
+/* C ref: mondata.h resists_ston() */
+function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
 /* C ref: youprop.h Half_physical_damage, Hate_silver */
 function Half_physical_damage() {
     const p = game.u.uprops[HALF_PHDAM];
@@ -194,10 +227,13 @@ function Hate_silver() {
         || pd === mons[M.PM_SHADE]
         || (pd.mlet === M.S_IMP && pd !== mons[M.PM_TENGU]);
 }
-/* C ref: artifact.c artifact_hit() -- returns !artifact_hit() */
-function artifact_hit_nyi(magr, mdef, otmp, mhm) {
-    void magr; void mdef; void otmp; void mhm;
-    throw new Error('mhitm_ad_phys(): artifact_hit() not ported yet');
+/* C ref: uhitm.c mhitm_ad_phys() -- !artifact_hit(magr, mdef, otmp,
+   &mhm->damage, gm.mhitu_dieroll) */
+async function not_artifact_hit(magr, mdef, otmp, mhm) {
+    const dmgp = { val: mhm.damage };
+    const r = await artifact_hit(magr, mdef, otmp, dmgp, game.mhitu_dieroll);
+    mhm.damage = dmgp.val;
+    return !r;
 }
 /* C ref: mondata.c attacktype() */
 function attacktype(ptr, atyp) {
@@ -323,7 +359,7 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                 if (mhm.damage <= 0)
                     mhm.damage = 1;
                 if (!otmp.oartifact
-                    || artifact_hit_nyi(magr, mdef, otmp, mhm)) {
+                    || await not_artifact_hit(magr, mdef, otmp, mhm)) {
                     await hitmsg(magr, mattk);
                     mhm.hitflags |= M_ATTK_HIT;
                 }
@@ -366,8 +402,24 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
 
 // C ref: uhitm.c mhitm_ad_elec()
 async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
+    const orig_dmg = mhm.damage;
+
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_elec(): uhitm branch not ported yet');
+        /* uhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (!Blind())
+            await pline(`${Monnam(mdef)} is zapped!`);
+        if (resists_elec(mdef) || defended(mdef, AD_ELEC)) {
+            if (!Blind())
+                await pline_The(`zap doesn't shock ${mon_nam(mdef)}!`);
+            await golemeffects(mdef, AD_ELEC, mhm.damage);
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_ELEC, orig_dmg);
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -381,7 +433,7 @@ async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
                 monstunseesu(M_SEEN_ELEC);
             }
             if (magr.m_lev > rn2(20))
-                throw new Error('mhitm_ad_elec(): destroy_items() not ported yet');
+                await destroy_items(game.youmonst, AD_ELEC, orig_dmg);
         } else
             mhm.damage = 0;
     } else {
@@ -885,9 +937,41 @@ export function on_fire(mptr, mattk) {
 // C ref: uhitm.c mhitm_ad_fire()
 async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
     const pd = mdef.data;
+    const orig_dmg = mhm.damage; /* damage coming into the function */
 
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_fire(): uhitm branch not ported yet');
+        /* uhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (!Blind())
+            await pline(`${Monnam(mdef)} is ${on_fire(pd, mattk)}!`);
+        if (completelyburns(pd)) { /* paper golem or straw golem */
+            if (!Blind())
+                /* note: the life-saved case is hypothetical because
+                   life-saving doesn't work for golems */
+                await pline(`${Monnam(mdef)} ${
+                    !mlifesaver(mdef) ? "burns completely"
+                                      : "is totally engulfed in flames"}!`);
+            else
+                await You(`smell burning${
+                    (pd === mons[M.PM_PAPER_GOLEM]) ? " paper"
+                      : (pd === mons[M.PM_STRAW_GOLEM]) ? " straw" : ""}.`);
+            await xkilled(mdef, XKILL_NOMSG | XKILL_NOCORPSE);
+            mhm.damage = 0;
+            return;
+            /* Don't return yet; keep hp<1 and mhm.damage=0 for pet msg */
+        }
+        if (resists_fire(mdef) || defended(mdef, AD_FIRE)) {
+            if (!Blind())
+                await pline_The(`fire doesn't heat ${mon_nam(mdef)}!`);
+            await golemeffects(mdef, AD_FIRE, mhm.damage);
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_FIRE, orig_dmg);
+        await ignite_items(mdef.minvent);
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -906,8 +990,10 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
             } else {
                 monstunseesu(M_SEEN_FIRE);
             }
-            if (magr.m_lev > rn2(20))
-                throw new Error('mhitm_ad_fire(): destroy_items()/ignite_items() not ported yet');
+            if (magr.m_lev > rn2(20)) {
+                await destroy_items(game.youmonst, AD_FIRE, orig_dmg);
+                await ignite_items(game.invent);
+            }
             await burn_away_slime();
         } else {
             mhm.damage = 0;
@@ -919,8 +1005,24 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
 
 // C ref: uhitm.c mhitm_ad_cold()
 async function mhitm_ad_cold(magr, mattk, mdef, mhm) {
+    const orig_dmg = mhm.damage;
+
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_cold(): uhitm branch not ported yet');
+        /* uhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (!Blind())
+            await pline(`${Monnam(mdef)} is covered in frost!`);
+        if (resists_cold(mdef) || defended(mdef, AD_COLD)) {
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            if (!Blind())
+                await pline_The(`frost doesn't chill ${mon_nam(mdef)}!`);
+            await golemeffects(mdef, AD_COLD, mhm.damage);
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_COLD, orig_dmg);
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -934,7 +1036,7 @@ async function mhitm_ad_cold(magr, mattk, mdef, mhm) {
                 monstunseesu(M_SEEN_COLD);
             }
             if (magr.m_lev > rn2(20))
-                throw new Error('mhitm_ad_cold(): destroy_items() not ported yet');
+                await destroy_items(game.youmonst, AD_COLD, orig_dmg);
         } else
             mhm.damage = 0;
     } else {
@@ -1796,10 +1898,62 @@ export async function mhitm_knockback(
         return false;
     }
 
-    /* subtly vary the message text if monster won't actually move;
-       give the message; do the actual knockback effect */
-    void knockdistance;
-    throw new Error('mhitm_knockback(): knockback (will_hurtle()/hurtle()/mhurtle()) not ported yet');
+    /* subtly vary the message text if monster won't actually move */
+    const dismount = false; /* (mounted hero is not ported above) */
+    const was_u = false;
+    const knockedhow = dismount ? "out of your saddle"
+                       : will_hurtle(mdef, defx + dx, defy + dy) ? "backward"
+                         : "back";
+
+    /* give the message */
+    if (u_def || canseemon(mdef)) {
+        const magrbuf = u_agr ? "You" : Monnam(magr);
+        const mdefbuf = (u_def || was_u) ? "you" : y_monnam(mdef);
+        /*
+         * uhitm: You knock the gnome back with a powerful blow!
+         * mhitu: The red dragon knocks you back with a forceful blow!
+         * mhitm: The fire giant knocks the gnome back with a forceful strike!
+         */
+        const how = rn2(2) ? "forceful" : "powerful";
+        const what = rn2(2) ? "blow" : "strike";
+        await pline(`${magrbuf} ${vtense(magrbuf, "knock")} ${mdefbuf} ${
+            knockedhow} with a ${how} ${what}!`);
+    } else if (u_agr) {
+        /* hero knocks unseen foe back; noticed by touch */
+        await You_feel(`${some_mon_nam(mdef)} be knocked ${knockedhow}!`);
+    }
+
+    if (u.ustuck && (u_def || u_agr))
+        await unstuck(u.ustuck);
+
+    /* do the actual knockback effect */
+    if (u_def) {
+        await hurtle(dx, dy, knockdistance, false);
+        hf.hitflags |= M_ATTK_HIT;
+        set_apparxy(magr); /* update magr's idea of where you are */
+        if (!Stunned() && !rn2(4))
+            await make_stunned(knockdistance + 1, true); /* 2 or 3 */
+    } else {
+        await mhurtle(mdef, dx, dy, knockdistance);
+        if (!u_agr)
+            hf.hitflags |= M_ATTK_HIT;
+        if (DEADMONSTER(mdef)) {
+            if (!was_u)
+                hf.hitflags |= M_ATTK_DEF_DIED;
+        } else if (!rn2(4)) {
+            mdef.mstun = 1;
+            /* if steed and hero were knocked back, update attacker's idea
+               of where hero is */
+            if (mdef === u.usteed)
+                set_apparxy(magr);
+        }
+    }
+    if (!u_agr) {
+        if (DEADMONSTER(magr))
+            hf.hitflags |= M_ATTK_AGR_DIED;
+    }
+
+    return true;
 }
 
 /* C ref: youprop.h Punished */
@@ -2704,8 +2858,29 @@ async function hmon_hitmon_weapon_melee(hmd, mon, obj) /* obj is not NULL */ {
         throw new Error('hmon_hitmon_weapon_melee(): shattering the defender\'s weapon not ported yet');
     }
 
-    if (obj.oartifact)
-        throw new Error('hmon_hitmon_weapon_melee(): artifact_hit() not ported yet');
+    if (obj.oartifact) {
+        const dmgp = { val: hmd.dmg };
+        const arthit = await artifact_hit(game.youmonst, mon, obj, dmgp,
+                                          hmd.dieroll);
+        hmd.dmg = dmgp.val;
+        if (arthit) {
+            /* artifact_hit updates 'tmp' but doesn't inflict any
+               damage; however, it might cause carried items to be
+               destroyed and they might do so */
+            if (DEADMONSTER(mon)) { /* artifact killed monster */
+                hmd.doreturn = true;
+                hmd.retval = false;
+                return;
+            }
+            /* perhaps artifact tried to behead a headless monster */
+            if (hmd.dmg === 0) {
+                hmd.doreturn = true;
+                hmd.retval = true;
+                return;
+            }
+            hmd.hittxt = true;
+        }
+    }
     if (hmd.material === SILVER && mon_hates_silver(mon)) {
         hmd.silvermsg = hmd.silverobj = true;
     }
@@ -2757,6 +2932,269 @@ async function hmon_hitmon_weapon(hmd, mon, obj) /* obj is not NULL */ {
     }
 }
 
+// C ref: uhitm.c hmon_hitmon_potion()
+async function hmon_hitmon_potion(hmd, mon, obj) /* obj is not NULL */ {
+    if (obj.quan > 1)
+        obj = splitobj(obj, 1);
+    else
+        setuwep(null);
+    freeinv(obj);
+    await potionhit(mon, obj,
+                    hmd.hand_to_hand ? POTHIT_HERO_BASH : POTHIT_HERO_THROW);
+    if (DEADMONSTER(mon)) {
+        hmd.doreturn = true;
+        hmd.retval = false; /* killed */
+        return;
+    }
+    hmd.hittxt = true;
+    /* in case potion effect causes transformation */
+    hmd.mdat = mon.data;
+    hmd.dmg = (hmd.mdat === mons[M.PM_SHADE]) ? 0 : 1;
+}
+
+/* C ref: hacklib.c plur() */
+function plur(x) { return (x === 1) ? "" : "s"; }
+
+// C ref: uhitm.c hmon_hitmon_misc_obj()
+async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {
+    switch (obj.otyp) {
+    case BOULDER:         /* 1d20 */
+    case HEAVY_IRON_BALL: /* 1d25 */
+    case IRON_CHAIN:      /* 1d4+1 */
+        hmd.dmg = dmgval(obj, mon);
+        break;
+    case MIRROR:
+        if (breaktest(obj)) {
+            await You(`break ${ysimple_name(obj)}.  That's bad luck!`);
+            change_luck(-2);
+            useup(obj);
+            obj = null;
+            hmd.unarmed = false; /* avoid obj==0 confusion */
+            hmd.get_dmg_bonus = false;
+            hmd.hittxt = true;
+        }
+        hmd.dmg = 1;
+        break;
+    case EXPENSIVE_CAMERA:
+        throw new Error('hmon_hitmon_misc_obj(): release_camera_demon() not ported yet');
+    case CORPSE: /* fixed by polder@cs.vu.nl */
+        if (touch_petrifies(mons[obj.corpsenm])) {
+            hmd.dmg = 1;
+            hmd.hittxt = true;
+            await You(`hit ${mon_nam(mon)} with ${corpse_xname(obj, null,
+                obj.dknown ? CXN_PFX_THE : CXN_ARTICLE)}.`);
+            observe_object(obj, Hallucination());
+            if (!await munstone(mon, true))
+                throw new Error('hmon_hitmon_misc_obj(): minstapetrify() not ported yet');
+            if (resists_ston(mon))
+                break;
+            /* note: hp may be <= 0 even if munstoned==TRUE */
+            hmd.doreturn = true;
+            hmd.retval = !DEADMONSTER(mon);
+            return;
+        }
+        hmd.dmg = (ismnum(obj.corpsenm) ? mons[obj.corpsenm].msize
+                   : 0) + 1;
+        break;
+    case EGG: {
+        const cnt = obj.quan;
+        /* C's useup_eggs(o) macro */
+        const useup_eggs = (o) => {
+            if (hmd.thrown)
+                obfree(o, null);
+            else
+                useupall(o);
+        };
+
+        hmd.dmg = 1; /* nominal physical damage */
+        hmd.get_dmg_bonus = false;
+        hmd.hittxt = true; /* message always given */
+        /* egg is always either used up or transformed, so next
+           hand-to-hand attack should yield a "bashing" mesg */
+        if (obj === game.uwep)
+            game.unweapon = true;
+        if (obj.spe && ismnum(obj.corpsenm)) {
+            if (obj.quan < 5)
+                change_luck(-(obj.quan));
+            else
+                change_luck(-5);
+        }
+
+        if (ismnum(obj.corpsenm)
+            && touch_petrifies(mons[obj.corpsenm])) {
+            /*learn_egg_type(obj->corpsenm);*/
+            await pline(`Splat!  You hit ${mon_nam(mon)} with ${
+                obj.known ? "the" : cnt > 1 ? "some" : "a"} ${
+                obj.known ? mons[obj.corpsenm].pmnames[NEUTRAL]
+                : "petrifying"} egg${plur(cnt)}!`);
+            obj.known = 1; /* (not much point...) */
+            useup_eggs(obj);
+            obj = null;
+            if (!await munstone(mon, true))
+                throw new Error('hmon_hitmon_misc_obj(): minstapetrify() not ported yet');
+            if (resists_ston(mon))
+                break;
+            hmd.doreturn = true;
+            hmd.retval = !DEADMONSTER(mon);
+            return;
+        } else { /* ordinary egg(s) */
+            const mnum = obj.corpsenm;
+            const eggp =
+                (ismnum(mnum) && obj.known)
+                    ? the(mons[mnum].pmnames[NEUTRAL])
+                    : (cnt > 1) ? "some" : "an";
+
+            await You(`hit ${mon_nam(mon)} with ${eggp} egg${plur(cnt)}.`);
+            if (touch_petrifies(hmd.mdat) && !stale_egg(obj)) {
+                await pline_The(`egg${plur(cnt)} ${
+                    (cnt === 1) ? "isn't" : "aren't"} alive any more...`);
+                if (obj.timed)
+                    throw new Error('hmon_hitmon_misc_obj(): obj_stop_timers() not ported yet');
+                obj.otyp = ROCK;
+                obj.oclass = GEM_CLASS;
+                obj.oartifact = 0;
+                obj.spe = 0;
+                obj.known = obj.dknown = obj.bknown = 0;
+                obj.owt = weight(obj);
+                if (hmd.thrown)
+                    place_object(obj, mon.mx, mon.my);
+            } else if (obj.corpsenm === M.PM_PYROLISK) {
+                useup_eggs(obj);
+                obj = null;
+                await explode(mon.mx, mon.my, -11, d(3, 6), 0, EXPL_FIERY);
+                hmd.doreturn = true;
+                hmd.retval = !DEADMONSTER(mon);
+                return;
+            } else {
+                await pline("Splat!");
+                useup_eggs(obj);
+                obj = null;
+                exercise(A_WIS, false);
+            }
+        }
+        break;
+    }
+    case CLOVE_OF_GARLIC: /* no effect against demons */
+        if (is_undead(hmd.mdat) || is_vampshifter(mon)) {
+            await monflee(mon, d(2, 4), false, true);
+        }
+        hmd.dmg = 1;
+        break;
+    case CREAM_PIE:
+    case BLINDING_VENOM:
+        mon.msleeping = 0;
+        if (can_blnd(game.youmonst, mon,
+                     (obj.otyp === BLINDING_VENOM) ? AT_SPIT : AT_WEAP,
+                     obj)) {
+            if (Blind()) {
+                await pline(obj.otyp === CREAM_PIE ? "Splat!" : "Splash!");
+            } else if (obj.otyp === BLINDING_VENOM) {
+                await pline_The(`venom blinds ${mon_nam(mon)}${
+                    mon.mcansee ? "" : " further"}!`);
+            } else {
+                let whom = mon_nam(mon);
+                let what = The(xname(obj));
+
+                if (!hmd.thrown && obj.quan > 1)
+                    what = An(singular(obj, xname));
+                /* note: s_suffix returns a modifiable buffer */
+                if (haseyes(hmd.mdat)
+                    && hmd.mdat !== mons[M.PM_FLOATING_EYE])
+                    whom = `${s_suffix(whom)} ${mbodypart(mon, FACE)}`;
+                await pline(`${what} ${vtense(what, "splash")} over ${whom}!`);
+            }
+            await setmangry(mon, true);
+            mon.mcansee = 0;
+            hmd.dmg = rn1(25, 21);
+            if ((mon.mblinded || 0) + hmd.dmg > 127)
+                mon.mblinded = 127;
+            else
+                mon.mblinded = (mon.mblinded || 0) + hmd.dmg;
+        } else {
+            await pline(obj.otyp === CREAM_PIE ? "Splat!" : "Splash!");
+            await setmangry(mon, true);
+        }
+        {
+            const more_than_1 = (obj.quan > 1);
+
+            if (hmd.thrown)
+                obfree(obj, null);
+            else
+                useup(obj);
+
+            if (!more_than_1)
+                obj = null;
+        }
+        hmd.hittxt = true;
+        hmd.get_dmg_bonus = false;
+        hmd.dmg = 0;
+        break;
+    case ACID_VENOM: /* thrown (or spit) */
+        if (resists_acid(mon)) {
+            await Your(`venom hits ${mon_nam(mon)} harmlessly.`);
+            hmd.dmg = 0;
+        } else {
+            await Your(`venom burns ${mon_nam(mon)}!`);
+            hmd.dmg = dmgval(obj, mon);
+        }
+        {
+            const more_than_1 = (obj.quan > 1);
+
+            if (hmd.thrown)
+                obfree(obj, null);
+            else
+                useup(obj);
+
+            if (!more_than_1)
+                obj = null;
+        }
+        hmd.hittxt = true;
+        hmd.get_dmg_bonus = false;
+        break;
+    default:
+        if ((objects[obj.otyp].oc_material === VEGGY
+             || objects[obj.otyp].oc_material === PAPER)
+            && obj.oclass !== SPBOOK_CLASS) {
+            /* vegetables (and similar) do no damage, because they
+               aren't rigid enough; paper objects also do no damage,
+               except for books */
+            hmd.dmg = 0;
+            hmd.get_dmg_bonus = false;
+            break;
+        }
+        /* non-weapons can damage because of their weight */
+        /* (but not too much) */
+        hmd.dmg = Math.trunc((obj.owt + 99) / 100);
+        hmd.dmg = (hmd.dmg <= 1) ? 1 : rnd(hmd.dmg);
+        if (hmd.dmg > 6)
+            hmd.dmg = 6;
+        /* wet towel has modest damage bonus beyond its weight,
+           based on its wetness */
+        if (is_wet_towel(obj)) {
+            const doubld = (mon.data === mons[M.PM_IRON_GOLEM]);
+
+            /* wielded wet towel should probably use whip skill
+               (but not by setting objects[TOWEL].oc_skill==P_WHIP
+               because that would turn towel into a weptool);
+               due to low weight, tmp always starts at 1 here, and
+               due to wet towel's definition, obj->spe is 1..7 */
+            hmd.dmg += obj.spe * (doubld ? 2 : 1);
+            hmd.dmg = rnd(hmd.dmg); /* wet towel damage not capped at 6 */
+            /* usually lose some wetness but defer doing so
+               until after hit message */
+            hmd.dryit = (rn2(obj.spe + 1) > 0);
+        }
+        /* things like silver wands can arrive here so we
+           need another silver check; blessed check too */
+        if (hmd.material === SILVER && mon_hates_silver(mon)) {
+            hmd.dmg += rnd(20);
+            hmd.silvermsg = hmd.silverobj = true;
+        }
+        if (obj.blessed && mon_hates_blessings(mon))
+            hmd.dmg += rnd(4);
+    }
+}
+
 // C ref: uhitm.c hmon_hitmon_do_hit()
 /* do the actual hitting monster with obj/fists */
 async function hmon_hitmon_do_hit(hmd, mon, obj) /* obj can be NULL */ {
@@ -2783,12 +3221,14 @@ async function hmon_hitmon_do_hit(hmd, mon, obj) /* obj can be NULL */ {
                 return;
         /* attacking with non-weapons */
         } else if (obj.oclass === POTION_CLASS) {
-            throw new Error('hmon_hitmon_do_hit(): hmon_hitmon_potion() not ported yet');
+            await hmon_hitmon_potion(hmd, mon, obj);
+            if (hmd.doreturn)
+                return;
         } else {
             if (hmd.mdat === mons[M.PM_SHADE] && !shade_aware(obj)) {
                 hmd.dmg = 0;
             } else {
-                throw new Error('hmon_hitmon_do_hit(): hmon_hitmon_misc_obj() not ported yet');
+                await hmon_hitmon_misc_obj(hmd, mon, obj);
             }
         }
     }
@@ -3188,8 +3628,13 @@ async function mhurtle_to_doom(
     hmd) /* caller's cached copy of mon->data is hmd.mdat */ {
     /* only hurtle if pending physical damage (tmp) isn't going to kill mon */
     if (tmp < mon.mhp) {
-        void hmd;
-        throw new Error('mhurtle_to_doom(): mhurtle() not ported yet');
+        await mhurtle(mon, game.u.dx, game.u.dy, 1);
+        /* update caller's cached mon->data in case mon was pushed into
+           a polymorph trap or is a vampshifter whose current form has
+           been killed by a trap so that it reverted to original form */
+        hmd.mdat = mon.data;
+        if (DEADMONSTER(mon))
+            return true;
     }
     return false; /* mon isn't dead yet */
 }
