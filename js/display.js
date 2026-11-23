@@ -790,7 +790,7 @@ function terrain_glyph_dec(loc, x, y) {
     case ICE:       return { ch: '~', color: CLR_CYAN, dec: true, asc: '.', cmapidx: 39 };
     case AIR:       return { ch: ' ', color: CLR_CYAN, dec: false, cmapidx: 46 };
     case CLOUD:     return { ch: '#', color: CLR_GRAY, dec: false, cmapidx: 47 };
-    case WATER:     return { ch: '`', color: CLR_BLUE, dec: true, asc: '}', cmapidx: 48 };
+    case WATER:     return { ch: '`', color: CLR_BRIGHT_BLUE, dec: true, asc: '}', cmapidx: 48 };  /* S_water */
     case DBWALL:    return { ch: '#', color: CLR_BROWN, dec: false,
                              cmapidx: loc.horizontal ? 45 : 44 };
     case DRAWBRIDGE_UP: return S_room;
