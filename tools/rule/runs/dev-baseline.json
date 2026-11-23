@@ -1,5 +1,5 @@
 {
- "when": "2026-11-22T18:29:23.094Z",
+ "when": "2026-11-23T02:05:15.594Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -80,7 +80,7 @@
      "rn2(2)=1 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/allmain.js:802:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/jsmain.js:227:13) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/jsmain.js:329:9)"
+   "error": "Error: maybe_do_tutorial(): entering the tutorial is not ported yet |     at maybe_do_tutorial (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/allmain.js:802:15) |     at async NethackGame.start (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/jsmain.js:227:13) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/jsmain.js:329:9)"
   },
   {
    "session": "dev81205-monk-vault-escort.session.json",
@@ -304,7 +304,7 @@
      "rn2(5)=1 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: doextcmd(): unported command doextversion not ported yet |     at doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/cmd.js:238:19) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/allmain.js:721:9)"
+   "error": "Error: doextcmd(): unported command doextversion not ported yet |     at doextcmd (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/cmd.js:238:19) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/allmain.js:721:9)"
   },
   {
    "session": "dev81861-samurai-twoweapon-enhance.session.json",
@@ -346,7 +346,7 @@
      "rn2(4)=3 @ dog_goal(dogmove.c:575)"
     ]
    },
-   "error": "Error: doapply(): use_lamp() not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/apply.js:598:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/allmain.js:721:9)"
+   "error": "Error: doapply(): use_lamp() not ported yet |     at doapply (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/apply.js:598:15) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/cmd.js:932:19) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/allmain.js:721:9)"
   },
   {
    "session": "dev81943-wizard-wear-shop.session.json",
@@ -377,7 +377,7 @@
   {
    "session": "dev82025-wizard-world-tour.session.json",
    "total": 90908,
-   "jsTotal": 86087,
+   "jsTotal": 88119,
    "totalScreens": 833,
    "valuePrefix": 86083,
    "rulePrefix": 86083,
@@ -401,36 +401,20 @@
      "rn2(20)=17 @ m_move(monmove.c:1963)"
     ]
    },
-   "error": "Error: hmon_hitmon_do_hit(): hmon_hitmon_misc_obj() not ported yet |     at hmon_hitmon_do_hit (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/uhitm.js:2791:23) |     at hmon_hitmon (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/uhitm.js:3056:11) |     at hmon (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/uhitm.js:2553:26)"
+   "error": "Error: kick_ouch(): feel_location() not ported yet |     at kick_ouch (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/dokick.js:206:19) |     at async kick_nondoor (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/dokick.js:354:9) |     at async dokick (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/dokick.js:816:16)"
   },
   {
    "session": "dev82066-archeologist-tour.session.json",
    "total": 46184,
-   "jsTotal": 21020,
+   "jsTotal": 46184,
    "totalScreens": 366,
-   "valuePrefix": 21020,
-   "rulePrefix": 21020,
-   "screens": 236,
-   "honestScreens": 236,
-   "firstScreenMiss": 236,
-   "first": {
-    "index": 21020,
-    "step": 236,
-    "c": "rnd(6)=2 @ trapeffect_pit(trap.c:2003)",
-    "js": "(none: JS log ended)",
-    "kind": "value",
-    "cCaller": "trapeffect_pit",
-    "jsCaller": null,
-    "context": [
-     "rn2(5)=0 @ distfleeck(monmove.c:538)",
-     "rnd(16)=8 @ trapeffect_landmine(trap.c:2533)",
-     "rn2(901)=605 @ trapeffect_landmine(trap.c:2606)",
-     "rnd(6)=2 @ trapeffect_pit(trap.c:2003)",
-     "rnd(12)=6 @ mdig_tunnel(dig.c:1418)",
-     "rn2(5)=3 @ distfleeck(monmove.c:538)"
-    ]
-   },
-   "error": "Error: trapeffect_landmine(): blow_up_landmine() not ported yet |     at trapeffect_landmine (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/trap.js:2837:15) |     at async mintrap (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/trap.js:3006:23) |     at async postmov (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/monmove.js:2094:19)"
+   "valuePrefix": 46184,
+   "rulePrefix": 46184,
+   "screens": 366,
+   "honestScreens": 366,
+   "firstScreenMiss": null,
+   "first": null,
+   "error": null
   },
   {
    "session": "dev82107-priest-quest-tour.session.json",
@@ -472,7 +456,7 @@
      "rn2(2)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)"
     ]
    },
-   "error": "Error: goto_level(): endgame/tutorial entry not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/do.js:475:19) |     at deferred_goto (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/do.js:393:15) |     at moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/allmain.js:725:15)"
+   "error": "Error: goto_level(): endgame/tutorial entry not ported yet |     at goto_level (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/do.js:475:19) |     at deferred_goto (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/do.js:393:15) |     at moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/allmain.js:725:15)"
   },
   {
    "session": "dev82189-wizard-hallucinate.session.json",
@@ -527,7 +511,7 @@
      "rn2(8)=4 @ dog_goal(dogmove.c:554)"
     ]
    },
-   "error": "Error: rhack(): unported command doquickwhatis not ported yet |     at rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/cmd.js:923:23) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/allmain.js:721:9) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/jsmain.js:341:13)"
+   "error": "Error: rhack(): unported command doquickwhatis not ported yet |     at rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/cmd.js:923:23) |     at async moveloop_core (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/allmain.js:721:9) |     at async runSegment (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/jsmain.js:341:13)"
   },
   {
    "session": "dev82312-priest-cast-read-turn.session.json",
@@ -634,7 +618,7 @@
      "rn2(5)=4 @ distfleeck(monmove.c:538)"
     ]
    },
-   "error": "Error: do_look(): describing a picked spot (putmixed(), checkfile()) not ported yet |     at do_look (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/pager.js:877:23) |     at async dowhatis (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/pager.js:890:12) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a965f2ab02da65310/js/cmd.js:932:19)"
+   "error": "Error: do_look(): describing a picked spot (putmixed(), checkfile()) not ported yet |     at do_look (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/pager.js:877:23) |     at async dowhatis (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/pager.js:890:12) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a512b9ff196497d43/js/cmd.js:932:19)"
   },
   {
    "session": "dev82599-wizard-custom-binds.session.json",
@@ -704,11 +688,11 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 459488,
-  "value": 459488,
+  "rule": 484652,
+  "value": 484652,
   "rolls": 504996,
-  "honestScreens": 7116,
-  "screens": 7116,
+  "honestScreens": 7246,
+  "screens": 7246,
   "totalScreens": 8438
  },
  "todo": [
@@ -730,15 +714,6 @@
    "examples": [
     "dev81820-priest-extcmd-sweep @2939: C \"rn2(3)=0 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\" / JS \"(none: JS log ended)\"",
     "dev82558-wizard-quaff-zap-read @3254: C \"rn2(3)=2 @ random src=nhlib.lua:8 parent=shuffle(nhlib.lua:19)\" / JS \"(none: JS log ended)\""
-   ]
-  },
-  {
-   "fn": "trapeffect_pit",
-   "sessions": 1,
-   "blockedRolls": 25164,
-   "blockedScreens": 130,
-   "examples": [
-    "dev82066-archeologist-tour @21020: C \"rnd(6)=2 @ trapeffect_pit(trap.c:2003)\" / JS \"(none: JS log ended)\""
    ]
   },
   {
