@@ -8,6 +8,10 @@
 // invoke, ...) and artidisco[] are not ported yet.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_ARTIFACT, NO_ROOM } from './const.js';
+import { inside_shop } from './shk.js';
+import { bare_artifactname } from './iactions.js';
 import { strncmpi, strcmpi, fuzzymatch } from './hacklib.js';
 import * as O from './objects.js';
 import * as M from './monsters.js';
@@ -694,7 +698,24 @@ export function find_artifact(otmp) {
 
     if (a && !artiexist()[a].found) {
         found_artifact(a); /* artiexist[a].found = 1 */
-        /* livelog_printf(LL_ARTIFACT, "found %s%s", ...): no livelog */
+        /*
+         * Note: this is also called when an artifact is created ...;
+         * the location tells how the hero came across it.
+         */
+        const where = ((otmp.where === 'OBJ_FLOOR')
+                       ? ((inside_shop(otmp.ox, otmp.oy) !== NO_ROOM)
+                          ? " in a shop"
+                          : " on the floor")
+                       /* artifacts aren't created in containers but could be
+                          inside one if it comes from a bones level */
+                       : (otmp.where === 'OBJ_CONTAINED') ? " in a container"
+                         /* perhaps probing, or seeing monster wield artifact */
+                         : (otmp.where === 'OBJ_MINVENT') ? " carried by a monster"
+                           /* catchall: probably in inventory, picked up while
+                              blind but now seen; there's no previous_where to
+                              figure out how it got here */
+                           : "");
+        livelog_printf(LL_ARTIFACT, `found ${bare_artifactname(otmp)}${where}`);
     }
 }
 

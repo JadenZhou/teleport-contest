@@ -9,6 +9,8 @@
 // HANGUPHANDLING's done_hup never happens in a recorded session.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_LIFESAVE } from './const.js';
 import { pline, You, Your, bot, Hallucination, canspotmon, Blind } from './display.js';
 import { accessible } from './makemon.js';
 import {
@@ -49,7 +51,8 @@ import { make_grave } from './engrave.js';
 import { deepest_lev_reached, depth, dunlev, on_level } from './dungeon.js';
 import { money_cnt } from './u_init.js';
 import { hidden_gold, currency, enlightenment, list_vanquished,
-         list_genocided, count_achievements } from './insight.js';
+         list_genocided, count_achievements,
+         show_conduct } from './insight.js';
 import { keepdogs } from './dog.js';
 import { Goodbye } from './role.js';
 import { inven_inuse } from './restore.js';
@@ -348,7 +351,7 @@ async function disclose(how, taken) {
             c = defquery;
         }
         if (c === 'y')
-            throw new Error('disclose(): show_conduct() not ported yet');
+            await show_conduct((how >= PANICKED) ? 1 : 2);
         if (c === 'q')
             inc_done_stopprint();
     }
@@ -607,8 +610,8 @@ export async function done(how) {
         if (how === GENOCIDED) {
             await pline("Unfortunately you are still genocided...");
         } else {
-            /* formatkiller(); livelog_printf(LL_LIFESAVE, "averted death
-               (%s)", killbuf): livelog isn't kept */
+            const killbuf = formatkiller(256 /* BUFSZ */, how, false);
+            livelog_printf(LL_LIFESAVE, `averted death (${killbuf})`);
             survive = true;
         }
     }

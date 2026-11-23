@@ -8,6 +8,9 @@
 // ported yet.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_ACHIEVE, LL_DEBUG } from './const.js';
+import { describe_level } from './botl.js';
 import { container_impact_dmg } from './dokick.js';
 import { pline, pline_The, docrt, flush_screen, Hallucination,
          Blind } from './display.js';
@@ -826,7 +829,24 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* this was originally done earlier; moved here to be logged after
        any achievement related to entering a dungeon branch */
     if (new_) {
-        /* describe_level(dloc, 2); livelog_printf(...): no livelog */
+        /* Astral is excluded as a major event here because entry to it
+           is already one such due to that being an achievement;
+           for the quest, listing the start, locate, and goal levels would
+           seem reasonable but all quest levels are included for simplicity--
+           level 2 (or 3 if hero level teleports after obtaining permission
+           to enter) is useful to show since it indicates that hero has
+           actually entered the quest rather than just received permission
+           to do so, and listing the goal level could be used to figure out
+           whether level 5 is the end or there's another level (ESP reveals
+           the same thing, but is part of normal game play as opposed to
+           #chronicle leaking information that hero hasn't discovered yet) */
+        const major = ((In_endgame(g.u.uz)
+                        && !on_level(g.u.uz, g.dungeon_topology.d_astral_level))
+                       || g.u.uz.dnum === g.dungeon_topology.d_quest_dnum);
+        const [, dloc] = describe_level(2);
+
+        livelog_printf(major ? LL_ACHIEVE : LL_DEBUG, `entered ${dloc}`);
+
         if (g.urole.mnum === PM_TOURIST) {
             more_experienced(level_difficulty(), 0);
             await newexplevel();

@@ -620,11 +620,14 @@ function Is_earthlevel() { return on_lev(game.dungeon_topology.d_earth_level); }
 export function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
 // C ref: display.h m_at(); MON_AT() -- level monsters are kept in
 // game.level.monsters (C keeps a grid; a list with mx/my is equivalent);
-// a long worm's tail segments are its grid cells kept in game.level.wsegs
+// a long worm's tail segments are its grid cells kept in game.level.wsegs;
+// a ridden steed is on the monster list but not on C's grid (mount_steed()
+// does remove_monster()), so it is skipped
 export function m_at(x, y) {
     const lst = game.level.monsters || [];
     for (const m of lst)
-        if (m.mx === x && m.my === y && !m.dead) return m;
+        if (m.mx === x && m.my === y && !m.dead && m !== game.u.usteed)
+            return m;
     return wseg_mon_at(x, y);
 }
 export function MON_AT(x, y) { return !!m_at(x, y); }
