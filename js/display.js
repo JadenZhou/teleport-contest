@@ -1742,6 +1742,11 @@ export function map_engraving(ep, show) {
 
 // C ref: display.c _map_location() -- gas
 // regions (show_region()) are not ported yet
+// C ref: display.h map_location()
+export function map_location(x, y, show) {
+    _map_location(x, y, show);
+}
+
 function _map_location(x, y, show) {
     let obj, trap, ml_ep;
     if ((obj = vobj_at(x, y)) && !covers_objects(x, y)) {

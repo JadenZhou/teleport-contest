@@ -594,12 +594,7 @@ export async function moveloop_core() {
                 await gethungry();
                 age_spells();
                 await exerchk();
-                /* invault(): vault_occupied(u.urooms) -- u.urooms is never
-                   set by the JS port yet (hero can't be in a vault) */
-                if (vault_occupied_urooms())
-                    throw new Error('moveloop_core(): invault() not ported yet');
-                else
-                    u.uinvault = 0;
+                await invault();
                 if (u.uhave.amulet)
                     throw new Error('moveloop_core(): amulet() not ported yet');
                 if (!rn2(40 + (ACURR(A_DEX) * 3)))
@@ -827,3 +822,5 @@ export async function moveloop(resuming) {
         if (game.program_state?.gameover) break;
     }
 }
+
+import { invault } from './vault.js';

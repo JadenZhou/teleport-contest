@@ -3622,8 +3622,15 @@ function doname_base(obj, doname_flags) {
     if (obj.greased)
         prefix += "greased ";
 
-    if (cknown && Has_contents(obj))
-        xn_not_ported('count_contents()');
+    if (cknown && Has_contents(obj) && obj.cobj.length /* cobj != NULL */) {
+        /* we count the number of separate stacks, which corresponds
+           to the number of inventory slots needed to be able to take
+           everything out if no merges occur;
+           count_contents(obj, FALSE, FALSE, TRUE, FALSE) */
+        const itemcount = obj.cobj.length;
+
+        bp += ` containing ${itemcount} item${(itemcount === 1) ? "" : "s"}`;
+    }
 
     switch (is_weptool(obj) ? O.WEAPON_CLASS : obj.oclass) {
     case O.AMULET_CLASS:

@@ -1466,8 +1466,14 @@ async function movemon_singlemon(mtmp) {
     }
 
     /* one dead monster needs to perform a move after death: vault guard */
-    if (mtmp.isgd && !mtmp.mx && !((mtmp.mstate || 0) & MON_MIGRATING))
-        throw new Error('movemon_singlemon(): gd_move() not ported yet');
+    if (mtmp.isgd && !mtmp.mx && !((mtmp.mstate || 0) & MON_MIGRATING)) {
+        /* parked at <0,0>; eventually isgd should get set to false */
+        if (game.moves > (mtmp.mlstmv || 0)) {
+            await gd_move(mtmp);
+            mtmp.mlstmv = game.moves;
+        }
+        return false;
+    }
     if (DEADMONSTER(mtmp))
         return false;
 
@@ -3332,3 +3338,5 @@ import { killer as killer_mn } from './topten.js';
 import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
 import { mon_explodes } from './explode.js';
 import { shkgone } from './shk.js';
+
+import { gd_move } from './vault.js';
