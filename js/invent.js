@@ -7,13 +7,13 @@ import { pline, You, pline_The, newsym, There } from './display.js';
 import { obj_resists } from './dogmove.js';
 import { maybe_unhide_at } from './mon.js';
 import { doname, doname_with_price, makeplural } from './objnam.js';
-import { rn2 } from './rng.js';
+import { rn2, rn2_on_display_rng } from './rng.js';
 import { ing_suffix, visctrl } from './hacklib.js';
 import { def_oc_syms } from './drawing.js';
 import { body_part, hidden_gold, currency, empty_handed } from './insight.js';
 import { money_cnt } from './u_init.js';
 import { welded } from './wield.js';
-import { stairway_at } from './display.js';
+import { stairway_at, obj_to_glyph } from './display.js';
 import { an, vtense } from './objnam.js';
 import { t_at, trapname } from './trap.js';
 import { visible_region_at, reg_damg } from './region.js';
@@ -414,9 +414,11 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
                     classcount++;
                 }
                 const ilet = otmp.invlet;
-                /* any.a_obj = otmp (wizid) or any.a_char = ilet;
-                   obj_to_glyph()/map_glyphinfo(): tty menus don't show
-                   the glyph */
+                /* any.a_obj = otmp (wizid) or any.a_char = ilet */
+                /* normal inventory item */
+                const tmpglyph = obj_to_glyph(otmp, rn2_on_display_rng);
+                /* map_glyphinfo(): tty menus don't show the glyph */
+                void tmpglyph;
                 tty_add_menu(win, null, wizid ? otmp : ilet, ilet,
                              wizid ? def_oc_syms[otmp.oclass] : '',
                              ATR_NONE, clr, doname(otmp), MENU_ITEMFLAGS_NONE);
@@ -844,6 +846,20 @@ export function carry_obj_effects(obj) {
             throw new Error('carry_obj_effects(): attach_fig_transform_timeout() not ported yet');
         }
     }
+}
+
+// C ref: invent.c nxtobj()
+/* return the next object of the given type after obj in its list
+   (the floor's nexthere chain when by_nexthere) */
+export function nxtobj(obj, type, by_nexthere) {
+    let otmp = obj; /* start with the object after this one */
+    do {
+        otmp = !by_nexthere ? otmp.nobj : otmp.nexthere;
+        if (!otmp)
+            break;
+    } while (otmp.otyp !== type);
+
+    return otmp || null;
 }
 
 // C ref: invent.c carrying()

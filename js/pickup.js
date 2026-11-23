@@ -10,9 +10,9 @@ import { is_pool, is_lava } from './makemon.js';
 import { engr_at, read_engr_at } from './engrave.js';
 import { near_capacity } from './hack.js';
 import { You, Your, You_cant, pline } from './display.js';
-import { rn2 } from './rng.js';
+import { rn2, rn2_on_display_rng } from './rng.js';
 import { check_capacity, nomul } from './hack.js';
-import { flush_screen } from './display.js';
+import { flush_screen, obj_to_glyph } from './display.js';
 import { look_here } from './invent.js';
 import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
@@ -1182,9 +1182,9 @@ export async function query_objlist(qstr, /* query string */
                     printed_type_name = true;
                 }
 
-                /* obj_to_glyph(curr, rn2_on_display_rng) and
-                   map_glyphinfo(): the display RNG, and tty menus don't
-                   show the glyph */
+                const tmpglyph = obj_to_glyph(curr, rn2_on_display_rng);
+                /* map_glyphinfo(): tty menus don't show the glyph */
+                void tmpglyph;
                 tty_add_menu(win, null, curr,
                              (qflags & USE_INVLET) ? curr.invlet
                                : (first && curr.oclass === COIN_CLASS) ? '$' : 0,

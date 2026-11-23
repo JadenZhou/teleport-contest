@@ -43,6 +43,7 @@ import { ROWNO as ROWNO_DG, LAVAPOOL as LAVAPOOL_DG, MOAT as MOAT_DG,
          POOL as POOL_DG } from './const.js';
 import { is_moat as is_moat_dg, is_pool as is_pool_dg,
          is_lava as is_lava_dg } from './makemon.js';
+import { mb_trapped } from './monmove.js';
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -296,8 +297,10 @@ export async function mdig_tunnel(mtmp) {
         newsym(mtmp.mx, mtmp.my);
         if (trapped) {
             seeit = canseemon(mtmp);
-            void sawit; void seeit;
-            throw new Error('mdig_tunnel(): mb_trapped() not ported yet');
+            if (await mb_trapped(mtmp, sawit || seeit)) { /* mtmp is killed */
+                newsym(mtmp.mx, mtmp.my);
+                return true;
+            }
         } else {
             if (g.flags.verbose) {
                 if (!Unaware() && !rn2(3)) /* not too often.. */
