@@ -202,10 +202,31 @@ export async function done_in_by(mtmp, how) {
 
     killer().name = buf;
 
-    /* might need to fix up multi_reason if 'mtmp' caused the reason;
-       gm.multireasonbuf ('m_id:reason') isn't filled by the JS port */
-    if (g.multi_reason && g.multireasonbuf)
-        throw new Error('done_in_by(): multireasonbuf fixup not ported yet');
+    /* might need to fix up multi_reason if 'mtmp' caused the reason */
+    /* [C tests that the multi_reason pointer lies inside multireasonbuf,
+       past its "m_id:" prefix; JS strings compare that text instead] */
+    if (g.multi_reason && g.multireasonbuf
+        && g.multireasonbuf.indexOf(':') >= 0
+        && g.multi_reason === g.multireasonbuf.slice(
+               g.multireasonbuf.indexOf(':') + 1)) {
+        /*
+         * multireasonbuf[] contains 'm_id:reason' and multi_reason
+         * points at the text past the colon, so we have something
+         * like "42:paralyzed by a ghoul"; if mtmp->m_id matches 42
+         * then we truncate 'reason' at its first space so that final
+         * death reason becomes "Killed by a ghoul, while paralyzed."
+         * instead of "Killed by a ghoul, while paralyzed by a ghoul."
+         */
+        const m = /^\s*(\d+):[\s\S]/.exec(g.multireasonbuf); /* sscanf "%u:%c" */
+        if (m && mtmp.m_id === Number(m[1])) {
+            const sp = g.multireasonbuf.indexOf(' ');
+            if (sp >= 0) {
+                g.multireasonbuf = g.multireasonbuf.slice(0, sp);
+                g.multi_reason = g.multireasonbuf.slice(
+                    g.multireasonbuf.indexOf(':') + 1);
+            }
+        }
+    }
 
     /*
      * Chicken and egg issue:

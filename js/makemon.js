@@ -1507,6 +1507,113 @@ function rnd_class(first, last) {
     return (first === last) ? first : O.STRANGE_OBJECT;
 }
 
+// C ref: makemon.c clone_mon()
+/* Note: for long worms, always call cutworm (cutworm calls clone_mon) */
+export async function clone_mon(
+    mon,
+    x, y) { /* clone's preferred location or 0 (near mon) */
+    const mm = { x: 0, y: 0 };
+    let m2;
+
+    /* may be too weak or have been extinguished for population control */
+    if (mon.mhp <= 1
+        || (game.mvitals[monsndx(mon.data)].mvflags & G_EXTINCT_CM) !== 0)
+        return null;
+
+    if (x === 0) {
+        mm.x = mon.mx;
+        mm.y = mon.my;
+    } else {
+        mm.x = x;
+        mm.y = y;
+    }
+    if (!isok_cm(mm.x, mm.y)) { /* paranoia */
+        /* impossible("clone_mon trying to create a monster at <%d,%d>?") */
+        return null;
+    }
+    if (MON_AT(mm.x, mm.y)) { /* (always True for the x==0 case) */
+        if (!enexto_cm(mm, mm.x, mm.y, mon.data) || MON_AT(mm.x, mm.y))
+            return null;
+    }
+
+    /* m2 = newmonst(); *m2 = *mon; -- copy condition of old monster */
+    m2 = { ...mon };
+    /* m2->mextra = (struct mextra *) 0; -- JS keeps some mextra fields
+       directly on the monster */
+    m2.mextra = null;
+    m2.edog = undefined;
+    m2.egd = undefined;
+    m2.epri = undefined;
+    m2.emin = undefined;
+    m2.mgivenname = undefined;
+    m2.nmon = game.fmon;
+    game.fmon = m2;
+    m2.m_id = next_ident();
+    m2.mx = mm.x;
+    m2.my = mm.y;
+
+    m2.mundetected = 0;
+    m2.mtrapped = 0;
+    m2.mcloned = 1;
+    m2.minvent = null; /* objects don't clone */
+    m2.mleashed = 0;
+    /* Max HP the same, but current HP halved for both.  The caller
+     * might want to override this by halving the max HP also.
+     * When current HP is odd, the original keeps the extra point.
+     * We know original has more than 1 HP, so both end up with at least 1.
+     */
+    m2.mhpmax = mon.mhpmax;
+    m2.mhp = Math.trunc(mon.mhp / 2);
+    mon.mhp -= m2.mhp;
+
+    /* clone doesn't have mextra so mustn't retain special monster flags */
+    m2.isshk = 0;
+    m2.isgd = 0;
+    m2.ispriest = 0;
+    /* ms->isminion handled below */
+
+    /* clone shouldn't be reluctant to move on spots 'parent' just moved on */
+    mon_track_clear_cm(m2);
+
+    place_monster(m2, m2.mx, m2.my);
+    /* if (emits_light(m2->data)) new_light_source(...): light sources
+       aren't ported (see makemon()) */
+    /* if 'parent' is named, give the clone the same name */
+    if (has_mgivenname_cm(mon)) {
+        m2 = christen_monst(m2, MGIVENNAME_cm(mon));
+    } else if (mon.isshk) {
+        throw new Error('clone_mon(): cloning a shopkeeper (shkname()) not ported yet');
+    }
+
+    /* not all clones caused by player are tame or peaceful */
+    if (!game.context.mon_moving && mon.mpeaceful) {
+        if (mon.mtame)
+            m2.mtame = rn2(Math.max(2 + game.u.uluck, 2)) ? mon.mtame : 0;
+        else if (mon.mpeaceful)
+            m2.mpeaceful = rn2(Math.max(2 + game.u.uluck, 2)) ? 1 : 0;
+    }
+    /* if guardian angel could be cloned (maybe after polymorph?),
+       m2 could be both isminion and mtame; isminion takes precedence */
+    if (m2.isminion) {
+        throw new Error('clone_mon(): cloning a minion (EMIN) not ported yet');
+    } else if (m2.mtame) {
+        /* Because m2 is a copy of mon it is tame but not init'ed.
+           However, tamedog() will not re-tame a tame dog, so m2
+           must be made non-tame to get initialized properly. */
+        m2.mtame = 0;
+        if (await tamedog_cm(m2, null, false)) {
+            /* *EDOG(m2) = *EDOG(mon); */
+            m2.edog = { ...mon.edog, ogoal: { ...mon.edog.ogoal } };
+        }
+        /* [TODO? some (most? all?) edog fields probably should be
+           reinitialized rather that retain the 'parent's values] */
+    }
+    set_malign(m2);
+    newsym(m2.mx, m2.my); /* display the new monster */
+
+    return m2;
+}
+
 // C ref: makemon.c mbirth_limit()
 export function mbirth_limit(mndx) {
     /* There is an implicit limit of 4 for "high priest of <deity>",
@@ -2858,3 +2965,8 @@ export function rnd_misc_item(mtmp) {
     /*NOTREACHED*/
     return 0;
 }
+import { G_EXTINCT as G_EXTINCT_CM, isok as isok_cm, MGIVENNAME as MGIVENNAME_cm,
+         has_mgivenname as has_mgivenname_cm } from './const.js';
+import { enexto as enexto_cm } from './teleport.js';
+import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
+import { tamedog as tamedog_cm } from './dog.js';

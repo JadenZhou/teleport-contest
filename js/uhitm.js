@@ -1350,7 +1350,8 @@ async function mhitm_ad_slim(magr, mattk, mdef, mhm) {
 // C ref: uhitm.c mhitm_ad_ench()
 async function mhitm_ad_ench(magr, mattk, mdef, mhm) {
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_ench(): uhitm branch not ported yet');
+        /* uhitm */
+        /* there's no msomearmor() function, so just do damage */
     } else if (mdef === game.youmonst) {
         /* mhitu */
         const negated = mhitm_mgc_atk_negated(magr, mdef, false).negated;
@@ -1381,11 +1382,13 @@ async function mhitm_ad_ench(magr, mattk, mdef, mhm) {
                     break;
                 }
             }
-            if (obj)
-                throw new Error('mhitm_ad_ench(): drain_item() not ported yet');
+            if (obj && drain_item(obj, false)) {
+                await pline(`${Yobjnam2(obj, "seem")} less effective.`);
+            }
         }
     } else {
-        throw new Error('mhitm_ad_ench(): mhitm branch not ported yet');
+        /* mhitm */
+        /* there's no msomearmor() function, so just do damage */
     }
     void mhm;
 }
@@ -3771,28 +3774,39 @@ export async function passive_obj(
     case AD_FIRE:
         if (!rn2(6) && !mon.mcan
             /* steam vortex: fire resist applies, fire damage doesn't */
-            && mon.data !== mons[M.PM_STEAM_VORTEX])
-            throw new Error('passive_obj(): erode_obj() not ported yet');
+            && mon.data !== mons[M.PM_STEAM_VORTEX]) {
+            await erode_obj(obj, null, ERODE_BURN, EF_NONE);
+        }
         break;
     case AD_ACID:
-        if (!rn2(6))
-            throw new Error('passive_obj(): erode_obj() not ported yet');
+        if (!rn2(6)) {
+            await erode_obj(obj, null, ERODE_CORRODE, EF_GREASE);
+        }
         break;
     case AD_RUST:
-        if (!mon.mcan)
-            throw new Error('passive_obj(): erode_obj() not ported yet');
+        if (!mon.mcan) {
+            await erode_obj(obj, null, ERODE_RUST, EF_GREASE);
+        }
         break;
     case AD_CORR:
-        if (!mon.mcan)
-            throw new Error('passive_obj(): erode_obj() not ported yet');
+        if (!mon.mcan) {
+            await erode_obj(obj, null, ERODE_CORRODE, EF_GREASE);
+        }
         break;
     case AD_ENCH:
-        if (!mon.mcan)
-            throw new Error('passive_obj(): drain_item() not ported yet');
+        if (!mon.mcan) {
+            if (drain_item(obj, true) && obj.where === 'OBJ_INVENT' /* carried() */
+                && (obj.known || obj.oclass === ARMOR_CLASS)) {
+                await pline(`${Yobjnam2(obj, "seem")} less effective.`);
+            }
+            break;
+        }
         /* FALLTHRU */
     default:
         break;
     }
+
+    /* if (carried(obj)) update_inventory(): no perm_invent */
 }
 
 // C ref: uhitm.c missum()
@@ -3892,33 +3906,127 @@ export async function passive(
      */
     switch (ptr.mattk[i].adtyp) {
     case AD_FIRE:
-    case AD_RUST:
-    case AD_CORR:
-        if (mhitb && !mon.mcan && weapon)
-            throw new Error('passive(): erode_obj()/passive_obj() not ported yet');
+        if (mhitb && !mon.mcan && weapon) {
+            if (aatyp === AT_KICK) {
+                if (game.uarmf && !rn2(6))
+                    await erode_obj(game.uarmf, xname(game.uarmf), ERODE_BURN,
+                                    EF_GREASE | EF_VERBOSE);
+            } else if (aatyp === AT_WEAP || aatyp === AT_CLAW
+                       || aatyp === AT_MAGC || aatyp === AT_TUCH)
+                await passive_obj(mon, weapon, ptr.mattk[i]);
+        }
         break;
     case AD_ACID:
-        if (mhitb && rn2(2))
-            throw new Error('passive(): acid splash not ported yet');
-        if (mhitb && weapon)
-            throw new Error('passive(): erode_obj()/passive_obj() not ported yet');
+        if (mhitb && rn2(2)) {
+            if (Blind() || !game.flags.verbose)
+                await You("are splashed!");
+            else
+                await You(`are splashed by ${s_suffix(mon_nam(mon))} ${
+                    hliquid("acid")}!`);
+
+            if (!uprop(ACID_RES)) { /* !Acid_resistance */
+                await mdamageu(mon, tmp);
+                monstunseesu(M_SEEN_ACID);
+            } else {
+                monstseesu(M_SEEN_ACID);
+            }
+            if (!rn2(30))
+                await erode_armor(game.youmonst, ERODE_CORRODE);
+        }
+        if (mhitb && weapon) {
+            if (aatyp === AT_KICK) {
+                if (game.uarmf && !rn2(6))
+                    await erode_obj(game.uarmf, xname(game.uarmf), ERODE_CORRODE,
+                                    EF_GREASE | EF_VERBOSE);
+            } else if (aatyp === AT_WEAP || aatyp === AT_CLAW
+                       || aatyp === AT_MAGC || aatyp === AT_TUCH)
+                await passive_obj(mon, weapon, ptr.mattk[i]);
+        }
         exercise(A_STR, false);
         break;
     case AD_STON:
-        if (mhitb) /* successful attack */
-            throw new Error('passive(): touching a petrifier not ported yet');
+        if (mhitb) { /* successful attack */
+            let protector = attk_protection(aatyp);
+
+            /* hero using monsters' AT_MAGC attack is hitting hand to
+               hand rather than casting a spell */
+            if (aatyp === AT_MAGC)
+                protector = W_ARMG;
+
+            if (protector === 0 /* no protection */
+                || (protector === W_ARMG && !game.uarmg
+                    && !game.uwep && !wep_was_destroyed)
+                || (protector === W_ARMF && !game.uarmf)
+                || (protector === W_ARMH && !game.uarmh)
+                || (protector === (W_ARMC | W_ARMG)
+                    && (!game.uarmc || !game.uarmg))) {
+                if (!Stone_resistance()
+                    && !(poly_when_stoned(game.youmonst.data)
+                         && await polymon(M.PM_STONE_GOLEM))) {
+                    await done_in_by(mon, STONING); /* "You turn to stone..." */
+                    return M_ATTK_DEF_DIED;
+                }
+            }
+        }
+        break;
+    case AD_RUST:
+        if (mhitb && !mon.mcan && weapon) {
+            if (aatyp === AT_KICK) {
+                if (game.uarmf)
+                    await erode_obj(game.uarmf, xname(game.uarmf), ERODE_RUST,
+                                    EF_GREASE | EF_VERBOSE);
+            } else if (aatyp === AT_WEAP || aatyp === AT_CLAW
+                       || aatyp === AT_MAGC || aatyp === AT_TUCH)
+                await passive_obj(mon, weapon, ptr.mattk[i]);
+        }
+        break;
+    case AD_CORR:
+        if (mhitb && !mon.mcan && weapon) {
+            if (aatyp === AT_KICK) {
+                if (game.uarmf)
+                    await erode_obj(game.uarmf, xname(game.uarmf), ERODE_CORRODE,
+                                    EF_GREASE | EF_VERBOSE);
+            } else if (aatyp === AT_WEAP || aatyp === AT_CLAW
+                       || aatyp === AT_MAGC || aatyp === AT_TUCH)
+                await passive_obj(mon, weapon, ptr.mattk[i]);
+        }
         break;
     case AD_MAGM:
         /* wrath of gods for attacking Oracle */
-        throw new Error('passive(): magic missiles not ported yet');
+        if (uprop(ANTIMAGIC)) { /* Antimagic */
+            /* shieldeff(u.ux, u.uy): transient display only */
+            monstseesu(M_SEEN_MAGR);
+            await pline("A hail of magic missiles narrowly misses you!");
+        } else {
+            await You("are hit by magic missiles appearing from thin air!");
+            await mdamageu(mon, tmp);
+            monstunseesu(M_SEEN_MAGR);
+        }
+        break;
     case AD_ENCH: /* KMH -- remove enchantment (disenchanter) */
-        if (mhitb)
-            throw new Error('passive(): passive_obj() disenchanting not ported yet');
+        if (mhitb) {
+            if (aatyp === AT_KICK) {
+                if (!weapon)
+                    break;
+            } else if (aatyp === AT_BITE || aatyp === AT_BUTT
+                       || (aatyp >= AT_STNG && aatyp < AT_WEAP)) {
+                break; /* no object involved */
+            } else {
+                /*
+                 * TODO:  #H2668 - if hitting with a ring that has a
+                 * positive enchantment, it ought to be subject to
+                 * having that enchantment reduced.  But we don't have
+                 * sufficient information here to know which hand/ring
+                 * has delivered a weaponless blow.
+                 */
+                ;
+            }
+            await passive_obj(mon, weapon, ptr.mattk[i]);
+        }
         break;
     default:
         break;
     }
-    void wep_was_destroyed; void aatyp;
 
     /*  These only affect you if they still live.
      */
@@ -3952,7 +4060,9 @@ export async function passive(
                         game.nomovemsg = null;
                     }
                 } else {
-                    throw new Error('passive(): blind floating eye not ported yet');
+                    await pline(`${Adjmonnam(mon, "blind")} cannot defend itself.`);
+                    if (!rn2(500))
+                        change_luck(-1);
                 }
             } else if (Free_action()) {
                 await You("momentarily stiffen.");
@@ -3967,10 +4077,55 @@ export async function passive(
             }
             break;
         case AD_COLD: /* brown mold or blue jelly */
+            if (monnear(mon, game.u.ux, game.u.uy)) {
+                if (uprop(COLD_RES)) { /* Cold_resistance */
+                    /* shieldeff(u.ux, u.uy): transient display only */
+                    await You_feel("a mild chill.");
+                    monstseesu(M_SEEN_COLD);
+                    await ugolemeffects(AD_COLD, tmp);
+                    break;
+                }
+                monstunseesu(M_SEEN_COLD);
+                await You("are suddenly very cold!");
+                await mdamageu(mon, tmp);
+                /* monster gets stronger with your heat! */
+                healmon(mon, Math.trunc((tmp + rn2(2)) / 2),
+                        Math.trunc((tmp + 1) / 2));
+                /* at a certain point, the monster will reproduce! */
+                if (mon.mhpmax > (mon.m_lev + 1) * 8)
+                    await split_mon(mon, game.youmonst);
+            }
+            break;
         case AD_STUN: /* specifically yellow mold */
+            if (!Stunned())
+                await make_stunned(tmp, true);
+            break;
         case AD_FIRE:
+            if (monnear(mon, game.u.ux, game.u.uy)) {
+                if (uprop(FIRE_RES)) { /* Fire_resistance */
+                    /* shieldeff(u.ux, u.uy): transient display only */
+                    await You_feel("mildly warm.");
+                    monstseesu(M_SEEN_FIRE);
+                    await ugolemeffects(AD_FIRE, tmp);
+                    break;
+                }
+                monstunseesu(M_SEEN_FIRE);
+                await You("are suddenly very hot!");
+                await mdamageu(mon, tmp); /* fire damage */
+            }
+            break;
         case AD_ELEC:
-            throw new Error(`passive(): passive damage type ${ptr.mattk[i].adtyp} not ported yet`);
+            if (uprop(SHOCK_RES)) { /* Shock_resistance */
+                /* shieldeff(u.ux, u.uy): transient display only */
+                await You_feel("a mild tingle.");
+                monstseesu(M_SEEN_ELEC);
+                await ugolemeffects(AD_ELEC, tmp);
+                break;
+            }
+            monstunseesu(M_SEEN_ELEC);
+            await You("are jolted with electricity!");
+            await mdamageu(mon, tmp);
+            break;
         default:
             break;
         }
@@ -4055,7 +4210,19 @@ function dynamic_multi_reason(mon, verb, by_gaze) {
                          false);
 
     /* prefix info for done_in_by() */
-    game.multireasonbuf = `${mon.m_id}:${verb} by ${!by_gaze ? who : s_suffix(who)}${
+    const p = `${verb} by ${!by_gaze ? who : s_suffix(who)}${
         !by_gaze ? "" : " gaze"}`;
-    game.multi_reason = game.multireasonbuf;
+    game.multireasonbuf = `${mon.m_id}:${p}`;
+    /* C: gm.multi_reason = p, which points past the "m_id:" prefix */
+    game.multi_reason = p;
 }
+import { AT_MAGC, AT_BITE, AT_STNG } from './monsters.js';
+import { ERODE_BURN, EF_NONE, M_SEEN_MAGR, STONING } from './const.js';
+import { done_in_by } from './end.js';
+import { polymon } from './polyself.js';
+import { attk_protection } from './mhitm.js';
+import { drain_item } from './zap.js';
+import { healmon, monnear } from './mon.js';
+import { ugolemeffects } from './mhitu.js';
+import { Yobjnam2 } from './objnam.js';
+import { split_mon } from './potion.js';
