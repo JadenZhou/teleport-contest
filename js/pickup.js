@@ -17,7 +17,7 @@ import { look_here } from './invent.js';
 import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
 import { Is_container } from './mkobj.js';
-import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME } from './const.js';
+import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME, ECMD_CANCEL, GETOBJ_DOWNPLAY } from './const.js';
 import { m_at } from './makemon.js';
 import { mon_nam } from './do_name.js';
 import { M1_NOHANDS, M1_NOLIMBS } from './monsters.js';
@@ -1761,6 +1761,82 @@ function u_prop(p) {
 function pk_Blind() {
     const up = game.u?.uprops?.[BLINDED];
     return !!((up?.intrinsic || up?.extrinsic) && !up?.blocked);
+}
+
+// C ref: pickup.c tip_ok()
+/* getobj callback for #tip */
+function tip_ok(obj) {
+    if (!obj || obj.oclass === COIN_CLASS)
+        return GETOBJ_EXCLUDE;
+
+    if (Is_container(obj)) {
+        return GETOBJ_SUGGEST;
+    }
+
+    /* include horn of plenty if sufficiently discovered */
+    if (obj.otyp === HORN_OF_PLENTY && obj.dknown
+        && objects[obj.otyp].oc_name_known)
+        return GETOBJ_SUGGEST;
+
+    /* allow trying anything else in inventory */
+    return GETOBJ_DOWNPLAY;
+}
+
+// C ref: pickup.c dotip()
+/* #tip command -- empty container contents onto floor */
+export async function dotip() {
+    const u = game.u;
+    let cobj;
+    let boxes;
+    let c;
+    const cc = { x: 0, y: 0 };
+
+    /*
+     * Doesn't require free hands;
+     * limbs are needed to tip floor containers.
+     */
+
+    /* at present, can only tip things at current spot, not adjacent ones */
+    cc.x = u.ux, cc.y = u.uy;
+
+    /* check floor container(s) first; at most one will be accessed */
+    boxes = container_at(cc.x, cc.y, true);
+    /* this is iffy for menustyle:traditional; 'm' prefix is ambiguous
+       for it: skip floor vs handle multiple containers via menu */
+    if (boxes > 0
+        && (!game.iflags.menu_requested
+            || (game.flags.menu_style === MENU_TRADITIONAL && boxes > 1))) {
+        const buf = `You can't tip ${!game.flags.verbose ? "a container"
+                                     : (boxes > 1) ? "one" : "it"} while carrying so much.`;
+        if (!(await check_capacity(buf)) && (await able_to_loot(cc.x, cc.y, false))) {
+            if (boxes > 1) {
+                throw new Error('dotip(): choose_tip_container_menu() not ported yet');
+            } else {
+                for (cobj of objects_at(cc.x, cc.y)) {
+                    if (!Is_container(cobj))
+                        continue;
+                    c = await tty_yn_function(
+                        safe_qbuf("There is ", " here, tip it?", cobj,
+                                  doname, "container"), "ynq", 'q'); /* ynq() */
+                    if (typeof c === 'number')
+                        c = String.fromCharCode(c);
+                    if (c === 'q')
+                        return ECMD_OK;
+                    if (c === 'n')
+                        continue;
+                    throw new Error('dotip(): tipcontainer() not ported yet');
+                }
+            }
+        }
+    }
+
+    /* either no floor container(s) or 'm' prefix was used to ignore such
+       or couldn't tip one or didn't tip any */
+    cobj = await getobj("tip", tip_ok, GETOBJ_PROMPT);
+    if (!cobj)
+        return ECMD_CANCEL;
+
+    throw new Error('dotip(): tipping a carried object not ported yet');
 }
 
 // C ref: pickup.c able_to_loot()

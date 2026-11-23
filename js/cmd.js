@@ -48,7 +48,7 @@ import { wiz_genesis } from './wizcmds.js';
 import { dodrop, doddrop, dodown, doup, dowipe } from './do.js';
 import { dozap } from './zap.js';
 import { docallcmd } from './do_name.js';
-import { doloot } from './pickup.js';
+import { doloot, dotip } from './pickup.js';
 import { dopickup } from './hack.js';
 import { Never_mind, isok, PARANOID_QUIT } from './const.js';
 import { dofire, dothrow } from './dothrow.js';
@@ -140,6 +140,7 @@ const cmd_funcs = {
     dozap: () => dozap(),
     docallcmd: () => docallcmd(),
     doloot: () => doloot(),
+    dotip: () => dotip(),
     dofire: () => dofire(),
     dothrow: () => dothrow(),
     dokick: () => dokick(),
