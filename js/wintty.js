@@ -24,7 +24,8 @@ import {
     TELEPORT_BANNER_C, PL_NSIZ, ROWNO, COLNO,
 } from './const.js';
 import { genl_player_setup } from './role.js';
-import { lowc } from './hacklib.js';
+import { lowc, tabexpand } from './hacklib.js';
+import { help_files } from './help_files.js';
 import { row_refresh, bot, flush_screen, pline, docrt, dec_cell_char,
          decode_mixed } from './display.js';
 import { vision_recalc } from './vision.js';
@@ -647,6 +648,35 @@ async function redotoplin(str) {
 function g_putch(in_ch) {
     const ch = String.fromCharCode(in_ch & 0x7f);
     xputc((in_ch & 0x80) ? dec_cell_char(ch) : ch);
+}
+
+// C ref: wintty.c tty_display_file() -- the internal pager (no DEF_PAGER);
+// the files are the help texts of help_files.js
+export async function tty_display_file(fname, complain) {
+    tty_clear_nhwindow(game.WIN_MESSAGE);
+    const f = help_files[fname];
+    if (!f) {
+        if (complain)
+            throw new Error(`tty_display_file(): can't open "${fname}" not ported yet`);
+        return;
+    }
+    const datawin = tty_create_nhwindow(NHW_TEXT);
+    let empty = true;
+
+    /* if (complain && nh_CD): "attempt to scroll text below map window if
+       there's room" -- the status window ends at the last of the 24 tty
+       rows, so offy + 12 exceeds the rows and offy stays 0 */
+    for (let buf of f) {
+        if (buf.includes('\t'))
+            buf = tabexpand(buf);
+        empty = false;
+        await tty_putstr(datawin, 0, buf);
+        if (wins()[datawin].flags & WIN_CANCELLED)
+            break;
+    }
+    if (!empty)
+        await tty_display_nhwindow(datawin, false);
+    await tty_destroy_nhwindow(datawin);
 }
 
 // C ref: wintty.c tty_putmixed() -- 'str' may contain glyphs encoded by

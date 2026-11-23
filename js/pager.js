@@ -92,7 +92,7 @@ import { the } from './iactions.js';
 import { trapname } from './trap.js';
 import { display_inventory } from './invent.js';
 import { data_base } from './data_base.js';
-import { tty_putmixed, tty_getlin } from './wintty.js';
+import { tty_putmixed, tty_getlin, tty_display_file } from './wintty.js';
 import { doextversion } from './mdlib.js';
 
 /* C ref: mondata.h digests() */
@@ -1582,6 +1582,24 @@ export async function dohelp() {
             await hmenu_dowhatis();
         else if (f === 'hmenu_doextversion')
             await hmenu_doextversion();
+        else if (f === 'dispfile_help')
+            await dispfile_help();
+        else if (f === 'dispfile_shelp')
+            await dispfile_shelp();
+        else if (f === 'hmenu_dohistory')
+            await hmenu_dohistory();
+        else if (f === 'hmenu_dowhatdoes')
+            await hmenu_dowhatdoes();
+        else if (f === 'dispfile_optionfile')
+            await dispfile_optionfile();
+        else if (f === 'dispfile_optmenu')
+            await dispfile_optmenu();
+        else if (f === 'dispfile_license')
+            await dispfile_license();
+        else if (f === 'dispfile_debughelp')
+            await dispfile_debughelp();
+        else if (f === 'dispfile_usagehelp')
+            await dispfile_usagehelp();
         else if (f === 'domenucontrols')
             await domenucontrols();
         else
@@ -2485,6 +2503,57 @@ export async function dowhatdoes() {
         const oct = q.toString(8).padStart(3, '0'), hex = q.toString(16).padStart(2, '0');
         await pline(`No such command '${visctrl(q)}', char code ${q} (0${oct} or 0x${hex}).`);
     }
+    return ECMD_OK;
+}
+
+// C ref: pager.c dispfile_help()
+async function dispfile_help() {
+    await tty_display_file("help", true); /* HELP */
+}
+
+// C ref: pager.c dispfile_shelp()
+async function dispfile_shelp() {
+    await tty_display_file("hh", true); /* SHELP */
+}
+
+// C ref: pager.c dispfile_optionfile()
+async function dispfile_optionfile() {
+    await tty_display_file("opthelp", true); /* OPTIONFILE */
+}
+
+// C ref: pager.c dispfile_optmenu()
+async function dispfile_optmenu() {
+    await tty_display_file("optmenu", true); /* OPTMENUHELP */
+}
+
+// C ref: pager.c dispfile_license()
+async function dispfile_license() {
+    await tty_display_file("license", true); /* LICENSE */
+}
+
+// C ref: pager.c dispfile_debughelp()
+async function dispfile_debughelp() {
+    await tty_display_file("wizhelp", true); /* DEBUGHELP */
+}
+
+// C ref: pager.c dispfile_usagehelp()
+async function dispfile_usagehelp() {
+    await tty_display_file("usagehlp", true); /* USAGEHELP */
+}
+
+// C ref: pager.c hmenu_dohistory()
+async function hmenu_dohistory() {
+    await dohistory();
+}
+
+// C ref: pager.c hmenu_dowhatdoes()
+async function hmenu_dowhatdoes() {
+    await dowhatdoes();
+}
+
+// C ref: pager.c dohistory() -- the #history command
+export async function dohistory() {
+    await tty_display_file("history", true); /* HISTORY */
     return ECMD_OK;
 }
 

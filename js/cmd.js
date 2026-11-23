@@ -64,7 +64,8 @@ import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
 import { doengrave } from './engrave.js';
 import { set_occupation } from './allmain.js';
-import { dohelp, dowhatis, doquickwhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
+import { dohelp, dowhatis, doquickwhatis, dowhatdoes, dowhatdoes_core,
+         dohistory } from './pager.js';
 import { doextversion } from './mdlib.js';
 import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
@@ -180,6 +181,7 @@ const cmd_funcs = {
     dowhatis: () => dowhatis(),
     doquickwhatis: () => doquickwhatis(),
     doextversion: () => doextversion(),
+    dohistory: () => dohistory(),
     dowhatdoes: () => dowhatdoes(),
     dosit: () => dosit(),
     dodip: () => dodip(),
