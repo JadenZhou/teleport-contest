@@ -62,7 +62,7 @@ import { the, simpleonames, surface, cloak_simple_name,
          helm_simple_name } from './iactions.js';
 import { Unaware } from './eat.js';
 import { unmul } from './allmain.js';
-import { make_glib, set_mimic_blocking } from './potion.js';
+import { make_glib, set_mimic_blocking, set_itimeout, make_blinded } from './potion.js';
 import { golemhp, is_pool, is_lava } from './makemon.js';
 import { find_ac } from './u_init.js';
 import { set_ustuck } from './uhitm.js';
@@ -485,8 +485,10 @@ async function polyman(fmt, arg) {
     if (u.utrap && u.utraptype === TT_PIT) {
         set_utrap(rn1(6, 2), TT_PIT); /* time to escape resets */
     }
-    if (was_blind && !Blind()) /* reverting from eyeless */
-        throw new Error('polyman(): set_itimeout(&HBlinded)/make_blinded() not ported yet');
+    if (was_blind && !Blind()) { /* reverting from eyeless */
+        set_itimeout(BLINDED, 1); /* set_itimeout(&HBlinded, 1L) */
+        await make_blinded(0, true); /* remove blindness */
+    }
     await check_strangling(true);
 
     if (!uprop_on(LEVITATION) && !u.ustuck && is_pool_or_lava(u.ux, u.uy))

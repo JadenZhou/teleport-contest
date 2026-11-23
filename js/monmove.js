@@ -62,7 +62,7 @@ import { Unaware } from './eat.js';
 import { TRAPPED_DOOR } from './const.js';
 import { has_ceiling } from './insight.js';
 import { resist_conflict } from './mhitm.js';
-import { cuss } from './wizard.js';
+import { cuss, tactics } from './wizard.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
@@ -883,8 +883,13 @@ export async function dochug(mtmp) {
 
     /* Monsters that want to acquire things may teleport, so do it before
        inrange is set. This costs a turn only if mstate is set.  */
-    if (is_covetous(mdat))
-        throw new Error('dochug(): tactics() not ported yet');
+    if (is_covetous(mdat)) {
+        await tactics(mtmp);
+        /* tactics -> mnexto -> deal_with_overcrowding */
+        if (mtmp.mstate)
+            return 0;
+        set_apparxy(mtmp);
+    }
 
     /* check distance and scariness of attacks */
     await distfleeck(mtmp, d);
@@ -1807,8 +1812,32 @@ export async function m_move(mtmp, after) {
     }
 
     /* and the acquisitive monsters get special treatment */
-    if (is_covetous(ptr))
-        throw new Error('m_move(): covetous monsters not ported yet');
+    if (is_covetous(ptr)) { /* [should this include
+                             *  '&& mtmp->mstrategy != STRAT_NONE'?] */
+        let covetousattack;
+        const tx = mtmp.mgoal ? mtmp.mgoal.x : 0,
+              ty = mtmp.mgoal ? mtmp.mgoal.y : 0;
+        const intruder = isok(tx, ty) ? m_at(tx, ty) : null;
+        /*
+         * if there's a monster on the object or in possession of it,
+         * attack it.
+         */
+        if (intruder && intruder !== mtmp
+            /* 5.0: this used to use 'dist2() < 2' which meant that intended
+               attack was disallowed if they were adjacent diagonally */
+            && dist2(mtmp.mx, mtmp.my, tx, ty) <= 2) {
+            game.bhitpos = { x: tx, y: ty };
+            game.notonhead = (intruder.mx !== tx || intruder.my !== ty);
+            covetousattack = await mattackm(mtmp, intruder);
+            /* 5.0: this used to erroneously use '== 2' (M_ATTK_DEF_DIED) */
+            if (covetousattack & M_ATTK_AGR_DIED)
+                return MMOVE_DIED;
+            mmoved = MMOVE_MOVED;
+            return await postmov(mtmp, ptr, omx, omy, mmoved,
+                                 seenflgs, can_tunnel, can_unlock, can_open);
+        }
+        /* otherwise continue with normal AI routine */
+    }
 
     /* likewise for shopkeeper, guard, or priest */
     if (mtmp.isshk || mtmp.isgd || mtmp.ispriest) {
