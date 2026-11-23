@@ -2040,6 +2040,14 @@ export function newsym(x, y) {
                              && game.iflags.wc_color !== false))
             && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
             loc.remembered_glyph = rememb_glyph(S_corr_g);
+        /* lev->glyph = cmap_to_glyph(DARKROOMSYM) for a remembered lit
+           floor spot; with dark_room set the S_darkroom glyph is drawn
+           like the remembered S_room spot (see feel_location()) */
+        else if (game.flags.dark_room !== false && game.iflags.wc_color !== false
+                 && loc.typ === ROOM && loc.remembered_glyph.cmap === 'S_room'
+                 && game.currentgraphics !== ROGUESET)
+            loc.remembered_glyph = { ...loc.remembered_glyph,
+                                     cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx, 0,
