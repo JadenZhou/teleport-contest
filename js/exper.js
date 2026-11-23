@@ -19,8 +19,9 @@ import {
 } from './monsters.js';
 import { ACURR, adjabil, newhp } from './attrib.js';
 import { xlev_to_rank } from './botl.js';
-import { record_achievement, achieve_rank } from './insight.js';
-import { pline } from './display.js';
+import { record_achievement, achieve_rank, count_achievements } from './insight.js';
+import { pline, livelog_printf } from './display.js';
+import { LL_MINORAC } from './const.js';
 import { Goodbye } from './role.js';
 import { resists_drli } from './mondata.js';
 
@@ -270,11 +271,17 @@ export async function pluslvl(
             u.ulevelmax = u.ulevel;
         await adjabil(u.ulevel - 1, u.ulevel); /* give new intrinsics */
         /* SoundAchievement(0, sa2_xplevelup, 0): no sound interface */
+        const old_ach_cnt = count_achievements();
         const newrank = xlev_to_rank(u.ulevel);
         if (newrank > oldrank)
             record_achievement(achieve_rank(newrank));
-        /* livelog_printf(LL_MINORAC, "...gained experience level %d"): the
-           livelog isn't shown on the tty */
+        /* a new rank achievement will log its own message; log a simpler
+           message here if we didn't just get an achievement (so when rank
+           hasn't changed or hero just regained a lost level and the rank
+           achievement doesn't get repeated) */
+        if (count_achievements() === old_ach_cnt)
+            livelog_printf(LL_MINORAC, `${(u.ulevel <= (u.ulevelpeak || 0)) ? "re" : ""
+                           }gained experience level ${u.ulevel}`);
         if (u.ulevel > (u.ulevelpeak || 0))
             u.ulevelpeak = u.ulevel;
     }
@@ -328,7 +335,8 @@ export async function losexp(drainer) /* cause of death, if drain should be fata
         u.ulevel -= 1;
         /* remove intrinsic abilities */
         await adjabil(u.ulevel + 1, u.ulevel);
-        /* livelog_printf(), SoundAchievement(): not needed */
+        livelog_printf(LL_MINORAC, `lost experience level ${u.ulevel + 1}`);
+        /* SoundAchievement(0, sa2_xpleveldown, 0): no sound interface */
     } else { /* u.ulevel==1 */
         if (drainer) {
             killer().format = KILLED_BY;
@@ -337,7 +345,12 @@ export async function losexp(drainer) /* cause of death, if drain should be fata
             await done(DIED);
         }
         /* no drainer or lifesaved */
+        if (u.ulevel > 1)
+            /* can happen during debug fuzzing if fuzzer_savelife() uses
+               a blessed potion of restore ability to restore lost levels */
+            return;
         u.uexp = 0;
+        livelog_printf(LL_MINORAC, "lost all experience");
     }
 
     olduhpmax = u.uhpmax;

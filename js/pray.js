@@ -24,7 +24,8 @@ import { known_spell, spelleffects, can_chant } from './spell.js';
 import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          RIN_LEVITATION, GAUNTLETS_OF_FUMBLING, FUMBLE_BOOTS, SADDLE,
          POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
-import { pline } from './display.js';
+import { pline, livelog_printf } from './display.js';
+import { LL_CONDUCT, LL_DIVINEGIFT, LL_ARTIFACT, LL_SPOILER } from './const.js';
 import { In_hell } from './dungeon.js';
 import { is_demon, is_undead, is_vampshifter } from './mondata.js';
 import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attrib.js';
@@ -1008,9 +1009,13 @@ export async function dopray() {
             return ECMD_OK;
     }
 
-    if (!u.uconduct.gnostic++) {
-        /* livelog_printf(LL_CONDUCT, "rejected atheism with a prayer") */
-    }
+    if (!u.uconduct.gnostic++)
+        /* breaking conduct should probably occur in can_pray() at
+         * "You begin praying to %s", as demons who find praying repugnant
+         * should not break conduct.  Also we can add more detail to the
+         * livelog message as p_aligntyp will be known.
+         */
+        livelog_printf(LL_CONDUCT, "rejected atheism with a prayer");
 
     /* set up p_type and p_alignment */
     if (!(await can_pray(true)))
@@ -1212,9 +1217,8 @@ export async function doturn() {
         await pline("You don't know how to turn undead!"); /* You() */
         return ECMD_OK;
     }
-    if (!u.uconduct.gnostic++) {
-        /* livelog_printf(LL_CONDUCT, "rejected atheism by turning undead") */
-    }
+    if (!u.uconduct.gnostic++)
+        livelog_printf(LL_CONDUCT, "rejected atheism by turning undead");
 
     Gname = halu_gname(u.ualign.type);
 

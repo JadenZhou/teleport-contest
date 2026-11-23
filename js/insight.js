@@ -2441,7 +2441,7 @@ export function record_achievement(achidx) {
         return; /* already recorded, don't duplicate it */
     u.uachieved[i] = achidx;
 
-    /* livelog_printf(): the livelog isn't shown on the tty */
+    record_achievement_livelog(achidx, absidx);
 }
 
 // C ref: insight.c remove_achievement()
@@ -2753,3 +2753,151 @@ import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
 import { hliquid as hliquid_is } from './potion.js';
 import { the as the_is, surface as surface_is } from './iactions.js';
 import { t_at as t_at_is, trapname as trapname_is } from './trap.js';
+
+// C ref: insight.c do_gamelog() (CHRONICLE)
+/* #chronicle command */
+export async function do_gamelog() {
+    if (game.gamelog && game.gamelog.length) {
+        await show_gamelog(ENL_GAMEINPROGRESS);
+    } else {
+        await pline("No chronicled events.");
+    }
+    return 0; /* ECMD_OK */
+}
+
+/* 'major' events for dumplog; inclusion or exclusion here may need tuning */
+const LL_majors = (0
+                   | LL_WISH_GL
+                   | LL_ACHIEVE_GL
+                   | LL_UMONST_GL
+                   | LL_DIVINEGIFT_GL
+                   | LL_LIFESAVE_GL
+                   | LL_ARTIFACT_GL
+                   | LL_GENOCIDE_GL
+                   | LL_DUMP_GL); /* explicitly for dumplog */
+function majorevent(llmsg) { return (llmsg.flags & LL_majors) !== 0; }
+function spoilerevent(llmsg) { return (llmsg.flags & LL_SPOILER_GL) !== 0; }
+
+// C ref: insight.c show_gamelog() (CHRONICLE)
+/* #chronicle details */
+export async function show_gamelog(final) {
+    let eventcnt = 0;
+
+    const win = tty_create_nhwindow_gl(NHW_TEXT_GL);
+    tty_putstr_gl(win, 0, `${final ? "Major" : "Logged"} events:`);
+    for (const llmsg of (game.gamelog || [])) {
+        if (final && !majorevent(llmsg))
+            continue;
+        if (!final && !game.flags.debug /* wizard */ && spoilerevent(llmsg))
+            continue;
+        if (!eventcnt++)
+            tty_putstr_gl(win, 0, " Turn");
+        tty_putstr_gl(win, 0, `${String(llmsg.turn).padStart(5)}: ${llmsg.text}`
+                                  .slice(0, BUFSZ_GL - 1));
+    }
+    /* since start of game is logged as a major event, 'eventcnt' should
+       never end up as 0; for 'final', end of game is a major event too */
+    if (!eventcnt)
+        tty_putstr_gl(win, 0, " none");
+
+    await tty_display_nhwindow_gl(win, true);
+    await tty_destroy_nhwindow_gl(win);
+}
+
+import { LL_WISH as LL_WISH_GL, LL_ACHIEVE as LL_ACHIEVE_GL,
+         LL_UMONST as LL_UMONST_GL, LL_DIVINEGIFT as LL_DIVINEGIFT_GL,
+         LL_LIFESAVE as LL_LIFESAVE_GL, LL_ARTIFACT as LL_ARTIFACT_GL,
+         LL_GENOCIDE as LL_GENOCIDE_GL, LL_DUMP as LL_DUMP_GL,
+         LL_SPOILER as LL_SPOILER_GL, NHW_TEXT as NHW_TEXT_GL,
+         BUFSZ as BUFSZ_GL } from './const.js';
+import { tty_create_nhwindow as tty_create_nhwindow_gl,
+         tty_putstr as tty_putstr_gl,
+         tty_display_nhwindow as tty_display_nhwindow_gl,
+         tty_destroy_nhwindow as tty_destroy_nhwindow_gl } from './wintty.js';
+
+// C ref: insight.c achieve_msg[] -- for livelogging; ordered per
+// 'enum achievements' in you.h
+const achieve_msg = [
+    { llflag: 0, msg: "" }, /* actual achievements are numbered from 1 */
+    { llflag: LL_ACHIEVE_GL, msg: "acquired the Bell of Opening" },
+    { llflag: LL_ACHIEVE_GL, msg: "entered Gehennom" },
+    { llflag: LL_ACHIEVE_GL, msg: "acquired the Candelabrum of Invocation" },
+    { llflag: LL_ACHIEVE_GL, msg: "acquired the Book of the Dead" },
+    { llflag: LL_ACHIEVE_GL, msg: "performed the invocation" },
+    { llflag: LL_ACHIEVE_GL, msg: "acquired The Amulet of Yendor" },
+    { llflag: LL_ACHIEVE_GL, msg: "entered the Elemental Planes" },
+    { llflag: LL_ACHIEVE_GL, msg: "entered the Astral Plane" },
+    { llflag: LL_ACHIEVE_GL, msg: "ascended" },
+    /* if the type of item isn't discovered yet, disclosing the event
+       via #chronicle would be a spoiler (particularly for gray stone);
+       the ID'd name for the type of item will be appended to the next
+       two messages, for display via livelog and/or dumplog */
+    { llflag: LL_ACHIEVE_GL | LL_SPOILER_GL, msg: "acquired the Mines' End" }, /* " luckstone" */
+    { llflag: LL_ACHIEVE_GL | LL_SPOILER_GL, msg: "acquired the Sokoban" }, /* " <item>" */
+    { llflag: LL_ACHIEVE_GL | LL_UMONST_GL, msg: "killed Medusa" },
+    /* these two are not logged */
+    { llflag: 0, msg: "hero was always blond, no, blind" },
+    { llflag: 0, msg: "hero never wore armor" },
+    { llflag: LL_MINORAC_GL | LL_DUMP_GL, msg: "entered the Gnomish Mines" },
+    { llflag: LL_ACHIEVE_GL, msg: "reached Mine Town" }, /* probably minor, but dnh logs it */
+    { llflag: LL_MINORAC_GL, msg: "entered a shop" },
+    { llflag: LL_MINORAC_GL, msg: "entered a temple" },
+    { llflag: LL_ACHIEVE_GL, msg: "consulted the Oracle" }, /* minor, but rare enough */
+    { llflag: LL_MINORAC_GL | LL_DUMP_GL, msg: "read a Discworld novel" }, /* even more so */
+    { llflag: LL_ACHIEVE_GL, msg: "entered Sokoban" }, /* keep as major for turn comparison
+                                                         * with completed sokoban */
+    { llflag: LL_ACHIEVE_GL, msg: "entered the Bigroom" },
+    /* The following 8 are for advancing through the ranks
+       and messages differ by role so are created on the fly;
+       rank 0 (Xp 1 and 2) isn't an achievement */
+    { llflag: LL_MINORAC_GL | LL_DUMP_GL, msg: "" }, /* Xp 3 */
+    { llflag: LL_MINORAC_GL | LL_DUMP_GL, msg: "" }, /* Xp 6 */
+    { llflag: LL_MINORAC_GL | LL_DUMP_GL, msg: "" }, /* Xp 10 */
+    { llflag: LL_ACHIEVE_GL, msg: "" }, /* Xp 14, so able to attempt the quest */
+    { llflag: LL_ACHIEVE_GL, msg: "" }, /* Xp 18 */
+    { llflag: LL_ACHIEVE_GL, msg: "" }, /* Xp 22 */
+    { llflag: LL_ACHIEVE_GL, msg: "" }, /* Xp 26 */
+    { llflag: LL_ACHIEVE_GL, msg: "" }, /* Xp 30 */
+    { llflag: LL_MINORAC_GL, msg: "learned castle drawbridge's tune" }, /* achievement #31 */
+    { llflag: 0, msg: "" } /* keep this one at the end */
+];
+
+// C ref: insight.c record_achievement() -- the livelog part, after the
+// achievement has been added to u.uachieved[]
+function record_achievement_livelog(achidx, absidx) {
+    /* avoid livelog for achievements recorded during final disclosure:
+       nudist and blind-from-birth; also ascension which is suppressed
+       by this gets logged separately in really_done() */
+    if (game.program_state?.gameover)
+        return;
+
+    if (absidx >= ACH_RNK1_GL && absidx <= ACH_RNK8_GL) {
+        livelog_printf_gl(achieve_msg[absidx].llflag,
+                          `attained the rank of ${
+                              rank_of(rank_to_xlev_gl(absidx - (ACH_RNK1_GL - 1)),
+                                      game.urole.mnum /* Role_switch */,
+                                      (achidx < 0) ? true : false)} (level ${
+                              game.u.ulevel})`);
+    } else if (achidx === ACH_SOKO_PRIZE_GL
+               || achidx === ACH_MINE_PRIZE_GL) {
+        /* need to supply extra information for these two */
+        const otyp = ((achidx === ACH_SOKO_PRIZE_GL)
+                      ? game.context.achieveo.soko_prize_otyp
+                      : game.context.achieveo.mines_prize_otyp);
+
+        /* note: OBJ_NAME() works here because both "bag of holding" and
+           "amulet of reflection" are fully named in their objects[] entry
+           but that's not true in the general case */
+        livelog_printf_gl(achieve_msg[achidx].llflag,
+                          `${achieve_msg[achidx].msg} ${OBJ_NAME_GL(objects_gl[otyp])}`);
+    } else {
+        livelog_printf_gl(achieve_msg[absidx].llflag, achieve_msg[absidx].msg);
+    }
+}
+
+import { LL_MINORAC as LL_MINORAC_GL, ACH_RNK1 as ACH_RNK1_GL,
+         ACH_RNK8 as ACH_RNK8_GL, ACH_SOKO_PRIZE as ACH_SOKO_PRIZE_GL,
+         ACH_MINE_PRIZE as ACH_MINE_PRIZE_GL } from './const.js';
+import { livelog_printf as livelog_printf_gl } from './display.js';
+import { rank_to_xlev as rank_to_xlev_gl } from './botl.js';
+import { objects as objects_gl, OBJ_NAME as OBJ_NAME_GL } from './objects.js';

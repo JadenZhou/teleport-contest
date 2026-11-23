@@ -19,7 +19,8 @@ import { LEVITATION, FLYING, TT_PIT, Is_airlevel, Is_waterlevel } from './const.
 import { ENGRAVE, MARK, BLINDED, IS_AIR, IS_POOL, LAVAPOOL, DRAWBRIDGE_DOWN,
          IS_ALTAR, IS_GRAVE, IS_FOUNTAIN, STAIRS, LADDER, IS_WALL, SDOOR,
          IS_DOOR, IS_ROOM } from './const.js';
-import { pline } from './display.js';
+import { pline, livelog_printf } from './display.js';
+import { LL_CONDUCT } from './const.js';
 import { nomul } from './hack.js';
 import { AD_STCK, AD_WRAP, AT_ENGL, AT_HUGS, M1_HIDE, M1_CLING, S_MIMIC,
          MZ_HUGE } from './monsters.js';
@@ -1235,9 +1236,13 @@ export async function doengrave() {
         }
 
         /* A single `x' is the traditional signature of an illiterate person */
-        if (de.len !== 1 || (!de.ebuf.includes('x') && !de.ebuf.includes('X')))
-            u.uconduct.literate = (u.uconduct.literate || 0) + 1;
-            /* livelog_printf(LL_CONDUCT, "became literate ..."): no livelog */
+        if (de.len !== 1 || (!de.ebuf.includes('x') && !de.ebuf.includes('X'))) {
+            /* if (!u.uconduct.literate++) */
+            const was_literate = u.uconduct.literate || 0;
+            u.uconduct.literate = was_literate + 1;
+            if (!was_literate)
+                livelog_printf(LL_CONDUCT, `became literate by engraving "${de.ebuf}"`);
+        }
 
         /* Mix up engraving if surface or state of mind is unsound.
            Note: this won't add or remove any spaces. */

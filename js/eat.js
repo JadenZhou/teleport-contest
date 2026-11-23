@@ -93,7 +93,7 @@ import { COST_OPEN, GLIB, A_DEX } from './const.js';
 import { TIN_OPENER, DAGGER, SILVER_DAGGER, ELVEN_DAGGER, ORCISH_DAGGER,
          ATHAME, KNIFE, STILETTO, CRYSKNIFE, PICK_AXE, AXE } from './objects.js';
 import { observe_object } from './o_init.js';
-import { makeplural } from './objnam.js';
+import { makeplural, an } from './objnam.js';
 import { acurrstr } from './attrib.js';
 import { costly_spot } from './insight.js';
 
@@ -1444,11 +1444,25 @@ function use_up_tin(tin) {
 
 // C ref: eat.c eating_conducts()
 async function eating_conducts(pd) {
-    conduct_inc('food'); /* livelog_printf(): not ported */
-    if (!vegan(pd))
-        conduct_inc('unvegan');
-    if (!vegetarian(pd))
+    let ll_conduct = 0;
+
+    if (!conduct_inc('food')) {
+        livelog_printf(LL_CONDUCT, `ate for the first time - ${pd.pmnames[NEUTRAL]}`);
+        ll_conduct++;
+    }
+    if (!vegan(pd)) {
+        if (!conduct_inc('unvegan') && !ll_conduct) {
+            livelog_printf(LL_CONDUCT,
+                           `consumed animal products (${pd.pmnames[NEUTRAL]}) for the first time`);
+            ll_conduct++;
+        }
+    }
+    if (!vegetarian(pd)) {
+        if (!game.u.uconduct.unvegetarian && !ll_conduct)
+            livelog_printf(LL_CONDUCT,
+                           `tasted meat (${pd.pmnames[NEUTRAL]}) for the first time`);
         await violated_vegetarian();
+    }
 }
 
 // C ref: eat.c consume_tin()
@@ -1732,6 +1746,7 @@ async function rottenfood(obj) {
 /* called when a corpse is selected as food */
 async function eatcorpse(otmp) {
     let retcode = 0, tp = 0;
+    let ll_conduct = 0;
     const mnum = otmp.corpsenm;
     let rotted = 0;
     const slimeable = (mnum === M.PM_GREEN_SLIME && !Slimed() && !Unchanging()
@@ -1743,8 +1758,17 @@ async function eatcorpse(otmp) {
 
     /* KMH, conduct */
     if (!vegan(mons[mnum]))
-        conduct_inc('unvegan'); /* livelog_printf(): not ported */
+        if (!conduct_inc('unvegan')) {
+            livelog_printf(LL_CONDUCT,
+                  `consumed animal products for the first time, by eating ${
+                      an(food_xname(otmp, false))}`);
+            ll_conduct++;
+        }
     if (!vegetarian(mons[mnum])) {
+        if (!game.u.uconduct.unvegetarian && !ll_conduct)
+            livelog_printf(LL_CONDUCT,
+                           `tasted meat for the first time, by eating ${
+                               an(food_xname(otmp, false))}`);
         await violated_vegetarian();
     }
     if (!nonrotting_corpse(mnum)) {
@@ -2092,7 +2116,9 @@ async function fpostfx(otmp) {
     case FORTUNE_COOKIE:
         await outrumor(bcsign(otmp), BY_COOKIE);
         if (!Blind())
-            conduct_inc('literate'); /* livelog_printf(): not ported */
+            if (!conduct_inc('literate'))
+                livelog_printf(LL_CONDUCT,
+                    "became literate by reading the fortune inside a cookie");
         break;
     case LUMP_OF_ROYAL_JELLY:
         throw new Error('fpostfx(): lump of royal jelly (gainstr()) not ported yet');
@@ -2304,6 +2330,7 @@ export async function doeat() {
     let otmp;
     let basenutrit; /* nutrition of full item */
     let dont_start = false, already_partly_eaten;
+    let ll_conduct = 0;
 
     if (Strangled()) {
         await pline("If you can't breathe air, how can you consume solids?");
@@ -2384,7 +2411,11 @@ export async function doeat() {
     }
 
     /* KMH, conduct */
-    conduct_inc('food'); /* livelog_printf(): not ported */
+    if (!conduct_inc('food')) {
+        livelog_printf(LL_CONDUCT, `ate for the first time - ${
+            food_xname(otmp, false)}`);
+        ll_conduct++;
+    }
 
     already_partly_eaten = otmp.oeaten ? true : false;
     otmp = await touchfood(otmp);
@@ -2418,8 +2449,18 @@ export async function doeat() {
          */
         switch (objects[otmp.otyp].oc_material) {
         case FLESH:
-            conduct_inc('unvegan'); /* livelog_printf(): not ported */
+            if (!conduct_inc('unvegan') && !ll_conduct) {
+                livelog_printf(LL_CONDUCT,
+                  `consumed animal products for the first time, by eating ${
+                      an(food_xname(otmp, false))}`);
+                ll_conduct++;
+            }
             if (otmp.otyp !== EGG) {
+                if (!u.uconduct.unvegetarian && !ll_conduct)
+                    livelog_printf(LL_CONDUCT,
+                                   `tasted meat for the first time, by eating ${
+                                       an(food_xname(otmp, false))}`);
+
                 await violated_vegetarian();
             }
             break;
@@ -2427,7 +2468,10 @@ export async function doeat() {
             if (otmp.otyp === PANCAKE || otmp.otyp === FORTUNE_COOKIE /*eggs*/
                 || otmp.otyp === CREAM_PIE || otmp.otyp === CANDY_BAR /*milk*/
                 || otmp.otyp === LUMP_OF_ROYAL_JELLY)
-                conduct_inc('unvegan'); /* livelog_printf(): not ported */
+                if (!conduct_inc('unvegan') && !ll_conduct)
+                    livelog_printf(LL_CONDUCT,
+                           `consumed animal products (${
+                               food_xname(otmp, false)}) for the first time`);
             break;
         }
 
@@ -2541,3 +2585,6 @@ export async function maybe_finished_meal(stopping) {
     }
     return false;
 }
+
+import { livelog_printf } from './display.js';
+import { LL_CONDUCT } from './const.js';
