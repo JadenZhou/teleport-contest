@@ -347,7 +347,12 @@ export async function losexp(drainer) /* cause of death, if drain should be fata
             await done(DIED);
         }
         /* no drainer or lifesaved */
+        if (u.ulevel > 1)
+            /* can happen during debug fuzzing if fuzzer_savelife() uses
+               a blessed potion of restore ability to restore lost levels */
+            return;
         u.uexp = 0;
+        livelog_printf(LL_MINORAC, "lost all experience");
     }
 
     olduhpmax = u.uhpmax;

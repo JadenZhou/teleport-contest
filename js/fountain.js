@@ -8,6 +8,7 @@
 // Paths that reach unported code throw 'not ported yet'.
 
 import { game } from './gstate.js';
+import { monster_detect } from './detect.js';
 import { livelog_printf } from './display.js';
 import { LL_ARTIFACT } from './const.js';
 import { rn2, rnd, rn1 } from './rng.js';
@@ -506,34 +507,6 @@ export async function drinkfountain() {
         }
     }
     await dryup(u.ux, u.uy, true);
-}
-
-// C ref: detect.c monster_detect() -- used by crystal balls, potions,
-// fountains.  Returns 1 if nothing was detected, 0 if something was.
-// Only the nothing-detected path and the fountain caller (no object)
-// are reached; the detection display (browse_map()) isn't ported yet.
-export async function monster_detect(otmp, mclass) {
-    let mcnt = 0;
-
-    /* Note: This used to just check fmon for a non-zero value
-     * but in versions since 3.3.0 fmon can test TRUE due to the
-     * presence of dmons, so we have to find at least one
-     * with positive hit-points to know for sure.
-     */
-    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
-        if (DEADMONSTER(mtmp) || (mtmp.isgd && !mtmp.mx))
-            continue;
-        ++mcnt;
-        break; /* no need for full count, just 1 or more vs 0 */
-    }
-
-    if (!mcnt) {
-        if (otmp)
-            throw new Error('monster_detect(): strange_feeling() for an object not ported yet');
-        return 1;
-    }
-    void mclass;
-    throw new Error('monster_detect(): monster display and browse_map() not ported yet');
 }
 
 // C ref: fountain.c dipfountain() -- dip an object into a fountain when

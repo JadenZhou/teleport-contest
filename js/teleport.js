@@ -6,6 +6,7 @@
 // teleport.c.
 
 import { game } from './gstate.js';
+import { make_blinded } from './potion.js';
 import { remove_worm, place_worm_tail_randomly } from './worm.js';
 import { rn2, rnl } from './rng.js';
 import { pline } from './display.js';
@@ -26,7 +27,7 @@ import { goodpos, m_at, place_monster, is_pool, is_lava, sobj_at } from './makem
 import { rnd, rn1 } from './rng.js';
 import { newsym, canseemon, canspotmon, sensemon, see_monsters } from './display.js';
 import { couldsee, vision_recalc } from './vision.js';
-import { u_on_newpos } from './mklev.js';
+import { u_on_newpos, somexyspace } from './mklev.js';
 import { nomul, spoteffects, switch_terrain } from './hack.js';
 import { VIBRATING_SQUARE, deltrap } from './trap.js';
 import { PASSES_WALLS, ANTIMAGIC } from './const.js';
@@ -518,9 +519,10 @@ async function vault_tele() {
     const croom = search_special_vault();
     const c = { x: 0, y: 0 };
 
-    if (croom)
-        throw new Error('vault_tele(): somexyspace() into a vault not ported yet');
-    void c;
+    if (croom && somexyspace(croom, c) && await teleok(c.x, c.y, false)) {
+        await teleds(c.x, c.y, TELEDS_TELEPORT);
+        return;
+    }
     await tele();
 }
 
@@ -555,10 +557,8 @@ export async function scrolltele(scroll) {
     }
 
     /* don't show trap if "Sorry..." */
-    /* if (!Blinded) make_blinded(0L, FALSE): with Blinded already 0 this
-       changes nothing (no timeout to clear, no blindness toggle) */
-    if (tp_prop(BLINDED).intrinsic)
-        throw new Error('scrolltele(): make_blinded() not ported yet');
+    if (!tp_prop(BLINDED).intrinsic) /* !Blinded */
+        await make_blinded(0, false);
 
     if ((u.uhave?.amulet || On_W_tower_level(u.uz)) && !rn2(3))
         throw new Error('scrolltele(): "You feel disoriented for a moment." not ported yet');

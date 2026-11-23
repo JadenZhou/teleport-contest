@@ -14,7 +14,12 @@ import {
     GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE, Has_contents, ONAME, has_oname,
     P_DAGGER, P_SABER, P_BOW, P_CROSSBOW, IS_ALTAR, IS_GRAVE, IS_FOUNTAIN,
     IS_WALL, IS_DOOR, IS_ROOM, SDOOR, STAIRS, LADDER, CORR,
+    DRAWBRIDGE_UP, DRAWBRIDGE_DOWN, CLOUD, IS_AIR, Is_waterlevel, Is_earthlevel,
 } from './const.js';
+import { db_under_typ, stairway_at } from './display.js';
+import { is_pool, is_lava } from './makemon.js';
+import { is_ice } from './dig.js';
+import { hliquid } from './potion.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
 import {
     tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
@@ -167,33 +172,46 @@ export function is_edible(obj) {
     return obj.oclass === O.FOOD_CLASS;
 }
 
-/* C ref: dungeon.c surface() -- the hero's spot on ordinary terrain */
+// C ref: dungeon.c surface()
 export function surface(x, y) {
+    const u = game.u;
     const lev = game.level.at(x, y);
-    const levtyp = lev.typ;
+    /* SURFACE_AT(x, y) */
+    const levtyp = (lev.typ === DRAWBRIDGE_UP) ? db_under_typ(lev.drawbridgemask)
+                                               : lev.typ;
 
-    if (game.u.uswallow)
-        ia_not_ported('surface() while swallowed');
-    if (IS_ALTAR(levtyp))
+    if (u.ux === x && u.uy === y && u.uswallow
+        && (u.ustuck.data.mflags1 & M.M1_ANIMAL)) /* is_animal() */
+        /* 'husk' is iffy but maw is wrong for 't' class */
+        ia_not_ported('surface() inside an engulfer (digests()/enfolds())');
+    else if (IS_AIR(levtyp))
+        return Is_waterlevel(u.uz) ? "air bubble"
+                                   : (levtyp === CLOUD) ? "cloud" : "air";
+    else if (is_pool(x, y))
+        return (u.uinwater /* Underwater */ && !Is_waterlevel(u.uz))
+            ? "bottom" : hliquid("water");
+    else if (is_ice(x, y))
+        return "ice";
+    else if (is_lava(x, y))
+        return hliquid("lava");
+    else if (lev.typ === DRAWBRIDGE_DOWN)
+        return "bridge";
+    else if (IS_ALTAR(levtyp))
         return "altar";
     else if (IS_GRAVE(levtyp))
         return "headstone";
     else if (IS_FOUNTAIN(levtyp))
         return "fountain";
-    else if (levtyp === STAIRS || levtyp === LADDER) /* On_stairs() */
+    else if (stairway_at(x, y)) /* On_stairs() */
         return "stairs";
     else if (IS_WALL(levtyp) || levtyp === SDOOR)
-        return "wall";
+        return "wall"; /* 'surface' during Passes_walls */
     else if (IS_DOOR(levtyp))
-        return "doorway";
-    else if (IS_ROOM(levtyp) || levtyp === CORR) {
-        /* pools, ice, lava, air and drawbridges are not ported */
-        if (!IS_ROOM(levtyp))
-            return "ground";
-        return "floor"; /* !Is_earthlevel(&u.uz) */
-    }
-    ia_not_ported('surface() for water/ice/lava/air/drawbridge');
-    return "";
+        return "doorway"; /* even for closed door */
+    else if (IS_ROOM(levtyp) && !Is_earthlevel(u.uz))
+        return "floor";
+    else
+        return "ground";
 }
 
 /* C ref: do_name.c objtyp_is_callable() */

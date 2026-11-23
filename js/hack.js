@@ -40,7 +40,7 @@ import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible } from './display.js';
 import { vision_recalc, couldsee } from './vision.js';
-import { glyph_at, Norep, feel_location } from './display.js';
+import { glyph_at, Norep, feel_location, glyph_is_warning } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
 import { u_at, Is_rogue_level } from './const.js';
@@ -2642,7 +2642,8 @@ async function domove_bump_mon(mtmp, glyph) {
      * different message and makes the player remember the monster.
      */
     if (game.context.nopick && !game.context.travel
-        && canspotmon(mtmp) /* || glyph_is_invisible() || glyph_is_warning() */) {
+        && (canspotmon(mtmp) || glyph_is_invisible(glyph)
+            || glyph_is_warning(glyph))) {
         if (mtmp.m_ap_type && !uhave(PROT_FROM_SHAPE_CHANGERS)
             && !sensemon(mtmp))
             await stumble_onto_mimic(mtmp);
@@ -2961,8 +2962,7 @@ async function domove_core() {
     u.uy0 = u.uy;
     game.bhitpos = { x, y };
     const tmpr = game.level.at(x, y);
-    const glyph = null; /* glyph_at(x, y): only remembered 'I' and warning
-                           glyphs matter below, and neither is ported */
+    const glyph = glyph_at(x, y);
 
     if (mtmp) {
         /* don't stop travel when displacing pets; if the

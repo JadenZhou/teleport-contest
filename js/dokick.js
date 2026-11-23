@@ -11,7 +11,9 @@
 import { game } from './gstate.js';
 import { in_town } from './hack.js';
 import { rn2, rnd, rn1, rnl } from './rng.js';
-import { pline, You, You_cant, newsym, unmap_invisible } from './display.js';
+import { pline, You, You_cant, newsym, unmap_invisible, feel_location,
+         feel_newsym } from './display.js';
+import { is_drawbridge_wall } from './dbridge.js';
 import { getdir } from './cmd.js';
 import { tty_display_nhwindow } from './wintty.js';
 import { isok, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, IS_THRONE,
@@ -183,7 +185,7 @@ async function kick_dumb(x, y) {
     if (martial() || ACURR(A_DEX) >= 16 || rn2(3)) {
         await You("kick at empty space.");
         if (Blind())
-            throw new Error('kick_dumb(): feel_location() not ported yet');
+            feel_location(x, y);
     } else {
         await pline("Dumb move!  You strain a muscle.");
         exercise(A_STR, false);
@@ -203,10 +205,9 @@ async function kick_ouch(x, y, kickobjnam) {
     exercise(A_STR, false);
     if (isok(x, y)) {
         if (Blind())
-            throw new Error('kick_ouch(): feel_location() not ported yet');
-        /* is_drawbridge_wall(x, y) >= 0 */
-        if (game.level.at(x, y).typ === DBWALL)
-            throw new Error('kick_ouch(): is_drawbridge_wall() not ported yet');
+            feel_location(x, y); /* we know we hit it */
+        if (is_drawbridge_wall(x, y) >= 0)
+            throw new Error('kick_ouch(): drawbridge (find_drawbridge()) not ported yet');
         await wake_nearto(x, y, 5 * 5);
     }
     if (!rn2(3))
@@ -256,10 +257,7 @@ async function kick_door(x, y, avrg_attrib) {
             exercise(A_STR, true);
             maploc.doormask = D_BROKEN;
         }
-        /* feel_newsym(x, y): we know we broke it */
-        if (Blind())
-            throw new Error('kick_door(): feel_location() not ported yet');
-        newsym(x, y);
+        feel_newsym(x, y); /* we know we broke it */
         recalc_block_point(x, y); /* vision */
         if (shopdoor)
             throw new Error('kick_door(): add_damage()/pay_for_damage() not ported yet');
@@ -267,7 +265,7 @@ async function kick_door(x, y, avrg_attrib) {
             throw new Error('kick_door(): watchman_thief_arrest() not ported yet');
     } else {
         if (Blind())
-            throw new Error('kick_door(): feel_location() not ported yet');
+            feel_location(x, y); /* we know we hit it */
         exercise(A_STR, true);
         /* note: this used to be unconditional "WHAMMM!!!" but that has a
            fairly strong connotation of noise that a deaf hero shouldn't
@@ -299,10 +297,7 @@ async function kick_nondoor(x, y, avrg_attrib) {
             } else if (maploc.doormask !== D_NODOOR
                        && !(maploc.doormask & D_LOCKED))
                 maploc.doormask = D_ISOPEN;
-            /* feel_newsym(x, y): we know it's gone */
-            if (Blind())
-                throw new Error('kick_nondoor(): feel_location() not ported yet');
-            newsym(x, y);
+            feel_newsym(x, y); /* we know it's gone */
             if (maploc.doormask === D_ISOPEN
                 || maploc.doormask === D_NODOOR)
                 unblock_point(x, y); /* vision */
@@ -318,10 +313,7 @@ async function kick_nondoor(x, y, avrg_attrib) {
             await pline("Crash!  You kick open a secret passage!");
             exercise(A_DEX, true);
             maploc.typ = CORR;
-            /* feel_newsym(x, y): we know it's gone */
-            if (Blind())
-                throw new Error('kick_nondoor(): feel_location() not ported yet');
-            newsym(x, y);
+            feel_newsym(x, y); /* we know it's gone */
             unblock_point(x, y); /* vision */
             return ECMD_TIME;
         } else {

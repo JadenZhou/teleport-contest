@@ -1742,6 +1742,11 @@ export function map_engraving(ep, show) {
 
 // C ref: display.c _map_location() -- gas
 // regions (show_region()) are not ported yet
+// C ref: display.h map_location()
+export function map_location(x, y, show) {
+    _map_location(x, y, show);
+}
+
 function _map_location(x, y, show) {
     let obj, trap, ml_ep;
     if ((obj = vobj_at(x, y)) && !covers_objects(x, y)) {
@@ -1982,16 +1987,10 @@ export function newsym(x, y) {
             if (!see_self)
                 return;
         } else {
+            feel_location(game.u.ux, game.u.uy); /* forces an update */
+
             if (!canspotself())
-                throw new Error('newsym(): feel_location() of an unseen hero spot not ported yet');
-            const tg = terrain_glyph(loc, x, y);
-            loc.remembered_glyph = { ch: tg.ch, color: tg.color, decgfx: tg.dec,
-                                     cmap: tg.cmap, cmapidx: tg.cmapidx };
-            /* C ref: display.c feel_location(): Corridors are never felt
-               as lit (unless remembered that way) (lit_corridor only). */
-            if (loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr'
-                && !loc.waslit)
-                loc.remembered_glyph = rememb_glyph(S_corr_g);
+                return;
         }
         display_self();
         return;
@@ -2048,6 +2047,14 @@ export function newsym(x, y) {
                              && game.iflags.wc_color !== false))
             && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
             loc.remembered_glyph = rememb_glyph(S_corr_g);
+        /* lev->glyph = cmap_to_glyph(DARKROOMSYM) for a remembered lit
+           floor spot; with dark_room set the S_darkroom glyph is drawn
+           like the remembered S_room spot (see feel_location()) */
+        else if (game.flags.dark_room !== false && game.iflags.wc_color !== false
+                 && loc.typ === ROOM && loc.remembered_glyph.cmap === 'S_room'
+                 && game.currentgraphics !== ROGUESET)
+            loc.remembered_glyph = { ...loc.remembered_glyph,
+                                     cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx, 0,
@@ -2077,6 +2084,19 @@ function engr_can_be_felt(ep) {
     default:
         return false;
     }
+}
+
+// C ref: display.c feel_newsym()
+/*
+ * feel_newsym()
+ *
+ * When hero knows what happened to location, even when blind.
+ */
+export function feel_newsym(x, y) {
+    if (Blind())
+        feel_location(x, y);
+    else
+        newsym(x, y);
 }
 
 // C ref: display.c feel_location()
@@ -2145,12 +2165,19 @@ export function feel_location(x, y) {
         }
 
         /* Floor spaces are dark if unlit.  Corridors are dark if unlit.
-           (JS remembers no S_darkroom glyphs; see newsym()) */
+           cmap_to_glyph(flags.dark_room ? S_darkroom : S_stone); the
+           S_darkroom glyph is a new glyph (lock.c and pager.c tell it
+           apart) but is drawn like the remembered S_room spot, as newsym()
+           draws out-of-sight dark room spots */
         if (lev.typ === ROOM && lev.remembered_glyph?.cmap === 'S_room'
             && (!lev.waslit || (game.flags.dark_room !== false
                                 && game.iflags.wc_color !== false))) {
-            lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
-                                     cmap: 'S_stone' };
+            if (game.flags.dark_room === false)
+                lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
+                                         cmap: 'S_stone' };
+            else
+                lev.remembered_glyph = { ...lev.remembered_glyph,
+                                         cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
             show_glyph(x, y, lev.remembered_glyph);
         } else if (lev.typ === CORR && lev.remembered_glyph?.cmap === 'S_litcorr'
                    && !lev.waslit) {
@@ -2793,7 +2820,10 @@ function clear_glyph_buffer() {
     for (let x = 1; x < COLNO; x++)
         for (let y = 0; y < ROWNO; y++)
             if (game.level.at(x, y))
-                show_glyph_cell(x, y, ' ', NO_COLOR, false);
+                /* GLYPH_UNEXPLORED: glyph_at() reports it as 'unexplored'
+                   until something else is shown there */
+                show_glyph_cell(x, y, ' ', NO_COLOR, false, 0, 'cmap', false,
+                                { unexplored: true });
 }
 
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
