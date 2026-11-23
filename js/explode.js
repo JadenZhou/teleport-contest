@@ -337,8 +337,8 @@ export async function explode(
            so retain a copy of the current value for this explosion */
         str = killer().name;
         do_hallu = (Hallucination()
-                    && (strstri(str, "'s explosion")
-                        || strstri(str, "s' explosion")));
+                    && (strstri(str, "'s explosion") >= 0
+                        || strstri(str, "s' explosion") >= 0));
     }
     if (type === PHYS_EXPL_TYPE) {
         /* currently only gas spores */

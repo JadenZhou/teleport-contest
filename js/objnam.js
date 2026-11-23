@@ -2855,7 +2855,7 @@ export function gloves_simple_name(gloves) {
         const actualn = OBJ_NAME(ocl), descrpn = OBJ_DESCR(ocl);
 
         if (strstri(objects[otyp].oc_name_known ? actualn : descrpn,
-                    gauntlets))
+                    gauntlets) >= 0)
             return gauntlets;
     }
     return "gloves";
@@ -2871,8 +2871,8 @@ export function boots_simple_name(boots) {
         const ocl = objects[otyp];
         const actualn = OBJ_NAME(ocl), descrpn = OBJ_DESCR(ocl);
 
-        if (strstri(descrpn, shoes)
-            || (objects[otyp].oc_name_known && strstri(actualn, shoes)))
+        if (strstri(descrpn, shoes) >= 0
+            || (objects[otyp].oc_name_known && strstri(actualn, shoes) >= 0))
             return shoes;
     }
     return "boots";
