@@ -18,6 +18,8 @@ import { game } from './gstate.js';
 import { restshk, set_residency } from './shk.js';
 import { restpriest } from './priest.js';
 import { Sfi, Sf_eof, rewind_nhfile, close_nhfile } from './sfbase.js';
+import { restore_timers as restore_timers_from, run_timers, relink_timers } from './timeout.js';
+import { RANGE_GLOBAL, RANGE_LEVEL } from './const.js';
 import { create_levelfile, delete_savefile, get_freeing_nhfile, validate,
          HACK_UID } from './files.js';
 import { savelev, rest_adjust_levelflags, relative_time_to_moves,
@@ -548,22 +550,19 @@ async function restgamestate(nhfp) {
     restore_msghistory(nhfp);
     restore_gamelog(nhfp);
     restore_luadata(nhfp);
-    /* must come after all mons & objs are restored:
-       relink_timers(FALSE), relink_light_sources(FALSE) -- object timers
-       stay on their objects in the JS port; no light sources yet */
+    /* must come after all mons & objs are restored: relink_timers(FALSE)
+       and relink_light_sources(FALSE) run in dorecover(), after the id
+       links are resolved */
     adj_erinys(u.ualign.abuse);
     /* inventory display is now viable */
     g.iflags.perm_invent = defer_perm_invent;
     return true;
 }
 
-// C ref: timeout.c restore_timers()
-function restore_timers(nhfp, range) {
-    const t = Sfi(nhfp, "timers");
-    if (range === 'global') {
-        if (t !== null && t !== undefined) game.timer_base_global = t;
-    } else if (t !== null && t !== undefined)
-        game.level.timer_base = t;
+/* restore_timers(): timeout.js */
+function restore_timers(nhfp, range, adjust = 0) {
+    restore_timers_from(nhfp, (range === 'global') ? RANGE_GLOBAL : RANGE_LEVEL,
+                        adjust);
 }
 
 // C ref: light.c restore_light_sources()
@@ -758,6 +757,7 @@ export async function dorecover(nhfp) {
     await getlev(nhfp, 0, 0, lev_from);
     /* now link the game state to the restored level */
     resolve_saved_ids(nhfp, 0);
+    relink_timers(false);
     close_nhfile(nhfp);
     restlevelstate();
     g.program_state.something_worth_saving = 1; /* useful data now exists */
@@ -789,7 +789,7 @@ export async function dorecover(nhfp) {
     vision_reset();
     g.vision_full_recalc = 1; /* recompute vision (not saved) */
 
-    run_timers(); /* expire all timers that have gone off while away */
+    await run_timers(); /* expire all timers that have gone off while away */
     g.program_state.restoring = 0; /* affects bot() so clear before docrt() */
 
     /* ge.early_raw_messages: no early raw messages */
@@ -813,11 +813,6 @@ function reglyph_darkroom() {
     /* nothing to convert: flags.dark_room comes from the save file */
 }
 
-// C ref: timeout.c run_timers() -- the JS port keeps object timers on
-// their objects and runs them from the turn loop; restoring takes no
-// game time, so none has come due
-function run_timers() {
-}
 
 // C ref: restore.c rest_stairs()
 function rest_stairs(nhfp) {
@@ -934,7 +929,7 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
     /* the JS level's own fields that C keeps in other globals */
     Object.assign(L, Sfi(nhfp, "lev-js"));
 
-    restore_timers(nhfp, 'level');
+    restore_timers(nhfp, 'level', elapsed);
     restore_light_sources(nhfp, 'level');
     g.fmon = restmonchn(nhfp);
     rest_worm(nhfp); /* restore worm information */
@@ -1042,10 +1037,10 @@ export async function getlev(nhfp, pid, lev, fixups_from) {
         }
     }
     /* must come after all mons & objs are restored:
-       relink_timers(ghostly), relink_light_sources(ghostly) -- no
-       separate timer or light lists (object timers are kept on the
-       objects, light sources aren't ported) */
+       relink_timers(ghostly), relink_light_sources(ghostly) -- light
+       sources aren't ported */
     resolve_saved_ids(nhfp, from);
+    relink_timers(ghostly);
     reset_oattached_mids(ghostly);
 
     if (ghostly)

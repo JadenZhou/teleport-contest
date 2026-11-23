@@ -35,6 +35,8 @@ import { change_luck } from './attrib.js';
 import { monsndx } from './mondata.js';
 import { objects, NUM_OBJECTS } from './objects.js';
 import { getlev } from './restore.js';
+import { save_timers as save_timers_to } from './timeout.js';
+import { RANGE_GLOBAL, RANGE_LEVEL } from './const.js';
 import { GameMap } from './game.js';
 import { setworn } from './worn.js';
 import { forget_temple_entry } from './priest.js';
@@ -331,13 +333,9 @@ function save_killers(nhfp) {
     Sfo(nhfp, game.killer ?? null, "killers");
 }
 
-// C ref: timeout.c save_timers() -- the JS port keeps object timers on
-// the objects themselves (obj.timer), saved with each object; there is no
-// separate global or level timer list yet
+/* save_timers(): timeout.js */
 function save_timers(nhfp, range) {
-    Sfo(nhfp, (range === 'global') ? (game.timer_base_global ?? null)
-                                   : (game.level?.timer_base ?? null),
-        "timers");
+    save_timers_to(nhfp, (range === 'global') ? RANGE_GLOBAL : RANGE_LEVEL);
 }
 
 // C ref: light.c save_light_sources() -- light sources aren't ported

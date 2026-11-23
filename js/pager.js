@@ -18,6 +18,7 @@
 // background (back_to_glyph()).
 
 import { game } from './gstate.js';
+import { obj_stop_timers } from './timeout.js';
 import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
          tty_select_menu, tty_destroy_nhwindow, add_menu_str,
          tty_yn_function } from './wintty.js';
@@ -501,10 +502,8 @@ export function object_from_map(glyph, x, y) {
         }
         /* even though we pass False for mksobj()'s 'init' arg, corpse-rot,
            egg-hatch, and figurine-transform timers get initialized */
-        if (otmp.timer || otmp.timed) {
-            otmp.timer = null; /* obj_stop_timers(otmp) */
-            otmp.timed = 0;
-        }
+        if (otmp.timed)
+            obj_stop_timers(otmp);
         fakeobj = true;
         if (otmp.oclass === COIN_CLASS)
             otmp.quan = 2; /* to force pluralization */

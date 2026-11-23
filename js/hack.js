@@ -23,7 +23,7 @@ import {
     ROWNO, xdir, ydir, DO_MOVE, TEST_MOVE, WT_TOOMUCH_DIAGONAL, IS_DOOR,
     IS_FURNITURE, SCORR, SDOOR, TREE, OROOM, P_AXE, ACCESSIBLE, IS_STWALL,
     TEMPLE, ZOO, SWAMP, COURT, LEPREHALL, MORGUE, BEEHIVE, COCKNEST, ANTHOLE,
-    BARRACKS, DELPHI, THRONE, STEALTH, WATER, POOL, LAVAPOOL, FIRE_RES,
+    BARRACKS, DELPHI, THRONE, STEALTH, WT_ELF, WATER, POOL, LAVAPOOL, FIRE_RES,
 } from './const.js';
 import { waterbody_name } from './pager.js';
 import { has_ceiling } from './insight.js';
@@ -99,7 +99,7 @@ import { midnight } from './calendar.js';
 import { Hello } from './role.js';
 import { search_special, You_hear } from './sounds.js';
 import { DEAF } from './const.js';
-import { wake_msg, seemimic, maybe_unhide_at } from './mon.js';
+import { wake_msg, seemimic, maybe_unhide_at, disturb_buried_zombies } from './mon.js';
 import { drag_ball, move_bc } from './ball.js';
 import { worm_cross } from './worm.js';
 /* C ref: mondata.h is_clinger() */
@@ -2353,8 +2353,7 @@ async function moverock_core(sx, sy) {
                potentially into something like a trap, pool, or lava) */
 
             /* rumbling disturbs buried zombies */
-            if (game.level.buriedobjlist?.some(o => o.otyp === CORPSE && o.timed))
-                throw new Error('moverock_core(): disturb_buried_zombies() not ported yet');
+            disturb_buried_zombies(sx, sy);
 
             if (ttmp) {
                 switch (ttmp.ttyp) {
@@ -3096,7 +3095,10 @@ async function domove_core() {
                 nomul(0);
     }
 
-    /* disturb_buried_zombies(): buried objects aren't ported */
+    /* your tread on the ground may disturb the slumber of nearby zombies */
+    if (!Levitation() && !Flying() && !uhave(STEALTH)
+        && game.youmonst.data.cwt >= Math.trunc(WT_ELF / 2))
+        disturb_buried_zombies(u.ux, u.uy);
     /* hideunder(&youmonst): only a hider form can hide */
     if (u.umonnum !== u.umonster
         && (hides_under(game.youmonst.data) || game.youmonst.data.mlet === S_EEL))

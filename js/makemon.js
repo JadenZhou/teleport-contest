@@ -17,6 +17,8 @@ import { canspotmon } from './display.js';
 import { mondied } from './mon.js';
 import { in_town } from './hack.js';
 import { game } from './gstate.js';
+import { stop_timer, obj_to_any } from './timeout.js';
+import { ROT_CORPSE } from './const.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
 import {
@@ -1440,7 +1442,7 @@ function m_initinv(mtmp) {
             if ((catcorpse = mksobj(O.CORPSE, true, false)) != null) {
                 otmp.spe = 1; /* flag for special SchroedingersBox */
                 set_corpsenm(catcorpse, M.PM_HOUSECAT);
-                /* stop_timer(ROT_CORPSE, ...): timers not ported yet */
+                stop_timer(ROT_CORPSE, obj_to_any(catcorpse));
                 if (!otmp.cobj) otmp.cobj = [];
                 otmp.cobj.push(catcorpse); /* add_to_container() */
             }

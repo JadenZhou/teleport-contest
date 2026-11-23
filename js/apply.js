@@ -908,3 +908,9 @@ export async function jump(magic) {
         return ECMD_TIME;
     }
 }
+
+// C ref: apply.c fig_transform()
+/* figurine timeout callback */
+export async function fig_transform(arg, timeout) {
+    throw new Error('fig_transform() not ported yet');
+}

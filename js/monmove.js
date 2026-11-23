@@ -56,7 +56,8 @@ import { grow_up } from './makemon.js';
 import { is_organic } from './objects.js';
 import { eaten_stat } from './eat.js';
 import { extract_from_minvent } from './steal.js';
-import { m_consume_obj } from './mon.js';
+import { m_consume_obj, disturb_buried_zombies } from './mon.js';
+import { has_ceiling } from './insight.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
@@ -977,8 +978,9 @@ export async function dochug(mtmp) {
             /* if confused grabber has wandered off, let go */
             if (mtmp === u.ustuck)
                 throw new Error('dochug(): unstuck() not ported yet');
-            /* if (grounded(mdat)) disturb_buried_zombies(): no buried
-               zombies are ported yet */
+            if (!is_flyer(mdat) && !is_floater(mdat) /* grounded(mdat) */
+                && ((mdat.mflags1 & M.M1_CLING) === 0 || !has_ceiling(game.u.uz)))
+                disturb_buried_zombies(mtmp.mx, mtmp.my);
             /* Maybe it stepped on a trap and fell asleep... */
             if (helpless(mtmp))
                 return 0;

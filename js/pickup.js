@@ -99,7 +99,9 @@ import { shop_keeper, sellobj, get_obj_location } from './shk.js';
 import { Norep, pline_The, bot, canspotmon } from './display.js';
 import { welded, setuwep, setuswapwep, setuqwep } from './wield.js';
 import { MZ_LARGE, PM_ICE_TROLL, PM_HOUSECAT } from './monsters.js';
-import { add_to_container, start_corpse_timeout, set_corpsenm } from './mkobj.js';
+import { add_to_container, start_corpse_timeout, set_corpsenm, start_glob_timeout } from './mkobj.js';
+import { stop_timer, obj_to_any } from './timeout.js';
+import { ROT_CORPSE, REVIVE_MON, SHRINK_GLOB } from './const.js';
 import { makemon, set_malign } from './makemon.js';
 import { more_experienced, newexplevel } from './exper.js';
 import { currency } from './insight.js';
@@ -2250,14 +2252,15 @@ async function in_container(obj) {
         obj.age = (game.moves || 0) - obj.age; /* actual age */
         /* stop any corpse timeouts when frozen */
         if (obj.otyp === CORPSE) {
-            if (obj.timer && (obj.timer.action === 'ROT_CORPSE'
-                              || obj.timer.action === 'REVIVE_MON'))
-                obj.timer = null; /* stop_timer(ROT_CORPSE), (REVIVE_MON) */
+            if (obj.timed) {
+                stop_timer(ROT_CORPSE, obj_to_any(obj));
+                stop_timer(REVIVE_MON, obj_to_any(obj));
+            }
             /* if this is the corpse of a cancelled ice troll, uncancel it */
             if (obj.corpsenm === PM_ICE_TROLL && obj.oextra?.omonst)
                 obj.oextra.omonst.mcan = 0;
-        } else if (obj.globby && obj.timer) {
-            throw new Error('in_container(): stop_timer(SHRINK_GLOB) not ported yet');
+        } else if (obj.globby && obj.timed) {
+            stop_timer(SHRINK_GLOB, obj_to_any(obj));
         }
     } else if (Is_mbag(cont) && mbag_explodes(obj, 0)) {
         throw new Error('in_container(): magic bag explosion (do_boh_explosion()) not ported yet');
@@ -2369,7 +2372,7 @@ export function removed_from_icebox(obj) {
             start_corpse_timeout(obj);
         } else if (obj.globby) {
             /* non-frozen globs gradually shrink away to nothing */
-            throw new Error('removed_from_icebox(): start_glob_timeout() not ported yet');
+            start_glob_timeout(obj, 0);
         }
     }
 }

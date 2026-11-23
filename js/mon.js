@@ -95,7 +95,8 @@ import { ceiling_hider } from './engrave.js';
 import { has_ceiling } from './insight.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, ROOM } from './const.js';
 import { dead_species } from './mkobj.js';
-import { kill_egg } from './timeout.js';
+import { kill_egg, peek_timer, stop_timer, start_timer, obj_to_any } from './timeout.js';
+import { ZOMBIFY_MON, TIMER_OBJECT } from './const.js';
 import { relobj, thiefdead, mdrop_special_objs, discard_minvent } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
          mon_track_clear, monflee } from './monmove.js';
@@ -2239,12 +2240,19 @@ export async function wake_nearby(petcall) {
 }
 
 // C ref: hack.c disturb_buried_zombies()
-function disturb_buried_zombies(x, y) {
-    for (const otmp of game.level.buriedobjlist || []) {
+/* reduce zombification timeout of buried zombies around px, py */
+export function disturb_buried_zombies(x, y) {
+    let t;
+
+    for (const otmp of [...(game.level.buriedobjlist || [])]) {
         if (otmp.otyp === CORPSE && otmp.timed
             && otmp.ox >= x - 1 && otmp.ox <= x + 1
-            && otmp.oy >= y - 1 && otmp.oy <= y + 1)
-            throw new Error('disturb_buried_zombies(): ZOMBIFY_MON timers not ported yet');
+            && otmp.oy >= y - 1 && otmp.oy <= y + 1
+            && (t = peek_timer(ZOMBIFY_MON, obj_to_any(otmp))) > 0) {
+            t = stop_timer(ZOMBIFY_MON, obj_to_any(otmp));
+            start_timer(Math.max(1, Math.trunc(t * 2 / 3)), TIMER_OBJECT,
+                        ZOMBIFY_MON, obj_to_any(otmp));
+        }
     }
 }
 
