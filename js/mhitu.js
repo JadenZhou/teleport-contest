@@ -106,7 +106,11 @@ const LARGEST_INT = 32767;
 import { done_in_by } from './end.js';
 import { ART_SNICKERSNEE } from './artilist.js';
 import { genders } from './role.js';
-import { xname } from './objnam.js';
+import { xname, doname } from './objnam.js';
+import { tp_sensemon, vobj_at } from './display.js';
+import { Amonnam } from './do_name.js';
+import { is_pool } from './makemon.js';
+import { DETECT_MONSTERS } from './const.js';
 
 /* C ref: mhitu.c static mon_currwep */
 let mon_currwep = null;
@@ -933,8 +937,32 @@ async function hitmu(mtmp, mattk) {
     /*  If the monster is undetected & hits you, you should know where
      *  the attack came from.
      */
-    if (mtmp.mundetected && (hides_under(mdat) || mdat.mlet === M.S_EEL))
-        throw new Error('hitmu(): undetected attacker reveal not ported yet');
+    if (mtmp.mundetected && (hides_under(mdat) || mdat.mlet === M.S_EEL)) {
+        mtmp.mundetected = 0;
+        const dm = game.u.uprops[DETECT_MONSTERS];
+        if (!tp_sensemon(mtmp)
+            && !(dm.intrinsic || dm.extrinsic)) { /* !Detect_monsters */
+            let obj;
+            let what;
+            let Amonbuf;
+
+            if ((obj = vobj_at(mtmp.mx, mtmp.my)) != null) {
+                if (Blind() && !obj.dknown)
+                    what = "something";
+                else if (is_pool(mtmp.mx, mtmp.my) && !Underwater())
+                    what = "the water";
+                else
+                    what = doname(obj);
+
+                Amonbuf = Amonnam(mtmp);
+                /* mtmp might be invisible with hero unable to see same */
+                if (Amonbuf === "It") /* note: not strcmpi() */
+                    Amonbuf = "Something";
+                await pline(`${Amonbuf} was hidden under ${what}!`);
+            }
+            newsym(mtmp.mx, mtmp.my);
+        }
+    }
 
     /*  First determine the base damage done */
     mhm.damage = d(mattk.damn, mattk.damd);

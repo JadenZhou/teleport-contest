@@ -958,10 +958,12 @@ export function glyph_at(x, y) {
 // C ref: defsym.h MONSYMS -- def_monsyms[].sym, indexed by mlet (S_ANT = 1)
 const def_monsyms = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@ '&;:~]";
 
-// C ref: display.h m_at() via level.monsters[][]
+// C ref: display.h m_at() via level.monsters[][] (a ridden steed isn't
+// on the grid)
 function mon_at_loc(x, y) {
     for (const m of game.level?.monsters || [])
-        if (m.mx === x && m.my === y && !m.dead) return m;
+        if (m.mx === x && m.my === y && !m.dead && m !== game.u?.usteed)
+            return m;
     return wseg_mon_at(x, y); /* a long worm's tail segment */
 }
 
@@ -2797,6 +2799,17 @@ function clear_glyph_buffer() {
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
 function display_self() {
     const u = game.u;
+    /* C ref: display.h maybe_display_usteed() -- a visible steed is shown
+       with ridden_mon_to_glyph(u.usteed, rn2_on_display_rng): the
+       monster's symbol and color (MG_RIDDEN has no tty highlighting) */
+    if (u.usteed && mon_visible(u.usteed)) {
+        const mndx = what_mon(u.usteed.data.pmidx, rn2_on_display_rng);
+        const ptr = mons[mndx];
+        show_glyph_cell(u.ux, u.uy, def_monsyms[ptr.mlet] ?? '?',
+                        ptr.mcolor ?? NO_COLOR, false, 0, 'mon', false,
+                        { mndx });
+        return;
+    }
     /* hero_glyph: monnum_to_glyph((Upolyd || !flags.showrace) ? u.umonnum
        : gu.urace.mnum, Ugender); a polymorphed hero shows the monster */
     if (u.umonnum !== u.umonster) { /* Upolyd */
@@ -2921,6 +2934,29 @@ export function bot() {
         }
     }
     game.disp_botl = game.disp_botlx = false;
+}
+
+// C ref: pline.c gamelog_add() (CHRONICLE) -- append an event to the
+// #chronicle log, game.gamelog (gg.gamelog: a list linked through .next)
+export function gamelog_add(glflags, gltime, str) {
+    const tmp = { turn: gltime, flags: glflags, text: str, next: null };
+    let lst = game.gamelog || null;
+
+    while (lst && lst.next)
+        lst = lst.next;
+    if (!lst)
+        game.gamelog = tmp;
+    else
+        lst.next = tmp;
+}
+
+// C ref: pline.c livelog_printf() (CHRONICLE) -- callers pass the
+// formatted text; livelog_add() (the LIVELOG file) isn't written here
+export function livelog_printf(ll_type, line) {
+    const gamelogbuf = line.slice(0, 2 * 256 - 1); /* BUFSZ * 2 */
+
+    gamelog_add(ll_type, game.moves, gamelogbuf);
+    /* strNsubst(gamelogbuf, "\t", "_", 0); livelog_add(ll_type, gamelogbuf) */
 }
 
 // ── pline ──

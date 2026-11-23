@@ -6,6 +6,8 @@
 // once-per-hero-took-time blocks are real.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_ACHIEVE } from './const.js';
 import { clear_bypasses } from './worn.js';
 import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
@@ -182,8 +184,8 @@ export async function welcome(new_game) /* false => restoring an old game */ {
                          : `${Hello(null)} ${g.plname}, the${buf}, welcome back to NetHack!`);
 
     if (new_game) {
-        /* guarantee that 'major' event category is never empty:
-           livelog_printf() -- the live log isn't kept */
+        /* guarantee that 'major' event category is never empty */
+        livelog_printf(LL_ACHIEVE, `${g.plname} the${buf} entered the dungeon`);
     } else {
         /* if restoring in Gehennom, give same hot/smoky message as when
            first entering it */

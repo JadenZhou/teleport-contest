@@ -9,6 +9,8 @@
 // item_what().
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_CONDUCT } from './const.js';
 import { You, Your, pline, pline_The, Blind, Hallucination } from './display.js';
 import { getobj, useupall } from './invent.js';
 import { check_capacity } from './hack.js';
@@ -265,8 +267,9 @@ export async function bhito(obj, otmp) {
                 break;
             }
             /* KMH, conduct */
-            u.uconduct.polypiles = (u.uconduct.polypiles || 0) + 1;
-            /* livelog_printf(LL_CONDUCT, ...) on the first: no livelog */
+            if (!u.uconduct.polypiles++)
+                livelog_printf(LL_CONDUCT, `polymorphed ${
+                               game.flags.female ? "her" : "his" /* uhis() */} first object`);
 
             /* any saved lock context will be dangerously obsolete */
             if (Is_box(obj))

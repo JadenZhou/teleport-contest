@@ -13,6 +13,9 @@
 // (mhitm) branches of those handlers throw a 'not ported yet' error.
 
 import { game } from './gstate.js';
+import { livelog_printf } from './display.js';
+import { LL_CONDUCT, ONAME } from './const.js';
+import { obj_is_pname } from './objnam.js';
 import { cutworm } from './worm.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { pline, canspotmon, You } from './display.js';
@@ -3453,6 +3456,36 @@ async function hmon_hitmon_msg_lightobj(hmd, mon, obj) {
 
 // C ref: uhitm.c hmon_hitmon()
 /* guts of hmon(); returns True if 'mon' survives */
+// C ref: uhitm.c first_weapon_hit()
+/* gamelog version of "you've broken never-hit-with-wielded-weapon conduct;
+   the conduct is tracked in known_hitum(); we're called by hmon_hitmon() */
+function first_weapon_hit(weapon) {
+    let buf;
+
+    /* avoid xname() since that includes "named <foo>" and we don't want
+       player-supplied <foo> in livelog */
+    buf = '';
+    /* include "cursed" if known but don't bother with blessed */
+    if (weapon.cursed && weapon.bknown)
+        buf += "cursed "; /* normally supplied by doname() */
+    if (obj_is_pname(weapon)) {
+        buf += ONAME(weapon); /* fully IDed artifact */
+    } else {
+        buf += simpleonames(weapon);
+        if (weapon.oartifact && weapon.dknown)
+            buf += ` named ${bare_artifactname(weapon)}`;
+    }
+
+    /* when a hit breaks the never-hit-with-wielded-weapon conduct
+       (handled by caller) we need to log the message about that before
+       monster is possibly killed; otherwise getting log entry sequence
+         N : killed for the first time
+         N : hit with a wielded weapon for the first time
+       reported on the same turn (N) looks "suboptimal" */
+    livelog_printf(LL_CONDUCT,
+                   `hit with a wielded weapon (${buf}) for the first time`);
+}
+
 async function hmon_hitmon(
     mon,
     obj,
@@ -3533,9 +3566,16 @@ async function hmon_hitmon(
     }
 
     if (!hmd.already_killed) {
-        /* first_weapon_hit(obj) only writes a livelog entry when this
-           hit breaks the never-hit-with-wielded-weapon conduct; it has
-           no game effect */
+        if (obj && (obj === game.uwep || (obj === game.uswapwep && u.twoweap))
+            /* known_hitum 'what counts as a weapon' criteria */
+            && (obj.oclass === WEAPON_CLASS || is_weptool(obj))
+            && (thrown === HMON_MELEE || thrown === HMON_APPLIED)
+            /* if jousting, the hit was already logged */
+            && !hmd.jousting
+            /* note: caller has already incremented u.uconduct.weaphit
+               so we test for 1; 0 shouldn't be able to happen here... */
+            && hmd.dmg > 0 && u.uconduct.weaphit <= 1)
+            first_weapon_hit(obj);
         mon.mhp -= hmd.dmg;
     }
     /* adjustments might have made tmp become less than what
