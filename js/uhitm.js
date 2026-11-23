@@ -171,6 +171,10 @@ import { ignite_items } from './trap.js';
 import { resists_fire, resists_cold, resists_elec, defended } from './mondata.js';
 import { XKILL_NOCORPSE } from './const.js';
 import { artifact_hit } from './artifact.js';
+import { will_hurtle, hurtle, mhurtle } from './dothrow.js';
+import { some_mon_nam } from './do_name.js';
+import { unstuck } from './mhitu.js';
+import { set_apparxy } from './monmove.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -1894,10 +1898,62 @@ export async function mhitm_knockback(
         return false;
     }
 
-    /* subtly vary the message text if monster won't actually move;
-       give the message; do the actual knockback effect */
-    void knockdistance;
-    throw new Error('mhitm_knockback(): knockback (will_hurtle()/hurtle()/mhurtle()) not ported yet');
+    /* subtly vary the message text if monster won't actually move */
+    const dismount = false; /* (mounted hero is not ported above) */
+    const was_u = false;
+    const knockedhow = dismount ? "out of your saddle"
+                       : will_hurtle(mdef, defx + dx, defy + dy) ? "backward"
+                         : "back";
+
+    /* give the message */
+    if (u_def || canseemon(mdef)) {
+        const magrbuf = u_agr ? "You" : Monnam(magr);
+        const mdefbuf = (u_def || was_u) ? "you" : y_monnam(mdef);
+        /*
+         * uhitm: You knock the gnome back with a powerful blow!
+         * mhitu: The red dragon knocks you back with a forceful blow!
+         * mhitm: The fire giant knocks the gnome back with a forceful strike!
+         */
+        const how = rn2(2) ? "forceful" : "powerful";
+        const what = rn2(2) ? "blow" : "strike";
+        await pline(`${magrbuf} ${vtense(magrbuf, "knock")} ${mdefbuf} ${
+            knockedhow} with a ${how} ${what}!`);
+    } else if (u_agr) {
+        /* hero knocks unseen foe back; noticed by touch */
+        await You_feel(`${some_mon_nam(mdef)} be knocked ${knockedhow}!`);
+    }
+
+    if (u.ustuck && (u_def || u_agr))
+        await unstuck(u.ustuck);
+
+    /* do the actual knockback effect */
+    if (u_def) {
+        await hurtle(dx, dy, knockdistance, false);
+        hf.hitflags |= M_ATTK_HIT;
+        set_apparxy(magr); /* update magr's idea of where you are */
+        if (!Stunned() && !rn2(4))
+            await make_stunned(knockdistance + 1, true); /* 2 or 3 */
+    } else {
+        await mhurtle(mdef, dx, dy, knockdistance);
+        if (!u_agr)
+            hf.hitflags |= M_ATTK_HIT;
+        if (DEADMONSTER(mdef)) {
+            if (!was_u)
+                hf.hitflags |= M_ATTK_DEF_DIED;
+        } else if (!rn2(4)) {
+            mdef.mstun = 1;
+            /* if steed and hero were knocked back, update attacker's idea
+               of where hero is */
+            if (mdef === u.usteed)
+                set_apparxy(magr);
+        }
+    }
+    if (!u_agr) {
+        if (DEADMONSTER(magr))
+            hf.hitflags |= M_ATTK_AGR_DIED;
+    }
+
+    return true;
 }
 
 /* C ref: youprop.h Punished */
@@ -3572,8 +3628,13 @@ async function mhurtle_to_doom(
     hmd) /* caller's cached copy of mon->data is hmd.mdat */ {
     /* only hurtle if pending physical damage (tmp) isn't going to kill mon */
     if (tmp < mon.mhp) {
-        void hmd;
-        throw new Error('mhurtle_to_doom(): mhurtle() not ported yet');
+        await mhurtle(mon, game.u.dx, game.u.dy, 1);
+        /* update caller's cached mon->data in case mon was pushed into
+           a polymorph trap or is a vampshifter whose current form has
+           been killed by a trap so that it reverted to original form */
+        hmd.mdat = mon.data;
+        if (DEADMONSTER(mon))
+            return true;
     }
     return false; /* mon isn't dead yet */
 }

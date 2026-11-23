@@ -85,6 +85,7 @@ import { map_invisible, There, glyph_at, show_glyph,
 import { a_monnam } from './do_name.js';
 import { inv_weight, weight_cap } from './hack.js';
 import { maybe_mnexto, noteleport_level } from './teleport.js';
+import { hurtle } from './dothrow.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
@@ -189,7 +190,7 @@ async function kick_dumb(x, y) {
         await set_wounded_legs(RIGHT_SIDE, 5 + rnd(5));
     }
     if ((Is_airlevel(game.u.uz) || Levitation()) && rn2(2))
-        throw new Error('kick_dumb(): hurtle() not ported yet');
+        await hurtle(-game.u.dx, -game.u.dy, 1, true);
     void x; void y;
 }
 
@@ -213,7 +214,7 @@ async function kick_ouch(x, y, kickobjnam) {
     dmg = rnd(ACURR(A_CON) > 15 ? 3 : 5);
     await losehp(Maybe_Half_Phys(dmg), kickstr(kickobjnam), KILLED_BY);
     if (Is_airlevel(game.u.uz) || Levitation())
-        throw new Error('kick_ouch(): hurtle() not ported yet'); /* rn1(2, 4) */
+        await hurtle(-game.u.dx, -game.u.dy, rn1(2, 4), true); /* assume it's heavy */
 }
 
 // C ref: dokick.c kick_door()
@@ -776,8 +777,16 @@ export async function dokick() {
         }
         /* recoil if floating */
         if ((Is_airlevel(u.uz) || Levitation()) && g.context.move) {
-            void mdat;
-            throw new Error('dokick(): hurtle() recoil not ported yet');
+            let range;
+
+            range = (g.youmonst.data.cwt + (weight_cap() + inv_weight()));
+            if (range < 1)
+                range = 1; /* divide by zero avoidance */
+            range = Math.trunc((3 * mdat.cwt) / range);
+
+            if (range < 1)
+                range = 1;
+            await hurtle(-u.dx, -u.dy, range, true);
         }
         return ECMD_TIME;
     }
@@ -793,7 +802,7 @@ export async function dokick() {
 
         if (await kick_object(x, y, kickobjnam)) {
             if (Is_airlevel(u.uz))
-                throw new Error('dokick(): hurtle() not ported yet'); /* assume it's light */
+                await hurtle(-u.dx, -u.dy, 1, true); /* assume it's light */
             return ECMD_TIME;
         }
         /* goto ouch; */

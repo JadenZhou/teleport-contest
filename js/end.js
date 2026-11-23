@@ -419,7 +419,7 @@ async function savelife(how) {
 
 // C ref: dothrow.c endmultishot()
 /* interrupt multishot (the 'verbose' message isn't needed here) */
-function endmultishot(verbose) {
+export function endmultishot(verbose) {
     const m_shot = game.m_shot;
 
     if (m_shot && m_shot.i < m_shot.n) {

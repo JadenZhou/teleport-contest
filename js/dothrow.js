@@ -968,7 +968,7 @@ async function throwit(obj,
 
         /* have to do this after bhit() so u.ux & u.uy are correct */
         if (Is_airlevel(u.uz) || Levitation())
-            throw new Error('throwit(): hurtle() not ported yet');
+            await hurtle(-u.dx, -u.dy, urange, true);
 
         if (!obj) {
             /* bhit display cleanup was left with this caller
@@ -1792,6 +1792,223 @@ export async function hurtle_step(arg, x, y) {
     /* if (*range != 0) nh_delay_output(): display timing only */
     return true;
 }
+
+// C ref: dothrow.c will_hurtle()
+/* used by mhurtle_step() and mhitm_knockback() */
+export function will_hurtle(mon, x, y) {
+    if (!isok(x, y))
+        return false;
+    /* redundant when called by mhurtle() but needed for mhitm_knockback() */
+    if (mon.data.msize >= MZ_HUGE_HU || mon === game.u.ustuck || mon.mtrapped)
+        return false;
+    /*
+     * TODO: Treat walls, doors, iron bars, etc. specially
+     * rather than just stopping before.
+     */
+    return goodpos_hu(x, y, mon, MM_IGNOREWATER_HU | MM_IGNORELAVA_HU);
+}
+
+/* C ref: dbridge.c is_waterwall() */
+function is_waterwall_hu(x, y) {
+    return isok(x, y) && IS_WATERWALL_HU(game.level.at(x, y).typ);
+}
+
+// C ref: dothrow.c mhurtle_step()
+async function mhurtle_step(mon, x, y) {
+    const u = game.u;
+    let mtmp;
+
+    if (!isok(x, y))
+        return false;
+
+    if (will_hurtle(mon, x, y) && await m_in_out_region_hu(mon, x, y)) {
+        let res;
+
+        if (mon !== u.usteed) {
+            /* remove_monster(mon->mx, mon->my) */
+            newsym_hu(mon.mx, mon.my);
+            place_monster_hu(mon, x, y);
+            newsym_hu(mon.mx, mon.my);
+        } else {
+            throw new Error('mhurtle_step(): hurtling steed not ported yet');
+        }
+        /* flush_screen(1); nh_delay_output(): display timing only */
+        set_apparxy_hu(mon);
+        if (is_waterwall_hu(x, y))
+            return false;
+        res = await mintrap_hu(mon, HURTLING_HU);
+        if (res === Trap_Killed_Mon_HU
+            || res === Trap_Caught_Mon_HU
+            || res === Trap_Moved_Mon_HU)
+            return false;
+        return true;
+    }
+    if ((mtmp = m_at_hu(x, y)) != null && mtmp !== mon) {
+        if (canseemon_hu(mon) || canseemon_hu(mtmp))
+            await pline(`${Monnam_dt(mon)} bumps into ${a_monnam_hu(mtmp)}.`);
+        await wakeup_hu(mtmp, !game.context.mon_moving);
+        /* check whether 'mon' is turned to stone by touching 'mtmp' */
+        if (touch_petrifies_hu(mtmp.data)
+            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
+            throw new Error('mhurtle_step(): minstapetrify() not ported yet');
+        /* and whether 'mtmp' is turned to stone by being touched by 'mon' */
+        if (touch_petrifies_hu(mon.data)
+            && !which_armor_hu(mtmp, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
+            throw new Error('mhurtle_step(): minstapetrify() not ported yet');
+    } else if (u.ux === x && u.uy === y) {
+        /* a monster has caused 'mon' to hurtle against hero */
+        await pline(`${Some_Monnam_hu(mon)} bumps into you.`);
+        await stop_occupation_hu();
+        /* check whether 'mon' is turned to stone by touching poly'd hero */
+        if (u.umonnum !== u.umonster && touch_petrifies_hu(game.youmonst.data)
+            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
+            throw new Error('mhurtle_step(): minstapetrify() not ported yet');
+        /* and whether hero is turned to stone by being touched by 'mon' */
+        if (touch_petrifies_hu(mon.data)
+            && !(game.uarmu || game.uarm || game.uarmc))
+            throw new Error('mhurtle_step(): instapetrify() not ported yet');
+    }
+
+    return false;
+}
+
+/* C ref: mondata.h touch_petrifies() */
+function touch_petrifies_hu(ptr) {
+    return ptr === mons_hu[PM_COCKATRICE_HU] || ptr === mons_hu[PM_CHICKATRICE_HU];
+}
+
+// C ref: dothrow.c hurtle()
+/*
+ * The player moves through the air for a few squares as a result of
+ * throwing or kicking something.
+ *
+ * dx and dy should be the direction of the hurtle, not of the original
+ * kick or throw.
+ */
+export async function hurtle(dx, dy, range, verbose) {
+    const g = game;
+    const u = g.u;
+    const uc = { x: 0, y: 0 }, cc = { x: 0, y: 0 };
+
+    /* The chain is stretched vertically, so you shouldn't be able to move
+     * very far diagonally.  [...] give the player a message and return.
+     */
+    if (g.uball && g.uball.where !== 'OBJ_INVENT') { /* Punished && !carried(uball) */
+        await pline("You feel a tug from the iron ball."); /* You_feel() */
+        nomul_hu(0);
+        return;
+    } else if (u.utrap) {
+        if (u.utraptype === TT_INFLOOR_HU)
+            throw new Error('hurtle(): surface() for an in-floor trap not ported yet');
+        await You(`are anchored by the ${
+            (u.utraptype === TT_WEB_HU) ? "web"
+            : (u.utraptype === TT_LAVA_HU) ? hliquid_hu("lava")
+              : (u.utraptype === TT_BURIEDBALL_HU) ? "buried ball"
+                : "trap"}.`);
+        nomul_hu(0);
+        return;
+    }
+
+    /* make sure dx and dy are [-1,0,1] */
+    dx = Math.sign(dx);
+    dy = Math.sign(dy);
+
+    if (!range || (!dx && !dy) || u.ustuck)
+        return; /* paranoia */
+
+    nomul_hu(-range);
+    g.multi_reason = "moving through the air";
+    g.nomovemsg = ""; /* it just happens */
+    if (verbose)
+        await You(`${(range > 1) ? "hurtle" : "float"} in the opposite direction.`);
+    /* if we're in the midst of shooting multiple projectiles, stop */
+    endmultishot_hu(true);
+    uc.x = u.ux;
+    uc.y = u.uy;
+    /* this setting of cc is only correct if dx and dy are [-1,0,1] only */
+    cc.x = u.ux + (dx * range);
+    cc.y = u.uy + (dy * range);
+    await walk_path(uc, cc, hurtle_step, { range });
+}
+
+// C ref: dothrow.c mhurtle()
+/* Move a monster through the air for a few squares. */
+export async function mhurtle(mon, dx, dy, range) {
+    const u = game.u;
+    const mc = { x: 0, y: 0 }, cc = { x: 0, y: 0 };
+
+    await wakeup_hu(mon, !game.context.mon_moving);
+    /* At the very least, debilitate the monster */
+    mon.movement = 0;
+    mon.mstun = 1;
+
+    /* Is the monster stuck or too heavy to push?
+     * (very large monsters have too much inertia, even floaters and flyers)
+     */
+    if (mon.data.msize >= MZ_HUGE_HU || mon === u.ustuck || mon.mtrapped) {
+        if (canseemon_hu(mon))
+            await pline(`${Monnam_dt(mon)} doesn't budge!`);
+        return;
+    }
+
+    /* Make sure dx and dy are [-1,0,1] */
+    dx = Math.sign(dx);
+    dy = Math.sign(dy);
+    if (!range || (!dx && !dy))
+        return; /* paranoia */
+    /* don't let grid bugs be hurtled diagonally */
+    if (dx && dy && mon.data === mons_hu[PM_GRID_BUG_HU]) /* NODIAG() */
+        return;
+
+    /* undetected monster can be moved by your strike */
+    if (mon.mundetected) {
+        mon.mundetected = 0;
+        newsym_hu(mon.mx, mon.my);
+    }
+    if ((mon.m_ap_type || 0) & M_AP_TYPMASK_DT) /* M_AP_TYPE(mon) */
+        seemimic_hu(mon);
+
+    /* Send the monster along the path */
+    mc.x = mon.mx;
+    mc.y = mon.my;
+    cc.x = mon.mx + (dx * range);
+    cc.y = mon.my + (dy * range);
+    await walk_path(mc, cc, mhurtle_step, mon);
+    if (mon.mhp >= 1) { /* !DEADMONSTER(mon) */
+        if (t_at_hu(mon.mx, mon.my))
+            await mintrap_hu(mon, FORCEBUNGLE_HU);
+        else
+            await minliquid_hu(mon);
+    }
+    return;
+}
+
+import { goodpos as goodpos_hu, m_at as m_at_hu,
+         place_monster as place_monster_hu } from './makemon.js';
+import { MM_IGNOREWATER as MM_IGNOREWATER_HU, MM_IGNORELAVA as MM_IGNORELAVA_HU,
+         IS_WATERWALL as IS_WATERWALL_HU, HURTLING as HURTLING_HU,
+         FORCEBUNGLE as FORCEBUNGLE_HU, W_ARMU as W_ARMU_HU, W_ARM as W_ARM_HU,
+         W_ARMC as W_ARMC_HU, TT_WEB as TT_WEB_HU, TT_LAVA as TT_LAVA_HU,
+         TT_INFLOOR as TT_INFLOOR_HU, TT_BURIEDBALL as TT_BURIEDBALL_HU
+       } from './const.js';
+import { mons as mons_hu, MZ_HUGE as MZ_HUGE_HU, PM_GRID_BUG as PM_GRID_BUG_HU,
+         PM_COCKATRICE as PM_COCKATRICE_HU,
+         PM_CHICKATRICE as PM_CHICKATRICE_HU } from './monsters.js';
+import { m_in_out_region as m_in_out_region_hu } from './region.js';
+import { newsym as newsym_hu, canseemon as canseemon_hu } from './display.js';
+import { set_apparxy as set_apparxy_hu } from './monmove.js';
+import { mintrap as mintrap_hu, t_at as t_at_hu,
+         Trap_Killed_Mon as Trap_Killed_Mon_HU,
+         Trap_Caught_Mon as Trap_Caught_Mon_HU,
+         Trap_Moved_Mon as Trap_Moved_Mon_HU } from './trap.js';
+import { a_monnam as a_monnam_hu, Some_Monnam as Some_Monnam_hu } from './do_name.js';
+import { wakeup as wakeup_hu, seemimic as seemimic_hu,
+         minliquid as minliquid_hu } from './mon.js';
+import { which_armor as which_armor_hu } from './worn.js';
+import { stop_occupation as stop_occupation_hu } from './allmain.js';
+import { hliquid as hliquid_hu } from './potion.js';
+import { endmultishot as endmultishot_hu } from './end.js';
+import { nomul as nomul_hu } from './hack.js';
 
 import { hmon as hmon_dt, passive_obj as passive_obj_dt } from './uhitm.js';
 import { spec_abon as spec_abon_dt } from './artifact.js';
