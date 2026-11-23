@@ -3526,6 +3526,15 @@ export function doname_with_price(obj) {
     return doname_base(obj, 1 /* DONAME_WITH_PRICE */);
 }
 
+// C ref: objnam.c doname_vague_quan()
+export function doname_vague_quan(obj) {
+    /* Used by farlook.
+     * If it hasn't been seen up close and quantity is more than one,
+     * use "some" instead of the quantity: "some gold pieces" rather
+     * than "25 gold pieces". */
+    return doname_base(obj, 2 /* DONAME_VAGUE_QUAN */);
+}
+
 // C ref: objnam.c doname_base()
 function doname_base(obj, doname_flags) {
     let ispoisoned = false;

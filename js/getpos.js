@@ -152,7 +152,7 @@ function coord_desc(x, y, cmode) {
 export async function auto_describe(cx, cy) {
     const st = gp();
     const cc = { x: cx, y: cy };
-    const { found, firstmatch } = do_screen_description(cc);
+    const { found, firstmatch } = do_screen_description(cc, true, 0);
 
     if (found) {
         const tmpbuf = coord_desc(cx, cy, game.iflags?.getpos_coords);

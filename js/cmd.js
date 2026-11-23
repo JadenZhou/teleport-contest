@@ -64,7 +64,7 @@ import { dotogglepickup, doset_simple, doset } from './options.js';
 import { doread } from './read.js';
 import { doengrave } from './engrave.js';
 import { set_occupation } from './allmain.js';
-import { dohelp, dowhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
+import { dohelp, dowhatis, doquickwhatis, dowhatdoes, dowhatdoes_core } from './pager.js';
 import { doopen, doforce, doclose } from './lock.js';
 import { dosave } from './save.js';
 import { done2 } from './end.js';
@@ -177,6 +177,7 @@ const cmd_funcs = {
     doprtool: () => doprtool(),
     doterrain: () => doterrain(),
     dowhatis: () => dowhatis(),
+    doquickwhatis: () => doquickwhatis(),
     dowhatdoes: () => dowhatdoes(),
     dosit: () => dosit(),
     dodip: () => dodip(),
