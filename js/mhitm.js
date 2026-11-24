@@ -705,7 +705,10 @@ async function mhitm_adtyping(magr, mattk, mdef, mhm) {
     case M.AD_SITM:
     case M.AD_SEDU: await mhitm_ad_sedu(magr, mattk, mdef, mhm); break;
     default:
-        throw new Error(`mhitm_adtyping(): damage type ${mattk.adtyp} not ported yet`);
+        /* the rest of C's switch: uhitm.js mhitm_adtyping() dispatches to
+           the mhitm_ad_*() handlers (unported mhitm branches stop there) */
+        await mhitm_adtyping_uh(magr, mattk, mdef, mhm);
+        break;
     }
 }
 
@@ -1143,3 +1146,4 @@ function is_rider_md(ptr) {
 }
 import { s_suffix as s_suffix_sm } from './hacklib.js';
 import { unstuck as unstuck_sm } from './mhitu.js';
+import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';
