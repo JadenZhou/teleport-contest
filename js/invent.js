@@ -2027,7 +2027,7 @@ export async function doprgold() {
         else
             await You("have no money.");
     }
-    shopper_financial_report();
+    await shopper_financial_report_iv();
 
     if (umoney && game.iflags.menu_requested) {
         /* mustn't use TRUE or gold wouldn't show up unless it was quivered */
@@ -2037,14 +2037,7 @@ export async function doprgold() {
     return ECMD_OK;
 }
 
-// C ref: shk.c shopper_financial_report() -- the report for the shop the
-// hero is in (shop_keeper(inside_shop(u.ux, u.uy))) and the level's other
-// shops (next_shkp()); without a shopkeeper there is nothing to report
-function shopper_financial_report() {
-    for (let shkp = game.fmon; shkp; shkp = shkp.nmon)
-        if (shkp.isshk && !shkp.dead)
-            throw new Error('shopper_financial_report(): shopkeepers not ported yet');
-}
+/* C ref: shk.c shopper_financial_report() is shk.js shopper_financial_report() */
 
 // C ref: invent.c doprwep() -- the #seeweapon command
 export async function doprwep() {
@@ -3047,3 +3040,4 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
          BILLED_TYPES as BILLED_TYPES_IV, BUC_UNKNOWN as BUC_UNKNOWN_IV,
          JUSTPICKED as JUSTPICKED_IV,
          INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
+import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
