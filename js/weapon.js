@@ -1015,8 +1015,8 @@ export async function mon_wield_item(mon) {
             let arw;
 
             await pline(`${Monnam(mon)} wields ${doname(obj)}${exclaim ? '!' : '.'}`); /* pline_mon() */
-            if ((arw = autoreturn_weapon(obj)) != null && arw.tethered !== 0)
-                throw new Error('mon_wield_item(): tether message (the()) not ported yet');
+            if ((arw = autoreturn_weapon(obj)) != null && arw.tethered !== 0) /* pline_mon() */
+                await pline(`${Monnam(mon)} secures the tether on ${the_wp(xname_wp(obj))}.`);
 
             /* 3.6.3: mwelded() predicate expects the object to have its
                W_WEP bit set in owormmask, but the pline here and for
@@ -1657,3 +1657,4 @@ import { mhis as mhis_wp } from './mhitu.js';
 import { s_suffix as s_suffix_wp } from './hacklib.js';
 import { mon_nam as mon_nam_wp } from './do_name.js';
 import { bimanual as bimanual_wp } from './wield.js';
+import { the as the_wp } from './iactions.js';

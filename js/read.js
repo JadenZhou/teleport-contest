@@ -1234,7 +1234,14 @@ export async function create_critters(cnt,
         if (!mptr && u.uinwater && enexto(c, x, y, mons[PM_GIANT_EEL]))
             x = c.x, y = c.y;
 
-        if ((mon = await makemon(mptr, x, y, NO_MM_FLAGS)) == null)
+        game.makemon_want_msg = true; /* see makemon()'s Norep() comment */
+        try {
+            mon = makemon(mptr, x, y, NO_MM_FLAGS);
+        } finally {
+            game.makemon_want_msg = false;
+        }
+        await makemon_flush_msg();
+        if (mon == null)
             continue; /* try again [should probably stop instead] */
 
         if ((canseemon(mon) && (M_AP_TYPE(mon) === M_AP_NOTHING

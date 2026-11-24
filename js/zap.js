@@ -884,7 +884,10 @@ export async function zapnodir(obj) {
         break;
     }
     case WAN_CREATE_MONSTER:
-        throw new Error('zapnodir(): wand of create monster (create_critters()) not ported yet');
+        /* create_critters() returns True iff hero sees a new monster appear */
+        if (await create_critters_zp(rn2(23) ? 1 : rn1(7, 2), null, false))
+            known = !!obj.dknown;
+        break;
     case WAN_WISHING:
         if ((game.u.uluck || 0) + (game.u.moreluck || 0) + rn2(5) < 0) { /* Luck */
             await pline("Unfortunately, nothing happens.");
@@ -3214,6 +3217,7 @@ export async function burn_floor_objects(
 
 import { findit } from './detect.js';
 import { makewish } from './wizcmds.js';
+import { create_critters as create_critters_zp } from './read.js';
 import { SPE_LIGHT as SPE_LIGHT_ZN,
          SPE_DETECT_UNSEEN as SPE_DETECT_UNSEEN_ZN } from './objects.js';
 import { litroom, lightdamage } from './read.js';
