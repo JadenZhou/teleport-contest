@@ -86,6 +86,9 @@ import { short_oname as short_oname_pt } from './objnam.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { set_bc } from './ball.js';
 import { float_vs_flight } from './polyself.js';
+import { polyself as polyself_pt } from './polyself.js';
+import { POLY_NOFLAGS as POLY_NOFLAGS_PT, POLY_CONTROLLED as POLY_CONTROLLED_PT,
+         POLY_LOW_CTRL as POLY_LOW_CTRL_PT } from './const.js';
 import { monster_detect } from './detect.js';
 import { drinkfountain, dipfountain, drinksink, dipsink, floating_above,
          wash_hands } from './fountain.js';
@@ -1376,10 +1379,17 @@ async function peffect_acid(otmp) {
 
 // C ref: potion.c peffect_polymorph()
 async function peffect_polymorph(otmp) {
-    void otmp;
+    const u = game.u;
     await You_feel(`a little ${Hallucination() ? "normal" : "strange"}.`);
-    if (!Unchanging())
-        throw new Error('peffect_polymorph(): polyself() not ported yet');
+    if (!Unchanging()) {
+        if (!otmp.blessed || (u.umonnum !== u.umonster))
+            await polyself_pt(POLY_NOFLAGS_PT);
+        else {
+            await polyself_pt(POLY_CONTROLLED_PT | POLY_LOW_CTRL_PT);
+            if (u.mtimedone && u.umonnum !== u.umonster)
+                u.mtimedone = Math.min(u.mtimedone, rn2(15) + 10);
+        }
+    }
 }
 
 // C ref: potion.c peffects()
