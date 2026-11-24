@@ -35,7 +35,7 @@ import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_ORACLE, S_EEL, PM_DISPLACER_BEAST, M2_PNAME, AT_EXPL } from './monsters.js';
 import { m_at, is_pool, is_lava, closed_door, may_passwall, sobj_at, goodpos,
          place_monster, accessible } from './makemon.js';
-import { dig_typ } from './dig.js';
+import { dig_typ, use_pick_axe2 } from './dig.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible, map_object } from './display.js';
@@ -1995,7 +1995,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
                    && is_pick(game.uwep)) {
             /* MRKR: Automatic digging when wielding the appropriate tool */
             if (mode === DO_MOVE)
-                throw new Error('test_move(): use_pick_axe2() not ported yet');
+                /* (void) */ await use_pick_axe2(game.uwep);
             return false;
         } else {
             if (mode === DO_MOVE) {
