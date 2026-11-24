@@ -121,7 +121,7 @@ export async function newgame() {
     // Real mklev generates the level with correct room positions
     // Structural phase consumes RNG for rooms/corridors/doors/stairs
     await mklev();
-    u_on_upstairs();
+    await u_on_upstairs();
     vision_reset();          /* set up internals for level (after mklev) */
     /* check_special_room(FALSE): no special room is entered on arrival
        at level 1 yet -- not ported yet (hack.c) */
