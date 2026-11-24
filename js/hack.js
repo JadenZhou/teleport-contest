@@ -569,7 +569,7 @@ function is_door_mappear(mon) {
 }
 
 // C ref: dbridge.c is_pool_or_lava()
-function is_pool_or_lava(x, y) {
+export function is_pool_or_lava(x, y) {
     return is_pool(x, y) || is_lava(x, y);
 }
 

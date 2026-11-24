@@ -165,13 +165,19 @@ function find_lev_obj() {
  * infamous "HUP" cheat) get used up here.
  */
 export async function inven_inuse(quietly) {
-    for (let otmp = game.invent; otmp; otmp = otmp.nobj) {
+    let otmp2;
+
+    for (let otmp = game.invent; otmp; otmp = otmp2) {
+        otmp2 = otmp.nobj;
         if (otmp.in_use) {
-            void quietly;
-            throw new Error('inven_inuse(): useup() of an in-use object not ported yet');
+            if (!quietly)
+                await pline(`Finishing off ${xname_rs(otmp)}...`);
+            useup_rs(otmp);
         }
     }
 }
+import { xname as xname_rs } from './objnam.js';
+import { useup as useup_rs } from './invent.js';
 
 // C ref: restore.c restlevchn()
 function restlevchn(nhfp) {

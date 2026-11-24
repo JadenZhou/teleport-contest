@@ -1330,7 +1330,51 @@ async function trapeffect_rocktrap(mtmp, trap, trflags) {
     let otmp;
 
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_rocktrap(): hero branch not ported yet');
+        const u = game.u;
+        let harmless = false;
+
+        if (trap.once && trap.tseen && !rn2(15)) {
+            await pline(`A trap door in ${the(ceiling_tr(u.ux, u.uy))} opens, but nothing falls out!`);
+            deltrap(trap);
+            newsym(u.ux, u.uy);
+        } else {
+            let dmg = d(2, 6); /* should be std ROCK dmg? */
+
+            trap.once = 1;
+            feeltrap(trap);
+            otmp = t_missile(ROCK, trap);
+            place_object(otmp, u.ux, u.uy);
+
+            await pline(`A trap door in ${the(ceiling_tr(u.ux, u.uy))} opens and ${
+                an_l(xname(otmp))} falls on your ${body_part(HEAD)}!`);
+            if (game.uarmh) {
+                /* normally passes_rocks() would protect against a falling
+                   rock, but not when wearing a helmet */
+                if (passes_rocks(game.youmonst.data)) {
+                    await pline(`Unfortunately, you are wearing ${
+                        an_l(helm_simple_name_tr(game.uarmh))}.`); /* helm or hat */
+                    dmg = 2;
+                } else if (hard_helmet_tr(game.uarmh)) {
+                    await pline("Fortunately, you are wearing a hard helmet.");
+                    dmg = 2;
+                } else if (game.flags.verbose) {
+                    await pline(`${Yname2_fd(game.uarmh)} does not protect you.`);
+                }
+            } else if (passes_rocks(game.youmonst.data)) {
+                await pline("It passes harmlessly through you.");
+                harmless = true;
+            }
+            if (!Blind())
+                observe_object(otmp, Hallucination());
+            stackobj(otmp);
+            newsym(u.ux, u.uy); /* map the rock */
+
+            if (!harmless) {
+                await losehp(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
+                exercise(A_STR, false);
+            }
+        }
+        return Trap_Effect_Finished;
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
         const see_it = cansee(mtmp.mx, mtmp.my);
@@ -2034,14 +2078,16 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
             seetrap(trap);
         switch (rn2(5)) {
         case 0:
-            if (in_sight)
-                throw new Error('trapeffect_rust_trap(): mbodypart() message not ported yet');
+            if (in_sight) /* pline_mon() */
+                await pline(`${A_gush_of_water_hits} ${mon_nam(mtmp)} on the ${
+                    mbodypart_tr(mtmp, HEAD)}!`);
             target = which_armor(mtmp, W_ARMH);
-            await water_damage(target, null, true);
+            await water_damage(target, helm_simple_name(target), true);
             break;
         case 1:
-            if (in_sight)
-                throw new Error('trapeffect_rust_trap(): mbodypart() message not ported yet');
+            if (in_sight) /* pline_mon() */
+                await pline(`${A_gush_of_water_hits} ${mon_nam(mtmp)}'s left ${
+                    mbodypart_tr(mtmp, ARM)}!`);
             target = which_armor(mtmp, W_ARMS);
             if (await water_damage(target, "shield", true) !== 0 /* ER_NOTHING */)
                 break;
@@ -2050,15 +2096,16 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
                 await water_damage(target, null, true);
             /* mglovecheck: */
             target = which_armor(mtmp, W_ARMG);
-            await water_damage(target, null, true);
+            await water_damage(target, gloves_simple_name(target), true);
             break;
         case 2:
-            if (in_sight)
-                throw new Error('trapeffect_rust_trap(): mbodypart() message not ported yet');
+            if (in_sight) /* pline_mon() */
+                await pline(`${A_gush_of_water_hits} ${mon_nam(mtmp)}'s right ${
+                    mbodypart_tr(mtmp, ARM)}!`);
             await water_damage(mtmp.mw, null, true);
             /* goto mglovecheck */
             target = which_armor(mtmp, W_ARMG);
-            await water_damage(target, null, true);
+            await water_damage(target, gloves_simple_name(target), true);
             break;
         default:
             if (in_sight)
@@ -2069,9 +2116,9 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
                     && (otmp.owornmask & (W_WEP | W_SWAPWEP)) === 0)
                     throw new Error('trapeffect_rust_trap(): splash_lit() not ported yet');
             if ((target = which_armor(mtmp, W_ARMC)) != null)
-                await water_damage(target, null, true);
+                await water_damage(target, cloak_simple_name(target), true);
             else if ((target = which_armor(mtmp, W_ARM)) != null)
-                await water_damage(target, null, true);
+                await water_damage(target, suit_simple_name(target), true);
             else if ((target = which_armor(mtmp, W_ARMU)) != null)
                 await water_damage(target, "shirt", true);
         }
@@ -3046,7 +3093,10 @@ export async function blow_up_landmine(trap) {
             /* fill pit with water, if applicable */
             typ = fillholetyp_l(x, y, false);
             if (typ !== ROOM) {
-                throw new Error('blow_up_landmine(): liquid_flow() not ported yet');
+                lev.typ = typ;
+                await liquid_flow_l(x, y, typ, trap,
+                                    cansee(x, y) ? "The hole fills with %s!"
+                                                 : null);
             } else {
                 trap.ttyp = PIT;       /* explosion creates a pit */
                 trap.madeby_u = 0;     /* resulting pit isn't yours */
@@ -4626,3 +4676,194 @@ import { done as done_dr } from './end.js';
 import { burn_away_slime as burn_away_slime_dr } from './potion.js';
 import { useupall as useupall_dr } from './invent.js';
 import { obj_resists as obj_resists_dr } from './dogmove.js';
+
+// C ref: trap.c fire_damage()
+/* Set an item on fire.  Return whether the object was destroyed. */
+export async function fire_damage(
+    obj,
+    force, /* if True, skip luck-based protection check */
+    x, y) { /* where to place contents of burned up container */
+    let chance;
+    const in_sight = !Blind() && couldsee(x, y); /* Don't care if it's lit */
+    let dindx;
+
+    /* object might light in a controlled manner */
+    if (await catch_lit(obj))
+        return false;
+
+    if (Is_container(obj) || obj.otyp === STATUE) {
+        switch (obj.otyp) {
+        case STATUE:
+        case ICE_BOX:
+            return false; /* Immune */
+        case CHEST:
+            chance = 40;
+            break;
+        case LARGE_BOX:
+            chance = 30;
+            break;
+        default:
+            chance = 20;
+            break;
+        }
+        if ((!force && (Luck() + 5) > rn2(chance))
+            /* note: containers aren't subject to erosion so are never
+               marked fireproof/corrodeproof/&c */
+            /*|| (is_flammable(obj) && obj->oerodeproof)*/
+            ) {
+            return false;
+        }
+        /* Container is burnt up - dump contents out */
+        if (in_sight)
+            await pline(`${Yname2_fd(obj)} catches fire and burns.`);
+        if (obj.cobj && obj.cobj.length) { /* Has_contents(obj) */
+            if (in_sight)
+                await pline("Its contents fall out.");
+            /* for (otmp = obj->cobj; otmp; otmp = ncobj): cobj[] is kept
+               in C's chain order (newest first) */
+            for (const otmp of obj.cobj.slice()) {
+                obj_extract_self_l(otmp);
+                if (!(await flooreffects_l(otmp, x, y, "")))
+                    place_object(otmp, x, y);
+            }
+        }
+        setnotworn_fd(obj);
+        delobj(obj);
+        return true;
+    } else if (!force && (Luck() + 5) > rn2(20)) {
+        /*  chance per item of sustaining damage:
+          *     max luck (Luck==13):    10%
+          *     avg luck (Luck==0):     75%
+          *     awful luck (Luck<-4):  100%
+          */
+        return false;
+    } else if (obj.oclass === SCROLL_CLASS || obj.oclass === SPBOOK_CLASS) {
+        if (obj.otyp === SCR_FIRE || obj.otyp === SPE_FIREBALL)
+            return false;
+        if (obj.otyp === SPE_BOOK_OF_THE_DEAD) {
+            if (in_sight)
+                await pline(`Smoke rises from ${the(xname(obj))}.`);
+            return false;
+        }
+        dindx = (obj.oclass === SCROLL_CLASS) ? 3 : 4;
+        if (in_sight)
+            await pline(`${Yname2_fd(obj)} ${
+                destroy_strings_fd[dindx][(obj.quan > 1) ? 1 : 0]}.`);
+        setnotworn_fd(obj);
+        delobj(obj);
+        return true;
+    } else if (obj.oclass === POTION_CLASS) {
+        dindx = (obj.otyp !== POT_OIL_TR) ? 1 : 2;
+        if (in_sight)
+            await pline(`${Yname2_fd(obj)} ${
+                destroy_strings_fd[dindx][(obj.quan > 1) ? 1 : 0]}.`);
+        setnotworn_fd(obj);
+        delobj(obj);
+        return true;
+    } else if (await erode_obj(obj, null, ERODE_BURN, EF_DESTROY)
+               === 3 /* ER_DESTROYED */) {
+        return true;
+    }
+    return false;
+}
+
+/* C ref: zap.c destroy_strings[] (the rows fire_damage() uses) */
+const destroy_strings_fd = [
+    [ "freezes and shatters", "freeze and shatter", "shattered potion" ],
+    [ "boils and explodes", "boil and explode", "boiling potion" ],
+    [ "ignites and explodes", "ignite and explode", "exploding potion" ],
+    [ "catches fire and burns", "catch fire and burn", "burning scroll" ],
+    [ "catches fire and burns", "", "burning book" ],
+    [ "turns to dust and vanishes", "", "" ],
+    [ "breaks apart and explodes", "", "exploding wand" ],
+];
+
+// C ref: trap.c fire_damage_chain()
+/*
+ * Apply fire_damage() to an entire chain.
+ *
+ * Return number of objects destroyed. --ALI
+ *
+ * "chain" is the chain in C's order: an array (the pile at a map spot, top
+ * first, standing in for ->nexthere, or a monster's minvent reversed into
+ * C's newest-first order), or the head of an ->nobj chain (hero inventory);
+ * "here" only picks the link in C.
+ */
+export async function fire_damage_chain(chain, force, here, x, y) {
+    let num = 0;
+
+    void here;
+    /* erode_obj() relies on bhitpos if target objects aren't carried by
+       the hero or a monster, to check visibility controlling feedback */
+    if (!game.bhitpos)
+        game.bhitpos = { x: 0, y: 0 };
+    game.bhitpos.x = x, game.bhitpos.y = y;
+
+    if (Array.isArray(chain)) {
+        for (const obj of chain.slice()) {
+            if (await fire_damage(obj, force, x, y))
+                ++num;
+        }
+    } else {
+        let nobj;
+        for (let obj = chain; obj; obj = nobj) {
+            nobj = obj.nobj;
+            if (await fire_damage(obj, force, x, y))
+                ++num;
+        }
+    }
+
+    if (num && (Blind() && !couldsee(x, y)))
+        await You("smell smoke.");
+    return num;
+}
+
+// C ref: trap.c lava_damage()
+/* obj has been thrown or dropped into lava; damage is worse than mere fire */
+export async function lava_damage(obj, x, y) {
+    const otyp = obj.otyp, ocls = obj.oclass;
+
+    /* the Amulet, invocation items, and Rider corpses are never destroyed
+       (let Book of the Dead fall through to fire_damage() to get feedback) */
+    if (obj_resists_dr(obj, 0, 0) && otyp !== SPE_BOOK_OF_THE_DEAD)
+        return false;
+    /* destroy liquid (venom), wax, veggy, flesh, paper (except for scrolls
+       and books--let fire damage deal with them), cloth, leather, wood, bone
+       unless it's inherently or explicitly fireproof or contains something;
+       note: potions are glass so fall through to fire_damage() and boil */
+    if (objects[otyp].oc_material < DRAGON_HIDE_FD
+        && ocls !== SCROLL_CLASS && ocls !== SPBOOK_CLASS
+        && objects[otyp].oc_oprop !== FIRE_RES
+        && otyp !== WAN_FIRE_FD && otyp !== FIRE_HORN_FD
+        /* assumes oerodeproof isn't overloaded for some other purpose on
+           non-eroding items */
+        && !obj.oerodeproof
+        /* fire_damage() knows how to deal with containers and contents */
+        && !(obj.cobj && obj.cobj.length) /* !Has_contents(obj) */) {
+        if (cansee(x, y)) {
+            /* this feedback is pretty clunky and can become very verbose
+               when former contents of a burned container get here via
+               flooreffects() */
+            if (obj === game.thrownobj || obj === game.kickedobj)
+                await pline(`${(obj.quan !== 1) /* is_plural(obj) */
+                               ? "They" : "It"} ${otense_fd(obj, "burn")} up!`);
+            else
+                await You_see_l(`${doname(obj)} hit lava and burn up!`);
+        }
+        if (obj.where === 'OBJ_INVENT') { /* carried(obj): shouldn't happen */
+            await remove_worn_item_dr(obj, true);
+            useupall_dr(obj);
+        } else
+            delobj(obj);
+        return true;
+    }
+    return await fire_damage(obj, true, x, y);
+}
+import { setnotworn as setnotworn_fd } from './worn.js';
+import { otense as otense_fd, Yname2 as Yname2_fd } from './objnam.js';
+import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
+         FIRE_HORN as FIRE_HORN_FD } from './objects.js';
+import { liquid_flow as liquid_flow_l } from './dig.js';
+import { ceiling as ceiling_tr } from './dungeon.js';
+import { hard_helmet as hard_helmet_tr } from './objnam.js';
+import { mbodypart as mbodypart_tr } from './insight.js';

@@ -59,6 +59,15 @@ import { ROWNO as ROWNO_DG, LAVAPOOL as LAVAPOOL_DG, MOAT as MOAT_DG,
 import { is_moat as is_moat_dg, is_pool as is_pool_dg,
          is_lava as is_lava_dg } from './makemon.js';
 import { mb_trapped } from './monmove.js';
+import { is_pool_or_lava as is_pool_or_lava_dg,
+         pooleffects as pooleffects_dg } from './hack.js';
+import { delfloortrap as delfloortrap_dg,
+         fire_damage_chain as fire_damage_chain_dg,
+         water_damage_chain as water_damage_chain_dg } from './trap.js';
+import { obj_ice_effects as obj_ice_effects_dg } from './mkobj.js';
+import { hliquid as hliquid_dg } from './potion.js';
+import { minliquid as minliquid_dg } from './mon.js';
+import { vobj_at as vobj_at_dg } from './display.js';
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -335,6 +344,60 @@ export function fillholetyp(x, y,
         return ROOM;
 }
 
+/* C ref: svl.level.objects[x][y] -- the pile at <x,y>, top first (the
+   ->nexthere chain); the JS floor chain is fobj, newest first, and
+   place_object() keeps a boulder on top of the pile */
+function level_objects_at_dg(x, y) {
+    const pile = (game.level.objects || []).filter(
+        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    const top = vobj_at_dg(x, y);
+    if (top && pile[0] !== top) {
+        pile.splice(pile.indexOf(top), 1);
+        pile.unshift(top);
+    }
+    return pile;
+}
+
+// C ref: dig.c liquid_flow()
+/*
+ * Called from dighole(); also from do_break_wand() in apply.c
+ * and do_earthquake() in music.c.
+ */
+export async function liquid_flow(x, y, typ, ttmp, fillmsg) {
+    let objchain;
+    let mon;
+    const u_spot = u_at(x, y);
+
+    /* caller should have changed levl[x][y].typ to POOL, MOAT, or LAVA */
+    if (!is_pool_or_lava_dg(x, y)) {
+        /* iflags.sanity_check: impossible("Insane liquid_flow(...)") */
+        return;
+    }
+
+    if (ttmp)
+        await delfloortrap_dg(ttmp); /* will untrap monster if one is here */
+    /* if any objects were frozen here, they're released now */
+    obj_ice_effects_dg(x, y, true);
+    unearth_objs(x, y);
+
+    if (fillmsg)
+        await pline(fillmsg.replace('%s',
+                                    hliquid_dg(typ === LAVAPOOL_DG ? "lava" : "water")));
+    /* handle object damage before hero damage; affects potential bones */
+    if ((objchain = level_objects_at_dg(x, y)).length) {
+        if (typ === LAVAPOOL_DG)
+            await fire_damage_chain_dg(objchain, true, true, x, y);
+        else
+            await water_damage_chain_dg(objchain, true);
+    }
+    /* damage to the hero */
+    if (u_spot) {
+        await pooleffects_dg(false);
+    } else if ((mon = m_at(x, y)) !== null && mon) {
+        await minliquid_dg(mon);
+    }
+}
+
 // C ref: dig.c is_digging()
 /* the hero's occupation is the dig() occupation */
 export function is_digging() {
@@ -542,7 +605,30 @@ export async function zap_dig() {
             if (maze_dig)
                 break;
         } else if (maze_dig) {
-            throw new Error('zap_dig(): digging on a maze level not ported yet');
+            if (IS_WALL(room.typ)) {
+                if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
+                    if (in_rooms(zx, zy, SHOPBASE).length)
+                        throw new Error('zap_dig(): shop wall damage (add_damage()) not ported yet');
+                    room.typ = ROOM, room.flags = 0;
+                    unblock_point(zx, zy); /* vision */
+                } else if (!Blind_dg())
+                    await pline_The("wall glows then fades.");
+                break;
+            } else if (IS_TREE(room.typ)) { /* check trees before stone */
+                if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
+                    room.typ = ROOM, room.flags = 0;
+                    unblock_point(zx, zy); /* vision */
+                } else if (!Blind_dg())
+                    await pline_The("tree shudders but is unharmed.");
+                break;
+            } else if (room.typ === STONE_DG || room.typ === SCORR) {
+                if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
+                    room.typ = CORR, room.flags = 0;
+                    unblock_point(zx, zy); /* vision */
+                } else if (!Blind_dg())
+                    await pline_The("rock glows then fades.");
+                break;
+            }
         } else if (IS_OBSTRUCTED(room.typ)) {
             if (!may_dig(zx, zy))
                 break;
@@ -653,3 +739,5 @@ export async function buried_ball_to_punishment() {
         newsym(cc.x, cc.y);
     }
 }
+import { Blind as Blind_dg } from './display.js';
+import { STONE as STONE_DG } from './const.js';
