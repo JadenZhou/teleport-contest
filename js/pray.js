@@ -5,6 +5,7 @@
 // prayer_done(), angrygods(), gods_upset(), godvoice(), and pleased() up
 // to its trouble fixing and boons.
 
+import { Inhell } from './mklev.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT } from './const.js';
@@ -271,7 +272,6 @@ const TROUBLE_HALLUCINATION = (-11);
 /* C ref: youprop.h -- intrinsic/extrinsic property tests */
 function HProp(prop) { return game.u.uprops[prop]?.intrinsic || 0; }
 function EProp(prop) { return game.u.uprops[prop]?.extrinsic || 0; }
-function Inhell() { return In_hell(game.u.uz); }
 /* C ref: pray.c ugod_is_angry(), on_altar(), on_shrine(), a_align() */
 function ugod_is_angry() { return game.u.ualign.record < 0; }
 function on_altar() { return IS_ALTAR(game.level.at(game.u.ux, game.u.uy).typ); }

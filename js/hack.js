@@ -7,6 +7,7 @@
 // check_special_room() (its shop and special room messages aren't ported
 // yet).
 
+import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
@@ -118,7 +119,7 @@ import { intemple } from './priest.js';
 import { stucksteed, exercise_steed } from './steed.js';
 
 // C's impossible() (pline.c) is not ported yet.
-function impossible(msg) { console.error(`impossible: ${msg}`); }
+export function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -570,7 +571,7 @@ export function is_safemon(mtmp) {
 const S_vcdoor = 15, S_hcdoor = 16;
 
 // C ref: monst.h is_door_mappear()
-function is_door_mappear(mon) {
+export function is_door_mappear(mon) {
     return mon.m_ap_type === M_AP_FURNITURE
            && (mon.mappearance === S_hcdoor || mon.mappearance === S_vcdoor);
 }
@@ -973,7 +974,6 @@ function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
 function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
 function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 /* C ref: monst.h helpless(), mundisplaceable() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 function mundisplaceable(mon) {
     return !!(mon.ispriest || mon.isshk || mon.isgd
               || mon.data === mons[PM_ORACLE]
@@ -3241,3 +3241,26 @@ import { is_ice as is_ice_sf } from './dig.js';
 import { objdescr_is as objdescr_is_sf } from './o_init.js';
 import { resists_cold as resists_cold_sf } from './mondata.js';
 import { COLD_RES as COLD_RES_SF } from './const.js';
+
+/* C ref: hack.c rounddiv() */
+export function rounddiv(x, y) {
+    let r, m;
+    let divsgn = 1;
+
+    if (y === 0)
+        throw new Error('division by zero in rounddiv');
+    else if (y < 0) {
+        divsgn = -divsgn;
+        y = -y;
+    }
+    if (x < 0) {
+        divsgn = -divsgn;
+        x = -x;
+    }
+    r = Math.trunc(x / y);
+    m = x % y;
+    if (2 * m >= y)
+        r++;
+
+    return divsgn * r;
+}

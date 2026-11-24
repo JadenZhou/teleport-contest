@@ -5,6 +5,7 @@
 // of priests and shopkeepers (move_special(), pri_move()), and temple
 // entry (findpriest(), intemple()). Donations are not ported yet.
 
+import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, rn1 } from './rng.js';
 import { mons, PM_HIGH_CLERIC, PM_ALIGNED_CLERIC } from './monsters.js';
@@ -354,7 +355,6 @@ export function findpriest(roomno) {
     return null;
 }
 
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
 // C ref: priest.c intemple()
 /* called from check_special_room() when the player enters the temple room */

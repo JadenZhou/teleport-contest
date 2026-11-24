@@ -7,6 +7,10 @@
 // Not ported yet: grddead() (mongone()/mondead() of a guard), uleftvault(),
 // paygd() (end.js), vault_summon_gd(), vault_gd_watching().
 
+import { DEADMONSTER } from './mon.js';
+import { impossible } from './hack.js';
+import { remove_monster } from './muse.js';
+import { um_dist } from './shk.js';
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
 import {
@@ -52,25 +56,11 @@ import { Deaf, Strangled, Blind } from './youprop.js';
 import { u_at } from './const.js';
 import { noit_mhis } from './mhitu.js';
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: hack.h distu(), um_dist() */
 function distu(x, y) { return (x - game.u.ux) ** 2 + (y - game.u.uy) ** 2; }
 function dist2(x0, y0, x1, y1) { return (x0 - x1) ** 2 + (y0 - y1) ** 2; }
-function um_dist(x, y, n) {
-    return Math.abs(game.u.ux - x) > n || Math.abs(game.u.uy - y) > n;
-}
-/* C ref: display.h remove_monster() -- the monster list is keyed by mx/my */
-function remove_monster(mtmp) {
-    const lst = game.level.monsters || [];
-    const i = lst.indexOf(mtmp);
-    if (i >= 0)
-        lst.splice(i, 1);
-}
 /* C ref: invent.c g_at() */
-function g_at(x, y) {
+export function g_at(x, y) {
     for (const o of game.level.objects || [])
         if (o.otyp === GOLD_PIECE && o.ox === x && o.oy === y)
             return o;

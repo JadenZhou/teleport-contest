@@ -5,6 +5,9 @@
 // morgue_mon_sound(), zoo_mon_sound(), dosounds().  temple_priest_sound()
 // and oracle_sound() are only partly ported (see their comments).
 
+import { DEADMONSTER } from './mon.js';
+import { g_at, vault_occupied } from './vault.js';
+import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, ROLL_FROM } from './rng.js';
 import { canseemon } from './display.js';
@@ -44,8 +47,6 @@ function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
 function is_prince(ptr) { return (ptr.mflags2 & M2_PRINCE) !== 0; }
 function is_animal(ptr) { return (ptr.mflags1 & M1_ANIMAL) !== 0; }
 function is_mercenary(ptr) { return (ptr.mflags2 & M2_MERC) !== 0; }
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 
 
 // C ref: pline.c You_hear()
@@ -202,16 +203,6 @@ export function search_special(type) {
     return null;
 }
 
-// C ref: vault.c vault_occupied()
-function vault_occupied(array) {
-    for (const ch of array || '') {
-        const r = ch.charCodeAt(0);
-        if (game.level.rooms[r - ROOMOFFSET].rtype === VAULT)
-            return r;
-    }
-    return 0;
-}
-
 // C ref: vault.c findgd()
 function findgd() {
     for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
@@ -230,14 +221,6 @@ function findgd() {
    is around */
 function gd_sound() {
     return !(vault_occupied(game.u.urooms) || findgd());
-}
-
-// C ref: invent.c g_at()
-function g_at(x, y) {
-    for (const o of game.level.objects || [])
-        if (o.otyp === GOLD_PIECE && o.ox === x && o.oy === y)
-            return o;
-    return null;
 }
 
 /* C ref: shk.c tended_shop(), noisy_shop() -- in shk.js */
@@ -381,8 +364,6 @@ export async function dosounds() {
 
 /* C ref: mondata.h is_silent() */
 function is_silent(ptr) { return ptr.msound === MS_SILENT; }
-/* C ref: monst.h helpless() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
 /* C ref: sounds.c h_sounds[] */
 const h_sounds = [

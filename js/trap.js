@@ -6,6 +6,10 @@
 // Not ported yet: shop damage,
 // set_levltyp()'s object/timer side effects, Sokoban bookkeeping.
 
+import { helpless } from './monmove.js';
+import { impossible } from './hack.js';
+import { is_hole, is_pit } from './const.js';
+export { is_hole, is_pit };
 import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
 import { thitu } from './mthrowu.js';
@@ -117,7 +121,6 @@ import { AD_ACID } from './monsters.js';
 import { COST_BURN, COST_RUST, COST_ROT, COST_CORRODE,
          COST_CRACK } from './const.js';
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 import { float_vs_flight } from './polyself.js';
 import { s_suffix } from './hacklib.js';
 import { m_at } from './makemon.js';
@@ -248,8 +251,6 @@ export const TRAPPED_CHEST = 25;
 export const TRAPNUM = 26;
 
 // C ref: trap.h is_pit(), is_hole(), unhideable_trap(), undestroyable_trap()
-export function is_pit(ttyp) { return ttyp === PIT || ttyp === SPIKED_PIT; }
-export function is_hole(ttyp) { return ttyp === HOLE || ttyp === TRAPDOOR; }
 function unhideable_trap(ttyp) { return ttyp === HOLE; }
 export function undestroyable_trap(ttyp) {
     return ttyp === MAGIC_PORTAL || ttyp === VIBRATING_SQUARE;
@@ -1046,7 +1047,7 @@ const A_gush_of_water_hits = "A gush of water hits";
 
 /* C ref: mondata.h passes_rocks(), grounded(), breathless(), flaming(),
    acidic(), extra_nasty(); obj.h stone_missile(); trap.c completelyrusts */
-function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
+export function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
 function grounded(ptr) {
     /* has_ceiling(&u.uz): no air or water levels are generated yet */
     return !is_flyer(ptr) && !is_floater(ptr) && !is_clinger(ptr);
@@ -1063,7 +1064,6 @@ function stone_missile(o) {
              || objects[o.otyp].oc_material === MINERAL)
             && o.oclass !== RING_CLASS);
 }
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 // C ref: trap.c wearing_iron_shoes()

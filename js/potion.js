@@ -17,6 +17,8 @@
 // eatmupdate()).  Dipping (dodip() past the first prompt, potion_dip(),
 // mixtype(), H2Opotion_dip()) is not ported yet.
 
+import { DEADMONSTER } from './mon.js';
+import { resists_poison } from './mondata.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { swallowed } from './display.js';
@@ -122,7 +124,6 @@ function likes_fire(ptr) {
     return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
            || likes_lava(ptr);
 }
-function resists_poison(mon) { return Resists_Elem(mon, POISON_RES); }
 function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
 /* C ref: mondata.h eyecount() */
 function eyecount(ptr) {
@@ -132,7 +133,6 @@ function eyecount(ptr) {
 }
 /* C ref: monst.h mon_perma_blind(), DEADMONSTER() */
 function mon_perma_blind(mon) { return !mon.mcansee && !mon.mblinded; }
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: hack.h makeknown(), distu() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
@@ -155,7 +155,7 @@ const Something = "Something";
 
 // C ref: potion.c itimeout()
 /* force `val' to be within valid range for intrinsic timeout value */
-function itimeout(val) {
+export function itimeout(val) {
     if (val >= TIMEOUT)
         val = TIMEOUT;
     else if (val < 1)

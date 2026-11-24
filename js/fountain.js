@@ -7,6 +7,8 @@
 // wash_hands(), breaksink(), drinksink(), dipsink(), sink_backs_up().
 // Paths that reach unported code throw 'not ported yet'.
 
+import { DEADMONSTER } from './mon.js';
+import { wizard } from './dungeon.js';
 import { polyself } from './polyself.js';
 import { POLY_NOFLAGS } from './const.js';
 import { game } from './gstate.js';
@@ -88,9 +90,6 @@ import { uprop } from './youprop.js';
 /* C ref: youprop.h -- the property macros used here */
 void HALLUC; void HALLUC_RES; void BLINDED;
 
-function wizard() { return !!game.flags?.debug; }
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: mondata.h breathless(), is_watch(), nolimbs() */
 function breathless(ptr) { return (ptr.mflags1 & M.M1_BREATHLESS) !== 0; }
 function is_watch(ptr) {

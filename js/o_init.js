@@ -9,6 +9,8 @@
 // svb.bases[] and go.oclass_prob_totals[] (decl.h) live on the game object
 // as game.bases and game.oclass_prob_totals.
 
+import { impossible } from './hack.js';
+import { panic } from './dungeon.js';
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
 import { SIZE, TRUE, FALSE, A_WIS, Role_if } from './const.js';
@@ -41,8 +43,6 @@ const BUFSZ = 256;
 
 // C's panic() (end.c), impossible() and raw_printf() (pline.c) are not
 // ported yet. None of the checks below can fail with the stock objects[].
-function panic(msg) { throw new Error(`panic: ${msg}`); }
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 function raw_printf(msg) { console.error(msg); }
 
 // C ref: o_init.c setgemprobs()

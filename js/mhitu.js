@@ -4,6 +4,8 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { DEADMONSTER } from './mon.js';
+import { is_art } from './artifact.js';
 import { poly_gender, rehumanize } from './polyself.js';
 import { stop_occupation } from './allmain.js';
 import { game } from './gstate.js';
@@ -129,8 +131,6 @@ function hides_under(ptr) { return (ptr.mflags1 & M.M1_CONCEAL) !== 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
@@ -140,7 +140,6 @@ function mdistu(mon) {
 function gender(mon) { return mon.female ? 1 : 0; }
 
 /* C ref: obj.h is_pole(), is_art() */
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_pole(otmp) {
     return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
            && (objects[otmp.otyp].oc_skill === P_POLEARMS

@@ -10,6 +10,7 @@
 // Not ported yet: the player-side engrave commands, reading and sensing
 // engravings.
 
+import { is_art } from './artifact.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT } from './const.js';
@@ -511,7 +512,6 @@ function is_boots(otmp) {
     return otmp.oclass === ARMOR_CLASS
            && objects[otmp.otyp].oc_armcat === ARM_BOOTS;
 }
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 /* C ref: rm.h SURFACE_AT() */
 function SURFACE_AT(x, y) {
     const lev = game.level.at(x, y);

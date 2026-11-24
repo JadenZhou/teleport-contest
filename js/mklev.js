@@ -2661,7 +2661,7 @@ function Is_rogue_level(lev) {
 function In_endgame(lev) {
     return lev.dnum === game.dungeon_topology.d_astral_level.dnum;
 }
-function Inhell() { return In_hell(game.u.uz); }
+export function Inhell() { return In_hell(game.u.uz); }
 
 // C ref: dungeon.c single_level_branch()
 function single_level_branch(lev) {

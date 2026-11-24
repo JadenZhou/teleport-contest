@@ -15,6 +15,8 @@
 // and wield.c chwepon().  do_class_genocide()/do_genocide() and
 // wand_explode() are not ported yet.
 
+import { DEADMONSTER } from './mon.js';
+import { is_art } from './artifact.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, Luck } from './const.js';
@@ -113,7 +115,6 @@ const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: obj.h is_art(), is_elven_armor(), Is_dragon_scales(),
    is_shield() */
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_elven_armor(o) {
     return o.otyp === O.ELVEN_LEATHER_HELM || o.otyp === O.ELVEN_MITHRIL_COAT
            || o.otyp === O.ELVEN_CLOAK || o.otyp === O.ELVEN_SHIELD
@@ -131,8 +132,6 @@ function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
 function passes_walls(ptr) { return (ptr.mflags1 & M1_WALLWALK) !== 0; }
 function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
 function unsolid(ptr) { return (ptr.mflags1 & M1_UNSOLID) !== 0; }
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: hack.h distu() */
 function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;

@@ -17,6 +17,7 @@
 // (glyph_at()): hero, seen monster, seen object, seen trap, or the
 // background (back_to_glyph()).
 
+import { db_under_typ } from './display.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
 import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
@@ -165,7 +166,7 @@ export const defsyms_explanation = defsyms.map(d => d[1]);
 
 /* C ref: rm.h is_cmap_trap(), is_cmap_drawbridge() */
 function is_cmap_trap(i) { return i >= S_arrow_trap && i <= S_trapped_chest; }
-function is_cmap_drawbridge(i) { return i >= S_vodbridge && i <= S_hcdbridge; }
+export function is_cmap_drawbridge(i) { return i >= S_vodbridge && i <= S_hcdbridge; }
 
 /* C ref: dat/symbols "DECgraphics" -- the symbols it sets (meta forms of
    the alternate-charset letters), by defsyms[] index */
@@ -334,16 +335,6 @@ export function back_to_cmap(x, y) {
         return S_vodbridge;
     default:
         return S_room;
-    }
-}
-
-// C ref: dbridge.c db_under_typ()
-function db_under_typ(mask) {
-    switch (mask & DB_UNDER) {
-    case DB_ICE: return ICE;
-    case DB_LAVA: return LAVAPOOL;
-    case DB_MOAT: return MOAT;
-    default: return STONE;
     }
 }
 
@@ -572,7 +563,7 @@ function look_at_object(x, y, glyph) {
 }
 
 // C ref: display.h is_obj_mappear()
-function is_obj_mappear(mon, otyp) {
+export function is_obj_mappear(mon, otyp) {
     return mon.m_ap_type === M_AP_OBJECT && mon.mappearance === otyp;
 }
 
@@ -1555,7 +1546,7 @@ function get_menu_cmd_key(ch) { return ch.charCodeAt(0); }
 
 /* C sprintf() field helpers for show_menu_controls()'s formats */
 function padl(s, w) { return s.length >= w ? s : ' '.repeat(w - s.length) + s; }
-function padr(s, w) { return s.length >= w ? s : s + ' '.repeat(w - s.length); }
+export function padr(s, w) { return s.length >= w ? s : s + ' '.repeat(w - s.length); }
 
 // C ref: options.c default_menu_cmd_info[] (the menu_shift_right/_left
 // entries are marked 'shift': tty doesn't offer WC2_MENU_SHIFT)
@@ -1804,7 +1795,7 @@ const LOOK_QUICK = 1, LOOK_ONCE = 2, LOOK_VERBOSE = 3;
 const chkfilNone = 0, chkfilUsrTyped = 1, chkfilDontAsk = 2, chkfilIaCheck = 4;
 
 // C ref: strutil.c pmatch() -- case-sensitive wildcard match
-function pmatch(patrn, strng) {
+export function pmatch(patrn, strng) {
     let pi = 0, si = 0;
     for (;;) { /* pmatch_top: */
         const s = strng[si++] || '';

@@ -4,6 +4,7 @@
 // Not ported yet: make_familiar, pick_familiar_pm, dog movement/food
 // (dogmove.c), keepdogs/losedogs, tamedog and the rest of dog.c.
 
+import { helpless } from './monmove.js';
 import { set_residency } from './shk.js';
 import { SCROLL_CLASS, SPBOOK_CLASS, CORPSE } from './objects.js';
 import { FULL_MOON, DOGFOOD, ACCFOOD, MANFOOD, NEED_HTH_WEAPON, ismnum } from './const.js';
@@ -225,9 +226,6 @@ export function makedog() {
     initedog(mtmp, true);
     return mtmp;
 }
-
-// C ref: monst.h helpless()
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
 // C ref: dog.c abuse_dog()
 /* hero has abused pet */

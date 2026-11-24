@@ -8,6 +8,7 @@
 // furniture (thrones, altars, fountains, graves, trees, sinks) are not
 // ported yet.
 
+import { DEADMONSTER } from './mon.js';
 import { game } from './gstate.js';
 import { in_town } from './hack.js';
 import { rn2, rnd, rn1, rnl } from './rng.js';
@@ -416,7 +417,6 @@ function thick_skinned(ptr) { return (ptr.mflags1 & M1_THICK_HIDE) !== 0; }
 function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 
 // C ref: dokick.c kickdmg()
 /* kicking damage when not poly'd into a form with a kick attack */

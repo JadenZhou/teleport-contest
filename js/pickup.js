@@ -5,6 +5,7 @@
 // when there's nothing at the hero's spot.  autopick(), query_objlist(),
 // check_here() and the rest of pickup.c are not ported yet.
 
+import { impossible } from './hack.js';
 import { FUMBLING, TIMEOUT, DRAWBRIDGE_UP, ICE, STONE, IS_POOL, IS_LAVA,
          IS_FURNITURE, PLNMSG_BACK_ON_GROUND } from './const.js';
 import { db_under_typ } from './display.js';
@@ -122,8 +123,6 @@ import { more_experienced, newexplevel } from './exper.js';
 import { currency } from './insight.js';
 import { container_contents } from './end.js';
 import { discover_object } from './o_init.js';
-
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 /* C ref: invent.c invlet_basic */
 const invlet_basic = 52;
@@ -3210,7 +3209,7 @@ async function in_or_out_menu(prompt, obj,
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 
 /* C ref: obj.h age_is_relative() */
-function age_is_relative(otmp) {
+export function age_is_relative(otmp) {
     return (otmp.otyp === BRASS_LANTERN || otmp.otyp === OIL_LAMP
             || otmp.otyp === CANDELABRUM_OF_INVOCATION
             || otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE

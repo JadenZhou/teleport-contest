@@ -5,6 +5,7 @@
 // aren't ported yet), explosionmask(), engulfer_explosion_msg(),
 // adtyp_to_expltype(), mon_explodes().
 
+import { DEADMONSTER } from './mon.js';
 import { pay_for_damage as pay_for_damage_ex } from './shk.js';
 import { game } from './gstate.js';
 import {
@@ -57,7 +58,6 @@ import { uprop } from './youprop.js';
 function digests(ptr) {
     return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
 }
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: monst.h monstseesu_ad(), monstunseesu_ad() */
 function monstseesu_ad(adtyp) { monstseesu(cvt_adtyp_to_mseenres(adtyp)); }
 function monstunseesu_ad(adtyp) { monstunseesu(cvt_adtyp_to_mseenres(adtyp)); }

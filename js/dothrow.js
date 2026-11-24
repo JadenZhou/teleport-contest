@@ -6,6 +6,8 @@
 // prompt.  Throwing itself (throwit()), autoquiver and doquiver_core()
 // are not ported yet.
 
+import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
+import { is_art } from './artifact.js';
 import { game } from './gstate.js';
 import { tamedog } from './dog.js';
 import { drag_ball, move_bc, drop_ball } from './ball.js';
@@ -105,17 +107,6 @@ function touch_petrifies(ptr) {
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 function notake(ptr) { return (ptr.mflags1 & M1_NOTAKE) !== 0; }
 
-/* C ref: cmd.c cmdq_add_ec(CQ_CANNED, fn), cmdq_add_key(CQ_CANNED, key);
-   the extended command is kept by its cmd.c function name */
-function cmdq_add_ec(fn) {
-    if (!game.cmdq) game.cmdq = [];
-    game.cmdq.push({ typ: 'ec', fn });
-}
-function cmdq_add_key(key) {
-    if (!game.cmdq) game.cmdq = [];
-    game.cmdq.push({ typ: 'key', key });
-}
-
 /* C ref: dothrow.c AutoReturn() -- uwep might already be removed from
    inventory so test for W_WEP instead */
 function AutoReturn(o, wmsk) {
@@ -144,7 +135,6 @@ async function ok_to_throw() {
 }
 
 /* C ref: obj.h is_art(), is_pick(); mondata.h throws_rocks() */
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_pick(otmp) {
     return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
 }

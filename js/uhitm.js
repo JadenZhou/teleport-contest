@@ -12,6 +12,11 @@
 // mhitm_mgc_atk_negated().  The hero-attacks and monster-vs-monster
 // (mhitm) branches of those handlers throw a 'not ported yet' error.
 
+import { DEADMONSTER } from './mon.js';
+import { helpless } from './monmove.js';
+import { is_art } from './artifact.js';
+import { passes_rocks } from './trap.js';
+import { resists_poison } from './mondata.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
@@ -1956,8 +1961,6 @@ function u_wield_art(art) { return !!(game.uwep && game.uwep.oartifact === art);
 function is_longworm(ptr) {
     return ptr === mons[PM_LONG_WORM] || ptr === mons[PM_LONG_WORM_TAIL];
 }
-/* C ref: monst.h helpless() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
 
 // C ref: uhitm.c do_attack()
@@ -2101,9 +2104,7 @@ export async function do_attack(mtmp) {
 
 /* C ref: youprop.h and mondata.h/obj.h predicates used below */
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 function hides_under(ptr) { return (ptr.mflags1 & M.M1_CONCEAL) !== 0; }
 function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
@@ -2117,7 +2118,6 @@ function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
 function is_whirly(ptr) {
     return ptr.mlet === M.S_VORTEX || ptr === mons[M.PM_AIR_ELEMENTAL];
 }
-function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
 function is_watch(ptr) {
     return ptr === mons[M.PM_WATCHMAN] || ptr === mons[M.PM_WATCH_CAPTAIN];
 }
@@ -4140,9 +4140,6 @@ export function stagger(ptr, def) {
                         ? crawl[locoindx]
                         : def);
 }
-
-/* C ref: mondata.h resists_poison() */
-function resists_poison(mon) { return Resists_Elem(mon, POISON_RES); }
 
 // C ref: uhitm.c dynamic_multi_reason()
 /* multi_reason is usually a literal string; here we generate one that

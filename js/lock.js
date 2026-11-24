@@ -10,6 +10,7 @@
 // forcelock(), breakchestlock(), u_have_forceable_weapon(),
 // chest_shatter_msg()) and #close (doclose()).
 
+import { impossible, is_door_mappear } from './hack.js';
 import { touch_artifact, is_magic_key } from './artifact.js';
 import { game } from './gstate.js';
 import { rn2, rnl } from './rng.js';
@@ -109,12 +110,6 @@ const ECMD_CANCEL = 0x02;
 /* C ref: defsym.h S_vcdoor, S_hcdoor (pchar indices) */
 const S_vcdoor = 15, S_hcdoor = 16;
 
-
-// C ref: monst.h is_door_mappear()
-function is_door_mappear(mon) {
-    return mon.m_ap_type === M_AP_FURNITURE
-           && (mon.mappearance === S_hcdoor || mon.mappearance === S_vcdoor);
-}
 
 /* C ref: decl.h struct xlock_s gx.xlock */
 function xlock() {
@@ -573,9 +568,6 @@ async function ynq(query) {
         c = String.fromCharCode(c);
     return c;
 }
-
-// C's impossible() (pline.c) is not ported yet.
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 // C ref: lock.c autokey() -- the unlocking tool autounlock would apply
 /* opening: True: key, pick, or card; False: key or pick */

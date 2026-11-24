@@ -841,7 +841,7 @@ function allunworn() {
 const MON_LINK_FIELDS = new Set(['nmon', 'minvent', 'data']);
 
 /* the pet's struct edog, wherever the JS monster keeps it */
-function edog_of(mtmp) { return mtmp.mextra?.edog || mtmp.edog || null; }
+export function edog_of(mtmp) { return mtmp.mextra?.edog || mtmp.edog || null; }
 
 // C ref: save.c savemon()
 function savemon(nhfp, mtmp) {

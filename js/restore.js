@@ -14,6 +14,8 @@
 // resolve_saved_ids() points at the restored objects and monsters, the
 // way C re-links them by id.
 
+import { age_is_relative } from './pickup.js';
+import { edog_of } from './save.js';
 import { game } from './gstate.js';
 import { restshk, set_residency } from './shk.js';
 import { restpriest } from './priest.js';
@@ -70,13 +72,6 @@ import { SLIME_MOLD, BRASS_LANTERN, OIL_LAMP, CANDELABRUM_OF_INVOCATION,
          TALLOW_CANDLE, WAX_CANDLE, POT_OIL } from './objects.js';
 import { S_UNICORN, M2_JEWELS } from './monsters.js';
 
-/* obj.h age_is_relative() */
-function age_is_relative(otmp) {
-    return (otmp.otyp === BRASS_LANTERN || otmp.otyp === OIL_LAMP
-            || otmp.otyp === CANDELABRUM_OF_INVOCATION
-            || otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE
-            || otmp.otyp === POT_OIL);
-}
 /* mondata.h is_unicorn() */
 function is_unicorn(ptr) {
     return ptr.mlet === S_UNICORN && (ptr.mflags2 & M2_JEWELS) !== 0;
@@ -304,9 +299,6 @@ function restobjchn(nhfp, frozen) {
     }
     return make_chain(shape, list, 'nobj');
 }
-
-/* the pet's struct edog, wherever the JS monster keeps it */
-function edog_of(mtmp) { return mtmp.mextra?.edog || mtmp.edog || null; }
 
 // C ref: restore.c restmon()
 /* restore one monster */

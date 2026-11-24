@@ -2,6 +2,7 @@
 // C ref: steal.c mpickobj(), mdrop_obj(), relobj();
 // invent.c carry_obj_effects(); worn.c extract_from_minvent()
 
+import { any_quest_artifact } from './wizard.js';
 import { game } from './gstate.js';
 import { unpunish } from './read.js';
 import { add_to_minv, obj_extract_self, place_object, unknow_object } from './mkobj.js';
@@ -75,8 +76,6 @@ function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;
     return dx * dx + dy * dy;
 }
-/* C ref: obj.h any_quest_artifact() */
-function any_quest_artifact(o) { return (o.oartifact || 0) >= ART_ORB_OF_DETECTION; }
 /* C ref: hacklib.c strsubst() -- replace the first instance */
 function strsubst(bp, orig, replacement) {
     const found = bp.indexOf(orig);

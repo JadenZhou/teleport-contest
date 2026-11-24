@@ -23,6 +23,7 @@
 // init_dungeon_dungeons(L, pd, i) is init_dungeon_dungeons(dgn, pd, i)
 // where dgn is the Lua table dungeon[i + 1].
 
+import { impossible } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rn1 } from './rng.js';
 import {
@@ -79,11 +80,10 @@ import { add_menu_str } from './wintty.js';
 import { Blind, Levitation } from './youprop.js';
 
 // C's panic() (end.c) and impossible() (pline.c) are not ported yet.
-function panic(msg) { throw new Error(`panic: ${msg}`); }
-function impossible(msg) { console.error(`impossible: ${msg}`); }
+export function panic(msg) { throw new Error(`panic: ${msg}`); }
 
 // C ref: flag.h wizard macro — flags.debug
-function wizard() { return !!game.flags?.debug; }
+export function wizard() { return !!game.flags?.debug; }
 
 const DUNGEON_FILE = 'dungeon.lua';
 

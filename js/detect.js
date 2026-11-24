@@ -4,6 +4,7 @@
 // Ported so far: dosearch0() (not its feel_location()/unmap_invisible()
 // parts), mfind0(), warnreveal() and lock.c cvt_sdoor_to_door().
 
+import { feel_newsym } from './display.js';
 import { game } from './gstate.js';
 import { rnl } from './rng.js';
 import { pline, newsym, docrt, flush_screen, glyph_at, glyph_kind, show_glyph,
@@ -31,13 +32,6 @@ import {
     Hallucination as Hallucination_dt
 } from './youprop.js';
 
-// C ref: display.c feel_newsym()
-function feel_newsym(x, y) {
-    if (Blind())
-        feel_location(x, y);
-    else
-        newsym(x, y);
-}
 import { tty_display_nhwindow } from './wintty.js';
 import { seemimic } from './mon.js';
 import { y_monnam, a_monnam } from './do_name.js';

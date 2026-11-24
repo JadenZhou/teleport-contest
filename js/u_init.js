@@ -7,6 +7,7 @@
 // restricted_spell_discipline(), u_init_carry_attr_boost().
 // u_init_skills_discoveries() and pauper_reinit() are not ported yet.
 
+import { spell_skilltype } from './spell.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rne, ROLL_FROM } from './rng.js';
 import { getnow } from './calendar.js';
@@ -1050,9 +1051,6 @@ function skills_for_role() {
 
     return skills;
 }
-
-// C ref: spell.c spell_skilltype()
-function spell_skilltype(booktype) { return objects[booktype].oc_skill; }
 
 // C ref: u_init.c restricted_spell_discipline()
 /* skills aren't initialized, so we use the role-specific skill lists */

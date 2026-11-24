@@ -5,6 +5,7 @@
 // placebc_core(), unplacebc_core(), check_restriction(), bc_order(),
 // set_bc(), move_bc(), drag_ball(), drop_ball(), litter(), drag_down().
 
+import { MON_AT } from './makemon.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { newsym, map_object, pline, pline_The, You, You_feel, Your,
@@ -46,8 +47,6 @@ function bcrestriction() { return game.bcrestriction || 0; }
 
 /* C ref: obj.h carried() */
 function carried(o) { return o.where === 'OBJ_INVENT'; }
-/* C ref: hack.h MON_AT() */
-function MON_AT(x, y) { return !!m_at(x, y); }
 /* C ref: mkobj.c remove_object() -- a floor object leaves the floor */
 function remove_object(otmp) {
     if (otmp.where !== 'OBJ_FLOOR')

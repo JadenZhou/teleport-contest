@@ -5,6 +5,7 @@
 // more_experienced(), newexplevel(), pluslvl() (not for a polymorphed
 // hero) and losexp().
 
+import { minuhpmax } from './attrib.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_MINORAC } from './const.js';
@@ -284,13 +285,6 @@ export async function pluslvl(
             u.ulevelpeak = u.ulevel;
     }
     game.disp_botl = true;
-}
-
-// C ref: attrib.c minuhpmax()
-function minuhpmax(altmin) {
-    if (altmin < 1)
-        altmin = 1;
-    return Math.max(game.u.ulevel, altmin);
 }
 
 // C ref: exper.c losexp()

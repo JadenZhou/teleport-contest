@@ -503,7 +503,7 @@ async function ynq(query) {
 
 
 /* C ref: obj.h is_plural(), pair_of() */
-function is_plural(o) {
+export function is_plural(o) {
     return (o.quan !== 1
             /* "the Eyes of the Overworld" are plural, but
                "a pair of lenses named the Eyes of the Overworld" is not */

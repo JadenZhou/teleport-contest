@@ -3,6 +3,7 @@
 // (commands_init()/reset_commands()) and the command functions ported so
 // far; hack.c domove() is in hack.js.
 
+import { impossible } from './hack.js';
 import { nhcb_counts, nhcb_name } from './nhlua.js';
 import { NHCB_CMD_BEFORE } from './const.js';
 import { dobreathe } from './polyself.js';
@@ -284,16 +285,14 @@ async function doextcmd() {
     return retval;
 }
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
 /* C ref: cmd.c cmdq_add_ec(CQ_CANNED, fn), cmdq_add_key(CQ_CANNED, key),
    cmdq_add_dir(CQ_CANNED, dx, dy, dz) -- the canned command queue is
    game.cmdq */
-function cmdq_add_ec(fn) {
+export function cmdq_add_ec(fn) {
     if (!game.cmdq) game.cmdq = [];
     game.cmdq.push({ typ: 'ec', fn });
 }
-function cmdq_add_key(key) {
+export function cmdq_add_key(key) {
     if (!game.cmdq) game.cmdq = [];
     game.cmdq.push({ typ: 'key', key });
 }

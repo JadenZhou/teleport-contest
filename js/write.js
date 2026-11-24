@@ -1,6 +1,7 @@
 // write.js — writing scrolls and spellbooks with a magic marker.
 // C ref: write.c — cost(), write_ok(), dowrite(), new_book_description().
 
+import { impossible } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rn1, rnl } from './rng.js';
 import * as O from './objects.js';
@@ -27,8 +28,6 @@ import { wipeout_text } from './engrave.js';
 import { hold_another_object } from './wizcmds.js';
 import { observe_object, discover_object } from './o_init.js';
 import { Glib, Blind, Hallucination } from './youprop.js';
-
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }

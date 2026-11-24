@@ -4,6 +4,8 @@
 // mhitm_ad_phys(), max_passive_dmg()).  Paths that aren't ported yet
 // throw a 'not ported yet' error instead of skipping their rolls.
 
+import { DEADMONSTER } from './mon.js';
+import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { ACURR as ACURR_mm } from './attrib.js';
@@ -50,7 +52,6 @@ import { tele_restrict, rloc } from './teleport.js';
 import { RLOC_NOMSG } from './const.js';
 import { Blind, Deaf, Conflict } from './youprop.js';
 
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: obj.h is_pole() */
 function is_pole(otmp) {
     return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
@@ -66,7 +67,6 @@ function mon_hates_silver(mon) {
             || ptr === mons[M.PM_SHADE]
             || (ptr.mlet === M.S_IMP && ptr !== mons[M.PM_TENGU]));
 }
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
