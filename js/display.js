@@ -48,6 +48,22 @@ import { IS_OBSTRUCTED, IS_DOOR, IS_ROOM, IS_POOL } from './const.js';
 import { t_at } from './trap.js';
 import { engr_at, sticks, can_reach_floor } from './engrave.js';
 import { ENGRAVE, BURN, HEADSTONE } from './const.js';
+import { AM_MASK, AM_SANCTUM, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC } from './const.js';
+
+// C ref: display.h altar_to_glyph(), enum altar_colors (without
+// USE_GENERAL_ALTAR_COLORS); display.c altarcolors[]
+function altar_color(amsk) {
+    if ((amsk & AM_SANCTUM) === AM_SANCTUM)
+        return CLR_BRIGHT_MAGENTA; /* altar_color_other */
+    switch (amsk & AM_MASK) {
+    case AM_LAWFUL:  /* altar_color_lawful */
+    case AM_NEUTRAL: /* altar_color_neutral */
+    case AM_CHAOTIC: /* altar_color_chaotic */
+        return CLR_GRAY;
+    default:         /* altar_color_unaligned */
+        return CLR_RED;
+    }
+}
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
          CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE, ATR_INVERSE } from './terminal.js';
@@ -203,7 +219,7 @@ export function stairway_at(x, y) {
 }
 
 // C ref: stairs.c known_branch_stairs() -- hero knows where the stairs go
-function known_branch_stairs(sway) {
+export function known_branch_stairs(sway) {
     return !!(sway && sway.tolev.dnum !== game.u?.uz?.dnum && sway.u_traversed);
 }
 
@@ -785,7 +801,8 @@ function terrain_glyph_dec(loc, x, y) {
     }
     case FOUNTAIN:  return { ch: '{', color: CLR_BRIGHT_BLUE, dec: false, cmapidx: 37 };
     case SINK:      return { ch: '{', color: CLR_WHITE, dec: false, cmapidx: 36 };
-    case ALTAR:     return { ch: '{', color: CLR_GRAY, dec: true, asc: '_', cmapidx: 33 };  /* S_altar */
+    case ALTAR:     /* bypass_glyph = altar_to_glyph(ptr->altarmask) */
+        return { ch: '{', color: altar_color(loc.altarmask), dec: true, asc: '_', cmapidx: 33 };  /* S_altar */
     case GRAVE:     return { ch: '|', color: CLR_WHITE, dec: false, cmapidx: 34 };
     case THRONE:    return { ch: '\\', color: CLR_YELLOW, dec: false, cmapidx: 35 };
     case LAVAPOOL:  return { ch: '`', color: CLR_RED, dec: true, asc: '}', cmapidx: 40 };

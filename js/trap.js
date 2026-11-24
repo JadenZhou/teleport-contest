@@ -179,7 +179,7 @@ function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 function likes_gems(ptr) { return (ptr.mflags2 & M2_JEWELS) !== 0; }
 function is_unicorn(ptr) { return ptr.mlet === S_UNICORN && likes_gems(ptr); }
 // C ref: hacklib.c sgn()
-function sgn(n) { return (n < 0) ? -1 : (n !== 0); }
+function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: trap.c mk_trap_statue()
 /* create a "living" statue at x,y */
@@ -4287,9 +4287,18 @@ export function maketrap(x, y, typ) {
         unearth_objs_l(x, y);
         recalc_block_point_l(x, y);
         break;
-    case TELEP_TRAP:
+    case TELEP_TRAP: {
         /* gl.launchplace is only set by special-level loaders */
+        const launchplace = game.launchplace || { x: 0, y: 0 };
+        if (isok(launchplace.x, launchplace.y)) {
+            ttmp.launch.x = game.xstart + launchplace.x; /* teledest */
+            ttmp.launch.y = game.ystart + launchplace.y;
+            if (ttmp.launch.x === x && ttmp.launch.y === y) {
+                /* impossible("making fixed-dest tele trap pointing to itself") */
+            }
+        }
         break;
+    }
     }
 
     if (!oldplace) {

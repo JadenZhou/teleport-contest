@@ -62,6 +62,8 @@ import { room_discovered } from './dungeon.js';
 import { inside_room } from './sp_lev.js';
 import { record_achievement } from './do.js';
 import { ACH_TOWN } from './const.js';
+import { RUN_TPORT, RUN_LEAP } from './const.js';
+import { flush_screen as flush_screen_hk } from './display.js';
 import { doopen_indir } from './lock.js';
 import { do_attack } from './uhitm.js';
 import { x_monnam, YMonnam, m_monnam, mon_nam, ARTICLE_NONE, ARTICLE_THE,
@@ -3192,7 +3194,25 @@ async function domove_core() {
         game.nomovemsg = "";
     }
 
-    /* runmode_delay_output(): display timing only */
+    await runmode_delay_output();
+}
+
+// C ref: hack.c runmode_delay_output()
+export async function runmode_delay_output() {
+    const g = game;
+    if ((g.context.run || g.multi) && g.flags.runmode !== RUN_TPORT) {
+        /* for tport mode, don't display anything until we've stopped;
+           for normal (leap) mode, update display every 7th step
+           (relative to turn counter; ought to be to start of running);
+           for walk and crawl (visual debugging) modes, update the
+           display after every step */
+        if (g.flags.runmode !== RUN_LEAP || !(g.moves % 7)) {
+            /* moveloop() suppresses time_botl when running */
+            g.disp_time_botl = !!g.flags.time;
+            await flush_screen_hk(1); /* curs_on_u() */
+            /* nh_delay_output(): display timing only */
+        }
+    }
 }
 
 // C ref: hack.c domove()
