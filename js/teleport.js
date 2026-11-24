@@ -61,6 +61,7 @@ import { ROOMOFFSET, VAULT, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL,
          TT_BURIEDBALL, LEVITATION, FLYING, TELEDS_TELEPORT } from './const.js';
 import { ECMD_OK, ECMD_TIME, TELEPORT, A_STR } from './const.js';
 import { You } from './display.js';
+import { docrt as docrt_tp } from './display.js';
 import { getpos } from './getpos.js';
 import { u_locomotion } from './trap.js';
 import { can_teleport } from './mondata.js';
@@ -1743,4 +1744,3 @@ import { tty_yn_function as tty_yn_function_tp } from './wintty.js';
 import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';
 import { inhishop } from './shk.js';
 import { inhistemple } from './priest.js';
-import { docrt as docrt_tp } from './display.js';

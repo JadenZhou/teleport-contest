@@ -3705,7 +3705,7 @@ export function flip_level(flp, extras) {
         Flip_coord(mtmp.mgoal);
 
         if (mtmp.ispriest) {
-            Flip_coord(mtmp.epri?.shrpos); /* EPRI(mtmp): JS keeps it on mtmp.epri */
+            Flip_coord(mtmp.epri?.shrpos);
         } else if (mtmp.isshk) {
             Flip_coord(mtmp.mextra?.eshk?.shk); /* shk's preferred spot */
             Flip_coord(mtmp.mextra?.eshk?.shd); /* shop door */

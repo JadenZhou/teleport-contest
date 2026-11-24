@@ -2331,8 +2331,12 @@ async function moverock_core(sx, sy) {
     let costly, firstboulder = true;
 
     while ((otmp = sobj_at(BOULDER, sx, sy)) !== null && otmp) {
-        if (Blind())
-            throw new Error('moverock_core(): feeling a boulder while blind not ported yet');
+        if (Blind() && glyph_to_obj_hk(glyph_at(sx, sy)) !== BOULDER) {
+            await pline("That feels like a boulder.");
+            map_object_hk(otmp, true);
+            nomul(0);
+            return -1;
+        }
 
         /* when otmp->next_boulder is 1, xname() will format it as
            "next boulder" instead of just "boulder" */
@@ -3221,4 +3225,11 @@ function maybe_smudge_engr(x1, y1, x2, y2) {
                 && (ep = engr_at(x2, y2)) && ep.engr_type !== HEADSTONE)
             wipe_engr_at(x2, y2, rnd(5), false);
     }
+}
+import { map_object as map_object_hk } from './display.js';
+/* C ref: display.h glyph_to_obj() for the JS glyph form: an object glyph
+   keeps its objects[] index in 'otyp'; anything else is NUM_OBJECTS */
+function glyph_to_obj_hk(glyph) {
+    return (glyph && glyph.kind === 'obj' && glyph.otyp !== undefined
+            && glyph.otyp !== null) ? glyph.otyp : -1;
 }
