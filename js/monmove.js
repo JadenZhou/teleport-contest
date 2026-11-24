@@ -863,10 +863,10 @@ async function bee_eat_jelly(mon, obj) {
 }
 
 /* C ref: obj.h is_mines_prize(), is_soko_prize() */
-function is_mines_prize(o) {
+export function is_mines_prize(o) {
     return o.o_id === game.context.achieveo?.mines_prize_oid;
 }
-function is_soko_prize(o) {
+export function is_soko_prize(o) {
     return o.o_id === game.context.achieveo?.soko_prize_oid;
 }
 
@@ -1919,8 +1919,10 @@ function m_search_items(mtmp, st) {
                        their way to grab them */
                     if (otmp.otyp === ROCK)
                         continue;
-                    /* is_mines_prize/is_soko_prize: those levels aren't
-                       ported yet */
+                    /* avoid special items; once hero picks them up, they'll
+                       cease being special */
+                    if (is_mines_prize(otmp) || is_soko_prize(otmp))
+                        continue;
                     /* skip shop merchandise */
                     if (costly && !otmp.no_charge)
                         continue;
@@ -2681,8 +2683,10 @@ async function mpickstuff(mtmp) {
         return false;
 
     for (const otmp of objects_at(mtmp.mx, mtmp.my)) {
-        /* avoid special items (is_mines_prize/is_soko_prize): those
-           levels aren't ported yet */
+        /* avoid special items; once hero picks them up, they'll cease
+           being special, becoming eligible for normal pickup */
+        if (is_mines_prize(otmp) || is_soko_prize(otmp))
+            continue;
 
         /* Nymphs take everything.  Most monsters don't pick up corpses. */
         if (mon_would_take_item(mtmp, otmp)) {

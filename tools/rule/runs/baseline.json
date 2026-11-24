@@ -1,5 +1,5 @@
 {
- "when": "2026-11-24T13:27:02.718Z",
+ "when": "2026-11-24T14:09:03.960Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -522,7 +522,7 @@
      "rn2(8)=5 @ dog_goal(dogmove.c:554)"
     ]
    },
-   "error": "Error: dohelp(): option_help() not ported yet |     at file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a7d6159866bca97ee/js/pager.js:1658:26 |     at dohelp (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a7d6159866bca97ee/js/pager.js:1795:32) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a7d6159866bca97ee/js/cmd.js:1702:19)"
+   "error": "Error: dohelp(): option_help() not ported yet |     at file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a2a4550a06f8a3148/js/pager.js:1658:26 |     at dohelp (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a2a4550a06f8a3148/js/pager.js:1795:32) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a2a4550a06f8a3148/js/cmd.js:1702:19)"
   },
   {
    "session": "seed2600-wizard-custom-binds.session.json",

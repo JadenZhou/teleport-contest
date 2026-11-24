@@ -2386,6 +2386,8 @@ async function moverock_core(sx, sy) {
                 && (!mtmp.mtrapped || !(ttmp && is_pit(ttmp.ttyp)))) {
                 let deliver_part1 = false;
 
+                if (Blind())
+                    feel_location(sx, sy);
                 if (canspotmon(mtmp)) {
                     await pline(`There's ${a_monnam(mtmp)} on the other side.`);
                     deliver_part1 = true;
