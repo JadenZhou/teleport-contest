@@ -29,9 +29,9 @@ import { M1_ANIMAL, M2_LORD, M2_PRINCE, M2_MERC, S_ANT, PM_ORACLE,
          MS_GROAN } from './monsters.js';
 import { quest_chat } from './quest.js';
 import { GOLD_PIECE, STATUE } from './objects.js';
-import { canspotmon, vobj_at } from './display.js';
+import { canspotmon, vobj_at, map_invisible } from './display.js';
 import { m_at } from './makemon.js';
-import { Monnam, mon_nam } from './do_name.js';
+import { Monnam, mon_nam, rndmonnam } from './do_name.js';
 import { night } from './calendar.js';
 import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
@@ -627,7 +627,7 @@ async function domonnoise(mtmp) {
      * which case we want to check its pre-teleport position
      */
     if (!canspotmon(mtmp))
-        throw new Error('domonnoise(): map_invisible() not ported yet');
+        map_invisible(mtmp.mx, mtmp.my);
 
     switch (msound) {
     case MS_LEADER:
@@ -849,9 +849,9 @@ async function dochat() {
         if ((otmp = vobj_at(tx, ty)) != null && otmp.otyp === STATUE) {
             /* Talking to a statue */
             if (!uprop(BLINDED)) {
-                if (Hallucination())
-                    throw new Error('dochat(): rndmonnam() not ported yet');
-                await pline("The statue seems not to notice you."); /* pline_The() */
+                await pline(`The ${
+                    /* if hallucinating, you can't tell it's a statue */
+                    Hallucination() ? rndmonnam(null) : "statue"} seems not to notice you.`); /* pline_The() */
             }
             return ECMD_OK;
         }
@@ -903,7 +903,7 @@ async function dochat() {
 
     if (!Deaf() && mtmp.mtame && mtmp.meating) {
         if (!canspotmon(mtmp))
-            throw new Error('dochat(): map_invisible() not ported yet');
+            map_invisible(mtmp.mx, mtmp.my);
         await pline(`${Monnam(mtmp)} is eating noisily.`);
         return ECMD_OK;
     }

@@ -100,6 +100,7 @@ import { makeplural } from './objnam.js';
 import { acurrstr } from './attrib.js';
 import { costly_spot } from './insight.js';
 import { done } from './end.js';
+import { rndmonnam } from './do_name.js';
 import { killer } from './topten.js';
 import { killer_xname } from './mthrowu.js';
 import { revive_corpse } from './zap.js';
@@ -1534,7 +1535,7 @@ async function consume_tin(mesg) {
             what = "chicken";
             which = 1; /* suppress pluralization */
         } else if (Hallucination()) {
-            throw new Error('consume_tin(): rndmonnam() not ported yet');
+            what = rndmonnam(null);
         } else {
             what = mons[mnum].pmnames[NEUTRAL];
             if (the_unique_pm(mons[mnum]))
@@ -2141,7 +2142,7 @@ async function fpostfx(otmp) {
         break;
     case CARROT:
         if (!u.uswallow
-            || !(() => { throw new Error('fpostfx(): attacktype_fordmg() not ported yet'); })())
+            || !attacktype_fordmg(u.ustuck.data, M.AT_ENGL, M.AD_BLND))
             await make_blinded(u.ucreamed || 0, true);
         break;
     case FORTUNE_COOKIE:

@@ -517,7 +517,8 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
             buf = `${magr_name} touches`;
             break;
         case AT_TENT:
-            throw new Error('hitmm(): s_suffix() not ported yet');
+            buf = `${s_suffix_sm(magr_name)} tentacles suck`;
+            break;
         case AT_HUGS:
             if (magr !== game.u.ustuck) {
                 buf = `${magr_name} squeezes`;

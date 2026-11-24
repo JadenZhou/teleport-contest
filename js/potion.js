@@ -26,6 +26,7 @@ import { pline, You, Your, You_feel, pline_The, newsym, see_monsters,
          DISP_END } from './display.js';
 import { getobj, useup, obfree, hands_obj } from './invent.js';
 import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
+import { undiscovered_artifact } from './artifact.js';
 import { can_reach_floor } from './engrave.js';
 import { GETOBJ_SUGGEST, GETOBJ_EXCLUDE, GETOBJ_EXCLUDE_NONINVENT,
          GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL, ECMD_TIME, STRANGLED,
@@ -2477,14 +2478,14 @@ export async function dodip() {
     throw new Error('dodip(): potion_dip() not ported yet');
 }
 
-/* C ref: obj.h is_plural() (undiscovered_artifact() isn't ported),
-   objnam.c pair_of() */
+/* C ref: obj.h is_plural(), objnam.c pair_of() */
 function dip_is_plural(o) {
     if (o.quan !== 1)
         return true;
-    if (o.oartifact === ART_EYES_OF_THE_OVERWORLD)
-        throw new Error('is_plural(): undiscovered_artifact() not ported yet');
-    return false;
+    /* "the Eyes of the Overworld" are plural, but
+       "a pair of lenses named the Eyes of the Overworld" is not */
+    return (o.oartifact === ART_EYES_OF_THE_OVERWORLD
+            && !undiscovered_artifact(ART_EYES_OF_THE_OVERWORLD));
 }
 function dip_pair_of(o) {
     return (o.otyp === O.LENSES

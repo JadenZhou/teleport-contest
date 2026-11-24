@@ -24,7 +24,7 @@ import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, MZ_HUGE, M1_NOLIMBS, M1_HUMANOID,
          PM_WINGED_GARGOYLE, PM_HORNED_DEVIL, PM_MINOTAUR, PM_ASMODEUS,
          PM_BALROG, PM_WHITE_UNICORN, PM_GRAY_UNICORN, PM_BLACK_UNICORN,
          PM_KI_RIN, PM_WIZARD } from './monsters.js';
-import { xname, an, makeplural, Tobjnam } from './objnam.js';
+import { xname, an, makeplural, Tobjnam, obj_is_pname } from './objnam.js';
 import { vision_recalc } from './vision.js';
 import { HEAD, BLINDED, TELEPAT, INFRAVISION } from './const.js';
 import * as O from './objects.js';
@@ -286,9 +286,8 @@ async function on_msg(otmp) {
 
         if (otmp.otyp === TOWEL)
             how = ` around your ${body_part(HEAD)}`;
-        if (otmp.oartifact)
-            throw new Error('on_msg(): obj_is_pname() not ported yet');
-        await You(`are now wearing ${an(otmp_name)}${how}.`);
+        await You(`are now wearing ${
+            obj_is_pname(otmp) ? the(otmp_name) : an(otmp_name)}${how}.`);
     }
 }
 
