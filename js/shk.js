@@ -13,6 +13,15 @@ import {
     BLINDED, TELEPAT, DETECT_MONSTERS, M_AP_NOTHING, M_AP_MONSTER, u_at,
 } from './const.js';
 import { ANY_SHOP } from './const.js';
+import { IS_DOOR, SVALL, ROWNO, COLNO, RLOC_NOMSG, RLOC_MSG, NECK } from './const.js';
+import { ROLL_FROM } from './rng.js';
+import { mnexto } from './teleport.js';
+import { mnearto } from './mon.js';
+import { yelp, growl, You_hear } from './sounds.js';
+import { tty_yn_function } from './wintty.js';
+import { body_part } from './insight.js';
+import { poly_gender } from './polyself.js';
+import { is_demon } from './mondata.js';
 import { search_special } from './sounds.js';
 import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
@@ -149,6 +158,10 @@ function IS_SHOP(x) { return game.level.rooms[x].rtype >= SHOPBASE; }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
+/* C ref: hack.h um_dist() */
+function um_dist(x, y, n) {
+    return Math.abs(game.u.ux - x) > n || Math.abs(game.u.uy - y) > n;
+}
 /* C ref: hacklib.c online2(); hack.h onlineu() */
 function online2(x0, y0, x1, y1) {
     const dx = x0 - x1, dy = y0 - y1;
@@ -657,6 +670,47 @@ async function rouse_shk(shkp, verbosely) {
     }
 }
 
+// C ref: shk.c add_damage()
+export function add_damage(x, y, cost) {
+    const lev = game.level;
+    let tmp_dam;
+
+    if (IS_DOOR(lev.at(x, y).typ)) {
+        let mtmp;
+        let found = false;
+
+        /* Don't schedule for repair unless it's a real shop entrance */
+        const shops = in_rooms(x, y, SHOPBASE);
+        for (let i = 0; i < shops.length; i++)
+            if ((mtmp = shop_keeper(shops.charCodeAt(i))) != null
+                && x === mtmp.mextra.eshk.shd.x
+                && y === mtmp.mextra.eshk.shd.y) {
+                found = true;
+                break;
+            }
+        if (!found)
+            return;
+    }
+    for (tmp_dam = lev.damagelist; tmp_dam; tmp_dam = tmp_dam.next)
+        if (tmp_dam.place.x === x && tmp_dam.place.y === y) {
+            tmp_dam.cost += cost;
+            tmp_dam.when = game.moves; /* needed by pay_for_damage() */
+            return;
+        }
+    tmp_dam = {
+        when: game.moves,
+        place: { x, y },
+        cost,
+        typ: lev.at(x, y).typ,
+        flags: lev.at(x, y).flags,
+        next: lev.damagelist || null,
+    };
+    lev.damagelist = tmp_dam;
+    /* If player saw damage, display walls post-repair as walls, not stone */
+    if (cansee(x, y))
+        lev.at(x, y).seenv = SVALL;
+}
+
 // C ref: shk.c shk_impaired()
 /* is shk unable to repair damage? */
 function shk_impaired(shkp) {
@@ -865,6 +919,264 @@ export async function after_shk_move(shkp) {
 /* for use in levl_follower (mondata.c) */
 export function is_fshk(mtmp) {
     return !!(mtmp.isshk && mtmp.mextra.eshk.following);
+}
+
+// C ref: shk.c getcad()
+async function getcad(shkp, dmgstr, x, y, uinshp, animal, pursue) {
+    const dugwall = (dmgstr === "dig into"    /* wand */
+                     || dmgstr === "damage"); /* pick-axe */
+
+    if (muteshk(shkp)) {
+        if (animal && !helpless(shkp))
+            await yelp(shkp);
+    } else if (pursue || uinshp || !um_dist(x, y, 1)) {
+        if (!Deaf()) {
+            /* SetVoice(shkp, 0, 80, 0) */
+            await verbalize(`How dare you ${dmgstr} my ${
+                dugwall ? "shop" : "door"}?`);
+        } else {
+            await pline(`${Shknam(shkp)} is ${ROLL_FROM(angrytexts)} that you decided to ${
+                dmgstr} ${noit_mhis(shkp)} ${dugwall ? "shop" : "door"}!`);
+        }
+    } else {
+        if (!Deaf()) {
+            await pline(`${Shknam(shkp)} shouts:`);
+            /* SetVoice(shkp, 0, 80, 0) */
+            await verbalize(`Who dared ${dmgstr} my ${
+                dugwall ? "shop" : "door"}?`);
+        } else {
+            await pline(`${Shknam(shkp)} is ${ROLL_FROM(angrytexts)} that someone decided to ${
+                dmgstr} ${noit_mhis(shkp)} ${dugwall ? "shop" : "door"}!`);
+        }
+    }
+    hot_pursuit(shkp);
+}
+
+// C ref: shk.c pay_for_damage()
+export async function pay_for_damage(dmgstr, cant_mollify) {
+    const u = game.u;
+    let shkp = null;
+    let shops_affected;
+    const uinshp = !!(u.ushops && u.ushops.length);
+    let x, y;
+    let animal, pursue;
+    let tmp_dam, appear_here = null;
+    let cost_of_damage = 0;
+    let nearest_shk = (ROWNO * ROWNO) + (COLNO * COLNO),
+        nearest_damage = nearest_shk;
+    let picks = 0;
+
+    for (tmp_dam = game.level.damagelist; tmp_dam; tmp_dam = tmp_dam.next) {
+        if (tmp_dam.when !== game.moves || !tmp_dam.cost)
+            continue;
+        cost_of_damage += tmp_dam.cost;
+        shops_affected = in_rooms(tmp_dam.place.x, tmp_dam.place.y, SHOPBASE);
+        for (let si = 0; si < shops_affected.length; si++) {
+            let tmp_shk;
+            let shk_distance;
+
+            if (!(tmp_shk = shop_keeper(shops_affected.charCodeAt(si))))
+                continue;
+            if (tmp_shk === shkp) {
+                const damage_distance =
+                    distu(tmp_dam.place.x, tmp_dam.place.y);
+
+                if (damage_distance < nearest_damage) {
+                    nearest_damage = damage_distance;
+                    appear_here = tmp_dam;
+                }
+                continue;
+            }
+            if (!inhishop(tmp_shk))
+                continue;
+            shk_distance = mdistu(tmp_shk);
+            if (shk_distance > nearest_shk)
+                continue;
+            if ((shk_distance === nearest_shk) && picks) {
+                if (rn2(++picks))
+                    continue;
+            } else
+                picks = 1;
+            shkp = tmp_shk;
+            nearest_shk = shk_distance;
+            appear_here = tmp_dam;
+            nearest_damage = distu(tmp_dam.place.x, tmp_dam.place.y);
+        }
+    }
+
+    if (!cost_of_damage || !shkp)
+        return;
+
+    animal = (shkp.data.msound <= MS_ANIMAL);
+    pursue = false;
+    x = appear_here.place.x;
+    y = appear_here.place.y;
+
+    /* not the best introduction to the shk... */
+    shkp.mextra.eshk.customer = (game.plname || '').slice(0, PL_NSIZ);
+
+    /* if the shk is already on the war path, be sure it's all out */
+    if (ANGRY(shkp) || shkp.mextra.eshk.following) {
+        hot_pursuit(shkp);
+        return;
+    }
+
+    /* if the shk is not in their shop.. */
+    if (!in_rooms(shkp.mx, shkp.my, SHOPBASE).length) {
+        if (!cansee(shkp.mx, shkp.my))
+            return;
+        pursue = true;
+        await getcad(shkp, dmgstr, x, y, uinshp, animal, pursue);
+        return;
+    }
+
+    if (uinshp) {
+        if (um_dist(shkp.mx, shkp.my, 1)
+            && !um_dist(shkp.mx, shkp.my, 3)) {
+            await pline(`${Shknam(shkp)} leaps towards you!`);
+            await mnexto(shkp, RLOC_NOMSG);
+        }
+        pursue = um_dist(shkp.mx, shkp.my, 1);
+        if (pursue) {
+            await getcad(shkp, dmgstr, x, y, uinshp, animal, pursue);
+            return;
+        }
+    } else {
+        /*
+         * Make shkp show up at the door.  Effect:  If there is a monster
+         * in the doorway, have the hero hear the shopkeeper yell a bit,
+         * pause, then have the shopkeeper appear at the door, having
+         * yanked the hapless critter out of the way.
+         */
+        if (m_at(x, y)) {
+            if (!animal) {
+                if (!Deaf() && !muteshk(shkp)) {
+                    /* Soundeffect(se_angry_voice, 75); */
+                    await You_hear("an angry voice:");
+                    /* SetVoice(shkp, 0, 80, 0) */
+                    await verbalize("Out of my way, scum!");
+                }
+                /* wait_synch(); sleep(1) */
+            } else {
+                await growl(shkp);
+            }
+        }
+        await mnearto(shkp, x, y, true, RLOC_MSG);
+    }
+
+    if ((um_dist(x, y, 1) && !uinshp) || cant_mollify
+        || (money_cnt(game.invent) + shkp.mextra.eshk.credit) < cost_of_damage
+        || !rn2(50)) {
+        await getcad(shkp, dmgstr, x, y, uinshp, animal, pursue);
+        return;
+    }
+
+    if (Invis())
+        await Your(`invisibility does not fool ${shkname(shkp)}!`);
+    const qbuf = `${!animal ? cad(true) : ""}You did ${cost_of_damage} ${
+        currency(cost_of_damage)} worth of damage!${!animal ? '"' : ""}  Pay?`;
+    if ((await tty_yn_function(qbuf, "yn", 'n')) !== 'n') { /* y_n() */
+        let is_seen;
+        const was_seen = canseemon(shkp),
+              was_outside = !inhishop(shkp);
+        const sx = shkp.mx, sy = shkp.my;
+
+        cost_of_damage = await check_credit(cost_of_damage, shkp);
+        if (cost_of_damage > 0) {
+            money2mon(shkp, cost_of_damage);
+            game.disp_botl = true;
+        }
+        await pline(`Mollified, ${shkname(shkp)} accepts your restitution.`);
+        /* move shk back to his home loc */
+        await home_shk(shkp, false);
+        pacify_shk(shkp, false);
+        /* home_shk() suppresses rloc()'s vanish/appear messages */
+        if (shkp.mx !== sx || shkp.my !== sy) {
+            if (was_outside && canspotmon(shkp))
+                await pline(`${Shknam(shkp)} returns to ${noit_mhis(shkp)} shop.`);
+            else if ((is_seen = canseemon(shkp)) === true || was_seen)
+                await pline(`${Shknam(shkp)} ${!was_seen ? "appears"
+                                              : is_seen ? "shifts location"
+                                                : "disappears"}.`);
+        }
+    } else {
+        if (!animal) {
+            if (!Deaf() && !muteshk(shkp)) {
+                /* SetVoice(shkp, 0, 80, 0) */
+                await verbalize("Oh, yes!  You'll pay!");
+            } else {
+                await pline(`${Shknam(shkp)} lunges ${noit_mhis(shkp)} ${
+                    mbodypart(shkp, HAND)} toward your ${body_part(NECK)}!`);
+            }
+        } else
+            await growl(shkp);
+        hot_pursuit(shkp);
+        adjalign(-Math.sign(u.ualign.type));
+    }
+}
+
+// C ref: shk.c cad()
+function cad(altusage) /* used as a verbalized exclamation:  \"Cad! ...\" */
+{
+    let res = null;
+
+    switch (is_demon(game.youmonst.data) ? 3 : poly_gender()) {
+    case 0:
+        res = "cad";
+        break;
+    case 1:
+        res = "minx";
+        break;
+    case 2:
+        res = "beast";
+        break;
+    case 3:
+        res = "fiend";
+        break;
+    default:
+        /* impossible("cad: unknown gender") */
+        res = "thing";
+        break;
+    }
+    if (altusage) {
+        /* alternate usage adds a leading double quote and trailing
+           exclamation point plus sentence separating spaces */
+        res = `"${highc(res.charAt(0))}${res.slice(1)}!  `;
+    }
+    return res;
+}
+
+// C ref: shk.c find_objowner()
+/* find the shopkeeper who owns 'obj'; needed to handle shared shop walls */
+export function find_objowner(obj, x, y) /* caller passes obj's location
+                           * since obj->ox,oy might be stale; don't update
+                           * coordinates here because if we're called during
+                           * sanity checking they shouldn't be modified */
+{
+    let shkp, deflt_shkp = null;
+
+    if (obj.where === 'OBJ_ONBILL') {
+        /* used up item; bill obj coordinates are useless and so are x,y */
+        for (shkp = next_shkp(game.fmon, true); shkp;
+             shkp = next_shkp(shkp.nmon, true))
+            if (onshopbill(obj, shkp, true))
+                return shkp;
+    } else {
+        const where = in_rooms(x, y, SHOPBASE);
+
+        /* conceptually object could be inside up to 4 rooms simultaneously;
+           in practice it will usually be one room but can sometimes be two;
+           check shk and bill for each room rather than just the first;
+           fallback to the first shk if obj isn't on the relevant bill(s) */
+        for (let ri = 0; ri < where.length; ++ri)
+            if ((shkp = shop_keeper(where.charCodeAt(ri))) != null) {
+                if (onshopbill(obj, shkp, true))
+                    return shkp;
+                if (!deflt_shkp)
+                    deflt_shkp = shkp;
+            }
+    }
+    return deflt_shkp;
 }
 
 // C ref: shk.c costly_spot()
@@ -1158,8 +1470,15 @@ function setpaid(shkp) {
 
 // C ref: shk.c home_shk()
 async function home_shk(shkp, killkops) {
-    void shkp; void killkops;
-    throw new Error('home_shk(): mnearto() not ported yet');
+    const x = shkp.mextra.eshk.shk.x, y = shkp.mextra.eshk.shk.y;
+
+    await mnearto(shkp, x, y, true, RLOC_NOMSG);
+    game.level.flags.has_shop = 1;
+    if (killkops) {
+        kops_gone(true);
+        pacify_guards();
+    }
+    await after_shk_move(shkp);
 }
 
 // C ref: shk.c paybill()

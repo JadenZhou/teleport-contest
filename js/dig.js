@@ -47,7 +47,8 @@ import { SDOOR, DOOR, CORR, ROOM, FOUNTAIN, SHOPBASE, W_NONDIGGABLE, D_NODOOR,
 import { in_rooms } from './hack.js';
 import { cansee, recalc_block_point, unblock_point } from './vision.js';
 import { pline_The, tmp_at, DISP_BEAM, DISP_END } from './display.js';
-import { COLNO, TT_BURIEDBALL } from './const.js';
+import { COLNO, TT_BURIEDBALL, SHOP_DOOR_COST, SHOP_WALL_COST } from './const.js';
+import { add_damage, pay_for_damage } from './shk.js';
 import { HEAVY_IRON_BALL } from './objects.js';
 import { dist2 } from './hacklib.js';
 import { reset_utrap } from './trap.js';
@@ -592,8 +593,10 @@ export async function zap_dig() {
         /* nh_delay_output(): wait a little bit */
 
         if (closed_door(zx, zy) || room.typ === SDOOR) {
-            if (in_rooms(zx, zy, SHOPBASE).length)
-                throw new Error('zap_dig(): shop door damage (add_damage()) not ported yet');
+            if (in_rooms(zx, zy, SHOPBASE).length) {
+                add_damage(zx, zy, SHOP_DOOR_COST);
+                shopdoor = true;
+            }
             if (room.typ === SDOOR)
                 room.typ = DOOR; /* doormask set below */
             else if (cansee(zx, zy))
@@ -607,8 +610,10 @@ export async function zap_dig() {
         } else if (maze_dig) {
             if (IS_WALL(room.typ)) {
                 if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
-                    if (in_rooms(zx, zy, SHOPBASE).length)
-                        throw new Error('zap_dig(): shop wall damage (add_damage()) not ported yet');
+                    if (in_rooms(zx, zy, SHOPBASE).length) {
+                        add_damage(zx, zy, SHOP_WALL_COST);
+                        shopwall = true;
+                    }
                     room.typ = ROOM, room.flags = 0;
                     unblock_point(zx, zy); /* vision */
                 } else if (!Blind_dg())
@@ -633,8 +638,10 @@ export async function zap_dig() {
             if (!may_dig(zx, zy))
                 break;
             if (IS_WALL(room.typ) || room.typ === SDOOR) {
-                if (in_rooms(zx, zy, SHOPBASE).length)
-                    throw new Error('zap_dig(): shop wall damage (add_damage()) not ported yet');
+                if (in_rooms(zx, zy, SHOPBASE).length) {
+                    add_damage(zx, zy, SHOP_WALL_COST);
+                    shopwall = true;
+                }
                 watch_dig(null, zx, zy, true);
                 if (g.level.flags.is_cavernous_lev && !in_town(zx, zy)) {
                     room.typ = CORR, room.flags = 0;
@@ -659,7 +666,7 @@ export async function zap_dig() {
     /* pitflow is only set by the (unported) pit case above */
 
     if (shopdoor || shopwall)
-        throw new Error('zap_dig(): pay_for_damage() not ported yet');
+        await pay_for_damage(shopdoor ? "destroy" : "dig into", false);
 }
 
 // C ref: dig.c buried_ball()

@@ -1158,7 +1158,7 @@ export async function hitfloor(obj,
  * The object is going to break because of something the hero did.
  * Return 0 if the object doesn't break, 1 if the object broke.
  */
-async function hero_breaks(obj,
+export async function hero_breaks(obj,
                            x, y, /* object location (ox, oy may not be right) */
                            breakflags) {
     /* from_invent: thrown or dropped by player; maybe on shop bill;
@@ -1175,6 +1175,23 @@ async function hero_breaks(obj,
 
     await breakmsg(obj, in_view);
     return await breakobj(obj, x, y, true, from_invent);
+}
+
+// C ref: dothrow.c breaks()
+/*
+ * The object is going to break for a reason other than the hero doing
+ * something to it.
+ * Return 0 if the object doesn't break, 1 if the object broke.
+ */
+export async function breaks(obj,
+                             x, y) /* object location (ox, oy may not be right) */
+{
+    const in_view = Blind_br() ? false : cansee_br(x, y);
+
+    if (!breaktest(obj))
+        return 0;
+    await breakmsg(obj, in_view);
+    return await breakobj(obj, x, y, false, false);
 }
 
 // C ref: dothrow.c breakobj()

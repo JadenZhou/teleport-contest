@@ -292,6 +292,32 @@ export async function bhito(obj, otmp) {
             obj = await poly_obj(obj, STRANGE_OBJECT);
             newsym(obj.ox, obj.oy);
             break;
+        case WAN_STRIKING:
+        case SPE_FORCE_BOLT: {
+            /* learn the type if you see or hear something break
+               (the sound could be implicit) */
+            let maybelearnit = cansee(obj.ox, obj.oy) || !Deaf_zp();
+            if (obj.otyp === BOULDER) {
+                throw new Error('bhito(): striking a boulder (fracture_rock()) not ported yet');
+            } else if (obj.otyp === STATUE_ZB) {
+                throw new Error('bhito(): striking a statue (break_statue()) not ported yet');
+            } else {
+                const oox = obj.ox, ooy = obj.oy;
+
+                if (g.context.mon_moving ? !(await breaks_zb(obj, oox, ooy))
+                                         : !(await hero_breaks_zb(obj, oox, ooy, 0)))
+                    maybelearnit = false; /* nothing broke */
+                else
+                    /* obj broke; force redisplay in case it was the only--
+                       or last--item under non-breaking pile-top; top item
+                       here might now be a lone object rather than a pile */
+                    newsym_force_zb(oox, ooy);
+                res = 0;
+            }
+            if (maybelearnit)
+                learn_it = true;
+            break;
+        }
         case WAN_SLOW_MONSTER: /* no effect on objects */
         case SPE_SLOW_MONSTER:
         case WAN_SPEED_MONSTER:
@@ -309,6 +335,10 @@ export async function bhito(obj, otmp) {
         learnwand(otmp);
     return res;
 }
+
+import { breaks as breaks_zb, hero_breaks as hero_breaks_zb } from './dothrow.js';
+import { newsym_force as newsym_force_zb } from './display.js';
+import { STATUE as STATUE_ZB } from './objects.js';
 
 /* C ref: obj.h Is_box() */
 function Is_box(otmp) { return otmp.otyp === LARGE_BOX || otmp.otyp === CHEST; }
