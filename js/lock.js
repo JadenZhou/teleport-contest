@@ -1247,8 +1247,15 @@ export async function doclose() {
 
     const door = game.level.at(x, y);
     const portcullis = (is_drawbridge_wall(x, y) >= 0);
-    if (Blind())
-        throw new Error('doclose(): feel_location() for a blind hero not ported yet');
+    if (Blind()) {
+        const oldglyph = door.remembered_glyph; /* door->glyph */
+        const oldlastseentyp = update_mapseen_for(x, y);
+
+        feel_location(x, y);
+        if (!same_glyph(door.remembered_glyph, oldglyph)
+            || (game.level.lastseentyp?.[x]?.[y] ?? 0) !== oldlastseentyp)
+            res = ECMD_TIME; /* learned something */
+    }
 
     if (portcullis || !IS_DOOR(door.typ)) {
         /* is_db_wall: closed portcullis */

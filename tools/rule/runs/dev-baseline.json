@@ -1,5 +1,5 @@
 {
- "when": "2026-11-24T08:38:26.124Z",
+ "when": "2026-11-24T09:12:08.816Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -522,7 +522,7 @@
      "rn2(1)=0 @ dog_move(dogmove.c:1255)"
     ]
    },
-   "error": "Error: dohelp(): option_help() not ported yet |     at file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a2944d1795ea2acd1/js/pager.js:1651:26 |     at dohelp (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a2944d1795ea2acd1/js/pager.js:1788:32) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a2944d1795ea2acd1/js/cmd.js:1701:19)"
+   "error": "Error: dohelp(): option_help() not ported yet |     at file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a5f23a79b5ce39285/js/pager.js:1651:26 |     at dohelp (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a5f23a79b5ce39285/js/pager.js:1788:32) |     at async rhack (file:///Users/JadenZ/code/teleport-contest/.claude/worktrees/agent-a5f23a79b5ce39285/js/cmd.js:1701:19)"
   },
   {
    "session": "dev82599-wizard-custom-binds.session.json",
@@ -544,8 +544,8 @@
    "totalScreens": 1112,
    "valuePrefix": 71392,
    "rulePrefix": 71392,
-   "screens": 1058,
-   "honestScreens": 1058,
+   "screens": 1059,
+   "honestScreens": 1059,
    "firstScreenMiss": 189,
    "first": null,
    "error": null
@@ -595,8 +595,8 @@
   "rule": 504932,
   "value": 504932,
   "rolls": 504996,
-  "honestScreens": 8297,
-  "screens": 8297,
+  "honestScreens": 8298,
+  "screens": 8298,
   "totalScreens": 8438
  },
  "todo": [

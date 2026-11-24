@@ -112,6 +112,11 @@ function ELevitation() { return uprop(LEVITATION).extrinsic; }
 function Levitation() {
     return !!((HLevitation() || ELevitation()) && !uprop(LEVITATION).blocked);
 }
+/* C ref: youprop.h Deaf */
+function Deaf_do() {
+    const p = uprop(DEAF_DO);
+    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
+}
 function Flying() {
     const p = uprop(FLYING);
     return !!((p.intrinsic || p.extrinsic) && !p.blocked);
@@ -1046,7 +1051,21 @@ export async function flooreffects(obj, /* the object landing on the floor */
     } else if (is_lava(x, y)) {
         res = await lava_damage(obj, x, y);
     } else if (is_pool(x, y)) {
-        throw new Error('flooreffects(): water_damage() not ported yet');
+        /* Reasonably bulky objects (arbitrary) splash when dropped.
+         * If you're floating above the water even small things make
+         * noise.  Stuff dropped near fountains always misses */
+        if ((Blind() || (Levitation() || Flying())) && !Deaf_do() && u_at(x, y)) {
+            if (!game.u.uinwater) { /* !Underwater */
+                if (weight_do(obj) > WT_SPLASH_THRESHOLD_DO) {
+                    await pline("Splash!");
+                } else if (Levitation() || Flying()) {
+                    await pline("Plop!");
+                }
+            }
+            map_background_do(x, y, 0);
+            newsym(x, y);
+        }
+        res = (await water_damage_do(obj, null, false)) === ER_DESTROYED_DO;
     } else if (u_at(x, y) && (t = t_at(x, y))
                && (is_pit(t.ttyp) || is_hole(t.ttyp))) {
         /* uteetering_at_seen_pit(t) || uescaped_shaft(t) */
@@ -1495,3 +1514,8 @@ export async function dowipe() {
 import { done as done_do } from './end.js';
 import { ESCAPED as ESCAPED_DO } from './const.js';
 import { impact_drop } from './dokick.js';
+import { water_damage as water_damage_do } from './trap.js';
+import { weight as weight_do } from './mkobj.js';
+import { map_background as map_background_do } from './display.js';
+import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTROYED_DO,
+         DEAF as DEAF_DO } from './const.js';

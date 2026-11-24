@@ -616,13 +616,13 @@ export async function getpos(ccp, force, goal) {
             /* '.' => 0, ',' => 1, ';' => 2, ':' => 3 */
             result = pick_chars_ret[cp];
             break;
-        } else if (!rushrun && movecmd_mode(c, MV_WALK)) {
+        } else if (movecmd_mode(c, MV_WALK) && !rushrun) {
             dx = u.dx;
             dy = u.dy;
             [cx, cy] = truncate_to_map(cx, cy, dx, dy);
-        } else if (rushrun || movecmd_mode(c, MV_RUSH) || movecmd_mode(c, MV_RUN)) {
-            if (rushrun && !movecmd_mode(c, MV_WALK))
-                throw new Error('getpos(): rush/run prefix with a non-move key not ported yet');
+        } else if ((rushrun && movecmd_mode(c, MV_WALK)) /* goto do_rushrun */
+                   || movecmd_mode(c, MV_RUSH) || movecmd_mode(c, MV_RUN)) {
+            /* do_rushrun: */
             if (game.iflags?.getloc_moveskip)
                 throw new Error('getpos(): getloc_moveskip not ported yet');
             dx = 8 * u.dx;

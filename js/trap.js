@@ -2998,7 +2998,35 @@ async function domagictrap() {
 
     if (fate < 10) {
         /* Most of the time, it creates some monsters. */
-        throw new Error('domagictrap(): flash/roar monster creation not ported yet');
+        let cnt = rnd(4);
+
+        /* blindness effects */
+        if (!resists_blnd_tr(game.youmonst)) {
+            await You("are momentarily blinded by a flash of light!");
+            await make_blinded_tr(rn1(5, 10), false);
+            if (!Blind())
+                await Your("vision quickly clears."); /* Your1(vision_clears) */
+        } else if (!Blind()) {
+            await You_see_l("a flash of light!");
+        }
+
+        /* deafness effects */
+        if (!Deaf()) {
+            /* Soundeffect(se_deafening_roar_atmospheric, 100); */
+            await You_hear("a deafening roar!");
+            incr_itimeout_tr(DEAF, rn1(20, 30));
+            game.disp_botl = true;
+        } else {
+            /* magic vibrations still hit you */
+            await You_feel("rankled.");
+            incr_itimeout_tr(DEAF, rn1(5, 15));
+            game.disp_botl = true;
+        }
+        while (cnt--)
+            makemon(null, u.ux, u.uy, NO_MM_FLAGS);
+        /* roar: wake monsters in vicinity, after placing trap-created ones */
+        await wake_nearto(u.ux, u.uy, 7 * 7);
+        /* [flash: should probably also hit nearby gremlins with light] */
     } else {
         switch (fate) {
         case 10:
@@ -5188,3 +5216,5 @@ import { polyself as polyself_tp } from './polyself.js';
 import { newcham as newcham_tp } from './mon.js';
 import { POLY_NOFLAGS as POLY_NOFLAGS_TP, NC_SHOW_MSG as NC_SHOW_MSG_TP } from './const.js';
 import { WAND_CLASS as WAND_CLASS_TP } from './objects.js';
+import { resists_blnd as resists_blnd_tr } from './mondata.js';
+import { make_blinded as make_blinded_tr, incr_itimeout as incr_itimeout_tr } from './potion.js';
