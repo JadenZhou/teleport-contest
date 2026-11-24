@@ -8,6 +8,7 @@
 // ported yet.
 
 import { game } from './gstate.js';
+import { fix_shop_damage } from './shk.js';
 import { livelog_printf } from './display.js';
 import { LL_ACHIEVE, LL_DEBUG } from './const.js';
 import { describe_level } from './botl.js';
@@ -961,12 +962,11 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
 
     /* assume this will always return TRUE when changing level */
     /* (void) */ await in_out_region(u.ux, u.uy);
-    if (!new_) {
-        /* fix_shop_damage(): if this level has no shop damage, there's
-           nothing to do; shop repair isn't ported */
-        if (g.level.damagelist)
-            throw new Error('goto_level(): fix_shop_damage() not ported yet');
-    }
+    /* shop repair is normally done when shopkeepers move, but we may
+       need to catch up for lost time here; do this before maybe dying
+       so bones map will include it */
+    if (!new_)
+        await fix_shop_damage();
 
     /* fall damage? */
     if (do_fall_dmg) {

@@ -6,6 +6,7 @@
 // once-per-hero-took-time blocks are real.
 
 import { game } from './gstate.js';
+import { fix_shop_damage } from './shk.js';
 import { livelog_printf } from './display.js';
 import { LL_ACHIEVE } from './const.js';
 import { clear_bypasses } from './worn.js';
@@ -850,9 +851,7 @@ export async function moveloop_preamble(resuming) {
     g.disp_botlx = true; /* for STATUS_HILITES */
     if (resuming) { /* restoring old game */
         await read_engr_at(u.ux, u.uy); /* subset of pickup() */
-        /* fix_shop_damage(): shop repair isn't ported */
-        if (g.level.damagelist)
-            throw new Error('moveloop_preamble(): fix_shop_damage() not ported yet');
+        await fix_shop_damage();
     }
 
     await encumber_msg(); /* in case they auto-picked up something */

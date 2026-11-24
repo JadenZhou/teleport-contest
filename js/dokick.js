@@ -55,7 +55,8 @@ import { closed_door } from './makemon.js';
 import { Norep, Your, pline_The } from './display.js';
 import { singular, doname, The, distant_name, xname, otense } from './objnam.js';
 import { breakchestlock } from './lock.js';
-import { addtobill } from './shk.js';
+import { addtobill, add_damage, pay_for_damage } from './shk.js';
+import { SHOP_DOOR_COST } from './const.js';
 import { flooreffects, impact_disturbs_zombies } from './do.js';
 import { place_object } from './mkobj.js';
 import { stackobj } from './invent.js';
@@ -265,8 +266,10 @@ async function kick_door(x, y, avrg_attrib) {
         }
         feel_newsym(x, y); /* we know we broke it */
         recalc_block_point(x, y); /* vision */
-        if (shopdoor)
-            throw new Error('kick_door(): add_damage()/pay_for_damage() not ported yet');
+        if (shopdoor) {
+            add_damage(x, y, SHOP_DOOR_COST);
+            await pay_for_damage("break", false);
+        }
         if (in_town(x, y))
             throw new Error('kick_door(): watchman_thief_arrest() not ported yet');
     } else {

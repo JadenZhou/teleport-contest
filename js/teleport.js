@@ -1275,6 +1275,7 @@ function rloc_pos_ok(x, y, /* coordinates of candidate location */
 export async function rloc_to_core(mtmp, x, y, rlocflags) {
     const u = game.u;
     const oldx = mtmp.mx, oldy = mtmp.my;
+    const resident_shk = mtmp.isshk && inhishop(mtmp);
     const preventmsg = (rlocflags & RLOC_NOMSG) !== 0;
     const vanishmsg = (rlocflags & RLOC_MSG) !== 0;
     let appearmsg = (mtmp.mstrategy & STRAT_APPEARMSG) !== 0;
@@ -1283,9 +1284,6 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
 
     if (x === mtmp.mx && y === mtmp.my && m_at(x, y) === mtmp)
         return; /* that was easy */
-
-    if (mtmp.isshk)
-        throw new Error('rloc_to_core(): resident shopkeeper not ported yet');
 
     if (oldx) { /* "pick up" monster */
         if (domsg && canspotmon(mtmp)) {
@@ -1358,12 +1356,32 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
         /* wand discovery (gc.current_wand): zapping isn't ported yet */
     }
 
-    /* shopkeeper anger and shop goods leaving the shop (costly_spot()):
-       shops aren't stocked by this port yet; clear no_charge as C does
-       when the destination isn't a costly spot */
-    for (const otmp of mtmp.minvent || [])
-        if (otmp.no_charge)
-            otmp.no_charge = 0;
+    /* shopkeepers will only teleport if you zap them with a wand of
+       teleportation or if they've been transformed into a jumpy monster;
+       the latter only happens if you've attacked them with polymorph
+       [FIXME? or they've been hit by a genetic engineer, which won't
+       necessarily be due to Conflict by hero] */
+    if (resident_shk && !inhishop(mtmp))
+        await make_angry_shk(mtmp, oldx, oldy);
+
+    /* if a monster carrying shop goods teleports out of the shop, blame
+       it on the hero; chance of an unpaid item is vanishingly small, but
+       no_charge is easily possible and needs to be cleared if not in shop;
+       a for-sale item is ordinary here--shk won't notice it leaving; if
+       mtmp teleports from one shop into another, no_charge status sticks
+       and an item on the first shk's bill stays there */
+    if (mtmp.minvent?.length && !costly_spot(x, y)) {
+        const shkp = find_objowner(mtmp.minvent[0], oldx, oldy);
+        const peaceful = !shkp || shkp.mpeaceful;
+
+        for (const otmp of mtmp.minvent) {
+            if (otmp.no_charge)
+                otmp.no_charge = 0;
+            else if (shkp && onshopbill(otmp, shkp, true))
+                throw new Error('rloc_to_core(): stolen_value() not ported yet');
+        }
+        void peaceful;
+    }
 
     /* if hero is busy, maybe stop occupation */
     if (game.occupation)
@@ -1742,5 +1760,6 @@ import { tty_display_nhwindow as tty_display_nhwindow_lt } from './wintty.js';
 import { You_feel as You_feel_lt } from './display.js';
 import { tty_yn_function as tty_yn_function_tp } from './wintty.js';
 import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';
-import { inhishop } from './shk.js';
+import { inhishop, make_angry_shk, costly_spot, find_objowner,
+         onshopbill } from './shk.js';
 import { inhistemple } from './priest.js';
