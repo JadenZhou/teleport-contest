@@ -32,7 +32,8 @@ import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic, wiz_map,
          wiz_detect, wiz_polyself, wiz_where } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
-         doprtool, add_menu_heading, doorganize, adjust_split } from './invent.js';
+         doprtool, add_menu_heading, doorganize, adjust_split,
+         dotypeinv } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
 export { domove };
@@ -142,6 +143,7 @@ const cmd_funcs = {
     dotalk: () => dotalk(),
     donull: () => donull(),
     ddoinv: () => ddoinv(),
+    dotypeinv: () => dotypeinv(),
     wiz_level_change: () => wiz_level_change(),
     wiz_wish: () => wiz_wish(),
     wiz_level_tele: () => wiz_level_tele(),

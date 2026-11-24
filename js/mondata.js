@@ -448,6 +448,28 @@ export function resists_cold(mon) { return Resists_Elem(mon, COLD_RES); }
 export function resists_elec(mon) { return Resists_Elem(mon, SHOCK_RES); }
 export function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
 export function resists_disint(mon) { return Resists_Elem(mon, DISINT_RES); }
+export function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
+/* C ref: mondata.h is_rider(), touch_petrifies(), flesh_petrifies(),
+   vegan() */
+export function is_rider(ptr) {
+    return ptr === M.mons[M.PM_DEATH] || ptr === M.mons[M.PM_FAMINE]
+        || ptr === M.mons[M.PM_PESTILENCE];
+}
+export function touch_petrifies(ptr) {
+    return ptr === M.mons[M.PM_COCKATRICE] || ptr === M.mons[M.PM_CHICKATRICE];
+}
+export function flesh_petrifies(pm) {
+    return touch_petrifies(pm) || pm === M.mons[M.PM_MEDUSA];
+}
+export function vegan(ptr) {
+    return (ptr.mlet === M.S_BLOB || ptr.mlet === M.S_JELLY
+            || ptr.mlet === M.S_FUNGUS || ptr.mlet === M.S_VORTEX
+            || ptr.mlet === M.S_LIGHT
+            || (ptr.mlet === M.S_ELEMENTAL && ptr !== M.mons[M.PM_STALKER])
+            || (ptr.mlet === M.S_GOLEM && ptr !== M.mons[M.PM_FLESH_GOLEM]
+                && ptr !== M.mons[M.PM_LEATHER_GOLEM])
+            || ptr.mlet === M.S_GHOST); /* noncorporeal() */
+}
 
 /* hero inventory is a nobj chain; monster minvent is an array in pickup
    order (C prepends, so walk it newest first) */
