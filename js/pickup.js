@@ -143,8 +143,10 @@ export async function pickup(what) /* should be a long */ {
     /* we might have arrived here while fainted or sleeping, via
        random teleport or levitation timeout; if so, skip check_here
        and read_engr_at in addition to bypassing autopickup itself */
-    if (autopickup && game.multi < 0 /* && unconscious() */)
-        throw new Error('pickup(): unconscious() not ported yet');
+    if (autopickup && game.multi < 0 && unconscious()) {
+        game.iflags.prev_decor = STONE;
+        return 0;
+    }
 
     /* used by pickup_object() for encumbrance feedback */
     game.pickup_encumbrance = 0;
@@ -3128,3 +3130,4 @@ function age_is_relative(otmp) {
             || otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE
             || otmp.otyp === POT_OIL);
 }
+import { unconscious } from './eat.js';

@@ -2487,7 +2487,12 @@ async function trapeffect_pit(mtmp, trap, trflags) {
 // C ref: trap.c trapeffect_hole()
 async function trapeffect_hole(mtmp, trap, trflags) {
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_hole(): fall_through() for the hero not ported yet');
+        if (!Can_fall_thru(game.u.uz)) {
+            seetrap(trap); /* normally done in fall_through */
+            /* impossible("dotrap: %ss cannot exist on this level.") */
+            return Trap_Effect_Finished; /* don't activate it after all */
+        }
+        await fall_through(true, (trflags & TOOKPLUNGE));
     } else {
         const tt = trap.ttyp;
         const mptr = mtmp.data;
@@ -2524,6 +2529,102 @@ async function trapeffect_hole(mtmp, trap, trflags) {
         }
         return trapeffect_level_telep(mtmp, trap, trflags);
     }
+    return Trap_Effect_Finished;
+}
+
+// C ref: trap.c fall_through()
+export async function fall_through(
+    td, /* td == TRUE : trap door or hole */
+    ftflags) {
+    const u = game.u;
+    const Sokoban = game.level.flags.sokoban_rules;
+    const dtmp = { dnum: 0, dlevel: 0 };
+    let msgbuf = '';
+    let dont_fall = null;
+    let newlevel;
+    let t = null;
+    let controlled_flight = false;
+
+    /* we'll fall even while levitating in Sokoban; otherwise, if we
+       won't fall and won't be told that we aren't falling, give up now */
+    if (Blind() && Levitation() && !Sokoban)
+        return;
+
+    newlevel = dunlev(u.uz); /* current level */
+    newlevel++;
+
+    if (td) {
+        t = t_at(u.ux, u.uy);
+        feeltrap(t);
+        if (!Sokoban && !(ftflags & TOOKPLUNGE)) {
+            if (t.ttyp === TRAPDOOR)
+                await pline("A trap door opens up under you!");
+            else
+                await pline("There's a gaping hole under you!");
+        }
+    } else
+        await pline_The(`${surface_tr(u.ux, u.uy)} opens up under you!`);
+
+    const lev = game.level.at(u.ux, u.uy);
+    if (Sokoban && Can_fall_thru(u.uz)) {
+        ; /* KMH -- You can't escape the Sokoban level traps */
+    } else if (Levitation() || u.ustuck
+               /* levl[u.ux][u.uy].candig (rm.h: #define arboreal_sdoor candig) */
+               || (!Can_fall_thru(u.uz) && !(lev.candig || lev.arboreal_sdoor))
+               || ((Flying() || is_clinger(game.youmonst.data)
+                    || (ceiling_hider(game.youmonst.data) && u.uundetected))
+                   && !(ftflags & TOOKPLUNGE))) {
+        dont_fall = "don't fall in.";
+    } else if (game.youmonst.data.msize >= MZ_HUGE) {
+        dont_fall = "don't fit through.";
+    } else if (!(await next_to_u())) {
+        dont_fall = "are jerked back by your pet!";
+    }
+    if (dont_fall) {
+        await You(dont_fall); /* You1() */
+        /* hero didn't fall through, but any objects here might */
+        await impact_drop(null, u.ux, u.uy, 0);
+        if (!td) {
+            await tty_display_nhwindow(game.WIN_MESSAGE, false);
+            await pline_The("opening under you closes up.");
+        }
+        return;
+    }
+    if ((Flying() || is_clinger(game.youmonst.data))
+        && (ftflags & TOOKPLUNGE) && td && t) {
+        if (Flying())
+            controlled_flight = true;
+        await You(`${Flying() ? "swoop" : "deliberately drop"} down ${
+            (t.ttyp === TRAPDOOR) ? "through the trap door"
+                                  : "into the gaping hole"}!`);
+    }
+
+    if (u.ushops && u.ushops.length) /* *u.ushops */
+        throw new Error('fall_through(): shopdig(1) not ported yet');
+    if (Is_stronghold(u.uz)) {
+        find_hell(dtmp);
+    } else {
+        let dist;
+
+        if (t) {
+            assign_level(dtmp, t.dst);
+            /* don't fall beyond the bottom, in case this came from a bones
+               file with different dungeon size  */
+            clamp_hole_destination(dtmp);
+        } else {
+            dtmp.dnum = u.uz.dnum;
+            dtmp.dlevel = newlevel;
+        }
+        dist = depth(dtmp) - depth(u.uz);
+        if (dist > 1)
+            await You(`${controlled_flight ? "fly" : "fall"} down a ${
+                dist > 3 ? "very " : ""}${dist > 2 ? "deep " : ""}shaft!`);
+    }
+    if (!td)
+        msgbuf = `The hole in the ${ceiling_tr(u.ux, u.uy)} above you closes up.`;
+
+    schedule_goto(dtmp, !Flying() ? UTOTYPE_FALLING : UTOTYPE_NONE, null,
+                  !td ? msgbuf : null);
 }
 
 // C ref: trap.c trapeffect_telep_trap()
@@ -4867,3 +4968,9 @@ import { liquid_flow as liquid_flow_l } from './dig.js';
 import { ceiling as ceiling_tr } from './dungeon.js';
 import { hard_helmet as hard_helmet_tr } from './objnam.js';
 import { mbodypart as mbodypart_tr } from './insight.js';
+import { schedule_goto, UTOTYPE_FALLING, UTOTYPE_NONE } from './do.js';
+import { impact_drop } from './dokick.js';
+import { next_to_u } from './teleport.js';
+import { ceiling_hider } from './engrave.js';
+import { find_hell, assign_level, depth } from './dungeon.js';
+import { Is_stronghold } from './const.js';
