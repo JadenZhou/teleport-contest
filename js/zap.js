@@ -560,8 +560,8 @@ export async function poly_obj(obj, id) {
     /* Keep chest/box traps and poisoned ammo if we may */
     if (obj.otrapped && Is_box(otmp))
         otmp.otrapped = 1;
-    if (obj.opoisoned && is_poisonable(otmp))
-        otmp.opoisoned = 1;
+    if (obj.otrapped /* opoisoned */ && is_poisonable(otmp))
+        otmp.otrapped /* opoisoned */ = 1;
 
     if (id === STRANGE_OBJECT && obj.otyp === CORPSE) {
         /* turn crocodile corpses into shoes */
@@ -678,6 +678,23 @@ export async function poly_obj(obj, id) {
         throw new Error('poly_obj(): shopkeeper reaction not ported yet');
     delobj(obj);
     return otmp;
+}
+
+// C ref: zap.c get_mon_location()
+/* returns [x, y], or null for a migrating or buried monster (C returns
+   FALSE with *xp = *yp = 0) */
+export function get_mon_location(
+    mon,
+    locflags) /* non-zero means get location even if monster is buried */
+{
+    const u = game.u;
+    if (mon === game.youmonst || (u.usteed && mon === u.usteed)) {
+        return [u.ux, u.uy];
+    } else if (mon.mx > 0 && (!mon.mburied || locflags)) {
+        return [mon.mx, mon.my];
+    } else { /* migrating or buried */
+        return null;
+    }
 }
 
 // C ref: zap.c bhitpile()

@@ -1184,7 +1184,7 @@ async function meatmetal(mtmp) {
         if ((mtmp.data === mons[M.PM_RUST_MONSTER] && !is_rustprone(otmp))
             || (otmp.otyp === AMULET_OF_STRANGULATION
                 || otmp.otyp === RIN_SLOW_DIGESTION)
-            || (otmp.opoisoned && !resists_poison(mtmp)))
+            || (otmp.otrapped /* opoisoned */ && !resists_poison(mtmp)))
             continue;
         if (is_metallic(otmp) && !obj_resists(otmp, 5, 95)
             && await touch_artifact(otmp, mtmp)) {

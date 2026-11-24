@@ -349,7 +349,7 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
             if (mattk.aatyp === AT_WEAP && otmp) {
                 let marmg;
                 let tmp;
-                const was_poisoned = (otmp.opoisoned
+                const was_poisoned = (otmp.otrapped /* opoisoned */
                                       || permapoisoned(otmp));
 
                 if (otmp.otyp === CORPSE
@@ -2909,7 +2909,7 @@ async function hmon_hitmon_weapon_melee(hmd, mon, obj) /* obj is not NULL */ {
                 hmd.dmg++;
             hmd.train_weapon_skill = (hmd.dmg > 0);
         }
-        if (obj.opoisoned && is_poisonable(obj))
+        if (obj.otrapped /* opoisoned */ && is_poisonable(obj))
             hmd.ispoisoned = true;
     }
     /* permapoisoned is non-ammo/missile, limit the poison */
@@ -3330,7 +3330,7 @@ async function hmon_hitmon_poison(hmd, mon, obj) /* obj is not NULL */ {
     }
     if (!permapoisoned(obj) && !rn2(nopoison)) {
         /* remove poison now in case obj ends up in a bones file */
-        obj.opoisoned = 0;
+        obj.otrapped /* opoisoned */ = 0;
         /* defer "obj is no longer poisoned" until after hit message */
         hmd.unpoisonmsg = true;
     }

@@ -515,7 +515,7 @@ export function mk_artifact(
         } /* otherwise, otmp has not changed; just fallthrough to return it */
     }
     if (otmp && permapoisoned(otmp))
-        otmp.opoisoned = 1;
+        otmp.otrapped /* opoisoned */ = 1;
     return otmp;
 }
 
