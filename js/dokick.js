@@ -102,6 +102,9 @@ import {
 } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
 import { uprop } from './youprop.js';
+import { Is_stronghold, In_endgame, Is_botlevel } from './const.js';
+import { stairway_at } from './display.js';
+import { down_gate } from './do.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
@@ -1123,9 +1126,6 @@ export async function impact_drop(
     throw new Error('impact_drop(): objects falling to another level not ported yet');
 }
 
-import { Is_stronghold, In_endgame, Is_botlevel } from './const.js';
-import { stairway_at } from './display.js';
-import { down_gate } from './do.js';
 // C ref: dokick.c obj_delivery()
 /* migrating objects arrive on the level the hero has just reached; objects
    bound for a monster species (MIGR_TO_SPECIES) wait for makemon()/

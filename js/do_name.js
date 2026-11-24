@@ -38,6 +38,21 @@ import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
 import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { Blind, Hallucination } from './youprop.js';
 import { m_next2u } from './const.js';
+import { exist_artifact, artifact_exists, artifact_name,
+         restrict_name } from './artifact.js';
+import { donamelevel } from './dungeon.js';
+import { ONAME_VIA_NAMING, ONAME_SKIP_INVUPD, ONAME_KNOW_ARTI, QBUFSZ, BUFSZ,
+         HAND } from './const.js';
+import { safe_qbuf } from './pickup.js';
+import { simpleonames } from './iactions.js';
+import { mungspaces, strncmpi } from './hacklib.js';
+import { tty_getlin, tty_display_nhwindow } from './wintty.js';
+import { wipeout_text } from './engrave.js';
+import { rnd_on_display_rng } from './rng.js';
+import { pline } from './display.js';
+import { body_part } from './insight.js';
+import { SPE_NOVEL } from './objects.js';
+import { HALLUC as HALLUC_DN, HALLUC_RES as HALLUC_RES_DN } from './const.js';
 
 const PL_PSIZ = 63; /* global.h */
 
@@ -152,20 +167,6 @@ export function christen_monst(mtmp, name) {
     return mtmp;
 }
 
-import { exist_artifact, artifact_exists, artifact_name,
-         restrict_name } from './artifact.js';
-import { donamelevel } from './dungeon.js';
-import { ONAME_VIA_NAMING, ONAME_SKIP_INVUPD, ONAME_KNOW_ARTI, QBUFSZ, BUFSZ,
-         HAND } from './const.js';
-import { safe_qbuf } from './pickup.js';
-import { simpleonames } from './iactions.js';
-import { mungspaces, strncmpi } from './hacklib.js';
-import { tty_getlin, tty_display_nhwindow } from './wintty.js';
-import { wipeout_text } from './engrave.js';
-import { rnd_on_display_rng } from './rng.js';
-import { pline } from './display.js';
-import { body_part } from './insight.js';
-import { SPE_NOVEL } from './objects.js';
 
 // C ref: do_name.c name_from_player() -- get a name for a monster or an
 // object from player; truncate if longer than PL_PSIZ, then return it
@@ -981,5 +982,3 @@ export function hcolor(colorpref) {
         ? hcolors[rn2_on_display_rng(hcolors.length)]
         : colorpref;
 }
-
-import { HALLUC as HALLUC_DN, HALLUC_RES as HALLUC_RES_DN } from './const.js';

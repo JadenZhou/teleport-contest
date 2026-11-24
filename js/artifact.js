@@ -75,6 +75,7 @@ import { STONE_RES } from './const.js';
 import { ART_GRIMTOOTH } from './artilist.js';
 import { Tobjnam } from './objnam.js';
 import { Antimagic, Hate_silver, Blind as Blind_art } from './youprop.js';
+import { objects as objects_ac } from './objects.js';
 
 // C ref: artifact.h SPFX_*
 export const SPFX_NONE = 0x00000000;
@@ -1885,7 +1886,6 @@ export function arti_cost(otmp) {
     else
         return (100 * objects_ac[otmp.otyp].oc_cost);
 }
-import { objects as objects_ac } from './objects.js';
 
 // C ref: artifact.c is_art()
 export function is_art(o, art) { return !!(o && o.oartifact === art); }

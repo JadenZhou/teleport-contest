@@ -125,6 +125,35 @@ import {
     Protection_from_shape_changers, Unaware
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
+import { DOOR as DOOR_MM, ROOM as ROOM_MM, CORR as CORR_MM } from './const.js';
+import { Is_special as Is_special_mm } from './dungeon.js';
+import { switch_terrain as switch_terrain_mm } from './hack.js';
+import { mons as mons_mm, PM_LEPRECHAUN as PM_LEPRECHAUN_MM } from './monsters.js';
+import { t_at as t_at_mm } from './trap.js';
+import { findgold as findgold_mm, mdrop_obj as mdrop_obj_mm } from './steal.js';
+import { bury_an_obj as bury_an_obj_mm } from './dig.js';
+import { COIN_CLASS as COIN_CLASS_MM } from './objects.js';
+import { gd_move } from './vault.js';
+import { sensemon as sensemon_mb } from './display.js';
+import { losehp as losehp_mb } from './trap.js';
+import { wakeup as wakeup_mb, monkilled as monkilled_mb } from './mon.js';
+import { telepathic as telepathic_mb } from './mondata.js';
+import { mon_nam as mon_nam_mb } from './do_name.js';
+import { TELEPAT as TELEPAT_MB, HALF_SPDAM as HALF_SPDAM_MB,
+         KILLED_BY_AN as KILLED_BY_AN_MB } from './const.js';
+import { AD_DRIN as AD_DRIN_MB } from './monsters.js';
+import { vegan as vegan_mm, is_rider as is_rider_mm, flesh_petrifies as flesh_petrifies_mm,
+         resists_ston as resists_ston_mm } from './mondata.js';
+import { touch_petrifies as touch_petrifies_mo } from './mondata.js';
+import { mstoning as mstoning_mo } from './mon.js';
+import { slimeproof as slimeproof_mo } from './eat.js';
+import { revive_corpse as revive_corpse_mo } from './zap.js';
+import { objdescr_is } from './o_init.js';
+import { wake_msg as wake_msg_mm } from './mon.js';
+import { cursed_object_at as cursed_object_at_ud } from './dogmove.js';
+import { mdisplacem as mdisplacem_mm } from './mhitm.js';
+import { M_ATTK_HIT as M_ATTK_HIT_MM, M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MM,
+         M_ATTK_AGR_DIED as M_ATTK_AGR_DIED_MM } from './const.js';
 
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
@@ -2729,9 +2758,6 @@ export async function dissolve_bars(x, y) {
     if (u_at(x, y))
         await switch_terrain_mm();
 }
-import { DOOR as DOOR_MM, ROOM as ROOM_MM, CORR as CORR_MM } from './const.js';
-import { Is_special as Is_special_mm } from './dungeon.js';
-import { switch_terrain as switch_terrain_mm } from './hack.js';
 
 // C ref: monmove.c leppie_avoidance()
 /* does leprechaun want to avoid the hero? */
@@ -2769,32 +2795,6 @@ async function leppie_stash(mtmp) {
             bury_an_obj_mm(gold, null);
     }
 }
-import { mons as mons_mm, PM_LEPRECHAUN as PM_LEPRECHAUN_MM } from './monsters.js';
-import { t_at as t_at_mm } from './trap.js';
-import { findgold as findgold_mm, mdrop_obj as mdrop_obj_mm } from './steal.js';
-import { bury_an_obj as bury_an_obj_mm } from './dig.js';
-import { COIN_CLASS as COIN_CLASS_MM } from './objects.js';
 
-import { gd_move } from './vault.js';
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER_mm(mon) { return mon.mhp < 1; }
-import { sensemon as sensemon_mb } from './display.js';
-import { losehp as losehp_mb } from './trap.js';
-import { wakeup as wakeup_mb, monkilled as monkilled_mb } from './mon.js';
-import { telepathic as telepathic_mb } from './mondata.js';
-import { mon_nam as mon_nam_mb } from './do_name.js';
-import { TELEPAT as TELEPAT_MB, HALF_SPDAM as HALF_SPDAM_MB,
-         KILLED_BY_AN as KILLED_BY_AN_MB } from './const.js';
-import { AD_DRIN as AD_DRIN_MB } from './monsters.js';
-import { vegan as vegan_mm, is_rider as is_rider_mm, flesh_petrifies as flesh_petrifies_mm,
-         resists_ston as resists_ston_mm } from './mondata.js';
-import { touch_petrifies as touch_petrifies_mo } from './mondata.js';
-import { mstoning as mstoning_mo } from './mon.js';
-import { slimeproof as slimeproof_mo } from './eat.js';
-import { revive_corpse as revive_corpse_mo } from './zap.js';
-import { objdescr_is } from './o_init.js';
-import { wake_msg as wake_msg_mm } from './mon.js';
-import { cursed_object_at as cursed_object_at_ud } from './dogmove.js';
-import { mdisplacem as mdisplacem_mm } from './mhitm.js';
-import { M_ATTK_HIT as M_ATTK_HIT_MM, M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MM,
-         M_ATTK_AGR_DIED as M_ATTK_AGR_DIED_MM } from './const.js';

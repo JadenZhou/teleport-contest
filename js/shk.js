@@ -107,6 +107,25 @@ import {
 } from './youprop.js';
 import { Role_if, m_next2u } from './const.js';
 import { noit_mhis, noit_mhe, noit_mhim } from './mhitu.js';
+import { D_BROKEN as D_BROKEN_SK, D_CLOSED as D_CLOSED_SK,
+         IS_WALL as IS_WALL_SK, ZAP_POS } from './const.js';
+import { BOULDER as BOULDER_SK, ROCK as ROCK_SK, LAND_MINE as LAND_MINE_SK,
+         BEARTRAP as BEARTRAP_SK } from './objects.js';
+import { LANDMINE as LANDMINE_SK, BEAR_TRAP as BEAR_TRAP_SK, HOLE as HOLE_SK,
+         PIT as PIT_SK, SPIKED_PIT as SPIKED_PIT_SK } from './const.js';
+import { unplacebc, placebc } from './ball.js';
+import { obfree } from './invent.js';
+import { place_object, mksobj } from './mkobj.js';
+import { closed_door } from './makemon.js';
+import { picking_at } from './lock.js';
+import { block_point } from './vision.js';
+import { del_engr_at } from './engrave.js';
+import { deltrap, trapname } from './trap.js';
+import { mpickobj } from './steal.js';
+import { ansimpleoname } from './iactions.js';
+import { Norep as Norep_sk, You_feel as You_feel_sk } from './display.js';
+import { stop_occupation as stop_occupation_sk } from './allmain.js';
+import { SHOPBASE as SHOPBASE_FR } from './const.js';
 
 // ── small helpers (C ref: youprop.h / monst.h / shk.c macros) ──
 
@@ -1029,24 +1048,6 @@ async function repair_damage(
         disposition = 2;
     return disposition;
 }
-import { D_BROKEN as D_BROKEN_SK, D_CLOSED as D_CLOSED_SK,
-         IS_WALL as IS_WALL_SK, ZAP_POS } from './const.js';
-import { BOULDER as BOULDER_SK, ROCK as ROCK_SK, LAND_MINE as LAND_MINE_SK,
-         BEARTRAP as BEARTRAP_SK } from './objects.js';
-import { LANDMINE as LANDMINE_SK, BEAR_TRAP as BEAR_TRAP_SK, HOLE as HOLE_SK,
-         PIT as PIT_SK, SPIKED_PIT as SPIKED_PIT_SK } from './const.js';
-import { unplacebc, placebc } from './ball.js';
-import { obfree } from './invent.js';
-import { place_object, mksobj } from './mkobj.js';
-import { closed_door } from './makemon.js';
-import { picking_at } from './lock.js';
-import { block_point } from './vision.js';
-import { del_engr_at } from './engrave.js';
-import { deltrap, trapname } from './trap.js';
-import { mpickobj } from './steal.js';
-import { ansimpleoname } from './iactions.js';
-import { Norep as Norep_sk, You_feel as You_feel_sk } from './display.js';
-import { stop_occupation as stop_occupation_sk } from './allmain.js';
 
 // C ref: shk.c shk_move()
 /*
@@ -3920,4 +3921,3 @@ export async function shopper_financial_report() {
                 await You("don't owe any gold here.");
         }
 }
-import { SHOPBASE as SHOPBASE_FR } from './const.js';

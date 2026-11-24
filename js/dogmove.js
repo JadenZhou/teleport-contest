@@ -55,6 +55,8 @@ import {
 } from './const.js';
 import { Hallucination, Conflict } from './youprop.js';
 import { u_at } from './const.js';
+import { undesirable_disp as undesirable_disp_dm } from './monmove.js';
+import { mdisplacem as mdisplacem_dm } from './mhitm.js';
 
 const DOG_HUNGRY = 300;
 const DOG_WEAK = 500;
@@ -1529,5 +1531,3 @@ export async function dog_move(mtmp, after) {
     }
     return MMOVE_MOVED;
 }
-import { undesirable_disp as undesirable_disp_dm } from './monmove.js';
-import { mdisplacem as mdisplacem_dm } from './mhitm.js';

@@ -79,6 +79,9 @@ import { run_regions, any_visible_region } from './region.js';
 import { m_everyturn_effect } from './monmove.js';
 import { Blind, Hallucination } from './youprop.js';
 import { Upolyd } from './const.js';
+import { invault } from './vault.js';
+import { sink_into_lava as sink_into_lava_am } from './trap.js';
+import { pooleffects as pooleffects_am } from './hack.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -909,7 +912,3 @@ export async function moveloop(resuming) {
         if (game.program_state?.gameover) break;
     }
 }
-
-import { invault } from './vault.js';
-import { sink_into_lava as sink_into_lava_am } from './trap.js';
-import { pooleffects as pooleffects_am } from './hack.js';

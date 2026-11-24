@@ -55,6 +55,8 @@ import { eaten_stat, tin_variety, tintxt_fodder, vegetarian } from './eat.js';
 import { costly_spot } from './insight.js';
 import { is_ice } from './dig.js';
 import { obj_sheds_light, obj_split_light_source, del_light_source } from './light.js';
+import { nartifact_exist, mk_artifact } from './artifact.js';
+import { A_NONE } from './const.js';
 
 const NON_PM = -1;
 
@@ -1233,8 +1235,6 @@ export function bcsign(otmp) {
 }
 
 // nartifact_exist(): C ref artifact.c, ported in artifact.js
-import { nartifact_exist, mk_artifact } from './artifact.js';
-import { A_NONE } from './const.js';
 
 function not_ported(what) {
     throw new Error(`mkobj: ${what} not ported yet`);

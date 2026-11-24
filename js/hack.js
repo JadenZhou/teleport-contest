@@ -110,13 +110,22 @@ import {
     Fumbling, Warning, Stealth, Conflict, Levitation, Flying, HWwalking, EWwalking, Wwalking,
     Swimming, Amphibious, Breathless, Underwater, Passes_walls, Protection_from_shape_changers
 } from './youprop.js';
-/* C ref: mondata.h is_clinger() */
-function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
 import { NUM_TIPS, TIP_ENHANCE, TIP_SWIM, TIP_UNTRAP_MON, TIP_GETPOS,
          NHCORE_GETPOS_TIP } from './const.js';
 import { intemple } from './priest.js';
 import { stucksteed, exercise_steed } from './steed.js';
+import { drown, lava_effects, is_waterwall, set_uinwater, back_on_ground } from './trap.js';
+import { docrt as docrt_pe } from './display.js';
+import { PLNMSG_BACK_ON_GROUND, SWIMMING, MAGICAL_BREATHING } from './const.js';
+import { M1_SWIM, M1_AMPHIBIOUS, M1_BREATHLESS } from './monsters.js';
+import { map_object as map_object_hk } from './display.js';
+import { is_ice as is_ice_sf } from './dig.js';
+import { objdescr_is as objdescr_is_sf } from './o_init.js';
+import { resists_cold as resists_cold_sf } from './mondata.js';
+import { COLD_RES as COLD_RES_SF } from './const.js';
+/* C ref: mondata.h is_clinger() */
+function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 
 // C's impossible() (pline.c) is not ported yet.
 export function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -1455,10 +1464,6 @@ export async function pooleffects(newspot) /* true if called by spoteffects */ {
     }
     return false;
 }
-import { drown, lava_effects, is_waterwall, set_uinwater, back_on_ground } from './trap.js';
-import { docrt as docrt_pe } from './display.js';
-import { PLNMSG_BACK_ON_GROUND, SWIMMING, MAGICAL_BREATHING } from './const.js';
-import { M1_SWIM, M1_AMPHIBIOUS, M1_BREATHLESS } from './monsters.js';
 
 /* C ref: hack.c spoteffects() static locals */
 let inspoteffects = 0;
@@ -3230,17 +3235,12 @@ function maybe_smudge_engr(x1, y1, x2, y2) {
             wipe_engr_at(x2, y2, rnd(5), false);
     }
 }
-import { map_object as map_object_hk } from './display.js';
 /* C ref: display.h glyph_to_obj() for the JS glyph form: an object glyph
    keeps its objects[] index in 'otyp'; anything else is NUM_OBJECTS */
 function glyph_to_obj_hk(glyph) {
     return (glyph && glyph.kind === 'obj' && glyph.otyp !== undefined
             && glyph.otyp !== null) ? glyph.otyp : -1;
 }
-import { is_ice as is_ice_sf } from './dig.js';
-import { objdescr_is as objdescr_is_sf } from './o_init.js';
-import { resists_cold as resists_cold_sf } from './mondata.js';
-import { COLD_RES as COLD_RES_SF } from './const.js';
 
 /* C ref: hack.c rounddiv() */
 export function rounddiv(x, y) {

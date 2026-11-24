@@ -52,6 +52,10 @@ import {
     Blind, Hallucination, See_invisible, Unblind_telepat, Warning, Warn_of_mon, Infravision,
     Detect_monsters, Invisible, Protection_from_shape_changers, Unaware
 } from './youprop.js';
+import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
+         CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
+         CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE, ATR_INVERSE } from './terminal.js';
+import { NHW_MENU as NHW_MENU_D, NHW_TEXT as NHW_TEXT_D } from './const.js';
 
 // C ref: display.h altar_to_glyph(), enum altar_colors (without
 // USE_GENERAL_ALTAR_COLORS); display.c altarcolors[]
@@ -67,9 +71,6 @@ function altar_color(amsk) {
         return CLR_RED;
     }
 }
-import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
-         CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
-         CLR_BRIGHT_MAGENTA, CLR_BRIGHT_GREEN, DEC_TO_UNICODE, ATR_INVERSE } from './terminal.js';
 
 // ── ANSI color codes ──
 // Maps CLR_* constants (0-15) to ANSI SGR color codes.
@@ -2892,7 +2893,6 @@ function _buildScreenOutput(cursor_on_u, printed = null) {
     }
 }
 
-import { NHW_MENU as NHW_MENU_D, NHW_TEXT as NHW_TEXT_D } from './const.js';
 
 // ── flush_screen ──
 // C ref: display.c flush_screen()

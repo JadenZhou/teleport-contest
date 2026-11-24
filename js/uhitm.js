@@ -192,6 +192,19 @@ import {
     Half_physical_damage, Protection_from_shape_changers, Unchanging, Free_action, Hate_silver
 } from './youprop.js';
 import { m_next2u, Upolyd, Role_if, Race_if, Luck } from './const.js';
+import { AT_MAGC, AT_BITE, AT_STNG } from './monsters.js';
+import { ERODE_BURN, EF_NONE, M_SEEN_MAGR, STONING } from './const.js';
+import { done_in_by } from './end.js';
+import { polymon } from './polyself.js';
+import { attk_protection } from './mhitm.js';
+import { drain_item } from './zap.js';
+import { healmon, monnear } from './mon.js';
+import { ugolemeffects } from './mhitu.js';
+import { Yobjnam2 } from './objnam.js';
+import { split_mon } from './potion.js';
+import { hit as hit_uh } from './zap.js';
+import { mshot_xname as mshot_xname_uh } from './mthrowu.js';
+import { tended_shop } from './shk.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -4161,16 +4174,3 @@ function dynamic_multi_reason(mon, verb, by_gaze) {
     /* C: gm.multi_reason = p, which points past the "m_id:" prefix */
     game.multi_reason = p;
 }
-import { AT_MAGC, AT_BITE, AT_STNG } from './monsters.js';
-import { ERODE_BURN, EF_NONE, M_SEEN_MAGR, STONING } from './const.js';
-import { done_in_by } from './end.js';
-import { polymon } from './polyself.js';
-import { attk_protection } from './mhitm.js';
-import { drain_item } from './zap.js';
-import { healmon, monnear } from './mon.js';
-import { ugolemeffects } from './mhitu.js';
-import { Yobjnam2 } from './objnam.js';
-import { split_mon } from './potion.js';
-import { hit as hit_uh } from './zap.js';
-import { mshot_xname as mshot_xname_uh } from './mthrowu.js';
-import { tended_shop } from './shk.js';

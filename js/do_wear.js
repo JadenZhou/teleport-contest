@@ -74,6 +74,7 @@ import { region_danger } from './region.js';
 import { Blind, Glib, Invisible, Levitation, Flying } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
 import { uprop } from './youprop.js';
+import { setnotworn as setnotworn_dw } from './worn.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -1033,7 +1034,6 @@ export async function Ring_off(obj) {
 export async function Ring_gone(obj) {
     await Ring_off_or_gone(obj, true);
 }
-import { setnotworn as setnotworn_dw } from './worn.js';
 
 // C ref: do_wear.c set_wear() -- called in moveloop()'s prologue to set
 // side-effects of worn start-up items; also used by poly_obj() when a

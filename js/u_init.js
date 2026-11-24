@@ -29,16 +29,16 @@ import { initialspell, num_spells } from './spell.js';
 import { skill_init } from './weapon.js';
 import { discover_object } from './o_init.js';
 import { Role_if, Race_if } from './const.js';
-
-/* C ref: spell.h SPELL_LEV_PW() */
-function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
 import { init_uhunger } from './eat.js';
 import { inv_weight } from './hack.js';
 import { max_rank_sz } from './botl.js';
 import { assigninvlet, reorder_invent, merged, addinv } from './invent.js';
-export { addinv }; // C ref: invent.c addinv() (ported in invent.js)
 import { Japanese_item_name } from './objnam.js';
 import { setworn } from './worn.js';
+
+/* C ref: spell.h SPELL_LEV_PW() */
+function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
+export { addinv }; // C ref: invent.c addinv() (ported in invent.js)
 
 // C ref: you.h struct you -- the JS equivalent of memset(&u, 0, sizeof u).
 // Every numeric field reads as 0, nested structs are zero-filled objects.

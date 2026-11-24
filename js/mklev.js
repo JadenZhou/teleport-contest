@@ -98,6 +98,8 @@ import {
     BEAR_TRAP, is_hole, is_pit, maketrap, t_at, deltrap, undestroyable_trap,
 } from './trap.js';
 import { Blind, Hallucination } from './youprop.js';
+import { oinit } from './o_init.js';
+import { Is_earthlevel as Is_earthlevel_mk, W_NONPASSWALL as W_NONPASSWALL_MK } from './const.js';
 
 const XLIM = 4;
 const YLIM = 3;
@@ -357,7 +359,6 @@ export async function u_on_dnstairs() {
 }
 
 // C ref: o_init.c oinit() -- level dependent obj probabilities (o_init.js)
-import { oinit } from './o_init.js';
 
 
 // ============================================================
@@ -3504,4 +3505,3 @@ function level_finalize_topology() {
         if (rm && rm.rtype != null) rm.orig_rtype = rm.rtype;
     }
 }
-import { Is_earthlevel as Is_earthlevel_mk, W_NONPASSWALL as W_NONPASSWALL_MK } from './const.js';

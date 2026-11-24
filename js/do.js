@@ -109,6 +109,15 @@ import {
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
 import { uprop } from './youprop.js';
+import { done as done_do } from './end.js';
+import { ESCAPED as ESCAPED_DO } from './const.js';
+import { impact_drop } from './dokick.js';
+import { water_damage as water_damage_do } from './trap.js';
+import { weight as weight_do } from './mkobj.js';
+import { map_background as map_background_do } from './display.js';
+import { use_pick_axe2 } from './dig.js';
+import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTROYED_DO,
+         DEAF as DEAF_DO } from './const.js';
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -1494,12 +1503,3 @@ export async function dowipe() {
     await Your(`${body_part(FACE)} is already clean.`);
     return ECMD_TIME;
 }
-import { done as done_do } from './end.js';
-import { ESCAPED as ESCAPED_DO } from './const.js';
-import { impact_drop } from './dokick.js';
-import { water_damage as water_damage_do } from './trap.js';
-import { weight as weight_do } from './mkobj.js';
-import { map_background as map_background_do } from './display.js';
-import { use_pick_axe2 } from './dig.js';
-import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTROYED_DO,
-         DEAF as DEAF_DO } from './const.js';

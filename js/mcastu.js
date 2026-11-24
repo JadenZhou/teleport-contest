@@ -60,6 +60,8 @@ import {
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
 import { uprop } from './youprop.js';
+import { burnarmor, ignite_items } from './trap.js';
+import { destroy_items } from './zap.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -703,8 +705,6 @@ async function mcast_lightning(mtmp, dmg) {
     await flashburn(rnd(100), true);
     return dmg;
 }
-import { burnarmor, ignite_items } from './trap.js';
-import { destroy_items } from './zap.js';
 
 // C ref: mcastu.c mcast_psi_bolt()
 async function mcast_psi_bolt(dmg) {

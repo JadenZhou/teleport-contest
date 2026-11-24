@@ -123,6 +123,7 @@ import { more_experienced, newexplevel } from './exper.js';
 import { currency } from './insight.js';
 import { container_contents } from './end.js';
 import { discover_object } from './o_init.js';
+import { unconscious } from './eat.js';
 
 /* C ref: invent.c invlet_basic */
 const invlet_basic = 52;
@@ -3215,4 +3216,3 @@ export function age_is_relative(otmp) {
             || otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE
             || otmp.otyp === POT_OIL);
 }
-import { unconscious } from './eat.js';

@@ -60,6 +60,7 @@ import { PLNMSG_MON_TAKES_OFF_ITEM, W_ACCESSORY, W_ARMG, TT_BURIEDBALL,
          FLYING, FOOT } from './const.js';
 import { ART_ORB_OF_DETECTION } from './artilist.js';
 import { Punished, Blind, Adornment, Conflict, Levitation, Flying } from './youprop.js';
+import { Ring_gone as Ring_gone_st } from './do_wear.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -940,5 +941,3 @@ export async function relobj(mtmp, show,
     if (show && cansee(omx, omy))
         newsym(omx, omy);
 }
-
-import { Ring_gone as Ring_gone_st } from './do_wear.js';

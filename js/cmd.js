@@ -38,7 +38,6 @@ import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
 import { next2u } from './const.js';
-export { domove };
 import { IS_DOOR, IS_FURNITURE, NHW_TEXT, ECMD_OK, ECMD_TIME, ECMD_CANCEL,
          ECMD_FAIL } from './const.js';
 import { dovspell, docast } from './spell.js';
@@ -98,6 +97,12 @@ import { IS_FOUNTAIN, IS_SINK, IS_THRONE, IS_ALTAR, u_at, Upolyd,
 import { SKELETON_KEY, LOCK_PICK, CREDIT_CARD, SADDLE, FOOD_CLASS,
          BOULDER } from './objects.js';
 import { CLR_WHITE } from './terminal.js';
+import { COLNO, ROWNO, xdir, ydir, zdir } from './const.js';
+import { PM_GRID_BUG, mons, PM_CAVE_SPIDER, PM_GIANT_SPIDER, PM_MIND_FLAYER,
+         PM_MASTER_MIND_FLAYER, PM_GREMLIN, AT_BREA, AT_SPIT, AT_GAZE, S_NYMPH,
+         S_UNICORN, M1_HIDE, M1_CONCEAL, M2_JEWELS, MS_SHRIEK } from './monsters.js';
+import { is_were, is_vampire, is_vampshifter } from './mondata.js';
+export { domove };
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
 // entries matching findstr
@@ -1212,11 +1217,6 @@ export async function donull() {
         return 0; /* ECMD_OK */
     return 1; /* ECMD_TIME: Do nothing, but let other things happen */
 }
-import { COLNO, ROWNO, xdir, ydir, zdir } from './const.js';
-import { PM_GRID_BUG, mons, PM_CAVE_SPIDER, PM_GIANT_SPIDER, PM_MIND_FLAYER,
-         PM_MASTER_MIND_FLAYER, PM_GREMLIN, AT_BREA, AT_SPIT, AT_GAZE, S_NYMPH,
-         S_UNICORN, M1_HIDE, M1_CONCEAL, M2_JEWELS, MS_SHRIEK } from './monsters.js';
-import { is_were, is_vampire, is_vampshifter } from './mondata.js';
 
 /* C ref: cmd.c dirchars[] for number_pad off (sdir): DIR_W .. DIR_SW,
    then DIR_DOWN '>' and DIR_UP '<' */

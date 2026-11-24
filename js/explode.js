@@ -53,6 +53,12 @@ import {
 } from './youprop.js';
 import { Upolyd, next2u } from './const.js';
 import { uprop } from './youprop.js';
+import { sticks as sticks_ex } from './engrave.js';
+import { dist2 as dist2_ex } from './hacklib.js';
+import { OBJ_AT as OBJ_AT_ex } from './const.js';
+import { newsym as newsym_ex } from './display.js';
+import { M1_CONCEAL as M1_CONCEAL_ex } from './monsters.js';
+import { maybe_unhide_at as maybe_unhide_at_ex } from './mon.js';
 
 /* C ref: mondata.h digests(), sticks() */
 function digests(ptr) {
@@ -688,12 +694,6 @@ export async function explode(
     await wake_nearto(x, y, i);
 }
 
-import { sticks as sticks_ex } from './engrave.js';
-import { dist2 as dist2_ex } from './hacklib.js';
-import { OBJ_AT as OBJ_AT_ex } from './const.js';
-import { newsym as newsym_ex } from './display.js';
-import { M1_CONCEAL as M1_CONCEAL_ex } from './monsters.js';
-import { maybe_unhide_at as maybe_unhide_at_ex } from './mon.js';
 
 // C ref: explode.c scatter()
 /*

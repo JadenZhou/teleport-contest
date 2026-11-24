@@ -8,7 +8,6 @@ import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
 import { is_plural } from './wield.js';
 import { pmatch } from './pager.js';
 import { shield_simple_name, shirt_simple_name } from './objnam.js';
-export { shield_simple_name, shirt_simple_name };
 import { game } from './gstate.js';
 import * as O from './objects.js';
 import { objects, OBJ_NAME, OBJ_DESCR, obj_descr } from './objects.js';
@@ -39,6 +38,7 @@ import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
 import { strncmpi, lowc, strstri } from './hacklib.js';
 import { CapitalMon } from './rumors.js';
+export { shield_simple_name, shirt_simple_name };
 
 const IA_NONE = 0,
     IA_UNWIELD = 1, /* hack for 'w-' */

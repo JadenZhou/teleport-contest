@@ -21,11 +21,6 @@ import { stop_occupation } from './allmain.js';
 import { obfree, stackobj } from './invent.js';
 import { M1_CONCEAL } from './monsters.js';
 import { Hallucination, Levitation, Unaware, Blind as Blind_dg } from './youprop.js';
-
-/* C ref: mondata.h hides_under() */
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
-/* C ref: invent.c update_inventory() -- no perm_invent window */
-function update_inventory() { }
 import { D_TRAPPED, D_BROKEN, SCORR, A_STR, A_INT, A_WIS, A_DEX, A_CON,
          A_CHA } from './const.js';
 import { ICE, DRAWBRIDGE_UP, DB_UNDER, DB_ICE, isok } from './const.js';
@@ -63,14 +58,6 @@ import { ceiling as ceiling_zd } from './dungeon.js';
 import { hard_helmet as hard_helmet_zd, xname as xname_zd } from './objnam.js';
 import { losehp as losehp_zd, Maybe_Half_Phys as Maybe_Half_Phys_zd } from './trap.js';
 import { ROCK as ROCK_ZD } from './objects.js';
-/* C ref: mondata.h is_whirly() */
-function is_whirly_zd(ptr) {
-    return ptr.mlet === S_VORTEX_ZD || ptr === mons_zd[PM_AIR_ELEMENTAL_ZD];
-}
-/* C ref: mondata.h digests() */
-function digests_zd(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL_ZD && a.adtyp === AD_DGST_ZD);
-}
 import { HEAVY_IRON_BALL } from './objects.js';
 import { dist2 } from './hacklib.js';
 import { reset_utrap } from './trap.js';
@@ -91,6 +78,40 @@ import { obj_ice_effects as obj_ice_effects_dg } from './mkobj.js';
 import { hliquid as hliquid_dg } from './potion.js';
 import { minliquid as minliquid_dg } from './mon.js';
 import { vobj_at as vobj_at_dg } from './display.js';
+import { STONE as STONE_DG } from './const.js';
+import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, N_DIRS_Z, TT_WEB, WEB, IRONBARS,
+         IS_WATERWALL, LAVAWALL, KILLED_BY, DIR_ERR, DIR_180, FORCEBUNGLE,
+         LANDMINE, BEAR_TRAP, LEVITATION } from './const.js';
+import { getdir, cmd_from_dir, movecmd_mode, dxdy_moveok,
+         MV_WALK } from './cmd.js';
+import { wield_tool } from './wield.js';
+import { can_reach_floor, cant_reach_floor, uteetering_at_seen_pit,
+         uescaped_shaft, u_wipe_engr } from './engrave.js';
+import { confdir, xytodir, nomul } from './hack.js';
+import { do_attack } from './uhitm.js';
+import { set_occupation } from './allmain.js';
+import { fire_damage, seetrap, dotrap, conjoined_pits } from './trap.js';
+import { wake_nearby } from './mon.js';
+import { Yobjnam2, yobjnam, yname } from './objnam.js';
+import { dbon } from './weapon.js';
+import { on_level, assign_level } from './dungeon.js';
+import { surface } from './iactions.js';
+import { You_cant, There } from './display.js';
+import { d } from './rng.js';
+import { OBJ_NAME } from './objects.js';
+
+/* C ref: mondata.h hides_under() */
+function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
+/* C ref: invent.c update_inventory() -- no perm_invent window */
+function update_inventory() { }
+/* C ref: mondata.h is_whirly() */
+function is_whirly_zd(ptr) {
+    return ptr.mlet === S_VORTEX_ZD || ptr === mons_zd[PM_AIR_ELEMENTAL_ZD];
+}
+/* C ref: mondata.h digests() */
+function digests_zd(ptr) {
+    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL_ZD && a.adtyp === AD_DGST_ZD);
+}
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -787,28 +808,6 @@ export async function buried_ball_to_punishment() {
         newsym(cc.x, cc.y);
     }
 }
-import { STONE as STONE_DG } from './const.js';
-
-import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, N_DIRS_Z, TT_WEB, WEB, IRONBARS,
-         IS_WATERWALL, LAVAWALL, KILLED_BY, DIR_ERR, DIR_180, FORCEBUNGLE,
-         LANDMINE, BEAR_TRAP, LEVITATION } from './const.js';
-import { getdir, cmd_from_dir, movecmd_mode, dxdy_moveok,
-         MV_WALK } from './cmd.js';
-import { wield_tool } from './wield.js';
-import { can_reach_floor, cant_reach_floor, uteetering_at_seen_pit,
-         uescaped_shaft, u_wipe_engr } from './engrave.js';
-import { confdir, xytodir, nomul } from './hack.js';
-import { do_attack } from './uhitm.js';
-import { set_occupation } from './allmain.js';
-import { fire_damage, seetrap, dotrap, conjoined_pits } from './trap.js';
-import { wake_nearby } from './mon.js';
-import { Yobjnam2, yobjnam, yname } from './objnam.js';
-import { dbon } from './weapon.js';
-import { on_level, assign_level } from './dungeon.js';
-import { surface } from './iactions.js';
-import { You_cant, There } from './display.js';
-import { d } from './rng.js';
-import { OBJ_NAME } from './objects.js';
 
 
 /* C ref: context.h struct dig_info (svc.context.digging); C's context

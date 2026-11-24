@@ -9,7 +9,6 @@
 import { helpless } from './monmove.js';
 import { impossible } from './hack.js';
 import { is_hole, is_pit } from './const.js';
-export { is_hole, is_pit };
 import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
 import { thitu } from './mthrowu.js';
@@ -75,9 +74,6 @@ import {
 } from './youprop.js';
 import { Upolyd, Luck } from './const.js';
 import { uprop } from './youprop.js';
-
-/* C ref: mondata.h resists_ston() */
-function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
 import { rndmonnum_adj, mkcorpstat, add_to_container, weight } from './mkobj.js';
 import { makemon, sobj_at, is_pool, is_lava, closed_door, goodpos } from './makemon.js';
 import { crawl_destination } from './hack.js';
@@ -120,7 +116,6 @@ import { inventory_resistance_check } from './zap.js';
 import { AD_ACID } from './monsters.js';
 import { COST_BURN, COST_RUST, COST_ROT, COST_CORRODE,
          COST_CRACK } from './const.js';
-
 import { float_vs_flight } from './polyself.js';
 import { s_suffix } from './hacklib.js';
 import { m_at } from './makemon.js';
@@ -185,6 +180,13 @@ import { LEVITATION, FLYING, FUMBLING, ANTIMAGIC, HALF_PHDAM, HALF_SPDAM,
          KILLED_BY_AN, KILLED_BY, A_DEX, RIGHT_SIDE, LEFT_SIDE,
          SLEEP_RES, BLINDED, HALLUC, HALLUC_RES, NO_MM_FLAGS,
        } from './const.js';
+import { xytodir as xytodir_tr } from './hack.js';
+import { DIR_180 as DIR_180_TR, DIR_ERR as DIR_ERR_TR } from './const.js';
+export { is_hole, is_pit };
+
+/* C ref: mondata.h resists_ston() */
+function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
+
 
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
@@ -928,8 +930,6 @@ function adj_nonconjoined_pit(adjtrap) {
     }
     return false;
 }
-import { xytodir as xytodir_tr } from './hack.js';
-import { DIR_180 as DIR_180_TR, DIR_ERR as DIR_ERR_TR } from './const.js';
 function sgn_tr(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 // C ref: trap.c dotrap()

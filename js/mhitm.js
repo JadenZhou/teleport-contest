@@ -51,6 +51,51 @@ import { mselftouch } from './trap.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { RLOC_NOMSG } from './const.js';
 import { Blind, Deaf, Conflict } from './youprop.js';
+import { sticks } from './engrave.js';
+import { getmattk } from './mhitu.js';
+import { mhitm_ad_stck } from './uhitm.js';
+import { ANTIMAGIC as ANTIMAGIC_MP, UNCHANGING as UNCHANGING_MP,
+         POLY_NOFLAGS as POLY_NOFLAGS_MP, NO_NC_FLAGS as NO_NC_FLAGS_MP,
+         XKILL_GIVEMSG as XKILL_GIVEMSG_MP, XKILL_NOCORPSE as XKILL_NOCORPSE_MP,
+         RLOC_MSG as RLOC_MSG_MP, nothing_happens as nothing_happens_mp,
+         NON_PM as NON_PM_MP, TELL as TELL_MP } from './const.js';
+import { AD_RBRE as AD_RBRE_MP } from './monsters.js';
+import { You as You_mp, You_feel as You_feel_mp } from './display.js';
+import { polyself as polyself_mp } from './polyself.js';
+import { resists_magm as resists_magm_mp, can_teleport as can_teleport_mp,
+         monsndx as monsndx_mp } from './mondata.js';
+import { resist as resist_mp } from './zap.js';
+import { pm_to_cham as pm_to_cham_mp } from './makemon.js';
+import { xkilled as xkilled_mp, newcham as newcham_mp } from './mon.js';
+import { tele as tele_mp } from './teleport.js';
+import { ARTICLE_A as ARTICLE_A_MP, SUPPRESS_NAME as SUPPRESS_NAME_MP,
+         SUPPRESS_IT as SUPPRESS_IT_MP,
+         SUPPRESS_INVISIBLE as SUPPRESS_INVISIBLE_MP } from './do_name.js';
+import { WAND_CLASS as WAND_CLASS_MP } from './objects.js';
+import { AT_NONE as AT_NONE_AP, AT_SPIT as AT_SPIT_AP, AT_EXPL as AT_EXPL_AP,
+         AT_BOOM as AT_BOOM_AP, AT_GAZE as AT_GAZE_AP, AT_BREA as AT_BREA_AP,
+         AT_MAGC as AT_MAGC_AP, AT_CLAW as AT_CLAW_AP, AT_TUCH as AT_TUCH_AP,
+         AT_WEAP as AT_WEAP_AP, AT_KICK as AT_KICK_AP, AT_BUTT as AT_BUTT_AP,
+         AT_HUGS as AT_HUGS_AP, AT_BITE as AT_BITE_AP, AT_STNG as AT_STNG_AP,
+         AT_ENGL as AT_ENGL_AP, AT_TENT as AT_TENT_AP } from './monsters.js';
+import { W_ARMG as W_ARMG_AP, W_ARMF as W_ARMF_AP, W_ARMH as W_ARMH_AP,
+         W_ARMC as W_ARMC_AP } from './const.js';
+import { seemimic as seemimic_md } from './mon.js';
+import { finish_meating as finish_meating_md } from './dog.js';
+import { canspotmon as canspotmon_md, newsym as newsym_md,
+         flush_screen as flush_screen_md } from './display.js';
+import { M_AP_MONSTER as M_AP_MONSTER_MD, STRAT_WAITMASK as STRAT_WAITMASK_MD,
+         W_ARMG as W_ARMG_MD } from './const.js';
+import { remove_worm as remove_worm_md,
+         place_worm_tail_randomly as place_worm_tail_randomly_md } from './worm.js';
+import { place_monster as place_monster_md } from './makemon.js';
+import { update_monster_region as update_monster_region_md } from './region.js';
+import { mhis as mhis_md } from './mhitu.js';
+import { which_armor as which_armor_md } from './worn.js';
+import { touch_petrifies as touch_petrifies_md, resists_ston as resists_ston_md } from './mondata.js';
+import { s_suffix as s_suffix_sm } from './hacklib.js';
+import { unstuck as unstuck_sm } from './mhitu.js';
+import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';
 
 /* C ref: obj.h is_pole() */
 function is_pole(otmp) {
@@ -87,14 +132,12 @@ function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
-import { sticks } from './engrave.js';
 
 
 /* C ref: worn.c find_mac() lives in worn.js */
 export { find_mac };
 
 /* C ref: mhitu.c getmattk() is mhitu.js getmattk() (any defender) */
-import { getmattk } from './mhitu.js';
 
 // C ref: mondata.c max_passive_dmg()
 export function max_passive_dmg(mdef, magr) {
@@ -679,7 +722,6 @@ async function mhitm_ad_ssex(magr, mattk, mdef, mhm) {
         return;
 }
 
-import { mhitm_ad_stck } from './uhitm.js';
 
 // C ref: uhitm.c mhitm_adtyping()
 async function mhitm_adtyping(magr, mattk, mdef, mhm) {
@@ -952,24 +994,6 @@ export async function mon_poly(magr, mdef, dmg) {
 
     return dmg;
 }
-import { ANTIMAGIC as ANTIMAGIC_MP, UNCHANGING as UNCHANGING_MP,
-         POLY_NOFLAGS as POLY_NOFLAGS_MP, NO_NC_FLAGS as NO_NC_FLAGS_MP,
-         XKILL_GIVEMSG as XKILL_GIVEMSG_MP, XKILL_NOCORPSE as XKILL_NOCORPSE_MP,
-         RLOC_MSG as RLOC_MSG_MP, nothing_happens as nothing_happens_mp,
-         NON_PM as NON_PM_MP, TELL as TELL_MP } from './const.js';
-import { AD_RBRE as AD_RBRE_MP } from './monsters.js';
-import { You as You_mp, You_feel as You_feel_mp } from './display.js';
-import { polyself as polyself_mp } from './polyself.js';
-import { resists_magm as resists_magm_mp, can_teleport as can_teleport_mp,
-         monsndx as monsndx_mp } from './mondata.js';
-import { resist as resist_mp } from './zap.js';
-import { pm_to_cham as pm_to_cham_mp } from './makemon.js';
-import { xkilled as xkilled_mp, newcham as newcham_mp } from './mon.js';
-import { tele as tele_mp } from './teleport.js';
-import { ARTICLE_A as ARTICLE_A_MP, SUPPRESS_NAME as SUPPRESS_NAME_MP,
-         SUPPRESS_IT as SUPPRESS_IT_MP,
-         SUPPRESS_INVISIBLE as SUPPRESS_INVISIBLE_MP } from './do_name.js';
-import { WAND_CLASS as WAND_CLASS_MP } from './objects.js';
 
 // C ref: mhitm.c paralyze_monst()
 export function paralyze_monst(mon, amt) {
@@ -1032,14 +1056,6 @@ export function attk_protection(aatyp) {
     }
     return w_mask;
 }
-import { AT_NONE as AT_NONE_AP, AT_SPIT as AT_SPIT_AP, AT_EXPL as AT_EXPL_AP,
-         AT_BOOM as AT_BOOM_AP, AT_GAZE as AT_GAZE_AP, AT_BREA as AT_BREA_AP,
-         AT_MAGC as AT_MAGC_AP, AT_CLAW as AT_CLAW_AP, AT_TUCH as AT_TUCH_AP,
-         AT_WEAP as AT_WEAP_AP, AT_KICK as AT_KICK_AP, AT_BUTT as AT_BUTT_AP,
-         AT_HUGS as AT_HUGS_AP, AT_BITE as AT_BITE_AP, AT_STNG as AT_STNG_AP,
-         AT_ENGL as AT_ENGL_AP, AT_TENT as AT_TENT_AP } from './monsters.js';
-import { W_ARMG as W_ARMG_AP, W_ARMF as W_ARMF_AP, W_ARMH as W_ARMH_AP,
-         W_ARMC as W_ARMC_AP } from './const.js';
 
 // C ref: mhitm.c mdisplacem()
 /* monster attempting to displace another monster out of its way */
@@ -1113,24 +1129,8 @@ export async function mdisplacem(magr, mdef, quietly) {
 
     return M_ATTK_HIT;
 }
-import { seemimic as seemimic_md } from './mon.js';
-import { finish_meating as finish_meating_md } from './dog.js';
-import { canspotmon as canspotmon_md, newsym as newsym_md,
-         flush_screen as flush_screen_md } from './display.js';
-import { M_AP_MONSTER as M_AP_MONSTER_MD, STRAT_WAITMASK as STRAT_WAITMASK_MD,
-         W_ARMG as W_ARMG_MD } from './const.js';
-import { remove_worm as remove_worm_md,
-         place_worm_tail_randomly as place_worm_tail_randomly_md } from './worm.js';
-import { place_monster as place_monster_md } from './makemon.js';
-import { update_monster_region as update_monster_region_md } from './region.js';
-import { mhis as mhis_md } from './mhitu.js';
-import { which_armor as which_armor_md } from './worn.js';
-import { touch_petrifies as touch_petrifies_md, resists_ston as resists_ston_md } from './mondata.js';
 /* C ref: mondata.h is_rider() */
 function is_rider_md(ptr) {
     return ptr === mons[M.PM_DEATH] || ptr === mons[M.PM_FAMINE]
         || ptr === mons[M.PM_PESTILENCE];
 }
-import { s_suffix as s_suffix_sm } from './hacklib.js';
-import { unstuck as unstuck_sm } from './mhitu.js';
-import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';

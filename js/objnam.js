@@ -64,6 +64,7 @@ import {
 } from './mkobj.js';
 import { delete_contents } from './invent.js';
 import { Luck } from './const.js';
+import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -3934,4 +3935,3 @@ export function short_oname(obj,
     /* use whatever we've got, whether it's too long or not */
     return outbuf;
 }
-import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';

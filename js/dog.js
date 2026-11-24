@@ -24,9 +24,6 @@ import { rnd } from './rng.js';
 import { Hallucination } from './youprop.js';
 import { Role_if } from './const.js';
 import { uhis } from './mhitu.js';
-
-/* C ref: mondata.h attacktype() */
-function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { an } from './objnam.js';
@@ -72,9 +69,15 @@ import { pline, canseemon, newsym } from './display.js';
 import { yelp, growl } from './sounds.js';
 import { AGGRAVATE_MONSTER, CONFLICT } from './const.js';
 import { Monnam } from './do_name.js';
-
 import { ACURR } from './attrib.js';
 import { deliver_obj_to_mon } from './dokick.js';
+import { haseyes as haseyes_wd } from './mondata.js';
+import { body_part as body_part_wd } from './insight.js';
+import { EYE as EYE_WD } from './const.js';
+
+/* C ref: mondata.h attacktype() */
+function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
+
 const DF_ALL = 0x04; /* hack.h */
 
 
@@ -1116,6 +1119,3 @@ export async function wary_dog(mtmp, was_dead) {
         } /* else lifesaved, so retain current values */
     }
 }
-import { haseyes as haseyes_wd } from './mondata.js';
-import { body_part as body_part_wd } from './insight.js';
-import { EYE as EYE_WD } from './const.js';

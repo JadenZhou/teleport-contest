@@ -78,6 +78,9 @@ import { describe_level } from './botl.js';
 import { highc, trimspaces } from './hacklib.js';
 import { add_menu_str } from './wintty.js';
 import { Blind, Levitation } from './youprop.js';
+import { strstri as strstri_dg } from './hacklib.js';
+import { In_V_tower as In_V_tower_dg, VISITED as VISITED_DG } from './const.js';
+import { level_info as level_info_dg } from './files.js';
 
 // C's panic() (end.c) and impossible() (pline.c) are not ported yet.
 export function panic(msg) { throw new Error(`panic: ${msg}`); }
@@ -1757,9 +1760,6 @@ export function lev_by_name(nam) {
     }
     return lev;
 }
-import { strstri as strstri_dg } from './hacklib.js';
-import { In_V_tower as In_V_tower_dg, VISITED as VISITED_DG } from './const.js';
-import { level_info as level_info_dg } from './files.js';
 
 // C ref: dungeon.c find_mapseen()
 /* find the particular mapseen object in the chain; may return null */

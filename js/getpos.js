@@ -28,6 +28,7 @@ import { docrt_flags, docrtRefresh } from './display.js';
 import { cansee } from './vision.js';
 import { PM_LONG_WORM_TAIL } from './monsters.js';
 import { BOULDER, ROCK } from './objects.js';
+import { xytodir as xytodir_gp, directionname as directionname_gp } from './hack.js';
 
 /* C ref: getpos.c getpos_hilitefunc, getpos_getvalid (static) */
 /* C ref: getpos.c enum getposHiliteState */
@@ -481,7 +482,6 @@ export function dxdy_to_dist_descr(dx, dy, fulldir) {
     }
     return buf;
 }
-import { xytodir as xytodir_gp, directionname as directionname_gp } from './hack.js';
 
 // C ref: getpos.c auto_describe()
 export async function auto_describe(cx, cy) {

@@ -38,10 +38,6 @@ import {
 } from './youprop.js';
 import { uhim, uhis } from './mhitu.js';
 import { uprop } from './youprop.js';
-/* C ref: mondata.h is_whirly() */
-function is_whirly(ptr) {
-    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
-}
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
          HALLUC, P_AXE } from './const.js';
@@ -71,6 +67,18 @@ import { ECMD_TIME, ECMD_FAIL, JUMPING, PASSES_WALLS, LEVITATION, WOUNDED_LEGS,
          ACCESSIBLE, isok, u_at, Is_airlevel, Is_waterlevel } from './const.js';
 import { use_container } from './pickup.js';
 import { do_play_instrument } from './music.js';
+import { invocation_pos as invocation_pos_bl } from './mklev.js';
+import { stairway_at as stairway_at_bl } from './display.js';
+import { wake_nearby as wake_nearby_bl } from './mon.js';
+import { G_GONE as G_GONE_bl } from './const.js';
+import * as MM_bl from './monsters.js';
+import { openit as openit_bl, findit as findit_bl } from './detect.js';
+import { unpunish as unpunish_bl } from './read.js';
+import { TT_BURIEDBALL as TT_BURIEDBALL_bl } from './const.js';
+/* C ref: mondata.h is_whirly() */
+function is_whirly(ptr) {
+    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
+}
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -190,14 +198,6 @@ async function use_bell(obj) {
     if (wakem)
         await wake_nearby_bl(true);
 }
-import { invocation_pos as invocation_pos_bl } from './mklev.js';
-import { stairway_at as stairway_at_bl } from './display.js';
-import { wake_nearby as wake_nearby_bl } from './mon.js';
-import { G_GONE as G_GONE_bl } from './const.js';
-import * as MM_bl from './monsters.js';
-import { openit as openit_bl, findit as findit_bl } from './detect.js';
-import { unpunish as unpunish_bl } from './read.js';
-import { TT_BURIEDBALL as TT_BURIEDBALL_bl } from './const.js';
 
 // C ref: apply.c use_stethoscope()
 /* Strictly speaking it makes no sense for usage of a stethoscope to

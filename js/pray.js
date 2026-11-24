@@ -25,8 +25,6 @@ import {
     Reflecting, Fixed_abil
 } from './youprop.js';
 import { Upolyd, Luck } from './const.js';
-/* C ref: defsym.h S_altar (cmap index) */
-const S_altar = 33;
 import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT, S_LICH, S_GHOST,
          S_VAMPIRE, S_WRAITH, S_MUMMY, S_ZOMBIE } from './monsters.js';
 import { known_spell, spelleffects, can_chant } from './spell.js';
@@ -72,8 +70,23 @@ import { unpunish, punish } from './read.js';
 import { rndcurse, attrcurse } from './sit.js';
 import { An } from './objnam.js';
 import { ANTIMAGIC } from './const.js';
-const NH_BLACK = "black"; /* color.h */
 import { encumber_msg } from './pickup.js';
+import { summon_minion } from './minion.js';
+import { mon_nam as mon_nam_pr, Monnam as Monnam_pr } from './do_name.js';
+import { resists_elec as resists_elec_pr, resists_disint as resists_disint_pr } from './mondata.js';
+import { xkilled as xkilled_pr } from './mon.js';
+import { ureflects as ureflects_pr } from './mcastu.js';
+import { monstseesu as monstseesu_pr, monstunseesu as monstunseesu_pr } from './uhitm.js';
+import { disintegrate_arm as disintegrate_arm_pr } from './do_wear.js';
+import { done as done_pr } from './end.js';
+import { killer as killer_pr } from './topten.js';
+import { REFLECTING, SHOCK_RES, DISINT_RES, W_ARM, W_ARMC, W_ARMS, M_SEEN_REFL,
+         M_SEEN_ELEC, M_SEEN_DISINT, XKILL_NOMSG, XKILL_NOCORPSE, XKILL_NOCONDUCT,
+         KILLED_BY as KILLED_BY_PR, DIED as DIED_PR, Is_astralevel as Is_astralevel_pr,
+         Is_sanctum as Is_sanctum_pr } from './const.js';
+/* C ref: defsym.h S_altar (cmap index) */
+const S_altar = 33;
+const NH_BLACK = "black"; /* color.h */
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
@@ -1385,16 +1398,3 @@ export async function doturn() {
     g.nomovemsg = "You can move again."; /* You_can_move_again */
     return ECMD_TIME;
 }
-import { summon_minion } from './minion.js';
-import { mon_nam as mon_nam_pr, Monnam as Monnam_pr } from './do_name.js';
-import { resists_elec as resists_elec_pr, resists_disint as resists_disint_pr } from './mondata.js';
-import { xkilled as xkilled_pr } from './mon.js';
-import { ureflects as ureflects_pr } from './mcastu.js';
-import { monstseesu as monstseesu_pr, monstunseesu as monstunseesu_pr } from './uhitm.js';
-import { disintegrate_arm as disintegrate_arm_pr } from './do_wear.js';
-import { done as done_pr } from './end.js';
-import { killer as killer_pr } from './topten.js';
-import { REFLECTING, SHOCK_RES, DISINT_RES, W_ARM, W_ARMC, W_ARMS, M_SEEN_REFL,
-         M_SEEN_ELEC, M_SEEN_DISINT, XKILL_NOMSG, XKILL_NOCORPSE, XKILL_NOCONDUCT,
-         KILLED_BY as KILLED_BY_PR, DIED as DIED_PR, Is_astralevel as Is_astralevel_pr,
-         Is_sanctum as Is_sanctum_pr } from './const.js';

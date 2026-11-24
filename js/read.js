@@ -105,6 +105,20 @@ import {
 } from './youprop.js';
 import { Role_if, u_at } from './const.js';
 import { snuff_light_source } from './light.js';
+import { drain_weapon_skill } from './weapon.js';
+import { explode as explode_rd } from './explode.js';
+import { EXPL_FIERY as EXPL_FIERY_RD } from './const.js';
+import { gold_detect, food_detect, trap_detect, do_mapping,
+         cvt_sdoor_to_door } from './detect.js';
+import { unblock_point } from './vision.js';
+import { is_pool as is_pool_rd, is_lava as is_lava_rd } from "./makemon.js";
+import { place_object as place_object_rd } from './mkobj.js';
+import { delobj as delobj_rd } from './invent.js';
+import { monstseesu as monstseesu_rd, monstunseesu as monstunseesu_rd } from './uhitm.js';
+import { SDOOR as SDOOR_RD, CORR as CORR_RD,
+         W_ARMH as W_ARMH_RD, DEAF as DEAF_RD, In_sokoban as In_sokoban_rd } from './const.js';
+import { ceiling as ceiling_rd } from './dungeon.js';
+import { In_quest as In_quest_rd } from './const.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -682,7 +696,6 @@ async function forget(howmuch) {
     for (let mtmp = g.migrating_mons; mtmp; mtmp = mtmp.nmon)
         mtmp.meverseen = 0;
 }
-import { drain_weapon_skill } from './weapon.js';
 
 // C ref: read.c maybe_tame() -- monster is hit by scroll of taming's effect
 async function maybe_tame(mtmp, sobj) {
@@ -1632,8 +1645,6 @@ async function seffect_fire(sobjp) {
     const ZT_SPELL_O_FIRE = 11; /* explained in splatter_burning_oil(explode.c) */
     await explode_rd(cc.x, cc.y, ZT_SPELL_O_FIRE, dam, O.SCROLL_CLASS, EXPL_FIERY_RD);
 }
-import { explode as explode_rd } from './explode.js';
-import { EXPL_FIERY as EXPL_FIERY_RD } from './const.js';
 const PLNMSG_TOWER_OF_FLAME = 3; /* C ref: hack.h enum plnmsg_types */
 
 // C ref: read.c seffect_earth()
@@ -2301,15 +2312,6 @@ async function do_stinking_cloud(sobj, mention_stinking) {
 }
 
 /* C ref: detect.c -- the detection routines (detect.js) */
-import { gold_detect, food_detect, trap_detect, do_mapping,
-         cvt_sdoor_to_door } from './detect.js';
-import { unblock_point } from './vision.js';
-import { is_pool as is_pool_rd, is_lava as is_lava_rd } from "./makemon.js";
-import { place_object as place_object_rd } from './mkobj.js';
-import { delobj as delobj_rd } from './invent.js';
-import { monstseesu as monstseesu_rd, monstunseesu as monstunseesu_rd } from './uhitm.js';
-import { SDOOR as SDOOR_RD, CORR as CORR_RD,
-         W_ARMH as W_ARMH_RD, DEAF as DEAF_RD, In_sokoban as In_sokoban_rd } from './const.js';
 function is_whirly_rd(ptr) { return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL]; }
 
 /* C ref: read.c tshirt_text() shirt_msgs[], hawaiian_motif()
@@ -2742,5 +2744,3 @@ function avoid_ceiling_rd(lev) {
         return true;
     return false;
 }
-import { ceiling as ceiling_rd } from './dungeon.js';
-import { In_quest as In_quest_rd } from './const.js';

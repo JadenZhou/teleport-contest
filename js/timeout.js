@@ -90,7 +90,23 @@ import { surface } from './iactions.js';
 import { region_danger } from './region.js';
 import { an } from './objnam.js';
 import { spec_ability, SPFX_LUCK } from './artifact.js';
-
+import { done as done_to } from './end.js';
+import { killer as killer_to } from './topten.js';
+import { find_delayed_killer as find_delayed_killer_to, dealloc_killer as dealloc_killer_to,
+         make_sick as make_sick_to } from './potion.js';
+import { I_SPECIAL as I_SPECIAL_TO, NO_KILLER_PREFIX as NO_KILLER_PREFIX_TO,
+         KILLED_BY as KILLED_BY_TO, KILLED_BY_AN as KILLED_BY_AN_TO,
+         STONING as STONING_TO, DIED as DIED_TO, POISONING as POISONING_TO,
+         SICK_NONVOMITABLE as SICK_NONVOMITABLE_TO, SICK_ALL as SICK_ALL_TO,
+         A_CON as A_CON_TO } from './const.js';
+import { AMULET_OF_STRANGULATION as AMULET_OF_STRANGULATION_TO } from './objects.js';
+import { useup as useup_to } from './invent.js';
+import { ACURR as ACURR_to, adjattrib as adjattrib_to } from './attrib.js';
+import { urgent_pline as urgent_pline_to } from './display.js';
+import { name_to_mon as name_to_mon_to } from './mondata.js';
+import { LOW_PM as LOW_PM_TO } from './const.js';
+import { mons as mons_to, M2_PNAME as M2_PNAME_TO, G_UNIQ as G_UNIQ_TO } from './monsters.js';
+import { the as the_to } from './iactions.js';
 
 
 // C ref: timeout.c propertynames[]
@@ -1979,21 +1995,3 @@ function cleanup_burn(arg, expire_time) {
 
     /* if (obj->where == OBJ_INVENT) update_inventory() */
 }
-
-import { done as done_to } from './end.js';
-import { killer as killer_to } from './topten.js';
-import { find_delayed_killer as find_delayed_killer_to, dealloc_killer as dealloc_killer_to,
-         make_sick as make_sick_to } from './potion.js';
-import { I_SPECIAL as I_SPECIAL_TO, NO_KILLER_PREFIX as NO_KILLER_PREFIX_TO,
-         KILLED_BY as KILLED_BY_TO, KILLED_BY_AN as KILLED_BY_AN_TO,
-         STONING as STONING_TO, DIED as DIED_TO, POISONING as POISONING_TO,
-         SICK_NONVOMITABLE as SICK_NONVOMITABLE_TO, SICK_ALL as SICK_ALL_TO,
-         A_CON as A_CON_TO } from './const.js';
-import { AMULET_OF_STRANGULATION as AMULET_OF_STRANGULATION_TO } from './objects.js';
-import { useup as useup_to } from './invent.js';
-import { ACURR as ACURR_to, adjattrib as adjattrib_to } from './attrib.js';
-import { urgent_pline as urgent_pline_to } from './display.js';
-import { name_to_mon as name_to_mon_to } from './mondata.js';
-import { LOW_PM as LOW_PM_TO } from './const.js';
-import { mons as mons_to, M2_PNAME as M2_PNAME_TO, G_UNIQ as G_UNIQ_TO } from './monsters.js';
-import { the as the_to } from './iactions.js';

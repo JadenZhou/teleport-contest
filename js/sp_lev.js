@@ -132,6 +132,7 @@ import { christen_monst, oname } from './do_name.js';
 import { newcham_sync, mongone } from './mon.js';
 import { mkmap } from './mkmap.js';
 import { Protection_from_shape_changers } from './youprop.js';
+import { A_NONE as A_NONE_SP, A_LAWFUL as A_LAWFUL_SP } from './const.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -4994,4 +4995,3 @@ export function l_register_des(L) {
     des.gold = lspo_gold;
     L.globals.des = des;
 }
-import { A_NONE as A_NONE_SP, A_LAWFUL as A_LAWFUL_SP } from './const.js';

@@ -59,6 +59,22 @@ import { objects, GOLD_PIECE, ROCK, RING_CLASS, STRANGE_OBJECT, FOOD_CLASS,
 import { shiny_obj } from './objnam.js';
 import { fruitadd } from './options.js';
 import { christen_monst, christen_orc, rndorcname } from './do_name.js';
+import { Is_firelevel as Is_firelevel_fm, LAVAPOOL as LAVAPOOL_FM,
+         DEAF as DEAF_FM } from './const.js';
+import { create_gas_cloud as create_gas_cloud_fm,
+         clear_heros_fault as clear_heros_fault_fm } from './region.js';
+import { dist2 as dist2_fm } from './hacklib.js';
+import { Norep as Norep_fm } from './display.js';
+import { Is_airlevel as Is_airlevel_wl, Is_waterlevel as Is_waterlevel_wl,
+         AIR as AIR_WL, CLOUD as CLOUD_WL, WATER as WATER_WL, STONE as STONE_WL,
+         MAGIC_PORTAL as MAGIC_PORTAL_WL, COLNO as COLNO_WL,
+         ROWNO as ROWNO_WL } from './const.js';
+import { vision_recalc as vision_recalc_wl, block_point as block_point_wl,
+         unblock_point as unblock_point_wl,
+         recalc_block_point as recalc_block_point_wl } from './vision.js';
+import { waterlevel_glyph as waterlevel_glyph_wl } from './display.js';
+import { update_file as update_file_wl, release_data as release_data_wl } from './save.js';
+import { Sfo as Sfo_wl, Sfi as Sfi_wl } from './sfbase.js';
 
 // C ref: mkmaze.c baalz_fixup()
 /* wallification of the baalz level's "insect" leaves wall stubs which
@@ -968,12 +984,6 @@ export async function fumaroles() {
     if (snd && !g.u.uprops[DEAF_FM]?.intrinsic && !g.u.uprops[DEAF_FM]?.extrinsic)
         await Norep_fm(`You hear a ${loud ? "loud " : ""}whoosh!`);  /* Deaf-aware */
 }
-import { Is_firelevel as Is_firelevel_fm, LAVAPOOL as LAVAPOOL_FM,
-         DEAF as DEAF_FM } from './const.js';
-import { create_gas_cloud as create_gas_cloud_fm,
-         clear_heros_fault as clear_heros_fault_fm } from './region.js';
-import { dist2 as dist2_fm } from './hacklib.js';
-import { Norep as Norep_fm } from './display.js';
 
 /*
  * Special waterlevel stuff in endgame (TH).
@@ -1357,13 +1367,3 @@ function mv_bubble(b, dx, dy, ini) {
         }
     }
 }
-import { Is_airlevel as Is_airlevel_wl, Is_waterlevel as Is_waterlevel_wl,
-         AIR as AIR_WL, CLOUD as CLOUD_WL, WATER as WATER_WL, STONE as STONE_WL,
-         MAGIC_PORTAL as MAGIC_PORTAL_WL, COLNO as COLNO_WL,
-         ROWNO as ROWNO_WL } from './const.js';
-import { vision_recalc as vision_recalc_wl, block_point as block_point_wl,
-         unblock_point as unblock_point_wl,
-         recalc_block_point as recalc_block_point_wl } from './vision.js';
-import { waterlevel_glyph as waterlevel_glyph_wl } from './display.js';
-import { update_file as update_file_wl, release_data as release_data_wl } from './save.js';
-import { Sfo as Sfo_wl, Sfi as Sfi_wl } from './sfbase.js';

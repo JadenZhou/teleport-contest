@@ -40,6 +40,11 @@ import { LENSES, ARMOR_CLASS, ARM_GLOVES, ARM_BOOTS } from './objects.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_PROMPT, GETOBJ_ALLOWCNT,
          ECMD_CANCEL, GETOBJ_EXCLUDE } from './const.js';
 import { COIN_CLASS } from './objects.js';
+import { setworn } from './worn.js';
+import { BATTLE_AXE as BATTLE_AXE_WL } from './objects.js';
+import { P_SHORT_SWORD as P_SHORT_SWORD_WL, P_SABER as P_SABER_WL } from './const.js';
+import { xname as xname_wl, yname as yname_wl, doname as doname_wl,
+         The as The_wl, aobjnam as aobjnam_wl } from './objnam.js';
 
 // C ref: obj.h is_weptool()
 export function is_weptool(o) {
@@ -83,7 +88,6 @@ export function is_pole(otmp) {
 export function is_wet_towel(o) { return o.otyp === TOWEL && o.spe > 0; }
 
 // C ref: worn.c setworn() -- in worn.js
-import { setworn } from './worn.js';
 export { setworn };
 
 // C ref: wield.c setuwep()
@@ -245,8 +249,6 @@ function is_sword_wl(otmp) {
         && objects[otmp.otyp].oc_skill >= P_SHORT_SWORD_WL
         && objects[otmp.otyp].oc_skill <= P_SABER_WL;
 }
-import { BATTLE_AXE as BATTLE_AXE_WL } from './objects.js';
-import { P_SHORT_SWORD as P_SHORT_SWORD_WL, P_SABER as P_SABER_WL } from './const.js';
 
 // C ref: wield.c ready_weapon()
 export async function ready_weapon(wep) {
@@ -783,5 +785,3 @@ export async function wield_tool(obj,
         game.unweapon = true;
     return true;
 }
-import { xname as xname_wl, yname as yname_wl, doname as doname_wl,
-         The as The_wl, aobjnam as aobjnam_wl } from './objnam.js';

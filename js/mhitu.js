@@ -107,9 +107,6 @@ import {
     Reflecting, Unaware as Unaware_mh
 } from './youprop.js';
 import { Upolyd, m_next2u, u_at } from './const.js';
-
-/* C ref: global.h LARGEST_INT */
-const LARGEST_INT = 32767;
 import { done_in_by } from './end.js';
 import { ART_SNICKERSNEE } from './artilist.js';
 import { genders } from './role.js';
@@ -118,6 +115,27 @@ import { tp_sensemon, vobj_at } from './display.js';
 import { Amonnam } from './do_name.js';
 import { is_pool } from './makemon.js';
 import { DETECT_MONSTERS } from './const.js';
+import { W_ACCESSORY as W_ACCESSORY_MU, W_WEP as W_WEP_MU } from './const.js';
+import { WEAPON_CLASS as WEAPON_CLASS_MU } from './objects.js';
+import { is_weptool as is_weptool_mu } from './mkobj.js';
+import { protects as protects_mu } from './artifact.js';
+import { couldsee as couldsee_mh } from './vision.js';
+import { m_seenres as m_seenres_mh } from './muse.js';
+import { cvt_adtyp_to_mseenres as cvt_adtyp_to_mseenres_mh } from './mondata.js';
+import { REFLECTING as REFLECTING_MH, CONFUSION as CONFUSION_MH,
+         STUNNED as STUNNED_MH, TIMEOUT as TIMEOUT_MH,
+         BOLT_LIM as BOLT_LIM_MH } from './const.js';
+import { make_confused as make_confused_mh,
+         make_stunned as make_stunned_mh } from './potion.js';
+import { burnarmor as burnarmor_mh, ignite_items as ignite_items_mh } from './trap.js';
+import { destroy_items as destroy_items_mh } from './zap.js';
+import { xkilled as xkilled_mu } from './mon.js';
+import { resists_cold as resists_cold_mu } from './mondata.js';
+import { XKILL_NOMSG as XKILL_NOMSG_MU } from './const.js';
+import { mon_explodes } from './explode.js';
+
+/* C ref: global.h LARGEST_INT */
+const LARGEST_INT = 32767;
 
 /* C ref: mhitu.c static mon_currwep */
 let mon_currwep = null;
@@ -880,10 +898,6 @@ export async function mattacku(mtmp) {
     return 0;
 }
 
-import { W_ACCESSORY as W_ACCESSORY_MU, W_WEP as W_WEP_MU } from './const.js';
-import { WEAPON_CLASS as WEAPON_CLASS_MU } from './objects.js';
-import { is_weptool as is_weptool_mu } from './mkobj.js';
-import { protects as protects_mu } from './artifact.js';
 
 // C ref: mhitu.c magic_negation()
 /* armor that sufficiently covers the body might be able to block magic */
@@ -1198,16 +1212,6 @@ export async function gazemu(mtmp, mattk) {
     }
     return M_ATTK_MISS;
 }
-import { couldsee as couldsee_mh } from './vision.js';
-import { m_seenres as m_seenres_mh } from './muse.js';
-import { cvt_adtyp_to_mseenres as cvt_adtyp_to_mseenres_mh } from './mondata.js';
-import { REFLECTING as REFLECTING_MH, CONFUSION as CONFUSION_MH,
-         STUNNED as STUNNED_MH, TIMEOUT as TIMEOUT_MH,
-         BOLT_LIM as BOLT_LIM_MH } from './const.js';
-import { make_confused as make_confused_mh,
-         make_stunned as make_stunned_mh } from './potion.js';
-import { burnarmor as burnarmor_mh, ignite_items as ignite_items_mh } from './trap.js';
-import { destroy_items as destroy_items_mh } from './zap.js';
 
 // C ref: mhitu.c mdamageu()
 /* mtmp hits you for n points damage */
@@ -2296,9 +2300,5 @@ async function assess_dmg_mu(mtmp, tmp) {
     }
     return M_ATTK_HIT;
 }
-import { xkilled as xkilled_mu } from './mon.js';
-import { resists_cold as resists_cold_mu } from './mondata.js';
-import { XKILL_NOMSG as XKILL_NOMSG_MU } from './const.js';
 
 void mon_currwep; void Blind; void AT_GAZE;
-import { mon_explodes } from './explode.js';

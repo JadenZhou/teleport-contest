@@ -71,6 +71,9 @@ import { fruitadd } from './options.js';
 import { SLIME_MOLD, BRASS_LANTERN, OIL_LAMP, CANDELABRUM_OF_INVOCATION,
          TALLOW_CANDLE, WAX_CANDLE, POT_OIL } from './objects.js';
 import { S_UNICORN, M2_JEWELS } from './monsters.js';
+import { xname as xname_rs } from './objnam.js';
+import { useup as useup_rs } from './invent.js';
+import { restore_waterlevel } from './mkmaze.js';
 
 /* mondata.h is_unicorn() */
 function is_unicorn(ptr) {
@@ -171,8 +174,6 @@ export async function inven_inuse(quietly) {
         }
     }
 }
-import { xname as xname_rs } from './objnam.js';
-import { useup as useup_rs } from './invent.js';
 
 // C ref: restore.c restlevchn()
 function restlevchn(nhfp) {
@@ -1189,7 +1190,6 @@ function rest_bubbles(nhfp) {
     if (bbubbly)
         restore_waterlevel(nhfp);
 }
-import { restore_waterlevel } from './mkmaze.js';
 
 // C ref: mklev.c load_exclusions()
 function load_exclusions(nhfp) {

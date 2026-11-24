@@ -102,6 +102,20 @@ import { doextversion } from './mdlib.js';
 import {
     Blind, Hallucination, See_invisible, Infravision, Detect_monsters, Invis, Invisible
 } from './youprop.js';
+import { trap_predicament } from './insight.js';
+import { y_monnam as y_monnam_pg } from './do_name.js';
+import { visible_region_at as visible_region_at_pg } from './region.js';
+import { ansimpleoname as ansimpleoname_pg } from './iactions.js';
+import { MHID_PREFIX, MHID_ARTICLE, MHID_ALTMON, MHID_REGION, M_AP_FURNITURE,
+         M_AP_MONSTER, BUFSZ as BUFSZ_PG } from './const.js';
+import { glyph_kind as glyph_kind_pg } from './display.js';
+import { simpleonames as simpleonames_pg, surface as surface_pg } from './iactions.js';
+import { Mgender as Mgender_pg } from './do_name.js';
+import { ceiling_hider as ceiling_hider_pg } from './engrave.js';
+import { M1_CONCEAL as M1_CONCEAL_PG, M1_HIDE as M1_HIDE_PG,
+         S_EEL as S_EEL_PG } from './monsters.js';
+import { S_poisoncloud as S_poisoncloud_pg } from './region.js';
+import { option_help as option_help_pg } from './options.js';
 
 /* C ref: mondata.h digests() */
 function digests(ptr) {
@@ -2746,19 +2760,3 @@ async function hmenu_doextversion() {
 async function hmenu_dowhatis() {
     await dowhatis();
 }
-
-import { trap_predicament } from './insight.js';
-import { y_monnam as y_monnam_pg } from './do_name.js';
-import { visible_region_at as visible_region_at_pg } from './region.js';
-import { ansimpleoname as ansimpleoname_pg } from './iactions.js';
-
-import { MHID_PREFIX, MHID_ARTICLE, MHID_ALTMON, MHID_REGION, M_AP_FURNITURE,
-         M_AP_MONSTER, BUFSZ as BUFSZ_PG } from './const.js';
-import { glyph_kind as glyph_kind_pg } from './display.js';
-import { simpleonames as simpleonames_pg, surface as surface_pg } from './iactions.js';
-import { Mgender as Mgender_pg } from './do_name.js';
-import { ceiling_hider as ceiling_hider_pg } from './engrave.js';
-import { M1_CONCEAL as M1_CONCEAL_PG, M1_HIDE as M1_HIDE_PG,
-         S_EEL as S_EEL_PG } from './monsters.js';
-import { S_poisoncloud as S_poisoncloud_pg } from './region.js';
-import { option_help as option_help_pg } from './options.js';

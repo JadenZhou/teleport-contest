@@ -22,6 +22,12 @@ import { STUNNED, CONFUSION, DEAF, STRANGLED, UNCHANGING, STRAT_WAITMASK,
 import {
     Stunned, Confusion, Deaf, Strangled, Unchanging, Underwater, Hallucination
 } from './youprop.js';
+import { consume_obj_charge as consume_obj_charge_mu } from './apply.js';
+import { sleep_monst as sleep_monst_mu } from './trap.js';
+import { slept_monst as slept_monst_mu } from './mhitm.js';
+import { tamedog as tamedog_mu } from './dog.js';
+import { d as d_mu } from './rng.js';
+import { NOTELL as NOTELL_MU } from './const.js';
 
 /* C ref: mondata.h unique_corpstat(), mindless() */
 function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
@@ -342,9 +348,3 @@ async function charm_monsters(distance) {
         }
     }
 }
-import { consume_obj_charge as consume_obj_charge_mu } from './apply.js';
-import { sleep_monst as sleep_monst_mu } from './trap.js';
-import { slept_monst as slept_monst_mu } from './mhitm.js';
-import { tamedog as tamedog_mu } from './dog.js';
-import { d as d_mu } from './rng.js';
-import { NOTELL as NOTELL_MU } from './const.js';

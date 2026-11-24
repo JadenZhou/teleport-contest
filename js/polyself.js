@@ -87,6 +87,9 @@ import {
     Unaware
 } from './youprop.js';
 import { Upolyd } from './const.js';
+import { done as done_ps } from './end.js';
+import { killer as killer_ps } from './topten.js';
+import { DIED as DIED_PS } from './const.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -1519,6 +1522,3 @@ export async function dobreathe() {
     /* getdir(), then ubreatheu() or ubuzz(BZ_U_BREATH(...)) */
     throw new Error('dobreathe(): getdir()/ubuzz() of a hero breath weapon not ported yet');
 }
-import { done as done_ps } from './end.js';
-import { killer as killer_ps } from './topten.js';
-import { DIED as DIED_PS } from './const.js';

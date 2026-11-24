@@ -56,6 +56,15 @@ import { P_SKILL_LIMIT, P_FIRST_SPELL, P_FIRST_H_TO_H, P_LAST_H_TO_H,
          P_FIRST_WEAPON, NHW_MENU, MENU_BEHAVE_STANDARD, PICK_NONE, PICK_ONE,
          MAXULEV, MENU_ITEMFLAGS_NONE, ECMD_OK } from './const.js';
 import { Upolyd, Role_if } from './const.js';
+import { mbodypart as mbodypart_wp } from './insight.js';
+import { HAND as HAND_WP } from './const.js';
+import { makeplural as makeplural_wp, otense as otense_wp, xname as xname_wp,
+         Yname2 as Yname2_wp, Tobjnam as Tobjnam_wp } from './objnam.js';
+import { mhis as mhis_wp } from './mhitu.js';
+import { s_suffix as s_suffix_wp } from './hacklib.js';
+import { mon_nam as mon_nam_wp } from './do_name.js';
+import { bimanual as bimanual_wp } from './wield.js';
+import { the as the_wp } from './iactions.js';
 
 function weapon_skills() {
     const u = game.u;
@@ -1632,12 +1641,3 @@ export function setmnotwielded(mon, obj) {
         MON_NOWEP(mon);
     obj.owornmask = (obj.owornmask || 0) & ~W_WEP;
 }
-import { mbodypart as mbodypart_wp } from './insight.js';
-import { HAND as HAND_WP } from './const.js';
-import { makeplural as makeplural_wp, otense as otense_wp, xname as xname_wp,
-         Yname2 as Yname2_wp, Tobjnam as Tobjnam_wp } from './objnam.js';
-import { mhis as mhis_wp } from './mhitu.js';
-import { s_suffix as s_suffix_wp } from './hacklib.js';
-import { mon_nam as mon_nam_wp } from './do_name.js';
-import { bimanual as bimanual_wp } from './wield.js';
-import { the as the_wp } from './iactions.js';

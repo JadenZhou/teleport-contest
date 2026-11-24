@@ -122,9 +122,6 @@ import {
 } from './youprop.js';
 import { m_next2u, u_at } from './const.js';
 import { mhe, mhim } from './mhitu.js';
-
-const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
-const QBUFSZ = 128; /* global.h */
 import { dist2, isok } from './hacklib.js';
 import { m_at, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
@@ -153,6 +150,16 @@ import { STAIRS, LADDER, TELEP_TRAP, WEB, BEAR_TRAP, is_hole, is_pit,
          M_SEEN_REFL, M_SEEN_MAGR, M_SEEN_SLEEP, M_SEEN_FIRE, M_SEEN_COLD,
          M_SEEN_ELEC, M_SEEN_ACID, POLY_TRAP, MFAST, NON_PM,
          SEE_INVIS } from './const.js';
+import { cls as cls_mu, show_glyph as show_glyph_mu, mon_to_glyph as mon_to_glyph_mu,
+         display_self as display_self_mu, docrt as docrt_mu, newsym as newsym_mu,
+         canspotmon as canspotmon_mu, map_invisible as map_invisible_mu,
+         You_feel as You_feel_mu } from './display.js';
+import { rn2_on_display_rng as rn2_on_display_rng_mu } from './rng.js';
+import { tty_display_map_nhwindow as tty_display_map_nhwindow_mu } from './wintty.js';
+import { unconscious as unconscious_mu } from './eat.js';
+
+const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
+const QBUFSZ = 128; /* global.h */
 
 /* C ref: muse.c MUSE_* (defensive) */
 const MUSE_SCR_TELEPORTATION = 1;
@@ -2709,10 +2716,3 @@ export async function mcureblindness(mon, verbos) {
             await pline(`${Monnam(mon)} can see again.`);
     }
 }
-import { cls as cls_mu, show_glyph as show_glyph_mu, mon_to_glyph as mon_to_glyph_mu,
-         display_self as display_self_mu, docrt as docrt_mu, newsym as newsym_mu,
-         canspotmon as canspotmon_mu, map_invisible as map_invisible_mu,
-         You_feel as You_feel_mu } from './display.js';
-import { rn2_on_display_rng as rn2_on_display_rng_mu } from './rng.js';
-import { tty_display_map_nhwindow as tty_display_map_nhwindow_mu } from './wintty.js';
-import { unconscious as unconscious_mu } from './eat.js';

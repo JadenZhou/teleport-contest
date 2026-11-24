@@ -46,6 +46,8 @@ import { done_object_cleanup } from './end.js';
 import { save_regions_data, clear_regions } from './region.js';
 import { ECMD_OK, WRITING, FREEING, COUNTING, FULL_MOON, VISITED, LFILE_EXISTS,
          REST_GSTATE, W_BALL, W_CHAIN, Has_contents } from './const.js';
+import { save_waterlevel } from './mkmaze.js';
+import { ledger_no as ledger_no_sv } from './dungeon.js';
 
 /* C ref: hack.h update_file(), release_data() */
 export function update_file(nhfp) { return (nhfp.mode & (COUNTING | WRITING)) !== 0; }
@@ -679,8 +681,6 @@ function save_bubbles(nhfp, lev) {
     if (bbubbly)
         save_waterlevel(nhfp); /* save air bubbles or clouds */
 }
-import { save_waterlevel } from './mkmaze.js';
-import { ledger_no as ledger_no_sv } from './dungeon.js';
 
 // C ref: decl.c/mklev.c save_exclusions()
 function save_exclusions(nhfp) {

@@ -49,6 +49,10 @@ import { obj_extract_self } from './mkobj.js';
 import { mpickobj } from './steal.js';
 import { dist2, isok } from './hacklib.js';
 import { Deaf } from './youprop.js';
+import { MAGIC_PORTAL as MAGIC_PORTAL_WZ, STRAT_WAITMASK as STRAT_WAITMASK_WZ } from './const.js';
+import { Tobjnam as Tobjnam_wz } from './objnam.js';
+import { You as You_wz } from './display.js';
+import { makemon_flush_msg as makemon_flush_msg_wz } from './makemon.js';
 
 // C ref: wizard.c nasties[]
 const nasties = [
@@ -804,7 +808,3 @@ export async function resurrect() {
         }
     }
 }
-import { MAGIC_PORTAL as MAGIC_PORTAL_WZ, STRAT_WAITMASK as STRAT_WAITMASK_WZ } from './const.js';
-import { Tobjnam as Tobjnam_wz } from './objnam.js';
-import { You as You_wz } from './display.js';
-import { makemon_flush_msg as makemon_flush_msg_wz } from './makemon.js';

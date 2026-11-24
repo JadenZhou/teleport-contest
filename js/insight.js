@@ -128,6 +128,20 @@ import {
     Lifesaved, Hate_silver, Half_gas_damage
 } from './youprop.js';
 import { Upolyd, Role_if, Luck } from './const.js';
+export { costly_spot, shop_keeper, inhishop, inside_shop } from './shk.js';
+import { costly_spot } from './shk.js';
+import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
+         TT_INFLOOR as TT_INFLOOR_IS } from './const.js';
+import { hliquid as hliquid_is } from './potion.js';
+import { the as the_is, surface as surface_is } from './iactions.js';
+import { t_at as t_at_is, trapname as trapname_is } from './trap.js';
+import { a_monnam as a_monnam_in } from './do_name.js';
+import { has_mgivenname as has_mgivenname_in, MGIVENNAME as MGIVENNAME_in } from './const.js';
+import { dmgtype_fromattack as dmgtype_fromattack_in, dmgtype as dmgtype_in } from './mondata.js';
+import { AD_DGST as AD_DGST_IN, AT_ENGL as AT_ENGL_IN } from './monsters.js';
+import { sticks as sticks_in } from './engrave.js';
+import { dxdy_to_dist_descr as dxdy_to_dist_descr_in } from './getpos.js';
+import { ROLL_FROM as ROLL_FROM_is } from './rng.js';
 
 // C ref: insight.c align_str()
 export function align_str(alignment) {
@@ -477,8 +491,6 @@ export function currency(amount) {
 
 // C ref: shk.c costly_spot(), shop_keeper(), inhishop(), inside_shop()
 // live in shk.js
-export { costly_spot, shop_keeper, inhishop, inside_shop } from './shk.js';
-import { costly_spot } from './shk.js';
 
 // C ref: wield.c empty_handed()
 /* description of hands when not wielding anything */
@@ -3299,16 +3311,3 @@ export function trap_predicament(final, wizxtra) {
     }
     return outbuf;
 }
-
-import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
-         TT_INFLOOR as TT_INFLOOR_IS } from './const.js';
-import { hliquid as hliquid_is } from './potion.js';
-import { the as the_is, surface as surface_is } from './iactions.js';
-import { t_at as t_at_is, trapname as trapname_is } from './trap.js';
-import { a_monnam as a_monnam_in } from './do_name.js';
-import { has_mgivenname as has_mgivenname_in, MGIVENNAME as MGIVENNAME_in } from './const.js';
-import { dmgtype_fromattack as dmgtype_fromattack_in, dmgtype as dmgtype_in } from './mondata.js';
-import { AD_DGST as AD_DGST_IN, AT_ENGL as AT_ENGL_IN } from './monsters.js';
-import { sticks as sticks_in } from './engrave.js';
-import { dxdy_to_dist_descr as dxdy_to_dist_descr_in } from './getpos.js';
-import { ROLL_FROM as ROLL_FROM_is } from './rng.js';
