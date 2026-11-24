@@ -12,7 +12,7 @@ import { newsym, flush_screen, pline, You_cant, You } from './display.js';
 import { getpos } from './getpos.js';
 import { vision_recalc } from './vision.js';
 import { tty_start_menu, tty_add_menu, tty_end_menu, tty_select_menu,
-         add_menu_str } from './wintty.js';
+         add_menu_str, custompline } from './wintty.js';
 import { reveal_terrain } from './detect.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SELECTED,
@@ -1517,7 +1517,7 @@ export async function rhack(key) {
              */
             if (was_m_prefix) {
                 /* custompline(SUPPRESS_HISTORY, ...) */
-                await pline(`The ${tlist.ef_txt} command does not accept '${which}' prefix.`);
+                await custompline(`The ${tlist.ef_txt} command does not accept '${which}' prefix.`);
             } else {
                 const ch = tlist.key;
                 const up = (ch === 0x3c || tlist.ef_funct === "doup"),
@@ -1598,7 +1598,7 @@ export async function rhack(key) {
     }
 
     /* if we reach here, cmd wasn't found in cmdlist[] */
-    await pline(`Unknown command '${visctrl(key)}'.`); /* custompline(SUPPRESS_HISTORY) */
+    await custompline(`Unknown command '${visctrl(key)}'.`); /* custompline(SUPPRESS_HISTORY) */
     game.cmdq = []; /* cmdq_clear(CQ_CANNED); cmdq_clear(CQ_REPEAT) */
     /* didn't move */
     ctx.move = 0;
@@ -1865,7 +1865,7 @@ export async function get_count(allowchars, /* what comes after digits; if Null,
                 qbuf = `Count: ${cnt}`;
                 backspaced = false;
             }
-            await pline(qbuf); /* custompline(SUPPRESS_HISTORY, "%s", qbuf) */
+            await custompline(qbuf); /* custompline(SUPPRESS_HISTORY, "%s", qbuf) */
             /* mark_synch(): output flush only */
         }
     }

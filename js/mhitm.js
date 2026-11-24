@@ -29,7 +29,7 @@ import { mons, AT_NONE, AT_CLAW, AT_BITE, AT_KICK, AT_BUTT, AT_TUCH,
 import * as M from './monsters.js';
 import { find_mac, which_armor } from './worn.js';
 import { mon_wield_item, possibly_unwield, hitval, dmgval } from './weapon.js';
-import { mswings_verb, mhis } from './mhitu.js';
+import { mswings_verb, mhis, could_seduce } from './mhitu.js';
 import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL,
          WEAPON_CLASS, TOOL_CLASS } from './objects.js';
 import { permapoisoned } from './mkobj.js';
@@ -226,8 +226,9 @@ async function missmm(magr, mdef, mattk) {
     pre_mm_attack(magr, mdef);
 
     if (game.mhitm_vis) {
-        /* could_seduce() is false: seduction attacks throw in getmattk() */
-        await pline(`${Monnam(magr)} misses ${mon_nam_too(mdef, magr)}.`);
+        await pline(`${Monnam(magr)} ${
+            (magr.mcan || !could_seduce(magr, mdef, mattk)) ? "misses"
+                : "pretends to be friendly to"} ${mon_nam_too(mdef, magr)}.`);
     } else {
         await noises(magr, mattk);
     }
@@ -502,15 +503,20 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
                        || (mattk.aatyp === AT_CLAW && mwep)),
         silverhit = (weaponhit && mwep
                      && objects[mwep.otyp].oc_material === SILVER);
-    /* compat: could_seduce() is 0 (seduction throws in getmattk()) */
     pre_mm_attack(magr, mdef);
 
-    if (mdef.data === mons[M.PM_SHADE])
+    const compat = !magr.mcan ? could_seduce(magr, mdef, mattk) : 0;
+    if (!compat && mdef.data === mons[M.PM_SHADE])
         throw new Error('hitmm(): shade_miss() not ported yet');
 
     if (game.mhitm_vis) {
         const magr_name = Monnam(magr);
         let buf = '';
+        if (compat) {
+            buf = `${magr_name} ${mdef.mcansee ? "smiles at" : "talks to"}`;
+            await pline(`${buf} ${mon_nam(mdef)} ${
+                (compat === 2) ? "engagingly" : "seductively"}.`);
+        } else {
         switch (mattk.aatyp) {
         case AT_BITE:
             buf = `${magr_name} bites`;
@@ -542,6 +548,7 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
 
         if (mon_hates_silver(mdef) && silverhit)
             throw new Error('hitmm(): silver sears message not ported yet');
+        }
     } else
         await noises(magr, mattk);
 

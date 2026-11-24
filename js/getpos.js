@@ -14,7 +14,7 @@ import { pline, newsym, flush_screen, glyph_at, glyph_kind,
 import { invocation_pos } from './mklev.js';
 import { t_at } from './trap.js';
 import { VIBRATING_SQUARE } from './const.js';
-import { tty_putstr, tty_clear_nhwindow } from './wintty.js';
+import { tty_putstr, tty_clear_nhwindow, custompline } from './wintty.js';
 import { visctrl } from './hacklib.js';
 import { handle_tip, is_valid_travelpt } from './hack.js';
 import { movecmd_mode, MV_WALK, MV_RUSH, MV_RUN, cmd_from_func,
@@ -505,9 +505,7 @@ export async function auto_describe(cx, cy) {
                  ? " (invalid target)" : ""}`
             + `${(game.iflags?.getloc_travelmode && !(await is_valid_travelpt(cx, cy)))
                  ? " (no travel path)" : ""}`;
-        /* custompline(SUPPRESS_HISTORY | OVERRIDE_MSGTYPE | NO_CURS_ON_U) */
-        await flush_screen(0);
-        await tty_putstr(game.WIN_MESSAGE, 0, msg);
+        await custompline(msg, true); /* (SUPPRESS_HISTORY | OVERRIDE_MSGTYPE | NO_CURS_ON_U) */
         curs_map(cx, cy);
         await flush_screen(0);
     }

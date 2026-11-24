@@ -350,8 +350,8 @@ export function u_on_dnstairs() {
         u_on_sstairs(1); /* destination dnstairs implies moving up */
 }
 
-// oinit stub (level-dependent object probability reset)
-function oinit() { /* no-op for contest */ }
+// C ref: o_init.c oinit() -- level dependent obj probabilities (o_init.js)
+import { oinit } from './o_init.js';
 
 
 // ============================================================
