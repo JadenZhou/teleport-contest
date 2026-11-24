@@ -4,8 +4,7 @@
 // isclearpath().
 //
 // Not ported yet: shop damage,
-// set_levltyp()'s object/timer side effects, unearth_objs(),
-// recalc_block_point(), Sokoban bookkeeping.
+// set_levltyp()'s object/timer side effects, Sokoban bookkeeping.
 
 import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
@@ -142,7 +141,7 @@ import { MAY_DESTROY as MAY_DESTROY_L, MAY_HIT as MAY_HIT_L,
 import { del_engr_at as del_engr_at_l } from './engrave.js';
 import { is_drawbridge_wall as is_drawbridge_wall_l } from './dbridge.js';
 import { find_drawbridge as find_drawbridge_l } from './zap.js';
-import { fillholetyp as fillholetyp_l } from './dig.js';
+import { fillholetyp as fillholetyp_l, unearth_objs as unearth_objs_l } from './dig.js';
 import { unconscious as unconscious_l } from './eat.js';
 import { M1_SLITHY, M1_NOLIMBS } from './monsters.js';
 import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
@@ -3893,6 +3892,9 @@ export function maketrap(x, y, typ) {
                         : DOOR;
         }
         lev.flags = 0;
+
+        unearth_objs_l(x, y);
+        recalc_block_point_l(x, y);
         break;
     case TELEP_TRAP:
         /* gl.launchplace is only set by special-level loaders */
