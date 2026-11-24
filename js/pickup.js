@@ -82,6 +82,7 @@ import { UNPAID_TYPES, BILLED_TYPES, WORN_TYPES, ALL_TYPES, CHOOSE_ALL,
          W_WEAPONS, Has_contents } from './const.js';
 import { is_worn, count_unpaid, count_buc } from './invent.js';
 import { add_menu_str } from './wintty.js';
+import { tty_putstr, tty_display_nhwindow } from './wintty.js';
 import { PM_CLERIC } from './monsters.js';
 import { observe_object } from './o_init.js';
 import { touch_artifact } from './artifact.js';
