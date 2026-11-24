@@ -70,7 +70,7 @@ import { In_endgame, Is_botlevel, In_V_tower, In_sokoban, Is_knox_level,
          MIGR_LADDER_DOWN, MIGR_SSTAIRS, FORCETRAP, FORCEBUNGLE, PIT, HOLE,
          DEAF, STONE_RES, ACID_RES, NORMAL_SPEED, W_ARM, W_ARMS, W_AMUL,
          W_WEP, REFLECTING } from './const.js';
-import { inhishop } from './shk.js';
+import { inhishop, add_damage } from './shk.js';
 import { is_ice } from './dig.js';
 import { unblock_point, recalc_block_point } from './vision.js';
 import { dog_nutrition, can_carry } from './dogmove.js';
@@ -2606,7 +2606,7 @@ async function mbhit(
                             === D_BROKEN
                         && in_rooms(game.bhitpos.x, game.bhitpos.y,
                                     SHOPBASE).length)
-                        throw new Error('mbhit(): add_damage() not ported yet');
+                        add_damage(game.bhitpos.x, game.bhitpos.y, 0);
                 }
                 break;
             }

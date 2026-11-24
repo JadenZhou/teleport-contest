@@ -434,7 +434,7 @@ export async function mdig_tunnel(mtmp) {
     /* Eats away door if present & closed or locked */
     if (closed_door(mtmp.mx, mtmp.my)) {
         if (in_rooms(mtmp.mx, mtmp.my, SHOPBASE).length)
-            throw new Error('mdig_tunnel(): add_damage() not ported yet');
+            add_damage(mtmp.mx, mtmp.my, 0);
         /* sawit: closed door location is more visible than an open one */
         sawit = canseemon(mtmp); /* before door state change and unblock_pt */
         trapped = ((here.doormask ?? 0) & D_TRAPPED) ? true : false;
@@ -477,7 +477,7 @@ export async function mdig_tunnel(mtmp) {
             await You_hear("crashing rock.");
         }
         if (in_rooms(mtmp.mx, mtmp.my, SHOPBASE).length)
-            throw new Error('mdig_tunnel(): add_damage() not ported yet');
+            add_damage(mtmp.mx, mtmp.my, 0);
         if (g.level.flags.is_maze_lev) {
             here.typ = ROOM; here.flags = 0;
         } else if (g.level.flags.is_cavernous_lev

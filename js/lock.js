@@ -63,7 +63,7 @@ import { COST_BRKLCK, PASSES_WALLS, DBWALL, BLINDED, P_DAGGER, P_FLAIL,
          P_LANCE, P_SABER, P_PICK_AXE, isok } from './const.js';
 import { costly_alteration, obj_extract_self, start_corpse_timeout,
          place_object, is_weptool } from './mkobj.js';
-import { costly_spot, shop_keeper } from './shk.js';
+import { costly_spot, shop_keeper, add_damage } from './shk.js';
 import { the, surface } from './iactions.js';
 import { xname, singular, an } from './objnam.js';
 import { obfree, useup, stackobj, delobj } from './invent.js';
@@ -935,7 +935,7 @@ export async function doorlock(otmp, x, y) {
         /* door was destroyed */
         await wake_nearto(x, y, loudness);
         if (in_rooms(x, y, SHOPBASE).length)
-            throw new Error('doorlock(): shop door damage (add_damage()) not ported yet');
+            add_damage(x, y, 0);
     }
 
     if (res && picking_at(x, y)) {
