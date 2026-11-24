@@ -1528,7 +1528,16 @@ function finish_meating(mtmp) {
 // C ref: trap.c trapeffect_slp_gas_trap()
 async function trapeffect_slp_gas_trap(mtmp, trap, trflags) {
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_slp_gas_trap(): hero branch not ported yet');
+        seetrap(trap);
+        if (Sleep_resistance() || breathless(game.youmonst.data)) {
+            await You("are enveloped in a cloud of gas!");
+            monstseesu_tr(M_SEEN_SLEEP_TR);
+        } else {
+            await pline("A cloud of gas puts you to sleep!");
+            await fall_asleep_tr(-rnd(25), true);
+            monstunseesu_tr(M_SEEN_SLEEP_TR);
+        }
+        await steedintrap(trap, null);
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
 
@@ -2858,7 +2867,80 @@ async function mu_maybe_destroy_web(mtmp, domsg, trap) {
 // C ref: trap.c trapeffect_web()
 async function trapeffect_web(mtmp, trap, trflags) {
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_web(): hero branch not ported yet');
+        const u = game.u;
+        let webmsgok = (trflags & NOWEBMSG_TR) === 0;
+        const forcetrap = ((trflags & FORCETRAP) !== 0
+                           || (trflags & FAILEDUNTRAP_TR) !== 0);
+        const viasitting = (trflags & VIASITTING_TR) !== 0;
+
+        /* suppress article in various steed messages when using its
+           name (which won't occur when hallucinating) */
+        /* steed_article: x_monnam() for the steed isn't ported */
+
+        feeltrap(trap);
+        if (await mu_maybe_destroy_web(game.youmonst, webmsgok, trap))
+            return Trap_Effect_Finished;
+        if (webmaker(game.youmonst.data)) {
+            if (webmsgok)
+                await pline(trap.madeby_u ? "You take a walk on your web."
+                            : "There is a spider web here.");
+            return Trap_Effect_Finished;
+        }
+        if (webmsgok) {
+            let verbbuf;
+
+            if (forcetrap || viasitting) {
+                verbbuf = "are caught by";
+            } else if (u.usteed) {
+                throw new Error('trapeffect_web(): steed message (x_monnam()) not ported yet');
+            } else {
+                verbbuf = `${u_locomotion("stumble")} into`;
+            }
+            await You(`${verbbuf} ${a_your[trap.madeby_u ? 1 : 0]} spider web!`);
+        }
+
+        /* time will be adjusted below */
+        set_utrap(1, TT_WEB_TR);
+
+        /* Time stuck in the web depends on your/steed's strength. */
+        {
+            let tim;
+            const str = ACURR_tr(A_STR_TR);
+
+            /* If mounted, the steed gets trapped.  Use mintrap
+             * to do all the work.  If mtrapped is set as a result,
+             * unset it and set utrap instead.  In the case of a
+             * strongmonst and mintrap said it's trapped, use a
+             * short but non-zero trap time.  Otherwise, monsters
+             * have no specific strength, so use player strength.
+             * This gets skipped for webmsgok, which implies that
+             * the steed isn't a factor.
+             */
+            if (u.usteed && webmsgok)
+                throw new Error('trapeffect_web(): steed caught in web (mintrap()) not ported yet');
+            if (str <= 3)
+                tim = rn1(6, 6);
+            else if (str < 6)
+                tim = rn1(6, 4);
+            else if (str < 9)
+                tim = rn1(4, 4);
+            else if (str < 12)
+                tim = rn1(4, 2);
+            else if (str < 15)
+                tim = rn1(2, 2);
+            else if (str < 18)
+                tim = rnd(2);
+            else if (str < 69)
+                tim = 1;
+            else {
+                tim = 0;
+                if (webmsgok)
+                    await You(`tear through ${a_your[trap.madeby_u ? 1 : 0]} web!`);
+                deltrap(trap);
+                newsym(u.ux, u.uy); /* get rid of trap symbol */
+            }
+            set_utrap(tim, TT_WEB_TR);
+        }
     } else {
         /* Monster in a web. */
         let tear_web;
@@ -5227,3 +5309,9 @@ import { POLY_NOFLAGS as POLY_NOFLAGS_TP, NC_SHOW_MSG as NC_SHOW_MSG_TP } from '
 import { WAND_CLASS as WAND_CLASS_TP } from './objects.js';
 import { resists_blnd as resists_blnd_tr } from './mondata.js';
 import { make_blinded as make_blinded_tr, incr_itimeout as incr_itimeout_tr } from './potion.js';
+import { monstseesu as monstseesu_tr, monstunseesu as monstunseesu_tr } from './uhitm.js';
+import { M_SEEN_SLEEP as M_SEEN_SLEEP_TR, NOWEBMSG as NOWEBMSG_TR,
+         FAILEDUNTRAP as FAILEDUNTRAP_TR, VIASITTING as VIASITTING_TR,
+         A_STR as A_STR_TR, TT_WEB as TT_WEB_TR } from './const.js';
+import { fall_asleep as fall_asleep_tr } from './timeout.js';
+import { ACURR as ACURR_tr } from './attrib.js';
