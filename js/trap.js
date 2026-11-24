@@ -142,7 +142,7 @@ import { MAY_DESTROY as MAY_DESTROY_L, MAY_HIT as MAY_HIT_L,
 import { del_engr_at as del_engr_at_l } from './engrave.js';
 import { is_drawbridge_wall as is_drawbridge_wall_l } from './dbridge.js';
 import { find_drawbridge as find_drawbridge_l } from './zap.js';
-import { fillholetyp as fillholetyp_l, liquid_flow as liquid_flow_l } from './dig.js';
+import { fillholetyp as fillholetyp_l } from './dig.js';
 import { unconscious as unconscious_l } from './eat.js';
 import { M1_SLITHY, M1_NOLIMBS } from './monsters.js';
 import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
@@ -1331,7 +1331,51 @@ async function trapeffect_rocktrap(mtmp, trap, trflags) {
     let otmp;
 
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_rocktrap(): hero branch not ported yet');
+        const u = game.u;
+        let harmless = false;
+
+        if (trap.once && trap.tseen && !rn2(15)) {
+            await pline(`A trap door in ${the(ceiling_tr(u.ux, u.uy))} opens, but nothing falls out!`);
+            deltrap(trap);
+            newsym(u.ux, u.uy);
+        } else {
+            let dmg = d(2, 6); /* should be std ROCK dmg? */
+
+            trap.once = 1;
+            feeltrap(trap);
+            otmp = t_missile(ROCK, trap);
+            place_object(otmp, u.ux, u.uy);
+
+            await pline(`A trap door in ${the(ceiling_tr(u.ux, u.uy))} opens and ${
+                an_l(xname(otmp))} falls on your ${body_part(HEAD)}!`);
+            if (game.uarmh) {
+                /* normally passes_rocks() would protect against a falling
+                   rock, but not when wearing a helmet */
+                if (passes_rocks(game.youmonst.data)) {
+                    await pline(`Unfortunately, you are wearing ${
+                        an_l(helm_simple_name_tr(game.uarmh))}.`); /* helm or hat */
+                    dmg = 2;
+                } else if (hard_helmet_tr(game.uarmh)) {
+                    await pline("Fortunately, you are wearing a hard helmet.");
+                    dmg = 2;
+                } else if (game.flags.verbose) {
+                    await pline(`${Yname2_fd(game.uarmh)} does not protect you.`);
+                }
+            } else if (passes_rocks(game.youmonst.data)) {
+                await pline("It passes harmlessly through you.");
+                harmless = true;
+            }
+            if (!Blind())
+                observe_object(otmp, Hallucination());
+            stackobj(otmp);
+            newsym(u.ux, u.uy); /* map the rock */
+
+            if (!harmless) {
+                await losehp(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
+                exercise(A_STR, false);
+            }
+        }
+        return Trap_Effect_Finished;
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
         const see_it = cansee(mtmp.mx, mtmp.my);
@@ -2035,14 +2079,16 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
             seetrap(trap);
         switch (rn2(5)) {
         case 0:
-            if (in_sight)
-                throw new Error('trapeffect_rust_trap(): mbodypart() message not ported yet');
+            if (in_sight) /* pline_mon() */
+                await pline(`${A_gush_of_water_hits} ${mon_nam(mtmp)} on the ${
+                    mbodypart_tr(mtmp, HEAD)}!`);
             target = which_armor(mtmp, W_ARMH);
-            await water_damage(target, null, true);
+            await water_damage(target, helm_simple_name(target), true);
             break;
         case 1:
-            if (in_sight)
-                throw new Error('trapeffect_rust_trap(): mbodypart() message not ported yet');
+            if (in_sight) /* pline_mon() */
+                await pline(`${A_gush_of_water_hits} ${mon_nam(mtmp)}'s left ${
+                    mbodypart_tr(mtmp, ARM)}!`);
             target = which_armor(mtmp, W_ARMS);
             if (await water_damage(target, "shield", true) !== 0 /* ER_NOTHING */)
                 break;
@@ -2051,15 +2097,16 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
                 await water_damage(target, null, true);
             /* mglovecheck: */
             target = which_armor(mtmp, W_ARMG);
-            await water_damage(target, null, true);
+            await water_damage(target, gloves_simple_name(target), true);
             break;
         case 2:
-            if (in_sight)
-                throw new Error('trapeffect_rust_trap(): mbodypart() message not ported yet');
+            if (in_sight) /* pline_mon() */
+                await pline(`${A_gush_of_water_hits} ${mon_nam(mtmp)}'s right ${
+                    mbodypart_tr(mtmp, ARM)}!`);
             await water_damage(mtmp.mw, null, true);
             /* goto mglovecheck */
             target = which_armor(mtmp, W_ARMG);
-            await water_damage(target, null, true);
+            await water_damage(target, gloves_simple_name(target), true);
             break;
         default:
             if (in_sight)
@@ -2070,9 +2117,9 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
                     && (otmp.owornmask & (W_WEP | W_SWAPWEP)) === 0)
                     throw new Error('trapeffect_rust_trap(): splash_lit() not ported yet');
             if ((target = which_armor(mtmp, W_ARMC)) != null)
-                await water_damage(target, null, true);
+                await water_damage(target, cloak_simple_name(target), true);
             else if ((target = which_armor(mtmp, W_ARM)) != null)
-                await water_damage(target, null, true);
+                await water_damage(target, suit_simple_name(target), true);
             else if ((target = which_armor(mtmp, W_ARMU)) != null)
                 await water_damage(target, "shirt", true);
         }
@@ -4812,3 +4859,7 @@ import { setnotworn as setnotworn_fd } from './worn.js';
 import { otense as otense_fd, Yname2 as Yname2_fd } from './objnam.js';
 import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
          FIRE_HORN as FIRE_HORN_FD } from './objects.js';
+import { liquid_flow as liquid_flow_l } from './dig.js';
+import { ceiling as ceiling_tr } from './dungeon.js';
+import { hard_helmet as hard_helmet_tr } from './objnam.js';
+import { mbodypart as mbodypart_tr } from './insight.js';

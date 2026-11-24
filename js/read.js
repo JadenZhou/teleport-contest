@@ -1656,7 +1656,16 @@ async function seffect_earth(sobjp) {
         if (u.uswallow) {
             await You_hear("rumbling.");
         } else {
-            throw new Error('seffect_earth(): ceiling()/avoid_ceiling() messages not ported yet');
+            if (!avoid_ceiling_rd(u.uz)) {
+                await pline_The(`${ceiling_rd(u.ux, u.uy)} rumbles ${
+                    sblessed ? "around" : "above"} you!`);
+            } else {
+                const avalanche = "avalanche";
+                const matbuf = sblessed ? makeplural(avalanche) : an(avalanche);
+
+                await pline(`${upstart(matbuf)} of boulders ${
+                    vtense(matbuf, "materialize")} ${sblessed ? "around" : "above"} you!`);
+            }
         }
         g.known = true;
         /* sokoban_guilt() */
@@ -2737,3 +2746,17 @@ export async function create_particular() {
 
     return false;
 }
+
+// C ref: dungeon.c avoid_ceiling()
+function avoid_ceiling_rd(lev) {
+    /* The quest is challenging since parts of the level
+       may have ceilings and other parts may not; Avoid
+       the ambiguity there by testing with avoid_ceiling()
+       and using alternative messaging that avoids the term
+       ceiling altogether there */
+    if (In_quest_rd(lev) || !has_ceiling(lev))
+        return true;
+    return false;
+}
+import { ceiling as ceiling_rd } from './dungeon.js';
+import { In_quest as In_quest_rd } from './const.js';

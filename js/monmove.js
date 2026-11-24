@@ -18,6 +18,11 @@ import { cansee, couldsee, clear_path, vision_recalc,
 import { newsym, pline, canseemon, canspotmon, vobj_at } from './display.js';
 import { can_hide_under_obj, nonliving } from './makemon.js';
 import { Monnam, Adjmonnam } from './do_name.js';
+import { W_NONDIGGABLE as W_NONDIGGABLE_MM } from './const.js';
+import { dmgtype as dmgtype_mm } from './mondata.js';
+import { Norep as Norep_mm } from './display.js';
+import { makeplural as makeplural_mm } from './objnam.js';
+import { locomotion as locomotion_mm } from './trap.js';
 import { mintrap, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon, t_at } from './trap.js';
 import { mon_knows_traps, get_atkdam_type,
@@ -2293,7 +2298,21 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
                     throw new Error('postmov(): add_damage() not ported yet');
             }
         } else if (lev.at(mtmp.mx, mtmp.my).typ === IRONBARS) {
-            throw new Error('postmov(): iron bars not ported yet');
+            /* 3.6.2: was using may_dig() but that doesn't handle bars;
+               AD_RUST catches rust monsters but metallivorous() is
+                   needed for xorns and rock moles */
+            if (!((lev.at(mtmp.mx, mtmp.my).wall_info || 0) & W_NONDIGGABLE_MM)
+                && (dmgtype_mm(ptr, M.AD_RUST) || dmgtype_mm(ptr, M.AD_CORR)
+                    || metallivorous(ptr))) {
+                if (canseemon(mtmp)) /* pline_mon() */
+                    await pline(`${Monnam(mtmp)} eats through the iron bars.`);
+                await dissolve_bars(mtmp.mx, mtmp.my);
+                return MMOVE_DONE;
+            } else if (game.flags.verbose && canseemon(mtmp))
+                await Norep_mm(`${Monnam(mtmp)} ${
+                    /* pluralization fakes verb conjugation */
+                    makeplural_mm(locomotion_mm(ptr, "pass"))} ${
+                    passes_walls(ptr) ? "through" : "between"} the iron bars.`);
         } /* doors and bars */
 
         /* possibly dig */
