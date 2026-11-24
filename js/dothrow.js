@@ -2118,13 +2118,12 @@ export async function hurtle(dx, dy, range, verbose) {
         nomul_hu(0);
         return;
     } else if (u.utrap) {
-        if (u.utraptype === TT_INFLOOR_HU)
-            throw new Error('hurtle(): surface() for an in-floor trap not ported yet');
         await You(`are anchored by the ${
             (u.utraptype === TT_WEB_HU) ? "web"
             : (u.utraptype === TT_LAVA_HU) ? hliquid_hu("lava")
-              : (u.utraptype === TT_BURIEDBALL_HU) ? "buried ball"
-                : "trap"}.`);
+              : (u.utraptype === TT_INFLOOR_HU) ? surface(u.ux, u.uy)
+                : (u.utraptype === TT_BURIEDBALL_HU) ? "buried ball"
+                  : "trap"}.`);
         nomul_hu(0);
         return;
     }

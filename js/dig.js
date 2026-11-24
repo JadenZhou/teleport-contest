@@ -113,7 +113,7 @@ function pick_can_reach(pick, x, y) {
        this applies to hero in pit trying to reach an adjcacent boulder too */
     if (u.utrap && u.utraptype === TT_PIT) {
         if (target_in_pit)
-            throw new Error('pick_can_reach(): conjoined_pits() not ported yet');
+            return conjoined_pits(t, t_at(u.ux, u.uy), false);
         return bimanual(pick);
     }
 

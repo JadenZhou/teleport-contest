@@ -31,7 +31,7 @@ import { data_base } from './data_base.js';
 import { is_weptool, Is_container, is_flammable } from './mkobj.js';
 import * as M from './monsters.js';
 import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
-import { artiname, artifact_name } from './artifact.js';
+import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
 import { strncmpi, lowc, strstri } from './hacklib.js';
 import { CapitalMon } from './rumors.js';
 
@@ -68,11 +68,13 @@ function ia_not_ported(what) {
     throw new Error(`itemactions: ${what} is not ported yet`);
 }
 
-/* C ref: obj.h is_plural() -- undiscovered_artifact() not ported */
+/* C ref: obj.h is_plural() */
 function is_plural(o) {
-    if (o.oartifact === ART_EYES_OF_THE_OVERWORLD)
-        ia_not_ported('undiscovered_artifact()');
-    return o.quan !== 1;
+    return (o.quan !== 1
+            /* "the Eyes of the Overworld" are plural, but
+               "a pair of lenses named the Eyes of the Overworld" is not */
+            || (o.oartifact === ART_EYES_OF_THE_OVERWORLD
+                && !undiscovered_artifact(ART_EYES_OF_THE_OVERWORLD)));
 }
 /* C ref: obj.h is_ammo(), is_missile(), is_launcher(), matching_launcher(),
    ammo_and_launcher(), bimanual(), is_blade(), is_wet_towel(),

@@ -37,7 +37,7 @@ import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
 import { Unaware } from './eat.js';
-import { is_flyer, is_undead, is_vampshifter } from './mondata.js';
+import { is_flyer, is_undead, is_vampshifter, same_race } from './mondata.js';
 
 /* C ref: mondata.h predicates */
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
@@ -615,8 +615,11 @@ async function domonnoise(mtmp) {
     else if (mtmp.isshk)
         msound = MS_SELL;
     /* some normally non-speaking types can/will speak if hero is similar */
-    else if (msound === MS_ORC)
-        throw new Error('domonnoise(): MS_ORC same_race() check not ported yet');
+    else if (msound === MS_ORC
+             && ((same_race(ptr, game.youmonst.data)           /* current form, */
+                  || same_race(ptr, mons[game.urace.mnum])) /* unpoly'd form (Race_switch) */
+                 || Hallucination()))
+        msound = MM.MS_HUMANOID;
     else if (msound === MS_MOO && !mtmp.mtame)
         msound = MS_BELLOW;
     /* silliness: Hallucination && mon_is_gecko() */
