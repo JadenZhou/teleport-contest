@@ -3,6 +3,8 @@
 // (commands_init()/reset_commands()) and the command functions ported so
 // far; hack.c domove() is in hack.js.
 
+import { nhcb_counts, nhcb_name } from './nhlua.js';
+import { NHCB_CMD_BEFORE } from './const.js';
 import { dobreathe } from './polyself.js';
 import { game } from './gstate.js';
 import { nhgetch } from './input.js';
@@ -811,10 +813,19 @@ function reset_cmd_vars(reset_cmdq) {
 
 const unavailcmd = (txt) => `Unavailable command '${txt}'.`;
 
-// C ref: cmd.c can_do_extcmd() -- the Lua NHCB_CMD_BEFORE callback isn't
-// ported (only the tutorial registers one)
+// C ref: cmd.c can_do_extcmd()
 async function can_do_extcmd(extcmd) {
     const ecflags = extcmd.flags;
+
+    if (game.luacore && nhcb_counts()[NHCB_CMD_BEFORE]) {
+        /* lua_getglobal(gl.luacore, "nh_callback_run");
+           nhl_pcall_handle(gl.luacore, 2, 1, "can_do_extcmd", NHLpa_panic) */
+        const ok = await game.luacore.globals.nh_callback_run(
+            nhcb_name[NHCB_CMD_BEFORE], extcmd.ef_txt);
+        if (!ok) { /* !lua_toboolean(gl.luacore, -1) */
+            return false;
+        }
+    }
 
     if (!game.flags?.debug && (ecflags & WIZMODECMD)) {
         await pline(unavailcmd(extcmd.ef_txt));
@@ -1463,6 +1474,27 @@ export function cmd_from_func(fn) {
     if (bind && bind.ef_funct === fn)
         return 0x20;
     return ret;
+}
+
+// C ref: cmd.c cmd_from_ecname()
+/* return the visual interpretation of the key bound to an extended command,
+   or the ext cmd name if not bound to any key */
+export function cmd_from_ecname(ecname) {
+    let cmdnamebuf;
+
+    for (const extcmd of extcmdlist)
+        if (extcmd.ef_txt === ecname) {
+            const key = cmd_from_func(extcmd.ef_funct);
+
+            if (key)
+                cmdnamebuf = `${visctrl(key)}`;
+            else
+                cmdnamebuf = `#${ecname}`;
+            return cmdnamebuf;
+        }
+
+    cmdnamebuf = '';
+    return cmdnamebuf;
 }
 
 // C ref: cmd.c show_direction_keys()

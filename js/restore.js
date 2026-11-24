@@ -1189,8 +1189,9 @@ function rest_regions(nhfp) {
 function rest_bubbles(nhfp) {
     const bbubbly = Sfi(nhfp, "bubbles-bbubbly");
     if (bbubbly)
-        throw new Error('rest_bubbles(): restore_waterlevel() not ported yet');
+        restore_waterlevel(nhfp);
 }
+import { restore_waterlevel } from './mkmaze.js';
 
 // C ref: mklev.c load_exclusions()
 function load_exclusions(nhfp) {
