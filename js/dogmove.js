@@ -22,7 +22,7 @@ import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
          m_consume_obj, mondied } from './mon.js';
 import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, m_avoid_soko_push_loc, mon_track_add,
-         m_digweapon_check } from './monmove.js';
+         m_digweapon_check, is_mines_prize, is_soko_prize } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater } from './mondata.js';
 import * as M from './monsters.js';
@@ -723,8 +723,9 @@ async function dog_invent(mtmp, edog, udist) {
         if (obj
             && !(obj.oclass === O.BALL_CLASS || obj.oclass === O.CHAIN_CLASS
                  || obj.oclass === O.ROCK_CLASS) /* nofetch[] */
-            /* avoid special items (is_mines_prize/is_soko_prize): those
-               levels aren't ported yet */) {
+            /* avoid special items; once hero picks them up, they'll cease
+               being special and become eligible for normal monst activity */
+            && !(is_mines_prize(obj) || is_soko_prize(obj))) {
             const edible = dogfood(mtmp, obj);
 
             if ((edible <= CADAVER
