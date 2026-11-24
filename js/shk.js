@@ -77,6 +77,7 @@ import { hidden_gold, currency, mbodypart } from './insight.js';
 import { getpos } from './getpos.js';
 import { cansee } from './vision.js';
 import { There, You_cant } from './display.js';
+import { newsym } from './display.js';
 import { Monnam, x_monnam, ARTICLE_THE } from './do_name.js';
 import { money_cnt } from './u_init.js';
 import { the } from './iactions.js';
