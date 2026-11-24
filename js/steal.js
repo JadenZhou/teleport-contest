@@ -19,7 +19,7 @@ import { artifact_exists } from './artifact.js';
 import { ONAME_NO_FLAGS, RLOC_MSG } from './const.js';
 import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN, W_ARM, W_WEP,
          W_SADDLE } from './const.js';
-import { update_mon_extrinsics, update_mon_extrinsics_sync } from './worn.js';
+import { update_mon_extrinsics, update_mon_extrinsics_g } from './worn.js';
 import { mwepgone } from './weapon.js';
 import { check_gear_next_turn } from './mon.js';
 import { W_ARMOR, W_AMUL, W_RING, W_TOOL, W_WEAPONS, W_BALL,
@@ -113,6 +113,14 @@ function RING_ON_SECONDARY() { return game.u.uhandedness ? game.uright : game.ul
 export function findgold(argchain) {
     let chain = argchain; /* allow arg to be nonnull */
 
+    if (Array.isArray(chain)) {
+        /* a monster's minvent: JS arrays are oldest first, C's chain
+           starts with the newest object */
+        for (let i = chain.length - 1; i >= 0; i--)
+            if (chain[i].otyp === O.GOLD_PIECE)
+                return chain[i];
+        return null;
+    }
     while (chain && chain.otyp !== O.GOLD_PIECE)
         chain = chain.nobj;
     return chain;
@@ -828,6 +836,12 @@ export function extract_from_minvent(
     silently)      /* doesn't affect all possible messages,
                     * just update_mon_extrinsics's */
 {
+    for (const msg of extract_from_minvent_g(mon, obj, do_extrinsics, silently))
+        throw new Error(`extract_from_minvent(): update_mon_extrinsics() message in a synchronous caller not ported yet: ${msg}`);
+}
+/* the body of extract_from_minvent(); yields update_mon_extrinsics()'s
+   messages */
+export function* extract_from_minvent_g(mon, obj, do_extrinsics, silently) {
     const unwornmask = obj.owornmask || 0;
 
     /*
@@ -849,11 +863,8 @@ export function extract_from_minvent(
     obj_extract_self(obj);
     obj.owornmask = 0;
     if (unwornmask) {
-        if (!(mon.mhp < 1) && do_extrinsics) { /* !DEADMONSTER(mon) */
-            if (!silently)
-                throw new Error('extract_from_minvent(): update_mon_extrinsics() messages not ported yet');
-            update_mon_extrinsics_sync(mon, obj, false);
-        }
+        if (!(mon.mhp < 1) && do_extrinsics) /* !DEADMONSTER(mon) */
+            yield* update_mon_extrinsics_g(mon, obj, false, silently);
         mon.misc_worn_check = (mon.misc_worn_check || 0) & ~unwornmask;
         /* give monster a chance to wear other equipment on its next
            move instead of waiting until it picks something up */

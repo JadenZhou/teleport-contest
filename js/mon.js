@@ -47,7 +47,7 @@ import { set_mon_data, emits_light } from './mondata.js';
 import { new_light_source, del_light_source, any_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { Monnam, noit_mon_nam } from './do_name.js';
-import { m_dowear, which_armor, mon_break_armor } from './worn.js';
+import { m_dowear, which_armor, mon_break_armor_g, worn_pline } from './worn.js';
 import {
     MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
     PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
@@ -1947,7 +1947,7 @@ export async function newcham(mtmp, mdat, ncflags) {
                 await monflee(mtmp, rn1(9, 2), true, true); /* 2..10 turns */
             continue;
         }
-        await pline(r.value); /* pline_mon() */
+        await worn_pline(r.value); /* pline_mon(), or You_hear() */
     }
     return r.value;
 }
@@ -1957,9 +1957,25 @@ const NEWCHAM_MON_MOVING = { newcham_mon_moving: true };
 /* newcham() from a synchronous caller (makemon(), level creation), which
    never asks for messages */
 export function newcham_sync(mtmp, mdat, ncflags) {
-    const r = newcham_g(mtmp, mdat, ncflags).next();
-    if (!r.done)
+    const gen = newcham_g(mtmp, mdat, ncflags);
+    let r;
+    while (!(r = gen.next()).done) {
+        if (r.value === NEWCHAM_MON_MOVING) {
+            /* the end of newcham() when a monster is moving (e.g. a level
+               made by deferred_goto() from movemon()): */
+            /* give 'mtmp' a new chance to pinpoint hero's location */
+            if (!(game.u.ux === mtmp.mux && game.u.uy === mtmp.muy)) /* u_at() */
+                set_apparxy_mn(mtmp);
+            /* if hero is on Elbereth or scare monster, mtmp in new form
+               might become scared */
+            if (!mtmp.mpeaceful
+                && onscary(mtmp.mux, mtmp.muy, mtmp)
+                && monnear(mtmp, mtmp.mux, mtmp.muy))
+                throw new Error('newcham(): monflee() from a synchronous caller not ported yet');
+            continue;
+        }
         throw new Error(`newcham(): message from a synchronous caller not ported yet: ${r.value}`);
+    }
     return r.value;
 }
 /* the body of newcham(); yields the messages it gives */
@@ -2124,7 +2140,7 @@ function* newcham_g(mtmp, mdat, ncflags) {
     /* possibly_unwield(mtmp, polyspot): might lose use of weapon */
     if (mtmp.mw)
         throw new Error('newcham(): possibly_unwield() not ported yet');
-    mon_break_armor(mtmp, polyspot);
+    yield* mon_break_armor_g(mtmp, polyspot);
     /* mselftouch(): only matters for a monster wielding a cockatrice
        corpse (no weapon here) */
     check_gear_next_turn(mtmp);

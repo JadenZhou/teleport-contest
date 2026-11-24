@@ -20,7 +20,7 @@ import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC, W_SADDLE, W_ARMG,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, ERODE_BURN,
          ERODE_RUST, ERODE_CORRODE, CONFLICT, BLINDED } from './const.js';
-import { STRAT_WAITFORU } from './const.js';
+import { STRAT_WAITFORU, DEAF } from './const.js';
 import { mons, AT_NONE, AT_CLAW, AT_BITE, AT_KICK, AT_BUTT, AT_TUCH,
          AT_STNG, AT_HUGS, AT_ENGL, AT_TENT, AT_WEAP, AT_EXPL, AT_BOOM,
          AT_BREA, AT_SPIT,
@@ -79,7 +79,12 @@ function DEADMONSTER(mon) { return mon.mhp < 1; }
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
 }
-function Deaf() { return false; }
+/* C ref: youprop.h Deaf */
+function Deaf() {
+    const P = game.u.uprops;
+    return !!(P[DEAF].intrinsic || P[DEAF].extrinsic
+              || game.u.uroleplay?.deaf);
+}
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
     return dx * dx + dy * dy;

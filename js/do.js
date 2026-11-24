@@ -206,7 +206,7 @@ export async function dodown() {
                    || !Can_fall_thru(u.uz) || !trap.tseen) {
             if (g.flags.autodig && !g.context.nopick
                 && g.uwep && is_pick(g.uwep)) {
-                throw new Error('dodown(): use_pick_axe2() not ported yet');
+                return await use_pick_axe2(g.uwep);
             } else {
                 await You_cant(`go down here${
                     (trap && trap.ttyp === VIBRATING_SQUARE) ? " yet" : ""}.`);
@@ -1517,5 +1517,6 @@ import { impact_drop } from './dokick.js';
 import { water_damage as water_damage_do } from './trap.js';
 import { weight as weight_do } from './mkobj.js';
 import { map_background as map_background_do } from './display.js';
+import { use_pick_axe2 } from './dig.js';
 import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTROYED_DO,
          DEAF as DEAF_DO } from './const.js';

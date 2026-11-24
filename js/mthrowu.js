@@ -70,7 +70,7 @@ import { monstseesu, monstunseesu, shade_miss, passive_obj } from './uhitm.js';
 import { mswings_verb } from './mhitu.js';
 import { hit, miss, exclam, dobuzz } from './zap.js';
 import { hold_another_object } from './wizcmds.js';
-import { extract_from_minvent } from './steal.js';
+import { extract_from_minvent, extract_from_minvent_g } from './steal.js';
 import { body_part } from './insight.js';
 import { mbodypart } from './shk.js';
 import { m_seenres } from './muse.js';
@@ -1340,6 +1340,12 @@ export function m_useupall(mon, obj) {
     extract_from_minvent(mon, obj, true, false);
     obfree(obj, null);
 }
+/* m_useupall() for a generator caller: yields extract_from_minvent()'s
+   update_mon_extrinsics() messages */
+export function* m_useupall_g(mon, obj) {
+    yield* extract_from_minvent_g(mon, obj, true, false);
+    obfree(obj, null);
+}
 
 // C ref: mthrowu.c m_useup()
 /* remove one instance of an item from a monster's inventory */
@@ -1349,6 +1355,15 @@ export function m_useup(mon, obj) {
         obj.owt = weight(obj);
     } else {
         m_useupall(mon, obj);
+    }
+}
+/* m_useup() for a generator caller (see m_useupall_g()) */
+export function* m_useup_g(mon, obj) {
+    if (obj.quan > 1) {
+        obj.quan--;
+        obj.owt = weight(obj);
+    } else {
+        yield* m_useupall_g(mon, obj);
     }
 }
 
