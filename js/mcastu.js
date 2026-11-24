@@ -4,6 +4,7 @@
 // would need large unported code (rehumanize(),
 // msummon() for summoners in Gehennom) throw a 'not ported yet' stop.
 
+import { is_obj_mappear } from './pager.js';
 import { game } from './gstate.js';
 import { rn2, rnd, d } from './rng.js';
 import { couldsee, cansee } from './vision.js';
@@ -151,10 +152,6 @@ function unconscious() {
 function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
 /* C ref: youprop.h Unaware */
 function Unaware() { return game.multi < 0 && (unconscious() || is_fainted()); }
-/* C ref: display.h is_obj_mappear() */
-function is_obj_mappear(mon, otyp) {
-    return mon.m_ap_type === M_AP_OBJECT && mon.mappearance === otyp;
-}
 /* C ref: rm.h IS_WATERWALL(), is_waterwall() */
 function is_waterwall(x, y) { return game.level.at(x, y).typ === WATER; }
 /* C ref: do_name.c mhe() */

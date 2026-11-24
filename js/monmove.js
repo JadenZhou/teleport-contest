@@ -6,6 +6,8 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
+import { is_armed } from './makemon.js';
+import { minv } from './mon.js';
 import { m_lined_up } from './mthrowu.js';
 import { game } from './gstate.js';
 import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
@@ -120,10 +122,6 @@ import { in_rooms, in_town } from './hack.js';
 import { pri_move, in_your_sanctuary, inhistemple } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
 
-/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
-   order; C prepends, so walk it newest first */
-function minv(mon) { return (mon.minvent || []).slice().reverse(); }
-
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
@@ -186,7 +184,6 @@ function likes_lava(ptr) {
     return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }
 function metallivorous(ptr) { return (ptr.mflags1 & M.M1_METALLIVORE) !== 0; }
-function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
 /* C ref: obj.h is_pick(), is_pole() */
 function is_pick(otmp) {
     return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
@@ -241,7 +238,7 @@ function flees_light(mtmp) {
         && couldsee(mtmp.mx, mtmp.my);
 }
 /* C ref: monst.h helpless() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
+export function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: mondata.h is_lminion() */
 function is_lminion(mon) {
     return (mon.data.mflags2 & M.M2_MINION) !== 0 && mon.data.maligntyp >= 0
@@ -307,7 +304,7 @@ function m_carrying(mtmp, type) {
     return null;
 }
 /* C ref: monmove.c monhaskey() */
-function monhaskey(mon, for_unlocking) {
+export function monhaskey(mon, for_unlocking) {
     if (for_unlocking && m_carrying(mon, CREDIT_CARD))
         return true;
     return !!(m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK));

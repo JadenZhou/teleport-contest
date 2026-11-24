@@ -10,6 +10,7 @@
 // Not ported yet: the player-side engrave commands, reading and sensing
 // engravings.
 
+import { is_art } from './artifact.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT } from './const.js';
@@ -509,7 +510,6 @@ function is_boots(otmp) {
     return otmp.oclass === ARMOR_CLASS
            && objects[otmp.otyp].oc_armcat === ARM_BOOTS;
 }
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 /* C ref: youprop.h Confusion, Stunned, Deaf */
 function uprop(p) {
     return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };

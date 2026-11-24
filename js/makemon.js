@@ -10,6 +10,9 @@
 // Not ported yet: newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm tail segments.
 
+import { db_under_typ } from './display.js';
+import { impossible } from './hack.js';
+import { rnd_class } from './mkobj.js';
 import { christen_monst, rndghostname, Amonnam, y_monnam, mon_nam, pmname,
          Mgender, YMonnam, pronoun_gender, PRONOUN_HALLU } from './do_name.js';
 import { genders } from './role.js';
@@ -90,8 +93,6 @@ import { Is_waterlevel, Is_firelevel, Is_airlevel, G_GENOD,
          G_EXTINCT } from './const.js';
 import { is_flyer } from './mondata.js';
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
 const NON_PM = -1;
 
 // C ref: monst.h monmax_difficulty(), monmin_difficulty(),
@@ -105,7 +106,7 @@ function montooweak(monindx, lev) { return mons[monindx].difficulty < lev; }
 function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: mondata.h pm_resistance(), is_placeholder()
-function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
+export function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
 export function is_placeholder(ptr) {
     return (ptr === mons[PM_ORC] || ptr === mons[PM_GIANT]
             || ptr === mons[PM_ELF] || ptr === mons[PM_HUMAN]);
@@ -184,7 +185,7 @@ function temperature_shift(ptr) {
 
 // C ref: display.h monsym() -- gs.showsyms[mlet + SYM_OFF_M]; no
 // symset in the port changes monster symbols, so they are def_monsyms[]
-function monsym(ptr) {
+export function monsym(ptr) {
     return def_monsyms[ptr.mlet];
 }
 
@@ -519,7 +520,7 @@ function attacktype(ptr, atyp) {
         if (ptr.mattk[i].aatyp === atyp) return true;
     return false;
 }
-function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
+export function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
 function is_mercenary(ptr) { return (ptr.mflags2 & M.M2_MERC) !== 0; }
 function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
 export function is_lord(ptr) { return (ptr.mflags2 & M.M2_LORD) !== 0; }
@@ -678,19 +679,6 @@ export function is_moat(x, y) {
            && (typ === MOAT
                || (typ === DRAWBRIDGE_UP
                    && ((game.level.at(x, y).drawbridgemask ?? 0) & DB_UNDER) === DB_MOAT));
-}
-// C ref: dbridge.c db_under_typ()
-function db_under_typ(mask) {
-    switch (mask & DB_UNDER) {
-    case DB_ICE:
-        return ICE;
-    case DB_LAVA:
-        return LAVAPOOL;
-    case DB_MOAT:
-        return MOAT;
-    default:
-        return STONE;
-    }
 }
 // C ref: monmove.c accessible()
 export function accessible(x, y) {
@@ -1492,24 +1480,6 @@ function m_initinv(mtmp) {
     if (likes_gold(ptr) && !findgold(mtmp.minvent) && !rn2(5))
         mkmonmoney(mtmp, d(level_difficulty(),
                            (mtmp.minvent && mtmp.minvent.length) ? 5 : 10));
-}
-
-// C ref: o_init.c rnd_class()
-function rnd_class(first, last) {
-    let i, x, sum = 0;
-
-    if (last > first) {
-        for (i = first; i <= last; i++)
-            sum += objects[i].oc_prob;
-        if (!sum) /* all zero, so equal probability */
-            return rn1(last - first + 1, first);
-
-        x = rnd(sum);
-        for (i = first; i <= last; i++)
-            if ((x -= objects[i].oc_prob) <= 0)
-                return i;
-    }
-    return (first === last) ? first : O.STRANGE_OBJECT;
 }
 
 // C ref: makemon.c clone_mon()

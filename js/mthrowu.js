@@ -8,6 +8,12 @@
 // m_has_launcher_and_ammo() in weapon.js.  Paths that aren't ported yet
 // throw a 'not ported yet' error instead of skipping their rolls.
 
+import { DEADMONSTER } from './mon.js';
+import { mhim } from './mhitu.js';
+import { ordin } from './hacklib.js';
+import { passes_rocks } from './trap.js';
+import { resists_poison } from './mondata.js';
+import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rnl, rn2_on_display_rng, ROLL_FROM } from './rng.js';
 import { distmin, dist2, s_suffix, strncmpi } from './hacklib.js';
@@ -98,8 +104,6 @@ function Hate_silver() {
 function Role_if(pm) { return game.urole.mnum === pm; }
 function verbose() { return game.flags.verbose ?? true; }
 
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: mondata.c poly_when_stoned() -- golems other than stone golem
    turn into stone golems */
 function poly_when_stoned(ptr) {
@@ -134,7 +138,6 @@ function is_flimsy(otmp) {
 /* C ref: mondata.h */
 function passes_walls(ptr) { return (ptr.mflags1 & M.M1_WALLWALK) !== 0; }
 function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
-function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
 function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
 function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
 function bigmonst(ptr) { return ptr.msize >= M.MZ_LARGE; }
@@ -145,20 +148,11 @@ function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
 function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
-function resists_poison(mon) { return Resists_Elem(mon, POISON_RES); }
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
-/* C ref: mondata.h mhim() */
-function mhim(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him; }
 /* C ref: objnam.c makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: hacklib.c upstart() */
 function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-/* C ref: hacklib.c ordin() */
-function ordin(n) {
-    const dd = n % 10;
-    return (dd === 0 || dd > 3 || Math.trunc((n % 100) / 10) === 1) ? "th"
-           : (dd === 1) ? "st" : (dd === 2) ? "nd" : "rd";
-}
 function plur(x) { return (x === 1) ? "" : "s"; }
 
 /* gm.m_shot (decl.h) -- multishot volley feedback */
@@ -442,27 +436,6 @@ function monmulti(mtmp, otmp, mwep) {
     if (multishot < 1)
         multishot = 1;
     return multishot;
-}
-/* C ref: hacklib.c rounddiv() */
-function rounddiv(x, y) {
-    let r, m;
-    let divsgn = 1;
-
-    if (y === 0)
-        throw new Error('division by zero in rounddiv'); /* panic() */
-    else if (y < 0) {
-        divsgn = -divsgn;
-        y = -y;
-    }
-    if (x < 0) {
-        divsgn = -divsgn;
-        x = -x;
-    }
-    r = Math.trunc(x / y);
-    m = x % y;
-    if (2 * m >= y)
-        r++;
-    return divsgn * r;
 }
 
 // C ref: mthrowu.c monshoot()

@@ -7,6 +7,7 @@
 // Not ported yet: the water/air levels (setup_waterlevel, movebubbles),
 // baalz_fixup, stolen_booty (orc-town loot), fumaroles. (mklev.js has place_lregion and put_lregion_here.)
 
+import { pm_resistance } from './makemon.js';
 import { game } from './gstate.js';
 import { spot_stop_timers } from './timeout.js';
 import { MELT_ICE_AWAY } from './const.js';
@@ -152,9 +153,6 @@ function baalz_fixup() {
     bh.inarea.x2 = bh.delarea.x2 = 0;
     bh.inarea.y2 = bh.delarea.y2 = 0;
 }
-
-// C ref: mondata.h pm_resistance()
-function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
 
 // C ref: mkmaze.c mz_move()
 /* move (cc.x, cc.y) one square in direction dir */

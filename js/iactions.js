@@ -4,6 +4,11 @@
 //        item_reading_classification(), ia_addmenu(),
 //        itemactions_pushkeys(), itemactions()
 
+import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
+import { is_plural } from './wield.js';
+import { pmatch } from './pager.js';
+import { shield_simple_name, shirt_simple_name } from './objnam.js';
+export { shield_simple_name, shirt_simple_name };
 import { game } from './gstate.js';
 import * as O from './objects.js';
 import { objects, OBJ_NAME, OBJ_DESCR, obj_descr } from './objects.js';
@@ -68,14 +73,6 @@ function ia_not_ported(what) {
     throw new Error(`itemactions: ${what} is not ported yet`);
 }
 
-/* C ref: obj.h is_plural() */
-function is_plural(o) {
-    return (o.quan !== 1
-            /* "the Eyes of the Overworld" are plural, but
-               "a pair of lenses named the Eyes of the Overworld" is not */
-            || (o.oartifact === ART_EYES_OF_THE_OVERWORLD
-                && !undiscovered_artifact(ART_EYES_OF_THE_OVERWORLD)));
-}
 /* C ref: obj.h is_ammo(), is_missile(), is_launcher(), matching_launcher(),
    ammo_and_launcher(), bimanual(), is_blade(), is_wet_towel(),
    is_graystone() */
@@ -465,24 +462,6 @@ export function boots_simple_name(boots) {
     return "boots";
 }
 
-/* C ref: objnam.c shield_simple_name() */
-/* simplified shield for messages */
-export function shield_simple_name(shield) {
-    if (shield) {
-        /* xname() describes unknown (unseen) reflection as smooth */
-        if (shield.otyp === O.SHIELD_OF_REFLECTION)
-            return shield.dknown ? "silver shield" : "smooth shield";
-    }
-    return "shield";
-}
-
-/* C ref: objnam.c shirt_simple_name() */
-/* for completeness */
-export function shirt_simple_name(shirt) {
-    void shirt;
-    return "shirt";
-}
-
 /* C ref: objnam.c bare_artifactname() */
 /* artifact's name without any object type or known/dknown/&c feedback */
 export function bare_artifactname(obj) {
@@ -588,24 +567,6 @@ function check_invent_gold(why) {
         if (o.oclass === O.COIN_CLASS && o.invlet !== '$')
             ia_not_ported('check_invent_gold() with misplaced gold');
     return false;
-}
-
-// C ref: strutil.c pmatch() -- case-sensitive wildcard match
-function pmatch(patrn, strng) {
-    let pi = 0, si = 0;
-    for (;;) { /* pmatch_top: */
-        const s = strng[si++] || '';
-        const p = patrn[pi++] || '';
-        if (!p) /* end of pattern */
-            return s === '';
-        else if (p === '*') /* wildcard reached */
-            return (pi >= patrn.length
-                    || pmatch(patrn.slice(pi), strng.slice(si - 1)))
-                ? true
-                : s ? pmatch(patrn.slice(pi - 1), strng.slice(si)) : false;
-        else if (p !== s && (p !== '?' || !s))
-            return false;
-    }
 }
 
 // C ref: pager.c checkfile() -- the chkfilIaCheck | chkfilDontAsk case:
@@ -779,17 +740,6 @@ function ia_addmenu(win, act, let_, txt) {
     /* any.a_int = act */
     tty_add_menu(win, null, act, let_, '', ATR_NONE, clr, txt,
                  MENU_ITEMFLAGS_NONE);
-}
-
-/* C ref: cmd.c cmdq_add_ec(CQ_CANNED, fn), cmdq_add_key(CQ_CANNED, key);
-   the extended command is kept by its cmd.c function name */
-function cmdq_add_ec(fn) {
-    if (!game.cmdq) game.cmdq = [];
-    game.cmdq.push({ typ: 'ec', fn });
-}
-function cmdq_add_key(key) {
-    if (!game.cmdq) game.cmdq = [];
-    game.cmdq.push({ typ: 'key', key });
 }
 
 // C ref: iactions.c itemactions_pushkeys()

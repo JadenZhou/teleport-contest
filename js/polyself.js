@@ -5,6 +5,8 @@
 // polymon(), polyman(), rehumanize(), break_armor(), drop_weapon(),
 // uunstick(), skinback().  newman() is not ported yet.
 
+import { is_golem } from './makemon.js';
+import { is_pool_or_lava, rounddiv } from './hack.js';
 import { new_light_source, del_light_source } from './light.js';
 import { monst_to_any } from './timeout.js';
 import { LS_MONSTER } from './const.js';
@@ -274,7 +276,7 @@ function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
 function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
 function hides_under(ptr) { return (ptr.mflags1 & M.M1_CONCEAL) !== 0; }
 function is_hider(ptr) { return (ptr.mflags1 & M.M1_HIDE) !== 0; }
-function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
+export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
 function polyok(ptr) { return (ptr.mflags2 & M.M2_NOPOLY) === 0; }
 function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
 function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
@@ -283,7 +285,6 @@ function is_female(ptr) { return (ptr.mflags2 & M.M2_FEMALE) !== 0; }
 function is_neuter(ptr) { return (ptr.mflags2 & M.M2_NEUTER) !== 0; }
 function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 function likes_gems(ptr) { return (ptr.mflags2 & M.M2_JEWELS) !== 0; }
-function is_golem(ptr) { return ptr.mlet === M.S_GOLEM; }
 function cantwield(ptr) { return nohands(ptr) || verysmall(ptr); }
 function could_twoweap(ptr) {
     return ((ptr.mattk[0].aatyp === M.AT_WEAP ? 1 : 0)
@@ -362,7 +363,7 @@ function num_horns(ptr) {
     }
     return 0;
 }
-function has_horns(ptr) { return num_horns(ptr) > 0; }
+export function has_horns(ptr) { return num_horns(ptr) > 0; }
 /* C ref: obj.h is_flimsy(), is_sword(), WrappingAllowed(),
    Is_dragon_armor() */
 function is_flimsy(otmp) {
@@ -411,10 +412,6 @@ function Flying() {
               && !fly.blocked);
 }
 function plur(x) { return x === 1 ? "" : "s"; }
-/* C ref: dbridge.c is_pool_or_lava() */
-function is_pool_or_lava(x, y) {
-    return is_pool(x, y) || is_lava(x, y);
-}
 const no_longer_petrify_resistant =
     "You no longer seem to be petrify-resistant. You";
 
@@ -676,30 +673,6 @@ async function polyself_made_change(old_light) {
             new_light_source(game.u.ux, game.u.uy, new_light, LS_MONSTER,
                              monst_to_any(game.youmonst));
     }
-}
-
-// C ref: hacklib.c rounddiv()
-/* round x/y to nearest integer */
-function rounddiv(x, y) {
-    let r, m;
-    let divsgn = 1;
-
-    if (y === 0)
-        throw new Error('division by zero in rounddiv'); /* panic() */
-    else if (y < 0) {
-        divsgn = -divsgn;
-        y = -y;
-    }
-    if (x < 0) {
-        divsgn = -divsgn;
-        x = -x;
-    }
-    r = Math.trunc(x / y);
-    m = x % y;
-    if (2 * m >= y)
-        r++;
-
-    return divsgn * r;
 }
 
 // C ref: polyself.c poly_gender()

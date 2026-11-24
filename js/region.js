@@ -21,6 +21,7 @@
 // create_force_field(), clone_region(), replace_mon_regions(),
 // remove_mon_from_regions()) are `#if 0' in C and aren't ported.
 
+import { uhas } from './were.js';
 import { game } from './gstate.js';
 import { COLNO, ROWNO, isok, REG_HERO_INSIDE, REG_NOT_HEROS, MONST_INC,
          KILLED_BY_AN, M_POISONGAS_OK, M_SEEN_POISON, EYE, LUNG,
@@ -658,10 +659,6 @@ function expire_gas_cloud(reg, p2) {
 
 /* C ref: youprop.h Poison_resistance, Half_physical_damage,
    Half_gas_damage */
-function uhas(p) {
-    const P = game.u.uprops[p];
-    return !!(P && (P.intrinsic || P.extrinsic));
-}
 function Half_gas_damage() {
     const ublindf = game.ublindf;
     return !!(ublindf && ublindf.otyp === TOWEL && ublindf.spe > 0);

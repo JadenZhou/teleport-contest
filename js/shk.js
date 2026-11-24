@@ -4,6 +4,9 @@
 //
 // Paths no session reaches yet throw a 'not ported yet' error.
 
+import { helpless } from './monmove.js';
+import { noit_mhim } from './mhitu.js';
+import { online2 } from './hacklib.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
 import { arti_cost } from './artifact.js';
@@ -146,8 +149,6 @@ function Detect_monsters() {
 }
 /* C ref: role.h Role_if() */
 function Role_if(pm) { return game.urole.mnum === pm; }
-/* C ref: monst.h helpless() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: shk.c NOTANGRY(), ANGRY() */
 function ANGRY(mon) { return !mon.mpeaceful; }
 /* C ref: shk.c muteshk() */
@@ -161,14 +162,10 @@ function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 /* C ref: hack.h um_dist() */
-function um_dist(x, y, n) {
+export function um_dist(x, y, n) {
     return Math.abs(game.u.ux - x) > n || Math.abs(game.u.uy - y) > n;
 }
 /* C ref: hacklib.c online2(); hack.h onlineu() */
-function online2(x0, y0, x1, y1) {
-    const dx = x0 - x1, dy = y0 - y1;
-    return (!dy || !dx || dy === dx || dy === -dx);
-}
 function onlineu(xx, yy) { return online2(xx, yy, game.u.ux, game.u.uy); }
 /* C ref: hacklib.c plur() */
 function plur(x) { return (x === 1) ? "" : "s"; }
@@ -1715,7 +1712,7 @@ export function hot_pursuit(shkp) {
 
 /* object chains are either linked through ->nobj (invent) or kept as
    arrays (fobj, minvent, cobj, buriedobjlist) */
-function* objchain(ochain) {
+export function* objchain(ochain) {
     if (Array.isArray(ochain)) {
         yield* ochain;
     } else {
@@ -2091,10 +2088,6 @@ export async function make_angry_shk(shkp, ox, oy) {
 const no_money = (s) => `Moreover, you${s} have no gold.`,
     not_enough_money = (s) => `Besides, you don't have enough to interest ${s}.`;
 
-/* C ref: you.h noit_mhim() */
-function noit_mhim(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].him;
-}
 /* C ref: hack.h m_next2u() */
 function m_next2u(mon) {
     return Math.abs(mon.mx - game.u.ux) <= 1

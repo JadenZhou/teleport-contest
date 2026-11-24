@@ -1,6 +1,7 @@
 // shknam.js — shop types, shopkeeper names, shopkeeper creation.
 // C ref: shknam.c
 
+import { letter } from './hacklib.js';
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
 import {
@@ -662,11 +663,6 @@ function Hallucination() {
     const P = game.u.uprops;
     return !!((P[HALLUC]?.intrinsic || P[HALLUC]?.extrinsic)
               && !(P[HALLUC_RES]?.intrinsic || P[HALLUC_RES]?.extrinsic));
-}
-
-/* C ref: hacklib.c letter() */
-function letter(c) {
-    return ('@' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
 }
 
 // C ref: shknam.c Shknam()

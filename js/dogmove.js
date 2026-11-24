@@ -5,6 +5,10 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
+import { helpless } from './monmove.js';
+import { may_dig } from './dig.js';
+import { minv } from './mon.js';
+import { poisonous } from './eat.js';
 import { touch_artifact_mon } from './artifact.js';
 import { game } from './gstate.js';
 import { eaten_stat, peek_at_iced_corpse_age } from './eat.js';
@@ -48,10 +52,6 @@ import {
     NEED_WEAPON, NEED_HTH_WEAPON, I_SPECIAL, W_ARMS,
 } from './const.js';
 
-/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
-   order; C prepends, so walk it newest first */
-function minv(mon) { return (mon.minvent || []).slice().reverse(); }
-
 const DOG_HUNGRY = 300;
 const DOG_WEAK = 500;
 const DOG_STARVE = 750;
@@ -70,7 +70,6 @@ function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
 function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
-function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
 function likes_lava(ptr) {
     return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }
@@ -96,21 +95,13 @@ function vegan(ptr) {
 function mresists(mon, mr) {
     return (((mon.data.mresists | (mon.mextrinsics ?? 0)) & mr) !== 0);
 }
-/* C ref: monst.h helpless() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 function Conflict() {
     const p = game.u.uprops[CONFLICT];
     return !!(p.intrinsic || p.extrinsic);
 }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
-/* C ref: hack.c may_dig() */
-function may_dig(x, y) {
-    const lev = game.level.at(x, y);
-    return !((IS_STWALL(lev.typ) || IS_TREE(lev.typ))
-             && ((lev.wall_info ?? 0) & W_NONDIGGABLE));
-}
 /* C ref: stairs.c On_stairs() */
-function On_stairs(x, y) {
+export function On_stairs(x, y) {
     for (let s = game.stairs; s; s = s.next)
         if (s.sx === x && s.sy === y) return true;
     return false;

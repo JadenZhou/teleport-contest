@@ -8,6 +8,7 @@
 // yet).  For enlightenment: adtyp_to_prop(), u_adtyp_resistance_obj(),
 // item_what().
 
+import { impossible } from './hack.js';
 import { game } from './gstate.js';
 import { livelog_printf, urgent_pline } from './display.js';
 import { LL_CONDUCT } from './const.js';
@@ -3492,7 +3493,6 @@ function free_omid_rv(obj) {
 }
 /* C ref: hacklib.c upstart() */
 function upstart_rv(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 // C ref: zap.c get_container_location() -- returns the following
 // information about the outermost container: loc.v gets set to

@@ -7,6 +7,9 @@
 // spelleffects(), dospellmenu(), spellsortmenu(), sortspells(),
 // percent_success() and spellretention().
 
+import { check_unpaid } from './zap.js';
+import { impossible } from './hack.js';
+import { uhim } from './explode.js';
 import { game } from './gstate.js';
 import {
     NO_SPELL, STUNNED, STRANGLED, MENU_TRADITIONAL,
@@ -36,12 +39,10 @@ import { P_SKILL } from './weapon.js';
 import { discover_object } from './o_init.js';
 import { freehand } from './wield.js';
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
 const KEEN = 20000; /* C ref: spell.c */
 
 /* C ref: spell.h spellid(), spellknow(), decrnknow() */
-function spellid(spell) { return game.spl_book[spell].sp_id; }
+export function spellid(spell) { return game.spl_book[spell].sp_id; }
 function spellknow(spell) { return game.spl_book[spell].sp_know; }
 function decrnknow(spell) { game.spl_book[spell].sp_know--; }
 /* C ref: spell.c incrnknow() */
@@ -445,14 +446,6 @@ async function learn() {
     sb.book = null;
     sb.o_id = 0;
     return 0;
-}
-
-/* C ref: shk.c check_unpaid() -> check_unpaid_usage(otmp, FALSE) */
-function check_unpaid(otmp) {
-    if (!otmp.unpaid || !game.u.ushops || !game.u.ushops[0]
-        || (otmp.spe <= 0 && objects[otmp.otyp].oc_charged))
-        return;
-    throw new Error('check_unpaid(): usage fee for unpaid item not ported yet');
 }
 
 // C ref: spell.c study_book()
@@ -1016,11 +1009,6 @@ export async function spelleffects(spell_otyp, atme, force) {
 
     obfree(pseudo, null); /* now, get rid of it */
     return ECMD_TIME;
-}
-
-/* C ref: you.h uhim() -- genders[flags.female ? 1 : 0].him */
-function uhim() {
-    return game.flags.female ? "her" : "him";
 }
 
 // C ref: spell.c losespells()

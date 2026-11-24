@@ -15,6 +15,8 @@
 // ported yet (wizard-mode terrain wishes, artifacts by name, fruit names,
 // tins of a monster, lit light sources, novels, ...) raise not_ported().
 
+import { letter } from './hacklib.js';
+import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
 import { ART_ORB_OF_DETECTION as ART_ORB_OF_DETECTION_ON } from './artilist.js';
 import { rn2, rnd, rn1 } from './rng.js';
@@ -508,11 +510,6 @@ export function fruit_from_name(fname, exact, highest_fid) {
         f = tentativef;
     }
     return f || null;
-}
-
-// C ref: hacklib.c letter()
-function letter(c) {
-    return ('@' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
 }
 
 // C ref: objnam.c ch_ksound()
@@ -1338,7 +1335,6 @@ const CORPSTAT_MALE = 2;
 const CORPSTAT_NEUTER = 3;
 const CORPSTAT_HISTORIC = 0x04;
 
-function wizard() { return !!game.flags?.debug; }
 // C ref: you.h Luck
 function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 

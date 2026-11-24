@@ -8,6 +8,7 @@
 // spots with tmp_at()), '#', '@', 'm'/'M' &c gathering, the menu and
 // filter toggles, and the dungeon-feature symbol search.
 
+import { is_cmap_drawbridge } from './pager.js';
 import { game } from './gstate.js';
 import { pline, newsym, newsym_force, flush_screen, glyph_at, glyph_kind,
          back_to_glyph } from './display.js';
@@ -78,7 +79,6 @@ function is_cmap_room(i) { return i >= S_room && i <= S_darkroom; }
 function is_cmap_corr(i) { return i >= S_corr && i <= S_litcorr; }
 function is_cmap_water(i) { return i === S_pool || i === S_water; }
 function is_cmap_lava(i) { return i === S_lava || i === S_lavawall; }
-function is_cmap_drawbridge(i) { return i >= S_vodbridge && i <= S_hcdbridge; }
 
 /* C ref: getpos.c gloc_descr[][], gloc_filtertxt[] */
 const gloc_descr = [

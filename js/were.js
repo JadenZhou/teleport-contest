@@ -19,7 +19,7 @@ import { mon_break_armor } from './worn.js';
 import { onscary, monflee } from './monmove.js';
 
 /* C ref: youprop.h Protection_from_shape_changers, Deaf, Hallucination */
-function uhas(p) {
+export function uhas(p) {
     const P = game.u.uprops[p];
     return !!(P && (P.intrinsic || P.extrinsic));
 }

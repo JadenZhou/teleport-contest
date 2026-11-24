@@ -11,6 +11,11 @@
 // synchronous ones (run_msgs_sync()) run the same body, where no message
 // can come up.
 
+import { has_horns } from './polyself.js';
+import { impossible } from './hack.js';
+import { is_art } from './artifact.js';
+import { minv } from './mon.js';
+import { objchain_items } from './invent.js';
 import { game } from './gstate.js';
 import { objects } from './objects.js';
 import * as O from './objects.js';
@@ -53,8 +58,6 @@ import { can_saddle } from './makemon.js';
 import { can_ride } from './steed.js';
 import { surface } from './iactions.js';
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
 /* print each message a worn.c generator yields, in order */
 async function run_msgs(gen) {
     for (const msg of gen)
@@ -67,9 +70,7 @@ function run_msgs_sync(gen) {
 }
 
 /* C ref: monst.h MON_WEP() */
-function MON_WEP(mon) { return mon.mw || null; }
-/* monster inventory in C order (add_to_minv() prepends) */
-function minv(mon) { return (mon.minvent || []).slice().reverse(); }
+export function MON_WEP(mon) { return mon.mw || null; }
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 /* C ref: youprop.h See_invisible, Blind */
@@ -81,8 +82,6 @@ function See_invisible() { return uhave(SEE_INVIS); }
 /* C ref: role.h Role_if() */
 function Role_if(pm) { return game.urole.mnum === pm; }
 
-/* C ref: obj.h is_art() */
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 /* C ref: obj.h greatest_erosion() */
 function greatest_erosion(otmp) {
     const e1 = otmp.oeroded || 0, e2 = otmp.oeroded2 || 0;
@@ -147,7 +146,7 @@ function breakarm(ptr) {
             || ptr === mons[M.PM_WINGED_GARGOYLE]);
 }
 /* C ref: mondata.h cantweararm() */
-function cantweararm(ptr) { return breakarm(ptr) || sliparm(ptr); }
+export function cantweararm(ptr) { return breakarm(ptr) || sliparm(ptr); }
 // C ref: mondata.c num_horns()
 function num_horns(ptr) {
     switch (monsndx(ptr)) {
@@ -166,7 +165,6 @@ function num_horns(ptr) {
     }
     return 0;
 }
-function has_horns(ptr) { return num_horns(ptr) > 0; }
 /* C ref: obj.h WrappingAllowed() */
 function WrappingAllowed(mptr) {
     return humanoid(mptr) && mptr.msize >= M.MZ_SMALL && mptr.msize <= M.MZ_HUGE
@@ -1191,14 +1189,6 @@ export function racial_exception(mon, obj) {
 
 /* an object chain as an array: JS keeps invent and the migrating lists as
    nobj chains and floor piles, minvent and container contents as arrays */
-function objchain_items(list) {
-    if (Array.isArray(list))
-        return list;
-    const res = [];
-    for (let o = list; o; o = o.nobj)
-        res.push(o);
-    return res;
-}
 
 // C ref: worn.c clear_bypass()
 /* clear bypass bits for an object chain, plus contents if applicable */

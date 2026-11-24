@@ -16,6 +16,11 @@
 // temp_resist(), dungeon.c has_ceiling(), hacklib.c ordin(), and the
 // youprop.h property macros).
 
+import { getnow } from './calendar.js';
+import { lays_eggs } from './polyself.js';
+import { ordin } from './hacklib.js';
+import { spellid } from './spell.js';
+import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
 import { count_wsegs, wseg_at } from './worm.js';
 import {
@@ -126,7 +131,6 @@ export function align_str(alignment) {
 // from other C files
 
 function U() { return game.u; }
-function wizard() { return !!game.flags?.debug; }
 function discover() { return !!game.flags?.explore; }
 function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 }; }
 
@@ -322,15 +326,11 @@ function Luck() { return (U().uluck || 0) + (U().moreluck || 0); }
 
 /* C ref: mondata.h is_clinger(), lays_eggs(); monst.h vampshifted() */
 function is_clinger(ptr) { return (ptr.mflags1 & M.M1_CLING) !== 0; }
-function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
 function vampshifted(mon) {
     return (mon.cham === M.PM_VAMPIRE || mon.cham === M.PM_VAMPIRE_LEADER
             || mon.cham === M.PM_VLAD_THE_IMPALER) /* is_vampshifter() */
            && !(mon.data.mlet === M.S_VAMPIRE); /* !is_vampire() */
 }
-
-/* C ref: spell.c spellid() */
-function spellid(spell) { return game.spl_book[spell].sp_id; }
 
 /* C ref: eat.c temp_resist() */
 /* if 'prop' is only set because of a timed value (so not an intrinsic
@@ -361,15 +361,6 @@ export function has_ceiling(lev) {
     if (In_endgame(lev) && !Is_earthlevel(lev))
         return false;
     return true;
-}
-
-/* C ref: hacklib.c ordin() */
-/* return the ordinal suffix of a number */
-function ordin(n) { /* note: should be non-negative */
-    const dd = n % 10;
-
-    return (dd === 0 || dd > 3 || Math.trunc((n % 100) / 10) === 1) ? "th"
-               : (dd === 1) ? "st" : (dd === 2) ? "nd" : "rd";
 }
 
 /* C ref: hacklib.c plur(), strsubst() (first occurrence only) */
@@ -1003,14 +994,6 @@ function attrval(attrindx, attrvalue) {
 
 // C ref: hacklib.c getnow(), timet_delta() -- the recorder's clock is
 // frozen at the game's datetime, so getnow() is that time
-function getnow() {
-    const dt = game.datetime;
-    if (dt && /^\d{14}$/.test(dt))
-        return Math.trunc(Date.UTC(+dt.slice(0, 4), +dt.slice(4, 6) - 1,
-                                   +dt.slice(6, 8), +dt.slice(8, 10),
-                                   +dt.slice(10, 12), +dt.slice(12, 14)) / 1000);
-    return Math.trunc(Date.now() / 1000);
-}
 function timet_delta(a, b) { return a - b; }
 
 // C ref: insight.c fmt_elapsed_time()

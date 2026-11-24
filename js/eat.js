@@ -9,6 +9,8 @@
 // start_tin(), opentin(), consume_tin().  Non-food and edibility prompts
 // are not ported yet.
 
+import { olfaction } from './mondata.js';
+import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
 import { livelog_printf } from './display.js';
@@ -671,7 +673,7 @@ function touch_petrifies(ptr) {
 }
 function flesh_petrifies(pm) { return touch_petrifies(pm) || pm === mons[M.PM_MEDUSA]; }
 function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
-function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
+export function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
 function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
 function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
 function flaming(ptr) {
@@ -691,40 +693,6 @@ function mvitals_gone(pm) {
 }
 function attacktype(ptr, atyp) {
     return ptr.mattk.some(a => a.aatyp === atyp);
-}
-/* C ref: mondata.c olfaction() */
-function olfaction(mdat) {
-    if (mdat.mlet === M.S_GOLEM
-        || mdat.mlet === M.S_EYE /* spheres  */
-        || mdat.mlet === M.S_JELLY || mdat.mlet === M.S_PUDDING
-        || mdat.mlet === M.S_BLOB || mdat.mlet === M.S_VORTEX
-        || mdat.mlet === M.S_ELEMENTAL
-        || mdat.mlet === M.S_FUNGUS /* mushrooms and fungi */
-        || mdat.mlet === M.S_LIGHT)
-        return false;
-    return true;
-}
-/* C ref: hacklib.c rounddiv() */
-function rounddiv(x, y) {
-    let r, m;
-    let divsgn = 1;
-
-    if (y === 0)
-        throw new Error('division by zero in rounddiv');
-    else if (y < 0) {
-        divsgn = -divsgn;
-        y = -y;
-    }
-    if (x < 0) {
-        divsgn = -divsgn;
-        x = -x;
-    }
-    r = Math.trunc(x / y);
-    m = x % y;
-    if (2 * m >= y)
-        r++;
-
-    return divsgn * r;
 }
 /* C ref: obj.h stale_egg() */
 export function stale_egg(egg) {

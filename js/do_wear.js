@@ -8,6 +8,11 @@
 // common amulets, Blindf_on(), #takeoff with the X_off() routines, and
 // donning()/doffing()/cancel_don()/cancel_doff().
 
+import { cantweararm } from './worn.js';
+import { has_horns } from './polyself.js';
+import { impossible } from './hack.js';
+import { is_flyer } from './mondata.js';
+import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
 import { pline, You, Your, There, pline_The, newsym,
@@ -67,9 +72,6 @@ import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
 import { region_danger } from './region.js';
 
-// C's impossible() (pline.c) is not ported yet.
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
     c_cloak = "cloak", c_gloves = "gloves", c_boots = "boots",
@@ -90,7 +92,6 @@ function is_whirly(ptr) {
 function has_head(ptr) { return (ptr.mflags1 & M1_NOHEAD) === 0; }
 function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
 function breathless(ptr) { return (ptr.mflags1 & M1_BREATHLESS) !== 0; }
-function is_flyer(ptr) { return (ptr.mflags1 & M1_FLY) !== 0; }
 // C ref: mondata.c sliparm()
 function sliparm(ptr) {
     return is_whirly(ptr) || ptr.msize <= MZ_SMALL || noncorporeal(ptr);
@@ -106,8 +107,6 @@ function breakarm(ptr) {
             || ptr === mons[PM_MARILITH]
             || ptr === mons[PM_WINGED_GARGOYLE]);
 }
-/* C ref: mondata.h cantweararm() */
-function cantweararm(ptr) { return breakarm(ptr) || sliparm(ptr); }
 // C ref: mondata.c num_horns()
 function num_horns(ptr) {
     switch (monsndx(ptr)) {
@@ -126,7 +125,6 @@ function num_horns(ptr) {
     }
     return 0;
 }
-function has_horns(ptr) { return num_horns(ptr) > 0; }
 /* C ref: obj.h WrappingAllowed() */
 function WrappingAllowed(mptr) {
     return humanoid(mptr) && mptr.msize >= MZ_SMALL && mptr.msize <= MZ_HUGE
@@ -368,13 +366,6 @@ async function toggle_displacement(obj,
  */
 
 // C ref: timeout.c itimeout(), itimeout_incr(), incr_itimeout()
-function itimeout(val) {
-    if (val >= TIMEOUT)
-        val = TIMEOUT;
-    else if (val < 1)
-        val = 0;
-    return val;
-}
 function incr_itimeout(prop, incr) {
     const p = uprop(prop);
     p.intrinsic = (p.intrinsic & ~TIMEOUT) | itimeout((p.intrinsic & TIMEOUT) + incr);

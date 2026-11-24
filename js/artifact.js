@@ -7,6 +7,7 @@
 // mk_artifact(). Artifact powers (spec_abon, spec_dbon, touch_artifact,
 // invoke, ...) and artidisco[] are not ported yet.
 
+import { On_stairs } from './dogmove.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_ARTIFACT, NO_ROOM } from './const.js';
@@ -1706,14 +1707,6 @@ export async function arti_speak(obj) {
     return ECMD_TIME;
 }
 
-/* C ref: stairs.c On_stairs() */
-function On_stairs(x, y) {
-    for (let s = game.stairs; s; s = s.next)
-        if (s.sx === x && s.sy === y)
-            return true;
-    return false;
-}
-
 // C ref: artifact.c abil_to_adtyp() -- 'abil' is the property index
 // standing in for C's &u.uprops[propidx].extrinsic
 function abil_to_adtyp(abil) {
@@ -1899,3 +1892,6 @@ export function arti_cost(otmp) {
         return (100 * objects_ac[otmp.otyp].oc_cost);
 }
 import { objects as objects_ac } from './objects.js';
+
+// C ref: artifact.c is_art()
+export function is_art(o, art) { return !!(o && o.oartifact === art); }

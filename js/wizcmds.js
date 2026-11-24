@@ -7,11 +7,10 @@
 // hold_another_object() (merging, inventory letters, prinv()) is not
 // ported yet.
 
+import { uhis } from './explode.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, LL_WISH, LL_ARTIFACT } from './const.js';
-/* C ref: you.h uhis() */
-function uhis() { return game.flags.female ? "her" : "his"; }
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { MAXULEV, IRONBARS, ICE, Is_airlevel, Is_waterlevel, ONAME_WISH,

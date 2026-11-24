@@ -3,6 +3,10 @@
 // C ref: muse.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { DEADMONSTER, minv } from './mon.js';
+import { helpless } from './monmove.js';
+import { mhim } from './mhitu.js';
+import { stairway_at } from './display.js';
 import { game } from './gstate.js';
 import { worm_move } from './worm.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -184,10 +188,6 @@ const MUSE_POT_SLEEPING = 35;
 const MUSE_SCR_EARTH = 36;
 const MUSE_CAMERA = 37;
 
-/* monster inventory: makemon.js keeps mon->minvent as an array in pickup
-   order; C prepends, so walk it newest first */
-function minv(mon) { return (mon.minvent || []).slice().reverse(); }
-
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
 function mindless(ptr) { return (ptr.mflags1 & M.M1_MINDLESS) !== 0; }
@@ -202,8 +202,6 @@ function touch_petrifies(ptr) {
 }
 /* C ref: mondata.h NODIAG() */
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
-/* C ref: monst.h helpless() */
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: youprop.h See_invisible -- (HSee_invisible || ESee_invisible) */
 function See_invisible() {
     const p = game.u.uprops[SEE_INVIS];
@@ -227,20 +225,11 @@ function m_carrying(mtmp, type) {
     return null;
 }
 
-// C ref: stairs.c stairway_at()
-function stairway_at(x, y) {
-    for (let s = game.stairs; s; s = s.next)
-        if (s.sx === x && s.sy === y) return s;
-    return null;
-}
-
 /* C ref: youprop.h Deaf */
 function Deaf() {
     const p = game.u.uprops[DEAF];
     return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
 }
-/* C ref: monst.h DEADMONSTER() */
-function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: mondata.h resists_ston(), resists_acid(), acidic(), slimeproof(),
    noncorporeal(), amorphous(), unsolid() */
 function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
@@ -1233,11 +1222,8 @@ export async function use_defensive(mtmp) {
    iflags.last_msg to PLNMSG_UNKNOWN */
 const PLNMSG_enum = -1;
 
-/* C ref: mondata.h mhim() */
-function mhim(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him; }
-
 /* C ref: display.h remove_monster() -- the monster list is keyed by mx/my */
-function remove_monster(mtmp) {
+export function remove_monster(mtmp) {
     const lst = game.level.monsters || [];
     const i = lst.indexOf(mtmp);
     if (i >= 0)

@@ -7,6 +7,12 @@
 //
 // u.weapon_skills[] (you.h) lives on game.u.weapon_skills.
 
+import { MON_WEP } from './worn.js';
+import { impossible } from './hack.js';
+import { is_art } from './artifact.js';
+import { minv } from './mon.js';
+import { padr } from './pager.js';
+import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
 import { rn2, rnd, d } from './rng.js';
 import {
@@ -49,8 +55,6 @@ import { add_menu_heading } from './invent.js';
 import { P_SKILL_LIMIT, P_FIRST_SPELL, P_FIRST_H_TO_H, P_LAST_H_TO_H,
          P_FIRST_WEAPON, NHW_MENU, MENU_BEHAVE_STANDARD, PICK_NONE, PICK_ONE,
          MAXULEV, MENU_ITEMFLAGS_NONE, ECMD_OK } from './const.js';
-
-function impossible(msg) { console.error(`impossible: ${msg}`); }
 
 function weapon_skills() {
     const u = game.u;
@@ -196,10 +200,7 @@ export function skill_init(class_skill) {
 // mthrowu.c m_carrying().
 
 /* monst.h MON_WEP(), MON_NOWEP() */
-function MON_WEP(mon) { return mon.mw || null; }
 function MON_NOWEP(mon) { mon.mw = null; }
-/* monster inventory in C order (add_to_minv() prepends) */
-function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 
 /* C ref: decl.c hands_obj -- "weapon" meaning bare hands (no propellor) */
 export const hands_obj = { otyp: O.STRANGE_OBJECT, oclass: 0, hands_obj: true };
@@ -234,7 +235,6 @@ function attacktype(ptr, atyp) {
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
 
 /* obj.h */
-function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_spear(otmp) {
     return otmp.oclass === WEAPON_CLASS && objects[otmp.otyp].oc_skill === P_SPEAR;
 }
@@ -1270,10 +1270,6 @@ const skill_ranges = [
     { first: P_FIRST_SPELL, last: P_LAST_SPELL, name: "Spellcasting Skills" },
 ];
 
-/* C ref: wizard (flags.debug) */
-function wizard() { return !!game.flags?.debug; }
-/* C ref: printf "%-*s" and "%5d" field widths */
-function padr(s, w) { return s.length >= w ? s : s + ' '.repeat(w - s.length); }
 function padl(s, w) { s = String(s); return s.length >= w ? s : ' '.repeat(w - s.length) + s; }
 
 // C ref: weapon.c add_skills_to_menu()

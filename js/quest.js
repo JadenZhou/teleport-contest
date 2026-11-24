@@ -5,6 +5,8 @@
 // nemesis_speaks, nemesis_stinks, chat_with_guardian, prisoner_speaks,
 // quest_chat, quest_talk, quest_stat_check.
 
+import { helpless } from './monmove.js';
+import { impossible } from './hack.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_ACHIEVE } from './const.js';
@@ -31,8 +33,6 @@ import { create_gas_cloud } from './region.js';
 import { Monnam, mon_nam } from './do_name.js';
 import { setmangry, monnear } from './mon.js';
 
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-
 // C ref: you.h MIN_QUEST_ALIGN, MIN_QUEST_LEVEL
 const MIN_QUEST_ALIGN = 20; /* at least "fervent" */
 const MIN_QUEST_LEVEL = 14; /* the minimum experience level for
@@ -47,9 +47,6 @@ function topo() { return game.dungeon_topology; }
 function Is_qstart(x) { return on_level(x, topo().d_qstart_level); }
 function Is_qlocate(x) { return on_level(x, topo().d_qlocate_level); }
 function Is_nemesis(x) { return on_level(x, topo().d_nemesis_level); }
-
-// C ref: monst.h helpless()
-function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
 // C ref: pline.c verbalize()
 async function verbalize(line) {

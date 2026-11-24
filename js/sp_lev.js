@@ -13,6 +13,8 @@
 // other des.* functions are registered by name but raise a Lua error until
 // they are ported (their C counterparts are listed in sp_lev_des_names).
 
+import { impossible } from './hack.js';
+import { panic } from './dungeon.js';
 import { game } from './gstate.js';
 import { flip_worm_segs_vertical, flip_worm_segs_horizontal,
          flip_wseg_cells } from './worm.js';
@@ -134,8 +136,6 @@ import { mkmap } from './mkmap.js';
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
 
 // C's impossible() and panic() (pline.c) are not ported yet.
-function impossible(msg) { console.error(`impossible: ${msg}`); }
-function panic(msg) { throw new Error(`panic: ${msg}`); }
 
 const MAX_NESTED_ROOMS = 5;
 const MAP_Y_LIM = 21; /* sp_lev.h */
