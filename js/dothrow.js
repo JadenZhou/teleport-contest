@@ -1388,6 +1388,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     let in_skip = false, allow_skip = false;
     let tethered_weapon = false;
     let bhit_done = false; /* left the loop by 'goto bhit_done' */
+    let shopdoor = false;
     const skip = { start: 0, end: 0 };
     let skipcount = 0;
     const was_returning = (g.iflags.returning_missile === obj) ? obj : null;
@@ -1515,7 +1516,19 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             case WAN_OPENING:
             case WAN_LOCKING:
             case WAN_STRIKING:
-                throw new Error('bhit(): doorlock() for zapped wand not ported yet');
+            case SPE_KNOCK_BH:
+            case SPE_WIZARD_LOCK_BH:
+            case SPE_FORCE_BOLT_BH:
+                if (await doorlock_bh(obj, x, y)) {
+                    if (cansee_br(x, y) || (obj.otyp === WAN_STRIKING && !Deaf_bh()))
+                        learnwand_bh(obj);
+                    if (g.level.at(x, y).doormask === D_BROKEN_BH
+                        && in_rooms_dt(x, y, SHOPBASE_DT).length) {
+                        shopdoor = true;
+                        add_damage_bh(x, y, SHOP_DOOR_COST_BH);
+                    }
+                }
+                break;
             }
         }
         if (!ZAP_POS(typ) || closed_door(x, y)) {
@@ -1552,6 +1565,9 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         && !tethered_weapon)
         tmp_at(DISP_END, 0);
     void was_returning;
+
+    if (!bhit_done && shopdoor)
+        await pay_for_damage_bh("destroy", false);
 
     /* bhit_done: */
     /* transient_light_cleanup(): lit objects are refused above */
@@ -2243,6 +2259,18 @@ import { erode_obj } from './trap.js';
 import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';
 import { You_hear as You_hear_br } from './sounds.js';
 import { costly_spot as costly_spot_br } from './shk.js';
+import { add_damage as add_damage_bh, pay_for_damage as pay_for_damage_bh } from './shk.js';
+import { doorlock as doorlock_bh } from './lock.js';
+import { learnwand as learnwand_bh } from './zap.js';
+import { SPE_KNOCK as SPE_KNOCK_BH, SPE_WIZARD_LOCK as SPE_WIZARD_LOCK_BH,
+         SPE_FORCE_BOLT as SPE_FORCE_BOLT_BH } from './objects.js';
+import { D_BROKEN as D_BROKEN_BH, SHOP_DOOR_COST as SHOP_DOOR_COST_BH,
+         DEAF as DEAF_BH } from './const.js';
+/* C ref: youprop.h Deaf */
+function Deaf_bh() {
+    const q = game.u.uprops[DEAF_BH];
+    return !!(q && (q.intrinsic || q.extrinsic)) || !!game.u.uroleplay?.deaf;
+}
 import { potionbreathe } from './potion.js';
 import { haseyes } from './mondata.js';
 import { armor_simple_name, makeplural, vtense } from './objnam.js';
