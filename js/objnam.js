@@ -3678,6 +3678,10 @@ function doname_base(obj, doname_flags) {
             prefix += `${obj.spe >= 0 ? "+" : ""}${obj.spe} `;
         break;
     case O.TOOL_CLASS:
+        if (obj.owornmask & (W_TOOL_XN | W_SADDLE_XN)) { /* blindfold */
+            bp += " (being worn)";
+            break;
+        }
         if (obj.otyp === O.LEASH && obj.leashmon)
             xn_not_ported('leash suffix');
         if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
@@ -3807,7 +3811,9 @@ function doname_base(obj, doname_flags) {
                     : "at the ready"})`;
     }
     if ((obj.owornmask & ~(W_ARMOR | W_AMUL | W_WEP | W_SWAPWEP | W_QUIVER
-                           | W_RINGL | W_RINGR | W_BALL | W_CHAIN))
+                           | W_RINGL | W_RINGR | W_BALL | W_CHAIN
+                           | ((obj.oclass === O.TOOL_CLASS && !is_weptool(obj))
+                              ? (W_TOOL_XN | W_SADDLE_XN) : 0)))
         || ((obj.owornmask & (W_RINGL | W_RINGR)) && obj.oclass !== O.RING_CLASS))
         xn_not_ported('meat ring/tool/leash worn suffixes');
 
@@ -3936,3 +3942,4 @@ export function short_oname(obj,
     /* use whatever we've got, whether it's too long or not */
     return outbuf;
 }
+import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';

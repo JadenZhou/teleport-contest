@@ -778,11 +778,24 @@ async function newman() {
     let newform;
     let i, oldlvl, newlvl, hpmax, enmax;
 
+    /* dead: -- we come directly here if experience level went to 0 or less */
+    const dead = async () => {
+        await urgent_pline("Your new form doesn't seem healthy enough to survive.");
+        killer_ps().format = KILLED_BY_AN;
+        killer_ps().name = "unsuccessful polymorph";
+        await done_ps(DIED_PS);
+        /* must have been life-saved to get here */
+        await newuhs(false);
+        await encumber_msg(); /* used to be done by redist_attr() */
+        /* return; lifesaved */
+    };
+
     oldlvl = u.ulevel;
     newlvl = oldlvl + rn1(5, -2);     /* new = old + {-2,-1,0,+1,+2} */
     if (newlvl > 127 || newlvl < 1) { /* level went below 0? */
         /* goto dead; old level is still intact (in case of lifesaving) */
-        throw new Error('newman(): "new form doesn\'t seem healthy enough" death not ported yet');
+        await dead();
+        return;
     }
     if (newlvl > MAXULEV)
         newlvl = MAXULEV;
@@ -854,7 +867,8 @@ async function newman() {
             if (u.uhp <= 0)
                 u.uhp = 1;
         } else {
-            throw new Error('newman(): "new form doesn\'t seem healthy enough" death not ported yet');
+            await dead();
+            return; /* lifesaved */
         }
     }
     await newuhs(false);
@@ -1551,3 +1565,6 @@ export async function dobreathe() {
     /* getdir(), then ubreatheu() or ubuzz(BZ_U_BREATH(...)) */
     throw new Error('dobreathe(): getdir()/ubuzz() of a hero breath weapon not ported yet');
 }
+import { done as done_ps } from './end.js';
+import { killer as killer_ps } from './topten.js';
+import { DIED as DIED_PS } from './const.js';
