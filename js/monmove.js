@@ -521,6 +521,75 @@ export async function monflee(mtmp, fleetime, first, fleemsg) {
     mon_track_clear(mtmp);
 }
 
+// C ref: monmove.c mind_blast()
+async function mind_blast(mtmp) {
+    const u = game.u;
+    let m2, nmon = null;
+
+    if (canseemon(mtmp))
+        await pline(`${Monnam(mtmp)} concentrates.`); /* pline_mon() */
+    if (mdistu(mtmp) > BOLT_LIM * BOLT_LIM) {
+        await pline("You sense a faint wave of psychic energy."); /* You() */
+        return;
+    }
+    await pline("A wave of psychic energy pours over you!");
+    if (mtmp.mpeaceful
+        && (!Conflict() || await resist_conflict(mtmp))) {
+        await pline("It feels quite soothing.");
+    } else if (!u.uinvulnerable) {
+        let dmg;
+        const m_sen = sensemon_mb(mtmp);
+        /* C ref: youprop.h Blind_telepat, Half_spell_damage */
+        const tp = u.uprops[TELEPAT_MB], hs = u.uprops[HALF_SPDAM_MB];
+        const Blind_telepat = !!(tp && (tp.intrinsic || tp.extrinsic));
+        const Half_spell_damage = !!(hs && (hs.intrinsic || hs.extrinsic));
+
+        if (m_sen || (Blind_telepat && rn2(2)) || !rn2(10)) {
+            /* hiding monsters are brought out of hiding when hit by
+                a psychic blast, so do the same for hiding poly'd hero */
+            if (u.uundetected) {
+                u.uundetected = 0;
+                newsym(u.ux, u.uy);
+            } else if ((game.youmonst.m_ap_type || M_AP_NOTHING) !== M_AP_NOTHING
+                        /* hero has no way to hide as monster but
+                            check for that theoretical case anyway */
+                        && game.youmonst.m_ap_type !== M_AP_MONSTER) {
+                game.youmonst.m_ap_type = M_AP_NOTHING;
+                game.youmonst.mappearance = 0;
+                newsym(u.ux, u.uy);
+            }
+            await pline(`It locks on to your ${
+                m_sen ? "telepathy"
+                : Blind_telepat ? "latent telepathy"
+                : "mind"}!`); /* note: hero is never mindless */
+            dmg = rnd(15);
+            if (Half_spell_damage)
+                dmg = Math.trunc((dmg + 1) / 2);
+            await losehp_mb(dmg, "psychic blast", KILLED_BY_AN_MB);
+        }
+    }
+    for (m2 = game.fmon; m2; m2 = nmon) {
+        nmon = m2.nmon;
+        if (m2.mhp < 1) /* DEADMONSTER(m2) */
+            continue;
+        if (m2.mpeaceful === mtmp.mpeaceful)
+            continue;
+        if (mindless(m2.data))
+            continue;
+        if (m2 === mtmp)
+            continue;
+        if ((telepathic_mb(m2.data) && (rn2(2) || m2.mblinded)) || !rn2(10)) {
+            /* wake it up first, to bring hidden monster out of hiding */
+            await wakeup_mb(m2, false);
+            if (cansee(m2.mx, m2.my))
+                await pline(`It locks on to ${mon_nam_mb(m2)}.`);
+            m2.mhp -= rnd(15);
+            if (m2.mhp < 1) /* DEADMONSTER(m2) */
+                await monkilled_mb(m2, "", AD_DRIN_MB);
+        }
+    }
+}
+
 // ── C ref: monmove.c distfleeck() ──
 async function distfleeck(mtmp, out) {
     const u = game.u;
@@ -942,7 +1011,9 @@ export async function dochug(mtmp) {
         await watch_on_duty(mtmp);
     /* mind flayers can make psychic attacks! */
     } else if (is_mind_flayer(mdat) && !rn2(20)) {
-        throw new Error('mind_blast() not ported yet');
+        await mind_blast(mtmp);
+        set_apparxy(mtmp);
+        await distfleeck(mtmp, d);
     }
 
     /* If monster is nearby you, and has to wield a weapon, do so.  This
@@ -2476,3 +2547,11 @@ import { COIN_CLASS as COIN_CLASS_MM } from './objects.js';
 import { gd_move } from './vault.js';
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER_mm(mon) { return mon.mhp < 1; }
+import { sensemon as sensemon_mb } from './display.js';
+import { losehp as losehp_mb } from './trap.js';
+import { wakeup as wakeup_mb, monkilled as monkilled_mb } from './mon.js';
+import { telepathic as telepathic_mb } from './mondata.js';
+import { mon_nam as mon_nam_mb } from './do_name.js';
+import { TELEPAT as TELEPAT_MB, HALF_SPDAM as HALF_SPDAM_MB,
+         KILLED_BY_AN as KILLED_BY_AN_MB } from './const.js';
+import { AD_DRIN as AD_DRIN_MB } from './monsters.js';
