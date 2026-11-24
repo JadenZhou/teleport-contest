@@ -725,7 +725,7 @@ function sortloot_cmp(sli1, sli2) {
 // C ref: pickup.c menu_class_present()
 /* gv.valid_menu_classes holds object classes (numbers) and the letters
    'B' 'U' 'C' 'X' 'P' 'u' (as char codes) */
-function menu_class_present(c) {
+export function menu_class_present(c) {
     return !!c && (game.valid_menu_classes || []).includes(c);
 }
 
@@ -775,6 +775,12 @@ function ParanoidAutoAll() {
         || game.flags.paranoid_confirm !== undefined)
         throw new Error('paranoia_bits: the paranoid_confirmation option is not ported yet');
     return false;
+}
+
+// C ref: pickup.c is_worn_by_type() -- query_objlist callback: return
+// TRUE if valid class and worn
+export function is_worn_by_type(otmp) {
+    return (is_worn(otmp) && allow_category(otmp)) ? true : false;
 }
 
 // C ref: pickup.c allow_category()

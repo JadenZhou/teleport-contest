@@ -58,7 +58,7 @@ import { enhance_weapon_skill } from './weapon.js';
 import { doapply, dorub, dojump } from './apply.js';
 import { dountrap } from './trap.js';
 import { doeat } from './eat.js';
-import { dowear, doputon, dotakeoff, ia_dotakeoff } from './do_wear.js';
+import { dowear, doputon, dotakeoff, ia_dotakeoff, doddoremarm } from './do_wear.js';
 import { dodrink, dodip, aggravate } from './potion.js';
 import { dopay } from './shk.js';
 import { dotogglepickup, doset_simple, doset } from './options.js';
@@ -176,6 +176,7 @@ const cmd_funcs = {
     doputon: () => doputon(),
     dotakeoff: () => dotakeoff(),
     ia_dotakeoff: () => ia_dotakeoff(),
+    doddoremarm: () => doddoremarm(),
     dodrink: () => dodrink(),
     dopay: () => dopay(),
     dolook: () => dolook(),

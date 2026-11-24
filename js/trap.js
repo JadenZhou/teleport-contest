@@ -59,7 +59,7 @@ import { dmgval } from './weapon.js';
 import { doname } from './objnam.js';
 import { monkilled, maybe_unhide_at } from './mon.js';
 import { find_mac, which_armor } from './worn.js';
-import { mtele_trap, mlevel_tele_trap, tele_trap } from './teleport.js';
+import { mtele_trap, mlevel_tele_trap, tele_trap, level_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
 import { bimanual } from './wield.js';
 
@@ -2496,13 +2496,15 @@ async function trapeffect_telep_trap(mtmp, trap, trflags) {
 // C ref: trap.c trapeffect_level_telep()
 async function trapeffect_level_telep(mtmp, trap, trflags) {
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_level_telep(): level_tele_trap() for the hero not ported yet');
+        seetrap(trap);
+        await level_tele_trap(trap, trflags);
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
         const forcetrap = ((trflags & FORCETRAP) !== 0);
 
         return mlevel_tele_trap(mtmp, trap, forcetrap, in_sight);
     }
+    return Trap_Effect_Finished;
 }
 
 // C ref: trap.c trapeffect_magic_portal()
