@@ -359,8 +359,13 @@ export async function teleds(nux, nuy, teleds_flags) {
     if (game.youmonst.data.mlet === S_MIMIC)
         throw new Error('teleds(): hideunder() for a mimic hero not ported yet');
 
-    if (was_swallowed)
-        throw new Error('teleds(): leaving an engulfer not ported yet');
+    if (was_swallowed) {
+        if (Punished()) { /* ball&chain are off map while swallowed */
+            ball_active = true; /* to put chain and non-carried ball on map */
+            ball_still_in_range = allow_drag = false; /* (redundant) */
+        }
+        await docrt_tp();
+    }
 
     if (ball_active && (ball_still_in_range || allow_drag)) {
         /* bc_control, ballx, bally, chainx, chainy, cause_delay */
@@ -1738,3 +1743,4 @@ import { tty_yn_function as tty_yn_function_tp } from './wintty.js';
 import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';
 import { inhishop } from './shk.js';
 import { inhistemple } from './priest.js';
+import { docrt as docrt_tp } from './display.js';

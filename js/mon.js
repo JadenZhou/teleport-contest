@@ -2997,7 +2997,7 @@ function flesh_petrifies(pm) {
     return pm === mons[MM.PM_COCKATRICE] || pm === mons[MM.PM_CHICKATRICE]
            || pm === mons[MM.PM_MEDUSA];
 }
-function mstoning(obj) {
+export function mstoning(obj) {
     return (ofood(obj) && obj.corpsenm >= LOW_PM && obj.corpsenm < NUMMONS
             && flesh_petrifies(mons[obj.corpsenm]));
 }

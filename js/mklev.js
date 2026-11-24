@@ -67,7 +67,7 @@ import {
     CORPSTAT_INIT, weight, add_to_container, mk_tt_object,
 } from './mkobj.js';
 import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon, is_pool,
-         is_lava } from './makemon.js';
+         is_lava, set_mimic_sym } from './makemon.js';
 import { priestini } from './priest.js';
 import { dist2, distmin } from './hacklib.js';
 import { del_engr_at } from './engrave.js';
@@ -77,7 +77,7 @@ import {
     PM_WRAITH, PM_SOLDIER_ANT, PM_FIRE_ANT, PM_GIANT_ANT, PM_SERGEANT,
     PM_LIEUTENANT, PM_CAPTAIN, PM_BUGBEAR, PM_HOBGOBLIN, S_DEMON, S_VAMPIRE,
     S_ZOMBIE, S_FUNGUS, S_DRAGON, S_GIANT, S_TROLL, S_CENTAUR, S_ORC,
-    S_GNOME, S_KOBOLD,
+    S_GNOME, S_KOBOLD, S_MIMIC, PM_SMALL_MIMIC, PM_LARGE_MIMIC, PM_GIANT_MIMIC,
 } from './monsters.js';
 import {
     IS_THRONE, THRONE, IS_ROOM, OBJ_AT, AM_SHRINE, MM_ASLEEP, A_NONE, NON_PM,
@@ -1969,8 +1969,17 @@ function dosdoor(x, y, aroom, type) {
             loc.flags = D_NODOOR;
 
         if (loc.flags & D_TRAPPED) {
-            if (level_difficulty() >= 9 && !rn2(5)) {
+            let mtmp;
+
+            if (level_difficulty() >= 9 && !rn2(5)
+                && !((game.mvitals[PM_SMALL_MIMIC].mvflags & G_GONE)
+                     && (game.mvitals[PM_LARGE_MIMIC].mvflags & G_GONE)
+                     && (game.mvitals[PM_GIANT_MIMIC].mvflags & G_GONE))) {
+                /* make a mimic instead */
                 loc.flags = D_NODOOR;
+                mtmp = makemon(mkclass(S_MIMIC, 0), x, y, NO_MM_FLAGS);
+                if (mtmp)
+                    set_mimic_sym(mtmp);
             }
         }
     } else {
