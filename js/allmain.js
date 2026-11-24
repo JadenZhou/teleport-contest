@@ -19,7 +19,7 @@ import { makewish } from './wizcmds.js';
 import { urgent_pline } from './display.js';
 import { tty_display_nhwindow } from './wintty.js';
 import { rhack, domove, enter_explore_mode } from './cmd.js';
-import { docrt, cls, bot, flush_screen, pline, see_monsters } from './display.js';
+import { docrt, cls, bot, timebot, flush_screen, pline, see_monsters } from './display.js';
 import { see_objects, see_traps, Hallucination, Blind, swallowed } from './display.js';
 import { read_engr_at } from './engrave.js';
 import { encumber_msg, pickup } from './pickup.js';
@@ -743,14 +743,16 @@ export async function moveloop_core() {
                    || any_visible_region()) { /* TODO: optimize this */
             see_monsters();
         }
+        if (g.vision_full_recalc)
+            vision_recalc(0); /* vision! */
     }
-    // Vision + display
-    if (g.vision_full_recalc) {
-        vision_recalc(0);
-        g.vision_full_recalc = 0;
+    if (g.disp_botl || g.disp_botlx) {
+        bot();
+        await flush_screen(1); /* curs_on_u() */
+    } else if (g.disp_time_botl) {
+        timebot();
+        await flush_screen(1); /* curs_on_u() */
     }
-    await bot();
-    await flush_screen(1);
 
     await m_everyturn_effect(g.youmonst);
 

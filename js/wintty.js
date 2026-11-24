@@ -504,13 +504,24 @@ export function tty_putstr(window, attr, str) {
                 cw.flags &= ~WIN_STOP;
             }
             cw.flags |= WIN_NOSTOP;
-            /* update_topl() may wait at --More--, so callers await this */
-            return update_topl(str).then(() => {
-                cw.flags &= ~WIN_NOSTOP; /* NOSTOP is a one-shot operation */
-            });
         }
-        /* update_topl() may wait at --More--, so callers await this */
-        return update_topl(str);
+        if (attr & 32 /* ATR_NOHISTORY */) {
+            /* put anything already on top line into history */
+            remember_topl();
+            /* write to top line without remembering what we're writing */
+            show_topl(str);
+            /* pline.c vpline(): gp.prevmsg (update_topl() sets it for the
+               other messages) */
+            game.prevmsg = str;
+            cw.flags &= ~WIN_NOSTOP; /* NOSTOP is a one-shot operation */
+            return Promise.resolve();
+        }
+        /* normal output; add to current top line if room, else flush
+           whatever is there to history and then write this;
+           update_topl() may wait at --More--, so callers await this */
+        return update_topl(str).then(() => {
+            cw.flags &= ~WIN_NOSTOP; /* NOSTOP is a one-shot operation */
+        });
     case NHW_BASE:
         tty_curs(window, cw.curx + 1, cw.cury);
         term_start_attr(attr);
@@ -695,6 +706,30 @@ export async function tty_putmixed(window, attr, str) {
         await tty_putstr(window, attr, buf);
     } finally {
         tty().mixed = 0;
+    }
+}
+
+// C ref: topl.c show_topl() -- for use by tty_putstr()
+function show_topl(str) {
+    const cw = wins()[game.WIN_MESSAGE];
+    const t = tty();
+
+    /* show if either STOP isn't set or current message specifies NOSTOP */
+    if ((cw.flags & (WIN_STOP | WIN_NOSTOP)) !== WIN_STOP) {
+        /* NOSTOP cancels persistent STOP and is a one-shot operation;
+           force both to be cleared (no-op for either bit that isn't set) */
+        cw.flags &= ~(WIN_STOP | WIN_NOSTOP);
+
+        if (t.cury && t.toplin === TOPLINE_NON_EMPTY)
+            tty_clear_nhwindow(game.WIN_MESSAGE);
+
+        cw.curx = cw.cury = 0;
+        home();
+        cl_end();
+        addtopl(str);
+
+        if (t.cury && t.toplin !== TOPLINE_SPECIAL_PROMPT)
+            t.toplin = TOPLINE_NON_EMPTY;
     }
 }
 
@@ -1261,15 +1296,20 @@ async function hooked_tty_getlin(query, hook) {
     return obufp;
 }
 
-// C ref: pline.c custompline() -- vpline() of a prompt: bring the map up
-// to date, then put the text in the message window
-async function custompline(line) {
+// C ref: pline.c custompline() -- vpline() of a prompt (SUPPRESS_HISTORY,
+// optionally NO_CURS_ON_U): bring the map up to date, then put the text in
+// the message window; putmesg() passes ATR_NOHISTORY for SUPPRESS_HISTORY
+// (the tty has WC2_SUPPRESS_HIST)
+export async function custompline(line, no_curs_on_u = false) {
     /* vpline(): bring the map and status up to date before putmesg() */
     if (game.vision_full_recalc)
         vision_recalc(0);
     if (game.u?.ux)
-        await flush_screen(1); /* %% */
-    await tty_putstr(game.WIN_MESSAGE, 0, line);
+        await flush_screen(no_curs_on_u ? 0 : 1); /* %% */
+    await tty_putstr(game.WIN_MESSAGE, 32 /* ATR_NOHISTORY */, line);
+    /* this gets cleared after every pline message */
+    if (game.iflags)
+        game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
 }
 
 // C ref: getline.c ext_cmd_getlin_hook()

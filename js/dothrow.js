@@ -1009,8 +1009,14 @@ async function throwit(obj,
             /* venom [via #monster to spit while poly'd] fails breaktest()
                but we want to force breakage even when location IS_SOFT() */
             || obj.oclass === VENOM_CLASS) {
-            /* tmp_at(DISP_FLASH, ...) display only; breakmsg(), breakobj() */
-            throw new Error('throwit(): breakobj() not ported yet');
+            /* tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
+               tmp_at(bx, by); nh_delay_output(); tmp_at(DISP_END, 0):
+               display only */
+            await breakmsg(obj, cansee_br(bx, by));
+            if (await breakobj(obj, bx, by, true, true)) {
+                throwit_return(true);
+                return;
+            }
         }
         if (!(uhave(DEAF) || u.uroleplay?.deaf) && !Underwater()) {
             /* Some sound effects when item lands in water or lava */
@@ -1157,6 +1163,8 @@ async function hero_breaks(obj,
                            breakflags) {
     /* from_invent: thrown or dropped by player; maybe on shop bill;
        by-hero is implicit so callers don't need to specify BRK_BY_HERO */
+    const from_invent = (breakflags & BRK_FROM_INV) !== 0,
+        in_view = Blind_br() ? false : (from_invent || cansee_br(x, y));
     let brk = (breakflags & BRK_KNOWN_OUTCOME);
 
     /* only call breaktest if caller hasn't already specified the outcome */
@@ -1165,7 +1173,137 @@ async function hero_breaks(obj,
     if (brk === BRK_KNOWN2NOTBREAK)
         return 0;
 
-    throw new Error('hero_breaks(): breakmsg()/breakobj() not ported yet');
+    await breakmsg(obj, in_view);
+    return await breakobj(obj, x, y, true, from_invent);
+}
+
+// C ref: dothrow.c breakobj()
+/*
+ * Unconditionally break an object. Assumes all resistance checks
+ * and break messages have been delivered prior to getting here.
+ */
+export async function breakobj(
+    obj,
+    x, y,          /* object location (ox, oy may not be right) */
+    hero_caused,   /* is this the hero's fault? */
+    from_invent) {
+    const u = game.u;
+    let fracture = false;
+    let explosion = false;
+
+    if (is_crackable(obj)) /* if erodeproof, erode_obj() will say so */
+        return ((await erode_obj(obj, armor_simple_name(obj), ERODE_CRACK,
+                                 EF_DESTROY | EF_VERBOSE)) === ER_DESTROYED);
+
+    switch (obj.oclass === POTION_CLASS ? POT_WATER : obj.otyp) {
+    case MIRROR:
+        if (hero_caused)
+            change_luck(-2);
+        break;
+    case POT_WATER: /* really, all potions */
+        obj.in_use = 1; /* in case it's fatal */
+        if (obj.otyp === POT_OIL && obj.lamplit) {
+            throw new Error('breakobj(): explode_oil() not ported yet');
+        } else if (dist2(x, y, u.ux, u.uy) <= 2) { /* next2u(x, y) */
+            const ptr = game.youmonst.data;
+            const breathless = (ptr.mflags1 & M1_BREATHLESS) !== 0;
+            if (!breathless || haseyes(ptr)) {
+                /* wet towel protects both eyes and breathing */
+                if (obj.otyp !== POT_WATER
+                    && !(game.ublindf && game.ublindf.otyp === TOWEL)) { /* !Half_gas_damage */
+                    if (!breathless) {
+                        /* [what about "familiar odor" when known?] */
+                        await You("smell a peculiar odor...");
+                    } else {
+                        let eyes = body_part(EYE);
+
+                        /* eyecount(ptr) */
+                        if (!(haseyes(ptr) && (ptr === mons[PM_CYCLOPS]
+                                               || ptr === mons[PM_FLOATING_EYE])))
+                            eyes = makeplural(eyes);
+                        await pline(`Your ${eyes} ${vtense(eyes, "water")}.`); /* Your() */
+                    }
+                }
+                await potionbreathe(obj);
+            }
+        }
+        /* monster breathing isn't handled... [yet?] */
+        break;
+    case EXPENSIVE_CAMERA:
+        throw new Error('breakobj(): release_camera_demon() not ported yet');
+    case EGG:
+        /* breaking your own eggs is bad luck */
+        if (hero_caused && obj.spe && obj.corpsenm >= LOW_PM) /* ismnum() */
+            change_luck(-Math.min(obj.quan, 5));
+        if (obj.corpsenm === PM_PYROLISK)
+            explosion = true;
+        break;
+    case BOULDER:
+    case STATUE:
+        /* caller will handle object disposition;
+           we're just doing the shop theft handling */
+        fracture = true;
+        break;
+    default:
+        break;
+    }
+
+    if (hero_caused) {
+        if (from_invent || obj.unpaid) {
+            if ((u.ushops && u.ushops.length) || obj.unpaid)
+                throw new Error('breakobj(): check_shop_obj() not ported yet');
+        } else if (!obj.no_charge && costly_spot_br(x, y)) {
+            /* it is assumed that the obj is a floor-object */
+            throw new Error('breakobj(): breaking a shop floor object not ported yet');
+        }
+    }
+    if (!fracture)
+        delobj(obj);
+    if (explosion)
+        throw new Error('breakobj(): pyrolisk egg explode() not ported yet');
+    return 1;
+}
+
+// C ref: dothrow.c breakmsg()
+async function breakmsg(obj, in_view) {
+    let to_pieces;
+
+    if (is_crackable(obj)) /* breakobj() will call erode_obj() for message */
+        return;
+
+    to_pieces = "";
+    switch (obj.oclass === POTION_CLASS ? POT_WATER : obj.otyp) {
+    default: /* glass or crystal wand */
+        /* if (obj->oclass != WAND_CLASS) impossible("breaking odd object") */
+        /* FALLTHRU */
+    case LENSES:
+    case MIRROR:
+    case CRYSTAL_BALL:
+    case EXPENSIVE_CAMERA:
+        to_pieces = " into a thousand pieces";
+        /* FALLTHRU */
+    case POT_WATER: /* really, all potions */
+        if (!in_view) {
+            await You_hear_br("something shatter!"); /* You_hear("%s shatter!", something) */
+        } else {
+            const dn = doname(obj);
+            await pline(`${dn.charAt(0).toUpperCase()}${dn.slice(1)} shatter${ /* Doname2() */
+                (obj.quan === 1) ? "s" : ""}${to_pieces}!`);
+        }
+        break;
+    case EGG:
+    case MELON:
+        await pline("Splat!");
+        break;
+    case CREAM_PIE:
+        if (in_view)
+            await pline("What a mess!");
+        break;
+    case ACID_VENOM:
+    case BLINDING_VENOM:
+        await pline("Splash!");
+        break;
+    }
 }
 
 // C ref: dothrow.c breaktest()
@@ -2081,3 +2219,19 @@ function is_axe_dt(otmp) {
 }
 /* C ref: you.h Race_if(PM_ELF) */
 function Race_if_elf() { return game.urace.mnum === PM_ELF_DT; }
+import { cansee as cansee_br } from './vision.js';
+import { Blind as Blind_br } from './display.js';
+import { is_crackable } from './objects.js';
+import { erode_obj } from './trap.js';
+import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';
+import { You_hear as You_hear_br } from './sounds.js';
+import { costly_spot as costly_spot_br } from './shk.js';
+import { potionbreathe } from './potion.js';
+import { haseyes } from './mondata.js';
+import { armor_simple_name, makeplural, vtense } from './objnam.js';
+import { change_luck } from './attrib.js';
+import { POT_OIL, MIRROR, TOWEL, STATUE, LENSES, CRYSTAL_BALL } from './objects.js';
+import { M1_BREATHLESS, PM_CYCLOPS, PM_FLOATING_EYE, PM_PYROLISK } from './monsters.js';
+import { LOW_PM } from './const.js';
+import { delobj } from './invent.js';
+import { dist2 } from './hacklib.js';

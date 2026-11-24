@@ -72,13 +72,13 @@ import { welded, setuwep, setuqwep, setuswapwep, bimanual } from './wield.js';
 import { Norep } from './display.js';
 import { makeplural } from './objnam.js';
 import { HAND } from './const.js';
-import { placebc, unplacebc, drag_down, ballrelease, drop_ball } from './ball.js';
+import { placebc, unplacebc, drag_down, ballrelease, drop_ball, ballfall } from './ball.js';
 import { You, newsym, stairway_at } from './display.js';
 import { can_reach_floor } from './engrave.js';
 import { doname } from './objnam.js';
 import { place_object } from './mkobj.js';
 import { encumber_msg } from './pickup.js';
-import { rn2, rnd } from './rng.js';
+import { rn2, rnd, d } from './rng.js';
 import { You_cant, Your } from './display.js';
 import { BLINDED, TIMEOUT, FACE } from './const.js';
 import { incr_itimeout, set_itimeout, make_blinded } from './potion.js';
@@ -518,8 +518,9 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     let up = (depth(newlevel) < depth(u.uz));
     const newdungeon = (u.uz.dnum !== newlevel.dnum);
     let leaving_tutorial = false;
-    /* dist, do_fall_dmg: falling isn't ported */
     let new_ = false, familiar = false;
+    const dist = depth(newlevel) - depth(u.uz);
+    let do_fall_dmg = false;
     const prev_temperature = g.level.flags?.temperature || 0;
     const was_in_W_tower = In_W_tower(u.ux, u.uy, u.uz);
 
@@ -579,7 +580,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (g.context?.polearm) g.context.polearm.hitmon = null;
 
     if (falling) /* assuming this is only trap door or hole */
-        throw new Error('goto_level(): impact_drop() not ported yet');
+        await impact_drop(null, u.ux, u.uy, newlevel.dlevel);
 
     await check_special_room(true); /* probably was a trap door */
     if (Punished())
@@ -787,8 +788,12 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         }
     } else { /* trap door or level_tele or In_endgame */
         u_on_rndspot((up ? 1 : 0) | (was_in_W_tower ? 2 : 0));
-        if (falling)
-            throw new Error('goto_level(): falling arrival not ported yet');
+        if (falling) {
+            if (Punished() && !welded(g.uball))
+                await ballfall();
+            await selftouch("Falling, you");
+            do_fall_dmg = true;
+        }
     }
 
     if (Punished())
@@ -958,8 +963,13 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
             throw new Error('goto_level(): fix_shop_damage() not ported yet');
     }
 
-    /* fall damage? do_fall_dmg is set only when falling, which
-       throws above */
+    /* fall damage? */
+    if (do_fall_dmg) {
+        let dmg = d(Math.max(dist, 1), 6);
+
+        dmg = Maybe_Half_Phys(dmg);
+        await losehp(dmg, "falling down a mine shaft", KILLED_BY);
+    }
 
     await pickup(1);
 }
@@ -1484,3 +1494,4 @@ export async function dowipe() {
 }
 import { done as done_do } from './end.js';
 import { ESCAPED as ESCAPED_DO } from './const.js';
+import { impact_drop } from './dokick.js';
