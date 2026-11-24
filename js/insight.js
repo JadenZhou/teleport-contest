@@ -2846,7 +2846,7 @@ export function size_str(msize) {
 
 /* C ref: priest.c mon_aligntyp() */
 function mon_aligntyp_s(mon) {
-    const algn = mon.ispriest ? mon.mextra?.epri?.shralign
+    const algn = mon.ispriest ? mon.epri?.shralign /* EPRI() */
                  : mon.isminion ? mon.mextra?.emin?.min_align
                    : mon.data.maligntyp;
 
