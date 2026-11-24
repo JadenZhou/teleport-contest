@@ -34,8 +34,10 @@ import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { extcmdlist } from './func_tab.js';
 import { cmd_from_func, key2extcmddesc, key2txt, dokeylist } from './cmd.js';
 import { visctrl } from './hacklib.js';
-import { canspotmon, vobj_at, pline, Hallucination, Blind, back_to_glyph,
-         known_branch_stairs, stairway_at } from './display.js';
+import {
+    canspotmon, vobj_at, pline, back_to_glyph, known_branch_stairs,
+    stairway_at
+} from './display.js';
 import { cansee } from './vision.js';
 import { m_at, closed_door, is_pool, is_lava } from './makemon.js';
 import { t_at } from './trap.js';
@@ -96,6 +98,7 @@ import { display_inventory } from './invent.js';
 import { data_base } from './data_base.js';
 import { tty_putmixed, tty_getlin, tty_display_file } from './wintty.js';
 import { doextversion } from './mdlib.js';
+import { Blind, Hallucination } from './youprop.js';
 
 /* C ref: mondata.h digests() */
 function digests(ptr) {

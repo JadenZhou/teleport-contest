@@ -43,7 +43,6 @@ import { learnwand } from './zap.js';
 import { cancel_doff } from './do_wear.js';
 import { is_weptool } from './wield.js';
 import { DEAF, W_SADDLE } from './const.js';
-import { Unaware } from './eat.js';
 import { extract_from_minvent_g } from './steal.js';
 import { place_object } from './mkobj.js';
 import { m_useup_g } from './mthrowu.js';
@@ -52,6 +51,7 @@ import { s_suffix } from './hacklib.js';
 import { can_saddle } from './makemon.js';
 import { can_ride } from './steed.js';
 import { surface } from './iactions.js';
+import { See_invisible, Unaware } from './youprop.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -73,11 +73,6 @@ function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 /* C ref: youprop.h See_invisible, Blind */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function See_invisible() { return uhave(SEE_INVIS); }
 /* C ref: role.h Role_if() */
 function Role_if(pm) { return game.urole.mnum === pm; }
 

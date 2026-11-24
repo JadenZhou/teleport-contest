@@ -33,8 +33,9 @@ import { splitobj, obj_extract_self } from './mkobj.js';
 import { mpickobj, relobj } from './steal.js';
 import { m_in_out_region } from './region.js';
 import { distant_name, doname } from './objnam.js';
-import { newsym, pline, canseemon, mon_visible, canspotmon, Hallucination,
-         glyph_kind, vobj_at } from './display.js';
+import {
+    newsym, pline, canseemon, mon_visible, canspotmon, glyph_kind, vobj_at
+} from './display.js';
 import { vtense } from './objnam.js';
 import { locomotion } from './trap.js';
 import { Monnam, noit_Monnam } from './do_name.js';
@@ -47,6 +48,7 @@ import {
     D_CLOSED, D_LOCKED, CONFLICT, NON_PM, isok, MAGIC_PORTAL, W_ARMG,
     NEED_WEAPON, NEED_HTH_WEAPON, I_SPECIAL, W_ARMS,
 } from './const.js';
+import { Hallucination, Conflict } from './youprop.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -98,10 +100,6 @@ function mresists(mon, mr) {
 }
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p.intrinsic || p.extrinsic);
-}
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: hack.c may_dig() */
 function may_dig(x, y) {

@@ -92,57 +92,20 @@ import { PICK_ANY, MENU_FULL, MENU_TRADITIONAL, NHW_MENU,
 import { ATR_NONE, NO_COLOR } from './terminal.js';
 import { M1_NOLIMBS } from './monsters.js';
 import { observe_object } from './o_init.js';
-import { Hallucination, bot } from './display.js';
+import { bot } from './display.js';
 import { highc } from './hacklib.js';
 import { SCROLL_CLASS, SPBOOK_CLASS, MIRROR } from './objects.js';
 import { saleable } from './shknam.js';
 import { paydoname } from './objnam.js';
 import { simpleonames, thesimpleoname } from './iactions.js';
+import {
+    Blind, Hallucination, Deaf, Blind_telepat, Detect_monsters, Invis, Displaced, Conflict,
+    Passes_walls, Fast
+} from './youprop.js';
 
 // ── small helpers (C ref: youprop.h / monst.h / shk.c macros) ──
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Invis() { return uhave(INVIS); }
-/* C ref: youprop.h Displaced, Conflict, Fast -- (H* || E*) */
-function Displaced() {
-    const p = game.u.uprops[DISPLACED];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Fast() {
-    const p = game.u.uprops[FAST];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p && (p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf));
-}
-/* C ref: youprop.h Blind -- display.js has the full test */
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Passes_walls() {
-    const p = game.u.uprops[PASSES_WALLS];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-/* C ref: youprop.h Blind_telepat, Detect_monsters */
-function Blind_telepat() {
-    const p = game.u.uprops[TELEPAT];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Detect_monsters() {
-    const p = game.u.uprops[DETECT_MONSTERS];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 /* C ref: role.h Role_if() */
 function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: monst.h helpless() */

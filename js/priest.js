@@ -48,6 +48,7 @@ import { Monnam } from './do_name.js';
 import { body_part } from './insight.js';
 import { record_achievement } from './do.js';
 import { ACH_TMPL } from './const.js';
+import { Invis, Displaced, Conflict, Deaf, Hallucination } from './youprop.js';
 
 // C ref: priest.c ALGN_SINNED, ALGN_DEVOUT
 const ALGN_SINNED = (-4); /* worse than strayed (-1..-3) */
@@ -154,19 +155,6 @@ export function p_coaligned(priest) {
     return (game.u.ualign.type === mon_aligntyp(priest));
 }
 
-/* C ref: youprop.h Invis, Displaced, Conflict */
-function Invis() {
-    const p = game.u.uprops[INVIS];
-    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Displaced() {
-    const p = game.u.uprops[DISPLACED];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 /* C ref: mondata.c resist_conflict() */
 function resist_conflict(mtmp) {
     /* always a small chance at 19 */
@@ -366,15 +354,6 @@ export function findpriest(roomno) {
     return null;
 }
 
-/* C ref: youprop.h Deaf, Hallucination; monst.h helpless() */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p && (p.intrinsic || p.extrinsic) || game.u.uroleplay?.deaf);
-}
-function Hallucination() {
-    const p = game.u.uprops[HALLUC];
-    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
-}
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 
 // C ref: priest.c intemple()

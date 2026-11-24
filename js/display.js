@@ -12,7 +12,6 @@ import { NOT_HUNGRY, UNENCUMBERED, SICK, SICK_VOMITABLE, SICK_NONVOMITABLE, TT_L
          TT_BURIEDBALL, CONFUSION, DEAF, FLYING, HALLUC_RES, LEVITATION, SLIMED,
          STONED, STRANGLED, STUNNED, GLIB } from './const.js';
 import { ACURR } from './attrib.js';
-import { Unaware } from './eat.js';
 import { mapxy_valid } from './getpos.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS, LADDER, SDOOR, SCORR,
@@ -49,6 +48,7 @@ import { t_at } from './trap.js';
 import { engr_at, sticks, can_reach_floor } from './engrave.js';
 import { ENGRAVE, BURN, HEADSTONE } from './const.js';
 import { AM_MASK, AM_SANCTUM, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC } from './const.js';
+import { Blind, Hallucination, Unaware } from './youprop.js';
 
 // C ref: display.h altar_to_glyph(), enum altar_colors (without
 // USE_GENERAL_ALTAR_COLORS); display.c altarcolors[]
@@ -1052,11 +1052,6 @@ function uprop(p) {
     const P = game.u?.uprops?.[p];
     return !!(P && (P.intrinsic || P.extrinsic));
 }
-/* C ref: youprop.h Blind -- ((HBlinded || EBlinded) && !BBlinded) */
-export function Blind() {
-    const P = game.u?.uprops?.[BLINDED];
-    return !!(P && (P.intrinsic || P.extrinsic) && !P.blocked);
-}
 
 // C ref: display.h _see_with_infrared()
 export function see_with_infrared(mon) {
@@ -1296,11 +1291,6 @@ function display_monster(
     }
 }
 
-// C ref: you.h Hallucination
-export function Hallucination() {
-    const p = game.u?.uprops?.[HALLUC];
-    return !!(p?.intrinsic || p?.extrinsic);
-}
 
 // C ref: display.h newsym_rn2 (rn2_on_display_rng) -- the display RNG is
 // separate from the core one; only hallucination draws from it here

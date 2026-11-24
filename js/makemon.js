@@ -64,6 +64,7 @@ import {
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
+import { See_invisible } from './youprop.js';
 const DF_NONE = 0x00; /* hack.h */
 import { engr_at } from './engrave.js';
 import { enexto_core, enexto_gpflags } from './teleport.js';
@@ -2957,11 +2958,6 @@ function is_vampshifter_mon(mon) {
            || mon.cham === M.PM_VLAD_THE_IMPALER;
 }
 // C ref: youprop.h See_invisible -- intrinsics aren't tracked yet
-/* C ref: youprop.h See_invisible */
-function See_invisible() {
-    const p = game.u?.uprops?.[SEE_INVIS];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 // C ref: muse.c rnd_misc_item()
 export function rnd_misc_item(mtmp) {

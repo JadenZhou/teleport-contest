@@ -44,9 +44,10 @@ import { highc } from './hacklib.js';
 import { monflee } from './monmove.js';
 import { is_safemon, end_running, in_rooms } from './hack.js';
 import { rnl, d } from './rng.js';
-import { Your, pline_The, Blind, Hallucination, sensemon, canseemon, newsym,
-         glyph_at, glyph_is_warning, glyph_is_invisible, map_invisible,
-         tp_sensemon, vobj_at } from './display.js';
+import {
+    Your, pline_The, sensemon, canseemon, newsym, glyph_at, glyph_is_warning,
+    glyph_is_invisible, map_invisible, tp_sensemon, vobj_at
+} from './display.js';
 import { mon_nam, l_monnam, x_monnam, ARTICLE_A, SUPPRESS_IT,
          SUPPRESS_INVISIBLE, SUPPRESS_HALLUCINATION, SUPPRESS_SADDLE,
          SUPPRESS_NAME } from './do_name.js';
@@ -178,6 +179,11 @@ import { will_hurtle, hurtle, mhurtle } from './dothrow.js';
 import { some_mon_nam } from './do_name.js';
 import { unstuck } from './mhitu.js';
 import { set_apparxy } from './monmove.js';
+import {
+    Shock_resistance, Stone_resistance, Punished, Stunned, Confusion, Blind, Hallucination,
+    Deaf, Detect_monsters, Amphibious, Breathless, Underwater, Half_physical_damage,
+    Protection_from_shape_changers, Free_action, Hate_silver
+} from './youprop.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -185,29 +191,9 @@ function flaming(ptr) {
            || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }
 function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
-/* C ref: youprop.h Amphibious, Breathless */
-function Amphibious() {
-    const p = game.u.uprops[MAGICAL_BREATHING];
-    return !!(p.intrinsic || p.extrinsic)
-           || (game.youmonst.data.mflags1 & M.M1_AMPHIBIOUS) !== 0;
-}
-function Breathless() {
-    const p = game.u.uprops[MAGICAL_BREATHING];
-    return !!(p.intrinsic || p.extrinsic)
-           || (game.youmonst.data.mflags1 & M.M1_BREATHLESS) !== 0;
-}
 /* C ref: mondata.h is_animal(), type_is_pname() */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
 function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
-/* C ref: youprop.h Deaf, Stone_resistance */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(((p.intrinsic || p.extrinsic) && !p.blocked) || game.u.uroleplay?.deaf);
-}
-function Stone_resistance() {
-    const p = game.u.uprops[STONE_RES];
-    return !!(p.intrinsic || p.extrinsic);
-}
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 
@@ -218,18 +204,6 @@ function touch_petrifies(ptr) {
 }
 /* C ref: mondata.h resists_ston() */
 function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
-/* C ref: youprop.h Half_physical_damage, Hate_silver */
-function Half_physical_damage() {
-    const p = game.u.uprops[HALF_PHDAM];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Hate_silver() {
-    const pd = game.youmonst.data;
-    return (game.u.ulycn ?? NON_PM) >= LOW_PM
-        || is_were(pd) || pd.mlet === M.S_VAMPIRE || is_demon(pd)
-        || pd === mons[M.PM_SHADE]
-        || (pd.mlet === M.S_IMP && pd !== mons[M.PM_TENGU]);
-}
 /* C ref: uhitm.c mhitm_ad_phys() -- !artifact_hit(magr, mdef, otmp,
    &mhm->damage, gm.mhitu_dieroll) */
 async function not_artifact_hit(magr, mdef, otmp, mhm) {
@@ -243,11 +217,6 @@ function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
-/* C ref: youprop.h Shock_resistance */
-function Shock_resistance() {
-    const p = game.u.uprops[SHOCK_RES];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 /* C ref: hack.h m_next2u() */
 function m_next2u(mon) {
     return Math.abs(mon.mx - game.u.ux) <= 1 && Math.abs(mon.my - game.u.uy) <= 1;
@@ -1993,8 +1962,6 @@ export async function mhitm_knockback(
     return true;
 }
 
-/* C ref: youprop.h Punished */
-function Punished() { return !!game.uball; }
 /* C ref: obj.h u_wield_art() */
 function u_wield_art(art) { return !!(game.uwep && game.uwep.oartifact === art); }
 /* C ref: mondata.h is_longworm() */
@@ -2152,12 +2119,6 @@ function uprop(p) {
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 function Role_if(pm) { return game.urole.mnum === pm; }
 function Race_if(pm) { return game.urace.mnum === pm; }
-function Confusion() { return uprop(CONFUSION); }
-function Stunned() { return uprop(STUNNED); }
-function Protection_from_shape_changers() { return uprop(PROT_FROM_SHAPE_CHANGERS); }
-function Detect_monsters() { return uprop(DETECT_MONSTERS); }
-function Free_action() { return uprop(FREE_ACTION); }
-function Underwater() { return !!game.u.uinwater; }
 function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function DEADMONSTER(mon) { return mon.mhp < 1; }

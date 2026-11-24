@@ -53,7 +53,6 @@ import { s_suffix } from './hacklib.js';
 import { cansee, block_point, vision_recalc } from './vision.js';
 import { t_at, chest_trap } from './trap.js';
 import { FINGER } from './const.js';
-import { Unaware } from './eat.js';
 import { You_hear } from './sounds.js';
 import { wake_nearto } from './mon.js';
 import { in_rooms } from './hack.js';
@@ -83,12 +82,8 @@ import { is_drawbridge_wall } from './dbridge.js';
 import { bottlename, potionbreathe } from './potion.js';
 import { haseyes } from './mondata.js';
 import { M1_BREATHLESS } from './monsters.js';
+import { Blind, Deaf, Unaware } from './youprop.js';
 
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
-}
 
 /* C ref: pline.c verbalize() -- SetVoice() only matters for speech
    output, which the tty doesn't do */
@@ -1303,11 +1298,6 @@ export async function doclose() {
     return ECMD_TIME;
 }
 
-/* C ref: youprop.h Blind */
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 
 // C ref: lock.c chest_shatter_msg()
 async function chest_shatter_msg(otmp) {

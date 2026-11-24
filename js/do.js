@@ -13,8 +13,9 @@ import { livelog_printf } from './display.js';
 import { LL_ACHIEVE, LL_DEBUG } from './const.js';
 import { describe_level } from './botl.js';
 import { container_impact_dmg, obj_delivery } from './dokick.js';
-import { pline, pline_The, docrt, flush_screen, Hallucination,
-         Blind } from './display.js';
+import {
+    pline, pline_The, docrt, flush_screen
+} from './display.js';
 import { bones_include_name } from './bones.js';
 import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
@@ -102,30 +103,19 @@ import { mon_nam } from './do_name.js';
 import { set_ustuck } from './uhitm.js';
 import { AT_ENGL, AD_DGST } from './monsters.js';
 import { STAIRS } from './const.js';
+import {
+    Punished, Blind, Hallucination, Fumbling, HLevitation, ELevitation, Levitation, Flying
+} from './youprop.js';
 
 /* C ref: youprop.h -- the hero's properties used by the level-change code */
 function uprop(p) {
     return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
-}
-function HLevitation() { return uprop(LEVITATION).intrinsic; }
-function ELevitation() { return uprop(LEVITATION).extrinsic; }
-function Levitation() {
-    return !!((HLevitation() || ELevitation()) && !uprop(LEVITATION).blocked);
 }
 /* C ref: youprop.h Deaf */
 function Deaf_do() {
     const p = uprop(DEAF_DO);
     return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
 }
-function Flying() {
-    const p = uprop(FLYING);
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Fumbling() {
-    const p = uprop(FUMBLING);
-    return !!(p.intrinsic || p.extrinsic);
-}
-function Punished() { return !!game.uball; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {

@@ -7,9 +7,10 @@
 import { game } from './gstate.js';
 import { rn2, rnd, d } from './rng.js';
 import { couldsee, cansee } from './vision.js';
-import { pline, You, Your, pline_The, You_feel, Norep, canseemon,
-         canspotmon, tp_sensemon, map_invisible, Blind,
-         Hallucination } from './display.js';
+import {
+    pline, You, Your, pline_The, You_feel, Norep, canseemon, canspotmon,
+    tp_sensemon, map_invisible
+} from './display.js';
 import { You_hear } from './sounds.js';
 import { nomul } from './hack.js';
 import { Monnam, mon_nam, pmname, bogusmon, pronoun_gender,
@@ -51,6 +52,11 @@ import { M_ATTK_MISS, M_ATTK_HIT, M_SEEN_MAGR, M_SEEN_FIRE, M_SEEN_COLD,
 import { STRANGE_OBJECT, SHIELD_OF_REFLECTION,
          AMULET_OF_REFLECTION } from './objects.js';
 import { discover_object } from './o_init.js';
+import {
+    Antimagic, Half_spell_damage, Half_physical_damage, Free_action, Fire_resistance,
+    Cold_resistance, Shock_resistance, HStun, Stunned, HConfusion, Confusion, Blinded, Invis,
+    Displaced, See_invisible, Deaf, Detect_monsters, Unaware, Blind, Hallucination
+} from './youprop.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -113,29 +119,6 @@ const mon_wizard_spells = [
 
 /* C ref: youprop.h -- the hero's properties used here */
 function uprop(p) { return game.u.uprops[p] || {}; }
-function Antimagic() { return !!(uprop(ANTIMAGIC).intrinsic || uprop(ANTIMAGIC).extrinsic); }
-function Half_spell_damage() { return !!(uprop(HALF_SPDAM).intrinsic || uprop(HALF_SPDAM).extrinsic); }
-function Half_physical_damage() { return !!(uprop(HALF_PHDAM).intrinsic || uprop(HALF_PHDAM).extrinsic); }
-function Free_action() { return !!uprop(FREE_ACTION).extrinsic; }
-function Fire_resistance() { return !!(uprop(FIRE_RES).intrinsic || uprop(FIRE_RES).extrinsic); }
-function Cold_resistance() { return !!(uprop(COLD_RES).intrinsic || uprop(COLD_RES).extrinsic); }
-function Shock_resistance() { return !!(uprop(SHOCK_RES).intrinsic || uprop(SHOCK_RES).extrinsic); }
-function HStun() { return uprop(STUNNED).intrinsic || 0; }
-function Stunned() { return !!HStun(); }
-function HConfusion() { return uprop(CONFUSION).intrinsic || 0; }
-function Confusion() { return !!HConfusion(); }
-function Blinded() { return !!(uprop(BLINDED).intrinsic && !uprop(BLINDED).blocked); }
-function Invis() {
-    return !!((uprop(INVIS).intrinsic || uprop(INVIS).extrinsic) && !uprop(INVIS).blocked);
-}
-function Displaced() { return !!(uprop(DISPLACED).intrinsic || uprop(DISPLACED).extrinsic); }
-function See_invisible() { return !!(uprop(SEE_INVIS).intrinsic || uprop(SEE_INVIS).extrinsic); }
-function Deaf() {
-    return !!(uprop(DEAF).intrinsic || uprop(DEAF).extrinsic || game.u.uroleplay?.deaf);
-}
-function Detect_monsters() {
-    return !!(uprop(DETECT_MONSTERS).intrinsic || uprop(DETECT_MONSTERS).extrinsic);
-}
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: hack.c unconscious() */
 function unconscious() {
@@ -149,8 +132,6 @@ function unconscious() {
 }
 /* C ref: eat.c is_fainted() */
 function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
-/* C ref: youprop.h Unaware */
-function Unaware() { return game.multi < 0 && (unconscious() || is_fainted()); }
 /* C ref: display.h is_obj_mappear() */
 function is_obj_mappear(mon, otyp) {
     return mon.m_ap_type === M_AP_OBJECT && mon.mappearance === otyp;

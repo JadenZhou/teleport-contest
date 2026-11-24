@@ -45,6 +45,7 @@ import { distant_name, doname } from './objnam.js';
 import { obj_extract_self } from './mkobj.js';
 import { mpickobj } from './steal.js';
 import { dist2, isok } from './hacklib.js';
+import { Deaf } from './youprop.js';
 
 // C ref: wizard.c nasties[]
 const nasties = [
@@ -315,11 +316,6 @@ const random_malediction = [
     "Verily, thou shalt be one dead"
 ];
 
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops?.[DEAF];
-    return !!(p?.intrinsic || p?.extrinsic) || !!game.u.uroleplay?.deaf;
-}
 /* C ref: mondata.h is_minion(), is_lminion() */
 function is_minion(ptr) { return (ptr.mflags2 & MM.M2_MINION) !== 0; }
 function is_lminion(mon) {

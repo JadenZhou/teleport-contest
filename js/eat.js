@@ -48,7 +48,7 @@ import { COIN_CLASS, FOOD_CLASS } from './objects.js';
 import { You, You_cant } from './display.js';
 import { W_ARMOR, W_TOOL, W_AMUL, W_SADDLE } from './const.js';
 import { rn1, rnd, d } from './rng.js';
-import { pline_The, Your, Blind, Hallucination, see_monsters } from './display.js';
+import { pline_The, Your, see_monsters } from './display.js';
 import { MAGICAL_BREATHING, UNCHANGING, INVIS, FAST, STUNNED, CONFUSION,
          BLINDED, VOMITING, SICK, STONED, SLIMED, SICK_RES, AGGRAVATE_MONSTER,
          TIMEOUT, FROMOUTSIDE, INTRINSIC, A_INT, A_LAWFUL, COST_BITE,
@@ -99,6 +99,11 @@ import { observe_object } from './o_init.js';
 import { makeplural } from './objnam.js';
 import { acurrstr } from './attrib.js';
 import { costly_spot } from './insight.js';
+import {
+    maybe_polyd, Sleep_resistance, Poison_resistance, Acid_resistance, Stone_resistance,
+    Sick_resistance, Blind, Sick, Stoned, Strangled, Slimed, Hallucination, Hunger, Breathless,
+    Unchanging, Unaware
+} from './youprop.js';
 
 const invlet_basic = 52; /* C ref: invent.c */
 const MAX_EGG_HATCH_TIME = 200; /* C ref: obj.h */
@@ -220,10 +225,6 @@ export function is_fainted() {
     return game.u.uhs === FAINTED;
 }
 
-// C ref: youprop.h Unaware -- (multi < 0 && (unconscious() || is_fainted()))
-export function Unaware() {
-    return game.multi < 0 && (unconscious() || is_fainted());
-}
 
 // C ref: trap.c unconscious()
 export function unconscious() {
@@ -628,30 +629,8 @@ function obj_here(obj, x, y) {
 }
 /* C ref: you.h Upolyd, maybe_polyd() */
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function maybe_polyd(if_poly, if_not) { return Upolyd() ? if_poly : if_not; }
 /* C ref: youprop.h */
 function uprop(p) { return game.u.uprops[p]; }
-function Stone_resistance() { return uprop(STONE_RES).intrinsic || uprop(STONE_RES).extrinsic; }
-function Acid_resistance() { return uprop(ACID_RES).intrinsic || uprop(ACID_RES).extrinsic; }
-function Poison_resistance() { return uprop(POISON_RES).intrinsic || uprop(POISON_RES).extrinsic; }
-function Sleep_resistance() { return uprop(SLEEP_RES).intrinsic || uprop(SLEEP_RES).extrinsic; }
-function Sick_resistance() {
-    return uprop(SICK_RES).intrinsic || uprop(SICK_RES).extrinsic
-           || defended(game.youmonst, M.AD_DISE);
-}
-function Stoned() { return uprop(STONED).intrinsic; }
-function Slimed() { return uprop(SLIMED).intrinsic; }
-function Sick() { return uprop(SICK).intrinsic; }
-function Strangled() { return uprop(STRANGLED).intrinsic; }
-function Unchanging() { return uprop(UNCHANGING).intrinsic || uprop(UNCHANGING).extrinsic; }
-function Hunger() { return uprop(HUNGER).intrinsic || uprop(HUNGER).extrinsic; }
-function Breathless() {
-    return uprop(MAGICAL_BREATHING).intrinsic || uprop(MAGICAL_BREATHING).extrinsic
-           || (game.youmonst.data.mflags1 & M.M1_BREATHLESS) !== 0;
-}
-function Invis() {
-    return (uprop(INVIS).intrinsic || uprop(INVIS).extrinsic) && !uprop(INVIS).blocked;
-}
 /* C ref: mondata.h */
 function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 function touch_petrifies(ptr) {

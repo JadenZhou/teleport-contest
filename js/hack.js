@@ -104,6 +104,10 @@ import { DEAF } from './const.js';
 import { wake_msg, seemimic, maybe_unhide_at, disturb_buried_zombies } from './mon.js';
 import { drag_ball, move_bc } from './ball.js';
 import { worm_cross } from './worm.js';
+import {
+    Punished, Stunned, Confusion, Blind, Fumbling, Levitation, Flying, Underwater,
+    Passes_walls
+} from './youprop.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 import { l_nhcore_call } from './nhlua.js';
@@ -954,15 +958,6 @@ function uhave(prop) {
     const p = game.u.uprops[prop];
     return !!(p && (p.intrinsic || p.extrinsic));
 }
-function Blind() { return uhave(BLINDED); }
-function Confusion() { return uhave(CONFUSION); }
-function Stunned() { return uhave(STUNNED); }
-function Fumbling() { return uhave(FUMBLING); }
-function Passes_walls() { return uhave(PASSES_WALLS); }
-function Underwater() { return !!game.u.uinwater; }
-function Levitation() { return uhave(LEVITATION); }
-function Flying() { return uhave(FLYING); }
-function Punished() { return !!game.uball; }
 /* C ref: rm.h Sokoban -- svl.level.flags.sokoban_rules */
 function Sokoban() { return !!game.level.flags.sokoban_rules; }
 /* C ref: mondata.h tunnels(), needspick(), amorphous(), verysmall(),

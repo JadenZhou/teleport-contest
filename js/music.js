@@ -3,7 +3,7 @@
 
 import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
-import { pline, You, You_feel, You_cant, Hallucination } from './display.js';
+import { pline, You, You_feel, You_cant } from './display.js';
 import { yname, Tobjnam, Yname2, an } from './objnam.js';
 import { thesimpleoname } from './iactions.js';
 import { exercise } from './attrib.js';
@@ -19,19 +19,10 @@ import { G_UNIQ, M1_MINDLESS, M1_BREATHLESS, M1_NOHEAD, MZ_SMALL, MS_SILENT,
          MS_BUZZ, S_EEL } from './monsters.js';
 import { STUNNED, CONFUSION, DEAF, STRANGLED, UNCHANGING, STRAT_WAITMASK,
          NOTELL, A_DEX, A_WIS, ECMD_OK, ECMD_TIME } from './const.js';
+import {
+    Stunned, Confusion, Deaf, Strangled, Unchanging, Underwater, Hallucination
+} from './youprop.js';
 
-function uprop(p) { return game.u.uprops[p]; }
-function Stunned() { return !!(uprop(STUNNED).intrinsic || uprop(STUNNED).extrinsic); }
-function Confusion() { return !!(uprop(CONFUSION).intrinsic || uprop(CONFUSION).extrinsic); }
-function Deaf() {
-    return !!(uprop(DEAF).intrinsic || uprop(DEAF).extrinsic
-              || game.u.uroleplay?.deaf);
-}
-function Strangled() { return !!(uprop(STRANGLED).intrinsic || uprop(STRANGLED).extrinsic); }
-function Unchanging() {
-    return !!(uprop(UNCHANGING).intrinsic || uprop(UNCHANGING).extrinsic);
-}
-function Underwater() { return !!game.u.uinwater; }
 /* C ref: mondata.h unique_corpstat(), mindless() */
 function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
 function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }

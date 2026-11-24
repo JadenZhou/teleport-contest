@@ -6,7 +6,7 @@ import { game } from './gstate.js';
 import { in_town } from './hack.js';
 import { rnd, rn2 } from './rng.js';
 import { cvt_sdoor_to_door } from './detect.js';
-import { canseemon, newsym, pline, Hallucination } from './display.js';
+import { canseemon, newsym, pline } from './display.js';
 import { You_hear } from './sounds.js';
 import { mksobj_at, place_object } from './mkobj.js';
 import { acurr } from './attrib.js';
@@ -20,12 +20,12 @@ import { hideunder_async as hideunder, m_at } from './makemon.js';
 import { stop_occupation } from './allmain.js';
 import { obfree, stackobj } from './invent.js';
 import { M1_CONCEAL } from './monsters.js';
+import { Hallucination, Unaware, Blind as Blind_dg } from './youprop.js';
 
 /* C ref: mondata.h hides_under() */
 function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
-import { Unaware } from './eat.js';
 import { D_TRAPPED, D_BROKEN, SCORR, A_STR, A_INT, A_WIS, A_DEX, A_CON,
          A_CHA } from './const.js';
 import { ICE, DRAWBRIDGE_UP, DB_UNDER, DB_ICE, isok } from './const.js';
@@ -806,7 +806,6 @@ export async function buried_ball_to_punishment() {
         newsym(cc.x, cc.y);
     }
 }
-import { Blind as Blind_dg } from './display.js';
 import { STONE as STONE_DG } from './const.js';
 
 import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, N_DIRS_Z, TT_WEB, WEB, IRONBARS,

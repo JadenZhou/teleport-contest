@@ -14,9 +14,10 @@ import { monster_detect } from './detect.js';
 import { livelog_printf } from './display.js';
 import { LL_ARTIFACT } from './const.js';
 import { rn2, rnd, rn1 } from './rng.js';
-import { pline, You, Your, You_feel, You_see, pline_The, newsym,
-         canspotmon, glyph_at, Hallucination as Hallucination_d,
-         Blind as Blind_d } from './display.js';
+import {
+    pline, You, Your, You_feel, You_see, pline_The, newsym, canspotmon,
+    glyph_at
+} from './display.js';
 import { You_hear, get_iter_mons } from './sounds.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { makemon } from './makemon.js';
@@ -76,37 +77,13 @@ import { G_GONE, NO_TRAP_FLAGS, MM_NOMSG, TT_INFLOOR, TT_LAVA, A_MAX,
          FROMOUTSIDE, LEVITATION, BLINDED, HALLUC, HALLUC_RES, DEAF,
          INVIS, POISON_RES, FIRE_RES, UNCHANGING, GLIB, ONAME_VIA_DIP,
          ONAME_KNOW_ARTI, PRONOUN_HALLU } from './const.js';
+import {
+    Fire_resistance, Poison_resistance, Blind, Glib, Hallucination, Deaf, Invisible,
+    Levitation, Unchanging
+} from './youprop.js';
 
 /* C ref: youprop.h -- the property macros used here */
 function uprop(p) { return game.u.uprops[p]; }
-function Blind() { return Blind_d(); }
-function Hallucination() { return Hallucination_d(); }
-function Levitation() {
-    return !!((uprop(LEVITATION).intrinsic || uprop(LEVITATION).extrinsic)
-              && !uprop(LEVITATION).blocked);
-}
-function Deaf() {
-    return !!(uprop(DEAF).intrinsic || uprop(DEAF).extrinsic
-              || game.u.uroleplay?.deaf);
-}
-function See_invisible() {
-    return !!(uprop(SEE_INVIS).intrinsic || uprop(SEE_INVIS).extrinsic);
-}
-function Invis() {
-    return !!((uprop(INVIS).intrinsic || uprop(INVIS).extrinsic)
-              && !uprop(INVIS).blocked);
-}
-function Invisible() { return Invis() && !See_invisible(); }
-function Poison_resistance() {
-    return !!(uprop(POISON_RES).intrinsic || uprop(POISON_RES).extrinsic);
-}
-function Fire_resistance() {
-    return !!(uprop(FIRE_RES).intrinsic || uprop(FIRE_RES).extrinsic);
-}
-function Unchanging() {
-    return !!(uprop(UNCHANGING).intrinsic || uprop(UNCHANGING).extrinsic);
-}
-function Glib() { return !!(uprop(GLIB).intrinsic || uprop(GLIB).extrinsic); }
 void HALLUC; void HALLUC_RES; void BLINDED;
 
 /* C ref: role.h Role_if(), hack.h wizard */

@@ -237,14 +237,6 @@ function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 
 // C ref: artifact.c retouch_object() (ported in artifact.js)
 export { retouch_object };
-/* C ref: you.h Hate_silver; mondata.h hates_silver() */
-export function Hate_silver() {
-    const ptr = game.youmonst?.data;
-    return ((game.u.ulycn ?? -1) >= 0
-            || !!(ptr && ((ptr.mflags2 & M2_WERE) || ptr.mlet === S_VAMPIRE
-                          || (ptr.mflags2 & M2_DEMON) || ptr === mons[PM_SHADE]
-                          || (ptr.mlet === S_IMP && ptr !== mons[PM_TENGU]))));
-}
 
 /* C ref: obj.h is_sword() */
 function is_sword_wl(otmp) {

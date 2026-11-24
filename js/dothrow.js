@@ -84,6 +84,10 @@ import { obj_resists } from './dogmove.js';
 import { map_invisible, unmap_object, glyph_is_invisible, tmp_at, obj_to_glyph,
          DISP_FLASH, DISP_END } from './display.js';
 import { in_out_region } from './region.js';
+import {
+    Stone_resistance, Stunned, Confusion, Blind, Hallucination, Fumbling, Levitation,
+    Underwater, Blind as Blind_br
+} from './youprop.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
@@ -144,20 +148,6 @@ function uprop(p) {
     return u.uprops[p];
 }
 function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
-function Confusion() { return uhave(CONFUSION); }
-function Stunned() { return uhave(STUNNED); }
-function Fumbling() { return uhave(FUMBLING); }
-function Blind() { return uhave(BLINDED) && !uprop(BLINDED).blocked; }
-function Hallucination() {
-    return !!(uprop(HALLUC).intrinsic
-              && !(uprop(HALLUC_RES).intrinsic || uprop(HALLUC_RES).extrinsic));
-}
-function Levitation() {
-    return !!((uprop(LEVITATION).intrinsic || uprop(LEVITATION).extrinsic)
-              && !uprop(LEVITATION).blocked);
-}
-function Stone_resistance() { return uhave(STONE_RES); }
-function Underwater() { return !!game.u.uinwater; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: obj.h is_art(), is_pick(); mondata.h throws_rocks() */
@@ -2285,7 +2275,6 @@ function is_axe_dt(otmp) {
 /* C ref: you.h Race_if(PM_ELF) */
 function Race_if_elf() { return game.urace.mnum === PM_ELF_DT; }
 import { cansee as cansee_br } from './vision.js';
-import { Blind as Blind_br } from './display.js';
 import { is_crackable } from './objects.js';
 import { erode_obj } from './trap.js';
 import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';

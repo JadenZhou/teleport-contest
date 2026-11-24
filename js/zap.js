@@ -11,7 +11,7 @@
 import { game } from './gstate.js';
 import { livelog_printf, urgent_pline } from './display.js';
 import { LL_CONDUCT } from './const.js';
-import { You, Your, pline, pline_The, Blind, Hallucination } from './display.js';
+import { You, Your, pline, pline_The } from './display.js';
 import { getobj, useupall } from './invent.js';
 import { check_capacity } from './hack.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -99,6 +99,7 @@ import {
     cloak_simple_name, suit_simple_name, shirt_simple_name, helm_simple_name,
     gloves_simple_name, boots_simple_name, shield_simple_name, simpleonames,
 } from './iactions.js';
+import { Sleep_resistance, Blind, Hallucination, Reflecting } from './youprop.js';
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -1029,11 +1030,6 @@ export function check_unpaid(otmp) {
     throw new Error('check_unpaid(): usage fee for unpaid item not ported yet');
 }
 
-/* C ref: youprop.h Sleep_resistance */
-function Sleep_resistance() {
-    const p = game.u.uprops[SLEEP_RES];
-    return !!(p.intrinsic || p.extrinsic);
-}
 
 // C ref: zap.c zapyourself()
 /* you've zapped yourself with a wand or spell (or broken a wand) */
@@ -3279,7 +3275,6 @@ function uhave_zp(p) {
     return !!(q && (q.intrinsic || q.extrinsic));
 }
 function Antimagic_zp() { return uhave_zp(ANTIMAGIC_ZY); }
-function Reflecting() { return uhave_zp(REFLECTING_ZP); }
 /* C ref: mondata.h is_rider(), eyecount() */
 function is_rider_zp(ptr) {
     return ptr === mons_zy[PM_DEATH_ZP] || ptr === mons_zy[PM_FAMINE_ZP]
@@ -4286,4 +4281,4 @@ import { obj_to_any as obj_to_any_ci, peek_timer as peek_timer_ci,
          stop_timer as stop_timer_ci } from './timeout.js';
 import { find_ac as find_ac_ci } from './u_init.js';
 import { rehumanize as rehumanize_ci } from './polyself.js';
-import { You_feel as You_feel_ci, Hallucination as Hallucination_ci } from './display.js';
+import { You_feel as You_feel_ci } from './display.js';

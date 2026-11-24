@@ -59,15 +59,12 @@ import {
 import { newsym, see_monsters } from './display.js';
 import { set_itimeout, make_confused, make_stunned, make_blinded, make_deaf,
          make_hallucinated, make_glib, set_mimic_blocking } from './potion.js';
+import { Blind, Breathless } from './youprop.js';
 
 /* C ref: youprop.h -- (H* || E*) for the timeout cases; Blind */
 function uhave(p) {
     const q = game.u.uprops[p];
     return !!(q.intrinsic || q.extrinsic);
-}
-function Blind() {
-    const q = game.u.uprops[BLINDED];
-    return !!((q.intrinsic || q.extrinsic) && !q.blocked);
 }
 import { PM_ARCHEOLOGIST } from './monsters.js';
 import { FEDORA, LUCKSTONE } from './objects.js';
@@ -214,10 +211,6 @@ const NH_BLUE = "blue", NH_GREEN = "green";
 /* C ref: mondata.h nolimbs(), breathless(), cantvomit(); youprop.h
    Breathless */
 function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
-function Breathless() {
-    return !!(up(MAGICAL_BREATHING).intrinsic || up(MAGICAL_BREATHING).extrinsic
-              || (game.youmonst.data.mflags1 & M1_BREATHLESS) !== 0);
-}
 function cantvomit(ptr) {
     return ptr.mlet === S_RODENT && ptr !== mons[PM_ROCK_MOLE]
            && ptr !== mons[PM_WOODCHUCK];

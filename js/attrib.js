@@ -51,8 +51,8 @@ import { mons, G_UNIQ, M2_PNAME, PM_ERINYS, M1_SEE_INVIS, M1_AMPHIBIOUS, M1_FLY,
          AD_SPEL } from './monsters.js';
 import { the } from './iactions.js';
 import { encumber_msg } from './pickup.js';
-import { Unaware } from './eat.js';
 import { TOWEL } from './objects.js';
+import { Fixed_abil, Unaware, Half_gas_damage } from './youprop.js';
 
 // C ref: attrib.h ABASE(), ABON(), AMAX(), ATEMP()
 export function ABASE(x) { return game.u.acurr.a[x]; }
@@ -566,11 +566,6 @@ export function ATTRMAX(x) {
 export function ATTRMIN(x) { return game.urace.attrmin[x]; }
 // C ref: mondata.h strongmonst()
 function strongmonst(ptr) { return (ptr.mflags2 & M2_STRONG) !== 0; }
-// C ref: youprop.h Fixed_abil
-function Fixed_abil() {
-    const p = game.u.uprops[FIXED_ABIL];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 // C ref: attrib.c losestr()
 /* strength loss, possibly with damage when going below minimum */
@@ -753,10 +748,6 @@ export async function poisoned(
         await done((strstri(pkiller, "poison") >= 0) ? DIED : POISONING);
     }
     await encumber_msg();
-}
-/* C ref: youprop.h Half_gas_damage -- a worn towel (ublindf) */
-function Half_gas_damage() {
-    return !!(game.ublindf && game.ublindf.otyp === TOWEL);
 }
 
 // C ref: attrib.c minuhpmax()

@@ -7,9 +7,10 @@
 
 import { pay_for_damage as pay_for_damage_ex } from './shk.js';
 import { game } from './gstate.js';
-import { pline, You, pline_The, map_invisible, unmap_invisible, canspotmon,
-         tmp_at, DISP_BEAM, DISP_CHANGE, DISP_END, explosion_to_glyph,
-         Hallucination } from './display.js';
+import {
+    pline, You, pline_The, map_invisible, unmap_invisible, canspotmon,
+    tmp_at, DISP_BEAM, DISP_CHANGE, DISP_END, explosion_to_glyph
+} from './display.js';
 import { You_hear } from './sounds.js';
 import { cansee } from './vision.js';
 import { m_at } from './makemon.js';
@@ -45,15 +46,14 @@ import { exercise } from './attrib.js';
 import { killer } from './topten.js';
 import { done } from './end.js';
 import { d } from './rng.js';
+import { Invulnerable, Hallucination, Deaf } from './youprop.js';
 
 /* C ref: youprop.h property tests used here */
 function uprop(p) {
     return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
 }
 function uhave(p) { const q = uprop(p); return !!(q.intrinsic || q.extrinsic); }
-function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Invulnerable() { return !!uprop(INVULNERABLE).intrinsic; }
 /* C ref: mondata.h digests(), sticks() */
 function digests(ptr) {
     return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);

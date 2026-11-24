@@ -78,7 +78,6 @@ import { money2mon } from './shk.js';
 import { FAST, SICK_RES, SICK, NEUTRAL, SICK_NONVOMITABLE } from './const.js';
 import { OILSKIN_CLOAK } from './objects.js';
 import { make_sick, make_blinded, make_hallucinated } from './potion.js';
-import { Hallucination } from './display.js';
 import { resists_blnd, defended } from './mondata.js';
 import { mondead, wake_nearto } from './mon.js';
 import { WATER, PASSES_WALLS, SLOW_DIGESTION, SHOCK_RES, TT_WEB, RLOC_NOMSG, IS_OBSTRUCTED, TREE, IRONBARS, MAGICAL_BREATHING, ACID_RES, FIRE_RES, M_SEEN_ACID, M_SEEN_ELEC, M_SEEN_COLD, M_SEEN_FIRE } from './const.js';
@@ -100,6 +99,10 @@ import { vision_recalc } from './vision.js';
 import { You_hear } from './sounds.js';
 import { can_blnd } from './mondata.js';
 import { burn_away_slime } from './potion.js';
+import {
+    Cold_resistance, Blind, Hallucination, Deaf, See_invisible, Invis, Displaced, Conflict,
+    Underwater, Half_physical_damage, Unaware as Unaware_mh
+} from './youprop.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -120,23 +123,7 @@ function uhave(prop) {
     const p = game.u.uprops[prop];
     return !!((p.intrinsic || p.extrinsic) && !p.blocked);
 }
-function Invis() { return uhave(INVIS); }
-function Displaced() { return uhave(DISPLACED); }
-function Underwater() { return !!game.u.uinwater; }
-function See_invisible() { return uhave(SEE_INVIS); }
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p.intrinsic || p.extrinsic);
-}
-function Half_physical_damage() { return uhave(HALF_PHDAM); }
-function Cold_resistance() { return uhave(COLD_RES); }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-/* C ref: youprop.h Deaf */
-function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
 
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
@@ -1209,7 +1196,6 @@ import { cvt_adtyp_to_mseenres as cvt_adtyp_to_mseenres_mh } from './mondata.js'
 import { REFLECTING as REFLECTING_MH, CONFUSION as CONFUSION_MH,
          STUNNED as STUNNED_MH, TIMEOUT as TIMEOUT_MH,
          BOLT_LIM as BOLT_LIM_MH } from './const.js';
-import { Unaware as Unaware_mh } from './eat.js';
 import { make_confused as make_confused_mh,
          make_stunned as make_stunned_mh } from './potion.js';
 import { burnarmor as burnarmor_mh, ignite_items as ignite_items_mh } from './trap.js';

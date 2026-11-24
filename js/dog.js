@@ -8,7 +8,7 @@ import { set_residency } from './shk.js';
 import { SCROLL_CLASS, SPBOOK_CLASS, CORPSE } from './objects.js';
 import { FULL_MOON, DOGFOOD, ACCFOOD, MANFOOD, NEED_HTH_WEAPON, ismnum } from './const.js';
 import { PM_MEDUSA, M3_WANTSARTI, M3_COVETOUS, S_DOG, AT_WEAP } from './monsters.js';
-import { canspotmon, Hallucination } from './display.js';
+import { canspotmon } from './display.js';
 import { cansee } from './vision.js';
 import { night } from './calendar.js';
 import { dogfood, dog_eat } from './dogmove.js';
@@ -20,6 +20,7 @@ import { is_human, is_demon } from './mondata.js';
 import { mon_wield_item } from './weapon.js';
 import { wake_nearto } from './mon.js';
 import { rnd } from './rng.js';
+import { Hallucination } from './youprop.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }

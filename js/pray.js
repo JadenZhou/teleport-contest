@@ -18,6 +18,7 @@ import { A_NONE, A_LAWFUL, A_NEUTRAL, A_CHAOTIC, IS_ALTAR, Amask2align,
          A_STR, A_WIS, A_MAX, W_SADDLE, LOW_PM, SDOOR, SCORR, TIMEOUT,
          IS_OBSTRUCTED, isok, ECMD_OK, ECMD_TIME, M_AP_FURNITURE,
          MCORPSENM, MAXULEV, BOLT_LIM, TELL, NOTELL } from './const.js';
+import { Blinded, Blind, Hallucination, Deaf } from './youprop.js';
 /* C ref: defsym.h S_altar (cmap index) */
 const S_altar = 33;
 import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT, S_LICH, S_GHOST,
@@ -53,7 +54,7 @@ import { body_part } from './insight.js';
 import { uncurse } from './mkobj.js';
 import { make_stoned, make_slimed, make_sick, make_blinded, make_deaf, make_stunned,
          make_confused, make_hallucinated, set_itimeout } from './potion.js';
-import { Your, You, You_feel, Blind } from './display.js';
+import { Your, You, You_feel } from './display.js';
 import { useup } from './invent.js';
 import { safe_teleds } from './teleport.js';
 import { reset_utrap, heal_legs } from './trap.js';
@@ -145,12 +146,6 @@ const hallu_gods = [
     "your Friend the Computer",     /* Paranoia */
 ];
 
-/* C ref: you.h Hallucination -- HHallucination && !Halluc_resistance */
-function Hallucination() {
-    const P = game.u.uprops;
-    return !!((P[HALLUC]?.intrinsic || P[HALLUC]?.extrinsic)
-              && !(P[HALLUC_RES]?.intrinsic || P[HALLUC_RES]?.extrinsic));
-}
 
 // C ref: pray.c halu_gname()
 /* hallucination handling for priest/minion names: select a random god
@@ -761,11 +756,6 @@ async function angrygods(resp_god) {
         u.ublesscnt = new_ublesscnt;
 }
 
-/* C ref: youprop.h Blinded, Deaf; mondata.h eyecount() */
-function Blinded() {
-    return !!(HProp(BLINDED) && !game.u.uprops[BLINDED].blocked);
-}
-function Deaf() { return !!(HProp(DEAF) || EProp(DEAF) || game.u.uroleplay?.deaf); }
 function eyecount(ptr) {
     return !(ptr.mflags1 & M1_NOEYES) ? ((ptr === mons[PM_CYCLOPS]
                                          || ptr === mons[PM_FLOATING_EYE]) ? 1 : 2)

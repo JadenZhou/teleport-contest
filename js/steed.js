@@ -43,22 +43,8 @@ import { pmname, Mgender } from './do_name.js';
 import { has_ceiling } from './insight.js';
 import { wseg_mon_at } from './worm.js';
 import { finish_meating } from './dog.js';
+import { Stealth, Levitation, Flying } from './youprop.js';
 
-/* C ref: youprop.h Flying, Levitation, Stealth */
-function Flying() {
-    const p = game.u.uprops[FLYING] || {};
-    return !!((p.intrinsic || p.extrinsic
-               || (game.u.usteed && is_flyer(game.u.usteed.data)))
-              && !p.blocked);
-}
-function Levitation() {
-    const p = game.u.uprops[LEVITATION] || {};
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Stealth() {
-    const p = game.u.uprops[STEALTH] || {};
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 /* C ref: mondata.h throws_rocks() */
 function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
 // C ref: cmd.c dirtocoord()

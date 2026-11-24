@@ -35,6 +35,7 @@ import { strcmpi, isqrt } from './hacklib.js';
 import { P_SKILL } from './weapon.js';
 import { discover_object } from './o_init.js';
 import { freehand } from './wield.js';
+import { Blind as Blind_sp } from './youprop.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -1720,7 +1721,6 @@ async function cast_protection() {
         await Your("skin feels warm for a moment.");
     }
 }
-import { Blind as Blind_sp } from './display.js';
 import { hcolor as hcolor_sp } from './do_name.js';
 import { hliquid as hliquid_sp } from './potion.js';
 import { an as an_sp } from './objnam.js';

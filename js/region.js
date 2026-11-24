@@ -31,8 +31,9 @@ import { mons, PM_FOG_CLOUD, AD_DRST, MS_SILENT, M1_NOEYES,
 import { rn2, rnd, rn1, d } from './rng.js';
 import { m_at, nonliving, is_pool, is_lava } from './makemon.js';
 import { block_point, unblock_point, cansee, does_block } from './vision.js';
-import { newsym, show_glyph_cell, pline, pline_The, You, Your, You_see,
-         You_feel, Blind } from './display.js';
+import {
+    newsym, show_glyph_cell, pline, pline_The, You, Your, You_see, You_feel
+} from './display.js';
 import { selection_getbounds, selection_getpoint } from './selvar.js';
 import { m_poisongas_ok, wake_nearto, setmangry, killed,
          monkilled } from './mon.js';
@@ -47,6 +48,7 @@ import { resists_poison } from './mondata.js';
 import { dist2 } from './hacklib.js';
 import { CLR_GRAY, CLR_BRIGHT_GREEN } from './terminal.js';
 import { TOWEL } from './objects.js';
+import { Blind, Half_gas_damage } from './youprop.js';
 
 const NO_CALLBACK = -1;
 // C ref: defsym.h S_cloud, S_poisoncloud (cmap indices)
@@ -661,10 +663,6 @@ function expire_gas_cloud(reg, p2) {
 function uhas(p) {
     const P = game.u.uprops[p];
     return !!(P && (P.intrinsic || P.extrinsic));
-}
-function Half_gas_damage() {
-    const ublindf = game.ublindf;
-    return !!(ublindf && ublindf.otyp === TOWEL && ublindf.spe > 0);
 }
 
 // C ref: region.c inside_gas_cloud()

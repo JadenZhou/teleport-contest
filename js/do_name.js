@@ -36,6 +36,7 @@ import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
 import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
          GETOBJ_PROMPT, GETOBJ_NOFLAGS, ECMD_OK } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { Hallucination } from './youprop.js';
 
 const PL_PSIZ = 63; /* global.h */
 
@@ -442,10 +443,6 @@ function uhave(prop) {
     return !!(p && (p.intrinsic || p.extrinsic));
 }
 
-/* C ref: you.h Hallucination -- HHallucination && !Halluc_resistance */
-function Hallucination() {
-    return uhave(HALLUC) && !uhave(HALLUC_RES);
-}
 /* C ref: do_name.c Mgender() */
 export function Mgender(mtmp) {
     let mgender = MALE;

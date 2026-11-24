@@ -95,6 +95,7 @@ import { MIGR_TO_SPECIES, MIGR_NOBREAK, MIGR_NOSCATTER, MIGR_WITH_HERO,
          NON_PM, In_mines, has_mgivenname, has_oname, ONAME } from './const.js';
 import { add_to_minv } from './mkobj.js';
 import { christen_orc } from './do_name.js';
+import { Blind, Levitation, Passes_walls, Wounded_legs, Fumbling, Deaf } from './youprop.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
@@ -106,11 +107,6 @@ function uprop(p) {
     return u.uprops[p];
 }
 function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
-function Blind() { return uhave(BLINDED) && !uprop(BLINDED).blocked; }
-function Levitation() { return uhave(LEVITATION) && !uprop(LEVITATION).blocked; }
-function Passes_walls() { return uhave(PASSES_WALLS); }
-function Wounded_legs() { return uhave(WOUNDED_LEGS); }
-function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
@@ -425,7 +421,6 @@ function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function DEADMONSTER(mon) { return mon.mhp < 1; }
-function Fumbling() { return uhave(FUMBLING); }
 
 // C ref: dokick.c kickdmg()
 /* kicking damage when not poly'd into a form with a kick attack */

@@ -50,9 +50,10 @@ import { ECMD_TIME, GETOBJ_ALLOWCNT, GETOBJ_EXCLUDE_SELECTABLE, BY_COOKIE,
          M_AP_TYPE, In_endgame, Is_earthlevel, Is_rogue_level, Is_waterlevel,
          thats_enough_tries, Never_mind, nothing_happens, ROOMOFFSET,
          IS_OBSTRUCTED, IS_AIR, ACCESSIBLE, isok } from './const.js';
-import { You, Your, You_feel, You_cant, pline_The, newsym, canspotmon,
-         canseemon, sensemon, Blind, Hallucination, map_invisible, tmp_at,
-         DISP_BEAM, DISP_END, cmap_to_glyph } from './display.js';
+import {
+    You, Your, You_feel, You_cant, pline_The, newsym, canspotmon, canseemon,
+    sensemon, map_invisible, tmp_at, DISP_BEAM, DISP_END, cmap_to_glyph
+} from './display.js';
 import { You_hear } from './sounds.js';
 import { useup, useupall, prinv, identify_pack, stackobj, obfree,
          silly_thing } from './invent.js';
@@ -96,6 +97,10 @@ import { PM_TOURIST, PM_WIZARD, PM_ACID_BLOB, PM_BLACK_LIGHT,
          PM_FLESH_GOLEM, PM_BARBED_DEVIL, PM_MARILITH, PM_PIRANHA,
          S_HUMAN, M1_AMORPHOUS, M1_WALLWALK, M1_UNSOLID, S_GHOST, S_VORTEX, PM_AIR_ELEMENTAL } from './monsters.js';
 import { placebc, set_bc } from './ball.js';
+import {
+    Confusion, HConfusion, HStun, Fire_resistance, Passes_walls, Invisible, Underwater,
+    Punished, Blind, Hallucination
+} from './youprop.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -103,17 +108,6 @@ const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
       NH_BLUE = "blue";
 
 /* C ref: youprop.h -- the property macros used here */
-function uprop(p) { return game.u.uprops[p]; }
-function Confusion() { return !!(uprop(CONFUSION).intrinsic || uprop(CONFUSION).extrinsic); }
-function HConfusion() { return uprop(CONFUSION).intrinsic; }
-function HStun() { return uprop(STUNNED).intrinsic; }
-function Fire_resistance() { return !!(uprop(FIRE_RES).intrinsic || uprop(FIRE_RES).extrinsic); }
-function Passes_walls() { return !!(uprop(PASSES_WALLS).intrinsic || uprop(PASSES_WALLS).extrinsic); }
-function See_invisible() { return !!(uprop(SEE_INVIS).intrinsic || uprop(SEE_INVIS).extrinsic); }
-function Invis() { return !!((uprop(INVIS).intrinsic || uprop(INVIS).extrinsic) && !uprop(INVIS).blocked); }
-function Invisible() { return Invis() && !See_invisible(); }
-function Underwater() { return !!game.u.uinwater; }
-function Punished() { return !!game.uball; }
 /* C ref: you.h Role_if() */
 function Role_if(pm) { return game.urole?.mnum === pm; }
 /* C ref: hack.h makeknown() */

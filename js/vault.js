@@ -9,9 +9,10 @@
 
 import { game } from './gstate.js';
 import { rn2 } from './rng.js';
-import { pline, You, pline_The, newsym, canspotmon,
-         map_invisible, mon_visible, xy_set_wall_state, map_location,
-         Blind } from './display.js';
+import {
+    pline, You, pline_The, newsym, canspotmon, map_invisible, mon_visible,
+    xy_set_wall_state, map_location
+} from './display.js';
 import { You_hear } from './sounds.js';
 import { cansee, couldsee, unblock_point, block_point,
          recalc_block_point } from './vision.js';
@@ -47,6 +48,7 @@ import { m_carrying, mon_wield_item } from './weapon.js';
 import { is_fainted } from './eat.js';
 import { mon_track_clear } from './monmove.js';
 import { on_level } from './dungeon.js';
+import { Deaf, Strangled, Blind } from './youprop.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -54,15 +56,6 @@ function impossible(msg) { console.error(`impossible: ${msg}`); }
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: hack.h u_at() */
 function u_at(x, y) { return x === game.u.ux && y === game.u.uy; }
-/* C ref: youprop.h Deaf, Strangled */
-function Deaf() {
-    const p = game.u.uprops?.[DEAF];
-    return !!(p?.intrinsic || p?.extrinsic) || !!game.u.uroleplay?.deaf;
-}
-function Strangled() {
-    const p = game.u.uprops?.[STRANGLED];
-    return !!(p?.intrinsic || p?.extrinsic);
-}
 /* C ref: hack.h distu(), um_dist() */
 function distu(x, y) { return (x - game.u.ux) ** 2 + (y - game.u.uy) ** 2; }
 function dist2(x0, y0, x1, y1) { return (x0 - x1) ** 2 + (y0 - y1) ** 2; }

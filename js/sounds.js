@@ -36,8 +36,8 @@ import { night } from './calendar.js';
 import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
-import { Unaware } from './eat.js';
 import { is_flyer, is_undead, is_vampshifter } from './mondata.js';
+import { Hallucination, Deaf, Unaware } from './youprop.js';
 
 /* C ref: mondata.h predicates */
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
@@ -47,12 +47,6 @@ function is_mercenary(ptr) { return (ptr.mflags2 & M2_MERC) !== 0; }
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 
-/* C ref: youprop.h Hallucination */
-function Hallucination() {
-    const P = game.u.uprops;
-    return !!(P[HALLUC].intrinsic
-              && !(P[HALLUC_RES].intrinsic || P[HALLUC_RES].extrinsic));
-}
 
 // C ref: pline.c You_hear()
 export async function You_hear(msg) {
@@ -394,7 +388,6 @@ function uprop(prop) {
     const p = game.u.uprops[prop];
     return !!(p && (p.intrinsic || p.extrinsic));
 }
-function Deaf() { return uprop(DEAF) || !!game.u.uroleplay?.deaf; }
 
 /* C ref: sounds.c h_sounds[] */
 const h_sounds = [

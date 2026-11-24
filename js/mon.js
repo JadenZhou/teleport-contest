@@ -122,7 +122,7 @@ import { rnd } from './rng.js';
 import { XKILL_GIVEMSG, XKILL_NOMSG, XKILL_NOCORPSE, XKILL_NOCONDUCT,
          engulfing_u, is_pit, A_CHAOTIC, TELEPAT, INTRINSIC, M_AP_NOTHING,
          TEMPLE } from './const.js';
-import { Hallucination, canspotmon, see_monsters } from './display.js';
+import { canspotmon, see_monsters } from './display.js';
 import { mon_nam, x_monnam, ARTICLE_NONE, ARTICLE_THE,
          SUPPRESS_SADDLE, ARTICLE_A, ARTICLE_YOUR, noname_monnam } from './do_name.js';
 import { olfaction, is_orc } from './mondata.js';
@@ -150,6 +150,7 @@ import { in_rooms } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
 import { stinky_nemesis } from './questpgr.js';
+import { Hallucination, Conflict } from './youprop.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -1506,10 +1507,6 @@ async function minliquid_core(mtmp) {
     return 0;
 }
 
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p.intrinsic || p.extrinsic);
-}
 
 // ── C ref: mon.c movemon_singlemon() ──
 // perform movement for a single monster

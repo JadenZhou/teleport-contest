@@ -62,6 +62,11 @@ import { find_mac, which_armor } from './worn.js';
 import { mtele_trap, mlevel_tele_trap, tele_trap, level_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
 import { bimanual } from './wield.js';
+import {
+    Sleep_resistance, Antimagic, Blind, Hallucination, Deaf, Fumbling, Wounded_legs,
+    Levitation, Flying, Passes_walls, Half_spell_damage, Half_physical_damage,
+    Unaware as Unaware_dr
+} from './youprop.js';
 
 /* C ref: mondata.h resists_ston() */
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
@@ -303,46 +308,7 @@ export function check_in_air(mtmp, trflags) {
 function uprop(p) {
     return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
 }
-function HLevitation() { return uprop(LEVITATION).intrinsic; }
-function ELevitation() { return uprop(LEVITATION).extrinsic; }
-function Levitation() {
-    return !!((HLevitation() || ELevitation()) && !uprop(LEVITATION).blocked);
-}
-function Flying() {
-    const p = uprop(FLYING);
-    return !!((p.intrinsic || p.extrinsic
-               || (game.u.usteed && is_flyer(game.u.usteed.data)))
-              && !p.blocked);
-}
-function Fumbling() { return !!(uprop(FUMBLING).intrinsic || uprop(FUMBLING).extrinsic); }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Antimagic() {
-    return !!(uprop(ANTIMAGIC).intrinsic || uprop(ANTIMAGIC).extrinsic
-              || (Upolyd() && resists_magm(game.youmonst)));
-}
-function Half_physical_damage() {
-    return !!(uprop(HALF_PHDAM).intrinsic || uprop(HALF_PHDAM).extrinsic);
-}
-function Half_spell_damage() {
-    return !!(uprop(HALF_SPDAM).intrinsic || uprop(HALF_SPDAM).extrinsic);
-}
-function Passes_walls() {
-    return !!(uprop(PASSES_WALLS).intrinsic || uprop(PASSES_WALLS).extrinsic);
-}
-function Sleep_resistance() {
-    return !!(uprop(SLEEP_RES).intrinsic || uprop(SLEEP_RES).extrinsic);
-}
-function Blind() {
-    const p = uprop(BLINDED);
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Hallucination() {
-    return !!(uprop(HALLUC).intrinsic
-              && !(uprop(HALLUC_RES).intrinsic || uprop(HALLUC_RES).extrinsic));
-}
-function Wounded_legs() {
-    return !!(uprop(WOUNDED_LEGS).intrinsic || uprop(WOUNDED_LEGS).extrinsic);
-}
 /* C ref: hack.h Maybe_Half_Phys() */
 export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;
@@ -1033,12 +999,6 @@ export const Trap_Caught_Mon = 1;
 export const Trap_Killed_Mon = 2;
 export const Trap_Moved_Mon = 3; /* new location, or new level */
 
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const P = game.u.uprops;
-    return !!(P[DEAF].intrinsic || P[DEAF].extrinsic
-              || game.u.uroleplay?.deaf);
-}
 /* mondata.h */
 function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
@@ -5099,7 +5059,6 @@ import { dropx as dropx_dr } from './do.js';
 import { feel_newsym as feel_newsym_dr, update_lastseentyp as update_lastseentyp_dr } from './display.js';
 import { waterbody_name as waterbody_name_dr } from './pager.js';
 import { can_teleport as can_teleport_dr } from './mondata.js';
-import { Unaware as Unaware_dr } from './eat.js';
 import { unmul as unmul_dr } from './allmain.js';
 import { teleds as teleds_dr, safe_teleds as safe_teleds_dr } from './teleport.js';
 import { done as done_dr } from './end.js';

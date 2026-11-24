@@ -63,7 +63,6 @@ import { pmname, Some_Monnam, Monnam } from './do_name.js';
 import { an, the_unique_pm, vtense, yname, makeplural } from './objnam.js';
 import { the, simpleonames, surface, cloak_simple_name,
          helm_simple_name } from './iactions.js';
-import { Unaware } from './eat.js';
 import { unmul } from './allmain.js';
 import { make_glib, set_mimic_blocking, set_itimeout, make_blinded } from './potion.js';
 import { golemhp, is_pool, is_lava } from './makemon.js';
@@ -81,6 +80,10 @@ import { setworn, racial_exception } from './worn.js';
 import { uwepgone, uswapwepgone, untwoweapon } from './wield.js';
 import { weapon_descr } from './insight.js';
 import { sticks } from './engrave.js';
+import {
+    Punished, Stunned, Blind, Stoned, Strangled, Slimed, Flying, Polymorph_control, Unchanging,
+    Unaware
+} from './youprop.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -400,24 +403,6 @@ function uprop_on(p) {
     return !!(pr.intrinsic || pr.extrinsic);
 }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-/* Blind: (HBlinded || EBlinded) && !BBlinded */
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Polymorph_control() { return uprop_on(POLYMORPH_CONTROL); }
-function Unchanging() { return uprop_on(UNCHANGING); }
-function Stunned() { return uprop_on(STUNNED); }
-function Stoned() { return uprop_on(STONED); }
-function Slimed() { return uprop_on(SLIMED); }
-function Strangled() { return uprop_on(STRANGLED); }
-function Punished() { return !!game.uball; }
-function Flying() {
-    const fly = game.u.uprops[FLYING];
-    return !!((fly.intrinsic || fly.extrinsic
-               || (game.u.usteed && is_flyer(game.u.usteed.data)))
-              && !fly.blocked);
-}
 function plur(x) { return x === 1 ? "" : "s"; }
 /* C ref: dbridge.c is_pool_or_lava() */
 function is_pool_or_lava(x, y) {

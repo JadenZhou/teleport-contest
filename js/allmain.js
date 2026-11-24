@@ -21,7 +21,7 @@ import { urgent_pline } from './display.js';
 import { tty_display_nhwindow } from './wintty.js';
 import { rhack, domove, enter_explore_mode } from './cmd.js';
 import { docrt, cls, bot, timebot, flush_screen, pline, see_monsters } from './display.js';
-import { see_objects, see_traps, Hallucination, Blind, swallowed } from './display.js';
+import { see_objects, see_traps, swallowed } from './display.js';
 import { read_engr_at } from './engrave.js';
 import { encumber_msg, pickup } from './pickup.js';
 import { reset_justpicked } from './invent.js';
@@ -77,6 +77,7 @@ import { Norep } from './display.js';
 import { init_artifacts } from './artifact.js';
 import { run_regions, any_visible_region } from './region.js';
 import { m_everyturn_effect } from './monmove.js';
+import { Blind, Hallucination } from './youprop.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 

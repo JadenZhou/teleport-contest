@@ -8,8 +8,9 @@ import { worm_move } from './worm.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { distmin } from './hacklib.js';
 import { cansee, couldsee } from './vision.js';
-import { pline, urgent_pline, pline_The, canseemon, canspotmon, map_invisible,
-         Hallucination } from './display.js';
+import {
+    pline, urgent_pline, pline_The, canseemon, canspotmon, map_invisible
+} from './display.js';
 import { You_hear } from './sounds.js';
 import { Monnam } from './do_name.js';
 import { an, xname, doname, singular } from './objnam.js';
@@ -33,8 +34,9 @@ import { BOLT_LIM, G_GONE, ANTIMAGIC, HALF_SPDAM, KILLED_BY_AN,
          DRAWBRIDGE_UP, SDOOR, D_LOCKED, D_CLOSED, IS_DOOR,
          ZAP_POS } from './const.js';
 
-import { newsym, sensemon, Norep, cls, show_glyph, docrt, You_feel,
-         Blind } from './display.js';
+import {
+    newsym, sensemon, Norep, cls, show_glyph, docrt, You_feel
+} from './display.js';
 import { mon_nam, x_monnam, Some_Monnam, noit_mon_nam, mon_nam_too,
          pronoun_gender, a_monnam } from './do_name.js';
 import { genders } from './role.js';
@@ -112,6 +114,7 @@ import { doorlock } from './lock.js';
 import { in_rooms } from './hack.js';
 import { D_BROKEN, SHOPBASE, TEMPLE } from './const.js';
 import { tele } from './teleport.js';
+import { Blind, Hallucination, Deaf, See_invisible, Teleport_control } from './youprop.js';
 
 const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
 const QBUFSZ = 128; /* global.h */
@@ -204,11 +207,6 @@ function touch_petrifies(ptr) {
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
-/* C ref: youprop.h See_invisible -- (HSee_invisible || ESee_invisible) */
-function See_invisible() {
-    const p = game.u.uprops[SEE_INVIS];
-    return !!(p.intrinsic || p.extrinsic);
-}
 /* C ref: mondata.c attacktype() */
 function attacktype(ptr, atyp) {
     return ptr.mattk.some(a => a.aatyp === atyp);
@@ -234,11 +232,6 @@ function stairway_at(x, y) {
     return null;
 }
 
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
-}
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 /* C ref: mondata.h resists_ston(), resists_acid(), acidic(), slimeproof(),
@@ -297,11 +290,6 @@ export function mon_has_special(mtmp) {
 function wearing_iron_shoes(mon) {
     const boots = which_armor(mon, W_ARMF);
     return !!(boots && objects[boots.otyp].oc_material === IRON);
-}
-/* C ref: you.h Teleport_control */
-function Teleport_control() {
-    const p = game.u.uprops[TELEPORT_CONTROL];
-    return !!(p.intrinsic || p.extrinsic);
 }
 
 // C ref: muse.c m_use_healing()

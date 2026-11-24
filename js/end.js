@@ -11,7 +11,7 @@
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_LIFESAVE } from './const.js';
-import { pline, You, Your, bot, Hallucination, canspotmon, Blind } from './display.js';
+import { pline, You, Your, bot, canspotmon } from './display.js';
 import { accessible } from './makemon.js';
 import {
     DIED, CHOKING, STARVING, BURNING, DISSOLVED, STONING, TURNED_SLIME,
@@ -72,6 +72,7 @@ import {
     tty_putstr, tty_exit_nhwindows, tty_raw_print, tty_yn_function,
     tty_destroy_mapwindow, tty_destroy_statuswindow, tty_clear_nhwindow,
 } from './wintty.js';
+import { Blind, Hallucination, Lifesaved } from './youprop.js';
 
 const EXIT_SUCCESS = 0;
 const BUFSZ = 256;
@@ -115,8 +116,6 @@ function type_is_pname(ptr) { return (ptr.mflags2 & M2_PNAME) !== 0; }
 /* C ref: you.h Race_if(), Role_if() */
 function Race_if(pm) { return game.urace.mnum === pm; }
 function Role_if(pm) { return game.urole.mnum === pm; }
-/* C ref: youprop.h Lifesaved */
-function Lifesaved() { return !!game.u.uprops[LIFESAVED]?.extrinsic; }
 /* C ref: obj.h SchroedingersBox() */
 function SchroedingersBox(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
 /* C ref: hacklib.c upstart() */

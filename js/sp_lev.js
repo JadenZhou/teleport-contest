@@ -129,6 +129,7 @@ import { premap_detect } from './detect.js';
 import { christen_monst, oname } from './do_name.js';
 import { newcham_sync, mongone } from './mon.js';
 import { mkmap } from './mkmap.js';
+import { Protection_from_shape_changers } from './youprop.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -2060,11 +2061,6 @@ let container_obj = new Array(MAX_CONTAINMENT).fill(null);
 let container_idx = 0;
 let invent_carrying_monster = null;
 
-// C ref: youprop.h Protection_from_shape_changers
-function Protection_from_shape_changers() {
-    const prot = game.u.uprops[PROT_FROM_SHAPE_CHANGERS];
-    return !!(prot.intrinsic || prot.extrinsic);
-}
 
 // C ref: sp_lev.c m_bad_boulder_spot()
 function m_bad_boulder_spot(x, y) {

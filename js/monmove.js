@@ -66,7 +66,6 @@ import { newcham } from './mon.js';
 import { PROT_FROM_SHAPE_CHANGERS, NC_SHOW_MSG, NO_NC_FLAGS } from './const.js';
 import { tty_display_nhwindow } from './wintty.js';
 import { mon_learns_traps } from './mondata.js';
-import { Unaware } from './eat.js';
 import { TRAPPED_DOOR } from './const.js';
 import { has_ceiling } from './insight.js';
 import { resist_conflict } from './mhitm.js';
@@ -118,6 +117,10 @@ import { shk_move, costly_spot, after_shk_move, inhishop, add_damage } from './s
 import { in_rooms, in_town } from './hack.js';
 import { pri_move, in_your_sanctuary } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
+import {
+    Hallucination, Deaf, Invis, Displaced, Stealth, Aggravate_monster, Conflict, Underwater,
+    Unaware
+} from './youprop.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -130,23 +133,7 @@ function uhave(prop) {
     const p = game.u.uprops[prop];
     return !!((p.intrinsic || p.extrinsic) && !p.blocked);
 }
-function Invis() { return uhave(INVIS); }
-function Stealth() { return uhave(STEALTH); }
-function Aggravate_monster() { return uhave(AGGRAVATE_MONSTER); }
-/* C ref: youprop.h Conflict -- (HConflict || EConflict) */
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p.intrinsic || p.extrinsic);
-}
-function Displaced() { return uhave(DISPLACED); }
-function Underwater() { return !!game.u.uinwater; }
 function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Hallucination() { return uhave(HALLUC); }
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
-}
 /* C ref: monst.h mon_offmap() */
 function mon_offmap(mon) {
     return ((mon.mstate || 0)

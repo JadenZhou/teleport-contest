@@ -48,17 +48,9 @@ import { canseemon } from './display.js';
 import { mselftouch } from './trap.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { RLOC_NOMSG } from './const.js';
+import { Blind, Deaf, Conflict } from './youprop.js';
 
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
-/* C ref: youprop.h Conflict, Blind */
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p.intrinsic || p.extrinsic);
-}
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 /* C ref: obj.h is_pole() */
 function is_pole(otmp) {
     return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
@@ -78,12 +70,6 @@ function DEADMONSTER(mon) { return mon.mhp < 1; }
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
-}
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const P = game.u.uprops;
-    return !!(P[DEAF].intrinsic || P[DEAF].extrinsic
-              || game.u.uroleplay?.deaf);
 }
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;

@@ -22,8 +22,13 @@ import { sobj_at } from './makemon.js';
 import { STONE, W_NONDIGGABLE, W_NONPASSWALL } from './const.js';
 import { BOULDER } from './objects.js';
 import { m_at } from './makemon.js';
-import { canspotmon, sensemon, warning_of, Blind, map_invisible,
-         glyph_is_invisible, feel_location } from './display.js';
+import {
+    canspotmon, sensemon, warning_of, map_invisible, glyph_is_invisible,
+    feel_location
+} from './display.js';
+import {
+    Blind, Hallucination as Hallucination_ft, Hallucination as Hallucination_dt
+} from './youprop.js';
 
 // C ref: display.c feel_newsym()
 function feel_newsym(x, y) {
@@ -43,7 +48,6 @@ function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
 function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 import { t_at, STATUE_TRAP, trapname as trapname_ft } from './trap.js';
 import { an as an_ft } from './objnam.js';
-import { Hallucination as Hallucination_ft } from './display.js';
 import {
     A_WIS, SDOOR, SCORR, DOOR, CORR, WM_MASK, D_NODOOR, D_CLOSED, D_LOCKED,
     BLINDED, isok, Is_rogue_level,
@@ -1044,8 +1048,9 @@ export async function monster_detect(otmp, /* detecting object (if any) */
     return 0;
 }
 
-import { show_glyph_cell as show_glyph_cell_dt,
-         Hallucination as Hallucination_dt } from './display.js';
+import {
+    show_glyph_cell as show_glyph_cell_dt
+} from './display.js';
 import { rn2_on_display_rng as rn2_on_display_rng_dt } from './rng.js';
 import { mons as mons_dt, NUMMONS as NUMMONS_DT, PM_LONG_WORM as PM_LONG_WORM_DT,
          S_WORM_TAIL as S_WORM_TAIL_DT } from './monsters.js';

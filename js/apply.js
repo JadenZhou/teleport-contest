@@ -14,7 +14,6 @@ import { is_pole, retouch_object } from './wield.js';
 import { pick_lock } from './lock.js';
 import * as O from './objects.js';
 import { is_graystone, thesimpleoname } from './iactions.js';
-import { Blind } from './display.js';
 import { discover_object } from './o_init.js';
 import { MAX_SPELL_STUDY, DEAF, HAND, SDOOR, SCORR, CORR, ARTICLE_A,
          SUPPRESS_IT, SUPPRESS_INVISIBLE, Is_stronghold } from './const.js';
@@ -33,6 +32,7 @@ import { canspotmon, newsym, map_invisible, unmap_invisible,
 import { cvt_sdoor_to_door } from './detect.js';
 import { recalc_block_point, unblock_point } from './vision.js';
 import { mons, PM_HEALER, PM_AIR_ELEMENTAL, S_VORTEX } from './monsters.js';
+import { Blind, Hallucination, Jumping, Passes_walls } from './youprop.js';
 /* C ref: mondata.h is_whirly() */
 function is_whirly(ptr) {
     return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
@@ -76,11 +76,6 @@ function is_pick(otmp) {
 function is_axe(otmp) {
     return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
             && objects[otmp.otyp].oc_skill === P_AXE);
-}
-/* C ref: you.h Hallucination */
-function Hallucination() {
-    const p = game.u?.uprops?.[HALLUC];
-    return !!(p?.intrinsic || p?.extrinsic);
 }
 
 /* C ref: display.c feel_newsym() -- feel_location() for a blind hero
@@ -800,9 +795,6 @@ const jAny = 0, /* any direction => magical jump */
 
 function uprop(p) { return game.u?.uprops?.[p] || {}; }
 function uhave(p) { const q = uprop(p); return !!(q.intrinsic || q.extrinsic); }
-/* C ref: youprop.h Jumping, HJumping, EJumping */
-function Jumping() { return uhave(JUMPING); }
-function Passes_walls() { return uhave(PASSES_WALLS); }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 
 // C ref: apply.c check_jump() -- callback routine for walk_path()

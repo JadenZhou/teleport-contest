@@ -12,9 +12,10 @@ import { game } from './gstate.js';
 import { rn2, rnd, rn2_on_display_rng, ROLL_FROM } from './rng.js';
 import { distmin, dist2, s_suffix, strncmpi } from './hacklib.js';
 import { cansee, couldsee } from './vision.js';
-import { pline, You, Your, pline_The, newsym, canseemon, canspotmon,
-         Blind, Hallucination, tmp_at, obj_to_glyph, DISP_FLASH,
-         DISP_TETHER, DISP_END } from './display.js';
+import {
+    pline, You, Your, pline_The, newsym, canseemon, canspotmon, tmp_at,
+    obj_to_glyph, DISP_FLASH, DISP_TETHER, DISP_END
+} from './display.js';
 import { BOLT_LIM, MON_POLE_DIST, NEED_WEAPON, NEED_RANGED_WEAPON,
          PET_MISSILE_RANGE2, P_POLEARMS, P_LANCE, P_BOW, P_CROSSBOW, P_DART,
          P_SHURIKEN, P_SPEAR, P_KNIFE, M_ATTK_MISS, M_ATTK_HIT, M_SEEN_ACID,
@@ -75,26 +76,12 @@ import { body_part } from './insight.js';
 import { mbodypart } from './shk.js';
 import { m_seenres } from './muse.js';
 import { spec_abon } from './artifact.js';
+import {
+    Sleep_resistance, Acid_resistance, Stone_resistance, Stunned, Confusion, BlindedTimeout,
+    Blind, Stoned, Hallucination, Deaf, Fumbling, Underwater, Hate_silver
+} from './youprop.js';
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Deaf() { return uhave(DEAF) || !!game.u.uroleplay?.deaf; }
-function Confusion() { return uhave(CONFUSION); }
-function Stunned() { return uhave(STUNNED); }
-function Fumbling() { return uhave(FUMBLING); }
-function Stoned() { return !!game.u.uprops[STONED].intrinsic; }
-function Acid_resistance() { return uhave(ACID_RES); }
-function Sleep_resistance() { return uhave(SLEEP_RES); }
-function Stone_resistance() { return uhave(STONE_RES); }
-function Underwater() { return !!game.u.uinwater; }
-function BlindedTimeout() { return game.u.uprops[BLINDED].intrinsic & 0xFFFFFF; }
-/* C ref: youprop.h Hate_silver */
-function Hate_silver() {
-    return game.u.ulycn >= LOW_PM || hates_silver(game.youmonst.data);
-}
 function Role_if(pm) { return game.urole.mnum === pm; }
 function verbose() { return game.flags.verbose ?? true; }
 
