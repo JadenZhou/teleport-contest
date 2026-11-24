@@ -2075,11 +2075,20 @@ export async function use_misc(mtmp) {
 // C ref: muse.c you_aggravate()
 async function you_aggravate(mtmp) {
     await pline(`For some reason, ${s_suffix(noit_mon_nam(mtmp))} presence is known to you.`);
-    /* cls(); show_glyph(mon_to_glyph(mtmp, rn2_on_display_rng));
-       display_self(); You_feel("aggravated at ..."); and a blocking
-       display_nhwindow(WIN_MAP, TRUE) that waits for the hero to
-       acknowledge the map */
-    throw new Error('you_aggravate(): blocking map display not ported yet');
+    await cls_mu();
+    /* cliparound(mtmp->mx, mtmp->my): CLIPPING isn't needed at 80x24 */
+    show_glyph_mu(mtmp.mx, mtmp.my, mon_to_glyph_mu(mtmp, rn2_on_display_rng_mu));
+    display_self_mu();
+    await You_feel_mu(`aggravated at ${noit_mon_nam(mtmp)}.`);
+    await tty_display_map_nhwindow_mu(true); /* display_nhwindow(WIN_MAP, TRUE) */
+    await docrt_mu();
+    if (unconscious_mu()) {
+        game.multi = -1;
+        game.nomovemsg = "Aggravated, you are jolted into full consciousness.";
+    }
+    newsym_mu(mtmp.mx, mtmp.my);
+    if (!canspotmon_mu(mtmp))
+        map_invisible_mu(mtmp.mx, mtmp.my);
 }
 
 
@@ -2742,3 +2751,10 @@ export async function mcureblindness(mon, verbos) {
             await pline(`${Monnam(mon)} can see again.`);
     }
 }
+import { cls as cls_mu, show_glyph as show_glyph_mu, mon_to_glyph as mon_to_glyph_mu,
+         display_self as display_self_mu, docrt as docrt_mu, newsym as newsym_mu,
+         canspotmon as canspotmon_mu, map_invisible as map_invisible_mu,
+         You_feel as You_feel_mu } from './display.js';
+import { rn2_on_display_rng as rn2_on_display_rng_mu } from './rng.js';
+import { tty_display_map_nhwindow as tty_display_map_nhwindow_mu } from './wintty.js';
+import { unconscious as unconscious_mu } from './eat.js';

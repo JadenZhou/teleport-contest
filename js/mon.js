@@ -1893,8 +1893,13 @@ export async function decide_to_shapeshift(mon) {
                 }
             }
             if (dochng && (mon.data.mflags1 & MM.M1_AMORPHOUS) /* amorphous */
-                && closed_door(mon.mx, mon.my))
-                throw new Error('decide_to_shapeshift(): enexto()/rloc_to() not ported yet');
+                && closed_door(mon.mx, mon.my)) {
+                const new_xy = { x: 0, y: 0 };
+
+                if (enexto(new_xy, mon.mx, mon.my, ptr)) {
+                    await rloc_to_mn(mon, new_xy.x, new_xy.y);
+                }
+            }
         } else {
             if (mon.mhp >= Math.trunc(9 * mon.mhpmax / 10) && !rn2(6)
                 && (!canseemon(mon)
@@ -2997,7 +3002,7 @@ function flesh_petrifies(pm) {
     return pm === mons[MM.PM_COCKATRICE] || pm === mons[MM.PM_CHICKATRICE]
            || pm === mons[MM.PM_MEDUSA];
 }
-function mstoning(obj) {
+export function mstoning(obj) {
     return (ofood(obj) && obj.corpsenm >= LOW_PM && obj.corpsenm < NUMMONS
             && flesh_petrifies(mons[obj.corpsenm]));
 }
@@ -3405,3 +3410,4 @@ import { mon_explodes } from './explode.js';
 import { shkgone } from './shk.js';
 
 import { gd_move } from './vault.js';
+import { rloc_to as rloc_to_mn } from './teleport.js';

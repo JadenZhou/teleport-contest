@@ -3455,15 +3455,27 @@ export function get_level_extends() {
     return { xmin, xmax, ymin, ymax };
 }
 
+// C ref: mkmaze.c bound_digging()
+/* put a non-diggable/non-phaseable boundary around the initial portion
+ * of a level map. */
 function bound_digging() {
     const map = game.level;
+
+    if (Is_earthlevel_mk(game.u.uz))
+        return; /* everything diggable here */
+
     const { xmin, xmax, ymin, ymax } = get_level_extends();
     for (let x = 0; x < COLNO; x++)
         for (let y = 0; y < ROWNO; y++) {
             const loc = map.at(x, y);
             if (!loc) continue;
-            if (IS_STWALL(loc.typ) && (y <= ymin || y >= ymax || x <= xmin || x >= xmax)) {
-                loc.wall_info = (loc.wall_info || 0) | W_NONDIGGABLE;
+            if (IS_STWALL(loc.typ)) {
+                /* undiggable walls at edges, ... */
+                if (y <= ymin || y >= ymax || x <= xmin || x >= xmax)
+                    loc.wall_info = (loc.wall_info || 0) | W_NONDIGGABLE;
+                /* one tile past that, everything is also unphaseable */
+                if (y < ymin || y > ymax || x < xmin || x > xmax)
+                    loc.wall_info = (loc.wall_info || 0) | W_NONPASSWALL_MK;
             }
         }
 }
@@ -3486,3 +3498,4 @@ function level_finalize_topology() {
         if (rm && rm.rtype != null) rm.orig_rtype = rm.rtype;
     }
 }
+import { Is_earthlevel as Is_earthlevel_mk, W_NONPASSWALL as W_NONPASSWALL_MK } from './const.js';

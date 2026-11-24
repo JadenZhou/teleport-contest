@@ -61,6 +61,7 @@ import { ROOMOFFSET, VAULT, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL,
          TT_BURIEDBALL, LEVITATION, FLYING, TELEDS_TELEPORT } from './const.js';
 import { ECMD_OK, ECMD_TIME, TELEPORT, A_STR } from './const.js';
 import { You } from './display.js';
+import { docrt as docrt_tp } from './display.js';
 import { getpos } from './getpos.js';
 import { u_locomotion } from './trap.js';
 import { can_teleport } from './mondata.js';
@@ -359,8 +360,13 @@ export async function teleds(nux, nuy, teleds_flags) {
     if (game.youmonst.data.mlet === S_MIMIC)
         throw new Error('teleds(): hideunder() for a mimic hero not ported yet');
 
-    if (was_swallowed)
-        throw new Error('teleds(): leaving an engulfer not ported yet');
+    if (was_swallowed) {
+        if (Punished()) { /* ball&chain are off map while swallowed */
+            ball_active = true; /* to put chain and non-carried ball on map */
+            ball_still_in_range = allow_drag = false; /* (redundant) */
+        }
+        await docrt_tp();
+    }
 
     if (ball_active && (ball_still_in_range || allow_drag)) {
         /* bc_control, ballx, bally, chainx, chainy, cause_delay */

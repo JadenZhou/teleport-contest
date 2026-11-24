@@ -450,8 +450,25 @@ export function getmattk(magr, mdef, indx, prev_result) {
             || attk.adtyp === AD_FAMN)
         && attk.adtyp === mptr.mattk[indx - 1].adtyp) {
         attk = { ...attk, adtyp: M.AD_STUN };
+    /* make drain-energy damage be somewhat in proportion to energy */
     } else if (attk.adtyp === AD_DREN && udefend) {
-        throw new Error('getmattk(): AD_DREN substitution not ported yet');
+        const u = game.u;
+        const ulev = Math.max(u.ulevel, 6);
+
+        attk = { ...attk }; /* *alt_attk_buf = *attk */
+        /* 3.6.0 used 4d6 but since energy drain came out of max energy
+           once current energy was gone, that tended to have a severe
+           effect on low energy characters; it's now 2d6 with adjustments */
+        if (u.uen <= 5 * ulev && attk.damn > 1) {
+            attk.damn -= 1; /* low energy: 2d6 -> 1d6 */
+            if (u.uenmax <= 2 * ulev && attk.damd > 3)
+                attk.damd -= 3; /* very low energy: 1d6 -> 1d3 */
+        } else if (u.uen > 12 * ulev) {
+            attk.damn += 1; /* high energy: 2d6 -> 3d6 */
+            if (u.uenmax > 20 * ulev)
+                attk.damd += 3; /* very high energy: 3d6 -> 3d9 */
+            /* note: 3d9 is slightly higher than previous 4d6 */
+        }
     } else if (magr.mspec_used && (attk.aatyp === AT_ENGL
                                    || attk.aatyp === AT_HUGS
                                    || attk.adtyp === AD_STCK

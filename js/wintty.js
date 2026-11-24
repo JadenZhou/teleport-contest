@@ -1547,6 +1547,18 @@ export async function tty_display_nhwindow(window, blocking) {
             game.iflags.window_inited = true;
         cw.active = 1;
         return;
+    case NHW_MAP:
+        /* end_glyphout(); */
+        if (blocking) {
+            if (t.toplin !== TOPLINE_EMPTY)
+                t.toplin = TOPLINE_NEED_MORE;
+            await tty_display_nhwindow(game.WIN_MESSAGE, true);
+            return;
+        }
+        /*FALLTHRU*/
+    case NHW_BASE:
+        /* (void) fflush(stdout); */
+        break;
     case NHW_TEXT:
         cw.maxcol = t.cols; /* force full-screen mode */
         /*FALLTHRU*/
@@ -1588,6 +1600,22 @@ export async function tty_display_nhwindow(window, blocking) {
         throw new Error(`tty_display_nhwindow: window type ${cw.type} not ported yet`);
     }
     cw.active = 1;
+}
+
+// C ref: wintty.c tty_display_nhwindow() case NHW_MAP -- the JS port has
+// no separate WIN_MAP window (the map is drawn straight to the terminal),
+// so display_nhwindow(WIN_MAP, blocking) callers come here
+export async function tty_display_map_nhwindow(blocking) {
+    const t = tty();
+
+    /* end_glyphout(); */
+    if (blocking) {
+        if (t.toplin !== TOPLINE_EMPTY)
+            t.toplin = TOPLINE_NEED_MORE;
+        await tty_display_nhwindow(game.WIN_MESSAGE, true);
+        return;
+    }
+    /* (void) fflush(stdout); */
 }
 
 // C ref: wintty.c set_item_state()
