@@ -82,7 +82,7 @@ import { mons, M1_NOLIMBS, M1_BREATHLESS, S_RODENT, PM_ROCK_MOLE, PM_WOODCHUCK,
          PM_GREEN_SLIME } from './monsters.js';
 import { rn2, d } from './rng.js';
 import { body_part } from './insight.js';
-import { hcolor } from './do_name.js';
+import { hcolor, rndmonnam } from './do_name.js';
 import { You } from './display.js';
 import { is_pool, is_lava } from './makemon.js';
 import { Is_waterlevel } from './const.js';
@@ -498,9 +498,8 @@ async function slime_dialogue() {
                 if (!Blind()) /* [what if you're already green?] */
                     await urgent_pline(buf.replace("%s", hcolor(NH_GREEN)));
             } else {
-                if (Hallucination())
-                    throw new Error('slime_dialogue(): rndmonnam() not ported yet');
-                await urgent_pline(buf.replace("%s", an("green slime")));
+                await urgent_pline(buf.replace("%s", an(Hallucination() ? rndmonnam(null)
+                                                                      : "green slime")));
             }
         } else {
             await urgent_pline(buf);

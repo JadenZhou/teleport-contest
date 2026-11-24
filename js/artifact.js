@@ -815,6 +815,23 @@ export function protects(otmp, being_worn) {
             || (being_worn && (arti.spfx & SPFX_PROTECT) !== 0));
 }
 
+// C ref: artifact.c shade_glare()
+/* used for hero's attack against a shade */
+export function shade_glare(obj) {
+    /* any silver object is effective */
+    if (objects_ac[obj.otyp].oc_material === O.SILVER)
+        return true;
+    /* non-silver artifacts with bonus against undead also are effective */
+    const arti = get_artifact(obj);
+    if (arti !== artilist()[ART_NONARTIFACT] && (arti.spfx & SPFX_DFLAG2)
+        && arti.mtype === M.M2_UNDEAD)
+        return true;
+    /* [if there was anything with special bonus against noncorporeals,
+       it would be effective too] */
+    /* otherwise, harmless to shades */
+    return false;
+}
+
 // C ref: artifact.c defends()
 /* used to check whether a monster is getting reflection/magic resistance
    from its wielded weapon or worn dragon scales */

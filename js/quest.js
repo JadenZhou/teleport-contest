@@ -26,7 +26,7 @@ import { observe_object } from './o_init.js';
 import { tty_yn_function } from './wintty.js';
 import { nomul } from './hack.js';
 import { schedule_goto } from './do.js';
-import { carrying } from './invent.js';
+import { carrying, fully_identify_obj } from './invent.js';
 import { create_gas_cloud } from './region.js';
 import { Monnam, mon_nam } from './do_name.js';
 import { setmangry, monnear } from './mon.js';
@@ -271,8 +271,10 @@ export async function finish_quest(obj) /* quest artifact or thrown unique
            quest artifact to the leader. */
         await qt_pager("hasamulet");
         /* leader IDs the real amulet but ignores any fakes */
-        if ((otmp = carrying(O.AMULET_OF_YENDOR)) !== null)
-            throw new Error('finish_quest(): fully_identify_obj() not ported yet');
+        if ((otmp = carrying(O.AMULET_OF_YENDOR)) !== null) {
+            fully_identify_obj(otmp);
+            /* update_inventory(): no perm_invent */
+        }
     } else {
         /* normal quest completion; threw artifact or walked up carrying it */
         await qt_pager(!Qstat().got_thanks ? "offeredit" : "offeredit2");
@@ -286,8 +288,9 @@ export async function finish_quest(obj) /* quest artifact or thrown unique
     if (obj) {
         u.uevent.qcompleted = 1; /* you did it! */
         /* behave as if leader imparts sufficient info about the
-           quest artifact: fully_identify_obj(obj); update_inventory() */
-        throw new Error('finish_quest(): fully_identify_obj() not ported yet');
+           quest artifact */
+        fully_identify_obj(obj);
+        /* update_inventory(): no perm_invent */
     }
 }
 

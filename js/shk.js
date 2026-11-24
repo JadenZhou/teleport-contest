@@ -6,6 +6,7 @@
 
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
+import { arti_cost } from './artifact.js';
 import { rn2 } from './rng.js';
 import {
     SHOPBASE, NO_ROOM, ROOMOFFSET, IS_ROOM, PL_NSIZ, EYE, HAND, BOLT_LIM,
@@ -3773,8 +3774,11 @@ function corpsenm_price_adj(obj) {
 function getprice(obj, shk_buying) {
     let tmp = objects[obj.otyp].oc_cost;
 
-    if (obj.oartifact)
-        throw new Error('getprice(): arti_cost() not ported yet');
+    if (obj.oartifact) {
+        tmp = arti_cost(obj);
+        if (shk_buying)
+            tmp = Math.trunc(tmp / 4);
+    }
     switch (obj.oclass) {
     case FOOD_CLASS:
         tmp += corpsenm_price_adj(obj);

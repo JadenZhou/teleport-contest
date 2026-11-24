@@ -102,6 +102,7 @@ import {
     Invisible, Underwater, Passes_walls
 } from './youprop.js';
 import { Role_if, u_at } from './const.js';
+import { snuff_light_source } from './light.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -2106,14 +2107,6 @@ function set_lit(x, y, val) {
         lev.lit = 0;
         snuff_light_source(x, y);
     }
-}
-
-/* C ref: light.c snuff_light_source() -- no light sources at the spot
-   (lit objects on the floor) are modeled yet */
-function snuff_light_source(x, y) {
-    for (const otmp of game.level.objects || [])
-        if (otmp.ox === x && otmp.oy === y && otmp.where === 'OBJ_FLOOR' && otmp.lamplit)
-            throw new Error('snuff_light_source(): snuffing a lit object not ported yet');
 }
 
 // C ref: read.c litroom()

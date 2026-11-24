@@ -407,7 +407,7 @@ async function pickup_checks() {
         else if (IS_GRAVE(lev.typ))
             await You("don't need a gravestone.  Yet.");
         else if (IS_FOUNTAIN(lev.typ))
-            await You(`could drink the ${Hallucination() ? (() => { throw new Error('pickup_checks(): hliquid() while hallucinating not ported yet'); })() : "water"}...`);
+            await You(`could drink the ${hliquid("water")}...`);
         else if (IS_DOOR(lev.typ) && (lev.doormask & D_ISOPEN))
             await pline("It won't come off the hinges.");
         else if (IS_ALTAR(lev.typ))

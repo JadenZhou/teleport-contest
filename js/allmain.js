@@ -39,7 +39,7 @@ import { init_objects } from './o_init.js';
 import { init_dungeons, depth, find_level, In_hell,
          print_level_annotation } from './dungeon.js';
 import { ask_do_tutorial } from './options.js';
-import { phase_of_the_moon, friday_13th } from './calendar.js';
+import { phase_of_the_moon, friday_13th, night } from './calendar.js';
 import { change_luck } from './attrib.js';
 import { set_wear } from './do_wear.js';
 import { FULL_MOON, NEW_MOON, COLNO } from './const.js';
@@ -287,13 +287,6 @@ function u_calc_moveamt(wtcap) {
 let mvl_wtcap = 0;
 let mvl_change = 0;
 
-
-// C ref: calendar.c night()
-function night() {
-    /* getlt() and the hour of the (fixed) game clock: calendar.c isn't
-       ported yet */
-    throw new Error('night(): calendar.c not ported yet');
-}
 
 /* C ref: vault.c vault_occupied(u.urooms) */
 function vault_occupied_urooms() {

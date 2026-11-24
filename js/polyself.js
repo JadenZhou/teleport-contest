@@ -65,7 +65,7 @@ import { the, simpleonames, surface, cloak_simple_name,
          helm_simple_name } from './iactions.js';
 import { unmul } from './allmain.js';
 import { make_glib, set_mimic_blocking, set_itimeout, make_blinded } from './potion.js';
-import { golemhp, is_pool, is_lava } from './makemon.js';
+import { golemhp, is_pool, is_lava, is_home_elemental } from './makemon.js';
 import { find_ac } from './u_init.js';
 import { set_ustuck } from './uhitm.js';
 import { spoteffects, nomul } from './hack.js';
@@ -311,14 +311,6 @@ function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
 function is_mind_flayer(ptr) {
     return ptr === mons[M.PM_MIND_FLAYER]
         || ptr === mons[M.PM_MASTER_MIND_FLAYER];
-}
-// C ref: mondata.h is_home_elemental() -- only true on the elemental planes
-function is_home_elemental(ptr) {
-    if (ptr.mlet !== M.S_ELEMENTAL)
-        return false;
-    if (In_endgame(game.u.uz))
-        throw new Error('is_home_elemental(): elemental planes not ported yet');
-    return false;
 }
 function is_placeholder(ptr) {
     return ptr === mons[M.PM_ORC] || ptr === mons[M.PM_GIANT]

@@ -20,7 +20,7 @@ import { find_mac } from './worn.js';
 import {
     PM_CLERIC, PM_WIZARD, PM_HEALER, PM_KNIGHT, PM_BARBARIAN, PM_VALKYRIE,
 } from './monsters.js';
-import { ACURR, adjabil, newhp } from './attrib.js';
+import { ACURR, adjabil, newhp, setuhpmax } from './attrib.js';
 import { xlev_to_rank } from './botl.js';
 import { record_achievement, achieve_rank } from './insight.js';
 import { pline } from './display.js';
@@ -291,23 +291,6 @@ function minuhpmax(altmin) {
     if (altmin < 1)
         altmin = 1;
     return Math.max(game.u.ulevel, altmin);
-}
-
-// C ref: attrib.c setuhpmax() -- the !Upolyd case
-function setuhpmax(newmax, even_when_polyd) {
-    const u = game.u;
-    if (u.umonnum !== u.umonster && !even_when_polyd)
-        throw new Error('setuhpmax(): polymorphed hit points not ported yet');
-    if (newmax !== u.uhpmax) {
-        u.uhpmax = newmax;
-        if (u.uhpmax > (u.uhppeak || 0))
-            u.uhppeak = u.uhpmax;
-        game.disp_botl = true;
-    }
-    if (u.uhp > u.uhpmax) {
-        u.uhp = u.uhpmax;
-        game.disp_botl = true;
-    }
 }
 
 // C ref: exper.c losexp()

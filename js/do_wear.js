@@ -24,7 +24,7 @@ import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, MZ_HUGE, M1_NOLIMBS, M1_HUMANOID,
          PM_WINGED_GARGOYLE, PM_HORNED_DEVIL, PM_MINOTAUR, PM_ASMODEUS,
          PM_BALROG, PM_WHITE_UNICORN, PM_GRAY_UNICORN, PM_BLACK_UNICORN,
          PM_KI_RIN, PM_WIZARD } from './monsters.js';
-import { xname, an, makeplural, Tobjnam } from './objnam.js';
+import { xname, an, makeplural, Tobjnam, obj_is_pname } from './objnam.js';
 import { vision_recalc } from './vision.js';
 import { HEAD, BLINDED, TELEPAT, INFRAVISION } from './const.js';
 import * as O from './objects.js';
@@ -56,7 +56,7 @@ import { the, thesimpleoname } from './iactions.js';
 import { change_luck } from './attrib.js';
 import { nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
-import { racial_exception } from './worn.js';
+import { racial_exception, artifact_light } from './worn.js';
 import { surface } from './iactions.js';
 import { discover_object } from './o_init.js';
 import { find_ac } from './u_init.js';
@@ -267,9 +267,8 @@ async function on_msg(otmp) {
 
         if (otmp.otyp === TOWEL)
             how = ` around your ${body_part(HEAD)}`;
-        if (otmp.oartifact)
-            throw new Error('on_msg(): obj_is_pname() not ported yet');
-        await You(`are now wearing ${an(otmp_name)}${how}.`);
+        await You(`are now wearing ${
+            obj_is_pname(otmp) ? the(otmp_name) : an(otmp_name)}${how}.`);
     }
 }
 
@@ -592,18 +591,6 @@ async function Armor_on() {
     if (artifact_light(g.uarm) && !g.uarm.lamplit)
         throw new Error('Armor_on(): begin_burn() for gold dragon armor not ported yet');
     return 0;
-}
-
-/* C ref: artifact.c artifact_light() -- gold dragon scales/mail are
-   treated as light-emitting artifacts while worn as body armor */
-function artifact_light(obj) {
-    if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL
-                || obj.otyp === O.GOLD_DRAGON_SCALES)
-        && ((obj.owornmask || 0) & W_ARM) !== 0)
-        return true;
-    if (obj && obj.oartifact)
-        throw new Error('artifact_light(): artifacts not ported yet');
-    return false;
 }
 
 // C ref: do_wear.c Amulet_on()

@@ -106,6 +106,13 @@ import {
 } from './youprop.js';
 import { Role_if, Race_if, Upolyd } from './const.js';
 import { uprop } from './youprop.js';
+import { done } from './end.js';
+import { rndmonnam } from './do_name.js';
+import { killer } from './topten.js';
+import { killer_xname } from './mthrowu.js';
+import { revive_corpse } from './zap.js';
+import { DIED, CHOKING, STARVING, STONING, KILLED_BY, A_WIS,
+         NO_KILLER_PREFIX } from './const.js';
 
 const invlet_basic = 52; /* C ref: invent.c */
 const MAX_EGG_HATCH_TIME = 200; /* C ref: obj.h */
@@ -416,7 +423,10 @@ export async function newuhs(incr) {
             u.uhs = STARVED;
             g.disp_botl = true;
             await pline("You die from starvation.");
-            /* done(STARVING): end of game isn't ported yet */
+            killer().format = KILLED_BY;
+            killer().name = "starvation";
+            await done(STARVING);
+            /* if we return, we lifesaved, and that calls newuhs */
             return;
         }
     }
@@ -464,7 +474,9 @@ export async function newuhs(incr) {
         g.disp_botl = true;
         if ((u.umonnum !== u.umonster ? u.mh : u.uhp) < 1) {
             await pline("You die from hunger and exhaustion.");
-            /* done(STARVING): end of game isn't ported yet */
+            killer().format = KILLED_BY;
+            killer().name = "exhaustion";
+            await done(STARVING);
             return;
         }
     }
@@ -710,7 +722,7 @@ function nonrotting_food(otyp) {
 /* C ref: pline.c You_feel() */
 async function You_feel(line) { await pline(`You feel ${line}`); }
 /* C ref: mkobj.c peek_at_iced_corpse_age() */
-function peek_at_iced_corpse_age(otmp) {
+export function peek_at_iced_corpse_age(otmp) {
     let age, retval = otmp.age;
 
     if (otmp.otyp === CORPSE && otmp.on_ice) {
@@ -719,10 +731,6 @@ function peek_at_iced_corpse_age(otmp) {
         retval += Math.trunc(age * (ROT_ICE_ADJUSTMENT - 1) / ROT_ICE_ADJUSTMENT);
     }
     return retval;
-}
-/* C ref: end.c done() -- the end of the game isn't ported */
-function done(how) {
-    throw new Error(`done(${how}): end of game not ported yet`);
 }
 
 // C ref: eat.c food_xname() -- ``[the(] singular(food, xname) [)]''
@@ -840,11 +848,18 @@ async function choke(food) {
          */
         if (food) {
             await You(`choke over your ${foodword(food)}.`);
+            if (food.oclass === COIN_CLASS) {
+                killer().name = "very rich meal";
+            } else {
+                killer().format = KILLED_BY;
+                killer().name = killer_xname(food);
+            }
         } else {
             await You("choke over it.");
+            killer().name = "quick snack";
         }
         await You("die...");
-        done('CHOKING');
+        await done(CHOKING);
     }
 }
 
@@ -1073,8 +1088,11 @@ async function cprefx(pm) {
             /* if food was a tin, use it up early to keep it out of bones */
             if (tin_ctx().tin)
                 use_up_tin(tin_ctx().tin);
+
+            killer().name = `tasting ${mons[pm].pmnames[NEUTRAL]} meat`;
+            killer().format = KILLED_BY;
             await You("turn to stone.");
-            done('STONING');
+            await done(STONING);
             if (victual().piece)
                 victual().eating = 0;
             return; /* lifesaved */
@@ -1102,7 +1120,19 @@ async function cprefx(pm) {
     case M.PM_PESTILENCE:
     case M.PM_FAMINE: {
         await pline("Eating that is instantly fatal.");
-        done('DIED');
+        killer().name = `unwisely ate the body of ${mons[pm].pmnames[NEUTRAL]}`;
+        killer().format = NO_KILLER_PREFIX;
+        await done(DIED);
+        /* life-saving needed to reach here */
+        exercise(A_WIS, false);
+        /* revive an actual corpse; can't do that if it was a tin;
+           5.0: this used to assume that such tins were impossible but
+           they can be wished for in wizard mode; they can't make it
+           to normal play though because bones creation empties them */
+        if (victual().piece /* Null for tins */
+            && victual().piece.otyp === CORPSE /* paranoia */
+            && await revive_corpse(victual().piece))
+            clear_victual(); /* victual.piece=0, .o_id=0 */
         return;
     }
     case M.PM_GREEN_SLIME:
@@ -1479,7 +1509,7 @@ async function consume_tin(mesg) {
             what = "chicken";
             which = 1; /* suppress pluralization */
         } else if (Hallucination()) {
-            throw new Error('consume_tin(): rndmonnam() not ported yet');
+            what = rndmonnam(null);
         } else {
             what = mons[mnum].pmnames[NEUTRAL];
             if (the_unique_pm(mons[mnum]))
@@ -2086,7 +2116,7 @@ async function fpostfx(otmp) {
         break;
     case CARROT:
         if (!u.uswallow
-            || !(() => { throw new Error('fpostfx(): attacktype_fordmg() not ported yet'); })())
+            || !attacktype_fordmg(u.ustuck.data, M.AT_ENGL, M.AD_BLND))
             await make_blinded(u.ucreamed || 0, true);
         break;
     case FORTUNE_COOKIE:

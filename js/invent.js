@@ -13,7 +13,7 @@ import { def_oc_syms } from './drawing.js';
 import { body_part, hidden_gold, currency, empty_handed } from './insight.js';
 import { money_cnt } from './u_init.js';
 import { welded } from './wield.js';
-import { stairway_at, obj_to_glyph } from './display.js';
+import { stairway_at, obj_to_glyph, db_under_typ as db_under_typ_iv } from './display.js';
 import { an, vtense } from './objnam.js';
 import { t_at, trapname } from './trap.js';
 import { visible_region_at, reg_damg } from './region.js';
@@ -2650,9 +2650,8 @@ import { surface as surface_iv } from './iactions.js';
 /* C ref: rm.h SURFACE_AT() */
 function SURFACE_AT_iv(x, y) {
     const lev = game.level.at(x, y);
-    if (lev.typ === DRAWBRIDGE_UP_IV)
-        throw new Error('SURFACE_AT(): drawbridge underside (db_under_typ()) not ported yet');
-    return lev.typ;
+    return (lev.typ === DRAWBRIDGE_UP_IV) ? db_under_typ_iv(lev.drawbridgemask || 0)
+                                          : lev.typ;
 }
 import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_IV } from './const.js';
 

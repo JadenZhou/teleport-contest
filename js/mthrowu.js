@@ -9,7 +9,7 @@
 // throw a 'not ported yet' error instead of skipping their rolls.
 
 import { game } from './gstate.js';
-import { rn2, rnd, rn2_on_display_rng, ROLL_FROM } from './rng.js';
+import { rn2, rnd, rnl, rn2_on_display_rng, ROLL_FROM } from './rng.js';
 import { distmin, dist2, s_suffix, strncmpi } from './hacklib.js';
 import { cansee, couldsee } from './vision.js';
 import {
@@ -67,7 +67,7 @@ import { exercise, ACURR, poisoned } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { stop_occupation } from './allmain.js';
 import { nomul, calc_capacity } from './hack.js';
-import { make_blinded, potionhit, make_stoned } from './potion.js';
+import { make_blinded, potionhit, make_stoned, hliquid } from './potion.js';
 import { You_hear } from './sounds.js';
 import { monstseesu, monstunseesu, shade_miss, passive_obj } from './uhitm.js';
 import { mswings_verb, mhim } from './mhitu.js';
@@ -338,11 +338,6 @@ export function should_mulch_missile(obj) {
 /* C ref: obj.h greatest_erosion() */
 function greatest_erosion(otmp) {
     return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
-}
-/* C ref: rnd.c rnl() -- not reached by monsters (mon_moving is set) */
-function rnl(x) {
-    void x;
-    throw new Error('should_mulch_missile(): rnl() for hero missiles not ported yet');
 }
 
 // C ref: mthrowu.c drop_throw()
@@ -686,12 +681,6 @@ export async function ohitmon(
         return 1;
     }
     return 0;
-}
-/* C ref: objnam.c hliquid() */
-function hliquid(liquidpref) {
-    if (Hallucination())
-        throw new Error('hliquid(): hallucinatory liquids not ported yet');
-    return liquidpref;
 }
 
 // C ref: mthrowu.c ucatchgem()

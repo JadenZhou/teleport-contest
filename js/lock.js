@@ -21,7 +21,7 @@ import { container_at, doloot } from './pickup.js';
 import { set_occupation } from './allmain.js';
 import { mon_nam } from './do_name.js';
 import { doname, yname } from './objnam.js';
-import { can_reach_floor } from './engrave.js';
+import { can_reach_floor, cant_reach_floor } from './engrave.js';
 import { mons, PM_ORACLE, PM_ROGUE } from './monsters.js';
 import { ART_ORB_OF_DETECTION, ART_MASTER_KEY_OF_THIEVERY } from './artilist.js';
 import { is_quest_artifact } from './questpgr.js';
@@ -1098,17 +1098,6 @@ function is_pick(otmp) {
            && objects[otmp.otyp].oc_skill === P_PICK_AXE;
 }
 function Is_box(o) { return o.otyp === LARGE_BOX || o.otyp === CHEST; }
-
-// C ref: engrave.c cant_reach_floor()
-async function cant_reach_floor(x, y, up, check_pit, wand_engraving) {
-    if (up)
-        throw new Error('cant_reach_floor(): ceiling() not ported yet');
-    await pline(`${wand_engraving
-                   ? "The wand does nothing more, and the tip of the wand"
-                   : "You"} can't reach the ${
-                (check_pit && can_reach_floor(false)) ? "bottom of the pit"
-                                                       : surface(x, y)}.`);
-}
 
 // C ref: lock.c doforce() -- the #force command - try to force a chest
 // with your weapon

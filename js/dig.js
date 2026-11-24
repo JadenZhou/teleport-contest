@@ -113,7 +113,7 @@ function pick_can_reach(pick, x, y) {
        this applies to hero in pit trying to reach an adjcacent boulder too */
     if (u.utrap && u.utraptype === TT_PIT) {
         if (target_in_pit)
-            throw new Error('pick_can_reach(): conjoined_pits() not ported yet');
+            return conjoined_pits(t, t_at(u.ux, u.uy), false);
         return bimanual(pick);
     }
 
@@ -165,25 +165,6 @@ export function is_ice(x, y) {
     return false;
 }
 
-// C ref: mkobj.c obj_extract_self() / remove_object() -- the cases
-// bury_an_obj() reaches: floor objects live in game.level.objects.
-function obj_extract_self(obj) {
-    switch (obj.where) {
-    case 'OBJ_FLOOR': {
-        const fobj = game.level.objects || [];
-        const i = fobj.indexOf(obj);
-        if (i >= 0)
-            fobj.splice(i, 1);
-        obj.where = 'OBJ_FREE';
-        break;
-    }
-    case 'OBJ_FREE':
-        break;
-    default:
-        throw new Error(`obj_extract_self: where=${obj.where} is not ported yet`);
-    }
-}
-
 // C ref: dig.c add_to_buried()
 export function add_to_buried(obj) {
     if (obj.where !== 'OBJ_FREE')
@@ -220,7 +201,7 @@ export function bury_an_obj(otmp, dealloced) {
     if (otmp.lamplit && otmp.otyp !== POT_OIL)
         throw new Error('bury_an_obj: end_burn() is not ported yet');
 
-    obj_extract_self(otmp);
+    mkobj_obj_extract_self(otmp);
 
     const under_ice = is_ice(otmp.ox, otmp.oy);
     if ((otmp.otyp === ROCK && !under_ice) || otmp.otyp === BOULDER) {

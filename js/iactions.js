@@ -26,12 +26,12 @@ import {
     tty_select_menu, tty_destroy_nhwindow,
 } from './wintty.js';
 import { xname, makeplural, makesingular, fruit_from_name, an,
-         armor_simple_name } from './objnam.js';
+         armor_simple_name, the_unique_obj, cxname } from './objnam.js';
 import { data_base } from './data_base.js';
 import { is_weptool, Is_container, is_flammable } from './mkobj.js';
 import * as M from './monsters.js';
 import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
-import { artiname, artifact_name } from './artifact.js';
+import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
 import { strncmpi, lowc, strstri } from './hacklib.js';
 import { CapitalMon } from './rumors.js';
 
@@ -68,11 +68,13 @@ function ia_not_ported(what) {
     throw new Error(`itemactions: ${what} is not ported yet`);
 }
 
-/* C ref: obj.h is_plural() -- undiscovered_artifact() not ported */
+/* C ref: obj.h is_plural() */
 function is_plural(o) {
-    if (o.oartifact === ART_EYES_OF_THE_OVERWORLD)
-        ia_not_ported('undiscovered_artifact()');
-    return o.quan !== 1;
+    return (o.quan !== 1
+            /* "the Eyes of the Overworld" are plural, but
+               "a pair of lenses named the Eyes of the Overworld" is not */
+            || (o.oartifact === ART_EYES_OF_THE_OVERWORLD
+                && !undiscovered_artifact(ART_EYES_OF_THE_OVERWORLD)));
 }
 /* C ref: obj.h is_ammo(), is_missile(), is_launcher(), matching_launcher(),
    ammo_and_launcher(), bimanual(), is_blade(), is_wet_towel(),
@@ -265,14 +267,6 @@ export function call_ok(obj) {
         return GETOBJ_DOWNPLAY;
 
     return GETOBJ_SUGGEST;
-}
-
-/* C ref: objnam.c the_unique_obj() -- not ported beyond the common case */
-function the_unique_obj(obj) {
-    if (obj.oartifact || objects[obj.otyp].oc_unique
-        || obj.otyp === O.FAKE_AMULET_OF_YENDOR)
-        ia_not_ported('the_unique_obj()');
-    return false;
 }
 
 /* C ref: objnam.c minimal_xname() -- distant_name() of an inventory
@@ -557,13 +551,6 @@ export function the(str) {
         }
     }
     return (insert_the ? "the " : "") + str;
-}
-
-/* C ref: objnam.c cxname() */
-function cxname(obj) {
-    if (obj.otyp === O.CORPSE)
-        ia_not_ported('corpse_xname()');
-    return xname(obj);
 }
 
 /* C ref: do_wear.c armcat_to_wornmask() */

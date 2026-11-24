@@ -24,7 +24,7 @@ import * as O from './objects.js';
 import * as M from './monsters.js';
 import { spell_skilltype, skill_based_spellbook_id } from './spell.js';
 import { ART_SUNSWORD, ART_SNICKERSNEE } from './artilist.js';
-import { touch_artifact_mon, spec_abon, spec_dbon } from './artifact.js';
+import { touch_artifact_mon, spec_abon, spec_dbon, shade_glare } from './artifact.js';
 import { is_weptool } from './mkobj.js';
 import { is_pool } from './makemon.js';
 import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
@@ -266,17 +266,6 @@ function artifact_light(obj) {
         && ((obj.owornmask || 0) & W_ARM) !== 0)
         return true;
     return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
-}
-// C ref: artifact.c shade_glare()
-function shade_glare(obj) {
-    /* any silver object is effective */
-    if (objects[obj.otyp].oc_material === O.SILVER)
-        return true;
-    /* non-silver artifacts with bonus against undead also are effective */
-    if (obj.oartifact)
-        throw new Error('shade_glare(): artifacts not ported yet');
-    /* otherwise, harmless to shades */
-    return false;
 }
 
 /* targets that provide attacker with small to-hit bonus when using a spear */

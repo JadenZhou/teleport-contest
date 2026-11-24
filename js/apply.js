@@ -14,11 +14,12 @@ import { is_pole, retouch_object } from './wield.js';
 import { pick_lock } from './lock.js';
 import * as O from './objects.js';
 import { is_graystone, thesimpleoname } from './iactions.js';
+import { feel_newsym } from './display.js';
 import { discover_object } from './o_init.js';
 import { MAX_SPELL_STUDY, DEAF, HAND, SDOOR, SCORR, CORR, ARTICLE_A,
          SUPPRESS_IT, SUPPRESS_INVISIBLE, Is_stronghold } from './const.js';
 import { surface } from './iactions.js';
-import { can_reach_floor } from './engrave.js';
+import { can_reach_floor, cant_reach_floor } from './engrave.js';
 import { You_hear } from './sounds.js';
 import { getdir } from './cmd.js';
 import { confdir } from './hack.js';
@@ -80,14 +81,6 @@ function is_pick(otmp) {
 function is_axe(otmp) {
     return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
             && objects[otmp.otyp].oc_skill === P_AXE);
-}
-
-/* C ref: display.c feel_newsym() -- feel_location() for a blind hero
-   isn't ported */
-function feel_newsym(x, y) {
-    if (Blind())
-        throw new Error('feel_newsym(): feel_location() not ported yet');
-    newsym(x, y);
 }
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
@@ -247,7 +240,7 @@ async function use_stethoscope(obj) {
         if (u.uinwater) { /* Underwater */
             await You_hear("faint splashing.");
         } else if (u.dz < 0 || !can_reach_floor(true)) {
-            throw new Error('use_stethoscope(): cant_reach_floor() not ported yet');
+            await cant_reach_floor(u.ux, u.uy, (u.dz < 0), true, false);
         } else if (await its_dead(u.ux, u.uy, res)) {
             ; /* message already given */
         } else if (Is_stronghold(u.uz)) {
