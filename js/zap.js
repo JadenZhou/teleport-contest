@@ -680,6 +680,23 @@ export async function poly_obj(obj, id) {
     return otmp;
 }
 
+// C ref: zap.c get_mon_location()
+/* returns [x, y], or null for a migrating or buried monster (C returns
+   FALSE with *xp = *yp = 0) */
+export function get_mon_location(
+    mon,
+    locflags) /* non-zero means get location even if monster is buried */
+{
+    const u = game.u;
+    if (mon === game.youmonst || (u.usteed && mon === u.usteed)) {
+        return [u.ux, u.uy];
+    } else if (mon.mx > 0 && (!mon.mburied || locflags)) {
+        return [mon.mx, mon.my];
+    } else { /* migrating or buried */
+        return null;
+    }
+}
+
 // C ref: zap.c bhitpile()
 export async function bhitpile(
     obj,          /* wand or fake spellbook for type of zap */
