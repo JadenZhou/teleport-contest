@@ -3391,7 +3391,7 @@ import { G_GENOD as G_GENOD_RV, NON_PM as NON_PM_RV, ROOM as ROOM_RV,
          isok as isok_rv } from './const.js';
 import { CORPSE as CORPSE_RV, STATUE as STATUE_RV,
          BAG_OF_HOLDING as BAG_OF_HOLDING_RV } from './objects.js';
-import { makemon as makemon_rv } from './makemon.js';
+import { makemon as makemon_rv, makemon_flush_msg as makemon_flush_msg_rv } from './makemon.js';
 import { enexto as enexto_rv, rloc as rloc_rv } from './teleport.js';
 import { corpse_xname as corpse_xname_rv, xname as xname_rv, an as an_rv,
          yname as yname_rv, The as The_rv } from './objnam.js';
@@ -3463,6 +3463,21 @@ function zombie_can_dig(x, y) {
             return true;
     }
     return false;
+}
+
+/* makemon() for revive(): makemon()'s dochugw() for an occupied hero is
+   async in this port, so it is run by makemon_flush_msg() right after
+   makemon() returns (see the Norep() comment in makemon()) */
+async function makemon_revive(ptr, x, y, mmflags) {
+    let mtmp;
+    game.makemon_want_msg = true;
+    try {
+        mtmp = makemon_rv(ptr, x, y, mmflags);
+    } finally {
+        game.makemon_want_msg = false;
+    }
+    await makemon_flush_msg_rv();
+    return mtmp;
 }
 
 // C ref: zap.c revive()
@@ -3577,7 +3592,7 @@ export async function revive(corpse, by_hero) {
     if (cant_revive_rv(montype, true, corpse)) {
         /* make a zombie or doppelganger instead */
         /* note: montype has changed; mptr keeps old value for newcham() */
-        mtmp = makemon_rv(mons_rv[montype.v], x, y, mmflags);
+        mtmp = await makemon_revive(mons_rv[montype.v], x, y, mmflags);
         if (mtmp) {
             /* skip ghost handling */
             if (has_omid_rv(corpse))
@@ -3598,7 +3613,7 @@ export async function revive(corpse, by_hero) {
         throw new Error('revive(): montraits() not ported yet');
     } else {
         /* make a new monster */
-        mtmp = makemon_rv(mptr, x, y, mmflags | MM_NOCOUNTBIRTH_RV);
+        mtmp = await makemon_revive(mptr, x, y, mmflags | MM_NOCOUNTBIRTH_RV);
     }
     if (!mtmp)
         return null;
