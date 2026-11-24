@@ -33,7 +33,7 @@ import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL } from './obje
 import { permapoisoned } from './mkobj.js';
 import { dmgval } from './weapon.js';
 import { which_armor } from './worn.js';
-import { rustm } from './mhitm.js';
+import { rustm, mon_poly } from './mhitm.js';
 import { couldsee, cansee } from './vision.js';
 import { perceives, is_were, is_demon } from './mondata.js';
 import { IS_OBSTRUCTED, SHOPBASE, ROOMOFFSET } from './const.js';
@@ -1441,7 +1441,20 @@ async function mhitm_ad_poly(magr, mattk, mdef, mhm) {
                      || !!magr.mspec_used);
 
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_poly(): uhitm branch not ported yet');
+        /* uhitm */
+        /* require weaponless attack in order to honor AD_POLY */
+        if (!game.uwep && mhm.damage < mdef.mhp) {
+            if (negated) {
+                /* assume that you can tell by touch if blinded */
+                await pline(`${Monnam(mdef)} is not transformed.`);
+            } else {
+                mhm.damage = await mon_poly(game.youmonst, mdef, mhm.damage);
+                if (mdef.mhp < 1) /* DEADMONSTER(mdef) */
+                    mhm.hitflags |= M_ATTK_DEF_DIED;
+                mhm.hitflags |= M_ATTK_HIT;
+                mhm.done = true;
+            }
+        }
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -1450,11 +1463,20 @@ async function mhitm_ad_poly(magr, mattk, mdef, mhm) {
                 if (magr.mcan)
                     await You("aren't transformed.");
             } else {
-                throw new Error('mhitm_ad_poly(): mon_poly() not ported yet');
+                mhm.damage = await mon_poly(magr, game.youmonst, mhm.damage);
+                mhm.hitflags |= M_ATTK_HIT;
+                mhm.done = true;
             }
         }
     } else {
-        throw new Error('mhitm_ad_poly(): mhitm branch not ported yet');
+        /* mhitm */
+        if (mhm.damage < mdef.mhp && !negated) {
+            mhm.damage = await mon_poly(magr, mdef, mhm.damage);
+            if (mdef.mhp < 1) /* DEADMONSTER(mdef) */
+                mhm.hitflags |= M_ATTK_DEF_DIED;
+            mhm.hitflags |= M_ATTK_HIT;
+            mhm.done = true;
+        }
     }
 }
 
