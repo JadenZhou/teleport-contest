@@ -283,7 +283,7 @@ function Dragon_mail_to_pm(o) {
     return mons[M.PM_GRAY_DRAGON + o.otyp - GRAY_DRAGON_SCALE_MAIL];
 }
 /* C ref: wizard.c mon_has_special() */
-function mon_has_special(mtmp) {
+export function mon_has_special(mtmp) {
     for (const otmp of minv(mtmp))
         if (otmp.otyp === AMULET_OF_YENDOR
             || (otmp.oartifact || 0) >= ART_ORB_OF_DETECTION /* any_quest_artifact() */

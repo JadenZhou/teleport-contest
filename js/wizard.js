@@ -413,7 +413,8 @@ function which_arti(mask) {
  *      artifacts right now.  [MRS]
  */
 function mon_has_arti(mtmp, otyp) {
-    for (let otmp = mtmp.minvent; otmp; otmp = otmp.nobj) {
+    /* JS minvent is an array, oldest first (C's chain reversed) */
+    for (const otmp of (mtmp.minvent || []).slice().reverse()) {
         if (otyp) {
             if (otmp.otyp === otyp)
                 return true;

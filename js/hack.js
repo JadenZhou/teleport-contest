@@ -38,7 +38,7 @@ import { m_at, is_pool, is_lava, closed_door, may_passwall, sobj_at, goodpos,
 import { dig_typ } from './dig.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
-         glyph_is_invisible } from './display.js';
+         glyph_is_invisible, map_object } from './display.js';
 import { vision_recalc, couldsee } from './vision.js';
 import { glyph_at, Norep, feel_location, glyph_is_warning } from './display.js';
 import { carrying } from './invent.js';
@@ -2332,8 +2332,15 @@ async function moverock_core(sx, sy) {
     let costly, firstboulder = true;
 
     while ((otmp = sobj_at(BOULDER, sx, sy)) !== null && otmp) {
-        if (Blind())
-            throw new Error('moverock_core(): feeling a boulder while blind not ported yet');
+        if (Blind()) {
+            const gl = glyph_at(sx, sy);
+            if (!(gl.kind === 'obj' && gl.otyp === BOULDER)) { /* glyph_to_obj() != BOULDER */
+                await pline("That feels like a boulder.");
+                map_object(otmp, true);
+                nomul(0);
+                return -1;
+            }
+        }
 
         /* when otmp->next_boulder is 1, xname() will format it as
            "next boulder" instead of just "boulder" */
