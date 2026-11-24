@@ -55,6 +55,8 @@ import { obj_resists } from './dogmove.js';
 import { cansee, does_block, block_point, unblock_point } from './vision.js';
 import { newsym } from './display.js';
 import { costly_spot } from './shk.js';
+import { add_damage as add_damage_zp, pay_for_damage as pay_for_damage_zp } from './shk.js';
+import { SHOP_DOOR_COST as SHOP_DOOR_COST_ZP, SHOP_BARS_COST as SHOP_BARS_COST_ZP } from './const.js';
 import { LARGEST_INT, MAX_SPELL_STUDY, Has_contents } from './const.js';
 import { STRANGE_OBJECT, WAN_POLYMORPH, SPE_POLYMORPH, POT_POLYMORPH,
          AMULET_OF_UNCHANGING, LARGE_BOX, CHEST, WAN_SLOW_MONSTER,
@@ -2726,7 +2728,13 @@ export async function dobuzz(
     if (fireball)
         await explode(sx, sy, type, d(12, 6), 0, EXPL_FIERY_ZP);
     if (shopdamage.v)
-        throw new Error('dobuzz(): pay_for_damage() not ported yet');
+        await pay_for_damage_zp(damgtype === ZT_FIRE ? "burn away"
+                                : damgtype === ZT_COLD ? "shatter"
+                                  /* "damage" indicates wall rather than door */
+                                  : damgtype === ZT_ACID ? "damage"
+                                    : damgtype === ZT_DEATH ? "disintegrate"
+                                      : "destroy",
+                                false);
     g.bhitpos = save_bhitpos;
 }
 
@@ -3017,8 +3025,11 @@ export async function zap_over_floor(
                     await Norep_zp(`The iron bars ${
                         (damgtype === ZT_ACID) ? "corrode away" : "melt"}.`);
                 await dissolve_bars(x, y);
-                if (in_rooms_zp(x, y, SHOPBASE_ZP).length)
-                    throw new Error('zap_over_floor(): add_damage() for shop bars not ported yet');
+                if (in_rooms_zp(x, y, SHOPBASE_ZP).length) {
+                    add_damage_zp(x, y, (type >= 0) ? SHOP_BARS_COST_ZP : 0);
+                    if (type >= 0)
+                        shopdamage.v = true;
+                }
             }
         }
         break; /* ZT_ACID */
@@ -3118,8 +3129,13 @@ export async function zap_over_floor(
                 await You_feel("vibrations.");
         }
         if (new_doormask >= 0) { /* door gets broken */
-            if (in_rooms_zp(x, y, SHOPBASE_ZP).length)
-                throw new Error('zap_over_floor(): add_damage() for a shop door not ported yet');
+            if (in_rooms_zp(x, y, SHOPBASE_ZP).length) {
+                if (type >= 0) {
+                    add_damage_zp(x, y, SHOP_DOOR_COST_ZP);
+                    shopdamage.v = true;
+                } else /* caused by monster */
+                    add_damage_zp(x, y, 0);
+            }
             lev.doormask = new_doormask;
             recalc_block_point_zp(x, y); /* vision */
             if (see_it) {
