@@ -19,7 +19,7 @@ import { visctrl } from './hacklib.js';
 import { handle_tip, is_valid_travelpt } from './hack.js';
 import { movecmd_mode, MV_WALK, MV_RUSH, MV_RUN, cmd_from_func,
          readchar_poskey as cmd_readchar_poskey } from './cmd.js';
-import { do_screen_description } from './pager.js';
+import { do_screen_description, coord_desc } from './pager.js';
 import { COLNO, ROWNO, TIP_GETPOS, TOPLINE_NEED_MORE, TOPLINE_NON_EMPTY } from './const.js';
 import { tty_create_nhwindow, tty_display_nhwindow, tty_destroy_nhwindow } from './wintty.js';
 import { NHW_MENU, TER_MON, TER_OBJ, TER_MAP, TER_DETECT, isok, u_at } from './const.js';
@@ -482,14 +482,6 @@ export function dxdy_to_dist_descr(dx, dy, fulldir) {
     return buf;
 }
 import { xytodir as xytodir_gp, directionname as directionname_gp } from './hack.js';
-
-// C ref: getpos.c coord_desc() -- iflags.getpos_coords defaults to
-// GPCOORDS_NONE, which gives an empty string
-function coord_desc(x, y, cmode) {
-    if (cmode && cmode !== 'none')
-        throw new Error('coord_desc(): getpos_coords not ported yet');
-    return "";
-}
 
 // C ref: getpos.c auto_describe()
 export async function auto_describe(cx, cy) {

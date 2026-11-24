@@ -2161,7 +2161,7 @@ async function putmixed(window, attr, str) {
 }
 
 // C ref: getpos.c coord_desc()
-function coord_desc(x, y, cmode) {
+export function coord_desc(x, y, cmode) {
     switch (cmode) {
     default:
         return "";

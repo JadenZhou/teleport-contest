@@ -40,13 +40,14 @@ import { cvt_sdoor_to_door } from './detect.js';
 import { Is_container, weight, obj_extract_self } from './mkobj.js';
 import { Has_contents, WEB, STATUE_TRAP, is_pit, STONE_RES, FUMBLING, ZAP_POS, LOW_PM } from './const.js';
 import { BAG_OF_HOLDING, BAG_OF_TRICKS, objects, GLASS, GEM_CLASS, EGG, MIRROR, CORPSE, COIN_CLASS, LARGE_BOX, CHEST } from './objects.js';
-import { shop_keeper, costly_spot, onshopbill, costly_adjacent } from './shk.js';
+import { shop_keeper, costly_spot, onshopbill, costly_adjacent,
+         find_objowner } from './shk.js';
 import { obj_resists } from './dogmove.js';
 import { change_luck } from './attrib.js';
 import { You_hear } from './sounds.js';
 import { useup, obfree } from './invent.js';
 import { killer_xname } from './mthrowu.js';
-import { breaktest } from './dothrow.js';
+import { breaktest, hero_breaks } from './dothrow.js';
 import { t_at, chest_trap } from './trap.js';
 import { PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { is_ice } from './dig.js';
@@ -898,38 +899,6 @@ function objects_at_top(x, y) {
         if (o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR')
             return o;
     return null;
-}
-
-// C ref: shk.c find_objowner()
-function find_objowner(obj, x, y) {
-    let shkp, deflt_shkp = null;
-
-    if (obj.where === 'OBJ_ONBILL')
-        throw new Error('find_objowner(): used-up bill object not ported yet');
-    const where = in_rooms(x, y, SHOPBASE);
-
-    /* conceptually object could be inside up to 4 rooms simultaneously;
-       in practice it will usually be one room but can sometimes be two;
-       check shk and bill for each room rather than just the first;
-       fallback to the first shk if obj isn't on the relevant bill(s) */
-    for (let i = 0; i < where.length; i++)
-        if ((shkp = shop_keeper(where.charCodeAt(i))) != null) {
-            if (onshopbill(obj, shkp, true))
-                return shkp;
-            if (!deflt_shkp)
-                deflt_shkp = shkp;
-        }
-    return deflt_shkp;
-}
-
-// C ref: dothrow.c hero_breaks() -- the "doesn't break" outcome; breaking
-// (breakmsg(), breakobj()) is not ported yet
-async function hero_breaks(obj, x, y, breakflags) {
-    void x; void y; void breakflags;
-    /* only call breaktest if caller hasn't already specified the outcome */
-    if (!breaktest(obj))
-        return false;
-    throw new Error('hero_breaks(): breakmsg()/breakobj() not ported yet');
 }
 
 // C ref: dokick.c really_kick_object() -- guts of kick_object

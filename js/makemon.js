@@ -563,8 +563,8 @@ function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
 export function is_mplayer(ptr) {
     return ptr.pmidx >= M.PM_ARCHEOLOGIST && ptr.pmidx <= M.PM_WIZARD;
 }
-// C ref: mondata.h is_home_elemental()
-function is_home_elemental(ptr) {
+// C ref: makemon.c is_home_elemental()
+export function is_home_elemental(ptr) {
     if (ptr.mlet !== M.S_ELEMENTAL) return false;
     const t = game.dungeon_topology;
     switch (ptr.pmidx) {

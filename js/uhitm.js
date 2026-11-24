@@ -158,7 +158,7 @@ import { ysimple_name } from './iactions.js';
 import { change_luck } from './attrib.js';
 import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
          VEGGY, PAPER, SPBOOK_CLASS } from './objects.js';
-import { corpse_xname, An, singular } from './objnam.js';
+import { corpse_xname, An, singular, cxname } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { munstone } from './muse.js';
 import { stale_egg } from './eat.js';
@@ -173,7 +173,7 @@ import { destroy_items } from './zap.js';
 import { ignite_items } from './trap.js';
 import { resists_fire, resists_cold, resists_elec, defended } from './mondata.js';
 import { XKILL_NOCORPSE } from './const.js';
-import { artifact_hit } from './artifact.js';
+import { artifact_hit, defends, shade_glare } from './artifact.js';
 import { will_hurtle, hurtle, mhurtle } from './dothrow.js';
 import { some_mon_nam } from './do_name.js';
 import { unstuck } from './mhitu.js';
@@ -736,17 +736,6 @@ async function mhitm_ad_ston(magr, mattk, mdef, mhm) {
    polymorphed hero */
 function rehumanize_nyi(who) {
     throw new Error(`${who}: rehumanize() not ported yet`);
-}
-/* C ref: artifact.c defends() -- the non-artifact, non-dragon-armor case */
-function defends(adtyp, otmp) {
-    if (!otmp)
-        return false;
-    if (otmp.oartifact)
-        throw new Error('defends(): artifact defn not ported yet');
-    if (otmp.otyp >= GRAY_DRAGON_SCALE_MAIL && otmp.otyp <= YELLOW_DRAGON_SCALES)
-        throw new Error('defends(): dragon armor not ported yet');
-    void adtyp;
-    return false;
 }
 
 // C ref: uhitm.c erode_armor()
@@ -2229,12 +2218,6 @@ function artifact_light(obj) {
 function troll_baned(m, o) {
     return m.data.mlet === M.S_TROLL && !!o && o.oartifact === ART_TROLLSBANE;
 }
-/* C ref: objnam.c cxname() */
-function cxname(obj) {
-    if (obj.otyp === CORPSE)
-        throw new Error('cxname(): corpse_xname() not ported yet');
-    return xname(obj);
-}
 
 // C ref: uhitm.c attack_checks()
 /* FALSE means it's OK to attack */
@@ -2806,17 +2789,6 @@ function hmon_hitmon_weapon_ranged(hmd, mon, obj) /* obj is not NULL */ {
     if (!hmd.thrown && obj === game.uwep && obj.otyp === BOOMERANG
         && rnl(4) === 4 - 1)
         throw new Error('hmon_hitmon_weapon_ranged(): boomerang breaking not ported yet');
-}
-
-/* C ref: artifact.c shade_glare() */
-function shade_glare(obj) {
-    /* silver is hurtful to shades */
-    if (objects[obj.otyp].oc_material === SILVER)
-        return true;
-    /* any lit artifact light source will do */
-    if (artifact_light(obj) && obj.lamplit)
-        return true;
-    return false;
 }
 
 // C ref: uhitm.c backstabbable()

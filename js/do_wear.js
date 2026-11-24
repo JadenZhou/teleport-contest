@@ -56,7 +56,7 @@ import { the, thesimpleoname } from './iactions.js';
 import { change_luck } from './attrib.js';
 import { nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
-import { racial_exception } from './worn.js';
+import { racial_exception, artifact_light } from './worn.js';
 import { surface } from './iactions.js';
 import { discover_object } from './o_init.js';
 import { find_ac } from './u_init.js';
@@ -611,18 +611,6 @@ async function Armor_on() {
     if (artifact_light(g.uarm) && !g.uarm.lamplit)
         throw new Error('Armor_on(): begin_burn() for gold dragon armor not ported yet');
     return 0;
-}
-
-/* C ref: artifact.c artifact_light() -- gold dragon scales/mail are
-   treated as light-emitting artifacts while worn as body armor */
-function artifact_light(obj) {
-    if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL
-                || obj.otyp === O.GOLD_DRAGON_SCALES)
-        && ((obj.owornmask || 0) & W_ARM) !== 0)
-        return true;
-    if (obj && obj.oartifact)
-        throw new Error('artifact_light(): artifacts not ported yet');
-    return false;
 }
 
 // C ref: do_wear.c Amulet_on()

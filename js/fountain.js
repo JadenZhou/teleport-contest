@@ -24,7 +24,7 @@ import { sobj_at, m_at } from './makemon.js';
 import { t_at, mintrap, losehp, water_damage, water_damage_chain,
          delfloortrap } from './trap.js';
 import { makeplural, xname } from './objnam.js';
-import { rndmonnam, a_monnam, Amonnam } from './do_name.js';
+import { rndmonnam, a_monnam, Amonnam, hcolor } from './do_name.js';
 import { mhis } from './mhitu.js';
 import { level_difficulty, dunlev, dunlevs_in_dungeon } from './dungeon.js';
 import { mongrantswish, fruitname, hliquid, make_glib, dopotion,
@@ -824,13 +824,6 @@ export async function drinksink() {
         await You(`take a sip of ${temp} ${hliquid("water")}.`);
     }
     }
-}
-
-// C ref: do_name.c hcolor() -- only the non-hallucinating case is ported
-function hcolor(colorpref) {
-    if (Hallucination() || !colorpref)
-        throw new Error('hcolor(): hallucinatory colors not ported yet');
-    return colorpref;
 }
 
 // C ref: fountain.c dipsink() -- for #dip(potion.c) when standing on a sink

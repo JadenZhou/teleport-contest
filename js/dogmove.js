@@ -7,7 +7,7 @@
 
 import { touch_artifact_mon } from './artifact.js';
 import { game } from './gstate.js';
-import { eaten_stat } from './eat.js';
+import { eaten_stat, peek_at_iced_corpse_age } from './eat.js';
 import { mon_wield_item } from './weapon.js';
 import { rn2, rnd } from './rng.js';
 import { resist_conflict } from './mhitm.js';
@@ -141,13 +141,6 @@ export function obj_resists(obj, ochance, achance) {
 /* C ref: artifact.c is_quest_artifact() */
 function is_quest_artifact(otmp) {
     return !!(otmp.oartifact && otmp.oartifact === game.urole.questarti);
-}
-
-/* C ref: mkobj.c peek_at_iced_corpse_age() */
-function peek_at_iced_corpse_age(otmp) {
-    if (otmp.on_ice)
-        throw new Error('peek_at_iced_corpse_age(): iced corpses not ported yet');
-    return otmp.age ?? 0;
 }
 
 // ── C ref: dog.c dogfood() ──
