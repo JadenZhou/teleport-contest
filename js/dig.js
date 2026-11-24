@@ -49,6 +49,28 @@ import { cansee, recalc_block_point, unblock_point } from './vision.js';
 import { pline_The, tmp_at, DISP_BEAM, DISP_END } from './display.js';
 import { COLNO, TT_BURIEDBALL, SHOP_DOOR_COST, SHOP_WALL_COST } from './const.js';
 import { add_damage, pay_for_damage } from './shk.js';
+import { S_VORTEX as S_VORTEX_ZD, PM_AIR_ELEMENTAL as PM_AIR_ELEMENTAL_ZD,
+         AT_ENGL as AT_ENGL_ZD, AD_DGST as AD_DGST_ZD, G_UNIQ as G_UNIQ_ZD,
+         mons as mons_zd } from './monsters.js';
+import { STOMACH as STOMACH_ZD, HEAD as HEAD_ZD, KILLED_BY_AN as KILLED_BY_AN_ZD,
+         Is_airlevel as Is_airlevel_zd, Is_waterlevel as Is_waterlevel_zd } from './const.js';
+import { You as You_zd, stairway_at as stairway_at_zd } from './display.js';
+import { s_suffix as s_suffix_zd } from './hacklib.js';
+import { mon_nam as mon_nam_zd } from './do_name.js';
+import { mbodypart as mbodypart_zd, body_part as body_part_zd } from './insight.js';
+import { expels as expels_zd } from './mhitu.js';
+import { ceiling as ceiling_zd } from './dungeon.js';
+import { hard_helmet as hard_helmet_zd, xname as xname_zd } from './objnam.js';
+import { losehp as losehp_zd, Maybe_Half_Phys as Maybe_Half_Phys_zd } from './trap.js';
+import { ROCK as ROCK_ZD } from './objects.js';
+/* C ref: mondata.h is_whirly() */
+function is_whirly_zd(ptr) {
+    return ptr.mlet === S_VORTEX_ZD || ptr === mons_zd[PM_AIR_ELEMENTAL_ZD];
+}
+/* C ref: mondata.h digests() */
+function digests_zd(ptr) {
+    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL_ZD && a.adtyp === AD_DGST_ZD);
+}
 import { HEAVY_IRON_BALL } from './objects.js';
 import { dist2 } from './hacklib.js';
 import { reset_utrap } from './trap.js';
@@ -570,11 +592,49 @@ export async function zap_dig() {
      * 3.6.0: from a PIT: dig one adjacent pit.
      */
 
-    if (u.uswallow)
-        throw new Error('zap_dig(): digging out of an engulfer not ported yet');
+    if (u.uswallow) {
+        const mtmp = u.ustuck;
 
-    if (u.dz)
-        throw new Error('zap_dig(): digging up or down not ported yet');
+        if (!is_whirly_zd(mtmp.data)) {
+            if (digests_zd(mtmp.data))
+                await You_zd(`pierce ${s_suffix_zd(mon_nam_zd(mtmp))} ${
+                    mbodypart_zd(mtmp, STOMACH_ZD)} wall!`);
+            if (mtmp.data.geno & G_UNIQ_ZD) /* unique_corpstat() */
+                mtmp.mhp = Math.trunc((mtmp.mhp + 1) / 2);
+            else
+                mtmp.mhp = 1; /* almost dead */
+            await expels_zd(mtmp, mtmp.data, !digests_zd(mtmp.data));
+        }
+        return;
+    } /* swallowed */
+
+    if (u.dz) {
+        if (!Is_airlevel_zd(u.uz) && !Is_waterlevel_zd(u.uz) && !u.uinwater) {
+            if (u.dz < 0 || stairway_at_zd(u.ux, u.uy)) { /* On_stairs() */
+                let dmg;
+                if (stairway_at_zd(u.ux, u.uy)) {
+                    const stway = stairway_at_zd(u.ux, u.uy);
+                    await pline_The(`beam bounces off the ${
+                        stway.isladder ? "ladder" : "stairs"} and hits the ${
+                        ceiling_zd(u.ux, u.uy)}.`);
+                }
+                await You_zd(`loosen a rock from the ${ceiling_zd(u.ux, u.uy)}.`);
+                await pline(`It falls on your ${body_part_zd(HEAD_ZD)}!`);
+                dmg = rnd(hard_helmet_zd(g.uarmh) ? 2 : 6);
+                await losehp_zd(Maybe_Half_Phys_zd(dmg), "falling rock", KILLED_BY_AN_ZD);
+                const otmp = mksobj_at(ROCK_ZD, u.ux, u.uy, false, false);
+                if (otmp) {
+                    xname_zd(otmp); /* set dknown, maybe bknown */
+                    stackobj(otmp);
+                }
+                newsym(u.ux, u.uy);
+            } else {
+                watch_dig(null, u.ux, u.uy, true);
+                throw new Error('zap_dig(): digging down (dighole()) not ported yet');
+            }
+        }
+        return;
+    } /* up or down */
 
     /* normal case: digging across the level */
     shopdoor = shopwall = false;
