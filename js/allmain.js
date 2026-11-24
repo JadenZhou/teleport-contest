@@ -696,14 +696,10 @@ export async function moveloop_core() {
         /* [fast hero who gets multiple moves per turn ends up sinking
            multiple times per turn; is that what we really want?] */
         if (u.utrap && u.utraptype === TT_LAVA)
-            throw new Error('moveloop_core(): sink_into_lava() not ported yet');
+            await sink_into_lava_am();
         /* when/if hero escapes from lava, he can't just stay there */
-        else if (!u.umoved) {
-            /* (void) pooleffects(FALSE): only acts when the hero is in
-               or over water or lava; not ported yet */
-            if (is_pool_or_lava_at_u())
-                throw new Error('moveloop_core(): pooleffects() not ported yet');
-        }
+        else if (!u.umoved)
+            await pooleffects_am(false);
 
         /* vision while buried or underwater is updated here */
         if (u.uinwater || u.uburied)
@@ -901,3 +897,5 @@ export async function moveloop(resuming) {
 }
 
 import { invault } from './vault.js';
+import { sink_into_lava as sink_into_lava_am } from './trap.js';
+import { pooleffects as pooleffects_am } from './hack.js';

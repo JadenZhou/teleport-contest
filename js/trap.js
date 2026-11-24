@@ -5315,3 +5315,52 @@ import { M_SEEN_SLEEP as M_SEEN_SLEEP_TR, NOWEBMSG as NOWEBMSG_TR,
          A_STR as A_STR_TR, TT_WEB as TT_WEB_TR } from './const.js';
 import { fall_asleep as fall_asleep_tr } from './timeout.js';
 import { ACURR as ACURR_tr } from './attrib.js';
+
+// C ref: trap.c sink_into_lava()
+/* called each turn by moveloop() while hero is trapped in lava */
+export async function sink_into_lava() {
+    const u = game.u;
+    const sink_deeper = "You sink deeper into the lava.";
+
+    if (!u.utrap || u.utraptype !== TT_LAVA_DR) {
+        ; /* do nothing; this usually won't happen but could after
+           * polymorphing from a flier into a ceiling hider and then hiding;
+           * allmain() only checks whether the hero is at a lava location,
+           * not whether he or she is currently sinking */
+    } else if (!is_lava(u.ux, u.uy)) {
+        await reset_utrap(false); /* this shouldn't happen either */
+    } else if (!u.uinvulnerable) {
+        /* ordinarily we'd have to be fire resistant to survive long
+           enough to become stuck in lava, but it can happen without
+           resistance if water walking boots allow survival and then
+           get burned up; u.utrap time will be quite short in that case */
+        if (!Fire_resistance_dr())
+            u.uhp = Math.trunc((u.uhp + 2) / 3);
+
+        u.utrap -= (1 << 8);
+        if (u.utrap < (1 << 8)) {
+            killer().format = KILLED_BY;
+            killer().name = "molten lava";
+            await urgent_pline("You sink below the surface and die.");
+            await burn_away_slime_dr(); /* add insult to injury? */
+            await done_dr(DISSOLVED_DR);
+            /* can only get here via life-saving; try to get away from lava */
+            await reset_utrap(true);
+            /* levitation or flight have become unblocked, otherwise Tport */
+            if (!Levitation() && !Flying())
+                await safe_teleds_dr(TELEDS_ALLOW_DRAG_DR | TELEDS_TELEPORT_DR);
+        } else if (!u.umoved) {
+            /* can't fully turn into slime while in lava, but might not
+               have it be burned away until you've come awfully close */
+            const Slimed = uprop(SLIMED_SL).intrinsic;
+            if (Slimed && rnd(10 - 1) >= (Slimed & TIMEOUT_SL)) {
+                await pline(sink_deeper);
+                await burn_away_slime_dr();
+            } else {
+                await Norep(sink_deeper);
+            }
+            u.utrap += rnd(4);
+        }
+    }
+}
+import { SLIMED as SLIMED_SL, TIMEOUT as TIMEOUT_SL } from './const.js';
