@@ -67,7 +67,7 @@ import { u_locomotion } from './trap.js';
 import { can_teleport } from './mondata.js';
 import { known_spell, spe_Fresh, spe_Unknown } from './spell.js';
 import { objects, SPE_TELEPORT_AWAY } from './objects.js';
-import { PM_WIZARD } from './monsters.js';
+import { PM_WIZARD, PM_GRID_BUG } from './monsters.js';
 import { ACURR } from './attrib.js';
 import { check_capacity } from './hack.js';
 import { morehungry } from './eat.js';
