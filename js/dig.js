@@ -8,9 +8,9 @@ import { rnd, rn2 } from './rng.js';
 import { cvt_sdoor_to_door } from './detect.js';
 import { canseemon, newsym, pline, Hallucination } from './display.js';
 import { You_hear } from './sounds.js';
-import { mksobj_at } from './mkobj.js';
+import { mksobj_at, place_object } from './mkobj.js';
 import { acurr } from './attrib.js';
-import { start_timer, obj_to_any } from './timeout.js';
+import { start_timer, stop_timer, obj_to_any } from './timeout.js';
 import { TIMER_OBJECT, ROT_ORGANIC, CXN_NO_PFX, OBJ_AT, u_at } from './const.js';
 import { corpse_xname, otense } from './objnam.js';
 import { Your } from './display.js';
@@ -18,7 +18,7 @@ import { remove_worn_item } from './steal.js';
 import { setmnotwielded } from './weapon.js';
 import { hideunder_async as hideunder, m_at } from './makemon.js';
 import { stop_occupation } from './allmain.js';
-import { obfree } from './invent.js';
+import { obfree, stackobj } from './invent.js';
 import { M1_CONCEAL } from './monsters.js';
 
 /* C ref: mondata.h hides_under() */
@@ -612,6 +612,31 @@ export function buried_ball(cc) {
         cc.y = ball.oy;
     }
     return ball;
+}
+
+// C ref: dig.c unearth_objs()
+export function unearth_objs(x, y) {
+    const u = game.u;
+    const cc = { x, y };
+
+    const bball = buried_ball(cc);
+    /* for (otmp = svl.level.buriedobjlist; otmp; otmp = otmp2) */
+    for (const otmp of (game.level.buriedobjlist || []).slice()) {
+        if (otmp.ox === x && otmp.oy === y) {
+            if (bball && otmp === bball
+                && u.utrap && u.utraptype === TT_BURIEDBALL) {
+                throw new Error('unearth_objs(): buried_ball_to_punishment() from maketrap() not ported yet');
+            } else {
+                mkobj_obj_extract_self(otmp);
+                if (otmp.timed)
+                    stop_timer(ROT_ORGANIC, obj_to_any(otmp));
+                place_object(otmp, x, y);
+                stackobj(otmp);
+            }
+        }
+    }
+    del_engr_at(x, y);
+    newsym(x, y);
 }
 
 // C ref: dig.c buried_ball_to_punishment()

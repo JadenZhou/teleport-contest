@@ -846,6 +846,49 @@ function is_pool_or_lava_at(x, y) {
            || typ === LAVAWALL;
 }
 
+// C ref: teleport.c level_tele_trap()
+export async function level_tele_trap(trap, trflags) {
+    const u = game.u;
+    let verbbuf;
+    let intentional = false;
+    const Antimagic = !!(tp_prop(ANTIMAGIC).intrinsic || tp_prop(ANTIMAGIC).extrinsic
+                         || (u.umonnum !== u.umonster /* Upolyd */
+                             && resists_magm(game.youmonst)));
+
+    if ((trflags & (VIASITTING_TP | FORCETRAP_TP)) !== 0) {
+        verbbuf = "trigger"; /* follows "You sit down." */
+        intentional = true;
+    } else
+        verbbuf = `${u_locomotion("step")} onto`;
+    await You(`${verbbuf} a level teleport trap!`);
+
+    if (Antimagic && !intentional) {
+        /* shieldeff(u.ux, u.uy): transient display only */
+    }
+    if ((Antimagic && !intentional) || In_endgame(u.uz)) {
+        await pline("You feel a wrenching sensation."); /* You_feel() */
+        return;
+    }
+    deltrap(trap);
+    newsym(u.ux, u.uy); /* get rid of trap symbol */
+    await level_tele();
+
+    const Teleport_control = !!(tp_prop(TELEPORT_CONTROL).intrinsic
+                                || tp_prop(TELEPORT_CONTROL).extrinsic);
+    const HConfusion = tp_prop(CONFUSION).intrinsic || 0;
+    const Confusion = !!(HConfusion || tp_prop(CONFUSION).extrinsic);
+    if (Hallucination_tp() || Teleport_control)
+        await You(`briefly feel ${Hallucination_tp() ? "oriented" : "centered"}.`);
+    else
+        await pline(`You feel ${Confusion ? "even more " : ""}disoriented.`); /* You_feel() */
+    /* magic portal traversal causes brief Stun; for level teleport, use
+       confusion instead, and only when hero lacks control; do this after
+       processing the level teleportation attempt because being confused
+       can affect the outcome ("Oops" result) */
+    if (!Teleport_control)
+        await make_confused_tp((HConfusion & TIMEOUT_TP) + 3, false);
+}
+
 // C ref: teleport.c level_tele() -- the prompt for the destination and
 // the wizard-mode level menu; random_levtport and lev_by_name() are not
 // ported yet
@@ -915,9 +958,8 @@ export async function level_tele() {
                 }
                 force_dest = true;
             } else {
-                if (!/^-?\d+$/.test(buf))
-                    throw new Error('level_tele(): lev_by_name() not ported yet');
-                newlev = parseInt(buf, 10); /* atoi() */
+                if ((newlev = lev_by_name_tp(buf)) === 0)
+                    newlev = parseInt(buf, 10) || 0; /* atoi() */
             }
         } while (!newlev && !digit(buf[0])
                  && (buf[0] !== '-' || !digit(buf[1])) && trycnt < 10);
@@ -1646,6 +1688,11 @@ export async function rloco(obj) {
     newsym(tx, ty);
     return true;
 }
+import { VIASITTING as VIASITTING_TP, FORCETRAP as FORCETRAP_TP,
+         TIMEOUT as TIMEOUT_TP } from './const.js';
+import { Hallucination as Hallucination_tp } from './display.js';
+import { make_confused as make_confused_tp } from './potion.js';
+import { lev_by_name as lev_by_name_tp } from './dungeon.js';
 
 import { killer as killer_lt } from './topten.js';
 import { done as done_lt } from './end.js';
