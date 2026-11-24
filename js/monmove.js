@@ -49,7 +49,8 @@ import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
 import { mattackm } from './mhitm.js';
-import { obj_resists } from './dogmove.js';
+import { obj_resists, dogfood } from './dogmove.js';
+import { MANFOOD, ACCFOOD } from './const.js';
 import { touch_artifact, has_magic_key } from './artifact.js';
 import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
          RIN_SLOW_DIGESTION } from './objects.js';
@@ -116,7 +117,7 @@ import { In_hell } from './dungeon.js';
 import { stop_occupation } from './allmain.js';
 import { shk_move, costly_spot, after_shk_move, inhishop, add_damage } from './shk.js';
 import { in_rooms, in_town } from './hack.js';
-import { pri_move, in_your_sanctuary } from './priest.js';
+import { pri_move, in_your_sanctuary, inhistemple } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
@@ -387,8 +388,9 @@ export function onscary(x, y, mtmp) {
     /* creatues who resist scaring under particular circumstances:
      * shopkeepers inside their own shop
      * priests inside their own temple */
-    if (mtmp.isshk || mtmp.ispriest)
-        throw new Error('onscary(): inhishop()/inhistemple() not ported yet');
+    if ((mtmp.isshk && inhishop(mtmp))
+        || (mtmp.ispriest && inhistemple(mtmp)))
+        return false;
 
     if (auditory_scare)
         return true;
@@ -1836,11 +1838,16 @@ function searches_for_item(mon, obj) {
 
 // ── C ref: monmove.c mon_would_consume_item() ──
 function mon_would_consume_item(mtmp, otmp) {
-    if (otmp.otyp === CORPSE && corpse_eater(mtmp.data))
-        throw new Error('mon_would_consume_item(): corpse eaters not ported yet');
+    let ftyp;
 
-    if (mtmp.mtame && mtmp.edog)
-        throw new Error('mon_would_consume_item(): dogfood() not ported yet');
+    if (otmp.otyp === CORPSE && !touch_petrifies_mo(mons[otmp.corpsenm])
+        && corpse_eater(mtmp.data))
+        return true;
+
+    if (mtmp.mtame && mtmp.edog /* has_edog(): not guardian angel */
+        && (ftyp = dogfood(mtmp, otmp)) < MANFOOD
+        && (ftyp < ACCFOOD || mtmp.edog.hungrytime <= game.moves))
+        return true;
 
     return false;
 }

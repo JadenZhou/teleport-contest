@@ -4,7 +4,8 @@
 // Ported so far: welded() with its will_weld()/erodeable_wep() macros,
 // obj.h is_weptool()/bimanual(), and engrave.c freehand().
 
-import { retouch_object, arti_speak } from './artifact.js';
+import { retouch_object, arti_speak, undiscovered_artifact } from './artifact.js';
+import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { artifact_light } from './worn.js';
 import { game } from './gstate.js';
 import { P_NONE, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, P_POLEARMS, P_LANCE,
@@ -509,12 +510,13 @@ async function ynq(query) {
 }
 
 
-/* C ref: obj.h is_plural() (undiscovered_artifact() isn't ported),
-   pair_of() */
+/* C ref: obj.h is_plural(), pair_of() */
 function is_plural(o) {
-    if (o.oartifact)
-        throw new Error('is_plural(): undiscovered_artifact() not ported yet');
-    return o.quan !== 1;
+    return (o.quan !== 1
+            /* "the Eyes of the Overworld" are plural, but
+               "a pair of lenses named the Eyes of the Overworld" is not */
+            || (o.oartifact === ART_EYES_OF_THE_OVERWORLD
+                && !undiscovered_artifact(ART_EYES_OF_THE_OVERWORLD)));
 }
 function pair_of(o) {
     return (o.otyp === LENSES

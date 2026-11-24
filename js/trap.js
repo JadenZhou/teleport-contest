@@ -9,6 +9,7 @@
 import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
 import { thitu } from './mthrowu.js';
+import { count_wsegs } from './worm.js';
 import { obfree } from './invent.js';
 import { get_obj_location } from './shk.js';
 import { tty_display_nhwindow } from './wintty.js';
@@ -165,6 +166,8 @@ import { LEG, BOTH_SIDES } from './const.js';
 import { on_level, at_dgn_entrance } from './dungeon.js';
 import { is_neuter } from './mondata.js';
 import { ART_MAGICBANE } from './artilist.js';
+import { defends_when_carried } from './artifact.js';
+import { is_quest_artifact } from './questpgr.js';
 import { LEVITATION, FLYING, FUMBLING, ANTIMAGIC, HALF_PHDAM, HALF_SPDAM,
          PASSES_WALLS, DEAF as DEAF_PROP, WOUNDED_LEGS, TIMEOUT, FROMOUTSIDE,
          TT_BEARTRAP, TT_PIT, TT_NONE, FOOT, SPINE, HEAD, ARM,
@@ -2598,9 +2601,7 @@ async function trapeffect_pit(mtmp, trap, trflags) {
         let fallverb;
 
         fallverb = "falls";
-        if (!grounded(mptr) || (mtmp.wormno /* && count_wsegs(mtmp) > 5 */)) {
-            if (mtmp.wormno)
-                throw new Error('trapeffect_pit(): count_wsegs() not ported yet');
+        if (!grounded(mptr) || (mtmp.wormno && count_wsegs(mtmp) > 5)) {
             if (forcetrap && !Sokoban) {
                 /* openfallingtrap; not inescapable here */
                 if (in_sight) {
@@ -2667,9 +2668,8 @@ async function trapeffect_hole(mtmp, trap, trflags) {
             /* impossible("mintrap: %ss cannot exist on this level.") */
             return Trap_Effect_Finished; /* don't activate it after all */
         }
-        if (mtmp.wormno)
-            throw new Error('trapeffect_hole(): count_wsegs() not ported yet');
-        if (!grounded(mptr) || mptr.msize >= MZ_HUGE) {
+        if (!grounded(mptr) || (mtmp.wormno && count_wsegs(mtmp) > 5)
+            || mptr.msize >= MZ_HUGE) {
             if (forcetrap && !Sokoban) {
                 /* openfallingtrap; not inescapable here */
                 if (in_sight) {
@@ -2986,11 +2986,10 @@ async function trapeffect_web(mtmp, trap, trflags) {
             break;
         }
         if (caught_default) { /* default: */
-            if (mtmp.wormno)
-                throw new Error('trapeffect_web(): count_wsegs() not ported yet');
             if (mptr.mlet === S_GIANT
                 /* exclude baby dragons and relatively short worms */
-                || (mptr.mlet === S_DRAGON && extra_nasty(mptr))) {
+                || (mptr.mlet === S_DRAGON && extra_nasty(mptr))
+                || (mtmp.wormno && count_wsegs(mtmp) > 5)) {
                 tear_web = true;
             } else if (in_sight) {
                 await pline(`${Monnam(mtmp)} is caught in ${
@@ -3295,9 +3294,13 @@ async function trapeffect_anti_magic(mtmp, /* monster, possibly youmonst */
             /* having an artifact--other than own quest one--which
                confers magic resistance simply by being carried
                also increases the effect */
-            for (let otmp = game.invent; otmp; otmp = otmp.nobj)
-                if (otmp.oartifact)
-                    throw new Error('trapeffect_anti_magic(): artifacts (defends_when_carried()) not ported yet');
+            let otmp;
+            for (otmp = game.invent; otmp; otmp = otmp.nobj)
+                if (otmp.oartifact && !is_quest_artifact(otmp)
+                    && defends_when_carried(AD_MAGM, otmp))
+                    break;
+            if (otmp)
+                dmgval2 += rnd(4);
             if (Passes_walls())
                 dmgval2 = Math.trunc((dmgval2 + 3) / 4);
 
@@ -3338,10 +3341,16 @@ async function trapeffect_anti_magic(mtmp, /* monster, possibly youmonst */
                 }
             }
         } else { /* take some damage */
+            let otmp;
             let dmgval2 = rnd(4);
 
-            if ((mtmp.minvent || []).some(o => o.oartifact))
-                throw new Error('trapeffect_anti_magic(): artifacts (defends_when_carried()) not ported yet');
+            if ((otmp = mtmp.mw) != null /* MON_WEP(mtmp) */
+                && otmp.oartifact === ART_MAGICBANE) /* is_art() */
+                dmgval2 += rnd(4);
+            otmp = (mtmp.minvent || []).find(
+                o => o.oartifact && defends_when_carried(AD_MAGM, o));
+            if (otmp)
+                dmgval2 += rnd(4);
             if (passes_walls(mptr))
                 dmgval2 = Math.trunc((dmgval2 + 3) / 4);
 

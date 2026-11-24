@@ -328,7 +328,9 @@ export async function hitmsg(mtmp, mattk) {
             verb = 'touches you';
             break;
         case AT_TENT:
-            throw new Error('hitmsg(): s_suffix() for tentacles not ported yet');
+            verb = "tentacles suck your brain";
+            Monst_name = s_suffix(Monst_name);
+            break;
         case AT_EXPL:
         case AT_BOOM:
             verb = 'explodes';

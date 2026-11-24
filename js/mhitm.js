@@ -29,7 +29,7 @@ import { mons, AT_NONE, AT_CLAW, AT_BITE, AT_KICK, AT_BUTT, AT_TUCH,
 import * as M from './monsters.js';
 import { find_mac, which_armor } from './worn.js';
 import { mon_wield_item, possibly_unwield, hitval, dmgval } from './weapon.js';
-import { mswings_verb, mhis, could_seduce } from './mhitu.js';
+import { mswings_verb, mhis, could_seduce, mtrapped_in_pit } from './mhitu.js';
 import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL,
          WEAPON_CLASS, TOOL_CLASS } from './objects.js';
 import { permapoisoned } from './mkobj.js';
@@ -389,8 +389,8 @@ export async function mattackm(magr, mdef) {
         case AT_TUCH:
         case AT_BUTT:
         case AT_TENT:
-            if (mattk.aatyp === AT_KICK && magr.mtrapped)
-                throw new Error('mattackm(): mtrapped_in_pit() not ported yet');
+            if (mattk.aatyp === AT_KICK && mtrapped_in_pit(magr))
+                continue;
             /* Nymph that teleported away on first attack? */
             if (distmin(magr.mx, magr.my, mdef.mx, mdef.my) > 1)
                 /* Continue because the monster may have a ranged attack. */
@@ -517,7 +517,8 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
             buf = `${magr_name} touches`;
             break;
         case AT_TENT:
-            throw new Error('hitmm(): s_suffix() not ported yet');
+            buf = `${s_suffix_sm(magr_name)} tentacles suck`;
+            break;
         case AT_HUGS:
             if (magr !== game.u.ustuck) {
                 buf = `${magr_name} squeezes`;

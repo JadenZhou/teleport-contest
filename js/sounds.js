@@ -29,15 +29,15 @@ import { M1_ANIMAL, M2_LORD, M2_PRINCE, M2_MERC, S_ANT, PM_ORACLE,
          MS_GROAN } from './monsters.js';
 import { quest_chat } from './quest.js';
 import { GOLD_PIECE, STATUE } from './objects.js';
-import { canspotmon, vobj_at } from './display.js';
+import { canspotmon, vobj_at, map_invisible } from './display.js';
 import { m_at } from './makemon.js';
-import { Monnam, mon_nam } from './do_name.js';
+import { Monnam, mon_nam, rndmonnam } from './do_name.js';
 import { night } from './calendar.js';
 import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
 import { Unaware } from './eat.js';
-import { is_flyer, is_undead, is_vampshifter } from './mondata.js';
+import { is_flyer, is_undead, is_vampshifter, same_race } from './mondata.js';
 
 /* C ref: mondata.h predicates */
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
@@ -615,8 +615,11 @@ async function domonnoise(mtmp) {
     else if (mtmp.isshk)
         msound = MS_SELL;
     /* some normally non-speaking types can/will speak if hero is similar */
-    else if (msound === MS_ORC)
-        throw new Error('domonnoise(): MS_ORC same_race() check not ported yet');
+    else if (msound === MS_ORC
+             && ((same_race(ptr, game.youmonst.data)           /* current form, */
+                  || same_race(ptr, mons[game.urace.mnum])) /* unpoly'd form (Race_switch) */
+                 || Hallucination()))
+        msound = MM.MS_HUMANOID;
     else if (msound === MS_MOO && !mtmp.mtame)
         msound = MS_BELLOW;
     /* silliness: Hallucination && mon_is_gecko() */
@@ -627,7 +630,7 @@ async function domonnoise(mtmp) {
      * which case we want to check its pre-teleport position
      */
     if (!canspotmon(mtmp))
-        throw new Error('domonnoise(): map_invisible() not ported yet');
+        map_invisible(mtmp.mx, mtmp.my);
 
     switch (msound) {
     case MS_LEADER:
@@ -849,9 +852,9 @@ async function dochat() {
         if ((otmp = vobj_at(tx, ty)) != null && otmp.otyp === STATUE) {
             /* Talking to a statue */
             if (!uprop(BLINDED)) {
-                if (Hallucination())
-                    throw new Error('dochat(): rndmonnam() not ported yet');
-                await pline("The statue seems not to notice you."); /* pline_The() */
+                await pline(`The ${
+                    /* if hallucinating, you can't tell it's a statue */
+                    Hallucination() ? rndmonnam(null) : "statue"} seems not to notice you.`); /* pline_The() */
             }
             return ECMD_OK;
         }
@@ -903,7 +906,7 @@ async function dochat() {
 
     if (!Deaf() && mtmp.mtame && mtmp.meating) {
         if (!canspotmon(mtmp))
-            throw new Error('dochat(): map_invisible() not ported yet');
+            map_invisible(mtmp.mx, mtmp.my);
         await pline(`${Monnam(mtmp)} is eating noisily.`);
         return ECMD_OK;
     }

@@ -15,7 +15,7 @@ import { Monnam } from './do_name.js';
 import { an, xname, doname, singular } from './objnam.js';
 import { simpleonames } from './iactions.js';
 import { observe_object, discover_object, objdescr_is } from './o_init.js';
-import { unknow_object } from './mkobj.js';
+import { unknow_object, unbless } from './mkobj.js';
 import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
 import { seemimic } from './mon.js';
@@ -93,7 +93,7 @@ import { ARTICLE_A, SUPPRESS_INVISIBLE, SUPPRESS_SADDLE, SUPPRESS_IT,
          AUGMENT_IT, W_ARMF, TELEPORT_CONTROL, STRAT_WAITFORU, XKILL_NOMSG,
          XKILL_NOCONDUCT, HAND, DOOR, DBWALL } from './const.js';
 import { AMULET_OF_YENDOR, BELL_OF_OPENING, CANDELABRUM_OF_INVOCATION,
-         SPE_BOOK_OF_THE_DEAD, IRON, POT_WATER } from './objects.js';
+         SPE_BOOK_OF_THE_DEAD, IRON } from './objects.js';
 import { ART_ORB_OF_DETECTION } from './artilist.js';
 import { arti_reflects } from './artifact.js';
 import { Can_rise_up, ceiling } from './dungeon.js';
@@ -1242,14 +1242,6 @@ function remove_monster(mtmp) {
     const i = lst.indexOf(mtmp);
     if (i >= 0)
         lst.splice(i, 1);
-}
-
-/* C ref: mkobj.c unbless() -- no inventory update needed for a monster's
-   potion */
-function unbless(otmp) {
-    otmp.blessed = 0;
-    if (otmp.otyp === POT_WATER)
-        throw new Error('unbless(): holy water not ported yet');
 }
 
 // C ref: trap.c fill_pit()
