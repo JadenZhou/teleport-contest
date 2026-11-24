@@ -52,6 +52,8 @@ import { depth } from './dungeon.js';
 import { mkobj, rndmonnum, can_be_hatched } from './mkobj.js';
 import { t_at, locomotion } from './trap.js';
 import { ansimpleoname } from './iactions.js';
+import { oname } from './do_name.js';
+import { ONAME_RANDOM } from './const.js';
 import { get_shop_item } from './shknam.js';
 import { mksobj, mkobj_at, curse, bless, next_ident, set_corpsenm } from './mkobj.js';
 import {
@@ -100,7 +102,7 @@ function montoostrong(monindx, lev) { return mons[monindx].difficulty > lev; }
 function montooweak(monindx, lev) { return mons[monindx].difficulty < lev; }
 
 // C ref: hacklib.c sgn()
-function sgn(n) { return (n < 0) ? -1 : (n !== 0); }
+function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: mondata.h pm_resistance(), is_placeholder()
 function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
@@ -1009,15 +1011,14 @@ function m_initweap(mtmp) {
         if (humanoid(ptr)) {
             /* create minion stuff; bypass mongets */
             const typ = rn2(3) ? O.LONG_SWORD : O.SILVER_MACE;
+            const nam = (typ === O.LONG_SWORD) ? "Sunsword" : "Demonbane";
 
             otmp = mksobj(typ, false, false);
             /* maybe promote weapon to an artifact */
             if ((!rn2(20) || is_lord(ptr))
                 && sgn(mtmp.isminion ? mtmp.emin.min_align
-                                     : ptr.maligntyp) === A_LAWFUL) {
-                /* otmp = oname(otmp, nam, ONAME_RANDOM): artifacts are not
-                   ported yet (artifact.c) */
-            }
+                                     : ptr.maligntyp) === A_LAWFUL)
+                otmp = oname(otmp, nam, ONAME_RANDOM); /* randomly created */
             /* enhance the weapon */
             bless(otmp);
             otmp.oerodeproof = true;

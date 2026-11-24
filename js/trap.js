@@ -179,7 +179,7 @@ function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 function likes_gems(ptr) { return (ptr.mflags2 & M2_JEWELS) !== 0; }
 function is_unicorn(ptr) { return ptr.mlet === S_UNICORN && likes_gems(ptr); }
 // C ref: hacklib.c sgn()
-function sgn(n) { return (n < 0) ? -1 : (n !== 0); }
+function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: trap.c mk_trap_statue()
 /* create a "living" statue at x,y */
