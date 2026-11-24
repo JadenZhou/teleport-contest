@@ -2929,7 +2929,7 @@ function clear_glyph_buffer() {
 }
 
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
-function display_self() {
+export function display_self() {
     const u = game.u;
     /* C ref: display.h maybe_display_usteed() -- a visible steed is shown
        with ridden_mon_to_glyph(u.usteed, rn2_on_display_rng): the
