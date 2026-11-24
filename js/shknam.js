@@ -19,6 +19,7 @@ import {
 import { mons, PM_SHOPKEEPER, S_MIMIC, PM_LICHEN } from './monsters.js';
 import { makemon, mkmonmoney, mongets, set_malign, m_at, MON_AT, mkclass } from './makemon.js';
 import { RLOC_NOMSG } from './const.js';
+import { SHOPBASE } from './const.js';
 import { mkobj_at, mksobj_at, set_tin_variety } from './mkobj.js';
 import { vegetarian } from './eat.js';
 import { distmin, highc } from './hacklib.js';
