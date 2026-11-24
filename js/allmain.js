@@ -61,7 +61,8 @@ import { A_CURRENT, A_ORIGINAL, ROLE_GENDMASK, ROLE_MALE, ROLE_FEMALE, RLOC_NOMS
 import { rn1 } from './rng.js';
 import { S_EEL, PM_WIZARD } from './monsters.js';
 import { ACURR, exerchk } from './attrib.js';
-import { near_capacity, lookaround, end_running, nomul, monster_nearby } from './hack.js';
+import { near_capacity, lookaround, end_running, nomul, monster_nearby,
+         runmode_delay_output } from './hack.js';
 import { nh_timeout } from './timeout.js';
 import { dosounds } from './sounds.js';
 import { gethungry, reset_eat, maybe_finished_meal } from './eat.js';
@@ -661,7 +662,7 @@ export async function moveloop_core() {
 
                 /* when immobile, count is in turns */
                 if (g.multi < 0) {
-                    /* runmode_delay_output(): display timing only */
+                    await runmode_delay_output();
                     if (++g.multi === 0) { /* finished yet? */
                         await unmul(null);
                     }
@@ -766,7 +767,7 @@ export async function moveloop_core() {
             await stop_occupation();
             reset_eat();
         }
-        /* runmode_delay_output(): display timing only */
+        await runmode_delay_output();
         return;
     }
 
@@ -774,7 +775,7 @@ export async function moveloop_core() {
 
     if (g.multi > 0) {
         await lookaround();
-        /* runmode_delay_output(): display timing only */
+        await runmode_delay_output();
         if (!g.multi) {
             /* lookaround may clear multi */
             g.context.move = 0;
