@@ -99,8 +99,10 @@ import { You_hear } from './sounds.js';
 import { can_blnd } from './mondata.js';
 import { burn_away_slime } from './potion.js';
 import {
-    Cold_resistance, Blind, Hallucination, Deaf, See_invisible, Invis, Displaced, Conflict,
-    Underwater, Half_physical_damage, Unaware as Unaware_mh
+    Fire_resistance, Cold_resistance, Shock_resistance, Acid_resistance, Sick_resistance,
+    Blind, Hallucination, Deaf, See_invisible, Invis, Displaced, Conflict, HMagical_breathing,
+    EMagical_breathing, Underwater, Passes_walls, Slow_digestion, Half_physical_damage, Fast,
+    Reflecting, Unaware as Unaware_mh
 } from './youprop.js';
 import { Upolyd, m_next2u, u_at } from './const.js';
 
@@ -117,12 +119,6 @@ import { DETECT_MONSTERS } from './const.js';
 
 /* C ref: mhitu.c static mon_currwep */
 let mon_currwep = null;
-
-/* C ref: youprop.h -- (H* || E*) && !B* */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
@@ -232,7 +228,7 @@ export function mpoisons_subj(mtmp, mattk) {
 /* called when your intrinsic speed is taken away */
 export async function u_slow_down() {
     game.u.uprops[FAST].intrinsic = 0; /* HFast = 0L */
-    if (!uhave(FAST))
+    if (!Fast())
         await pline("You slow down."); /* You() */
     else /* speed boots */
         await pline("Your quickness feels less natural."); /* Your() */
@@ -242,7 +238,7 @@ export async function u_slow_down() {
 // C ref: mhitu.c diseasemu()
 export async function diseasemu(mdat) {
     const u = game.u;
-    if (uhave(SICK_RES)) {
+    if (Sick_resistance()) {
         await You_feel("a slight illness.");
         return false;
     } else {
@@ -1071,7 +1067,7 @@ export async function gazemu(mtmp, mattk) {
         return M_ATTK_MISS;
 
     const is_medusa = (mtmp.data === mons[M.PM_MEDUSA]);
-    const reflectable = (uhave(REFLECTING_MH) && couldsee_mh(mtmp.mx, mtmp.my)
+    const reflectable = (Reflecting() && couldsee_mh(mtmp.mx, mtmp.my)
                          && is_medusa);
     /* assumes that hero has to see monster's gaze in order to be
        affected, rather than monster just having to look at hero;
@@ -1166,7 +1162,7 @@ export async function gazemu(mtmp, mattk) {
 
                 await pline(`${Monnam(mtmp)} attacks you with a fiery gaze!`); /* pline_mon() */
                 stop_occupation();
-                if (uhave(FIRE_RES)) {
+                if (Fire_resistance()) {
                     /* shieldeff(u.ux, u.uy): display effect only */
                     await pline("The fire doesn't feel hot!"); /* pline_The() */
                     monstseesu(M_SEEN_FIRE);
@@ -1369,7 +1365,6 @@ export function engulf_target(magr, mdef) {
     let ax, ay, dx, dy;
     const uatk = (magr === game.youmonst),
           udef = (mdef === game.youmonst);
-    const Passes_walls = () => uhave(PASSES_WALLS);
     const passes_walls = (ptr) => (ptr.mflags1 & M.M1_WALLWALK) !== 0;
 
     /* can't swallow something that's too big */
@@ -1577,7 +1572,7 @@ async function gulpmu(mtmp, mattk) {
     switch (mattk.adtyp) {
     case M.AD_DGST:
         physical_damage = true;
-        if (uhave(SLOW_DIGESTION)) {
+        if (Slow_digestion()) {
             /* Messages are handled below */
             u.uswldtim = 0;
             tmp = 0;
@@ -1599,9 +1594,9 @@ async function gulpmu(mtmp, mattk) {
             const ydat = game.youmonst.data;
             const flamingy = (ydat === mons[M.PM_FIRE_VORTEX] || ydat === mons[M.PM_FLAMING_SPHERE]
                               || ydat === mons[M.PM_FIRE_ELEMENTAL] || ydat === mons[M.PM_SALAMANDER]);
-            const Breathless = uhave(MAGICAL_BREATHING)
+            const Breathless = (HMagical_breathing() || EMagical_breathing())
                                || (ydat.mflags1 & M.M1_BREATHLESS) !== 0;
-            const Amphibious = uhave(MAGICAL_BREATHING)
+            const Amphibious = (HMagical_breathing() || EMagical_breathing())
                                || (ydat.mflags1 & M.M1_AMPHIBIOUS) !== 0;
             await pline(`You are laden with moisture and ${
                 flamingy ? "are smoldering out!"
@@ -1617,7 +1612,7 @@ async function gulpmu(mtmp, mattk) {
         }
         break;
     case AD_ACID:
-        if (uhave(ACID_RES)) {
+        if (Acid_resistance()) {
             await pline("You are covered with a seemingly harmless goo."); /* You() */
             /* NB: the monst[un]seesu calls in gulpmu are no-ops since the
                hero must be currently swallowed for the attack to hit... */
@@ -1650,7 +1645,7 @@ async function gulpmu(mtmp, mattk) {
     case M.AD_ELEC:
         if (!mtmp.mcan && rn2(2)) {
             await pline("The air around you crackles with electricity."); /* pline_The() */
-            if (uhave(SHOCK_RES))
+            if (Shock_resistance())
                 throw new Error('gulpmu(): shieldeff() not ported yet');
             else
                 monstunseesu(M_SEEN_ELEC);
@@ -1670,7 +1665,7 @@ async function gulpmu(mtmp, mattk) {
         break;
     case M.AD_FIRE:
         if (!mtmp.mcan && rn2(2)) {
-            if (uhave(FIRE_RES)) {
+            if (Fire_resistance()) {
                 throw new Error('gulpmu(): shieldeff() not ported yet');
             } else {
                 await pline("You are burning to a crisp!"); /* You() */
@@ -1729,7 +1724,7 @@ async function gulpmu(mtmp, mattk) {
                                : enfolds(mtmp.data) ? "released"
                                  : "expelled"}!`); /* You() */
         if (game.flags.verbose
-            && (digests(mtmp.data) && uhave(SLOW_DIGESTION)))
+            && (digests(mtmp.data) && Slow_digestion()))
             await pline(`Obviously ${mon_nam(mtmp)} doesn't like your taste.`);
         await expels(mtmp, mtmp.data, false);
     }

@@ -32,8 +32,11 @@ import { canspotmon, newsym, map_invisible, unmap_invisible,
 import { cvt_sdoor_to_door } from './detect.js';
 import { recalc_block_point, unblock_point } from './vision.js';
 import { mons, PM_HEALER, PM_AIR_ELEMENTAL, S_VORTEX } from './monsters.js';
-import { Blind, Hallucination, Jumping, Passes_walls } from './youprop.js';
+import {
+    Blind, Hallucination, Deaf, Wounded_legs, Jumping, Levitation, Passes_walls
+} from './youprop.js';
 import { uhim, uhis } from './mhitu.js';
+import { uprop } from './youprop.js';
 /* C ref: mondata.h is_whirly() */
 function is_whirly(ptr) {
     return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
@@ -218,7 +221,7 @@ async function use_stethoscope(obj) {
     if (nohands(game.youmonst.data)) {
         await You("have no hands!"); /* not `body_part(HAND)' */
         return ECMD_OK;
-    } else if (uhave(DEAF) || u.uroleplay?.deaf) { /* Deaf */
+    } else if (Deaf() || u.uroleplay?.deaf) { /* Deaf */
         await You_cant("hear anything!");
         return ECMD_OK;
     } else if (!freehand()) {
@@ -794,8 +797,6 @@ const jAny = 0, /* any direction => magical jump */
     jVert = 2,
     jDiag = 3; /* jHorz|jVert */
 
-function uprop(p) { return game.u?.uprops?.[p] || {}; }
-function uhave(p) { const q = uprop(p); return !!(q.intrinsic || q.extrinsic); }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 
 // C ref: apply.c check_jump() -- callback routine for walk_path()
@@ -942,7 +943,7 @@ export async function jump(magic) {
         return ECMD_OK;
     } else if (u.ustuck) {
         throw new Error('jump(): jumping while stuck not ported yet');
-    } else if (uhave(LEVITATION) || Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
+    } else if (Levitation() || Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
         if (magic) {
             await You("flail around a little.");
             return ECMD_TIME;
@@ -955,7 +956,7 @@ export async function jump(magic) {
     } else if (!magic && (u.uhunger <= 100 || ACURR(A_STR) < 6)) {
         await You("lack the strength to jump!");
         return ECMD_OK;
-    } else if (!magic && uhave(WOUNDED_LEGS)) {
+    } else if (!magic && Wounded_legs()) {
         throw new Error('jump(): legs_in_no_shape() not ported yet');
     } else if (u.usteed && u.utrap) {
         throw new Error('jump(): steed in a trap not ported yet');
@@ -997,7 +998,7 @@ export async function jump(magic) {
             if (t_at(cc.x, cc.y))
                 throw new Error('jump(): jumping in place on a trap not ported yet');
             /* jumping in place takes no time and doesn't exercise anything */
-            await You(`${uhave(HALLUC) ? "hop up and down a bit"
+            await You(`${Hallucination() ? "hop up and down a bit"
                                        : "decide not to jump after all"}.`);
             return ECMD_OK;
         }

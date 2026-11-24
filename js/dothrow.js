@@ -85,10 +85,11 @@ import { map_invisible, unmap_object, glyph_is_invisible, tmp_at, obj_to_glyph,
          DISP_FLASH, DISP_END } from './display.js';
 import { in_out_region } from './region.js';
 import {
-    Stone_resistance, Stunned, Confusion, Blind, Hallucination, Fumbling, Levitation,
+    Stone_resistance, Stunned, Confusion, Blind, Hallucination, Deaf, Fumbling, Levitation,
     Underwater, Blind as Blind_br
 } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
@@ -142,13 +143,6 @@ async function ok_to_throw() {
     return { ok: true, shotlimit };
 }
 
-/* C ref: youprop.h -- the hero's properties used by the throwing code */
-function uprop(p) {
-    const u = game.u;
-    if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
-    return u.uprops[p];
-}
-function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
 /* C ref: obj.h is_art(), is_pick(); mondata.h throws_rocks() */
 function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_pick(otmp) {
@@ -1008,7 +1002,7 @@ async function throwit(obj,
                 return;
             }
         }
-        if (!(uhave(DEAF) || u.uroleplay?.deaf) && !Underwater()) {
+        if (!(Deaf() || u.uroleplay?.deaf) && !Underwater()) {
             /* Some sound effects when item lands in water or lava */
             if (is_pool(bx, by) || (is_lava(bx, by) && !is_flammable(obj))) {
                 /* Soundeffect(se_splash, 50) */

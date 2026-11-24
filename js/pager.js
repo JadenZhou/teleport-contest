@@ -98,7 +98,9 @@ import { display_inventory } from './invent.js';
 import { data_base } from './data_base.js';
 import { tty_putmixed, tty_getlin, tty_display_file } from './wintty.js';
 import { doextversion } from './mdlib.js';
-import { Blind, Hallucination } from './youprop.js';
+import {
+    Blind, Hallucination, See_invisible, Infravision, Detect_monsters, Invis, Invisible
+} from './youprop.js';
 
 /* C ref: mondata.h digests() */
 function digests(ptr) {
@@ -248,10 +250,6 @@ function showsyms_oth(idx) {
     }
 }
 
-function uhave(prop) {
-    const p = game.u?.uprops?.[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 // C ref: display.c back_to_glyph() -- the cmap index of the background
 // at <x,y> (walls are all "wall", so wall_angle() isn't needed here)
@@ -407,7 +405,7 @@ export function self_lookat() {
     /* include race with role unless polymorphed */
     if (!u.mtimedone) /* !Upolyd */
         race = `${game.urace.adj} `;
-    let outbuf = `${uhave(INVIS) && !uhave(BLINDED) ? "invisible " : ""}${race}`
+    let outbuf = `${Invis() && !Blind() ? "invisible " : ""}${race}`
         + `${pmname(game.youmonst.data, game.flags.female ? FEMALE : MALE)}`
         + ` called ${game.plname}`;
     if (u.usteed)
@@ -685,7 +683,6 @@ function howmonseen(mon) {
     const u = game.u;
     const useemon = canseemon(mon);
     const xraydist = (u.xray_range < 0) ? -1 : ((u.xray_range || 0) * (u.xray_range || 0));
-    const See_invisible = uhave(SEE_INVIS) || perceives(game.youmonst.data);
     let how_seen = 0; /* result */
 
     /* normal vision;
@@ -699,7 +696,7 @@ function howmonseen(mon) {
     if (useemon && mon.minvis)
         how_seen |= MONSEEN_SEEINVIS;
     /* infravision */
-    if ((!mon.minvis || See_invisible) && see_with_infrared(mon))
+    if ((!mon.minvis || See_invisible()) && see_with_infrared(mon))
         how_seen |= MONSEEN_INFRAVIS;
     /* telepathy */
     if (tp_sensemon(mon))
@@ -709,7 +706,7 @@ function howmonseen(mon) {
         && ((mon.mx - u.ux) ** 2 + (mon.my - u.uy) ** 2) <= xraydist) /* mdistu() */
         how_seen |= MONSEEN_XRAYVIS;
     /* extended detection */
-    if (uhave(DETECT_MONSTERS))
+    if (Detect_monsters())
         how_seen |= MONSEEN_DETECT;
     /* class-/type-specific warning */
     if (MATCH_WARN_OF_MON(mon))
@@ -941,17 +938,15 @@ export function lookat(x, y) {
            (even if you could also see yourself via other means).
            Sensing self while blind or swallowed is treated as if it
            were by normal vision (cf canseeself()). */
-        const See_invisible = uhave(SEE_INVIS) || perceives(game.youmonst.data);
-        const Invisible = uhave(INVIS) && !u.uprops[INVIS]?.blocked && !See_invisible;
-        if ((Invisible || u.uundetected) && !Blind()
+        if ((Invisible() || u.uundetected) && !Blind()
             && !(u.uswallow || game.iflags.save_uswallow)) {
             let how = 0;
 
-            if (uhave(INFRAVISION))
+            if (Infravision())
                 how |= 1;
             if (u.uprops[TELEPAT]?.extrinsic) /* Unblind_telepat */
                 how |= 2;
-            if (uhave(DETECT_MONSTERS))
+            if (Detect_monsters())
                 how |= 4;
 
             if (how)

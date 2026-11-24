@@ -18,7 +18,11 @@ import { A_NONE, A_LAWFUL, A_NEUTRAL, A_CHAOTIC, IS_ALTAR, Amask2align,
          A_STR, A_WIS, A_MAX, W_SADDLE, LOW_PM, SDOOR, SCORR, TIMEOUT,
          IS_OBSTRUCTED, isok, ECMD_OK, ECMD_TIME, M_AP_FURNITURE,
          MCORPSENM, MAXULEV, BOLT_LIM, TELL, NOTELL } from './const.js';
-import { Blinded, Blind, Hallucination, Deaf } from './youprop.js';
+import {
+    Disint_resistance, Shock_resistance, Antimagic, Confusion, Blinded, Blind, Strangled, Glib,
+    Hallucination, Deaf, Wounded_legs, Levitation, Flying, Passes_walls, Unchanging,
+    Reflecting, Fixed_abil
+} from './youprop.js';
 import { Upolyd, Luck } from './const.js';
 /* C ref: defsym.h S_altar (cmap index) */
 const S_altar = 33;
@@ -267,7 +271,6 @@ const TROUBLE_HALLUCINATION = (-11);
 /* C ref: youprop.h -- intrinsic/extrinsic property tests */
 function HProp(prop) { return game.u.uprops[prop]?.intrinsic || 0; }
 function EProp(prop) { return game.u.uprops[prop]?.extrinsic || 0; }
-function uhave(prop) { return !!(HProp(prop) || EProp(prop)); }
 function Inhell() { return In_hell(game.u.uz); }
 /* C ref: pray.c ugod_is_angry(), on_altar(), on_shrine(), a_align() */
 function ugod_is_angry() { return game.u.ualign.record < 0; }
@@ -378,7 +381,7 @@ export function stuck_in_wall() {
     const u = game.u;
     let count = 0;
 
-    if (uhave(PASSES_WALLS))
+    if (Passes_walls())
         return false;
     for (let i = -1; i <= 1; i++) {
         const x = u.ux + i;
@@ -486,7 +489,7 @@ function in_trouble() {
         return TROUBLE_STARVING;
     if (region_danger())
         return TROUBLE_REGION;
-    if ((!Upolyd() || uhave(UNCHANGING)) && critically_low_hp(false))
+    if ((!Upolyd() || Unchanging()) && critically_low_hp(false))
         return TROUBLE_HIT;
     if (u.ulycn >= LOW_PM) /* ismnum(u.ulycn) */
         return TROUBLE_LYCANTHROPE;
@@ -542,7 +545,7 @@ function in_trouble() {
     for (let i = 0; i < A_MAX; i++)
         if (ABASE(i) < AMAX(i))
             return TROUBLE_POISONED;
-    if (uhave(WOUNDED_LEGS) && !u.usteed)
+    if (Wounded_legs() && !u.usteed)
         return TROUBLE_WOUNDED_LEGS;
     if (u.uhs >= HUNGRY)
         return TROUBLE_HUNGRY;
@@ -602,14 +605,14 @@ async function god_zaps_you(resp_god) {
             await pline(`${Monnam_pr(u.ustuck)} seems unaffected.`);
     } else {
         await pline("Suddenly, a bolt of lightning strikes you!");
-        if (uhave(REFLECTING)) { /* Reflecting */
+        if (Reflecting()) { /* Reflecting */
             /* shieldeff(u.ux, u.uy): transient display only */
             if (Blind())
                 await pline("For some reason you're unaffected.");
             else
                 await ureflects_pr("%s reflects from your %s.", "It");
             monstseesu_pr(M_SEEN_REFL);
-        } else if (uhave(SHOCK_RES)) { /* Shock_resistance */
+        } else if (Shock_resistance()) { /* Shock_resistance */
             /* shieldeff(u.ux, u.uy) */
             await pline("It seems not to affect you.");
             monstseesu_pr(M_SEEN_ELEC);
@@ -645,7 +648,7 @@ async function god_zaps_you(resp_god) {
             await disintegrate_arm_pr(g.uarm);
         if (g.uarmu && !g.uarm && !g.uarmc)
             await disintegrate_arm_pr(g.uarmu);
-        if (!uhave(DISINT_RES)) { /* !Disint_resistance */
+        if (!Disint_resistance()) { /* !Disint_resistance */
             await fry_by_god(resp_god, true);
             monstunseesu_pr(M_SEEN_DISINT);
         } else {
@@ -701,7 +704,7 @@ async function angrygods(resp_god) {
     case 0:
     case 1:
         await pline(`You feel that ${align_gname(resp_god)} is ${
-            uhave(HALLUC) ? "bummed" : "displeased"}.`); /* You_feel() */
+            Hallucination() ? "bummed" : "displeased"}.`); /* You_feel() */
         break;
     case 2:
     case 3:
@@ -725,7 +728,7 @@ async function angrygods(resp_god) {
     case 4:
     case 5:
         await gods_angry(resp_god);
-        if (!Blind() && !uhave(ANTIMAGIC))
+        if (!Blind() && !Antimagic())
             await pline(`${An(hcolor(NH_BLACK))} glow surrounds you.`);
         if (rn2(2) || !(await attrcurse()))
             await rndcurse();
@@ -768,7 +771,7 @@ async function fix_curse_trouble(otmp, what) {
         console.error('impossible: fix_curse_trouble: nothing to uncurse.');
         return;
     }
-    if (otmp === g.uarmg && uhave(GLIB))
+    if (otmp === g.uarmg && Glib())
         throw new Error('fix_curse_trouble(): make_glib() not ported yet');
     if (!Blind() || (otmp === g.ublindf
                      && EProp(BLINDED) && !Blinded())) { /* Blindfolded_only */
@@ -851,7 +854,7 @@ async function fix_worst_trouble(trouble) {
         await You_feel(`${(AMAX(A_STR) - ABASE(A_STR) > 6) ? "much " : ""}stronger.`);
         u.acurr.a[A_STR] = u.amax.a[A_STR]; /* ABASE(A_STR) = AMAX(A_STR) */
         g.disp_botl = true;
-        if (uhave(FIXED_ABIL))
+        if (Fixed_abil())
             throw new Error('fix_worst_trouble(): stuck_ring() not ported yet');
         break;
     case TROUBLE_STUCK_IN_WALL:
@@ -978,10 +981,10 @@ async function pleased(g_align) {
 
     await pline(`You feel that ${align_gname(g_align)} is ${
         (u.ualign.record >= DEVOUT)
-            ? uhave(HALLUC) ? "pleased as punch" : "well-pleased"
+            ? Hallucination() ? "pleased as punch" : "well-pleased"
             : (u.ualign.record >= STRIDENT)
-                ? uhave(HALLUC) ? "ticklish" : "pleased"
-                : uhave(HALLUC) ? "full" : "satisfied"}.`); /* You_feel() */
+                ? Hallucination() ? "ticklish" : "pleased"
+                : Hallucination() ? "full" : "satisfied"}.`); /* You_feel() */
 
     /* not your deity */
     if (on_altar() && game.p_aligntyp !== u.ualign.type) {
@@ -1160,7 +1163,7 @@ export async function dopray() {
 
     if (g.p_type === 3 && !Inhell()) {
         /* if you've been true to your god you can't die while you pray */
-        if (!uhave(BLINDED))
+        if (!Blind())
             await pline("You are surrounded by a shimmering light."); /* You() */
         u.uinvulnerable = 1;
     }
@@ -1226,12 +1229,9 @@ export async function dosacrifice() {
     const u = game.u;
     /* C ref: youprop.h Levitation, Flying (BFlying isn't ported),
        Confusion, Stunned */
-    const lev = u.uprops[LEVITATION] || {};
-    const Levitation = !!((lev.intrinsic || lev.extrinsic) && !lev.blocked);
-    const Flying = uhave(FLYING);
 
     if (!on_altar() || u.uswallow) {
-        await pline(`You are not ${(Levitation || Flying) ? "over" : "on"} an altar.`); /* You() */
+        await pline(`You are not ${(Levitation() || Flying()) ? "over" : "on"} an altar.`); /* You() */
         return ECMD_OK;
     } else if (HProp(CONFUSION) || HProp(STUNNED)) {
         await pline("You are too impaired to perform the rite."); /* You() */
@@ -1259,7 +1259,7 @@ async function maybe_turn_mon_iter(mtmp) {
         && (is_undead(mtmp.data) || is_vampshifter(mtmp)
             || (is_demon(mtmp.data) && (u.ulevel > (MAXULEV / 2))))) {
         mtmp.msleeping = 0;
-        if (uhave(CONFUSION)) {
+        if (Confusion()) {
             if (!turn_undead_msg_cnt++)
                 await pline("Unfortunately, your voice falters.");
             mtmp.mflee = 0;
@@ -1334,7 +1334,7 @@ export async function doturn() {
     /* [What about needing free hands (does #turn involve any gesturing)?] */
     if (!can_chant(g.youmonst)) {
         /* "evilness": "demons and undead" is too verbose and too precise */
-        await pline(`You are ${uhave(STRANGLED) ? "not able to call"
+        await pline(`You are ${Strangled() ? "not able to call"
                                                 : "incapable of calling"} upon ${
                         Gname} to turn aside evilness.`); /* You() */
         /* violates agnosticism due to intent; conduct tracking is not

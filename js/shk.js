@@ -107,7 +107,6 @@ import { noit_mhis, noit_mhe, noit_mhim } from './mhitu.js';
 
 // ── small helpers (C ref: youprop.h / monst.h / shk.c macros) ──
 
-/* C ref: youprop.h -- (H* || E*) && !B* */
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: shk.c NOTANGRY(), ANGRY() */

@@ -58,6 +58,7 @@ import {
     Displaced, See_invisible, Deaf, Detect_monsters, Unaware, Blind, Hallucination
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
+import { uprop } from './youprop.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -118,8 +119,6 @@ const mon_wizard_spells = [
     MCAST_AGGRAVATION, MCAST_SUMMON_MONS, MCAST_CLONE_WIZ, MCAST_DEATH_TOUCH,
 ];
 
-/* C ref: youprop.h -- the hero's properties used here */
-function uprop(p) { return game.u.uprops[p] || {}; }
 /* C ref: hack.c unconscious() */
 function unconscious() {
     if (game.multi >= 0)

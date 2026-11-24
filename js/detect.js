@@ -27,7 +27,8 @@ import {
     feel_location
 } from './display.js';
 import {
-    Blind, Hallucination as Hallucination_ft, Hallucination as Hallucination_dt
+    Stunned, Confusion, Blind, Hallucination, Hallucination as Hallucination_ft,
+    Hallucination as Hallucination_dt
 } from './youprop.js';
 
 // C ref: display.c feel_newsym()
@@ -426,9 +427,8 @@ export async function reveal_terrain(which_subset) {
     const u = game.u;
     /* 'full' overrides impairment and implies no-traps, no-objs, no-mons */
     const full = (which_subset & TER_FULL) !== 0; /* show whole map */
-    const uprop = (p) => !!(u.uprops?.[p]?.intrinsic || u.uprops?.[p]?.extrinsic);
 
-    if ((uprop(HALLUC) || uprop(STUNNED) || uprop(CONFUSION)) && !full) {
+    if ((Hallucination() || Stunned() || Confusion()) && !full) {
         await pline("You are too disoriented for this."); /* You() */
     } else {
         let glyph;

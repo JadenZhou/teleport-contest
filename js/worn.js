@@ -53,6 +53,7 @@ import { can_ride } from './steed.js';
 import { surface } from './iactions.js';
 import { See_invisible, Unaware } from './youprop.js';
 import { Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -72,8 +73,6 @@ function MON_WEP(mon) { return mon.mw || null; }
 /* monster inventory in C order (add_to_minv() prepends) */
 function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
-
-/* C ref: youprop.h See_invisible, Blind */
 
 /* C ref: obj.h is_art() */
 function is_art(o, art) { return !!(o && o.oartifact === art); }
@@ -210,13 +209,6 @@ const worn = [
     { w_mask: W_BALL, w_obj: 'uball' },
     { w_mask: W_CHAIN, w_obj: 'uchain' },
 ];
-
-/* C ref: youprop.h u.uprops[] entry, made on demand */
-function uprop(p) {
-    const u = game.u;
-    if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
-    return u.uprops[p];
-}
 
 // C ref: mondata.c cvt_prop_to_mseenres()
 function cvt_prop_to_mseenres(prop) {

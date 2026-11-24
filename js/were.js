@@ -19,8 +19,6 @@ import { mon_break_armor } from './worn.js';
 import { onscary, monflee } from './monmove.js';
 import { Protection_from_shape_changers, Deaf, Hallucination } from './youprop.js';
 
-/* C ref: youprop.h Protection_from_shape_changers, Deaf, Hallucination */
-
 // C ref: were.c were_change()
 export async function were_change(mon) {
     if (!is_were(mon.data))

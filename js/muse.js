@@ -114,7 +114,9 @@ import { doorlock } from './lock.js';
 import { in_rooms } from './hack.js';
 import { D_BROKEN, SHOPBASE, TEMPLE } from './const.js';
 import { tele } from './teleport.js';
-import { Blind, Hallucination, Deaf, See_invisible, Teleport_control } from './youprop.js';
+import {
+    Antimagic, Blind, Hallucination, Deaf, See_invisible, Teleport_control, Half_spell_damage
+} from './youprop.js';
 import { m_next2u, u_at } from './const.js';
 import { mhe, mhim } from './mhitu.js';
 
@@ -2193,11 +2195,6 @@ function mdistu(mon) {
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 /* C ref: obj.h makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
-/* C ref: youprop.h */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!(p.intrinsic || p.extrinsic);
-}
 
 // C ref: muse.c mzapwand()
 /* when a monster zaps a wand give a message, deduct a charge, and if it
@@ -2438,7 +2435,7 @@ async function mbhitm(mtmp, otmp) {
     case WAN_STRIKING:
         reveal_invis = true;
         if (hits_you) {
-            if (uhave(ANTIMAGIC)) {
+            if (Antimagic()) {
                 monstseesu(M_SEEN_MAGR); /* monsters notice hero resisting */
                 /* shieldeff(u.ux, u.uy): transient display only */
                 /* Soundeffect(se_boing, 40) */
@@ -2449,7 +2446,7 @@ async function mbhitm(mtmp, otmp) {
                 monstunseesu(M_SEEN_MAGR); /* mons see hero not resisting */
                 await pline_The("wand hits you!");
                 tmp = d(2, 12);
-                if (uhave(HALF_SPDAM))
+                if (Half_spell_damage())
                     tmp = Math.trunc((tmp + 1) / 2);
                 await losehp(tmp, "wand", KILLED_BY_AN);
                 learnit = true;

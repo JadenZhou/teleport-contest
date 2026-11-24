@@ -48,7 +48,10 @@ import { t_at } from './trap.js';
 import { engr_at, sticks, can_reach_floor } from './engrave.js';
 import { ENGRAVE, BURN, HEADSTONE } from './const.js';
 import { AM_MASK, AM_SANCTUM, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC } from './const.js';
-import { Blind, Hallucination, Unaware } from './youprop.js';
+import {
+    Blind, Hallucination, See_invisible, Unblind_telepat, Warning, Warn_of_mon, Infravision,
+    Detect_monsters, Invisible, Protection_from_shape_changers, Unaware
+} from './youprop.js';
 
 // C ref: display.h altar_to_glyph(), enum altar_colors (without
 // USE_GENERAL_ALTAR_COLORS); display.c altarcolors[]
@@ -1026,36 +1029,22 @@ function mon_at_loc(x, y) {
 // C ref: display.h mon_visible(): not invisible (or hero sees invisible)
 // and not hiding
 export function mon_visible(mon) {
-    const See_invisible = !!(game.u?.uprops?.[SEE_INVIS]?.intrinsic
-                             || game.u?.uprops?.[SEE_INVIS]?.extrinsic);
-    return (!mon.minvis || See_invisible) && !mon.mundetected;
+    return (!mon.minvis || See_invisible()) && !mon.mundetected;
 }
 
 /* C ref: display.h canspotself(), canseeself(), senseself();
    youprop.h Invisible, See_invisible, Unblind_telepat, Detect_monsters */
 export function canspotself() {
     const u = game.u;
-    const inv = u.uprops[INVIS];
-    const Invis = !!((inv.intrinsic || inv.extrinsic) && !inv.blocked);
-    const See_invisible = uprop(SEE_INVIS)
-                          || (game.youmonst.data.mflags1 & M1_SEE_INVIS) !== 0;
-    const Invisible = Invis && !See_invisible;
     const canseeself = Blind() || !!u.uswallow
-                       || (!Invisible && !u.uundetected);
-    const senseself = !!u.uprops[TELEPAT]?.extrinsic /* Unblind_telepat */
-                      || uprop(DETECT_MONSTERS);
+                       || (!Invisible() && !u.uundetected);
+    const senseself = Unblind_telepat() || Detect_monsters();
     return canseeself || senseself;
-}
-
-/* C ref: youprop.h -- the hero's property tests canspotmon() needs */
-function uprop(p) {
-    const P = game.u?.uprops?.[p];
-    return !!(P && (P.intrinsic || P.extrinsic));
 }
 
 // C ref: display.h _see_with_infrared()
 export function see_with_infrared(mon) {
-    return !Blind() && uprop(INFRAVISION)
+    return !Blind() && Infravision()
            && (mon.data.mflags3 & M3_INFRAVISIBLE) !== 0
            && couldsee(mon.mx, mon.my);
 }
@@ -1083,7 +1072,7 @@ export function tp_sensemon(mon) {
 // C ref: display.h MATCH_WARN_OF_MON()
 export function MATCH_WARN_OF_MON(mon) {
     const wt = game.context.warntype || {};
-    return uprop(WARN_OF_MON)
+    return Warn_of_mon()
            && (((wt.obj ?? 0) & mon.data.mflags2) !== 0
                || ((wt.polyd ?? 0) & mon.data.mflags2) !== 0
                || (!!wt.species && wt.species === mon.data));
@@ -1095,7 +1084,7 @@ export function sensemon(mon) {
     if (u.uinwater)
         throw new Error('sensemon(): Underwater not ported yet');
     return (!u.uswallow || mon === u.ustuck)
-           && (uprop(DETECT_MONSTERS) || tp_sensemon(mon)
+           && (Detect_monsters() || tp_sensemon(mon)
                || MATCH_WARN_OF_MON(mon));
 }
 
@@ -1113,7 +1102,7 @@ function is_worm_tail(mon, x, y) {
 // C ref: display.h _mon_warning()
 function mon_warning(mon) {
     const u = game.u;
-    return uprop(WARNING) && !mon.mpeaceful
+    return Warning() && !mon.mpeaceful
            && ((mon.mx - u.ux) ** 2 + (mon.my - u.uy) ** 2) < 100 /* mdistu() */
            && Math.trunc((mon.m_lev || 0) / 4) >= (game.context.warnlevel || 0);
 }
@@ -1192,7 +1181,7 @@ function display_monster(
                   * 2 if detected using Detect_monsters */
     worm_tail) { /* mon is actually a worm tail */
     const mon_mimic = (M_AP_TYPE(mon) !== M_AP_NOTHING);
-    const sensed = (mon_mimic && (uprop(PROT_FROM_SHAPE_CHANGERS)
+    const sensed = (mon_mimic && (Protection_from_shape_changers()
                                   || sensemon(mon)));
 
     /*
@@ -2052,7 +2041,7 @@ export function newsym(x, y) {
         const see_it = !!mon && (mon_visible(mon)
                                  || (!worm_tail && (tp_sensemon(mon)
                                                     || MATCH_WARN_OF_MON(mon))));
-        if (mon && (see_it || (!worm_tail && uprop(DETECT_MONSTERS)))) {
+        if (mon && (see_it || (!worm_tail && Detect_monsters()))) {
             if (mon.mtrapped) {
                 const trap = t_at(x, y);
                 const tt = trap ? trap.ttyp : NO_TRAP;
@@ -2079,7 +2068,7 @@ export function newsym(x, y) {
                && ((see_it_nv = (tp_sensemon(mon) || MATCH_WARN_OF_MON(mon)
                                  || (see_with_infrared(mon)
                                      && mon_visible(mon))))
-                   || (uprop(DETECT_MONSTERS) && !is_worm_tail(mon, x, y)))) {
+                   || (Detect_monsters() && !is_worm_tail(mon, x, y)))) {
         /* Seen or sensed monsters are printed every time.
            This also gets rid of any invisibility glyph. */
         display_monster(x, y, mon, see_it_nv ? 0 : DETECTED,
@@ -2434,7 +2423,7 @@ export function see_monsters() {
         newsym(mon.mx, mon.my);
         if (mon.wormno)
             see_wsegs(mon);
-        if (uprop(WARN_OF_MON)
+        if (Warn_of_mon()
             && ((game.context.warntype?.obj ?? 0) & mon.data.mflags2) !== 0)
             new_warn_obj_cnt++;
     }

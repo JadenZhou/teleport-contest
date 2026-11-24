@@ -63,7 +63,6 @@ import { Punished, Blind, Adornment, Conflict, Levitation, Flying } from './youp
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
 
-/* C ref: youprop.h -- (H* || E*) && !B* */
 /* C ref: mondata.h is_animal(), slithy(), throws_rocks(), touch_petrifies() */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }

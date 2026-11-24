@@ -46,14 +46,13 @@ import { exercise } from './attrib.js';
 import { killer } from './topten.js';
 import { done } from './end.js';
 import { d } from './rng.js';
-import { Invulnerable, Hallucination, Deaf } from './youprop.js';
+import {
+    Fire_resistance, Cold_resistance, Disint_resistance, Shock_resistance, Poison_resistance,
+    Antimagic, Acid_resistance, Invulnerable, Hallucination, Deaf
+} from './youprop.js';
 import { Upolyd, next2u } from './const.js';
+import { uprop } from './youprop.js';
 
-/* C ref: youprop.h property tests used here */
-function uprop(p) {
-    return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
-}
-function uhave(p) { const q = uprop(p); return !!(q.intrinsic || q.extrinsic); }
 /* C ref: mondata.h digests(), sticks() */
 function digests(ptr) {
     return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
@@ -90,33 +89,33 @@ function explosionmask(
             /* leave 'res' with EXPL_NONE */
             break;
         case AD_MAGM:
-            if (uhave(ANTIMAGIC))
+            if (Antimagic())
                 res = EXPL_HERO;
             break;
         case AD_FIRE:
-            if (uhave(FIRE_RES))
+            if (Fire_resistance())
                 res = EXPL_HERO;
             break;
         case AD_COLD:
-            if (uhave(COLD_RES))
+            if (Cold_resistance())
                 res = EXPL_HERO;
             break;
         case AD_DISN:
             if ((olet === WAND_CLASS)
                 ? (nonliving(m.data) || is_demon(m.data))
-                : uhave(DISINT_RES))
+                : Disint_resistance())
                 res = EXPL_HERO;
             break;
         case AD_ELEC:
-            if (uhave(SHOCK_RES))
+            if (Shock_resistance())
                 res = EXPL_HERO;
             break;
         case AD_DRST:
-            if (uhave(POISON_RES))
+            if (Poison_resistance())
                 res = EXPL_HERO;
             break;
         case AD_ACID:
-            if (uhave(ACID_RES))
+            if (Acid_resistance())
                 res = EXPL_HERO;
             break;
         default:

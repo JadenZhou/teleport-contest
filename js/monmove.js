@@ -119,7 +119,7 @@ import { pri_move, in_your_sanctuary } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
 import {
     Hallucination, Deaf, Invis, Displaced, Stealth, Aggravate_monster, Conflict, Underwater,
-    Unaware
+    Protection_from_shape_changers, Unaware
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
 
@@ -129,11 +129,6 @@ function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
-/* C ref: youprop.h -- (H* || E*) && !B* */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 /* C ref: monst.h mon_offmap() */
 function mon_offmap(mon) {
     return ((mon.mstate || 0)
@@ -740,7 +735,7 @@ function stuff_prevents_passage(mtmp) {
 // C ref: monmove.c can_fog()
 export function can_fog(mtmp) {
     if (!(game.mvitals[M.PM_FOG_CLOUD].mvflags & G_GENOD) && is_vampshifter(mtmp)
-        && !uhave(PROT_FROM_SHAPE_CHANGERS) /* !Protection_from_shape_changers */
+        && !Protection_from_shape_changers() /* !Protection_from_shape_changers */
         && !stuff_prevents_passage(mtmp))
         return true;
     return false;

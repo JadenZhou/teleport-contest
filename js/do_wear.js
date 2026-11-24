@@ -68,6 +68,7 @@ import { rnd } from './rng.js';
 import { region_danger } from './region.js';
 import { Blind, Glib, Invisible, Levitation, Flying } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -157,7 +158,6 @@ function is_flimsy(otmp) {
 function makeknown(x) { discover_object(x, true, true, true); }
 /* C ref: pline.c You_feel() */
 async function You_feel(line) { await pline(`You feel ${line}`); }
-/* C ref: youprop.h property tests used here */
 
 // C ref: do_wear.c fingers_or_gloves() -- plural "fingers" or optionally
 // "gloves"
@@ -1480,12 +1480,6 @@ function takeoff_ctx() {
     return g.context.takeoff;
 }
 
-/* C ref: youprop.h u.uprops[] entry */
-function uprop(p) {
-    const u = game.u;
-    if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
-    return u.uprops[p];
-}
 /* C ref: obj.h is_boots(), is_gloves() */
 function is_boots(otmp) {
     return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_BOOTS;

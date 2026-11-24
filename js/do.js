@@ -107,11 +107,8 @@ import {
     Punished, Blind, Hallucination, Fumbling, HLevitation, ELevitation, Levitation, Flying
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
+import { uprop } from './youprop.js';
 
-/* C ref: youprop.h -- the hero's properties used by the level-change code */
-function uprop(p) {
-    return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
-}
 /* C ref: youprop.h Deaf */
 function Deaf_do() {
     const p = uprop(DEAF_DO);

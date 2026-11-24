@@ -37,7 +37,7 @@ import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
 import { is_flyer, is_undead, is_vampshifter } from './mondata.js';
-import { Hallucination, Deaf, Unaware } from './youprop.js';
+import { Blind, Strangled, Hallucination, Deaf, Unaware } from './youprop.js';
 
 /* C ref: mondata.h predicates */
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
@@ -383,11 +383,6 @@ export async function dosounds() {
 function is_silent(ptr) { return ptr.msound === MS_SILENT; }
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
-/* C ref: youprop.h Deaf, Blind, Strangled, Underwater */
-function uprop(prop) {
-    const p = game.u.uprops[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 /* C ref: sounds.c h_sounds[] */
 const h_sounds = [
@@ -791,7 +786,7 @@ async function dochat() {
 
     if (is_silent(game.youmonst.data))
         throw new Error('dochat(): silent hero form not ported yet');
-    if (uprop(STRANGLED)) {
+    if (Strangled()) {
         await pline("You can't speak.  You're choking!"); /* You_cant() */
         return ECMD_OK;
     }
@@ -804,7 +799,7 @@ async function dochat() {
         return ECMD_OK;
     }
     /* shop_object()/price_quote(): shopkeepers aren't created yet */
-    if (!Deaf() && !uprop(BLINDED) && game.u.ushops && game.u.ushops.length)
+    if (!Deaf() && !Blind() && game.u.ushops && game.u.ushops.length)
         throw new Error('dochat(): shop_object() price quote not ported yet');
 
     if (!(await getdir("Talk to whom? (in what direction)"))) {
@@ -841,7 +836,7 @@ async function dochat() {
     if (!mtmp || mtmp.mundetected) {
         if ((otmp = vobj_at(tx, ty)) != null && otmp.otyp === STATUE) {
             /* Talking to a statue */
-            if (!uprop(BLINDED)) {
+            if (!Blind()) {
                 if (Hallucination())
                     throw new Error('dochat(): rndmonnam() not ported yet');
                 await pline("The statue seems not to notice you."); /* pline_The() */
@@ -852,7 +847,7 @@ async function dochat() {
         if (!Deaf() && (IS_WALL(typ) || typ === SDOOR)) {
             /* Talking to a wall; secret door remains hidden by behaving
                like a wall */
-            if (uprop(BLINDED))
+            if (Blind())
                 throw new Error('dochat(): blind wall talk (lastseentyp) not ported yet');
             else if (!Hallucination()) {
                 await pline("It's like talking to a wall.");

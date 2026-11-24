@@ -95,19 +95,15 @@ import { MIGR_TO_SPECIES, MIGR_NOBREAK, MIGR_NOSCATTER, MIGR_WITH_HERO,
          NON_PM, In_mines, has_mgivenname, has_oname, ONAME } from './const.js';
 import { add_to_minv } from './mkobj.js';
 import { christen_orc } from './do_name.js';
-import { Blind, Levitation, Passes_walls, Wounded_legs, Fumbling, Deaf } from './youprop.js';
+import {
+    Stone_resistance, Blind, Deaf, Fumbling, Wounded_legs, Levitation, Passes_walls
+} from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
-/* C ref: youprop.h -- the hero's properties used by the kick code */
-function uprop(p) {
-    const u = game.u;
-    if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
-    return u.uprops[p];
-}
-function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
 /* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
 function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
 function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
@@ -947,14 +943,14 @@ async function really_kick_object(x, y) {
             throw new Error('really_kick_object(): activate_statue_trap() not ported yet');
     }
 
-    if (uhave(FUMBLING) && !rn2(3)) {
+    if (Fumbling() && !rn2(3)) {
         await Your("clumsy kick missed.");
         return 1;
     }
 
     if (!game.uarmf && kobj.otyp === CORPSE
         && (kobj.corpsenm === PM_COCKATRICE || kobj.corpsenm === PM_CHICKATRICE)
-        && !uhave(STONE_RES))
+        && !Stone_resistance())
         throw new Error('really_kick_object(): kicking a cockatrice corpse barefoot not ported yet');
 
     isgold = (kobj.oclass === COIN_CLASS);

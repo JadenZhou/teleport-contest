@@ -108,7 +108,6 @@ const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
       NH_SILVER = "silver", NH_PURPLE = "purple", NH_RED = "red",
       NH_BLUE = "blue";
 
-/* C ref: youprop.h -- the property macros used here */
 /* C ref: hack.h makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: obj.h is_art(), is_elven_armor(), Is_dragon_scales(),

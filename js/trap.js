@@ -68,6 +68,7 @@ import {
     Unaware as Unaware_dr
 } from './youprop.js';
 import { Upolyd, Luck } from './const.js';
+import { uprop } from './youprop.js';
 
 /* C ref: mondata.h resists_ston() */
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
@@ -306,9 +307,6 @@ export function check_in_air(mtmp, trflags) {
 
 /* C ref: youprop.h -- the hero's properties used by the trap code;
    BLevitation/BFlying are uprops[].blocked */
-function uprop(p) {
-    return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
-}
 /* C ref: hack.h Maybe_Half_Phys() */
 export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;

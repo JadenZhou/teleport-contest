@@ -59,14 +59,13 @@ import {
 import { newsym, see_monsters } from './display.js';
 import { set_itimeout, make_confused, make_stunned, make_blinded, make_deaf,
          make_hallucinated, make_glib, set_mimic_blocking } from './potion.js';
-import { Blind, Breathless } from './youprop.js';
+import {
+    Fire_resistance, Stunned, Confusion, Blind, Halluc_resistance, Deaf, See_invisible, Invis,
+    HWwalking, EWwalking, Breathless
+} from './youprop.js';
 import { Role_if } from './const.js';
 
 /* C ref: youprop.h -- (H* || E*) for the timeout cases; Blind */
-function uhave(p) {
-    const q = game.u.uprops[p];
-    return !!(q.intrinsic || q.extrinsic);
-}
 import { PM_ARCHEOLOGIST } from './monsters.js';
 import { FEDORA, LUCKSTONE } from './objects.js';
 import { stone_luck } from './attrib.js';
@@ -681,13 +680,13 @@ export async function nh_timeout() {
                 /* So make_confused works properly */
                 set_itimeout(CONFUSION, 1);
                 await make_confused(0, true);
-                if (!uhave(CONFUSION))
+                if (!Confusion())
                     await stop_occupation();
                 break;
             case STUNNED:
                 set_itimeout(STUNNED, 1);
                 await make_stunned(0, true);
-                if (!uhave(STUNNED))
+                if (!Stunned())
                     await stop_occupation();
                 break;
             case BLINDED: {
@@ -703,14 +702,13 @@ export async function nh_timeout() {
                 set_itimeout(DEAF, 1);
                 await make_deaf(0, true);
                 g.disp_botl = true;
-                if (!(uhave(DEAF) || u.uroleplay?.deaf))
+                if (!(Deaf() || u.uroleplay?.deaf))
                     await stop_occupation();
                 break;
             case INVIS: {
-                const Invis = uhave(INVIS) && !P[INVIS].blocked;
                 newsym(u.ux, u.uy);
-                if (!Invis && !P[INVIS].blocked && !Blind()) {
-                    await pline(!uhave(SEE_INVIS)
+                if (!Invis() && !P[INVIS].blocked && !Blind()) {
+                    await pline(!See_invisible()
                                 ? "You are no longer invisible."
                                 : "You can no longer see through yourself.");
                     await stop_occupation();
@@ -726,7 +724,7 @@ export async function nh_timeout() {
             case HALLUC:
                 set_itimeout(HALLUC, 1);
                 await make_hallucinated(0, true, 0);
-                if (!(P[HALLUC].intrinsic && !uhave(HALLUC_RES)))
+                if (!(P[HALLUC].intrinsic && !Halluc_resistance()))
                     await stop_occupation();
                 break;
             case FIRE_RES:
@@ -734,12 +732,12 @@ export async function nh_timeout() {
                    as a way to survive lava after multiple life-saving
                    attempts fail to relocate hero; skip timeout message
                    if hero has acquired fire resistance in the meantime */
-                if (!uhave(FIRE_RES))
+                if (!Fire_resistance())
                     await pline("Your temporary ability to survive burning has ended.");
                 break;
             case WWALKING:
                 /* [see fire resistance] */
-                if (!uhave(WWALKING))
+                if (!(HWwalking() || EWwalking()))
                     await pline("Your temporary ability to walk on liquid has ended.");
                 break;
             case ACID_RES:

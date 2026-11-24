@@ -512,7 +512,6 @@ function is_boots(otmp) {
            && objects[otmp.otyp].oc_armcat === ARM_BOOTS;
 }
 function is_art(o, art) { return !!(o && o.oartifact === art); }
-/* C ref: youprop.h Confusion, Stunned, Deaf */
 /* C ref: rm.h SURFACE_AT() */
 function SURFACE_AT(x, y) {
     const lev = game.level.at(x, y);

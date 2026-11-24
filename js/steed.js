@@ -43,7 +43,10 @@ import { pmname, Mgender } from './do_name.js';
 import { has_ceiling } from './insight.js';
 import { wseg_mon_at } from './worm.js';
 import { finish_meating } from './dog.js';
-import { Stealth, Levitation, Flying } from './youprop.js';
+import {
+    Stone_resistance, Stunned, Confusion, Blind, Glib, Hallucination, Fumbling, Wounded_legs,
+    Blind_telepat, Stealth, Levitation, Flying, Half_physical_damage
+} from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
 
 /* C ref: mondata.h throws_rocks() */
@@ -56,10 +59,6 @@ function dirtocoord(cc, dd) {
     }
 }
 
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 // C ref: steed.c can_ride()
 /* Can this monster wear a saddle and can the hero ride it? */
@@ -122,11 +121,11 @@ async function mount_steed(mtmp, force) {
     }
 
     /* Is the player in the right form? */
-    if (uhave(HALLUC) && !force) {
+    if (Hallucination() && !force) {
         await pline("Maybe you should find a designated driver.");
         return false;
     }
-    if (uhave(WOUNDED_LEGS))
+    if (Wounded_legs())
         throw new Error('mount_steed(): legs_in_no_shape() not ported yet');
 
     if (Upolyd())
@@ -137,8 +136,7 @@ async function mount_steed(mtmp, force) {
     }
 
     /* Can the player reach and see the monster? */
-    const Blind = uhave(BLINDED), Blind_telepat = uhave(TELEPAT);
-    if (!mtmp || (!force && ((Blind && !Blind_telepat) || mtmp.mundetected
+    if (!mtmp || (!force && ((Blind() && !Blind_telepat()) || mtmp.mundetected
                              || mtmp.m_ap_type === M_AP_FURNITURE
                              || mtmp.m_ap_type === M_AP_OBJECT))) {
         await pline("I see nobody there.");
@@ -167,7 +165,7 @@ async function mount_steed(mtmp, force) {
     const ptr = mtmp.data;
     /* touch_petrifies(ptr) && !Stone_resistance */
     if ((ptr === mons[PM_COCKATRICE] || ptr === mons[PM_CHICKATRICE])
-        && !uhave(STONE_RES))
+        && !Stone_resistance())
         throw new Error('mount_steed(): instapetrify() not ported yet');
     if (!mtmp.mtame || mtmp.isminion) {
         await pline(`I think ${mon_nam(mtmp)} would mind.`);
@@ -186,16 +184,16 @@ async function mount_steed(mtmp, force) {
     }
 
     /* Is the player impaired? */
-    if (!force && !is_floater(ptr) && !is_flyer(ptr) && uhave(LEVITATION))
+    if (!force && !is_floater(ptr) && !is_flyer(ptr) && Levitation())
         throw new Error('mount_steed(): levitating hero (Lev_at_will) not ported yet');
     /* uarm && is_metallic(uarm) && greatest_erosion(uarm) */
     if (!force && game.uarm && (game.uarm.oeroded || game.uarm.oeroded2))
         throw new Error('mount_steed(): eroded metallic armor check not ported yet');
     if (!force
-        && (uhave(CONFUSION) || uhave(FUMBLING) || uhave(GLIB)
-            || uhave(WOUNDED_LEGS) || otmp.cursed || otmp.greased
+        && (Confusion() || Fumbling() || Glib()
+            || Wounded_legs() || otmp.cursed || otmp.greased
             || (u.ulevel + mtmp.mtame < rnd(Math.trunc(MAXULEV / 2) + 5)))) {
-        if (uhave(LEVITATION)) {
+        if (Levitation()) {
             await pline(`${Monnam(mtmp)} slips away from you.`);
             return false;
         }
@@ -208,7 +206,7 @@ async function mount_steed(mtmp, force) {
                          true)}`;
         const dmg = rn1(5, 10);
         /* Maybe_Half_Phys() */
-        await losehp(uhave(HALF_PHDAM) ? Math.trunc((dmg + 1) / 2) : dmg,
+        await losehp(Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg,
                      buf, 2 /* NO_KILLER_PREFIX */);
         return false;
     }
@@ -216,7 +214,7 @@ async function mount_steed(mtmp, force) {
     /* Success */
     await maybewakesteed(mtmp);
     if (!force) {
-        if (uhave(LEVITATION) && !is_floater(ptr) && !is_flyer(ptr))
+        if (Levitation() && !is_floater(ptr) && !is_flyer(ptr))
             /* Must have Lev_at_will at this point */
             await pline(`${Monnam(mtmp)} magically floats up!`);
         await You(`mount ${mon_nam(mtmp)}.`);
@@ -324,7 +322,7 @@ async function landing_spot(
      * Fallback to i==1 if nothing appropriate was found for i==0 and
      * to i==2 as last resort.
      */
-    impaird = (uhave(STUNNED) || uhave(CONFUSION) || uhave(FUMBLING));
+    impaird = (Stunned() || Confusion() || Fumbling());
     viable = 0;
     found = false;
     for (i = (reason === DISMOUNT_BYCHOICE && !impaird) ? 0
@@ -401,7 +399,7 @@ export async function dismount_steed(
     const cc = { x: 0, y: 0 }, steedcc = { x: 0, y: 0 };
     const save_utrap = u.utrap;
     let ulev, ufly;
-    let repair_leg_damage = uhave(WOUNDED_LEGS);
+    let repair_leg_damage = Wounded_legs();
     let have_spot = await landing_spot(cc, reason, 0);
 
     mtmp = u.usteed; /* make a copy of steed pointer */
@@ -430,7 +428,7 @@ export async function dismount_steed(
         if (!ulev && !ufly) {
             const dmg = rn1(10, 10);
             /* Maybe_Half_Phys() */
-            await losehp(uhave(HALF_PHDAM) ? Math.trunc((dmg + 1) / 2) : dmg,
+            await losehp(Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg,
                          "riding accident", KILLED_BY_AN);
             await set_wounded_legs(BOTH_SIDES,
                                    (u.uprops[WOUNDED_LEGS]?.intrinsic || 0)
@@ -466,7 +464,7 @@ export async function dismount_steed(
         if (!has_mgivenname(mtmp)) {
             await pline(`You've been through the dungeon on ${
                         an(pmname(mtmp.data, Mgender(mtmp)))} with no name.`);
-            if (uhave(HALLUC))
+            if (Hallucination())
                 await pline("It felt good to get out of the rain.");
         } else
             await You(`dismount ${mon_nam(mtmp)}.`);

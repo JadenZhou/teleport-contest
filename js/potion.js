@@ -103,9 +103,8 @@ import {
     Underwater, Unchanging, Fast, Very_fast, Free_action, Fixed_abil, Unaware, Half_gas_damage
 } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
-/* C ref: youprop.h -- the property macros used here */
-function uprop(p) { return game.u.uprops[p]; }
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
 /* C ref: monst.h ismnum() */

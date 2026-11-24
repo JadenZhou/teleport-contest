@@ -105,8 +105,9 @@ import { wake_msg, seemimic, maybe_unhide_at, disturb_buried_zombies } from './m
 import { drag_ball, move_bc } from './ball.js';
 import { worm_cross } from './worm.js';
 import {
-    Punished, Stunned, Confusion, Blind, Fumbling, Levitation, Flying, Underwater,
-    Passes_walls
+    Fire_resistance, Cold_resistance, Punished, Stunned, Confusion, Blind, Hallucination,
+    Fumbling, Warning, Stealth, Conflict, Levitation, Flying, HWwalking, EWwalking, Underwater,
+    Passes_walls, Protection_from_shape_changers
 } from './youprop.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
@@ -406,7 +407,7 @@ async function pickup_checks() {
         else if (IS_GRAVE(lev.typ))
             await You("don't need a gravestone.  Yet.");
         else if (IS_FOUNTAIN(lev.typ))
-            await You(`could drink the ${uhave(HALLUC) ? (() => { throw new Error('pickup_checks(): hliquid() while hallucinating not ported yet'); })() : "water"}...`);
+            await You(`could drink the ${Hallucination() ? (() => { throw new Error('pickup_checks(): hliquid() while hallucinating not ported yet'); })() : "water"}...`);
         else if (IS_DOOR(lev.typ) && (lev.doormask & D_ISOPEN))
             await pline("It won't come off the hinges.");
         else if (IS_ALTAR(lev.typ))
@@ -861,7 +862,7 @@ function Known_wwalking() {
               && !game.u.usteed);
 }
 function Known_lwalking() {
-    return Known_wwalking() && uhave(FIRE_RES)
+    return Known_wwalking() && Fire_resistance()
            && !!game.uarmf.oerodeproof && !!game.uarmf.rknown;
 }
 
@@ -953,11 +954,6 @@ export function nomul(nval) {
 
 /* ── C ref: hack.c domove() and the parts of domove_core() reached so far ── */
 
-/* C ref: you.h / youprop.h property tests used below */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 /* C ref: rm.h Sokoban -- svl.level.flags.sokoban_rules */
 function Sokoban() { return !!game.level.flags.sokoban_rules; }
 /* C ref: mondata.h tunnels(), needspick(), amorphous(), verysmall(),
@@ -1290,7 +1286,7 @@ export async function check_special_room(newlev) {
                     if (!isok(mtmp.mx, mtmp.my)
                         || roomno !== game.level.at(mtmp.mx, mtmp.my).roomno)
                         continue;
-                    if (!uhave(STEALTH) && !rn2(3)) { /* Stealth */
+                    if (!Stealth() && !rn2(3)) { /* Stealth */
                         await wake_msg(mtmp, false);
                         mtmp.msleeping = 0;
                     }
@@ -1566,7 +1562,7 @@ export async function spoteffects(pick) {
                 await pickup(1);
         }
         /* Warning alerts you to ice danger */
-        if (uhave(WARNING) && game.level.at(u.ux, u.uy).typ === ICE)
+        if (Warning() && game.level.at(u.ux, u.uy).typ === ICE)
             throw new Error('spoteffects(): ice warnings (spot_time_left()) not ported yet');
 
         if ((mtmp = m_at(u.ux, u.uy)) != null && !u.uswallow)
@@ -2141,7 +2137,7 @@ async function test_move_rest(ux, uy, dx, dy, mode, x, y) {
         /* Known_wwalking/Known_lwalking: whether worn water/lava walking
            boots are identified isn't tracked yet; only intrinsic water
            walking (as in avoid_moving_on_liquid()) */
-        const Known_wwalking = uhave(WWALKING);
+        const Known_wwalking = (HWwalking() || EWwalking());
         const Known_lwalking = false;
         if ((lev.seenv && is_pool_or_lava(x, y)) /* known pool/lava */
             && ((IS_WATERWALL(lev.typ) /* never enter wall of liquid */
@@ -2172,7 +2168,7 @@ async function test_move_rest(ux, uy, dx, dy, mode, x, y) {
 
     if (sobj_at(BOULDER, x, y) && (Sokoban() || !Passes_walls())) {
         if (mode !== TEST_TRAV && game.context.run >= 2
-            && !(Blind() || uhave(HALLUC)) && !could_move_onto_boulder(x, y)) {
+            && !(Blind() || Hallucination()) && !could_move_onto_boulder(x, y)) {
             if (mode === DO_MOVE && game.flags.mention_walls)
                 /* pline_dir(xytodir(dx,dy), ...) */
                 await pline("A boulder blocks your path.");
@@ -2489,7 +2485,7 @@ async function escape_from_sticky_mon(x, y) {
                 }
                 /*FALLTHRU*/
             default:
-                if (uhave(CONFLICT) || u.ustuck.mconf || !u.ustuck.mtame) {
+                if (Conflict() || u.ustuck.mconf || !u.ustuck.mtame) {
                     await You(`cannot escape from ${y_monnam(u.ustuck)}!`);
                     nomul(0);
                     return true;
@@ -2547,7 +2543,7 @@ function slippery_ice_fumbling() {
             || is_floater(isd) || is_clinger(isd)
             || is_whirly(isd)) {
             on_ice = false;
-        } else if (!rn2((uhave(COLD_RES_SF)) ? 3 : 2)) {
+        } else if (!rn2((Cold_resistance()) ? 3 : 2)) {
             HFumbling.intrinsic |= FROMOUTSIDE;
             HFumbling.intrinsic &= ~TIMEOUT;
             HFumbling.intrinsic += 1; /* slip on next move */
@@ -2645,10 +2641,9 @@ async function avoid_trap_andor_region(x, y) {
     const ctx = game.context;
     let trap = null;
     let newreg, oldreg;
-    const Hallucination = uhave(HALLUC);
 
     /* treat entering a visible gas cloud region like entering a trap */
-    if (ParanoidTrap() && !Blind() && !Stunned() && !Confusion() && !Hallucination
+    if (ParanoidTrap() && !Blind() && !Stunned() && !Confusion() && !Hallucination()
         /* skip if player used 'm' prefix or is moving recklessly */
         && (!ctx.nopick || ctx.run)
         /* check for region(s) */
@@ -2684,8 +2679,8 @@ async function avoid_trap_andor_region(x, y) {
         && (immune_to_trap(game.youmonst, trap.ttyp) !== TRAP_CLEARLY_IMMUNE
             /* Hallucination: all traps still show as ^, but the
                hero can't tell what they are, so treat as dangerous */
-            || Hallucination)) {
-        const traptype = (Hallucination ? rnd(TRAPNUM - 1) : trap.ttyp);
+            || Hallucination())) {
+        const traptype = (Hallucination() ? rnd(TRAPNUM - 1) : trap.ttyp);
         const into = into_vs_onto(traptype);
 
         /* defsyms[trap_to_defsym(traptype)].explanation, which is what
@@ -2717,10 +2712,10 @@ async function domove_bump_mon(mtmp, glyph) {
     if (game.context.nopick && !game.context.travel
         && (canspotmon(mtmp) || glyph_is_invisible(glyph)
             || glyph_is_warning(glyph))) {
-        if (mtmp.m_ap_type && !uhave(PROT_FROM_SHAPE_CHANGERS)
+        if (mtmp.m_ap_type && !Protection_from_shape_changers()
             && !sensemon(mtmp))
             await stumble_onto_mimic(mtmp);
-        else if (mtmp.mpeaceful && !uhave(HALLUC))
+        else if (mtmp.mpeaceful && !Hallucination())
             /* m_monnam(): "dog" or "Fido", no "invisible dog" or "it" */
             await pline(`Pardon me, ${m_monnam(mtmp)}.`);
         else
@@ -3022,7 +3017,7 @@ async function domove_core() {
             if (ctx.run && ((!Blind() && mon_visible(mtmp)
                              && ((mtmp.m_ap_type !== M_AP_FURNITURE
                                   && mtmp.m_ap_type !== M_AP_OBJECT)
-                                 || uhave(PROT_FROM_SHAPE_CHANGERS)))
+                                 || Protection_from_shape_changers()))
                             || sensemon(mtmp))) {
                 nomul(0);
                 ctx.move = 0;
@@ -3169,7 +3164,7 @@ async function domove_core() {
     }
 
     /* your tread on the ground may disturb the slumber of nearby zombies */
-    if (!Levitation() && !Flying() && !uhave(STEALTH)
+    if (!Levitation() && !Flying() && !Stealth()
         && game.youmonst.data.cwt >= Math.trunc(WT_ELF / 2))
         disturb_buried_zombies(u.ux, u.uy);
     /* hideunder(&youmonst): only a hider form can hide */

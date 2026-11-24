@@ -150,8 +150,6 @@ function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, bloc
 
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
 
-/* C ref: youprop.h */
-
 /* C ref: mondata.h humanoid(), haseyes() */
 function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
 function haseyes(ptr) { return (ptr.mflags1 & M.M1_NOEYES) === 0; }

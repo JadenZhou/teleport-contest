@@ -83,9 +83,9 @@ import {
 } from './youprop.js';
 import { Role_if, u_at } from './const.js';
 import { mhe } from './mhitu.js';
+import { uprop } from './youprop.js';
 
 /* C ref: youprop.h -- the property macros used here */
-function uprop(p) { return game.u.uprops[p]; }
 void HALLUC; void HALLUC_RES; void BLINDED;
 
 function wizard() { return !!game.flags?.debug; }

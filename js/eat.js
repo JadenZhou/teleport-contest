@@ -105,6 +105,7 @@ import {
     Unchanging, Unaware
 } from './youprop.js';
 import { Role_if, Race_if, Upolyd } from './const.js';
+import { uprop } from './youprop.js';
 
 const invlet_basic = 52; /* C ref: invent.c */
 const MAX_EGG_HATCH_TIME = 200; /* C ref: obj.h */
@@ -625,8 +626,6 @@ function obj_here(obj, x, y) {
             return otmp.where === 'OBJ_FLOOR' && otmp.ox === x && otmp.oy === y;
     return false;
 }
-/* C ref: youprop.h */
-function uprop(p) { return game.u.uprops[p]; }
 /* C ref: mondata.h */
 function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 function touch_petrifies(ptr) {

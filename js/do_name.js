@@ -36,7 +36,7 @@ import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
 import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
          GETOBJ_PROMPT, GETOBJ_NOFLAGS, ECMD_OK } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
-import { Hallucination } from './youprop.js';
+import { Blind, Hallucination } from './youprop.js';
 import { m_next2u } from './const.js';
 
 const PL_PSIZ = 63; /* global.h */
@@ -439,10 +439,6 @@ export function pmname(pm, mgender) {
 export function mon_pmname(mon) {
     return pmname(mon.data, mon.female ? FEMALE : MALE);
 }
-function uhave(prop) {
-    const p = game.u?.uprops?.[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 /* C ref: do_name.c Mgender() */
 export function Mgender(mtmp) {
@@ -702,7 +698,7 @@ export function x_monnam(mtmp, article, adjective, suppress, called) {
         buf += "invisible ";
     /* Blind: only the BLINDED property is checked so far */
     if (do_saddle && ((mtmp.misc_worn_check ?? 0) & W_SADDLE)
-        && !uhave(BLINDED) && !Hallucination())
+        && !Blind() && !Hallucination())
         buf += "saddled ";
     has_adjectives = (buf !== '');
 
@@ -904,7 +900,7 @@ export function pronoun_gender(mtmp, pg_flags) {
     const override_vis = (pg_flags & PRONOUN_NO_IT) !== 0,
           hallu_rand = (pg_flags & PRONOUN_HALLU) !== 0;
 
-    if (hallu_rand && uhave(HALLUC))
+    if (hallu_rand && Hallucination())
         return rn2(4); /* 0..3 */
     if (!override_vis && !canspotmon(mtmp))
         return 2;
