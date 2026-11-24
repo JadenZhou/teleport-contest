@@ -444,7 +444,8 @@ function other_mon_has_arti(mtmp, otyp) {
  * on the ground, otherwise returns NULL obj pointer.
  */
 function on_ground(otyp) {
-    for (let otmp = game.fobj; otmp; otmp = otmp.nobj)
+    /* fobj is game.level.objects (newest first) */
+    for (const otmp of game.level.objects || [])
         if (otyp) {
             if (otmp.otyp === otyp)
                 return otmp;
