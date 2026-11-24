@@ -554,7 +554,8 @@ export async function doapply() {
     case LUMP_OF_ROYAL_JELLY:
         throw new Error('doapply(): use_royal_jelly() not ported yet');
     case BULLWHIP:
-        throw new Error('doapply(): use_whip() not ported yet');
+        res = await use_whip(obj);
+        break;
     case O.GRAPPLING_HOOK:
         throw new Error('doapply(): use_grapple() not ported yet');
     case O.LARGE_BOX:
@@ -987,3 +988,139 @@ async function use_lamp(obj) {
 export async function fig_transform(arg, timeout) {
     throw new Error('fig_transform() not ported yet');
 }
+
+// C ref: apply.c use_whip()
+async function use_whip(obj) {
+    const g = game;
+    const u = g.u;
+    let mtmp;
+    let otmp;
+    let rx, ry, proficient, res = ECMD_OK;
+    const msg_slipsfree = "The bullwhip slips free.";
+    const msg_snap = "Snap!";
+    const up = (p) => u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
+    const Fumbling = !!(up(FUMBLING_WH).intrinsic || up(FUMBLING_WH).extrinsic);
+    const Glib = !!(up(GLIB_WH).intrinsic || up(GLIB_WH).extrinsic);
+    const Levitation = !!((up(LEVITATION_WH).intrinsic || up(LEVITATION_WH).extrinsic)
+                          && !up(LEVITATION_WH).blocked);
+    const Flying = !!((up(FLYING_WH).intrinsic || up(FLYING_WH).extrinsic)
+                      && !up(FLYING_WH).blocked);
+
+    if (obj !== g.uwep) {
+        if (await wield_tool_ap(obj, "lash")) {
+            /* cmdq_add_ec(CQ_CANNED, doapply);
+               cmdq_add_key(CQ_CANNED, obj->invlet); */
+            if (!g.cmdq) g.cmdq = [];
+            g.cmdq.push({ typ: 'ec', fn: 'doapply' });
+            g.cmdq.push({ typ: 'key', key: obj.invlet });
+            return ECMD_TIME;
+        }
+        return ECMD_OK;
+    }
+    if (!(await getdir(null)))
+        return (res | ECMD_CANCEL);
+
+    if (u.uswallow) {
+        mtmp = u.ustuck;
+        rx = mtmp.mx;
+        ry = mtmp.my;
+    } else {
+        confdir(false);
+        rx = u.ux + u.dx;
+        ry = u.uy + u.dy;
+        if (!isok(rx, ry)) {
+            await You("miss.");
+            return res;
+        }
+        mtmp = m_at(rx, ry);
+    }
+
+    /* fake some proficiency checks */
+    proficient = 0;
+    if (g.urole.mnum === PM_ARCHEOLOGIST_WH) /* Role_if() */
+        ++proficient;
+    if (ACURR(A_DEX_WH) < 6)
+        proficient--;
+    else if (ACURR(A_DEX_WH) >= 14)
+        proficient += (ACURR(A_DEX_WH) - 14);
+    if (Fumbling)
+        --proficient;
+    if (proficient > 3)
+        proficient = 3;
+    if (proficient < 0)
+        proficient = 0;
+
+    const loc = g.level.at(rx, ry);
+    if (u.uswallow) {
+        await There("is not enough room to flick your bullwhip.");
+
+    } else if (u.uinwater) { /* Underwater */
+        await There("is too much resistance to flick your bullwhip.");
+
+    } else if (u.dz < 0) {
+        await You(`flick a bug off of the ${ceiling_wh(u.ux, u.uy)}.`);
+
+    } else if (!u.dz && (IS_WATERWALL(loc.typ) || loc.typ === LAVAWALL)) {
+        await You("cause a small splash.");
+        if (loc.typ === LAVAWALL)
+            throw new Error('use_whip(): fire_damage() of a lava wall not ported yet');
+        return ECMD_TIME;
+    } else if ((!u.dx && !u.dy) || (u.dz > 0)) {
+        let dam;
+
+        /* Sometimes you hit your steed by mistake */
+        if (u.usteed)
+            throw new Error('use_whip(): whipping while riding not ported yet');
+        if (is_pool_or_lava(u.ux, u.uy)
+            || IS_WATERWALL(loc.typ) || loc.typ === LAVAWALL) {
+            await You("cause a small splash.");
+            if (is_lava_wh(u.ux, u.uy))
+                throw new Error('use_whip(): fire_damage() of lava not ported yet');
+            return ECMD_TIME;
+        }
+        if (Levitation || u.usteed || Flying) {
+            /* Have a shot at snaring something on the floor.  A flyer
+               can reach the floor so could just pick an item up, but
+               allow snagging by whip too. */
+            throw new Error('use_whip(): snaring an object from the air not ported yet');
+        }
+        dam = rnd(2) + dbon() + obj.spe;
+        if (dam <= 0)
+            dam = 1;
+        await You(`hit your ${body_part(FOOT_WH)} with your bullwhip.`);
+        const buf = `killed ${g.flags.female ? "her" : "him"}self with ${ /* uhim() */
+            g.flags.female ? "her" : "his"} bullwhip`; /* uhis() */
+        await losehp(Maybe_Half_Phys(dam), buf, NO_KILLER_PREFIX_WH);
+        return ECMD_TIME;
+
+    } else if ((Fumbling || Glib) && !rn2(5)) {
+        await pline_The(`bullwhip slips out of your ${body_part(HAND)}.`);
+        await dropx(obj);
+
+    } else if (u.utrap && u.utraptype === TT_PIT_WH) {
+        throw new Error('use_whip(): whipping out of a pit not ported yet');
+    } else if (mtmp) {
+        /* whipattack: */
+        throw new Error('use_whip(): whipping a monster not ported yet');
+    } else if (Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
+        /* it must be air -- water checked above */
+        await You("snap your whip through thin air.");
+
+    } else {
+        await pline(msg_snap);
+    }
+    void msg_slipsfree;
+    void otmp;
+    return ECMD_TIME;
+}
+import { FUMBLING as FUMBLING_WH, GLIB as GLIB_WH, LEVITATION as LEVITATION_WH,
+         FLYING as FLYING_WH, A_DEX as A_DEX_WH, TT_PIT as TT_PIT_WH,
+         NO_KILLER_PREFIX as NO_KILLER_PREFIX_WH, FOOT as FOOT_WH,
+         IS_WATERWALL, LAVAWALL } from './const.js';
+import { PM_ARCHEOLOGIST as PM_ARCHEOLOGIST_WH } from './monsters.js';
+import { ceiling as ceiling_wh } from './dungeon.js';
+import { is_pool_or_lava } from './hack.js';
+import { is_lava as is_lava_wh } from './makemon.js';
+import { dbon } from './weapon.js';
+import { losehp, Maybe_Half_Phys } from './trap.js';
+import { dropx } from './do.js';
