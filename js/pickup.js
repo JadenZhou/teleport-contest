@@ -1249,7 +1249,9 @@ export async function query_objlist(qstr, /* query string */
     const win = tty_create_nhwindow(NHW_MENU);
     tty_start_menu(win, MENU_BEHAVE_STANDARD);
     if (game.this_title)
-        throw new Error('query_objlist(): this_title (dotypeinv) not ported yet');
+        /* dotypeinv() supplies gt.this_title to display as initial header;
+           intentionally avoid the menu_headings highlight attribute here */
+        add_menu_str(win, game.this_title);
     /*
      * Run through the list and add the objects to the menu.  If
      * INVORDER_SORT is set, we'll run through the list once for

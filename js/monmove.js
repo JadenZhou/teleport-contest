@@ -1308,6 +1308,67 @@ async function meatmetal(mtmp) {
     return 0;
 }
 
+// ── C ref: mon.c meatcorpse() ──
+/* Monster eats a corpse off the ground.
+   Return value is 0 = nothing eaten, 1 = ate a corpse, 2 = died. */
+async function meatcorpse(mtmp) /* for purple worms and other voracious monsters */ {
+    const original_ptr = mtmp.data;
+    const x = mtmp.mx, y = mtmp.my;
+    let ptr;
+
+    /* if a pet, eating is handled separately, in dog.c */
+    if (mtmp.mtame)
+        return 0;
+
+    /* skips past any globs; the pile at <x,y> is read from fobj (newest
+       first), like sobj_at() and nxtobj(otmp, CORPSE, TRUE) */
+    const corpses = (game.level.objects || []).filter(
+        o => o.where === 'OBJ_FLOOR' && o.ox === x && o.oy === y
+             && o.otyp === OBJ.CORPSE);
+    for (let otmp of corpses) {
+        /* won't get back here if otmp is split or gets used up */
+        const corpsepm = mons[otmp.corpsenm];
+        /* skip some corpses */
+        if (vegan_mm(corpsepm) /* ignore veggy corpse even if omnivorous */
+            /* don't eat harmful corpses */
+            || (flesh_petrifies_mm(corpsepm) && !resists_ston_mm(mtmp)))
+            continue;
+        if (is_rider_mm(corpsepm)) {
+            /* revive_corpse(otmp), newsym(x, y) */
+            throw new Error('meatcorpse(): Rider corpse revival not ported yet');
+        }
+
+        if (otmp.quan > 1)
+            otmp = splitobj(otmp, 1);
+
+        if (cansee(x, y) && canseemon(mtmp)) {
+            /* call distant_name() for its possible side-effects even if
+               the result won't be printed */
+            const otmpname = distant_name(otmp, doname);
+
+            if (game.flags.verbose) /* pline_mon() */
+                await pline(`${Monnam(mtmp)} eats ${otmpname}!`);
+        } else {
+            /* Soundeffect(se_masticating_sound, 50) */
+            if (game.flags.verbose)
+                await You_hear("a masticating sound.");
+        }
+
+        await m_consume_obj(mtmp, otmp);
+        /* in case it polymorphed or died */
+        ptr = mtmp.data;
+        if (ptr !== original_ptr)
+            return !ptr ? 2 : 1;
+
+        /* Engulf & devour is instant, so don't set meating */
+        if (mtmp.minvis)
+            newsym(x, y);
+
+        return 1;
+    }
+    return 0;
+}
+
 // ── C ref: monmove.c m_avoid_soko_push_loc() ──
 /* return TRUE if monster shouldn't move to (nx,ny) to avoid pushing boulder
    in sokoban: if hero is 2 squares away, and there's a boulder between the
@@ -1522,8 +1583,11 @@ export function mon_would_take_item(mtmp, otmp) {
         && pctload() < 50 && !game.level.flags.sokoban_rules)
         return true;
     if (mtmp.data === mons[M.PM_GELATINOUS_CUBE]
-        && otmp.oclass !== ROCK_CLASS && otmp.oclass !== BALL_CLASS)
-        throw new Error('mon_would_take_item(): gelatinous cube not ported yet');
+        && otmp.oclass !== ROCK_CLASS && otmp.oclass !== BALL_CLASS
+        && !(otmp.otyp === OBJ.CORPSE
+             && (otmp.corpsenm === M.PM_COCKATRICE
+                 || otmp.corpsenm === M.PM_CHICKATRICE))) /* touch_petrifies() */
+        return true;
 
     return false;
 }
@@ -2410,8 +2474,11 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             if (ptr === mons[M.PM_GELATINOUS_CUBE])
                 throw new Error('postmov(): meatobj() not ported yet');
             /* Maybe a purple worm ate a corpse */
-            if (corpse_eater(ptr))
-                throw new Error('postmov(): meatcorpse() not ported yet');
+            if (corpse_eater(ptr)) {
+                let etmp;
+                if ((etmp = await meatcorpse(mtmp)) >= 2)
+                    return etmp; /* it died or got forced off the level */
+            }
 
             if (await mpickstuff(mtmp))
                 mmoved = MMOVE_DONE;
@@ -2555,3 +2622,5 @@ import { mon_nam as mon_nam_mb } from './do_name.js';
 import { TELEPAT as TELEPAT_MB, HALF_SPDAM as HALF_SPDAM_MB,
          KILLED_BY_AN as KILLED_BY_AN_MB } from './const.js';
 import { AD_DRIN as AD_DRIN_MB } from './monsters.js';
+import { vegan as vegan_mm, is_rider as is_rider_mm, flesh_petrifies as flesh_petrifies_mm,
+         resists_ston as resists_ston_mm } from './mondata.js';

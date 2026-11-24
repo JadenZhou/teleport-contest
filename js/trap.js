@@ -3554,6 +3554,57 @@ export async function launch_obj(otyp, x1, y1, x2, y2, style) {
 }
 
 // C ref: trap.c trapeffect_selector()
+// C ref: trap.c trapeffect_poly_trap()
+async function trapeffect_poly_trap(mtmp, trap, trflags) {
+    const u = game.u;
+
+    if (mtmp === game.youmonst) {
+        const viasitting = (trflags & VIASITTING) !== 0;
+        let verbbuf;
+
+        seetrap(trap);
+        if (viasitting)
+            verbbuf = "trigger"; /* follows "You sit down." */
+        else if (u.usteed)
+            /* x_monnam(u.usteed, steed_article, NULL, SUPPRESS_SADDLE) */
+            throw new Error('trapeffect_poly_trap(): steed onto a polymorph trap not ported yet');
+        else
+            verbbuf = `${u_locomotion("step")} onto`;
+        await You(`${verbbuf} a polymorph trap!`);
+        if (wearing_iron_shoes(mtmp)) {
+            /* deltrap(), "%s warps strangely.", poly_obj(uarmf), prinv() */
+            throw new Error('trapeffect_poly_trap(): iron shoes warping not ported yet');
+        } else if (Antimagic()
+                   || (u.uprops[UNCHANGING].intrinsic
+                       || u.uprops[UNCHANGING].extrinsic)) { /* Unchanging */
+            /* shieldeff(u.ux, u.uy): transient display only */
+            await You_feel("momentarily different.");
+            /* Trap did nothing; don't remove it --KAA */
+        } else {
+            await steedintrap(trap, null);
+            deltrap(trap); /* delete trap before polymorph */
+            newsym(u.ux, u.uy); /* get rid of trap symbol */
+            await You_feel("a change coming over you.");
+            await polyself_tp(POLY_NOFLAGS_TP);
+        }
+    } else {
+        const in_sight = canseemon(mtmp) || (mtmp === u.usteed);
+
+        if (wearing_iron_shoes(mtmp)) {
+            /* remove and readd the shoes to forcibly unwear them;
+               poly_obj() of worn boots */
+            throw new Error('trapeffect_poly_trap(): monster iron shoes warping not ported yet');
+        } else if (resists_magm(mtmp)) {
+            /* shieldeff_mon(mtmp): transient display only */
+        } else if (!resist(mtmp, WAND_CLASS_TP, 0, NOTELL)) {
+            await newcham_tp(mtmp, null, NC_SHOW_MSG_TP);
+            if (in_sight)
+                seetrap(trap);
+        }
+    }
+    return Trap_Effect_Finished;
+}
+
 async function trapeffect_selector(mtmp, trap, trflags) {
     switch (trap.ttyp) {
     case ARROW_TRAP:
@@ -3597,6 +3648,7 @@ async function trapeffect_selector(mtmp, trap, trflags) {
     case ROLLING_BOULDER_TRAP:
         return trapeffect_rolling_boulder_trap(mtmp, trap, trflags);
     case POLY_TRAP:
+        return trapeffect_poly_trap(mtmp, trap, trflags);
     case VIBRATING_SQUARE:
         throw new Error(`trapeffect_selector(): trap type ${trap.ttyp} not ported yet`);
     default:
@@ -4974,3 +5026,7 @@ import { next_to_u } from './teleport.js';
 import { ceiling_hider } from './engrave.js';
 import { find_hell, assign_level, depth } from './dungeon.js';
 import { Is_stronghold } from './const.js';
+import { polyself as polyself_tp } from './polyself.js';
+import { newcham as newcham_tp } from './mon.js';
+import { POLY_NOFLAGS as POLY_NOFLAGS_TP, NC_SHOW_MSG as NC_SHOW_MSG_TP } from './const.js';
+import { WAND_CLASS as WAND_CLASS_TP } from './objects.js';

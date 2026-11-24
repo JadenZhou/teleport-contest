@@ -61,6 +61,8 @@ import {
 } from './mondata.js';
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
+import { deliver_obj_to_mon } from './dokick.js';
+const DF_NONE = 0x00; /* hack.h */
 import { engr_at } from './engrave.js';
 import { enexto_core, enexto_gpflags } from './teleport.js';
 import { newedog } from './dog.js';
@@ -2102,7 +2104,7 @@ export function makemon(ptr, x, y, mmflags) {
     }
 
     if (allow_minvent && game.migrating_objs) /* in case of waiting items */
-        throw new Error('makemon(): deliver_obj_to_mon() not ported yet');
+        deliver_obj_to_mon(mtmp, 1, DF_NONE); /* in case of waiting items */
 
     if (!game.in_mklev) {
         newsym(mtmp.mx, mtmp.my); /* make sure the mon shows up */

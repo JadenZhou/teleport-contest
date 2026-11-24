@@ -453,6 +453,8 @@ import { Your as Your_lp } from './display.js';
 import { begin_burn as begin_burn_lp, end_burn as end_burn_lp } from './timeout.js';
 import { make_glib as make_glib_lp } from './potion.js';
 import { fingers_or_gloves as fingers_or_gloves_lp } from './do_wear.js';
+import { Blindf_on as Blindf_on_dw, Blindf_off as Blindf_off_dw,
+         cursed as cursed_dw } from './do_wear.js';
 import { d as d_lp } from './rng.js';
 import { check_unpaid as check_unpaid_lp } from './zap.js';
 
@@ -547,7 +549,18 @@ export async function doapply() {
     switch (obj.otyp) {
     case O.BLINDFOLD:
     case O.LENSES:
-        throw new Error('doapply(): Blindf_on()/Blindf_off() not ported yet');
+        if (obj === game.ublindf) {
+            if (!(await cursed_dw(obj)))
+                await Blindf_off_dw(obj);
+        } else if (!game.ublindf) {
+            await Blindf_on_dw(obj);
+        } else {
+            await You(`are already ${
+                (game.ublindf.otyp === O.TOWEL) ? "covered by a towel"
+                : (game.ublindf.otyp === O.BLINDFOLD) ? "wearing a blindfold"
+                  : "wearing lenses"}.`);
+        }
+        break;
     case CREAM_PIE:
         res = await use_cream_pie(obj);
         break;

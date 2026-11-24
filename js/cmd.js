@@ -32,7 +32,8 @@ import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic, wiz_map,
          wiz_detect, wiz_polyself, wiz_where } from './wizcmds.js';
 import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
-         doprtool, add_menu_heading, doorganize, adjust_split } from './invent.js';
+         doprtool, add_menu_heading, doorganize, adjust_split,
+         dotypeinv } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
 export { domove };
@@ -142,6 +143,7 @@ const cmd_funcs = {
     dotalk: () => dotalk(),
     donull: () => donull(),
     ddoinv: () => ddoinv(),
+    dotypeinv: () => dotypeinv(),
     wiz_level_change: () => wiz_level_change(),
     wiz_wish: () => wiz_wish(),
     wiz_level_tele: () => wiz_level_tele(),
@@ -2087,7 +2089,7 @@ export function cmd_from_ecname(ecname) {
 }
 
 // C ref: cmd.c show_direction_keys()
-function show_direction_keys(win, centerchar, nodiag) {
+async function show_direction_keys(win, centerchar, nodiag) {
     let buf;
     const k = (fn) => visctrl(cmd_from_func(fn));
 
@@ -2096,23 +2098,211 @@ function show_direction_keys(win, centerchar, nodiag) {
 
     if (nodiag) {
         buf = `             ${k("do_move_north")}   `;
-        tty_putstr(win, 0, buf);
-        tty_putstr(win, 0, "             |   ");
+        await tty_putstr(win, 0, buf);
+        await tty_putstr(win, 0, "             |   ");
         buf = `          ${k("do_move_west")}- ${centerchar} -${k("do_move_east")}`;
-        tty_putstr(win, 0, buf);
-        tty_putstr(win, 0, "             |   ");
+        await tty_putstr(win, 0, buf);
+        await tty_putstr(win, 0, "             |   ");
         buf = `             ${k("do_move_south")}   `;
-        tty_putstr(win, 0, buf);
+        await tty_putstr(win, 0, buf);
     } else {
         buf = `          ${k("do_move_northwest")}  ${k("do_move_north")}  ${k("do_move_northeast")}`;
-        tty_putstr(win, 0, buf);
-        tty_putstr(win, 0, "           \\ | / ");
+        await tty_putstr(win, 0, buf);
+        await tty_putstr(win, 0, "           \\ | / ");
         buf = `          ${k("do_move_west")}- ${centerchar} -${k("do_move_east")}`;
-        tty_putstr(win, 0, buf);
-        tty_putstr(win, 0, "           / | \\ ");
+        await tty_putstr(win, 0, buf);
+        await tty_putstr(win, 0, "           / | \\ ");
         buf = `          ${k("do_move_southwest")}  ${k("do_move_south")}  ${k("do_move_southeast")}`;
-        tty_putstr(win, 0, buf);
+        await tty_putstr(win, 0, buf);
     }
+}
+
+// C ref: cmd.c keylist_func_has_key()
+function keylist_func_has_key(extcmd, skip_keys_used) /* boolean keys_used[256] */ {
+    let i;
+    let bind;
+
+    for (i = 0; i < 256; ++i) {
+        if (skip_keys_used[i])
+            continue;
+
+        if (((bind = cmdbind_get(i)) !== null) && (bind === extcmd))
+            return true;
+    }
+    return false;
+}
+
+// C ref: cmd.c keylist_putcmds() -- game.Cmd.cmdbinds maps a key straight
+// to its extcmdlist[] entry (bind->cmd)
+async function keylist_putcmds(datawin, docount, incl_flags, excl_flags,
+                               keys_used) /* boolean keys_used[256] */ {
+    let i;
+    let buf;
+    const keys_already_used = []; /* copy of keys_used[] before updates */
+    let count = 0;
+    let bind;
+
+    for (i = 0; i < 256; i++) {
+        const key = i;
+
+        keys_already_used[i] = keys_used[i];
+        if (keys_used[i])
+            continue;
+        if (key === 0x20 && !game.flags.rest_on_space)
+            continue;
+        bind = cmdbind_get(key);
+        if (bind) {
+            if ((incl_flags && !(bind.flags & incl_flags))
+                || (excl_flags && (bind.flags & excl_flags)))
+                continue;
+            if (docount) {
+                count++;
+                continue;
+            }
+            if ((bind.flags & CMD_PARAM) !== 0)
+                /* "%-7s %-13s %s \"%s\"" with bind->param */
+                throw new Error('keylist_putcmds(): a key bound with a parameter not ported yet');
+            else
+                buf = `${key2txt(key).padEnd(7)} ${bind.ef_txt.padEnd(13)} ${bind.ef_desc}`;
+            await tty_putstr(datawin, 0, buf);
+            keys_used[i] = true;
+        }
+    }
+    /* also list commands that lack key assignments; most are wizard mode */
+    for (const extcmd of extcmdlist) {
+        if ((incl_flags && !(extcmd.flags & incl_flags))
+            || (excl_flags && (extcmd.flags & excl_flags)))
+            continue;
+        /* can't just check for non-Null extcmd->key; it holds the
+           default assignment and a user-specified binding might hijack
+           this command's default key for some other command; or this
+           command might have been assigned a key being used for
+           movement or as a prefix, intercepting that keystroke */
+        if (keylist_func_has_key(extcmd, keys_already_used))
+            continue;
+        /* found a command for current category without any key assignment */
+        if (docount) {
+            count++;
+            continue;
+        }
+        /* '#'+20 for one column here == 7+' '+13 for two columns above */
+        buf = `#${extcmd.ef_txt.padEnd(20)} ${extcmd.ef_desc}`;
+        await tty_putstr(datawin, 0, buf);
+    }
+    return count;
+}
+
+// C ref: cmd.c dokeylist() -- list all keys and their bindings, like
+// dat/hh but dynamic; misc_keys[]' key is gc.Cmd.spkeys[nhkf]
+export async function dokeylist() {
+    let buf;
+    let key;
+    let spkey_gap;
+    const keys_used = new Array(256).fill(false);
+    const pfx_seen = new Array(256).fill(-1); /* -1: no special key seen */
+    const wizard = !!game.flags.debug;
+
+    /* this is actually ambiguous; tty raw mode will override SIGINT;
+       when enabled, treat it like a movement command since assigning
+       other commands to this keystroke would be unwise... */
+    key = 0x03; /* C('c') */
+    keys_used[key] = true;
+
+    /* movement keys have been flagged in keys_used[]; clone them */
+    const mov_seen = keys_used.slice();
+
+    spkey_gap = false;
+    for (let i = 0; i < misc_keys.length; ++i) {
+        if (misc_keys[i].numpad /* && !iflags.num_pad */)
+            continue;
+        key = misc_keys[i].key;
+        if (key && !mov_seen[key] && pfx_seen[key] < 0) {
+            keys_used[key] = true;
+            pfx_seen[key] = i;
+        } else
+            spkey_gap = true;
+    }
+
+    const datawin = tty_create_nhwindow(NHW_TEXT);
+    await tty_putstr(datawin, 0, "");
+    buf = `${"".padStart(7)} ${"    Full Current Key Bindings List"}`;
+    await tty_putstr(datawin, 0, buf);
+    for (const extcmd of extcmdlist)
+        if (spkey_gap || !keylist_func_has_key(extcmd, keys_used)) {
+            buf = `${"".padStart(7)} ${"(also commands with no key assignment)"}`;
+            await tty_putstr(datawin, 0, buf);
+            break;
+        }
+
+    /* directional keys */
+    await tty_putstr(datawin, 0, "");
+    await tty_putstr(datawin, 0, "Directional keys:");
+    await show_direction_keys(datawin, '.', false); /* '.'==self in direct'n grid */
+
+    /* !iflags.num_pad */
+    await tty_putstr(datawin, 0, "");
+    await tty_putstr(datawin, 0,
+        "Ctrl+<direction> will run in specified direction until something very");
+    buf = `${"".padStart(7)} ${"interesting is seen."}`;
+    await tty_putstr(datawin, 0, buf);
+    buf = "Shift"; /* append the rest below */
+    buf += "+<direction> will run in specified direction until you encounter";
+    await tty_putstr(datawin, 0, buf);
+    buf = `${"".padStart(7)} ${"an obstacle."}`;
+    await tty_putstr(datawin, 0, buf);
+
+    await tty_putstr(datawin, 0, "");
+    await tty_putstr(datawin, 0, "Miscellaneous keys:");
+    for (let i = 0; i < misc_keys.length; ++i) {
+        if (misc_keys[i].numpad /* && !iflags.num_pad */)
+            continue;
+        key = misc_keys[i].key;
+        if (key && !mov_seen[key] && (pfx_seen[key] === i)) {
+            buf = `${key2txt(key).padEnd(7)} ${misc_keys[i].desc}`;
+            await tty_putstr(datawin, 0, buf);
+        }
+    }
+    /* (see above) */
+    key = 0x03; /* C('c') */
+    /* last of the special keys (!NO_SIGNAL) */
+    buf = key2txt(key).padEnd(7);
+    buf += " interrupt: break out of NetHack (SIGINT)";
+    await tty_putstr(datawin, 0, buf);
+    /* keyless special key commands, if any */
+    if (spkey_gap)
+        /* "[%s]" spkey_name() lines */
+        throw new Error('dokeylist(): keyless special keys not ported yet');
+
+    const IGNORECMD = (WIZMODECMD | INTERNALCMD | MOVEMENTCMD);
+
+    await tty_putstr(datawin, 0, "");
+    await show_menu_controls_cm(datawin, true);
+
+    if (await keylist_putcmds(datawin, true, GENERALCMD, IGNORECMD, keys_used)) {
+        await tty_putstr(datawin, 0, "");
+        await tty_putstr(datawin, 0, "General commands:");
+        await keylist_putcmds(datawin, false, GENERALCMD,
+                              IGNORECMD, keys_used);
+    }
+
+    if (await keylist_putcmds(datawin, true, 0, GENERALCMD | IGNORECMD, keys_used)) {
+        await tty_putstr(datawin, 0, "");
+        await tty_putstr(datawin, 0, "Game commands:");
+        await keylist_putcmds(datawin, false, 0,
+                              GENERALCMD | IGNORECMD,
+                              keys_used);
+    }
+
+    if (wizard && await keylist_putcmds(datawin, true,
+                                        WIZMODECMD, INTERNALCMD, keys_used)) {
+        await tty_putstr(datawin, 0, "");
+        await tty_putstr(datawin, 0, "Debug mode commands:");
+        await keylist_putcmds(datawin, false,
+                              WIZMODECMD, INTERNALCMD, keys_used);
+    }
+
+    await tty_display_nhwindow(datawin, false);
+    await tty_destroy_nhwindow(datawin);
 }
 
 // C ref: cmd.c help_dir() -- explain choices if player has asked for
@@ -2156,7 +2346,7 @@ async function help_dir(sym, spkey, msg) {
 
     buf = `Valid direction keys${prefixhandling ? " to " : ""}${prefixhandling ? dothat : ""}${nodiag ? " in your current form" : ""} are:`;
     tty_putstr(win, 0, buf);
-    show_direction_keys(win, !prefixhandling ? '.' : ' ', nodiag);
+    await show_direction_keys(win, !prefixhandling ? '.' : ' ', nodiag);
 
     if (!prefixhandling) {
         tty_putstr(win, 0, "");
@@ -2374,3 +2564,4 @@ export async function getdir(s) {
         confdir(false);
     return 1;
 }
+import { show_menu_controls as show_menu_controls_cm } from './pager.js';

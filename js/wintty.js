@@ -24,7 +24,7 @@ import {
     TELEPORT_BANNER_C, PL_NSIZ, ROWNO, COLNO,
 } from './const.js';
 import { genl_player_setup } from './role.js';
-import { lowc, tabexpand } from './hacklib.js';
+import { lowc, tabexpand, pmatchi } from './hacklib.js';
 import { help_files } from './help_files.js';
 import { row_refresh, bot, flush_screen, pline, docrt, dec_cell_char,
          decode_mixed } from './display.js';
@@ -2114,6 +2114,37 @@ async function process_menu_window(window, cw) {
             }
             if (cw.how === PICK_NONE && morc === MENU_SEARCH)
                 continue; /* tty_nhbell() */
+            if (morc === MENU_SEARCH) {
+                let on_curr_page = false;
+                let lineno = 0;
+
+                const tmpbuf = await tty_getlin("Search for:");
+                if (!tmpbuf || tmpbuf[0] === '\x1b')
+                    continue;
+                const searchbuf = `*${tmpbuf}*`;
+
+                /* page_start/page_end are indices into cw.mlist;
+                   page_end === mlist.length stands for C's NULL */
+                for (let i = 0; i < cw.mlist.length; i++) {
+                    const curr = cw.mlist[i];
+                    if (on_curr_page)
+                        lineno++;
+                    if (i === page_start)
+                        on_curr_page = true;
+                    else if (i === page_end)
+                        on_curr_page = false;
+                    if (curr.identifier
+                        && pmatchi(searchbuf, curr.str)) {
+                        toggle_menu_curr(window, curr, lineno, on_curr_page,
+                                         counting, count);
+                        if (cw.how === PICK_ONE) {
+                            finished = true;
+                            break;
+                        }
+                    }
+                }
+                continue;
+            }
             if (default_menu_cmds.includes(morc))
                 throw new Error(`process_menu_window: menu command '${morc}' not ported yet`);
         }

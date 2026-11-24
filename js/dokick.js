@@ -88,6 +88,12 @@ import { a_monnam } from './do_name.js';
 import { inv_weight, weight_cap } from './hack.js';
 import { maybe_mnexto, noteleport_level } from './teleport.js';
 import { hurtle } from './dothrow.js';
+import { M2_UNDEAD, M2_WERE, M2_HUMAN, M2_ELF, M2_DWARF, M2_GNOME, M2_ORC,
+         M2_DEMON } from './monsters.js';
+import { MIGR_TO_SPECIES, MIGR_NOBREAK, MIGR_NOSCATTER, MIGR_WITH_HERO,
+         NON_PM, In_mines, has_mgivenname, has_oname, ONAME } from './const.js';
+import { add_to_minv } from './mkobj.js';
+import { christen_orc } from './do_name.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
@@ -1158,3 +1164,87 @@ export async function impact_drop(
 import { Is_stronghold, In_endgame, Is_botlevel } from './const.js';
 import { stairway_at } from './display.js';
 import { down_gate } from './do.js';
+// C ref: dokick.c obj_delivery()
+/* migrating objects arrive on the level the hero has just reached; objects
+   bound for a monster species (MIGR_TO_SPECIES) wait for makemon()/
+   mon_arrive() to hand them out via deliver_obj_to_mon() */
+export function obj_delivery(near_hero) {
+    const u = game.u;
+    let otmp, otmp2;
+    let where;
+
+    for (otmp = game.migrating_objs; otmp; otmp = otmp2) {
+        otmp2 = otmp.nobj;
+        if (otmp.ox !== u.uz.dnum || otmp.oy !== u.uz.dlevel)
+            continue;
+
+        where = (otmp.owornmask || 0) & 0x7fff; /* destination code */
+        if ((where & MIGR_TO_SPECIES) !== 0)
+            continue;
+
+        where &= ~(MIGR_NOBREAK | MIGR_NOSCATTER);
+
+        if (!near_hero ^ (where === MIGR_WITH_HERO))
+            continue;
+
+        /* nothing in the port sends an object to another level yet
+           (only orctown loot migrates, and that goes MIGR_TO_SPECIES) */
+        throw new Error('obj_delivery(): delivering a migrating object not ported yet');
+    }
+}
+
+const DF_RANDOM = 0x01; /* hack.h */
+const DF_ALL = 0x04;
+const DELIVER_PM = (M2_UNDEAD | M2_WERE | M2_HUMAN | M2_ELF | M2_DWARF
+                    | M2_GNOME | M2_ORC | M2_DEMON | M2_GIANT);
+
+// C ref: dokick.c deliver_obj_to_mon()
+export function deliver_obj_to_mon(mtmp, cnt, deliverflags) {
+    let otmp, otmp2;
+    let where, maxobj = 1;
+    const at_crime_scene = In_mines(game.u.uz);
+
+    if ((deliverflags & DF_RANDOM) && cnt > 1)
+        maxobj = rnd(cnt);
+    else if (deliverflags & DF_ALL)
+        maxobj = 0;
+    else
+        maxobj = 1;
+
+    cnt = 0;
+    for (otmp = game.migrating_objs; otmp; otmp = otmp2) {
+        otmp2 = otmp.nobj;
+        where = (otmp.owornmask || 0) & 0x7fff; /* destination code */
+        if ((where & MIGR_TO_SPECIES) === 0)
+            continue;
+
+        /* otmp->migr_species is an alias of otmp->corpsenm */
+        if (otmp.corpsenm !== NON_PM
+            && (mtmp.data.mflags2 & DELIVER_PM) === otmp.corpsenm) {
+            obj_extract_self(otmp);
+            otmp.owornmask = 0;
+            otmp.ox = otmp.oy = 0;
+
+            /* special treatment for orcs and their kind */
+            if ((otmp.corpsenm & M2_ORC) !== 0 && has_oname(otmp)) {
+                if (!has_mgivenname(mtmp)) {
+                    if (at_crime_scene || !rn2(2))
+                        mtmp = christen_orc(mtmp,
+                                            at_crime_scene ? ONAME(otmp)
+                                                           : null,
+                                            /* bought the stolen goods */
+                                            " the Fence");
+                }
+                delete otmp.oextra.oname; /* free_oname(otmp) */
+            }
+            otmp.corpsenm = NON_PM; /* otmp->migr_species = NON_PM */
+            otmp.omigr_from_dnum = 0;
+            otmp.omigr_from_dlevel = 0;
+            add_to_minv(mtmp, otmp);
+            cnt++;
+            if (maxobj && cnt >= maxobj)
+                break;
+            /* getting here implies DF_ALL */
+        }
+    }
+}

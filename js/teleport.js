@@ -1216,13 +1216,40 @@ function rloc_pos_ok(x, y, /* coordinates of candidate location */
     const xx = mtmp.mx, yy = mtmp.my;
     if (!xx) {
         /* no current location (migrating monster arrival) */
-        throw new Error('rloc_pos_ok(): migrating monster arrival not ported yet');
+        const dndest = game.dndest || {}, updest = game.updest || {};
+        if (dndest.nlx && On_W_tower_level_tp(game.u.uz))
+            return (((yy & 2) !== 0)
+                    /* inside xor not within */
+                    !== !within_bounded_area(x, y,
+                                             dndest.nlx, dndest.nly,
+                                             dndest.nhx, dndest.nhy));
+        if (updest.lx && (yy & 1) !== 0) /* moving up */
+            return (within_bounded_area(x, y,
+                                        updest.lx, updest.ly,
+                                        updest.hx, updest.hy)
+                    && (!updest.nlx
+                        || !within_bounded_area(x, y,
+                                                updest.nlx, updest.nly,
+                                                updest.nhx, updest.nhy)));
+        if (dndest.lx && (yy & 1) === 0) /* moving down */
+            return (within_bounded_area(x, y,
+                                        dndest.lx, dndest.ly,
+                                        dndest.hx, dndest.hy)
+                    && (!dndest.nlx
+                        || !within_bounded_area(x, y,
+                                                dndest.nlx, dndest.nly,
+                                                dndest.nhx, dndest.nhy)));
     } else {
         /* [try to] prevent a shopkeeper or temple priest from being
            sent out of his room (caller might resort to goodpos() if
            we report failure here, so this isn't full prevention) */
-        if (mtmp.isshk || mtmp.ispriest)
-            throw new Error('rloc_pos_ok(): shopkeeper/priest rooms not ported yet');
+        if (mtmp.isshk && inhishop(mtmp)) {
+            if (game.level.at(x, y).roomno !== mtmp.mextra.eshk.shoproom)
+                return false;
+        } else if (mtmp.ispriest && inhistemple(mtmp)) {
+            if (game.level.at(x, y).roomno !== mtmp.epri.shroom)
+                return false;
+        }
         /* current location is <xx,yy> */
         if (!tele_jump_ok(xx, yy, x, y))
             return false;
@@ -1709,3 +1736,5 @@ import { tty_display_nhwindow as tty_display_nhwindow_lt } from './wintty.js';
 import { You_feel as You_feel_lt } from './display.js';
 import { tty_yn_function as tty_yn_function_tp } from './wintty.js';
 import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';
+import { inhishop } from './shk.js';
+import { inhistemple } from './priest.js';
