@@ -33,6 +33,7 @@ import { cvt_sdoor_to_door } from './detect.js';
 import { recalc_block_point, unblock_point } from './vision.js';
 import { mons, PM_HEALER, PM_AIR_ELEMENTAL, S_VORTEX } from './monsters.js';
 import { Blind, Hallucination, Jumping, Passes_walls } from './youprop.js';
+import { uhim, uhis } from './mhitu.js';
 /* C ref: mondata.h is_whirly() */
 function is_whirly(ptr) {
     return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
@@ -1196,8 +1197,7 @@ async function use_whip(obj) {
         if (dam <= 0)
             dam = 1;
         await You(`hit your ${body_part(FOOT_WH)} with your bullwhip.`);
-        const buf = `killed ${g.flags.female ? "her" : "him"}self with ${ /* uhim() */
-            g.flags.female ? "her" : "his"} bullwhip`; /* uhis() */
+        const buf = `killed ${uhim()}self with ${uhis()} bullwhip`;
         await losehp(Maybe_Half_Phys(dam), buf, NO_KILLER_PREFIX_WH);
         return ECMD_TIME;
 

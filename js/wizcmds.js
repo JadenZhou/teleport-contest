@@ -10,8 +10,6 @@
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, LL_WISH, LL_ARTIFACT } from './const.js';
-/* C ref: you.h uhis() */
-function uhis() { return game.flags.female ? "her" : "his"; }
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { MAXULEV, IRONBARS, ICE, Is_airlevel, Is_waterlevel, ONAME_WISH,
@@ -46,6 +44,7 @@ import { pooleffects } from './hack.js';
 import { docrt } from './display.js';
 import { display_inventory } from './invent.js';
 import { cmd_from_func } from './cmd.js';
+import { uhis } from './mhitu.js';
 
 // C ref: wizcmds.c wiz_level_change() -- #levelchange
 export async function wiz_level_change() {

@@ -14,8 +14,9 @@ import { resist_conflict } from './mhitm.js';
 import { mattacku } from './mhitu.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, do_clear_area } from './vision.js';
-import { m_at, MON_AT, place_monster, is_pool, is_lava, sobj_at, u_at,
-         may_passwall } from './makemon.js';
+import {
+    m_at, MON_AT, place_monster, is_pool, is_lava, sobj_at, may_passwall
+} from './makemon.js';
 import { t_at } from './trap.js';
 import { mattackm, max_passive_dmg } from './mhitm.js';
 import { mfndpos, monnear, mon_allowflags, check_gear_next_turn,
@@ -49,6 +50,7 @@ import {
     NEED_WEAPON, NEED_HTH_WEAPON, I_SPECIAL, W_ARMS,
 } from './const.js';
 import { Hallucination, Conflict } from './youprop.js';
+import { u_at } from './const.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */

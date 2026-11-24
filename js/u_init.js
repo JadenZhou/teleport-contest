@@ -27,6 +27,7 @@ import { newpw } from './exper.js';
 import { initialspell, num_spells } from './spell.js';
 import { skill_init } from './weapon.js';
 import { discover_object } from './o_init.js';
+import { Role_if, Race_if } from './const.js';
 
 /* C ref: spell.h SPELL_LEV_PW() */
 function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
@@ -707,8 +708,6 @@ const Skill_W = [
 ];
 
 // C ref: role.c Role_if(), Race_if(); you.h Role_switch, Race_switch
-function Role_if(pm) { return game.urole.mnum === pm; }
-function Race_if(pm) { return game.urace.mnum === pm; }
 
 // C ref: obj.h is_pole(), is_spear(), is_launcher(), is_ammo(),
 // Is_container(), is_graystone()

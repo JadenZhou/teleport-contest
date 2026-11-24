@@ -53,6 +53,7 @@ import { the } from './iactions.js';
 import { encumber_msg } from './pickup.js';
 import { TOWEL } from './objects.js';
 import { Fixed_abil, Unaware, Half_gas_damage } from './youprop.js';
+import { Role_if } from './const.js';
 
 // C ref: attrib.h ABASE(), ABON(), AMAX(), ATEMP()
 export function ABASE(x) { return game.u.acurr.a[x]; }
@@ -968,8 +969,6 @@ export function acurrstr() {
     return result;
 }
 
-// C ref: role.h Role_if()
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 const AVAL = 50; /* tune value for exercise gains */
 

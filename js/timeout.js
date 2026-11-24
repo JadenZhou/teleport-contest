@@ -60,6 +60,7 @@ import { newsym, see_monsters } from './display.js';
 import { set_itimeout, make_confused, make_stunned, make_blinded, make_deaf,
          make_hallucinated, make_glib, set_mimic_blocking } from './potion.js';
 import { Blind, Breathless } from './youprop.js';
+import { Role_if } from './const.js';
 
 /* C ref: youprop.h -- (H* || E*) for the timeout cases; Blind */
 function uhave(p) {
@@ -91,8 +92,6 @@ import { region_danger } from './region.js';
 import { an } from './objnam.js';
 import { spec_ability, SPFX_LUCK } from './artifact.js';
 
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 
 // C ref: timeout.c propertynames[]

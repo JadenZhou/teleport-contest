@@ -67,6 +67,7 @@ import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
 import { region_danger } from './region.js';
 import { Blind, Glib, Invisible, Levitation, Flying } from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -152,8 +153,6 @@ function is_flimsy(otmp) {
     return objects[otmp.otyp].oc_material <= O.LEATHER
            || otmp.otyp === O.RUBBER_HOSE;
 }
-/* C ref: you.h Upolyd */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: obj.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 /* C ref: pline.c You_feel() */
@@ -1487,8 +1486,6 @@ function uprop(p) {
     if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
     return u.uprops[p];
 }
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: obj.h is_boots(), is_gloves() */
 function is_boots(otmp) {
     return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_BOOTS;

@@ -37,6 +37,7 @@ import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
          GETOBJ_PROMPT, GETOBJ_NOFLAGS, ECMD_OK } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { Hallucination } from './youprop.js';
+import { m_next2u } from './const.js';
 
 const PL_PSIZ = 63; /* global.h */
 
@@ -460,10 +461,6 @@ export function Mgender(mtmp) {
 function humanoid(ptr) { return (ptr.mflags1 & M1_HUMANOID) !== 0; }
 function is_animal(ptr) { return (ptr.mflags1 & M1_ANIMAL) !== 0; }
 function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
-/* C ref: you.h m_next2u() */
-function m_next2u(m) {
-    return dist2(m.mx, m.my, game.u.ux, game.u.uy) <= 2;
-}
 
 // C ref: do_name.c bogon_codes[]
 export const bogon_codes = "-_+|="; /* see dat/bonusmon.txt */

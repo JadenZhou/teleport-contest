@@ -52,6 +52,7 @@ import { can_saddle } from './makemon.js';
 import { can_ride } from './steed.js';
 import { surface } from './iactions.js';
 import { See_invisible, Unaware } from './youprop.js';
+import { Role_if } from './const.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -73,8 +74,6 @@ function minv(mon) { return (mon.minvent || []).slice().reverse(); }
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 /* C ref: youprop.h See_invisible, Blind */
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 /* C ref: obj.h is_art() */
 function is_art(o, art) { return !!(o && o.oartifact === art); }

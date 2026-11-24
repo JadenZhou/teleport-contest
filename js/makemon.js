@@ -18,7 +18,7 @@ import { mondied } from './mon.js';
 import { in_town } from './hack.js';
 import { game } from './gstate.js';
 import { stop_timer, obj_to_any, monst_to_any, begin_burn } from './timeout.js';
-import { ROT_CORPSE } from './const.js';
+import { ROT_CORPSE, next2u } from './const.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { level_difficulty, Is_special, In_hell } from './dungeon.js';
 import {
@@ -65,6 +65,8 @@ import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
 import { See_invisible } from './youprop.js';
+import { Role_if, Race_if, u_at } from './const.js';
+import { mhe } from './mhitu.js';
 const DF_NONE = 0x00; /* hack.h */
 import { engr_at } from './engrave.js';
 import { enexto_core, enexto_gpflags } from './teleport.js';
@@ -593,9 +595,6 @@ function is_sword(otmp) {
     return objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
            && objects[otmp.otyp].oc_skill <= P_SABER;
 }
-// C ref: role.h Role_if(), Race_if()
-function Role_if(pm) { return game.urole.mnum === pm; }
-function Race_if(pm) { return game.urace.mnum === pm; }
 // C ref: makemon.c quest_mon_represents_role()
 function quest_mon_represents_role(mptr, role_pm) {
     return (mptr.mlet === M.S_HUMAN && Role_if(role_pm)
@@ -625,8 +624,6 @@ function Is_knox() { return on_lev(game.dungeon_topology.d_knox_level); }
 function Is_earthlevel() { return on_lev(game.dungeon_topology.d_earth_level); }
 
 // ---- map / monster-position helpers ----
-// C ref: hack.h u_at()
-export function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
 // C ref: display.h m_at(); MON_AT() -- level monsters are kept in
 // game.level.monsters (C keeps a grid; a list with mx/my is equivalent);
 // a long worm's tail segments are its grid cells kept in game.level.wsegs;
@@ -2155,7 +2152,7 @@ export function makemon(ptr, x, y, mmflags) {
                 const msg = `${what}${exclaim ? " suddenly" : ""} `
                     /* 'what' might be "gold pieces" so need plural verb */
                     + `${vtense(what, "appear")}`
-                    + `${(dist2(x, y, game.u.ux, game.u.uy) <= 2) /* next2u() */
+                    + `${next2u(x, y)
                          ? " next to you"
                          : (dist2(x, y, game.u.ux, game.u.uy) <= (BOLT_LIM * BOLT_LIM))
                            ? " close by" : ""}`
@@ -2656,7 +2653,7 @@ export async function grow_up(mtmp, victim) {
             if (canspotmon(mtmp))
                 await pline(`As ${mon_nam(mtmp)} grows up into ${
                     an(pmname(ptr, Mgender(mtmp)))}, ${
-                    genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he} ${ /* mhe() */
+                    mhe(mtmp)} ${
                     nonliving(ptr) ? "expires" : "dies"}!`);
             set_mon_data(mtmp, ptr); /* keep svm.mvitals[] accurate */
             await mondied(mtmp);

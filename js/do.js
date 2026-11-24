@@ -30,7 +30,7 @@ import {
 } from './dungeon.js';
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR, MAGIC_PORTAL, Is_qstart } from './const.js';
 import * as O from './objects.js';
-import { is_pool, is_lava, u_at } from './makemon.js';
+import { is_pool, is_lava } from './makemon.js';
 import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
@@ -106,6 +106,7 @@ import { STAIRS } from './const.js';
 import {
     Punished, Blind, Hallucination, Fumbling, HLevitation, ELevitation, Levitation, Flying
 } from './youprop.js';
+import { Upolyd, u_at } from './const.js';
 
 /* C ref: youprop.h -- the hero's properties used by the level-change code */
 function uprop(p) {
@@ -116,7 +117,6 @@ function Deaf_do() {
     const p = uprop(DEAF_DO);
     return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
 }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
     return otmp.otyp === O.PICK_AXE || otmp.otyp === O.DWARVISH_MATTOCK;

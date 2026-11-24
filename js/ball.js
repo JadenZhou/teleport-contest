@@ -35,6 +35,7 @@ import { hliquid } from './potion.js';
 import { fill_pit } from './muse.js';
 import { exercise } from './attrib.js';
 import { Blind, Levitation } from './youprop.js';
+import { Luck } from './const.js';
 
 /* C ref: you.h bc_order values, bc_felt bits */
 export const BCPOS_DIFFER = 0, BCPOS_CHAIN = 1, BCPOS_BALL = 2;
@@ -45,8 +46,6 @@ function bcrestriction() { return game.bcrestriction || 0; }
 
 /* C ref: obj.h carried() */
 function carried(o) { return o.where === 'OBJ_INVENT'; }
-/* C ref: you.h Luck */
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 /* C ref: hack.h MON_AT() */
 function MON_AT(x, y) { return !!m_at(x, y); }
 /* C ref: mkobj.c remove_object() -- a floor object leaves the floor */

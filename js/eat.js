@@ -104,6 +104,7 @@ import {
     Sick_resistance, Blind, Sick, Stoned, Strangled, Slimed, Hallucination, Hunger, Breathless,
     Unchanging, Unaware
 } from './youprop.js';
+import { Role_if, Race_if, Upolyd } from './const.js';
 
 const invlet_basic = 52; /* C ref: invent.c */
 const MAX_EGG_HATCH_TIME = 200; /* C ref: obj.h */
@@ -201,9 +202,6 @@ export function tin_details(obj, mnum, buf) {
 function carnivorous(ptr) { return (ptr.mflags1 & M1_CARNIVORE) !== 0; }
 function herbivorous(ptr) { return (ptr.mflags1 & M1_HERBIVORE) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
-/* C ref: role.h Role_if(), Race_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
-function Race_if(pm) { return game.urace.mnum === pm; }
 
 // C ref: eat.c init_uhunger()
 export function init_uhunger() {
@@ -627,8 +625,6 @@ function obj_here(obj, x, y) {
             return otmp.where === 'OBJ_FLOOR' && otmp.ox === x && otmp.oy === y;
     return false;
 }
-/* C ref: you.h Upolyd, maybe_polyd() */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: youprop.h */
 function uprop(p) { return game.u.uprops[p]; }
 /* C ref: mondata.h */

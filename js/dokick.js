@@ -96,6 +96,7 @@ import { MIGR_TO_SPECIES, MIGR_NOBREAK, MIGR_NOSCATTER, MIGR_WITH_HERO,
 import { add_to_minv } from './mkobj.js';
 import { christen_orc } from './do_name.js';
 import { Blind, Levitation, Passes_walls, Wounded_legs, Fumbling, Deaf } from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
@@ -107,8 +108,6 @@ function uprop(p) {
     return u.uprops[p];
 }
 function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
 function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
 function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }

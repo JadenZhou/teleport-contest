@@ -67,6 +67,7 @@ import {
     Levitation, Flying, Passes_walls, Half_spell_damage, Half_physical_damage,
     Unaware as Unaware_dr
 } from './youprop.js';
+import { Upolyd, Luck } from './const.js';
 
 /* C ref: mondata.h resists_ston() */
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
@@ -308,7 +309,6 @@ export function check_in_air(mtmp, trflags) {
 function uprop(p) {
     return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
 }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: hack.h Maybe_Half_Phys() */
 export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;
@@ -1739,8 +1739,6 @@ export async function delfloortrap(ttmp) {
     return false;
 }
 
-/* C ref: you.h Luck */
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 
 /* C ref: trap.h erode types, EF_* flags */
 const ERODE_BURN = 0, ERODE_RUST = 1, ERODE_ROT = 2, ERODE_CORRODE = 3,

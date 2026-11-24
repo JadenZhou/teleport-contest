@@ -26,7 +26,7 @@ import { t_at, mintrap, losehp, water_damage, water_damage_chain,
          delfloortrap } from './trap.js';
 import { makeplural, xname } from './objnam.js';
 import { rndmonnam, a_monnam, Amonnam } from './do_name.js';
-import { mhis } from './mhitu.js';
+import { uhim, mhis } from './mhitu.js';
 import { level_difficulty, dunlev, dunlevs_in_dungeon } from './dungeon.js';
 import { mongrantswish, fruitname, hliquid, make_glib, dopotion,
          potionbreathe, trycall } from './potion.js';
@@ -81,13 +81,13 @@ import {
     Fire_resistance, Poison_resistance, Blind, Glib, Hallucination, Deaf, Invisible,
     Levitation, Unchanging
 } from './youprop.js';
+import { Role_if, u_at } from './const.js';
+import { mhe } from './mhitu.js';
 
 /* C ref: youprop.h -- the property macros used here */
 function uprop(p) { return game.u.uprops[p]; }
 void HALLUC; void HALLUC_RES; void BLINDED;
 
-/* C ref: role.h Role_if(), hack.h wizard */
-function Role_if(pm) { return game.urole.mnum === pm; }
 function wizard() { return !!game.flags?.debug; }
 /* C ref: monst.h DEADMONSTER() */
 function DEADMONSTER(mon) { return mon.mhp < 1; }
@@ -108,8 +108,6 @@ function SET_FOUNTAIN_WARNED(x, y) { lev(x, y).flags = (lev(x, y).flags || 0) | 
 function SET_FOUNTAIN_LOOTED(x, y) { lev(x, y).flags = (lev(x, y).flags || 0) | F_LOOTED; }
 function CLEAR_FOUNTAIN_LOOTED(x, y) { lev(x, y).flags = (lev(x, y).flags || 0) & ~F_LOOTED; }
 
-/* C ref: you.h u_at() */
-function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
 
 const nothing_seems_to_happen = "Nothing seems to happen.";
 
@@ -184,8 +182,6 @@ async function dowaterdemon() {
     }
 }
 
-/* C ref: mondata.h mhe() */
-function mhe(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he; }
 
 // C ref: fountain.c dowaternymph() -- Water Nymph
 async function dowaternymph() {
@@ -518,8 +514,7 @@ export async function dipfountain(obj) {
             obj.oerodeproof = 0;
             exercise(A_WIS, false);
             livelog_printf(LL_ARTIFACT, `was denied ${artiname(ART_EXCALIBUR)}!  The ${
-                               lady} has deemed ${game.flags.female ? "her" : "him" /* uhim() */
-                               } unworthy`);
+                               lady} has deemed ${uhim()} unworthy`);
         } else {
             /* The lady of the lake acts! - Eric Backus */
             /* Be *REAL* nice */

@@ -32,7 +32,7 @@ import { unconscious, is_fainted } from './eat.js';
 export function uprop(p) { return game.u.uprops[p]; }
 
 /* C: #define maybe_polyd(if_so, if_not) (Upolyd ? (if_so) : (if_not)) */
-export function maybe_polyd(if_so, if_not) { return Upolyd(game.u) ? if_so : if_not; }
+export function maybe_polyd(if_so, if_not) { return Upolyd() ? if_so : if_not; }
 
 /*** Resistances to troubles ***/
 export function Fire_resistance() { const p = uprop(FIRE_RES); return !!(p.intrinsic || p.extrinsic); }

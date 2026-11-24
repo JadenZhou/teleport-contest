@@ -21,6 +21,8 @@ import { mon_wield_item } from './weapon.js';
 import { wake_nearto } from './mon.js';
 import { rnd } from './rng.js';
 import { Hallucination } from './youprop.js';
+import { Role_if } from './const.js';
+import { uhis } from './mhitu.js';
 
 /* C ref: mondata.h attacktype() */
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
@@ -74,8 +76,6 @@ import { ACURR } from './attrib.js';
 import { deliver_obj_to_mon } from './dokick.js';
 const DF_ALL = 0x04; /* hack.h */
 
-// C ref: role.c Role_if()
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 // C ref: dog.c newedog()
 export function newedog(mtmp) {
@@ -130,8 +130,7 @@ export function initedog(mtmp, everything) {
          * from a figurine or some other method in which it was created tame
          * using an() is safe unless it somehow becomes possible to tame a
          * unique monster */
-        livelog_printf(LL_CONDUCT, `obtained ${game.flags.female ? "her" : "his" /* uhis() */
-                                   } first pet (${an(mon_pmname(mtmp))})`);
+        livelog_printf(LL_CONDUCT, `obtained ${uhis()} first pet (${an(mon_pmname(mtmp))})`);
     }
     game.u.uconduct.pets++;
 }

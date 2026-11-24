@@ -115,11 +115,13 @@ import { in_rooms } from './hack.js';
 import { D_BROKEN, SHOPBASE, TEMPLE } from './const.js';
 import { tele } from './teleport.js';
 import { Blind, Hallucination, Deaf, See_invisible, Teleport_control } from './youprop.js';
+import { m_next2u, u_at } from './const.js';
+import { mhe, mhim } from './mhitu.js';
 
 const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
 const QBUFSZ = 128; /* global.h */
 import { dist2, isok } from './hacklib.js';
-import { m_at, sobj_at, u_at } from './makemon.js';
+import { m_at, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
 import { monsndx, is_floater, passes_walls, dmgtype, haseyes,
          mon_knows_traps } from './mondata.js';
@@ -213,10 +215,6 @@ function attacktype(ptr, atyp) {
 }
 /* C ref: monst.h m_seenres() */
 export function m_seenres(mon, mask) { return (mon.seen_resistance || 0) & mask; }
-/* C ref: hack.h m_next2u() */
-function m_next2u(mon) {
-    return Math.abs(mon.mx - game.u.ux) <= 1 && Math.abs(mon.my - game.u.uy) <= 1;
-}
 
 // C ref: mthrowu.c m_carrying()
 function m_carrying(mtmp, type) {
@@ -248,8 +246,6 @@ function slimeproof(ptr) {
            || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER]
            || noncorporeal(ptr);
 }
-/* C ref: mondata.h mhe() */
-function mhe(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he; }
 /* C ref: hacklib.c upstart() */
 function upstart(s) { return s ? highc(s[0]) + s.slice(1) : s; }
 /* C ref: hacklib.c strsubst() -- replace the first instance of orig */
@@ -1221,8 +1217,6 @@ export async function use_defensive(mtmp) {
    iflags.last_msg to PLNMSG_UNKNOWN */
 const PLNMSG_enum = -1;
 
-/* C ref: mondata.h mhim() */
-function mhim(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him; }
 
 /* C ref: display.h remove_monster() -- the monster list is keyed by mx/my */
 function remove_monster(mtmp) {

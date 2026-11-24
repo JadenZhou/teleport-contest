@@ -102,12 +102,12 @@ import {
     Blind, Hallucination, Deaf, Blind_telepat, Detect_monsters, Invis, Displaced, Conflict,
     Passes_walls, Fast
 } from './youprop.js';
+import { Role_if, m_next2u } from './const.js';
+import { noit_mhis, noit_mhe, noit_mhim } from './mhitu.js';
 
 // ── small helpers (C ref: youprop.h / monst.h / shk.c macros) ──
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: shk.c NOTANGRY(), ANGRY() */
@@ -138,13 +138,6 @@ function plur(x) { return (x === 1) ? "" : "s"; }
 function strncmpi(s1, s2, n) {
     return (s1 || '').slice(0, n).toLowerCase()
            !== (s2 || '').slice(0, n).toLowerCase();
-}
-/* C ref: you.h noit_mhis(), noit_mhe() */
-function noit_mhis(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].his;
-}
-function noit_mhe(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].he;
 }
 /* C ref: polyself.c mbodypart() -- ported in insight.js beside body_part() */
 export { mbodypart };
@@ -2053,15 +2046,6 @@ export async function make_angry_shk(shkp, ox, oy) {
 const no_money = (s) => `Moreover, you${s} have no gold.`,
     not_enough_money = (s) => `Besides, you don't have enough to interest ${s}.`;
 
-/* C ref: you.h noit_mhim() */
-function noit_mhim(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].him;
-}
-/* C ref: hack.h m_next2u() */
-function m_next2u(mon) {
-    return Math.abs(mon.mx - game.u.ux) <= 1
-           && Math.abs(mon.my - game.u.uy) <= 1;
-}
 
 // C ref: shk.c dopay()
 /* the #pay command */

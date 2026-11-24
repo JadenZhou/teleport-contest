@@ -58,7 +58,7 @@ import { You as You_zd, stairway_at as stairway_at_zd } from './display.js';
 import { s_suffix as s_suffix_zd } from './hacklib.js';
 import { mon_nam as mon_nam_zd } from './do_name.js';
 import { mbodypart as mbodypart_zd, body_part as body_part_zd } from './insight.js';
-import { expels as expels_zd } from './mhitu.js';
+import { uhis, expels as expels_zd } from './mhitu.js';
 import { ceiling as ceiling_zd } from './dungeon.js';
 import { hard_helmet as hard_helmet_zd, xname as xname_zd } from './objnam.js';
 import { losehp as losehp_zd, Maybe_Half_Phys as Maybe_Half_Phys_zd } from './trap.js';
@@ -951,7 +951,7 @@ export async function use_pick_axe2(obj) {
         if (dam <= 0)
             dam = 1;
         await You_zd(`hit yourself with ${yname(game.uwep)}.`);
-        buf = `${game.flags.female ? "her" : "his" /* uhis() */} own ${
+        buf = `${uhis()} own ${
             OBJ_NAME(objects[obj.otyp])}`;
         await losehp_zd(Maybe_Half_Phys_zd(dam), buf, KILLED_BY);
         game.disp_botl = true;

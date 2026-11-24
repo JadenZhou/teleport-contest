@@ -100,6 +100,7 @@ import {
     gloves_simple_name, boots_simple_name, shield_simple_name, simpleonames,
 } from './iactions.js';
 import { Sleep_resistance, Blind, Hallucination, Reflecting } from './youprop.js';
+import { Luck } from './const.js';
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -271,8 +272,7 @@ export async function bhito(obj, otmp) {
             }
             /* KMH, conduct */
             if (!u.uconduct.polypiles++)
-                livelog_printf(LL_CONDUCT, `polymorphed ${
-                               game.flags.female ? "her" : "his" /* uhis() */} first object`);
+                livelog_printf(LL_CONDUCT, `polymorphed ${uhis()} first object`);
 
             /* any saved lock context will be dangerously obsolete */
             if (Is_box(obj))
@@ -453,8 +453,6 @@ export function obj_shudders(obj) {
     return !rn2(zap_odds);
 }
 
-/* C ref: you.h Luck */
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 
 // C ref: zap.c do_osshock() -- assumes obj is on the floor
 export function do_osshock(obj) {
@@ -999,7 +997,7 @@ export async function dozap() {
         /* make him pay for knowing !NODIR */
     } else if (need_dir && !u.dx && !u.dy && !u.dz) {
         if ((damage = await zapyourself(obj, true)) !== 0) {
-            const buf = `zapped ${uhim_zy()}self with ${killer_xname_zp(obj)}`;
+            const buf = `zapped ${uhim()}self with ${killer_xname_zp(obj)}`;
 
             await losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX_ZY);
         }
@@ -1227,7 +1225,7 @@ export async function zapyourself(obj, ordinary) {
             break;
         }
         learn_it = true;
-        killer_zy().name = `shot ${uhim_zy()}self with a death ray`;
+        killer_zy().name = `shot ${uhim()}self with a death ray`;
         killer_zy().format = NO_KILLER_PREFIX_ZY;
         /* probably don't need these to be urgent; player just gave input
            without subsequent opportunity to dismiss --More-- with ESC */
@@ -1304,10 +1302,6 @@ import { delete_contents } from './invent.js';
 function nonliving_zy(ptr) {
     return (ptr.mflags2 & M2_UNDEAD_ZY) !== 0 || ptr === mons_zy[PM_MANES_ZY]
            || ptr.mlet === S_GOLEM_ZY || ptr.mlet === S_VORTEX_ZY;
-}
-/* C ref: you.h uhim() -- genders[flags.female ? 1 : 0].him */
-function uhim_zy() {
-    return game.flags.female ? "her" : "him";
 }
 
 // C ref: zap.c zapsetup() -- used by do_break_wand() was well as by weffects()
@@ -2038,7 +2032,7 @@ async function zhitu(
             /* FIXME: "zapped by herself" is suitable for a rebound;
                "zapped at herself" would be better if player explicitly
                targeted hero */
-            kbuf = `${fltxt} ${verb} by ${uhim_zy()}self`;
+            kbuf = `${fltxt} ${verb} by ${uhim()}self`;
         }
         /* Half_spell_damage protection yields half-damage for wands & spells,
            including hero's own ricochets; breath attacks do full damage */
@@ -3345,7 +3339,7 @@ import { which_armor as which_armor_zp, setnotworn as setnotworn_zp,
          bypass_objlist as bypass_objlist_zp,
          nxt_unbypassed_obj as nxt_unbypassed_obj_zp } from './worn.js';
 import { m_useup, rnd_hallublast } from './mthrowu.js';
-import { ugolemeffects as ugolemeffects_zp } from './mhitu.js';
+import { uhim, uhis, ugolemeffects as ugolemeffects_zp } from './mhitu.js';
 import { burn_away_slime as burn_away_slime_zp,
          hliquid as hliquid_zp, potionbreathe as potionbreathe_zp,
          make_stunned as make_stunned_zp, incr_itimeout as incr_itimeout_zp,

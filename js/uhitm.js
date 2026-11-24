@@ -184,6 +184,7 @@ import {
     Deaf, Detect_monsters, Amphibious, Breathless, Underwater, Half_physical_damage,
     Protection_from_shape_changers, Free_action, Hate_silver
 } from './youprop.js';
+import { m_next2u, Upolyd, Role_if, Race_if, Luck } from './const.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -217,10 +218,6 @@ function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
-/* C ref: hack.h m_next2u() */
-function m_next2u(mon) {
-    return Math.abs(mon.mx - game.u.ux) <= 1 && Math.abs(mon.my - game.u.uy) <= 1;
-}
 
 // C ref: mon.c set_ustuck()
 export function set_ustuck(mtmp) {
@@ -2116,10 +2113,6 @@ function uprop(p) {
     const P = game.u.uprops[p];
     return !!(P && (P.intrinsic || P.extrinsic));
 }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
-function Race_if(pm) { return game.urace.mnum === pm; }
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function DEADMONSTER(mon) { return mon.mhp < 1; }
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }

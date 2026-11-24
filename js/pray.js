@@ -19,6 +19,7 @@ import { A_NONE, A_LAWFUL, A_NEUTRAL, A_CHAOTIC, IS_ALTAR, Amask2align,
          IS_OBSTRUCTED, isok, ECMD_OK, ECMD_TIME, M_AP_FURNITURE,
          MCORPSENM, MAXULEV, BOLT_LIM, TELL, NOTELL } from './const.js';
 import { Blinded, Blind, Hallucination, Deaf } from './youprop.js';
+import { Upolyd, Luck } from './const.js';
 /* C ref: defsym.h S_altar (cmap index) */
 const S_altar = 33;
 import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT, S_LICH, S_GHOST,
@@ -267,8 +268,6 @@ const TROUBLE_HALLUCINATION = (-11);
 function HProp(prop) { return game.u.uprops[prop]?.intrinsic || 0; }
 function EProp(prop) { return game.u.uprops[prop]?.extrinsic || 0; }
 function uhave(prop) { return !!(HProp(prop) || EProp(prop)); }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 function Inhell() { return In_hell(game.u.uz); }
 /* C ref: pray.c ugod_is_angry(), on_altar(), on_shrine(), a_align() */
 function ugod_is_angry() { return game.u.ualign.record < 0; }

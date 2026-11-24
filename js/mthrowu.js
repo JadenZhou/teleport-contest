@@ -37,8 +37,10 @@ import { ART_SNICKERSNEE } from './artilist.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon, mwelded, dmgval,
          setmnotwielded, m_carrying } from './weapon.js';
 import { lined_up, linedup } from './monmove.js';
-import { m_at, u_at, closed_door, is_pool, is_lava, is_prince, is_lord,
-         is_mplayer, nonliving } from './makemon.js';
+import {
+    m_at, closed_door, is_pool, is_lava, is_prince, is_lord, is_mplayer,
+    nonliving
+} from './makemon.js';
 import { monsndx, is_elf, is_orc, is_gnome, is_vampshifter, hates_silver,
          mon_hates_silver, Resists_Elem, get_atkdam_type,
          cvt_adtyp_to_mseenres, can_blnd, haseyes } from './mondata.js';
@@ -68,7 +70,7 @@ import { nomul, calc_capacity } from './hack.js';
 import { make_blinded, potionhit, make_stoned } from './potion.js';
 import { You_hear } from './sounds.js';
 import { monstseesu, monstunseesu, shade_miss, passive_obj } from './uhitm.js';
-import { mswings_verb } from './mhitu.js';
+import { mswings_verb, mhim } from './mhitu.js';
 import { hit, miss, exclam, dobuzz } from './zap.js';
 import { hold_another_object } from './wizcmds.js';
 import { extract_from_minvent, extract_from_minvent_g } from './steal.js';
@@ -80,9 +82,9 @@ import {
     Sleep_resistance, Acid_resistance, Stone_resistance, Stunned, Confusion, BlindedTimeout,
     Blind, Stoned, Hallucination, Deaf, Fumbling, Underwater, Hate_silver
 } from './youprop.js';
+import { Role_if, u_at } from './const.js';
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
-function Role_if(pm) { return game.urole.mnum === pm; }
 function verbose() { return game.flags.verbose ?? true; }
 
 /* C ref: monst.h DEADMONSTER() */
@@ -134,8 +136,6 @@ function touch_petrifies(ptr) {
 function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
 function resists_poison(mon) { return Resists_Elem(mon, POISON_RES); }
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
-/* C ref: mondata.h mhim() */
-function mhim(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him; }
 /* C ref: objnam.c makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: hacklib.c upstart() */

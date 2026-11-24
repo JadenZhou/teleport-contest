@@ -84,6 +84,7 @@ import {
     Punished, Stunned, Blind, Stoned, Strangled, Slimed, Flying, Polymorph_control, Unchanging,
     Unaware
 } from './youprop.js';
+import { Upolyd } from './const.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -402,7 +403,6 @@ function uprop_on(p) {
     const pr = game.u.uprops[p];
     return !!(pr.intrinsic || pr.extrinsic);
 }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 function plur(x) { return x === 1 ? "" : "s"; }
 /* C ref: dbridge.c is_pool_or_lava() */
 function is_pool_or_lava(x, y) {

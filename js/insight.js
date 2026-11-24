@@ -122,6 +122,7 @@ import {
     Polymorph_control, Unchanging, Fast, Very_fast, Reflecting, Free_action, Fixed_abil,
     Lifesaved, Hate_silver, Half_gas_damage
 } from './youprop.js';
+import { Upolyd, Role_if, Luck } from './const.js';
 
 // C ref: insight.c align_str()
 export function align_str(alignment) {
@@ -147,10 +148,7 @@ function wizard() { return !!game.flags?.debug; }
 function discover() { return !!game.flags?.explore; }
 function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 }; }
 
-/* C ref: you.h Upolyd, URIGHTY, Role_if() */
-function Upolyd() { return U().umonnum !== U().umonster; }
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 /* C ref: youprop.h */
 
@@ -173,8 +171,6 @@ function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
 
 /* C ref: youprop.h -- the rest of the property macros that
    attributes_enlightenment() checks */
-/* C ref: you.h Luck */
-function Luck() { return (U().uluck || 0) + (U().moreluck || 0); }
 
 /* C ref: mondata.h is_clinger(), lays_eggs(); monst.h vampshifted() */
 function is_clinger(ptr) { return (ptr.mflags1 & M.M1_CLING) !== 0; }

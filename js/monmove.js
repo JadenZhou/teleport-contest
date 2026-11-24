@@ -78,7 +78,7 @@ import { wipe_engr_at } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
     m_at, MON_AT, place_monster, sobj_at, is_pool, is_lava, accessible,
-    closed_door, sengr_at, u_at,
+    closed_door, sengr_at
 } from './makemon.js';
 import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls, haseyes,
          perceives, can_teleport, is_undead, is_human, is_vampshifter,
@@ -121,6 +121,7 @@ import {
     Hallucination, Deaf, Invis, Displaced, Stealth, Aggravate_monster, Conflict, Underwater,
     Unaware
 } from './youprop.js';
+import { Upolyd, u_at } from './const.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -133,7 +134,6 @@ function uhave(prop) {
     const p = game.u.uprops[prop];
     return !!((p.intrinsic || p.extrinsic) && !p.blocked);
 }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: monst.h mon_offmap() */
 function mon_offmap(mon) {
     return ((mon.mstate || 0)

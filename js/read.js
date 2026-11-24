@@ -101,6 +101,7 @@ import {
     Confusion, HConfusion, HStun, Fire_resistance, Passes_walls, Invisible, Underwater,
     Punished, Blind, Hallucination
 } from './youprop.js';
+import { Role_if, u_at } from './const.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -108,8 +109,6 @@ const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
       NH_BLUE = "blue";
 
 /* C ref: youprop.h -- the property macros used here */
-/* C ref: you.h Role_if() */
-function Role_if(pm) { return game.urole?.mnum === pm; }
 /* C ref: hack.h makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: obj.h is_art(), is_elven_armor(), Is_dragon_scales(),
@@ -139,7 +138,6 @@ function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;
     return dx * dx + dy * dy;
 }
-function u_at(x, y) { return game.u.ux === x && game.u.uy === y; }
 /* C ref: hacklib.c sgn(), upwords() */
 function sgn(n) { return (n < 0) ? -1 : (n !== 0) ? 1 : 0; }
 function upwords(s) {

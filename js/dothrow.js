@@ -88,6 +88,7 @@ import {
     Stone_resistance, Stunned, Confusion, Blind, Hallucination, Fumbling, Levitation,
     Underwater, Blind as Blind_br
 } from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
@@ -148,8 +149,6 @@ function uprop(p) {
     return u.uprops[p];
 }
 function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: obj.h is_art(), is_pick(); mondata.h throws_rocks() */
 function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_pick(otmp) {

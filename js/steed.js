@@ -44,6 +44,7 @@ import { has_ceiling } from './insight.js';
 import { wseg_mon_at } from './worm.js';
 import { finish_meating } from './dog.js';
 import { Stealth, Levitation, Flying } from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
 
 /* C ref: mondata.h throws_rocks() */
 function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
@@ -59,9 +60,6 @@ function uhave(prop) {
     const p = game.u.uprops[prop];
     return !!(p && (p.intrinsic || p.extrinsic));
 }
-/* C ref: you.h Upolyd, Role_if() */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 // C ref: steed.c can_ride()
 /* Can this monster wear a saddle and can the hero ride it? */

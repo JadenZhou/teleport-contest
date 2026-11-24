@@ -102,13 +102,12 @@ import {
     Wounded_legs, See_invisible, Detect_monsters, BInvis, Invis, Invisible, Levitation,
     Underwater, Unchanging, Fast, Very_fast, Free_action, Fixed_abil, Unaware, Half_gas_damage
 } from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
 
 /* C ref: youprop.h -- the property macros used here */
 function uprop(p) { return game.u.uprops[p]; }
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: monst.h ismnum() */
 function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
 /* C ref: mondata.h breathless(), likes_fire(), is_silent(), is_human() */

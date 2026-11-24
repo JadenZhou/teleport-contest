@@ -63,6 +63,7 @@ import {
     Is_container,
 } from './mkobj.js';
 import { delete_contents } from './invent.js';
+import { Luck } from './const.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -1339,8 +1340,6 @@ const CORPSTAT_NEUTER = 3;
 const CORPSTAT_HISTORIC = 0x04;
 
 function wizard() { return !!game.flags?.debug; }
-// C ref: you.h Luck
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 
 // C ref: objnam.c setbp() has no C counterpart: it stands for an in-place
 // edit of the buffer at d->bp, which origbp (the buffer's start) also sees

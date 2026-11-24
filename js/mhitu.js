@@ -38,7 +38,6 @@ import { M_ATTK_MISS, M_ATTK_HIT, M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, P_WHIP,
          is_pit } from './const.js';
 import { t_at } from './trap.js';
-import { u_at } from './makemon.js';
 import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
          PIERCE } from './objects.js';
 import { mon_wield_item, hitval } from './weapon.js';
@@ -103,6 +102,7 @@ import {
     Cold_resistance, Blind, Hallucination, Deaf, See_invisible, Invis, Displaced, Conflict,
     Underwater, Half_physical_damage, Unaware as Unaware_mh
 } from './youprop.js';
+import { Upolyd, m_next2u, u_at } from './const.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -123,7 +123,6 @@ function uhave(prop) {
     const p = game.u.uprops[prop];
     return !!((p.intrinsic || p.extrinsic) && !p.blocked);
 }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 
 /* mondata.h */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
@@ -141,10 +140,6 @@ function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
     return dx * dx + dy * dy;
 }
-/* C ref: hack.h m_next2u() */
-function m_next2u(mon) {
-    return Math.abs(mon.mx - game.u.ux) <= 1 && Math.abs(mon.my - game.u.uy) <= 1;
-}
 /* C ref: mondata.h gender() / pronoun_gender() subset */
 function gender(mon) { return mon.female ? 1 : 0; }
 
@@ -158,10 +153,26 @@ function is_pole(otmp) {
 }
 /* C ref: obj.h is_wet_towel() */
 function is_wet_towel(o) { return o.otyp === TOWEL && (o.spe || 0) > 0; }
-/* C ref: you.h mhis() */
-export function mhis(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].his; }
-/* C ref: you.h mhim() */
+/* C ref: you.h -- pronoun macros for the hero and for monsters */
+/* #define uhe() (genders[flags.female ? 1 : 0].he) */
+export function uhe() { return genders[game.flags.female ? 1 : 0].he; }
+export function uhim() { return genders[game.flags.female ? 1 : 0].him; }
+export function uhis() { return genders[game.flags.female ? 1 : 0].his; }
+/* #define mhe(mtmp) (genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he) */
+export function mhe(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he; }
 export function mhim(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him; }
+export function mhis(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].his; }
+/* #define noit_mhe(mtmp) \
+       (genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].he) */
+export function noit_mhe(mtmp) {
+    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].he;
+}
+export function noit_mhim(mtmp) {
+    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].him;
+}
+export function noit_mhis(mtmp) {
+    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].his;
+}
 
 // C ref: mhitu.c mswings_verb()
 /* strike types P|S|B: Pierce (pointed: stab) => "thrusts",
@@ -1832,11 +1843,6 @@ async function explmu(mtmp, mattk, ufound) {
 function ld() { return (yyyymmdd(0) - (getyear() * 10000)) === 0xe5; }
 /* C ref: calendar.c getyear() */
 function getyear() { return Math.trunc(yyyymmdd(0) / 10000); }
-/* C ref: you.h mhe(), noit_mhim() */
-function mhe(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he; }
-function noit_mhim(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].him;
-}
 /* C ref: pline.c verbalize() */
 async function verbalize(line) {
     if (Deaf())

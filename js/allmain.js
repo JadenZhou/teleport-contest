@@ -78,6 +78,7 @@ import { init_artifacts } from './artifact.js';
 import { run_regions, any_visible_region } from './region.js';
 import { m_everyturn_effect } from './monmove.js';
 import { Blind, Hallucination } from './youprop.js';
+import { Upolyd } from './const.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -286,8 +287,6 @@ function u_calc_moveamt(wtcap) {
 let mvl_wtcap = 0;
 let mvl_change = 0;
 
-/* C ref: you.h Upolyd */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 
 // C ref: calendar.c night()
 function night() {

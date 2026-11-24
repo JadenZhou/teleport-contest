@@ -20,7 +20,7 @@ import { perceives, is_demon, haseyes,
          cvt_adtyp_to_mseenres } from './mondata.js';
 import { m_seenres } from './muse.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
-import { mdamageu } from './mhitu.js';
+import { mdamageu, mhe } from './mhitu.js';
 import { healmon } from './mon.js';
 import { mon_adjust_speed, mon_set_minvis } from './worn.js';
 import { aggravate, make_stunned, make_confused, make_blinded,
@@ -32,7 +32,7 @@ import { done } from './end.js';
 import { killer } from './topten.js';
 import { flashburn, buzz, flash_str, mon_spell_hits_spot } from './zap.js';
 import { lined_up } from './monmove.js';
-import { mkclass, makemon, set_malign, u_at, nonliving } from './makemon.js';
+import { mkclass, makemon, set_malign, nonliving } from './makemon.js';
 import { enexto } from './teleport.js';
 import { body_part } from './insight.js';
 import { genders } from './role.js';
@@ -57,6 +57,7 @@ import {
     Cold_resistance, Shock_resistance, HStun, Stunned, HConfusion, Confusion, Blinded, Invis,
     Displaced, See_invisible, Deaf, Detect_monsters, Unaware, Blind, Hallucination
 } from './youprop.js';
+import { Upolyd, u_at } from './const.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -119,7 +120,6 @@ const mon_wizard_spells = [
 
 /* C ref: youprop.h -- the hero's properties used here */
 function uprop(p) { return game.u.uprops[p] || {}; }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: hack.c unconscious() */
 function unconscious() {
     if (game.multi >= 0)
@@ -138,8 +138,6 @@ function is_obj_mappear(mon, otyp) {
 }
 /* C ref: rm.h IS_WATERWALL(), is_waterwall() */
 function is_waterwall(x, y) { return game.level.at(x, y).typ === WATER; }
-/* C ref: do_name.c mhe() */
-function mhe(mtmp) { return genders[pronoun_gender(mtmp, PRONOUN_HALLU)].he; }
 /* C ref: mondata.h eyecount() */
 function eyecount(ptr) {
     return !haseyes(ptr) ? 0
