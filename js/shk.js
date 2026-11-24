@@ -93,59 +93,21 @@ import { PICK_ANY, MENU_FULL, MENU_TRADITIONAL, NHW_MENU,
 import { ATR_NONE, NO_COLOR } from './terminal.js';
 import { M1_NOLIMBS } from './monsters.js';
 import { observe_object } from './o_init.js';
-import { Hallucination, bot } from './display.js';
+import { bot } from './display.js';
 import { highc } from './hacklib.js';
 import { SCROLL_CLASS, SPBOOK_CLASS, MIRROR } from './objects.js';
 import { saleable } from './shknam.js';
 import { paydoname } from './objnam.js';
 import { simpleonames, thesimpleoname } from './iactions.js';
+import {
+    Punished, Blind, Hallucination, Deaf, Blind_telepat, Detect_monsters, Invis, Displaced,
+    Conflict, Passes_walls, Fast
+} from './youprop.js';
+import { Role_if, m_next2u } from './const.js';
+import { noit_mhis, noit_mhe, noit_mhim } from './mhitu.js';
 
 // ── small helpers (C ref: youprop.h / monst.h / shk.c macros) ──
 
-/* C ref: youprop.h -- (H* || E*) && !B* */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Invis() { return uhave(INVIS); }
-/* C ref: youprop.h Displaced, Conflict, Fast -- (H* || E*) */
-function Displaced() {
-    const p = game.u.uprops[DISPLACED];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Fast() {
-    const p = game.u.uprops[FAST];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p && (p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf));
-}
-/* C ref: youprop.h Blind -- display.js has the full test */
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!(p && (p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Passes_walls() {
-    const p = game.u.uprops[PASSES_WALLS];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-/* C ref: youprop.h Blind_telepat, Detect_monsters */
-function Blind_telepat() {
-    const p = game.u.uprops[TELEPAT];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-function Detect_monsters() {
-    const p = game.u.uprops[DETECT_MONSTERS];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: monst.h helpless() */
 function helpless(mon) { return !!(mon.msleeping || !mon.mcanmove); }
 /* C ref: shk.c NOTANGRY(), ANGRY() */
@@ -176,13 +138,6 @@ function plur(x) { return (x === 1) ? "" : "s"; }
 function strncmpi(s1, s2, n) {
     return (s1 || '').slice(0, n).toLowerCase()
            !== (s2 || '').slice(0, n).toLowerCase();
-}
-/* C ref: you.h noit_mhis(), noit_mhe() */
-function noit_mhis(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].his;
-}
-function noit_mhe(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].he;
 }
 /* C ref: polyself.c mbodypart() -- ported in insight.js beside body_part() */
 export { mbodypart };
@@ -881,7 +836,7 @@ async function litter_scatter(
        that's inside the shop; caller guarantees that */
     {
         /* Scatter objects haphazardly into the shop */
-        if (Punished_sk() && !g.u.uswallow
+        if (Punished() && !g.u.uswallow
             && ((g.uchain.ox === x && g.uchain.oy === y)
                 || (g.uball.where === 'OBJ_FLOOR'
                     && g.uball.ox === x && g.uball.oy === y))) {
@@ -1078,8 +1033,6 @@ async function repair_damage(
         disposition = 2;
     return disposition;
 }
-/* C ref: youprop.h Punished */
-function Punished_sk() { return !!game.uball; }
 import { D_BROKEN as D_BROKEN_SK, D_CLOSED as D_CLOSED_SK,
          IS_WALL as IS_WALL_SK, ZAP_POS } from './const.js';
 import { BOULDER as BOULDER_SK, ROCK as ROCK_SK, LAND_MINE as LAND_MINE_SK,
@@ -2091,15 +2044,6 @@ export async function make_angry_shk(shkp, ox, oy) {
 const no_money = (s) => `Moreover, you${s} have no gold.`,
     not_enough_money = (s) => `Besides, you don't have enough to interest ${s}.`;
 
-/* C ref: you.h noit_mhim() */
-function noit_mhim(mtmp) {
-    return genders[pronoun_gender(mtmp, PRONOUN_NO_IT | PRONOUN_HALLU)].him;
-}
-/* C ref: hack.h m_next2u() */
-function m_next2u(mon) {
-    return Math.abs(mon.mx - game.u.ux) <= 1
-           && Math.abs(mon.my - game.u.uy) <= 1;
-}
 
 // C ref: shk.c dopay()
 /* the #pay command */

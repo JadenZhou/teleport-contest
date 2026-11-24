@@ -53,7 +53,6 @@ import { s_suffix } from './hacklib.js';
 import { cansee, block_point, vision_recalc } from './vision.js';
 import { t_at, chest_trap } from './trap.js';
 import { FINGER } from './const.js';
-import { Unaware } from './eat.js';
 import { You_hear } from './sounds.js';
 import { wake_nearto } from './mon.js';
 import { in_rooms } from './hack.js';
@@ -83,12 +82,10 @@ import { is_drawbridge_wall } from './dbridge.js';
 import { bottlename, potionbreathe } from './potion.js';
 import { haseyes } from './mondata.js';
 import { M1_BREATHLESS } from './monsters.js';
+import {
+    Stunned, Confusion, Blind, Deaf, Passes_walls, Protection_from_shape_changers, Unaware
+} from './youprop.js';
 
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const p = game.u.uprops[DEAF];
-    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
-}
 
 /* C ref: pline.c verbalize() -- SetVoice() only matters for speech
    output, which the tty doesn't do */
@@ -112,10 +109,6 @@ const ECMD_CANCEL = 0x02;
 /* C ref: defsym.h S_vcdoor, S_hcdoor (pchar indices) */
 const S_vcdoor = 15, S_hcdoor = 16;
 
-function uhave(prop) {
-    const p = game.u?.uprops?.[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
 // C ref: monst.h is_door_mappear()
 function is_door_mappear(mon) {
@@ -647,7 +640,7 @@ export function autokey(opening) {
 async function stumble_on_door_mimic(x, y) {
     const mtmp = m_at(x, y);
 
-    if (mtmp && is_door_mappear(mtmp) && !uhave(PROT_FROM_SHAPE_CHANGERS)) {
+    if (mtmp && is_door_mappear(mtmp) && !Protection_from_shape_changers()) {
         await stumble_onto_mimic(mtmp);
         return true;
     }
@@ -700,7 +693,7 @@ export async function doopen_indir(x, y) {
 
     /* when choosing a direction is impaired, use a turn
        regardless of whether a door is successfully targeted */
-    if (uhave(CONFUSION) || uhave(STUNNED))
+    if (Confusion() || Stunned())
         res = ECMD_TIME;
 
     const door = game.level.at(cc.x, cc.y);
@@ -1215,7 +1208,7 @@ export async function doclose() {
 
     x = u.ux + u.dx;
     y = u.uy + u.dy;
-    if (u.ux === x && u.uy === y && !uhave(PASSES_WALLS)) {
+    if (u.ux === x && u.uy === y && !Passes_walls()) {
         await You("are in the way!");
         return ECMD_TIME;
     }
@@ -1231,7 +1224,7 @@ export async function doclose() {
 
     /* when choosing a direction is impaired, use a turn
        regardless of whether a door is successfully targeted */
-    if (uhave(CONFUSION) || uhave(STUNNED))
+    if (Confusion() || Stunned())
         res = ECMD_TIME;
 
     const door = game.level.at(x, y);
@@ -1292,11 +1285,6 @@ export async function doclose() {
     return ECMD_TIME;
 }
 
-/* C ref: youprop.h Blind */
-function Blind() {
-    const p = game.u.uprops[BLINDED];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 
 // C ref: lock.c chest_shatter_msg()
 async function chest_shatter_msg(otmp) {

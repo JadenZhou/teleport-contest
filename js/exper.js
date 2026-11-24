@@ -26,6 +26,7 @@ import { record_achievement, achieve_rank } from './insight.js';
 import { pline } from './display.js';
 import { Goodbye } from './role.js';
 import { resists_drli } from './mondata.js';
+import { Amphibious } from './youprop.js';
 
 // C ref: exper.c newuexp()
 export function newuexp(lev) {
@@ -98,11 +99,6 @@ export function newpw() {
 
 /* C ref: mondata.h extra_nasty(); youprop.h Amphibious */
 function extra_nasty(ptr) { return (ptr.mflags2 & M2_NASTY) !== 0; }
-function Amphibious() {
-    const p = game.u.uprops[MAGICAL_BREATHING];
-    return !!(p.intrinsic || p.extrinsic)
-           || (game.youmonst.data.mflags1 & M1_AMPHIBIOUS) !== 0;
-}
 
 // C ref: exper.c experience()
 export function experience(mtmp, nk) {

@@ -16,7 +16,7 @@ import { A_ORIGINAL, A_CURRENT, A_WIS, OBJ_FLOOR, OBJ_MINVENT, OBJ_BURIED,
 import { mons, PM_PRISONER, MS_NEMESIS, MS_GUARDIAN, MS_DJINNI }
     from './monsters.js';
 import * as O from './objects.js';
-import { pline, You, canseemon, Hallucination } from './display.js';
+import { pline, You, canseemon } from './display.js';
 import { on_level, Is_special, dungeon_branch } from './dungeon.js';
 import { qt_pager, com_pager, is_quest_artifact, find_quest_artifact }
     from './questpgr.js';
@@ -30,6 +30,7 @@ import { carrying, fully_identify_obj } from './invent.js';
 import { create_gas_cloud } from './region.js';
 import { Monnam, mon_nam } from './do_name.js';
 import { setmangry, monnear } from './mon.js';
+import { Hallucination } from './youprop.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 

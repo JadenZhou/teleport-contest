@@ -58,26 +58,11 @@ import { PLNMSG_MON_TAKES_OFF_ITEM, W_ACCESSORY, W_ARMG, TT_BURIEDBALL,
          ADORNED, LEFT_RING, RIGHT_RING, CONFLICT, BLINDED, LEVITATION,
          FLYING, FOOT } from './const.js';
 import { ART_ORB_OF_DETECTION } from './artilist.js';
+import { Punished, Blind, Adornment, Conflict, Levitation, Flying } from './youprop.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
 
-/* C ref: youprop.h -- (H* || E*) && !B* */
-function uhave(prop) {
-    const p = game.u.uprops[prop];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-/* C ref: youprop.h Blind, Conflict, Levitation, Flying, Adornment */
-function Blind() { return uhave(BLINDED); }
-function Conflict() {
-    const p = game.u.uprops[CONFLICT];
-    return !!(p.intrinsic || p.extrinsic);
-}
-function Levitation() { return uhave(LEVITATION); }
-function Flying() { return uhave(FLYING); }
-function Adornment() { return game.u.uprops[ADORNED].extrinsic || 0; }
-/* C ref: youprop.h Punished */
-function Punished() { return !!game.uball; }
 /* C ref: mondata.h is_animal(), slithy(), throws_rocks(), touch_petrifies() */
 function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }

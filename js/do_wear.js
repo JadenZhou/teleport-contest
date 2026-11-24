@@ -66,6 +66,9 @@ import { unmul } from './allmain.js';
 import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
 import { region_danger } from './region.js';
+import { Blind, Glib, Invisible, Levitation, Flying } from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
 // C's impossible() (pline.c) is not ported yet.
 function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -151,32 +154,10 @@ function is_flimsy(otmp) {
     return objects[otmp.otyp].oc_material <= O.LEATHER
            || otmp.otyp === O.RUBBER_HOSE;
 }
-/* C ref: you.h Upolyd */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
 /* C ref: obj.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 /* C ref: pline.c You_feel() */
 async function You_feel(line) { await pline(`You feel ${line}`); }
-/* C ref: youprop.h property tests used here */
-function Levitation() {
-    const p = uprop(LEVITATION);
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Flying() {
-    const p = uprop(FLYING);
-    return !!((p.intrinsic || p.extrinsic
-               || (game.u.usteed && is_flyer(game.u.usteed.data)))
-              && !p.blocked);
-}
-function See_invisible() {
-    const p = uprop(SEE_INVIS);
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Invis() {
-    const p = uprop(INVIS);
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Invisible() { return Invis() && !See_invisible(); }
 
 // C ref: do_wear.c fingers_or_gloves() -- plural "fingers" or optionally
 // "gloves"
@@ -830,10 +811,6 @@ export function adj_abon(otmp, delta) {
 
 /* C ref: you.h Blind -- Blinded intrinsic or extrinsic (blindfold),
    not blocked */
-function Blind() {
-    const p = game.u.uprops?.[BLINDED];
-    return !!((p?.intrinsic || p?.extrinsic) && !p?.blocked);
-}
 
 // C ref: potion.c toggle_blindness() -- blindness has just been toggled
 export function toggle_blindness() {
@@ -1490,15 +1467,6 @@ function takeoff_ctx() {
     return g.context.takeoff;
 }
 
-/* C ref: youprop.h u.uprops[] entry */
-function uprop(p) {
-    const u = game.u;
-    if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
-    return u.uprops[p];
-}
-function Glib() { return !!(uprop(GLIB).intrinsic || uprop(GLIB).extrinsic); }
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: obj.h is_boots(), is_gloves() */
 function is_boots(otmp) {
     return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_BOOTS;

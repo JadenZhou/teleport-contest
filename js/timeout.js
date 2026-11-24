@@ -59,16 +59,13 @@ import {
 import { newsym, see_monsters } from './display.js';
 import { set_itimeout, make_confused, make_stunned, make_blinded, make_deaf,
          make_hallucinated, make_glib, set_mimic_blocking } from './potion.js';
+import {
+    Fire_resistance, Stunned, Confusion, Blind, Halluc_resistance, Hallucination, Deaf,
+    See_invisible, Invis, HWwalking, EWwalking, Breathless
+} from './youprop.js';
+import { Role_if } from './const.js';
 
 /* C ref: youprop.h -- (H* || E*) for the timeout cases; Blind */
-function uhave(p) {
-    const q = game.u.uprops[p];
-    return !!(q.intrinsic || q.extrinsic);
-}
-function Blind() {
-    const q = game.u.uprops[BLINDED];
-    return !!((q.intrinsic || q.extrinsic) && !q.blocked);
-}
 import { PM_ARCHEOLOGIST } from './monsters.js';
 import { FEDORA, LUCKSTONE } from './objects.js';
 import { stone_luck } from './attrib.js';
@@ -94,8 +91,6 @@ import { region_danger } from './region.js';
 import { an } from './objnam.js';
 import { spec_ability, SPFX_LUCK } from './artifact.js';
 
-/* C ref: role.h Role_if() */
-function Role_if(pm) { return game.urole.mnum === pm; }
 
 
 // C ref: timeout.c propertynames[]
@@ -214,17 +209,9 @@ const NH_BLUE = "blue", NH_GREEN = "green";
 /* C ref: mondata.h nolimbs(), breathless(), cantvomit(); youprop.h
    Breathless */
 function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
-function Breathless() {
-    return !!(up(MAGICAL_BREATHING).intrinsic || up(MAGICAL_BREATHING).extrinsic
-              || (game.youmonst.data.mflags1 & M1_BREATHLESS) !== 0);
-}
 function cantvomit(ptr) {
     return ptr.mlet === S_RODENT && ptr !== mons[PM_ROCK_MOLE]
            && ptr !== mons[PM_WOODCHUCK];
-}
-function Hallucination_to() {
-    return !!(up(HALLUC).intrinsic
-              && !(up(HALLUC_RES).intrinsic || up(HALLUC_RES).extrinsic));
 }
 /* C ref: trap.c unconscious() */
 function unconscious() {
@@ -351,7 +338,7 @@ async function vomiting_dialogue() {
         txt = vomiting_texts[4];
         if (cantvomit(g.youmonst.data))
             txt = "gag uncontrollably.";
-        else if (Hallucination_to())
+        else if (Hallucination())
             /* "hurl" is short for "hurl chunks" which is slang for
                relatively violent vomiting... */
             txt = "are about to hurl!";
@@ -363,7 +350,7 @@ async function vomiting_dialogue() {
             /* case 2 used to be "You suddenly vomit!" ... give one here to
                have more specific point at which hero became unable to move */
             if (g.u.uhs < FAINTING)
-                await You(`${!Hallucination_to() ? "vomit" : "hurl chunks"}!`);
+                await You(`${!Hallucination() ? "vomit" : "hurl chunks"}!`);
         }
         await vomit();
         break;
@@ -435,7 +422,7 @@ async function sickness_dialogue() {
         /* change the message slightly for food poisoning */
         if ((game.u.usick_type & SICK_NONVOMITABLE) === 0)
             buf = buf.replace("illness", "sickness"); /* strsubst() */
-        if (Hallucination_to() && buf.includes("Death's door"))
+        if (Hallucination() && buf.includes("Death's door"))
             throw new Error('sickness_dialogue(): hallucinatory "inviting you in" (mhe()) not ported yet');
         await urgent_pline(buf);
     }
@@ -511,8 +498,8 @@ async function slime_dialogue() {
                 if (!Blind()) /* [what if you're already green?] */
                     await urgent_pline(buf.replace("%s", hcolor(NH_GREEN)));
             } else {
-                await urgent_pline(buf.replace("%s", an(Hallucination_to() ? rndmonnam(null)
-                                                                         : "green slime")));
+                await urgent_pline(buf.replace("%s", an(Hallucination() ? rndmonnam(null)
+                                                                      : "green slime")));
             }
         } else {
             await urgent_pline(buf);
@@ -688,13 +675,13 @@ export async function nh_timeout() {
                 /* So make_confused works properly */
                 set_itimeout(CONFUSION, 1);
                 await make_confused(0, true);
-                if (!uhave(CONFUSION))
+                if (!Confusion())
                     await stop_occupation();
                 break;
             case STUNNED:
                 set_itimeout(STUNNED, 1);
                 await make_stunned(0, true);
-                if (!uhave(STUNNED))
+                if (!Stunned())
                     await stop_occupation();
                 break;
             case BLINDED: {
@@ -710,14 +697,13 @@ export async function nh_timeout() {
                 set_itimeout(DEAF, 1);
                 await make_deaf(0, true);
                 g.disp_botl = true;
-                if (!(uhave(DEAF) || u.uroleplay?.deaf))
+                if (!(Deaf() || u.uroleplay?.deaf))
                     await stop_occupation();
                 break;
             case INVIS: {
-                const Invis = uhave(INVIS) && !P[INVIS].blocked;
                 newsym(u.ux, u.uy);
-                if (!Invis && !P[INVIS].blocked && !Blind()) {
-                    await pline(!uhave(SEE_INVIS)
+                if (!Invis() && !P[INVIS].blocked && !Blind()) {
+                    await pline(!See_invisible()
                                 ? "You are no longer invisible."
                                 : "You can no longer see through yourself.");
                     await stop_occupation();
@@ -733,7 +719,7 @@ export async function nh_timeout() {
             case HALLUC:
                 set_itimeout(HALLUC, 1);
                 await make_hallucinated(0, true, 0);
-                if (!(P[HALLUC].intrinsic && !uhave(HALLUC_RES)))
+                if (!(P[HALLUC].intrinsic && !Halluc_resistance()))
                     await stop_occupation();
                 break;
             case FIRE_RES:
@@ -741,12 +727,12 @@ export async function nh_timeout() {
                    as a way to survive lava after multiple life-saving
                    attempts fail to relocate hero; skip timeout message
                    if hero has acquired fire resistance in the meantime */
-                if (!uhave(FIRE_RES))
+                if (!Fire_resistance())
                     await pline("Your temporary ability to survive burning has ended.");
                 break;
             case WWALKING:
                 /* [see fire resistance] */
-                if (!uhave(WWALKING))
+                if (!(HWwalking() || EWwalking()))
                     await pline("Your temporary ability to walk on liquid has ended.");
                 break;
             case ACID_RES:
@@ -1562,7 +1548,7 @@ async function lantern_message(obj) {
     switch (obj.where) {
     case 'OBJ_INVENT':
         await Your_to("lantern is getting dim.");
-        if (Hallucination_to())
+        if (Hallucination())
             await pline("Batteries have not been invented yet.");
         break;
     case 'OBJ_FLOOR':
@@ -1782,7 +1768,7 @@ async function burn_object(arg, timeout) {
                     }
 
                     /* post message */
-                    await pline(Hallucination_to()
+                    await pline(Hallucination()
                                     ? (many ? "They shriek!" : "It shrieks!")
                                     : Blind() ? "" : (many ? "Their flames die."
                                                            : "Its flame dies."));

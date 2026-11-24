@@ -44,7 +44,6 @@ import { recalc_telepat_range, clear_bypasses, bypass_obj, nxt_unbypassed_obj,
          which_armor } from './worn.js';
 import { make_hallucinated } from './potion.js';
 import { invocation_pos } from './mklev.js';
-import { Hate_silver } from './wield.js';
 import { You_cant } from './display.js';
 import { yname } from './objnam.js';
 import { killer_xname } from './mthrowu.js';
@@ -69,12 +68,12 @@ import { ignite_items as ignite_items_art } from './trap.js';
 import { wake_nearto as wake_nearto_art } from './mon.js';
 import { ART_TSURUGI_OF_MURAMASA, ART_VORPAL_BLADE } from './artilist.js';
 import { SLIMED as SLIMED_ART } from './const.js';
-import { Blind as Blind_art } from './display.js';
 import { defended, resists_fire, resists_cold, resists_elec, resists_poison,
          resists_drli, Resists_Elem } from './mondata.js';
 import { STONE_RES } from './const.js';
 import { ART_GRIMTOOTH } from './artilist.js';
 import { Tobjnam } from './objnam.js';
+import { Antimagic, Hate_silver, Blind as Blind_art } from './youprop.js';
 
 // C ref: artifact.h SPFX_*
 export const SPFX_NONE = 0x00000000;
@@ -1508,11 +1507,6 @@ export function touch_artifact_mon(obj, mon) {
     return 1;
 }
 
-/* C ref: youprop.h Antimagic */
-function Antimagic() {
-    const p = game.u.uprops[ANTIMAGIC];
-    return !!(p.intrinsic || p.extrinsic);
-}
 
 // C ref: artifact.c retouch_object()
 /* decide whether a particular item can be used by the hero; returns 1 if

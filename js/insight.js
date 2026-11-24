@@ -105,6 +105,24 @@ import { visible_region_at, reg_damg } from './region.js';
 import { find_mac } from './worn.js';
 import { x_monnam, ARTICLE_YOUR, SUPPRESS_IT, SUPPRESS_INVISIBLE } from './do_name.js';
 import { STRAT_WAITMASK, MFAST, MSLOW } from './const.js';
+import {
+    Fire_resistance, Cold_resistance, Sleep_resistance, Disint_resistance, Shock_resistance,
+    Poison_resistance, Drain_resistance, Antimagic, Acid_resistance, Stone_resistance,
+    Sick_resistance, Invulnerable, Punished, Stunned, Confusion, HBlinded, EBlinded, BBlinded,
+    BlindedTimeout, PermaBlind, Blindfolded, Blindfolded_only, Blind, Sick, Stoned, Strangled,
+    Vomiting, Glib, Slimed, Halluc_resistance, Hallucination, Deaf, Fumbling, EWounded_legs,
+    Wounded_legs, HSleepy, Sleepy, Hunger, See_invisible, Blind_telepat, Blnd_resist, Warning,
+    Warn_of_mon, Undead_warning, Searching, HClairvoyant, EClairvoyant, BClairvoyant,
+    Clairvoyant, Infravision, HDetect_monsters, Detect_monsters, Adornment, HInvis, EInvis,
+    BInvis, Invis, Invisible, Displaced, HStealth, EStealth, BStealth, Stealth,
+    Aggravate_monster, Conflict, Jumping, Teleportation, Teleport_control, BLevitation,
+    Levitation, Lev_at_will, BFlying, Flying, Wwalking, Swimming, Amphibious, Breathless,
+    Underwater, Passes_walls, Slow_digestion, Half_spell_damage, Half_physical_damage,
+    Regeneration, HProtection, Protection, Protection_from_shape_changers, Polymorph,
+    Polymorph_control, Unchanging, Fast, Very_fast, Reflecting, Free_action, Fixed_abil,
+    Lifesaved, Hate_silver, Half_gas_damage
+} from './youprop.js';
+import { Upolyd, Role_if, Luck } from './const.js';
 
 // C ref: insight.c align_str()
 export function align_str(alignment) {
@@ -130,65 +148,7 @@ function wizard() { return !!game.flags?.debug; }
 function discover() { return !!game.flags?.explore; }
 function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 }; }
 
-/* C ref: you.h Upolyd, URIGHTY, Role_if() */
-function Upolyd() { return U().umonnum !== U().umonster; }
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
-function Role_if(pm) { return game.urole.mnum === pm; }
-
-/* C ref: youprop.h */
-function HLevitation() { return prop(LEVITATION).intrinsic; }
-function ELevitation() { return prop(LEVITATION).extrinsic; }
-function Levitation() {
-    return (HLevitation() || ELevitation()) && !prop(LEVITATION).blocked;
-}
-function Lev_at_will() {
-    return ((HLevitation() & I_SPECIAL) !== 0 || (ELevitation() & W_ARTI) !== 0)
-           && (HLevitation() & ~(I_SPECIAL | TIMEOUT)) === 0
-           && (ELevitation() & ~W_ARTI) === 0;
-}
-function Flying() {
-    /* u.usteed && is_flyer(u.usteed->data): Riding stops earlier */
-    return (prop(FLYING).intrinsic || prop(FLYING).extrinsic)
-           && !prop(FLYING).blocked;
-}
-function Wwalking() {
-    return (prop(WWALKING).intrinsic || prop(WWALKING).extrinsic)
-           && !Is_waterlevel(U().uz);
-}
-function Underwater() { return U().uinwater; }
-function Stoned() { return prop(STONED).intrinsic; }
-function Slimed() { return prop(SLIMED).intrinsic; }
-function Strangled() { return prop(STRANGLED).intrinsic; }
-function Sick() { return prop(SICK).intrinsic; }
-function Vomiting() { return prop(VOMITING).intrinsic; }
-function Stunned() { return prop(STUNNED).intrinsic; }
-function Confusion() { return prop(CONFUSION).intrinsic; }
-function Hallucination() {
-    return prop(HALLUC).intrinsic
-           && !(prop(HALLUC_RES).intrinsic || prop(HALLUC_RES).extrinsic);
-}
-function HBlinded() { return prop(BLINDED).intrinsic; }
-function Blindfolded() { return prop(BLINDED).extrinsic; }
-function Blinded() { return HBlinded() && !prop(BLINDED).blocked; }
-function BlindedTimeout() { return HBlinded() & TIMEOUT; }
-function Blindfolded_only() { return Blindfolded() && !Blinded(); }
-function Blind() {
-    return (HBlinded() || Blindfolded()) && !prop(BLINDED).blocked;
-}
-function Deaf() {
-    return prop(DEAF).intrinsic || prop(DEAF).extrinsic || U().uroleplay?.deaf;
-}
-function Punished() { return !!game.uball; }
-function EWounded_legs() { return prop(WOUNDED_LEGS).extrinsic; }
-function Wounded_legs() {
-    return prop(WOUNDED_LEGS).intrinsic || prop(WOUNDED_LEGS).extrinsic;
-}
-function Glib() { return prop(GLIB).intrinsic; }
-function Fumbling() { return prop(FUMBLING).intrinsic || prop(FUMBLING).extrinsic; }
-function HSleepy() { return prop(SLEEPY).intrinsic; }
-function Sleepy() { return prop(SLEEPY).intrinsic || prop(SLEEPY).extrinsic; }
-function Hunger() { return prop(HUNGER).intrinsic || prop(HUNGER).extrinsic; }
-function Fixed_abil() { return prop(FIXED_ABIL).extrinsic; }
 
 /* C ref: mondata.h humanoid(), haseyes() */
 function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
@@ -209,116 +169,6 @@ function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
 
 /* C ref: youprop.h -- the rest of the property macros that
    attributes_enlightenment() checks */
-function Invulnerable() { return prop(INVULNERABLE).intrinsic; }
-function Antimagic() { return prop(ANTIMAGIC).intrinsic || prop(ANTIMAGIC).extrinsic; }
-function Fire_resistance() { return prop(FIRE_RES).intrinsic || prop(FIRE_RES).extrinsic; }
-function Cold_resistance() { return prop(COLD_RES).intrinsic || prop(COLD_RES).extrinsic; }
-function Sleep_resistance() { return prop(SLEEP_RES).intrinsic || prop(SLEEP_RES).extrinsic; }
-function Disint_resistance() {
-    return prop(DISINT_RES).intrinsic || prop(DISINT_RES).extrinsic;
-}
-function Shock_resistance() { return prop(SHOCK_RES).intrinsic || prop(SHOCK_RES).extrinsic; }
-function Poison_resistance() {
-    return prop(POISON_RES).intrinsic || prop(POISON_RES).extrinsic;
-}
-function Acid_resistance() { return prop(ACID_RES).intrinsic || prop(ACID_RES).extrinsic; }
-function Drain_resistance() { return prop(DRAIN_RES).intrinsic || prop(DRAIN_RES).extrinsic; }
-function Sick_resistance() {
-    return prop(SICK_RES).intrinsic || prop(SICK_RES).extrinsic
-           || defended(game.youmonst, M.AD_DISE);
-}
-function Stone_resistance() { return prop(STONE_RES).intrinsic || prop(STONE_RES).extrinsic; }
-function Halluc_resistance() {
-    return prop(HALLUC_RES).intrinsic || prop(HALLUC_RES).extrinsic;
-}
-function EBlinded() { return prop(BLINDED).extrinsic; }
-function BBlinded() { return prop(BLINDED).blocked; }
-function PermaBlind() { return (HBlinded() & FROMOUTSIDE) !== 0; }
-function Blnd_resist() { return prop(BLND_RES).intrinsic || prop(BLND_RES).extrinsic; }
-function See_invisible() { return prop(SEE_INVIS).intrinsic || prop(SEE_INVIS).extrinsic; }
-function Blind_telepat() { return prop(TELEPAT).intrinsic || prop(TELEPAT).extrinsic; }
-function Warning() { return prop(WARNING).intrinsic || prop(WARNING).extrinsic; }
-function Warn_of_mon() { return prop(WARN_OF_MON).intrinsic || prop(WARN_OF_MON).extrinsic; }
-function Undead_warning() { return prop(WARN_UNDEAD).intrinsic; }
-function Searching() { return prop(SEARCHING).intrinsic || prop(SEARCHING).extrinsic; }
-function HClairvoyant() { return prop(CLAIRVOYANT).intrinsic; }
-function EClairvoyant() { return prop(CLAIRVOYANT).extrinsic; }
-function BClairvoyant() { return prop(CLAIRVOYANT).blocked; }
-function Clairvoyant() { return (HClairvoyant() || EClairvoyant()) && !BClairvoyant(); }
-function Infravision() { return prop(INFRAVISION).intrinsic || prop(INFRAVISION).extrinsic; }
-function HDetect_monsters() { return prop(DETECT_MONSTERS).intrinsic; }
-function Detect_monsters() {
-    return prop(DETECT_MONSTERS).intrinsic || prop(DETECT_MONSTERS).extrinsic;
-}
-function Adornment() { return prop(ADORNED).extrinsic; }
-function HInvis() { return prop(INVIS).intrinsic; }
-function EInvis() { return prop(INVIS).extrinsic; }
-function BInvis() { return prop(INVIS).blocked; }
-function Invis() { return (HInvis() || EInvis()) && !BInvis(); }
-function Invisible() { return Invis() && !See_invisible(); }
-function Displaced() { return prop(DISPLACED).intrinsic || prop(DISPLACED).extrinsic; }
-function HStealth() { return prop(STEALTH).intrinsic; }
-function EStealth() { return prop(STEALTH).extrinsic; }
-function BStealth() { return prop(STEALTH).blocked; }
-function Stealth() { return (HStealth() || EStealth()) && !BStealth(); }
-function Aggravate_monster() {
-    return prop(AGGRAVATE_MONSTER).intrinsic || prop(AGGRAVATE_MONSTER).extrinsic;
-}
-function Conflict() { return prop(CONFLICT).intrinsic || prop(CONFLICT).extrinsic; }
-function Jumping() { return prop(JUMPING).intrinsic || prop(JUMPING).extrinsic; }
-function Teleportation() { return prop(TELEPORT).intrinsic || prop(TELEPORT).extrinsic; }
-function Teleport_control() {
-    return prop(TELEPORT_CONTROL).intrinsic || prop(TELEPORT_CONTROL).extrinsic;
-}
-function BLevitation() { return prop(LEVITATION).blocked; }
-function BFlying() { return prop(FLYING).blocked; }
-function Swimming() {
-    return prop(SWIMMING).intrinsic || prop(SWIMMING).extrinsic
-           || (U().usteed && (U().usteed.data.mflags1 & M.M1_SWIM) !== 0);
-}
-function Amphibious() {
-    return prop(MAGICAL_BREATHING).intrinsic || prop(MAGICAL_BREATHING).extrinsic
-           || (game.youmonst.data.mflags1 & M.M1_AMPHIBIOUS) !== 0;
-}
-function Breathless() {
-    return prop(MAGICAL_BREATHING).intrinsic || prop(MAGICAL_BREATHING).extrinsic
-           || (game.youmonst.data.mflags1 & M.M1_BREATHLESS) !== 0;
-}
-function Passes_walls() {
-    return prop(PASSES_WALLS).intrinsic || prop(PASSES_WALLS).extrinsic;
-}
-function Slow_digestion() {
-    return prop(SLOW_DIGESTION).intrinsic || prop(SLOW_DIGESTION).extrinsic;
-}
-function Half_spell_damage() { return prop(HALF_SPDAM).intrinsic || prop(HALF_SPDAM).extrinsic; }
-function Half_physical_damage() {
-    return prop(HALF_PHDAM).intrinsic || prop(HALF_PHDAM).extrinsic;
-}
-function Regeneration() {
-    return prop(REGENERATION).intrinsic || prop(REGENERATION).extrinsic;
-}
-function HProtection() { return prop(PROTECTION).intrinsic; }
-function Protection() { return prop(PROTECTION).intrinsic || prop(PROTECTION).extrinsic; }
-function Protection_from_shape_changers() {
-    return prop(PROT_FROM_SHAPE_CHANGERS).intrinsic
-           || prop(PROT_FROM_SHAPE_CHANGERS).extrinsic;
-}
-function Polymorph() { return prop(POLYMORPH).intrinsic || prop(POLYMORPH).extrinsic; }
-function Polymorph_control() {
-    return prop(POLYMORPH_CONTROL).intrinsic || prop(POLYMORPH_CONTROL).extrinsic;
-}
-function Unchanging() { return prop(UNCHANGING).intrinsic || prop(UNCHANGING).extrinsic; }
-function Fast() { return prop(FAST).intrinsic || prop(FAST).extrinsic; }
-function Very_fast() { return (prop(FAST).intrinsic & ~INTRINSIC) || prop(FAST).extrinsic; }
-function Reflecting() { return prop(REFLECTING).intrinsic || prop(REFLECTING).extrinsic; }
-function Free_action() { return prop(FREE_ACTION).extrinsic; }
-function Lifesaved() { return prop(LIFESAVED).extrinsic; }
-function Hate_silver() { return U().ulycn >= M.LOW_PM || hates_silver(game.youmonst.data); }
-function Half_gas_damage() {
-    return game.ublindf && game.ublindf.otyp === TOWEL && game.ublindf.spe > 0;
-}
-/* C ref: you.h Luck */
-function Luck() { return (U().uluck || 0) + (U().moreluck || 0); }
 
 /* C ref: mondata.h is_clinger(), lays_eggs(); monst.h vampshifted() */
 function is_clinger(ptr) { return (ptr.mflags1 & M.M1_CLING) !== 0; }

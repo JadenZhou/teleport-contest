@@ -49,6 +49,7 @@ import { add_menu_heading } from './invent.js';
 import { P_SKILL_LIMIT, P_FIRST_SPELL, P_FIRST_H_TO_H, P_LAST_H_TO_H,
          P_FIRST_WEAPON, NHW_MENU, MENU_BEHAVE_STANDARD, PICK_NONE, PICK_ONE,
          MAXULEV, MENU_ITEMFLAGS_NONE, ECMD_OK } from './const.js';
+import { Upolyd, Role_if } from './const.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -1046,9 +1047,6 @@ export function mwepgone(mon) {
     }
 }
 
-/* C ref: youprop.h Upolyd; skills.h martial_bonus() */
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 
 // C ref: weapon.c abon()

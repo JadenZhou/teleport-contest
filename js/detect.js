@@ -22,8 +22,14 @@ import { sobj_at } from './makemon.js';
 import { STONE, W_NONDIGGABLE, W_NONPASSWALL } from './const.js';
 import { BOULDER } from './objects.js';
 import { m_at } from './makemon.js';
-import { canspotmon, sensemon, warning_of, Blind, map_invisible,
-         glyph_is_invisible, feel_location } from './display.js';
+import {
+    canspotmon, sensemon, warning_of, map_invisible, glyph_is_invisible,
+    feel_location
+} from './display.js';
+import {
+    Stunned, Confusion, Blind, Hallucination, Hallucination as Hallucination_ft,
+    Hallucination as Hallucination_dt
+} from './youprop.js';
 
 // C ref: display.c feel_newsym()
 function feel_newsym(x, y) {
@@ -43,7 +49,6 @@ function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
 function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 import { t_at, STATUE_TRAP, trapname as trapname_ft } from './trap.js';
 import { an as an_ft } from './objnam.js';
-import { Hallucination as Hallucination_ft } from './display.js';
 import {
     A_WIS, SDOOR, SCORR, DOOR, CORR, WM_MASK, D_NODOOR, D_CLOSED, D_LOCKED,
     BLINDED, isok, Is_rogue_level,
@@ -422,9 +427,8 @@ export async function reveal_terrain(which_subset) {
     const u = game.u;
     /* 'full' overrides impairment and implies no-traps, no-objs, no-mons */
     const full = (which_subset & TER_FULL) !== 0; /* show whole map */
-    const uprop = (p) => !!(u.uprops?.[p]?.intrinsic || u.uprops?.[p]?.extrinsic);
 
-    if ((uprop(HALLUC) || uprop(STUNNED) || uprop(CONFUSION)) && !full) {
+    if ((Hallucination() || Stunned() || Confusion()) && !full) {
         await pline("You are too disoriented for this."); /* You() */
     } else {
         let glyph;
@@ -841,7 +845,7 @@ import { unmap_invisible } from './display.js';
 export async function food_detect(sobj) {
     const g = game, u = g.u;
     let ct = 0, ctu = 0;
-    const confused = !!(Confusion_dt() || (sobj && sobj.cursed));
+    const confused = !!(Confusion() || (sobj && sobj.cursed));
     const oclass = confused ? POTION_CLASS_DT : FOOD_CLASS_DT;
     const what = confused ? "something" : "food";
 
@@ -1044,8 +1048,9 @@ export async function monster_detect(otmp, /* detecting object (if any) */
     return 0;
 }
 
-import { show_glyph_cell as show_glyph_cell_dt,
-         Hallucination as Hallucination_dt } from './display.js';
+import {
+    show_glyph_cell as show_glyph_cell_dt
+} from './display.js';
 import { rn2_on_display_rng as rn2_on_display_rng_dt } from './rng.js';
 import { mons as mons_dt, NUMMONS as NUMMONS_DT, PM_LONG_WORM as PM_LONG_WORM_DT,
          S_WORM_TAIL as S_WORM_TAIL_DT } from './monsters.js';
@@ -1330,7 +1335,7 @@ export async function do_mapping() {
     const unconstrained = unconstrain_map();
     for (zx = 1; zx < COLNO; zx++)
         for (zy = 0; zy < ROWNO; zy++)
-            show_map_spot(zx, zy, Confusion_dt());
+            show_map_spot(zx, zy, Confusion());
 
     if (!game.level.flags?.hero_memory || unconstrained) {
         await flush_screen(1);                 /* flush temp screen */
@@ -1658,7 +1663,3 @@ import { CONFUSION as CONFUSION_DT,
          NOSE as NOSE_DT, A_WIS as A_WIS_DT, TER_DETECT as TER_DETECT_DT } from './const.js';
 import { body_part as body_part_dt } from './insight.js';
 import { strange_feeling as strange_feeling_dt } from './potion.js';
-function Confusion_dt() {
-    const p = game.u.uprops[CONFUSION_DT];
-    return !!(p.intrinsic || p.extrinsic);
-}

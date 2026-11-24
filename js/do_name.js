@@ -36,6 +36,8 @@ import { tty_create_nhwindow, tty_start_menu, tty_add_menu, tty_end_menu,
 import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
          GETOBJ_PROMPT, GETOBJ_NOFLAGS, ECMD_OK } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
+import { Blind, Hallucination } from './youprop.js';
+import { m_next2u } from './const.js';
 
 const PL_PSIZ = 63; /* global.h */
 
@@ -437,15 +439,7 @@ export function pmname(pm, mgender) {
 export function mon_pmname(mon) {
     return pmname(mon.data, mon.female ? FEMALE : MALE);
 }
-function uhave(prop) {
-    const p = game.u?.uprops?.[prop];
-    return !!(p && (p.intrinsic || p.extrinsic));
-}
 
-/* C ref: you.h Hallucination -- HHallucination && !Halluc_resistance */
-function Hallucination() {
-    return uhave(HALLUC) && !uhave(HALLUC_RES);
-}
 /* C ref: do_name.c Mgender() */
 export function Mgender(mtmp) {
     let mgender = MALE;
@@ -463,10 +457,6 @@ export function Mgender(mtmp) {
 function humanoid(ptr) { return (ptr.mflags1 & M1_HUMANOID) !== 0; }
 function is_animal(ptr) { return (ptr.mflags1 & M1_ANIMAL) !== 0; }
 function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
-/* C ref: you.h m_next2u() */
-function m_next2u(m) {
-    return dist2(m.mx, m.my, game.u.ux, game.u.uy) <= 2;
-}
 
 // C ref: do_name.c bogon_codes[]
 export const bogon_codes = "-_+|="; /* see dat/bonusmon.txt */
@@ -708,7 +698,7 @@ export function x_monnam(mtmp, article, adjective, suppress, called) {
         buf += "invisible ";
     /* Blind: only the BLINDED property is checked so far */
     if (do_saddle && ((mtmp.misc_worn_check ?? 0) & W_SADDLE)
-        && !uhave(BLINDED) && !Hallucination())
+        && !Blind() && !Hallucination())
         buf += "saddled ";
     has_adjectives = (buf !== '');
 
@@ -910,7 +900,7 @@ export function pronoun_gender(mtmp, pg_flags) {
     const override_vis = (pg_flags & PRONOUN_NO_IT) !== 0,
           hallu_rand = (pg_flags & PRONOUN_HALLU) !== 0;
 
-    if (hallu_rand && uhave(HALLUC))
+    if (hallu_rand && Hallucination())
         return rn2(4); /* 0..3 */
     if (!override_vis && !canspotmon(mtmp))
         return 2;
@@ -987,15 +977,9 @@ const hcolors = [
 
 // C ref: do_name.c hcolor()
 export function hcolor(colorpref) {
-    return (Hallucination_dn() || !colorpref)
+    return (Hallucination() || !colorpref)
         ? hcolors[rn2_on_display_rng(hcolors.length)]
         : colorpref;
 }
 
-/* C ref: youprop.h Hallucination */
-function Hallucination_dn() {
-    const p = game.u.uprops;
-    return !!(p[HALLUC_DN].intrinsic
-              && !(p[HALLUC_RES_DN].intrinsic || p[HALLUC_RES_DN].extrinsic));
-}
 import { HALLUC as HALLUC_DN, HALLUC_RES as HALLUC_RES_DN } from './const.js';

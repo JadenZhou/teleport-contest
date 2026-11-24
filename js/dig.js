@@ -6,7 +6,7 @@ import { game } from './gstate.js';
 import { in_town } from './hack.js';
 import { rnd, rn2 } from './rng.js';
 import { cvt_sdoor_to_door } from './detect.js';
-import { canseemon, newsym, pline, Hallucination } from './display.js';
+import { canseemon, newsym, pline } from './display.js';
 import { You_hear } from './sounds.js';
 import { mksobj_at, place_object } from './mkobj.js';
 import { acurr } from './attrib.js';
@@ -20,12 +20,12 @@ import { hideunder_async as hideunder, m_at } from './makemon.js';
 import { stop_occupation } from './allmain.js';
 import { obfree, stackobj } from './invent.js';
 import { M1_CONCEAL } from './monsters.js';
+import { Hallucination, Levitation, Unaware, Blind as Blind_dg } from './youprop.js';
 
 /* C ref: mondata.h hides_under() */
 function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
-import { Unaware } from './eat.js';
 import { D_TRAPPED, D_BROKEN, SCORR, A_STR, A_INT, A_WIS, A_DEX, A_CON,
          A_CHA } from './const.js';
 import { ICE, DRAWBRIDGE_UP, DB_UNDER, DB_ICE, isok } from './const.js';
@@ -58,7 +58,7 @@ import { You as You_zd, stairway_at as stairway_at_zd } from './display.js';
 import { s_suffix as s_suffix_zd } from './hacklib.js';
 import { mon_nam as mon_nam_zd } from './do_name.js';
 import { mbodypart as mbodypart_zd, body_part as body_part_zd } from './insight.js';
-import { expels as expels_zd } from './mhitu.js';
+import { uhis, expels as expels_zd } from './mhitu.js';
 import { ceiling as ceiling_zd } from './dungeon.js';
 import { hard_helmet as hard_helmet_zd, xname as xname_zd } from './objnam.js';
 import { losehp as losehp_zd, Maybe_Half_Phys as Maybe_Half_Phys_zd } from './trap.js';
@@ -787,7 +787,6 @@ export async function buried_ball_to_punishment() {
         newsym(cc.x, cc.y);
     }
 }
-import { Blind as Blind_dg } from './display.js';
 import { STONE as STONE_DG } from './const.js';
 
 import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, N_DIRS_Z, TT_WEB, WEB, IRONBARS,
@@ -811,11 +810,6 @@ import { You_cant, There } from './display.js';
 import { d } from './rng.js';
 import { OBJ_NAME } from './objects.js';
 
-/* C ref: youprop.h Levitation */
-function Levitation_dg() {
-    const p = game.u.uprops[LEVITATION];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 
 /* C ref: context.h struct dig_info (svc.context.digging); C's context
    starts zeroed */
@@ -921,7 +915,7 @@ export async function use_pick_axe2(obj) {
     } else if (u.uinwater) { /* Underwater */
         await pline(`Turbulence torpedoes your ${verbing} attempts.`);
     } else if (u.dz < 0) {
-        if (Levitation_dg())
+        if (Levitation())
             await You_zd("don't have enough leverage.");
         else
             await You_cant(`reach the ${ceiling_zd(u.ux, u.uy)}.`);
@@ -933,7 +927,7 @@ export async function use_pick_axe2(obj) {
         if (dam <= 0)
             dam = 1;
         await You_zd(`hit yourself with ${yname(game.uwep)}.`);
-        buf = `${game.flags.female ? "her" : "his" /* uhis() */} own ${
+        buf = `${uhis()} own ${
             OBJ_NAME(objects[obj.otyp])}`;
         await losehp_zd(Maybe_Half_Phys_zd(dam), buf, KILLED_BY);
         game.disp_botl = true;

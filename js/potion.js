@@ -96,75 +96,18 @@ import { waterbody_name } from './pager.js';
 import { is_swimmer } from './mondata.js';
 import { P_SKILL } from './weapon.js';
 import { P_RIDING, P_BASIC } from './const.js';
+import {
+    Fire_resistance, Cold_resistance, Sleep_resistance, Poison_resistance, Antimagic,
+    Acid_resistance, Sick_resistance, Stunned, Confusion, PermaBlind, Blindfolded, Blind, Sick,
+    Stoned, Strangled, Vomiting, Glib, Slimed, Halluc_resistance, Hallucination, Deaf,
+    Wounded_legs, See_invisible, Detect_monsters, BInvis, Invis, Invisible, Levitation,
+    Underwater, Unchanging, Fast, Very_fast, Free_action, Fixed_abil, Unaware, Half_gas_damage
+} from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
-/* C ref: youprop.h -- the property macros used here */
-function uprop(p) { return game.u.uprops[p]; }
-function Hallucination() {
-    return !!(uprop(HALLUC).intrinsic
-              && !(uprop(HALLUC_RES).intrinsic || uprop(HALLUC_RES).extrinsic));
-}
-function Halluc_resistance() {
-    return !!(uprop(HALLUC_RES).intrinsic || uprop(HALLUC_RES).extrinsic);
-}
-function Blindfolded() { return uprop(BLINDED).extrinsic; }
-function Blind() {
-    return !!((uprop(BLINDED).intrinsic || Blindfolded())
-              && !uprop(BLINDED).blocked);
-}
-function PermaBlind() { return (uprop(BLINDED).intrinsic & FROMOUTSIDE) !== 0; }
-function Deaf() {
-    return !!(uprop(DEAF).intrinsic || uprop(DEAF).extrinsic
-              || game.u.uroleplay?.deaf);
-}
-function Confusion() { return !!(uprop(CONFUSION).intrinsic || uprop(CONFUSION).extrinsic); }
-function Stunned() { return !!(uprop(STUNNED).intrinsic || uprop(STUNNED).extrinsic); }
-function Vomiting() { return !!uprop(VOMITING).intrinsic; }
-function Sick() { return uprop(SICK).intrinsic; }
-function Slimed() { return uprop(SLIMED).intrinsic; }
-function Stoned() { return uprop(STONED).intrinsic; }
-function Strangled() { return !!(uprop(STRANGLED).intrinsic || uprop(STRANGLED).extrinsic); }
-function Glib() { return !!(uprop(GLIB).intrinsic || uprop(GLIB).extrinsic); }
-function Sick_resistance() {
-    return !!(uprop(SICK_RES).intrinsic || uprop(SICK_RES).extrinsic
-              || defended_you(AD_DISE));
-}
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
-function defended_you(adtyp) {
-    void adtyp;
-    return false;
-}
-function See_invisible() { return !!(uprop(SEE_INVIS).intrinsic || uprop(SEE_INVIS).extrinsic); }
-function BInvis() { return uprop(INVIS).blocked; }
-function Invis() { return !!((uprop(INVIS).intrinsic || uprop(INVIS).extrinsic) && !BInvis()); }
-function Invisible() { return Invis() && !See_invisible(); }
-function Fast() { return !!(uprop(FAST).intrinsic || uprop(FAST).extrinsic); }
-function Very_fast() { return !!((uprop(FAST).intrinsic & ~INTRINSIC) || uprop(FAST).extrinsic); }
-function BLevitation() { return uprop(LEVITATION).blocked; }
-function Levitation() {
-    return !!((uprop(LEVITATION).intrinsic || uprop(LEVITATION).extrinsic)
-              && !BLevitation());
-}
-function Detect_monsters() {
-    return !!(uprop(DETECT_MONSTERS).intrinsic || uprop(DETECT_MONSTERS).extrinsic);
-}
-function Free_action() { return !!uprop(FREE_ACTION).extrinsic; }
-function Fixed_abil() { return !!uprop(FIXED_ABIL).extrinsic; }
-function Sleep_resistance() { return !!(uprop(SLEEP_RES).intrinsic || uprop(SLEEP_RES).extrinsic); }
-function Poison_resistance() { return !!(uprop(POISON_RES).intrinsic || uprop(POISON_RES).extrinsic); }
-function Acid_resistance() { return !!(uprop(ACID_RES).intrinsic || uprop(ACID_RES).extrinsic); }
-function Fire_resistance() { return !!(uprop(FIRE_RES).intrinsic || uprop(FIRE_RES).extrinsic); }
-function Cold_resistance() { return !!(uprop(COLD_RES).intrinsic || uprop(COLD_RES).extrinsic); }
-function Unchanging() { return !!(uprop(UNCHANGING).intrinsic || uprop(UNCHANGING).extrinsic); }
-function Antimagic() { return !!(uprop(ANTIMAGIC).intrinsic || uprop(ANTIMAGIC).extrinsic); }
-function Wounded_legs() { return !!(uprop(WOUNDED_LEGS).intrinsic || uprop(WOUNDED_LEGS).extrinsic); }
-function Underwater() { return !!game.u.uinwater; }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
-/* C ref: youprop.h Half_gas_damage */
-function Half_gas_damage() {
-    return !!(game.ublindf && game.ublindf.otyp === O.TOWEL && game.ublindf.spe > 0);
-}
 /* C ref: monst.h ismnum() */
 function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
 /* C ref: mondata.h breathless(), likes_fire(), is_silent(), is_human() */
@@ -203,10 +146,6 @@ function unconscious() {
                   && (g.nomovemsg.startsWith("You awake")
                       || g.nomovemsg.startsWith("You regain con")
                       || g.nomovemsg.startsWith("You are consci"))));
-}
-/* C ref: youprop.h Unaware -- (multi < 0 && (unconscious() || is_fainted())) */
-function Unaware() {
-    return game.multi < 0 && (unconscious() || game.u.uhs === FAINTED /* is_fainted() */);
 }
 /* C ref: decl.c c_common_strings */
 const You_can_move_again = "You can move again.";

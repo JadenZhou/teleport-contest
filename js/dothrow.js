@@ -13,7 +13,7 @@ import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
 import { is_ammo, is_pole, ammo_and_launcher, doquiver_core } from './wield.js';
-import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP } from './const.js';
+import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP, Race_if } from './const.js';
 import { BULLWHIP, BOOMERANG, AKLYS, WAN_PROBING, WAN_OPENING, WAN_LOCKING,
          WAN_STRIKING } from './objects.js';
 import { zap_map, bhitpile } from './zap.js';
@@ -84,6 +84,12 @@ import { obj_resists } from './dogmove.js';
 import { map_invisible, unmap_object, glyph_is_invisible, tmp_at, obj_to_glyph,
          DISP_FLASH, DISP_END } from './display.js';
 import { in_out_region } from './region.js';
+import {
+    Stone_resistance, Stunned, Confusion, Blind, Hallucination, Deaf, Fumbling, Levitation,
+    Underwater, Blind as Blind_br
+} from './youprop.js';
+import { Upolyd, Role_if } from './const.js';
+import { uprop } from './youprop.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
@@ -137,29 +143,6 @@ async function ok_to_throw() {
     return { ok: true, shotlimit };
 }
 
-/* C ref: youprop.h -- the hero's properties used by the throwing code */
-function uprop(p) {
-    const u = game.u;
-    if (!u.uprops[p]) u.uprops[p] = { intrinsic: 0, extrinsic: 0, blocked: 0 };
-    return u.uprops[p];
-}
-function uhave(p) { return !!(uprop(p).intrinsic || uprop(p).extrinsic); }
-function Confusion() { return uhave(CONFUSION); }
-function Stunned() { return uhave(STUNNED); }
-function Fumbling() { return uhave(FUMBLING); }
-function Blind() { return uhave(BLINDED) && !uprop(BLINDED).blocked; }
-function Hallucination() {
-    return !!(uprop(HALLUC).intrinsic
-              && !(uprop(HALLUC_RES).intrinsic || uprop(HALLUC_RES).extrinsic));
-}
-function Levitation() {
-    return !!((uprop(LEVITATION).intrinsic || uprop(LEVITATION).extrinsic)
-              && !uprop(LEVITATION).blocked);
-}
-function Stone_resistance() { return uhave(STONE_RES); }
-function Underwater() { return !!game.u.uinwater; }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Role_if(pm) { return game.urole.mnum === pm; }
 /* C ref: obj.h is_art(), is_pick(); mondata.h throws_rocks() */
 function is_art(o, art) { return !!(o && o.oartifact === art); }
 function is_pick(otmp) {
@@ -673,7 +656,7 @@ export async function thitmonst(mon,
 
     tmp += omon_adj(mon, obj, true);
     if (is_orc_dt(mon.data)
-        && (Upolyd() ? is_elf_dt(g.youmonst.data) : Race_if_elf()))
+        && (Upolyd() ? is_elf_dt(g.youmonst.data) : Race_if(PM_ELF_DT)))
         tmp++;
     if (guaranteed_hit) {
         tmp += 1000; /* Guaranteed hit */
@@ -725,11 +708,11 @@ export async function thitmonst(mon,
                  * especially their own special types of bow.
                  * Polymorphing won't make you a bow expert.
                  */
-                if ((Race_if_elf() || Role_if(PM_SAMURAI))
+                if ((Race_if(PM_ELF_DT) || Role_if(PM_SAMURAI))
                     && (!Upolyd() || your_race_dt(g.youmonst.data))
                     && objects[uwep.otyp].oc_skill === P_BOW_DT) {
                     ++tmp;
-                    if ((Race_if_elf() && uwep.otyp === ELVEN_BOW_DT)
+                    if ((Race_if(PM_ELF_DT) && uwep.otyp === ELVEN_BOW_DT)
                         || (Role_if(PM_SAMURAI) && uwep.otyp === YUMI_DT))
                         ++tmp;
                 }
@@ -1019,7 +1002,7 @@ async function throwit(obj,
                 return;
             }
         }
-        if (!(uhave(DEAF) || u.uroleplay?.deaf) && !Underwater()) {
+        if (!(Deaf() || u.uroleplay?.deaf) && !Underwater()) {
             /* Some sound effects when item lands in water or lava */
             if (is_pool(bx, by) || (is_lava(bx, by) && !is_flammable(obj))) {
                 /* Soundeffect(se_splash, 50) */
@@ -1521,7 +1504,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             case SPE_WIZARD_LOCK_BH:
             case SPE_FORCE_BOLT_BH:
                 if (await doorlock_bh(obj, x, y)) {
-                    if (cansee_br(x, y) || (obj.otyp === WAN_STRIKING && !Deaf_bh()))
+                    if (cansee_br(x, y) || (obj.otyp === WAN_STRIKING && !Deaf()))
                         learnwand_bh(obj);
                     if (g.level.at(x, y).doormask === D_BROKEN_BH
                         && in_rooms_dt(x, y, SHOPBASE_DT).length) {
@@ -2281,10 +2264,7 @@ function is_axe_dt(otmp) {
     return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS_DT)
             && objects[otmp.otyp].oc_skill === P_AXE_DT);
 }
-/* C ref: you.h Race_if(PM_ELF) */
-function Race_if_elf() { return game.urace.mnum === PM_ELF_DT; }
 import { cansee as cansee_br } from './vision.js';
-import { Blind as Blind_br } from './display.js';
 import { is_crackable } from './objects.js';
 import { erode_obj } from './trap.js';
 import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';
@@ -2297,11 +2277,6 @@ import { SPE_KNOCK as SPE_KNOCK_BH, SPE_WIZARD_LOCK as SPE_WIZARD_LOCK_BH,
          SPE_FORCE_BOLT as SPE_FORCE_BOLT_BH } from './objects.js';
 import { D_BROKEN as D_BROKEN_BH, SHOP_DOOR_COST as SHOP_DOOR_COST_BH,
          DEAF as DEAF_BH } from './const.js';
-/* C ref: youprop.h Deaf */
-function Deaf_bh() {
-    const q = game.u.uprops[DEAF_BH];
-    return !!(q && (q.intrinsic || q.extrinsic)) || !!game.u.uroleplay?.deaf;
-}
 import { potionbreathe } from './potion.js';
 import { haseyes } from './mondata.js';
 import { armor_simple_name, makeplural, vtense } from './objnam.js';

@@ -73,9 +73,8 @@ import { check_capacity } from './hack.js';
 import { morehungry } from './eat.js';
 import { in_out_region, update_player_regions, update_monster_region } from './region.js';
 import { learnscroll } from './read.js';
+import { Punished, Hallucination as Hallucination_tp } from './youprop.js';
 
-/* C ref: youprop.h Punished */
-function Punished() { return !!game.uball; }
 
 /* C ref: mondata.h is_rider() */
 function is_rider(ptr) {
@@ -1749,7 +1748,6 @@ export async function rloco(obj) {
 }
 import { VIASITTING as VIASITTING_TP, FORCETRAP as FORCETRAP_TP,
          TIMEOUT as TIMEOUT_TP } from './const.js';
-import { Hallucination as Hallucination_tp } from './display.js';
 import { make_confused as make_confused_tp } from './potion.js';
 import { lev_by_name as lev_by_name_tp } from './dungeon.js';
 

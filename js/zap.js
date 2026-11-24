@@ -11,7 +11,7 @@
 import { game } from './gstate.js';
 import { livelog_printf, urgent_pline } from './display.js';
 import { LL_CONDUCT } from './const.js';
-import { You, Your, pline, pline_The, Blind, Hallucination } from './display.js';
+import { You, Your, pline, pline_The } from './display.js';
 import { getobj, useupall } from './invent.js';
 import { check_capacity } from './hack.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -99,6 +99,8 @@ import {
     cloak_simple_name, suit_simple_name, shirt_simple_name, helm_simple_name,
     gloves_simple_name, boots_simple_name, shield_simple_name, simpleonames,
 } from './iactions.js';
+import { Sleep_resistance, Antimagic, Blind, Hallucination, Deaf, Reflecting } from './youprop.js';
+import { Luck } from './const.js';
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -270,8 +272,7 @@ export async function bhito(obj, otmp) {
             }
             /* KMH, conduct */
             if (!u.uconduct.polypiles++)
-                livelog_printf(LL_CONDUCT, `polymorphed ${
-                               game.flags.female ? "her" : "his" /* uhis() */} first object`);
+                livelog_printf(LL_CONDUCT, `polymorphed ${uhis()} first object`);
 
             /* any saved lock context will be dangerously obsolete */
             if (Is_box(obj))
@@ -298,7 +299,7 @@ export async function bhito(obj, otmp) {
         case SPE_FORCE_BOLT: {
             /* learn the type if you see or hear something break
                (the sound could be implicit) */
-            let maybelearnit = cansee(obj.ox, obj.oy) || !Deaf_zp();
+            let maybelearnit = cansee(obj.ox, obj.oy) || !Deaf();
             if (obj.otyp === BOULDER) {
                 throw new Error('bhito(): striking a boulder (fracture_rock()) not ported yet');
             } else if (obj.otyp === STATUE_ZB) {
@@ -452,8 +453,6 @@ export function obj_shudders(obj) {
     return !rn2(zap_odds);
 }
 
-/* C ref: you.h Luck */
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 
 // C ref: zap.c do_osshock() -- assumes obj is on the floor
 export function do_osshock(obj) {
@@ -998,7 +997,7 @@ export async function dozap() {
         /* make him pay for knowing !NODIR */
     } else if (need_dir && !u.dx && !u.dy && !u.dz) {
         if ((damage = await zapyourself(obj, true)) !== 0) {
-            const buf = `zapped ${uhim_zy()}self with ${killer_xname_zp(obj)}`;
+            const buf = `zapped ${uhim()}self with ${killer_xname_zp(obj)}`;
 
             await losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX_ZY);
         }
@@ -1029,11 +1028,6 @@ export function check_unpaid(otmp) {
     throw new Error('check_unpaid(): usage fee for unpaid item not ported yet');
 }
 
-/* C ref: youprop.h Sleep_resistance */
-function Sleep_resistance() {
-    const p = game.u.uprops[SLEEP_RES];
-    return !!(p.intrinsic || p.extrinsic);
-}
 
 // C ref: zap.c zapyourself()
 /* you've zapped yourself with a wand or spell (or broken a wand) */
@@ -1125,7 +1119,7 @@ export async function zapyourself(obj, ordinary) {
     case O_zy.WAN_MAGIC_MISSILE:
     case O_zy.SPE_MAGIC_MISSILE:
         learn_it = true;
-        if (Antimagic_zp()) {
+        if (Antimagic()) {
             /* shieldeff(u.ux, u.uy) */
             await pline_The("missiles bounce!");
             monstseesu(M_SEEN_MAGR_ZY);
@@ -1231,7 +1225,7 @@ export async function zapyourself(obj, ordinary) {
             break;
         }
         learn_it = true;
-        killer_zy().name = `shot ${uhim_zy()}self with a death ray`;
+        killer_zy().name = `shot ${uhim()}self with a death ray`;
         killer_zy().format = NO_KILLER_PREFIX_ZY;
         /* probably don't need these to be urgent; player just gave input
            without subsequent opportunity to dismiss --More-- with ESC */
@@ -1308,10 +1302,6 @@ import { delete_contents } from './invent.js';
 function nonliving_zy(ptr) {
     return (ptr.mflags2 & M2_UNDEAD_ZY) !== 0 || ptr === mons_zy[PM_MANES_ZY]
            || ptr.mlet === S_GOLEM_ZY || ptr.mlet === S_VORTEX_ZY;
-}
-/* C ref: you.h uhim() -- genders[flags.female ? 1 : 0].him */
-function uhim_zy() {
-    return game.flags.female ? "her" : "him";
 }
 
 // C ref: zap.c zapsetup() -- used by do_break_wand() was well as by weffects()
@@ -1878,7 +1868,7 @@ async function zhitu(
 
     switch (abstyp % 10) {
     case ZT_MAGIC_MISSILE:
-        if (Antimagic_zp()) {
+        if (Antimagic()) {
             /* shieldeff(sx, sy): transient display only */
             await pline_The("missiles bounce off!");
             monstseesu(M_SEEN_MAGR_ZY);
@@ -1964,7 +1954,7 @@ async function zhitu(
             /* shieldeff(sx, sy) */
             await You("seem unaffected.");
             break;
-        } else if (Antimagic_zp()) {
+        } else if (Antimagic()) {
             /* shieldeff(sx, sy) */
             monstseesu(M_SEEN_MAGR_ZY);
             await You("aren't affected.");
@@ -2042,7 +2032,7 @@ async function zhitu(
             /* FIXME: "zapped by herself" is suitable for a rebound;
                "zapped at herself" would be better if player explicitly
                targeted hero */
-            kbuf = `${fltxt} ${verb} by ${uhim_zy()}self`;
+            kbuf = `${fltxt} ${verb} by ${uhim()}self`;
         }
         /* Half_spell_damage protection yields half-damage for wands & spells,
            including hero's own ricochets; breath attacks do full damage */
@@ -2858,7 +2848,7 @@ export async function zap_over_floor(
         } else if (is_pool(x, y)) {
             const on_water_level = Is_waterlevel_zp(g.u.uz);
             let msggiven = false;
-            let msgtxt = (!Deaf_zp())
+            let msgtxt = (!Deaf())
                          ? "You hear hissing gas." /* Deaf-aware */
                          : (type >= 0)
                            ? "That seemed remarkably uneventful."
@@ -2875,7 +2865,7 @@ export async function zap_over_floor(
             if (lev.typ !== POOL_ZP) { /* MOAT or DRAWBRIDGE_UP or WATER */
                 t = null;
                 if (on_water_level)
-                    msgtxt = (see_it || !Deaf_zp()) ? "Some water boils." : null;
+                    msgtxt = (see_it || !Deaf()) ? "Some water boils." : null;
                 else if (see_it)
                     msgtxt = "Some water evaporates.";
             } else {
@@ -3278,8 +3268,6 @@ function uhave_zp(p) {
     const q = game.u.uprops[p];
     return !!(q && (q.intrinsic || q.extrinsic));
 }
-function Antimagic_zp() { return uhave_zp(ANTIMAGIC_ZY); }
-function Reflecting() { return uhave_zp(REFLECTING_ZP); }
 /* C ref: mondata.h is_rider(), eyecount() */
 function is_rider_zp(ptr) {
     return ptr === mons_zy[PM_DEATH_ZP] || ptr === mons_zy[PM_FAMINE_ZP]
@@ -3350,7 +3338,7 @@ import { which_armor as which_armor_zp, setnotworn as setnotworn_zp,
          bypass_objlist as bypass_objlist_zp,
          nxt_unbypassed_obj as nxt_unbypassed_obj_zp } from './worn.js';
 import { m_useup, rnd_hallublast } from './mthrowu.js';
-import { ugolemeffects as ugolemeffects_zp } from './mhitu.js';
+import { uhim, uhis, ugolemeffects as ugolemeffects_zp } from './mhitu.js';
 import { burn_away_slime as burn_away_slime_zp,
          hliquid as hliquid_zp, potionbreathe as potionbreathe_zp,
          make_stunned as make_stunned_zp, incr_itimeout as incr_itimeout_zp,
@@ -3402,11 +3390,6 @@ import { maketrap as maketrap_zp, dotrap as dotrap_zp,
          mintrap as mintrap_zp } from './trap.js';
 import { is_swimmer as is_swimmer_zp } from './mondata.js';
 import { dissolve_bars } from './monmove.js';
-/* C ref: youprop.h Deaf */
-function Deaf_zp() {
-    const q = game.u.uprops[DEAF_ZP];
-    return !!(q && (q.intrinsic || q.extrinsic)) || !!game.u.uroleplay?.deaf;
-}
 /* C ref: hack.h ERODE_CORRODE */
 const ERODE_CORRODE_ZP = 3;
 import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_ZP, DRAWBRIDGE_DOWN as DRAWBRIDGE_DOWN_ZP,
@@ -4286,4 +4269,4 @@ import { obj_to_any as obj_to_any_ci, peek_timer as peek_timer_ci,
          stop_timer as stop_timer_ci } from './timeout.js';
 import { find_ac as find_ac_ci } from './u_init.js';
 import { rehumanize as rehumanize_ci } from './polyself.js';
-import { You_feel as You_feel_ci, Hallucination as Hallucination_ci } from './display.js';
+import { You_feel as You_feel_ci } from './display.js';

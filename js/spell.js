@@ -35,6 +35,9 @@ import { strcmpi, isqrt } from './hacklib.js';
 import { P_SKILL } from './weapon.js';
 import { discover_object } from './o_init.js';
 import { freehand } from './wield.js';
+import { Blind as Blind_sp } from './youprop.js';
+import { Role_if } from './const.js';
+import { uhim } from './mhitu.js';
 
 function impossible(msg) { console.error(`impossible: ${msg}`); }
 
@@ -64,8 +67,6 @@ const uarmhbon = 4; /* Metal helmets interfere with the mind */
 const uarmgbon = 6; /* Casting channels through the hands */
 const uarmfbon = 2; /*  All metal interferes to some degree */
 
-/* C ref: you.h Role_if() */
-function Role_if(pm) { return game.urole?.mnum === pm; }
 /* C ref: youprop.h Stunned, Strangled */
 function u_have_prop(p) {
     const up = game.u.uprops?.[p];
@@ -1018,10 +1019,6 @@ export async function spelleffects(spell_otyp, atme, force) {
     return ECMD_TIME;
 }
 
-/* C ref: you.h uhim() -- genders[flags.female ? 1 : 0].him */
-function uhim() {
-    return game.flags.female ? "her" : "him";
-}
 
 // C ref: spell.c losespells()
 export function losespells() {
@@ -1720,7 +1717,6 @@ async function cast_protection() {
         await Your("skin feels warm for a moment.");
     }
 }
-import { Blind as Blind_sp } from './display.js';
 import { hcolor as hcolor_sp } from './do_name.js';
 import { hliquid as hliquid_sp } from './potion.js';
 import { an as an_sp } from './objnam.js';

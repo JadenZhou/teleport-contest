@@ -36,6 +36,7 @@ import { ddoinv, dolook, doprgold, doprwep, doprarm, doprring, dopramulet,
          dotypeinv } from './invent.js';
 import { cmd_safety_prevention, nomul, domove, DOMOVE_WALK,
          DOMOVE_RUSH, confdir } from './hack.js';
+import { next2u } from './const.js';
 export { domove };
 import { IS_DOOR, IS_FURNITURE, NHW_TEXT, ECMD_OK, ECMD_TIME, ECMD_CANCEL,
          ECMD_FAIL } from './const.js';
@@ -307,8 +308,6 @@ const CLICK_1 = 1, CLICK_2 = 2;
 const S_sink = 36, S_fountain = 37;
 
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
-/* C ref: you.h next2u() */
-function next2u(x, y) { return dist2(x, y, game.u.ux, game.u.uy) <= 2; }
 /* C ref: hacklib.c upstart() */
 function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
@@ -598,7 +597,7 @@ function there_cmd_menu_common(win, x, y, mod, act) {
     if (mod === CLICK_1 || mod === CLICK_2) { /* ignore iflags.clicklook here */
         /* for self, only include "look at map symbol" if it isn't the
            ordinary hero symbol (steed, invisible w/o see invisible, ?) */
-        if (!u_at(x, y) || Upolyd(game.u)
+        if (!u_at(x, y) || Upolyd()
             || !glyph_is_hero_glyph(glyph_at(x, y)))
             mcmd_addmenu(win, MCMD_LOOK_AT, "Look at map symbol"), ++K;
     }

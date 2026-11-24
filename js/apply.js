@@ -14,7 +14,7 @@ import { is_pole, retouch_object } from './wield.js';
 import { pick_lock } from './lock.js';
 import * as O from './objects.js';
 import { is_graystone, thesimpleoname } from './iactions.js';
-import { Blind, feel_newsym } from './display.js';
+import { feel_newsym } from './display.js';
 import { discover_object } from './o_init.js';
 import { MAX_SPELL_STUDY, DEAF, HAND, SDOOR, SCORR, CORR, ARTICLE_A,
          SUPPRESS_IT, SUPPRESS_INVISIBLE, Is_stronghold } from './const.js';
@@ -33,6 +33,11 @@ import { canspotmon, newsym, map_invisible, unmap_invisible,
 import { cvt_sdoor_to_door } from './detect.js';
 import { recalc_block_point, unblock_point } from './vision.js';
 import { mons, PM_HEALER, PM_AIR_ELEMENTAL, S_VORTEX } from './monsters.js';
+import {
+    Blind, Hallucination, Deaf, Wounded_legs, Jumping, Levitation, Passes_walls
+} from './youprop.js';
+import { uhim, uhis } from './mhitu.js';
+import { uprop } from './youprop.js';
 /* C ref: mondata.h is_whirly() */
 function is_whirly(ptr) {
     return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
@@ -76,11 +81,6 @@ function is_pick(otmp) {
 function is_axe(otmp) {
     return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
             && objects[otmp.otyp].oc_skill === P_AXE);
-}
-/* C ref: you.h Hallucination */
-function Hallucination() {
-    const p = game.u?.uprops?.[HALLUC];
-    return !!(p?.intrinsic || p?.extrinsic);
 }
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
@@ -214,7 +214,7 @@ async function use_stethoscope(obj) {
     if (nohands(game.youmonst.data)) {
         await You("have no hands!"); /* not `body_part(HAND)' */
         return ECMD_OK;
-    } else if (uhave(DEAF) || u.uroleplay?.deaf) { /* Deaf */
+    } else if (Deaf() || u.uroleplay?.deaf) { /* Deaf */
         await You_cant("hear anything!");
         return ECMD_OK;
     } else if (!freehand()) {
@@ -790,11 +790,6 @@ const jAny = 0, /* any direction => magical jump */
     jVert = 2,
     jDiag = 3; /* jHorz|jVert */
 
-function uprop(p) { return game.u?.uprops?.[p] || {}; }
-function uhave(p) { const q = uprop(p); return !!(q.intrinsic || q.extrinsic); }
-/* C ref: youprop.h Jumping, HJumping, EJumping */
-function Jumping() { return uhave(JUMPING); }
-function Passes_walls() { return uhave(PASSES_WALLS); }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 
 // C ref: apply.c check_jump() -- callback routine for walk_path()
@@ -941,7 +936,7 @@ export async function jump(magic) {
         return ECMD_OK;
     } else if (u.ustuck) {
         throw new Error('jump(): jumping while stuck not ported yet');
-    } else if (uhave(LEVITATION) || Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
+    } else if (Levitation() || Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
         if (magic) {
             await You("flail around a little.");
             return ECMD_TIME;
@@ -954,7 +949,7 @@ export async function jump(magic) {
     } else if (!magic && (u.uhunger <= 100 || ACURR(A_STR) < 6)) {
         await You("lack the strength to jump!");
         return ECMD_OK;
-    } else if (!magic && uhave(WOUNDED_LEGS)) {
+    } else if (!magic && Wounded_legs()) {
         throw new Error('jump(): legs_in_no_shape() not ported yet');
     } else if (u.usteed && u.utrap) {
         throw new Error('jump(): steed in a trap not ported yet');
@@ -996,7 +991,7 @@ export async function jump(magic) {
             if (t_at(cc.x, cc.y))
                 throw new Error('jump(): jumping in place on a trap not ported yet');
             /* jumping in place takes no time and doesn't exercise anything */
-            await You(`${uhave(HALLUC) ? "hop up and down a bit"
+            await You(`${Hallucination() ? "hop up and down a bit"
                                        : "decide not to jump after all"}.`);
             return ECMD_OK;
         }
@@ -1196,8 +1191,7 @@ async function use_whip(obj) {
         if (dam <= 0)
             dam = 1;
         await You(`hit your ${body_part(FOOT_WH)} with your bullwhip.`);
-        const buf = `killed ${g.flags.female ? "her" : "him"}self with ${ /* uhim() */
-            g.flags.female ? "her" : "his"} bullwhip`; /* uhis() */
+        const buf = `killed ${uhim()}self with ${uhis()} bullwhip`;
         await losehp(Maybe_Half_Phys(dam), buf, NO_KILLER_PREFIX_WH);
         return ECMD_TIME;
 

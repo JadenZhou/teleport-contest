@@ -63,6 +63,14 @@ import { find_mac, which_armor } from './worn.js';
 import { mtele_trap, mlevel_tele_trap, tele_trap, level_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
 import { bimanual } from './wield.js';
+import {
+    Fire_resistance, Sleep_resistance, Antimagic, Punished, Blind, Hallucination, Deaf,
+    Fumbling, Wounded_legs, Teleportation, Teleport_control, Levitation, Flying, Wwalking,
+    Swimming, Amphibious, Breathless, Underwater, Passes_walls, Half_spell_damage,
+    Half_physical_damage, Lifesaved, Unaware as Unaware_dr
+} from './youprop.js';
+import { Upolyd, Luck } from './const.js';
+import { uprop } from './youprop.js';
 
 /* C ref: mondata.h resists_ston() */
 function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
@@ -303,49 +311,6 @@ export function check_in_air(mtmp, trflags) {
 
 /* C ref: youprop.h -- the hero's properties used by the trap code;
    BLevitation/BFlying are uprops[].blocked */
-function uprop(p) {
-    return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 };
-}
-function HLevitation() { return uprop(LEVITATION).intrinsic; }
-function ELevitation() { return uprop(LEVITATION).extrinsic; }
-function Levitation() {
-    return !!((HLevitation() || ELevitation()) && !uprop(LEVITATION).blocked);
-}
-function Flying() {
-    const p = uprop(FLYING);
-    return !!((p.intrinsic || p.extrinsic
-               || (game.u.usteed && is_flyer(game.u.usteed.data)))
-              && !p.blocked);
-}
-function Fumbling() { return !!(uprop(FUMBLING).intrinsic || uprop(FUMBLING).extrinsic); }
-function Upolyd() { return game.u.umonnum !== game.u.umonster; }
-function Antimagic() {
-    return !!(uprop(ANTIMAGIC).intrinsic || uprop(ANTIMAGIC).extrinsic
-              || (Upolyd() && resists_magm(game.youmonst)));
-}
-function Half_physical_damage() {
-    return !!(uprop(HALF_PHDAM).intrinsic || uprop(HALF_PHDAM).extrinsic);
-}
-function Half_spell_damage() {
-    return !!(uprop(HALF_SPDAM).intrinsic || uprop(HALF_SPDAM).extrinsic);
-}
-function Passes_walls() {
-    return !!(uprop(PASSES_WALLS).intrinsic || uprop(PASSES_WALLS).extrinsic);
-}
-function Sleep_resistance() {
-    return !!(uprop(SLEEP_RES).intrinsic || uprop(SLEEP_RES).extrinsic);
-}
-function Blind() {
-    const p = uprop(BLINDED);
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
-function Hallucination() {
-    return !!(uprop(HALLUC).intrinsic
-              && !(uprop(HALLUC_RES).intrinsic || uprop(HALLUC_RES).extrinsic));
-}
-function Wounded_legs() {
-    return !!(uprop(WOUNDED_LEGS).intrinsic || uprop(WOUNDED_LEGS).extrinsic);
-}
 /* C ref: hack.h Maybe_Half_Phys() */
 export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;
@@ -1036,12 +1001,6 @@ export const Trap_Caught_Mon = 1;
 export const Trap_Killed_Mon = 2;
 export const Trap_Moved_Mon = 3; /* new location, or new level */
 
-/* C ref: youprop.h Deaf */
-function Deaf() {
-    const P = game.u.uprops;
-    return !!(P[DEAF].intrinsic || P[DEAF].extrinsic
-              || game.u.uroleplay?.deaf);
-}
 /* mondata.h */
 function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
@@ -1605,7 +1564,7 @@ export async function water_damage(
         await water_damage_chain(obj.cobj, false);
         return ER_DAMAGED; /* contents were damaged */
     } else if (Waterproof_container(obj)) {
-        if (in_invent && !Blind() && !Underwater_t()) {
+        if (in_invent && !Blind() && !Underwater()) {
             await pline_The(`${hliquid("water")} cannot get into your ${ostr}.`);
             game.mentioned_water = !Hallucination();
             /* makeknown(obj->otyp): if an oilskin sack, discover it;
@@ -1754,8 +1713,6 @@ function Waterproof_container(o) {
            || o.otyp === LARGE_BOX || o.otyp === CHEST;
 }
 
-/* C ref: youprop.h Underwater */
-function Underwater_t() { return !!game.u.uinwater; }
 
 // C ref: trap.c delfloortrap() -- Destroy a trap that emanates from the
 // floor.
@@ -1782,8 +1739,6 @@ export async function delfloortrap(ttmp) {
     return false;
 }
 
-/* C ref: you.h Luck */
-function Luck() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 
 /* C ref: trap.h erode types, EF_* flags */
 const ERODE_BURN = 0, ERODE_RUST = 1, ERODE_ROT = 2, ERODE_CORRODE = 3,
@@ -4649,34 +4604,6 @@ import { is_ice as is_ice_bg } from './dig.js';
 import { strcmpi as strcmpi_bg } from './hacklib.js';
 import { PLNMSG_BACK_ON_GROUND as PLNMSG_BACK_ON_GROUND_BG } from './const.js';
 
-/* C ref: youprop.h -- more hero properties for drown()/lava_effects() */
-function Swimming_dr() {
-    return !!(uprop(SWIMMING_DR).intrinsic || uprop(SWIMMING_DR).extrinsic
-              || (game.u.usteed && (game.u.usteed.data.mflags1 & M1_SWIM_DR) !== 0));
-}
-function Amphibious_dr() {
-    return !!(uprop(MAGICAL_BREATHING_DR).intrinsic || uprop(MAGICAL_BREATHING_DR).extrinsic
-              || (game.youmonst.data.mflags1 & M1_AMPHIBIOUS_DR) !== 0);
-}
-function Breathless_dr() {
-    return !!(uprop(MAGICAL_BREATHING_DR).intrinsic || uprop(MAGICAL_BREATHING_DR).extrinsic
-              || (game.youmonst.data.mflags1 & M1_BREATHLESS_DR) !== 0);
-}
-function Teleportation_dr() {
-    return !!(uprop(TELEPORT_DR).intrinsic || uprop(TELEPORT_DR).extrinsic);
-}
-function Teleport_control_dr() {
-    return !!(uprop(TELEPORT_CONTROL_DR).intrinsic || uprop(TELEPORT_CONTROL_DR).extrinsic);
-}
-function Fire_resistance_dr() {
-    return !!(uprop(FIRE_RES_DR).intrinsic || uprop(FIRE_RES_DR).extrinsic);
-}
-function Wwalking_dr() {
-    return !!((uprop(WWALKING).intrinsic || uprop(WWALKING).extrinsic)
-              && !Is_waterlevel_dr(game.u.uz));
-}
-function Lifesaved_dr() { return !!uprop(LIFESAVED_DR).extrinsic; }
-function Punished_dr() { return !!game.uball; }
 /* C ref: mondata.h likes_lava() */
 function likes_lava_dr(ptr) {
     return ptr === mons_dr[PM_FIRE_ELEMENTAL_DR] || ptr === mons_dr[PM_SALAMANDER_DR];
@@ -4723,7 +4650,7 @@ async function emergency_disrobe(lostsome) {
     const g = game;
     let invc = inv_cnt_dr(true);
 
-    while (near_capacity_dr() > (Punished_dr() ? UNENCUMBERED_DR : SLT_ENCUMBER_DR)) {
+    while (near_capacity_dr() > (Punished() ? UNENCUMBERED_DR : SLT_ENCUMBER_DR)) {
         let obj, nextobj, otmp = null;
         let i;
 
@@ -4824,7 +4751,7 @@ export async function drown() {
     feel_newsym_dr(u.ux, u.uy); /* in case Blind, map the water here */
     /* happily wading in the same contiguous pool */
     if (u.uinwater && is_pool(u.ux - u.dx, u.uy - u.dy)
-        && (Swimming_dr() || Amphibious_dr() || Breathless_dr())) {
+        && (Swimming() || Amphibious() || Breathless())) {
         /* water effects on objects every now and then */
         if (!rn2(5))
             inpool_ok = true;
@@ -4835,8 +4762,8 @@ export async function drown() {
     if (!u.uinwater) {
         await You(`${is_solid ? "plunge" : "fall"} into the ${
             waterbody_name_dr(u.ux, u.uy)}${
-            (Amphibious_dr() || Swimming_dr() || Breathless_dr()) ? '.' : '!'}`);
-        if (!Swimming_dr() && !is_solid)
+            (Amphibious() || Swimming() || Breathless()) ? '.' : '!'}`);
+        if (!Swimming() && !is_solid)
             await You(`sink like ${Hallucination() ? "the Titanic" : "a rock"}.`);
     }
 
@@ -4860,13 +4787,13 @@ export async function drown() {
         unleash_all();
     }
 
-    if (Amphibious_dr() || Breathless_dr() || Swimming_dr()) {
+    if (Amphibious() || Breathless() || Swimming()) {
         /* "But you aren't drowning.", touch bottom, set_uinwater(1),
            under_water(1) */
         throw new Error('drown(): staying under water (under_water()) not ported yet');
     }
-    if ((Teleportation_dr() || can_teleport_dr(g.youmonst.data)) && !Unaware_dr()
-        && (Teleport_control_dr() || rn2(3) < Luck() + 2)) {
+    if ((Teleportation() || can_teleport_dr(g.youmonst.data)) && !Unaware_dr()
+        && (Teleport_control() || rn2(3) < Luck() + 2)) {
         throw new Error('drown(): teleport spell out of the water not ported yet');
     }
     if (u.usteed) {
@@ -4955,7 +4882,7 @@ export async function lava_effects() {
     if (likes_lava_dr(g.youmonst.data))
         return false;
 
-    usurvive = Fire_resistance_dr() || (Wwalking_dr() && dmg < u.uhp);
+    usurvive = Fire_resistance() || (Wwalking() && dmg < u.uhp);
     /*
      * A timely interrupt might manage to salvage your life
      * but not your gear.  For scrolls and potions this
@@ -4998,13 +4925,13 @@ export async function lava_effects() {
         throw new Error('lava_effects(): burning boots (Boots_off()) not ported yet');
     }
 
-    if (!Fire_resistance_dr()) {
-        if (Wwalking_dr()) {
+    if (!Fire_resistance()) {
+        if (Wwalking()) {
             throw new Error('lava_effects(): water walking on lava not ported yet');
         } else
             await You(`fall into the ${waterbody_name_dr(u.ux, u.uy)}!`);
 
-        usurvive = Lifesaved_dr() || !!g.flags.explore /* discover */;
+        usurvive = Lifesaved() || !!g.flags.explore /* discover */;
         if (g.flags.debug) /* wizard */
             usurvive = true;
 
@@ -5074,7 +5001,7 @@ export async function lava_effects() {
         await spoteffects_dr(false); /* suppress auto-pickup for this landing... */
 
         return true;
-    } else if (!Wwalking_dr() && (!u.utrap || u.utraptype !== TT_LAVA_DR)) {
+    } else if (!Wwalking() && (!u.utrap || u.utraptype !== TT_LAVA_DR)) {
         throw new Error('lava_effects(): sinking into lava while fire resistant not ported yet');
     }
 
@@ -5108,7 +5035,6 @@ import { dropx as dropx_dr } from './do.js';
 import { feel_newsym as feel_newsym_dr, update_lastseentyp as update_lastseentyp_dr } from './display.js';
 import { waterbody_name as waterbody_name_dr } from './pager.js';
 import { can_teleport as can_teleport_dr } from './mondata.js';
-import { Unaware as Unaware_dr } from './eat.js';
 import { unmul as unmul_dr } from './allmain.js';
 import { teleds as teleds_dr, safe_teleds as safe_teleds_dr } from './teleport.js';
 import { done as done_dr } from './end.js';
@@ -5343,7 +5269,7 @@ export async function sink_into_lava() {
            enough to become stuck in lava, but it can happen without
            resistance if water walking boots allow survival and then
            get burned up; u.utrap time will be quite short in that case */
-        if (!Fire_resistance_dr())
+        if (!Fire_resistance())
             u.uhp = Math.trunc((u.uhp + 2) / 3);
 
         u.utrap -= (1 << 8);

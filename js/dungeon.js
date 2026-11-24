@@ -63,7 +63,7 @@ import { AM_MASK, LEVITATION, MAXNROFROOMS, TREE, FOUNTAIN, THRONE, SINK,
 import { Sfo, Sfi } from './sfbase.js';
 import { savecemetery } from './save.js';
 import { restcemetery } from './restore.js';
-import { You, Blind, update_lastseentyp } from './display.js';
+import { You, update_lastseentyp } from './display.js';
 import { altarmask_at, align_gname } from './pray.js';
 import { is_drawbridge_wall } from './dbridge.js';
 import { Invocation_lev } from './mklev.js';
@@ -76,6 +76,7 @@ import { formatkiller } from './topten.js';
 import { describe_level } from './botl.js';
 import { highc, trimspaces } from './hacklib.js';
 import { add_menu_str } from './wintty.js';
+import { Blind, Levitation } from './youprop.js';
 
 // C's panic() (end.c) and impossible() (pline.c) are not ported yet.
 function panic(msg) { throw new Error(`panic: ${msg}`); }
@@ -1585,11 +1586,6 @@ function Lcheck(x, z) {
 }
 /* C ref: hack.h plur() */
 function plur(x) { return (x === 1) ? "" : "s"; }
-/* C ref: youprop.h Levitation */
-function Levitation() {
-    const p = game.u.uprops[LEVITATION];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 /* svl.lastseentyp[x][y]; zero until the level has been seen */
 function lastseentyp_at(x, y) {
     return game.level?.lastseentyp?.[x]?.[y] ?? 0;
