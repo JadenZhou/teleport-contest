@@ -589,6 +589,97 @@ async function gods_upset(g_align) {
     await angrygods(g_align);
 }
 
+// C ref: pray.c god_zaps_you()
+async function god_zaps_you(resp_god) {
+    const u = game.u, g = game;
+
+    if (u.uswallow) {
+        await pline("Suddenly a bolt of lightning comes down at you from the heavens!");
+        await pline(`It strikes ${mon_nam_pr(u.ustuck)}!`);
+        if (!resists_elec_pr(u.ustuck)) {
+            await pline(`${Monnam_pr(u.ustuck)} fries to a crisp!`);
+            /* Yup, you get experience.  It takes guts to successfully
+             * pull off this trick on your god, anyway.
+             * Other credit/blame applies (luck or alignment adjustments),
+             * but not direct kill count (pacifist conduct).
+             */
+            await xkilled_pr(u.ustuck, XKILL_NOMSG | XKILL_NOCONDUCT);
+        } else
+            await pline(`${Monnam_pr(u.ustuck)} seems unaffected.`);
+    } else {
+        await pline("Suddenly, a bolt of lightning strikes you!");
+        if (uhave(REFLECTING)) { /* Reflecting */
+            /* shieldeff(u.ux, u.uy): transient display only */
+            if (Blind())
+                await pline("For some reason you're unaffected.");
+            else
+                await ureflects_pr("%s reflects from your %s.", "It");
+            monstseesu_pr(M_SEEN_REFL);
+        } else if (uhave(SHOCK_RES)) { /* Shock_resistance */
+            /* shieldeff(u.ux, u.uy) */
+            await pline("It seems not to affect you.");
+            monstseesu_pr(M_SEEN_ELEC);
+            monstunseesu_pr(M_SEEN_REFL);
+        } else {
+            await fry_by_god(resp_god, false);
+            monstunseesu_pr(M_SEEN_REFL | M_SEEN_ELEC);
+        }
+    }
+
+    await pline(`${align_gname(resp_god)} is not deterred...`);
+    if (u.uswallow) {
+        await pline(`A wide-angle disintegration beam aimed at you hits ${
+            mon_nam_pr(u.ustuck)}!`);
+        if (!resists_disint_pr(u.ustuck)) {
+            await pline(`${Monnam_pr(u.ustuck)} disintegrates into a pile of dust!`);
+            await xkilled_pr(u.ustuck,
+                             XKILL_NOMSG | XKILL_NOCORPSE | XKILL_NOCONDUCT);
+        } else
+            await pline(`${Monnam_pr(u.ustuck)} seems unaffected.`);
+    } else {
+        await pline("A wide-angle disintegration beam hits you!");
+
+        /* disintegrate shield and body armor before disintegrating
+         * the impudent mortal, like black dragon breath -3.
+         */
+        const ERefl = EProp(REFLECTING), EDisint = EProp(DISINT_RES);
+        if (g.uarms && !(ERefl & W_ARMS) && !(EDisint & W_ARMS))
+            await disintegrate_arm_pr(g.uarms);
+        if (g.uarmc && !(ERefl & W_ARMC) && !(EDisint & W_ARMC))
+            await disintegrate_arm_pr(g.uarmc);
+        if (g.uarm && !(ERefl & W_ARM) && !(EDisint & W_ARM) && !g.uarmc)
+            await disintegrate_arm_pr(g.uarm);
+        if (g.uarmu && !g.uarm && !g.uarmc)
+            await disintegrate_arm_pr(g.uarmu);
+        if (!uhave(DISINT_RES)) { /* !Disint_resistance */
+            await fry_by_god(resp_god, true);
+            monstunseesu_pr(M_SEEN_DISINT);
+        } else {
+            await You(`bask in its ${NH_BLACK} glow for a minute...`);
+            await godvoice(resp_god, "I believe it not!");
+            monstseesu_pr(M_SEEN_DISINT);
+        }
+        if (Is_astralevel_pr(u.uz) || Is_sanctum_pr(u.uz)) {
+            /* one more try for high altars */
+            /* SetVoice(): speech synthesis only */
+            await verbalize("Thou cannot escape my wrath, mortal!");
+            await summon_minion(resp_god, false);
+            await summon_minion(resp_god, false);
+            await summon_minion(resp_god, false);
+            await verbalize(`Destroy ${game.flags.female ? "her" : "him"}, my servants!`); /* uhim() */
+        }
+    }
+}
+
+// C ref: pray.c fry_by_god()
+async function fry_by_god(resp_god, via_disintegration) {
+    await You(`${!via_disintegration ? "fry to a crisp"
+                                     : "disintegrate into a pile of dust"}!`);
+    killer_pr().format = KILLED_BY_PR;
+    killer_pr().name = `the wrath of ${align_gname(resp_god)}`;
+    await done_pr(DIED_PR);
+}
+
 // C ref: pray.c angrygods()
 async function angrygods(resp_god) {
     const u = game.u;
@@ -656,13 +747,13 @@ async function angrygods(resp_god) {
         /* [why isn't this using verbalize()?] */
         await pline(`"Then die, ${
             (game.youmonst.data.mlet === S_HUMAN) ? "mortal" : "creature"}!"`);
-        /* summon_minion(resp_god, FALSE) */
-        throw new Error('angrygods(): summon_minion() not ported yet');
+        await summon_minion(resp_god, false);
+        break;
 
     default:
         await gods_angry(resp_god);
-        /* god_zaps_you(resp_god): lightning, disintegration, fry_by_god() */
-        throw new Error('angrygods(): god_zaps_you() not ported yet');
+        await god_zaps_you(resp_god);
+        break;
     }
     /* even though this might not be in response to prayer, set pray timer */
     new_ublesscnt = rnz(300);
@@ -1305,3 +1396,16 @@ export async function doturn() {
     g.nomovemsg = "You can move again."; /* You_can_move_again */
     return ECMD_TIME;
 }
+import { summon_minion } from './minion.js';
+import { mon_nam as mon_nam_pr, Monnam as Monnam_pr } from './do_name.js';
+import { resists_elec as resists_elec_pr, resists_disint as resists_disint_pr } from './mondata.js';
+import { xkilled as xkilled_pr } from './mon.js';
+import { ureflects as ureflects_pr } from './mcastu.js';
+import { monstseesu as monstseesu_pr, monstunseesu as monstunseesu_pr } from './uhitm.js';
+import { disintegrate_arm as disintegrate_arm_pr } from './do_wear.js';
+import { done as done_pr } from './end.js';
+import { killer as killer_pr } from './topten.js';
+import { REFLECTING, SHOCK_RES, DISINT_RES, W_ARM, W_ARMC, W_ARMS, M_SEEN_REFL,
+         M_SEEN_ELEC, M_SEEN_DISINT, XKILL_NOMSG, XKILL_NOCORPSE, XKILL_NOCONDUCT,
+         KILLED_BY as KILLED_BY_PR, DIED as DIED_PR, Is_astralevel as Is_astralevel_pr,
+         Is_sanctum as Is_sanctum_pr } from './const.js';
