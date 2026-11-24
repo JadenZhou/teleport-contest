@@ -43,7 +43,7 @@ import { makemon, is_domestic, set_malign, put_saddle_on_mon,
 import { monsndx, regenerates } from './mondata.js';
 import { healmon } from './mon.js';
 import { M1_CARNIVORE, M1_HERBIVORE, S_MIMIC } from './monsters.js';
-import { LARGEST_INT, M_AP_NOTHING } from './const.js';
+import { LARGEST_INT, M_AP_NOTHING, In_endgame } from './const.js';
 import { mon_track_clear } from './monmove.js';
 import { mnexto, rloc_to } from './teleport.js';
 import { on_level, ledger_to_dnum, ledger_to_dlev, depth,
