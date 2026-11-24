@@ -498,8 +498,29 @@ function overexert_hp() {
     }
 }
 
+// The game loop's entry point for the browser page and the judge's
+// playability check: both call moveloop_core() once per key and stop when
+// program_state.gameover is set. In C, nh_terminate() (death, quit, save)
+// ends the program; in JS it throws NhExit out of whatever was running, so
+// that exit becomes the stop signal here instead of escaping as an error.
+// Nothing runs after nh_terminate(), so no roll or screen changes. The body
+// keeps the name moveloop_core: rng.js credits rolls by the JS stack.
+async function moveloop_core_entry() {
+    if (!game.program_state?.exiting) {
+        try {
+            await moveloop_core();
+            return;
+        } catch (e) {
+            if (!e?.nhexit)
+                throw e;
+        }
+    }
+    game.program_state.gameover = 1;
+}
+export { moveloop_core_entry as moveloop_core };
+
 // C ref: allmain.c moveloop_core()
-export async function moveloop_core() {
+async function moveloop_core() {
     const g = game;
     const u = g.u;
     const P = u.uprops;
