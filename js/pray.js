@@ -61,7 +61,11 @@ import { init_uhunger } from './eat.js';
 import { region_safety } from './region.js';
 import { rnd, d } from './rng.js';
 import { setuhpmax } from './attrib.js';
-import { unpunish } from './read.js';
+import { unpunish, punish } from './read.js';
+import { rndcurse, attrcurse } from './sit.js';
+import { An } from './objnam.js';
+import { ANTIMAGIC } from './const.js';
+const NH_BLACK = "black"; /* color.h */
 import { encumber_msg } from './pickup.js';
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
@@ -626,10 +630,39 @@ async function angrygods(resp_god) {
         await adjattrib(A_WIS, -1, false);
         await losexp(null);
         break;
+    case 6:
+        if (!game.uball) { /* !Punished */
+            await gods_angry(resp_god);
+            await punish(null);
+            break;
+        }
+        /* FALLTHRU */
+    case 4:
+    case 5:
+        await gods_angry(resp_god);
+        if (!Blind() && !uhave(ANTIMAGIC))
+            await pline(`${An(hcolor(NH_BLACK))} glow surrounds you.`);
+        if (rn2(2) || !(await attrcurse()))
+            await rndcurse();
+        break;
+    case 7:
+    case 8:
+        await godvoice(resp_god, null);
+        /* SetVoice(): speech synthesis only */
+        await verbalize(`Thou durst ${
+            (on_altar() && (a_align(u.ux, u.uy) !== resp_god))
+                ? "scorn"
+                : "call upon"} me?`);
+        /* [why isn't this using verbalize()?] */
+        await pline(`"Then die, ${
+            (game.youmonst.data.mlet === S_HUMAN) ? "mortal" : "creature"}!"`);
+        /* summon_minion(resp_god, FALSE) */
+        throw new Error('angrygods(): summon_minion() not ported yet');
+
     default:
-        /* punish(), rndcurse()/attrcurse(), summon_minion() and
-           god_zaps_you() aren't ported yet */
-        throw new Error('angrygods(): anger cases 4+ not ported yet');
+        await gods_angry(resp_god);
+        /* god_zaps_you(resp_god): lightning, disintegration, fry_by_god() */
+        throw new Error('angrygods(): god_zaps_you() not ported yet');
     }
     /* even though this might not be in response to prayer, set pray timer */
     new_ublesscnt = rnz(300);
