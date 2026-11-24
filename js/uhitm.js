@@ -89,7 +89,7 @@ import { a_monnam, EXACT_NAME } from './do_name.js';
 import { M_AP_OBJECT, M_AP_FURNITURE, M_AP_MONSTER, MIM_REVEAL, MIM_OMIT_WAIT,
          TELEPAT, SEE_INVIS } from './const.js';
 import { STRANGE_OBJECT } from './objects.js';
-import { u_wipe_engr } from './engrave.js';
+import { u_wipe_engr, sticks } from './engrave.js';
 import { m_move } from './monmove.js';
 import { wakeup, seemimic, xkilled, killed } from './mon.js';
 import { is_pool, m_at } from './makemon.js';
@@ -242,11 +242,7 @@ async function not_artifact_hit(magr, mdef, otmp, mhm) {
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
-/* C ref: mondata.c sticks() */
-function sticks(ptr) {
-    return attacktype(ptr, AT_ENGL) || attacktype(ptr, AT_HUGS)
-        || ptr.mattk.some((a) => a.adtyp === AD_STCK);
-}
+/* C ref: mondata.c sticks() is engrave.js sticks() */
 /* C ref: youprop.h Shock_resistance */
 function Shock_resistance() {
     const p = game.u.uprops[SHOCK_RES];
@@ -445,14 +441,18 @@ async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
 }
 
 // C ref: uhitm.c mhitm_ad_stck()
-async function mhitm_ad_stck(magr, mattk, mdef, mhm) {
+export async function mhitm_ad_stck(magr, mattk, mdef, mhm) {
     const negated = await mgc_atk_negated(magr, mdef, false);
     const pd = mdef.data;
     const barbs = (magr.data === mons[M.PM_BARBED_DEVIL]);
 
-    void mhm;
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_stck(): uhitm branch not ported yet');
+        /* uhitm */
+        if (!negated && !sticks(pd) && m_next2u(mdef)) {
+            set_ustuck(mdef); /* it's now stuck to you */
+            if (barbs)
+                await Your(`barbs stick to ${y_monnam(mdef)}!`);
+        }
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -462,7 +462,9 @@ async function mhitm_ad_stck(magr, mattk, mdef, mhm) {
                 await pline('The barbs stick to you!');
         }
     } else {
-        throw new Error('mhitm_ad_stck(): mhitm branch not ported yet');
+        /* mhitm */
+        if (negated)
+            mhm.damage = 0;
     }
 }
 
