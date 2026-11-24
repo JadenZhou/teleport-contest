@@ -336,10 +336,9 @@ export async function mnearto(
 /* replace a non-shopkeeper monster with another one */
 export function replmon(mtmp, mtmp2) {
     const u = game.u;
-    let otmp;
 
-    /* transfer the monster's inventory */
-    for (otmp = mtmp2.minvent; otmp; otmp = otmp.nobj) {
+    /* transfer the monster's inventory (minvent is an array here) */
+    for (const otmp of mtmp2.minvent || []) {
         if (otmp.where !== 'OBJ_MINVENT' || otmp.ocarry !== mtmp)
             console.error('impossible: replmon: minvent inconsistency');
         otmp.ocarry = mtmp2;
