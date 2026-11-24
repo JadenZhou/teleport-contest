@@ -1129,7 +1129,7 @@ function t_missile(otyp, trap) {
 
     otmp.quan = 1;
     otmp.owt = weight(otmp);
-    otmp.opoisoned = 0;
+    otmp.otrapped /* opoisoned */ = 0;
     otmp.ox = trap.tx, otmp.oy = trap.ty;
     return otmp;
 }
@@ -1276,7 +1276,7 @@ async function trapeffect_dart_trap(mtmp, trap, trflags) {
         await pline("A little dart shoots out at you!");
         otmp = t_missile(DART, trap);
         if (!rn2(6))
-            otmp.opoisoned = 1;
+            otmp.otrapped /* opoisoned */ = 1;
         const dam = dmgval(otmp, game.youmonst);
         const oref = { obj: otmp };
         if (u.usteed && !rn2(2) && await steedintrap(trap, otmp)) {
@@ -1284,7 +1284,7 @@ async function trapeffect_dart_trap(mtmp, trap, trflags) {
         } else if (await thitu(7, Maybe_Half_Phys(dam), oref, "little dart")) {
             otmp = oref.obj;
             if (otmp) {
-                if (otmp.opoisoned)
+                if (otmp.otrapped /* opoisoned */)
                     await poisoned("dart", A_CON, "little dart",
                                    /* if damage triggered life-saving,
                                       poison is limited to attrib loss */
@@ -1315,7 +1315,7 @@ async function trapeffect_dart_trap(mtmp, trap, trflags) {
         trap.once = 1;
         otmp = t_missile(DART, trap);
         if (!rn2(6))
-            otmp.opoisoned = 1;
+            otmp.otrapped /* opoisoned */ = 1;
         if (in_sight)
             seetrap(trap);
         if (await thitm(7, mtmp, otmp, 0, false))
