@@ -2189,8 +2189,18 @@ function* newcham_g(mtmp, mdat, ncflags) {
     check_gear_next_turn(mtmp);
 
     /* former giants can't continue carrying boulders */
-    if (mtmp.minvent?.length && !throws_rocks(mdat))
-        throw new Error('newcham(): dropping boulders not ported yet');
+    if (mtmp.minvent?.length && !throws_rocks(mdat)) {
+        /* DEADMONSTER(): it is possible for flooreffects() to kill mtmp;
+           the rest of its inventory would be dropped making otmp2 stale */
+        for (const otmp of mtmp.minvent.slice()) {
+            if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+                break;
+            if (otmp.otyp === BOULDER)
+                /* bypass_obj() if polyspot, obj_extract_self(), then the
+                   async flooreffects() or place_object() */
+                throw new Error('newcham(): dropping boulders (flooreffects()) not ported yet');
+        }
+    }
     if (mtmp === game.u.usteed)
         throw new Error('newcham(): poly_steed() not ported yet');
 
