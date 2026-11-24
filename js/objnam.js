@@ -1320,6 +1320,11 @@ export function rnd_otyp_by_namedesc(
     return O.STRANGE_OBJECT;
 }
 
+// C ref: objnam.c shiny_obj()
+export function shiny_obj(oclass) {
+    return rnd_otyp_by_namedesc("shiny", oclass, 0);
+}
+
 // hack.h tin varieties; objnam.c readobjnam contents codes
 const RANDOM_TIN = -2;
 const TIN_UNDEFINED = 0;

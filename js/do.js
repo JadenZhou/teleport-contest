@@ -11,7 +11,7 @@ import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_ACHIEVE, LL_DEBUG } from './const.js';
 import { describe_level } from './botl.js';
-import { container_impact_dmg } from './dokick.js';
+import { container_impact_dmg, obj_delivery } from './dokick.js';
 import { pline, pline_The, docrt, flush_screen, Hallucination,
          Blind } from './display.js';
 import { bones_include_name } from './bones.js';
@@ -795,7 +795,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         await placebc();
     /* obj_delivery(FALSE) */
     if (g.migrating_objs)
-        throw new Error('goto_level(): obj_delivery() not ported yet');
+        obj_delivery(false);
     await losedogs();
     kill_genocided_monsters(); /* for those wiped out while in limbo */
     /*
@@ -947,7 +947,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* deliver objects traveling with player */
     /* obj_delivery(TRUE) */
     if (g.migrating_objs)
-        throw new Error('goto_level(): obj_delivery() not ported yet');
+        obj_delivery(true);
 
     /* assume this will always return TRUE when changing level */
     /* (void) */ await in_out_region(u.ux, u.uy);
