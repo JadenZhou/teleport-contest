@@ -1572,8 +1572,12 @@ function zaptype(type) {
 // C ref: zap.c flash_str()
 export function flash_str(typ, nohallu) { /* suppress hallucination (for death reasons) */
     typ = zaptype(typ);
-    if (Hallucination() && !nohallu)
-        throw new Error('flash_str(): rnd_hallublast() not ported yet');
+    if (Hallucination() && !nohallu) {
+        /* always return "blast of foo" for simplicity;
+           this could be extended with hallucinatory rays, but probably
+           not worth it at this time */
+        return `blast of ${rnd_hallublast()}`;
+    }
     return flash_types[typ];
 }
 
@@ -3344,7 +3348,7 @@ import { PM_DEATH as PM_DEATH_ZP, PM_FAMINE as PM_FAMINE_ZP,
 import { which_armor as which_armor_zp, setnotworn as setnotworn_zp,
          bypass_objlist as bypass_objlist_zp,
          nxt_unbypassed_obj as nxt_unbypassed_obj_zp } from './worn.js';
-import { m_useup } from './mthrowu.js';
+import { m_useup, rnd_hallublast } from './mthrowu.js';
 import { ugolemeffects as ugolemeffects_zp } from './mhitu.js';
 import { burn_away_slime as burn_away_slime_zp,
          hliquid as hliquid_zp, potionbreathe as potionbreathe_zp,
