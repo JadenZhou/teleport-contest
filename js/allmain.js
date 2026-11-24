@@ -13,6 +13,11 @@ import { rn2, rnd } from './rng.js';
 import { mklev, u_on_upstairs } from './mklev.js';
 import { l_nhcore_init, nhcb_counts, nhcb_name } from './nhlua.js';
 import { NHCB_END_TURN } from './const.js';
+import { fumaroles, movebubbles } from './mkmaze.js';
+import { amulet } from './wizard.js';
+import { makewish } from './wizcmds.js';
+import { urgent_pline } from './display.js';
+import { tty_display_nhwindow } from './wintty.js';
 import { rhack, domove, enter_explore_mode } from './cmd.js';
 import { docrt, cls, bot, flush_screen, pline, see_monsters } from './display.js';
 import { see_objects, see_traps, Hallucination, Blind, swallowed } from './display.js';
@@ -640,7 +645,7 @@ export async function moveloop_core() {
                 await exerchk();
                 await invault();
                 if (u.uhave.amulet)
-                    throw new Error('moveloop_core(): amulet() not ported yet');
+                    await amulet();
                 if (!rn2(40 + (ACURR(A_DEX) * 3)))
                     u_wipe_engr(rnd(3));
                 if (u.uevent.udemigod && !u.uinvulnerable) {
@@ -649,9 +654,9 @@ export async function moveloop_core() {
                 }
                 /* vision will be updated as bubbles move */
                 if (Is_waterlevel(u.uz) || Is_airlevel(u.uz))
-                    throw new Error('moveloop_core(): movebubbles() not ported yet');
+                    movebubbles();
                 else if (g.level.flags.fumaroles)
-                    throw new Error('moveloop_core(): fumaroles() not ported yet');
+                    await fumaroles();
 
                 /* when immobile, count is in turns */
                 if (g.multi < 0) {
@@ -706,6 +711,16 @@ export async function moveloop_core() {
     } /* actual time passed */
 
     /* once-per-player-input things go here */
+
+    /* clear_splitobjs(): no split-object context is kept */
+
+    /* the Amulet of Yendor gives a wish when initially picked up */
+    if (u.uhave.amulet && !u.uevent.amulet_wish) {
+        u.uevent.amulet_wish = 1;
+        await tty_display_nhwindow(g.WIN_MESSAGE, true);
+        await urgent_pline("The Amulet is bestowing a wish upon you!");
+        await makewish();
+    }
 
     find_ac();
     if (!g.context.mv || Blind()) {

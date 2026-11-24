@@ -966,17 +966,78 @@ export async function level_tele() {
 
     /* if (!next_to_u() && !force_dest): leashed pets aren't ported yet;
        next_to_u() is TRUE without them */
-    if (In_endgame(u.uz)) /* must already be wizard */
-        throw new Error('level_tele(): level teleport in the endgame not ported yet');
+    if (In_endgame(u.uz)) { /* must already be wizard */
+        const llimit = dunlevs_in_dungeon(u.uz);
 
-    /* svk.killer.name[0] = 0: still alive, so far... */
+        if (newlev >= 0 || newlev <= -llimit) {
+            /* You_cant(get_there_from, "here") */
+            await pline("You can't get there from here.");
+            return;
+        }
+        newlevel.dnum = u.uz.dnum;
+        newlevel.dlevel = llimit + newlev;
+        schedule_goto(newlevel, UTOTYPE_NONE, null, null);
+        return;
+    }
 
-    if (newlev < 0 && !force_dest)
-        throw new Error('level_tele(): teleporting above the dungeon not ported yet');
+    killer_lt().name = ''; /* still alive, so far... */
 
-    /* escape_by_flying: not reached */
+    let escape_by_flying = null;
+    if (newlev < 0 && !force_dest) {
+        if (u.ushops0) {
+            /* take unpaid inventory items off of shop bills */
+            throw new Error('level_tele(): u_left_shop() when teleporting out of the dungeon not ported yet');
+        }
+        if (newlev <= -10) {
+            await You("arrive in heaven.");
+            /* SetVoice((struct monst *) 0, 0, 80, voice_deity) */
+            await pline('"Thou art early, but we\'ll admit thee."'); /* verbalize() */
+            killer_lt().format = NO_KILLER_PREFIX_LT;
+            killer_lt().name = "went to heaven prematurely";
+        } else if (newlev === -9) {
+            await You_feel_lt("deliriously happy.");
+            await pline("(In fact, you're on Cloud 9!)");
+            await tty_display_nhwindow_lt(g.WIN_MESSAGE, false);
+        } else
+            await You("are now high above the clouds...");
+
+        if (killer_lt().name) {
+            ; /* arrival in heaven is pending */
+        } else if (tp_Levitation()) {
+            escape_by_flying = "float gently down to earth";
+        } else if (tp_Flying()) {
+            escape_by_flying = "fly down to the ground";
+        } else {
+            await pline("Unfortunately, you don't know how to fly.");
+            await You("plummet a few thousand feet to your death.");
+            killer_lt().name = `teleported out of the dungeon and fell to ${
+                g.flags.female ? "her" : "his"} death`; /* uhis() */
+            killer_lt().format = NO_KILLER_PREFIX_LT;
+        }
+    }
+
+    if (killer_lt().name) { /* the chosen destination was not survivable */
+        /* set specific death location; this also suppresses bones */
+        const lsav = { ...u.uz }; /* save current level; see below */
+        u.uz.dnum = 0; /* main dungeon */
+        u.uz.dlevel = (newlev <= -10) ? -10 : 0; /* heaven or surface */
+        await done_lt(DIED_LT);
+        /* can only get here via life-saving (or declining to die in
+           explore|debug mode); the hero has now left the dungeon... */
+        escape_by_flying = "find yourself back on the surface";
+        u.uz = lsav; /* restore u.uz so escape code works */
+    }
+
+    /* calls done(ESCAPED) if newlevel==0 */
     const topo = g.dungeon_topology;
-    if (force_dest) {
+    if (escape_by_flying) {
+        await You(`${escape_by_flying}.`);
+        /* [dlevel used to be set to 1, but it doesn't make sense to
+            teleport out of the dungeon and float or fly down to the
+            surface but then actually arrive back inside the dungeon] */
+        newlevel.dnum = 0;   /* specify main dungeon */
+        newlevel.dlevel = 0; /* escape the dungeon */
+    } else if (force_dest) {
         /* wizard mode menu; no further validation needed */
         ;
     } else if (u.uz.dnum === topo.d_medusa_level.dnum
@@ -1586,3 +1647,8 @@ export async function rloco(obj) {
     return true;
 }
 
+import { killer as killer_lt } from './topten.js';
+import { done as done_lt } from './end.js';
+import { NO_KILLER_PREFIX as NO_KILLER_PREFIX_LT, DIED as DIED_LT } from './const.js';
+import { tty_display_nhwindow as tty_display_nhwindow_lt } from './wintty.js';
+import { You_feel as You_feel_lt } from './display.js';

@@ -3067,3 +3067,10 @@ export async function You_see(line) {
     else
         await pline(`You see ${line}`);
 }
+
+// C ref: display.h cmap_to_glyph(S_cloud / S_air / S_water) -- the glyph
+// the Planes of Air and Water remember everywhere, in the remembered-glyph
+// form (lev->glyph)
+export function waterlevel_glyph(typ) {
+    return rememb_glyph(terrain_glyph({ typ, flags: 0 }, 0, 0));
+}

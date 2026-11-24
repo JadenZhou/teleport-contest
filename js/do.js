@@ -50,6 +50,9 @@ import { LFILE_EXISTS, VISITED, WRITING, FREEING } from './const.js';
 import { m_at } from './makemon.js';
 import { mklev, place_lregion } from './mklev.js';
 import { tutorial, nhl_done } from './nhlua.js';
+import { fumaroles, movebubbles } from './mkmaze.js';
+import { resurrect } from './wizard.js';
+import { ACH_ENDG } from './const.js';
 import { delete_levelfile } from './files.js';
 import { maxledgerno, ledger_to_dnum } from './dungeon.js';
 import { vision_reset, vision_recalc } from './vision.js';
@@ -484,10 +487,28 @@ function free_luathemes(theme_group) {
 
 // C ref: dog.c discard_migrations()
 function discard_migrations() {
-    /* the monsters and objects scheduled to migrate get discarded (the
-       Wizard and anything bound for the endgame excepted) */
-    if (game.migrating_mons || game.migrating_objs)
-        throw new Error('discard_migrations(): discarding migrating monsters/objects not ported yet');
+    let mtmp;
+    const dest = { dnum: 0, dlevel: 0 };
+
+    for (mtmp = game.migrating_mons; mtmp; mtmp = mtmp.nmon) {
+        dest.dnum = mtmp.mux;
+        dest.dlevel = mtmp.muy;
+        /* the Wizard is kept regardless of location so that he is
+           ready to be brought back; nothing should be scheduled to
+           migrate to the endgame but if we find such, we'll keep it */
+        if (mtmp.iswiz || In_endgame(dest)) {
+            continue; /* keep mtmp on migrating_mons */
+        } else {
+            /* remove mtmp from migrating_mons; discard_minvent(mtmp, FALSE),
+               del_light_source(), dealloc_monst() */
+            throw new Error('discard_migrations(): discarding a migrating monster not ported yet');
+        }
+    }
+
+    /* objects get similar treatment (JS has no migrating objects yet:
+       obj_delivery() stops explicitly on them) */
+    if (game.migrating_objs)
+        throw new Error('discard_migrations(): migrating objects not ported yet');
 }
 
 // C ref: do.c goto_level()
@@ -507,7 +528,10 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (newdungeon) {
         const tutorial_dnum = g.dungeon_topology.d_tutorial_dnum;
         if (In_endgame(newlevel)) { /* 1st Endgame Level !!! */
-            throw new Error('goto_level(): endgame/tutorial entry not ported yet');
+            if (!u.uhave?.amulet)
+                return;  /* must have the Amulet */
+            if (!g.flags.debug) /* wizard ^V can bypass Earth level */
+                assign_level(newlevel, g.dungeon_topology.d_earth_level); /* (redundant) */
         } else if (newlevel.dnum === tutorial_dnum) { /* In_tutorial(newlevel) */
             await tutorial(true); /* entering tutorial */
         } else if (u.uz.dnum === tutorial_dnum) { /* In_tutorial(&u.uz) */
@@ -518,7 +542,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     }
     let new_ledger = ledger_no(newlevel);
     if (new_ledger <= 0)
-        throw new Error('goto_level(): done(ESCAPED) not ported yet');
+        await done_do(ESCAPED_DO); /* in fact < 0 is impossible */
 
     /* the "mysterious force" when climbing out of Gehennom with the
        Amulet */
@@ -596,8 +620,6 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
                 m.mlstmv = g.moves;
         /* if (nhfp->structlevel) bufon(nhfp->fd): no buffering to do */
     } else {
-        /* only reachable when leaving the tutorial: the endgame entry
-           throws above */
         free_luathemes(leaving_tutorial ? 'tut_themes' : 'most_themes');
     }
     const save_mode = nhfp.mode;
@@ -791,9 +813,9 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
 
     /* initial movement of bubbles just before vision_recalc */
     if (Is_waterlevel(u.uz) || Is_airlevel(u.uz))
-        throw new Error('goto_level(): movebubbles() not ported yet');
+        movebubbles();
     else if (g.level.flags?.fumaroles)
-        throw new Error('goto_level(): fumaroles() not ported yet');
+        await fumaroles();
 
     /* Reset the screen. */
     vision_reset(); /* reset the blockages */
@@ -840,7 +862,14 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* special location arrival messages/events */
     const topo = g.dungeon_topology;
     if (In_endgame(u.uz)) {
-        throw new Error('goto_level(): endgame arrival not ported yet');
+        if (newdungeon)
+            record_achievement(ACH_ENDG); /* reached endgame */
+        if (new_ && on_level(u.uz, topo.d_astral_level)) {
+            /* final_level(); record_achievement(ACH_ASTR) */
+            throw new Error('goto_level(): final_level() not ported yet');
+        } else if (newdungeon && u.uhave?.amulet) {
+            await resurrect(); /* force confrontation with Wizard */
+        }
     } else if (u.uz.dnum === topo.d_quest_dnum) { /* In_quest() */
         await onquest(); /* might be reaching locate|goal level */
     } else if (topo.d_knox_level?.dlevel && on_level(u.uz, topo.d_knox_level)) {
@@ -1453,3 +1482,5 @@ export async function dowipe() {
     await Your(`${body_part(FACE)} is already clean.`);
     return ECMD_TIME;
 }
+import { done as done_do } from './end.js';
+import { ESCAPED as ESCAPED_DO } from './const.js';
