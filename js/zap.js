@@ -3463,6 +3463,14 @@ import { locomotion as locomotion_rv } from './trap.js';
 import { get_obj_location as get_obj_location_rv } from './shk.js';
 import { obj_has_timer as obj_has_timer_rv } from './timeout.js';
 import { dist2 as dist2_rv } from './hacklib.js';
+import { get_mtraits as get_mtraits_rv } from './mkobj.js';
+import { monhp_per_lvl as monhp_per_lvl_rv } from './makemon.js';
+import { replmon as replmon_rv } from './mon.js';
+import { restore_cham as restore_cham_rv } from './restore.js';
+import { wary_dog as wary_dog_rv } from './dog.js';
+import { dmgtype as dmgtype_rv } from './mondata.js';
+import { AD_SEDU as AD_SEDU_RV, AD_SSEX as AD_SSEX_RV } from './monsters.js';
+import { MM_NOTAIL as MM_NOTAIL_RV, MM_ADJACENTOK as MM_ADJACENTOK_RV } from './const.js';
 
 /* C ref: mondata.h is_rider(), is_reviver(), is_displacer(),
    dmgtype() for AD_SEDU */
@@ -3517,6 +3525,123 @@ function zombie_can_dig(x, y) {
             return true;
     }
     return false;
+}
+
+// C ref: zap.c montraits()
+/* used by revive() and animate_statue() */
+export async function montraits(
+    obj,
+    cc,
+    adjacentok) /* False: at obj's spot only,
+                 * True: nearby is allowed */
+{
+    let mtmp = null;
+    const mtmp2 = has_omonst_rv(obj) ? get_mtraits_rv(obj, true) : null;
+
+    if (mtmp2) {
+        /* save_mtraits() validated mtmp2->mnum */
+        mtmp2.data = mons_rv[mtmp2.mnum];
+
+        if (mtmp2.mhpmax > 0 || is_rider_rv(mtmp2.data)) {
+            mtmp = await makemon_revive(mtmp2.data, cc.x, cc.y,
+                           (NO_MINVENT_RV | MM_NOWAIT_RV | MM_NOCOUNTBIRTH_RV
+                            /* in case mtmp2 is a long worm; saved traits for
+                               long worm don't include tail segments so don't
+                               give mtmp any; it will be given a new 'wormno'
+                               though (unless those are exhausted) so be able
+                               to grow new tail segments */
+                            | MM_NOTAIL_RV | MM_NOMSG_RV
+                            | (adjacentok ? MM_ADJACENTOK_RV : 0)));
+        }
+        if (!mtmp) {
+            /* mtmp2 is a copy of obj's object->oextra->omonst extension
+               and is not on the map or on any monst lists */
+            /* dealloc_monst(mtmp2) */
+            return null;
+        }
+
+        /* heal the monster; lower than normal level might come from
+           adj_lev() but we assume it has come from 'mtmp' being level
+           drained before finally killed; give a chance to restore
+           some levels so that trolls and Riders can't be drained to
+           level 0 and then trivially killed repeatedly */
+        if (mtmp.m_lev < mtmp.data.mlevel) {
+            const ltmp = rnd(mtmp.data.mlevel + 1);
+
+            if (ltmp > mtmp.m_lev) {
+                while (mtmp.m_lev < ltmp) {
+                    mtmp.m_lev++;
+                    mtmp.mhpmax += monhp_per_lvl_rv(mtmp);
+                }
+                mtmp2.m_lev = mtmp.m_lev;
+            }
+        }
+        if (mtmp.mhpmax > mtmp2.mhpmax) /* &&is_rider(mtmp2->data)*/
+            mtmp2.mhpmax = mtmp.mhpmax;
+        mtmp2.mhp = mtmp2.mhpmax;
+        /* Get these ones from mtmp */
+        mtmp2.minvent = mtmp.minvent; /*redundant*/
+        /* monster ID is available if the monster died in the current
+           game, but will be zero if the corpse was in a bones level
+           (we cleared it when loading bones) */
+        if (mtmp.m_id) {
+            mtmp2.m_id = mtmp.m_id;
+            /* might be bringing quest leader back to life */
+            const qs = game.quest_status;
+            if (qs?.leader_is_dead
+                /* leader_is_dead implies leader_m_id is valid */
+                && mtmp2.m_id === qs.leader_m_id)
+                qs.leader_is_dead = false;
+        }
+        mtmp2.mx = mtmp.mx;
+        mtmp2.my = mtmp.my;
+        mtmp2.mux = mtmp.mux;
+        mtmp2.muy = mtmp.muy;
+        mtmp2.mw = mtmp.mw;
+        mtmp2.wormno = mtmp.wormno;
+        mtmp2.misc_worn_check = mtmp.misc_worn_check;
+        mtmp2.weapon_check = mtmp.weapon_check;
+        mtmp2.mtrapseen = mtmp.mtrapseen;
+        mtmp2.mflee = mtmp.mflee;
+        mtmp2.mburied = mtmp.mburied;
+        mtmp2.mundetected = mtmp.mundetected;
+        mtmp2.mfleetim = mtmp.mfleetim;
+        mtmp2.mlstmv = mtmp.mlstmv;
+        mtmp2.m_ap_type = mtmp.m_ap_type;
+        /* set these ones explicitly */
+        mtmp2.mrevived = 1;
+        mtmp2.mavenge = 0;
+        mtmp2.meating = 0;
+        mtmp2.mleashed = 0;
+        mtmp2.mtrapped = 0;
+        mtmp2.msleeping = 0;
+        mtmp2.mfrozen = 0;
+        mtmp2.mcanmove = 1;
+        /* most cancelled monsters return to normal,
+           but some need to stay cancelled */
+        /* SYSOPT_SEDUCE is on in the recorded games */
+        if (!dmgtype_rv(mtmp2.data, AD_SEDU_RV)
+            && (!dmgtype_rv(mtmp2.data, AD_SSEX_RV)))
+            mtmp2.mcan = 0;
+        mtmp2.mcansee = 1; /* set like in makemon */
+        mtmp2.mblinded = 0;
+        mtmp2.mstun = 0;
+        mtmp2.mconf = 0;
+        /* when traits are for a shopkeeper, dummy monster 'mtmp' won't
+           have necessary eshk data for replmon() -> replshk() */
+        if (mtmp2.isshk) {
+            /* neweshk(mtmp); *ESHK(mtmp) = *ESHK(mtmp2); ...; and
+               replmon()'s replshk() */
+            throw new Error('montraits(): shopkeeper traits (replshk()) not ported yet');
+        }
+        replmon_rv(mtmp, mtmp2);
+        newsym(mtmp2.mx, mtmp2.my); /* Might now be invisible */
+
+        /* in case Protection_from_shape_changers is different
+           now than it was when the traits were stored */
+        restore_cham_rv(mtmp2);
+    }
+    return mtmp2;
 }
 
 /* makemon() for revive(): makemon()'s dochugw() for an occupied hero is
@@ -3662,9 +3787,11 @@ export async function revive(corpse, by_hero) {
             }
         }
     } else if (has_omonst_rv(corpse)) {
-        /* use saved traits: montraits(corpse, &xy, FALSE), then
-           wary_dog() for a tame one */
-        throw new Error('revive(): montraits() not ported yet');
+        /* use saved traits */
+        xy.x = x, xy.y = y;
+        mtmp = await montraits(corpse, xy, false);
+        if (mtmp && mtmp.mtame && !mtmp.isminion)
+            await wary_dog_rv(mtmp, true);
     } else {
         /* make a new monster */
         mtmp = await makemon_revive(mptr, x, y, mmflags | MM_NOCOUNTBIRTH_RV);

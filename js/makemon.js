@@ -1670,6 +1670,30 @@ export function golemhp(type) {
     }
 }
 
+// C ref: makemon.c monhp_per_lvl()
+/* amount of HP to lose from level drain (or gain from Stormbringer) */
+export function monhp_per_lvl(mon) {
+    const ptr = mon.data;
+    let hp = rnd(8); /* default is d8 */
+
+    /* like newmonhp, but home elementals are ignored, riders use normal d8 */
+    if (ptr.mlet === M.S_GOLEM) { /* is_golem(ptr) */
+        /* draining usually won't be applicable for these critters */
+        hp = Math.trunc(golemhp(monsndx(ptr)) / ptr.mlevel);
+    } else if (ptr.mlevel > 49) {
+        /* arbitrary; such monsters won't be involved in draining anyway */
+        hp = 4 + rnd(4); /* 5..8 */
+    } else if (ptr.mlet === M.S_DRAGON && monsndx(ptr) >= M.PM_GRAY_DRAGON) {
+        /* adult dragons; newmonhp() uses In_endgame(&u.uz) ? 8 : 4 + rnd(4)
+         */
+        hp = 4 + rn2(5); /* 4..8 */
+    } else if (!mon.m_lev) {
+        /* level 0 monsters use 1d4 instead of Nd8 */
+        hp = rnd(4);
+    }
+    return hp;
+}
+
 // C ref: makemon.c newmonhp()
 /* set up a new monster's initial level and hit points;
    used by newcham() as well as by makemon() */
