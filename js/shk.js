@@ -1789,6 +1789,35 @@ function o_on(id, objchn) {
     return null;
 }
 
+// C ref: shk.c doinvbill()
+export function doinvbill(mode) /* 0: deliver count 1: paged */ {
+    const u = game.u;
+    const shkp = shop_keeper(u.ushops ? (u.ushops.charCodeAt(0) || 0) : 0);
+    if (!shkp || !inhishop(shkp)) {
+        if (mode !== 0)
+            console.error("impossible: doinvbill: no shopkeeper?");
+        return 0;
+    }
+    const eshkp = shkp.mextra.eshk;
+
+    if (mode === 0) {
+        /* count expended items, so that the `I' command can decide
+           whether to include 'x' in its prompt string */
+        let cnt = !eshkp.debit ? 0 : 1;
+        let obj;
+
+        for (let i = 0; i < eshkp.billct; i++) {
+            const bp = eshkp.bill[i];
+            if (bp.useup
+                || ((obj = bp_to_obj(bp)) != null && obj.quan < bp.bquan))
+                cnt++;
+        }
+        return cnt;
+    }
+    /* the paged "Used up items" list */
+    throw new Error('doinvbill(): itemized used-up bill not ported yet');
+}
+
 // C ref: shk.c bp_to_obj()
 function bp_to_obj(bp) {
     let obj;

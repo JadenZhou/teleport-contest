@@ -103,7 +103,8 @@ import { kill_egg, peek_timer, stop_timer, start_timer, obj_to_any,
 import { ZOMBIFY_MON, TIMER_OBJECT } from './const.js';
 import { relobj, thiefdead, mdrop_special_objs, discard_minvent } from './steal.js';
 import { dochugw, onscary, mon_regen, m_everyturn_effect,
-         mon_track_clear, monflee } from './monmove.js';
+         mon_track_clear, monflee,
+         set_apparxy as set_apparxy_mn } from './monmove.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { can_teleport, resists_fire } from './mondata.js';
 import { on_fire } from './uhitm.js';
@@ -1922,10 +1923,29 @@ export async function decide_to_shapeshift(mon) {
 export async function newcham(mtmp, mdat, ncflags) {
     const gen = newcham_g(mtmp, mdat, ncflags);
     let r;
-    while (!(r = gen.next()).done)
+    while (!(r = gen.next()).done) {
+        if (r.value === NEWCHAM_MON_MOVING) {
+            /* the end of newcham() when a monster is moving: */
+            /* old form might not have been affected by Elbereth but
+               perhaps the new form is */
+            /* give 'mtmp' a new chance to pinpoint hero's location */
+            if (!(game.u.ux === mtmp.mux && game.u.uy === mtmp.muy)) /* u_at() */
+                set_apparxy_mn(mtmp);
+            /* if hero is on Elbereth or scare monster, mtmp in new form
+               might become scared */
+            if (!mtmp.mpeaceful
+                && onscary(mtmp.mux, mtmp.muy, mtmp)
+                && monnear(mtmp, mtmp.mux, mtmp.muy))
+                await monflee(mtmp, rn1(9, 2), true, true); /* 2..10 turns */
+            continue;
+        }
         await pline(r.value); /* pline_mon() */
+    }
     return r.value;
 }
+/* newcham_g() yields this (instead of a message) to have newcham() run
+   its final mon_moving step, which may call the async monflee() */
+const NEWCHAM_MON_MOVING = { newcham_mon_moving: true };
 /* newcham() from a synchronous caller (makemon(), level creation), which
    never asks for messages */
 export function newcham_sync(mtmp, mdat, ncflags) {
@@ -2110,7 +2130,7 @@ function* newcham_g(mtmp, mdat, ncflags) {
     /* old form might not have been affected by Elbereth but perhaps the
        new form is */
     if (game.context?.mon_moving)
-        throw new Error('newcham(): set_apparxy()/monflee() for a moving monster not ported yet');
+        yield NEWCHAM_MON_MOVING; /* set_apparxy()/monflee(), in newcham() */
 
     return 1;
 }
