@@ -560,8 +560,8 @@ export async function poly_obj(obj, id) {
     /* Keep chest/box traps and poisoned ammo if we may */
     if (obj.otrapped && Is_box(otmp))
         otmp.otrapped = 1;
-    if (obj.opoisoned && is_poisonable(otmp))
-        otmp.opoisoned = 1;
+    if (obj.otrapped /* opoisoned */ && is_poisonable(otmp))
+        otmp.otrapped /* opoisoned */ = 1;
 
     if (id === STRANGE_OBJECT && obj.otyp === CORPSE) {
         /* turn crocodile corpses into shoes */

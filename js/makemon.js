@@ -833,7 +833,7 @@ function m_initthrow(mtmp, otyp, oquan) {
     otmp.quan = rn1(oquan, 3);
     otmp.owt = weight(otmp);
     if (otyp === O.ORCISH_ARROW)
-        otmp.opoisoned = true;
+        otmp.otrapped /* opoisoned */ = true;
     mpickobj(mtmp, otmp);
 }
 

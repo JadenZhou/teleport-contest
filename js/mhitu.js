@@ -222,7 +222,7 @@ export function mpoisons_subj(mtmp, mattk) {
         const mwep = (mtmp === game.youmonst) ? game.uwep : (mtmp.mw || null);
         /* "Foo's attack was poisoned." is pretty lame, but at least
            it's better than "sting" when not a stinging attack... */
-        return (!mwep || !mwep.opoisoned) ? "attack" : "weapon";
+        return (!mwep || !mwep.otrapped /* opoisoned */) ? "attack" : "weapon";
     } else {
         return (mattk.aatyp === AT_TUCH) ? "contact"
                : (mattk.aatyp === AT_GAZE) ? "gaze"
