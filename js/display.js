@@ -2763,7 +2763,7 @@ export function serialize_terminal_grid(display) {
 // The map window (rows 1-21) and the status window (rows 22-23) are
 // redrawn from the glyph buffer; row 0 and whatever rows a multi-line
 // message is using belong to the tty message window (wintty.js topl).
-function _buildScreenOutput(cursor_on_u) {
+function _buildScreenOutput(cursor_on_u, printed = null) {
     const display = game?.nhDisplay;
     if (!display) return;
 
@@ -2786,10 +2786,18 @@ function _buildScreenOutput(cursor_on_u) {
     if (display.grid) {
         const msgw = game.tty_wins?.[game.WIN_MESSAGE];
         const msgrows = (game.ttyDisplay?.toplin && msgw) ? msgw.cury + 1 : 1;
+        /* C's flush_screen() print_glyph()s only the spots that changed
+           (gnew); repainting every map row shows the same thing except
+           while a menu or text window is up over the map (e.g. its
+           getlin "Search for:" prompt), which tty leaves in place */
+        const overlay = !!printed && (game.tty_wins || []).some(w =>
+            w && w.active && (w.type === NHW_MENU_D || w.type === NHW_TEXT_D));
         // Map — write characters to grid (DEC → Unicode for browser display)
         for (let y = 0; y < ROWNO; y++) {
             if (y + 1 < msgrows) continue;
             for (let x = 1; x < COLNO; x++) {
+                if (overlay && !printed.has(y * COLNO + x))
+                    continue;
                 const loc = game.level?.at(x, y);
                 if (!loc?.disp_ch || loc.disp_ch === ' ') {
                     display.setCell(x - 1, y + 1, ' ', NO_COLOR, 0);
@@ -2799,8 +2807,9 @@ function _buildScreenOutput(cursor_on_u) {
                 display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), tty_glyph_attr(loc));
             }
         }
-        // Status lines (left alone while erased)
-        if (game.status_shown !== false) {
+        // Status lines (left alone while erased; with a menu or text
+        // window up, only bot() itself draws them)
+        if (game.status_shown !== false && !overlay) {
             const s1 = st1.replace(/\x1b\[[0-9;]*[A-Za-z]/g, m =>
                 m.match(/\x1b\[\d+C/) ? ' '.repeat(parseInt(m.slice(2))) : '');
             for (let c = 0; c < display.cols; c++)
@@ -2819,6 +2828,8 @@ function _buildScreenOutput(cursor_on_u) {
         }
     }
 }
+
+import { NHW_MENU as NHW_MENU_D, NHW_TEXT as NHW_TEXT_D } from './const.js';
 
 // ── flush_screen ──
 // C ref: display.c flush_screen()
@@ -2839,7 +2850,8 @@ export async function flush_screen(cursor_on_u) {
     /* print_glyph() of each spot inside the changed-glyph bounding boxes
        that is gnew (or has a getpos frame color): the tty cursor is left
        just past the last one printed */
-    const last = await flush_gbuf();
+    const printed = new Set();
+    const last = await flush_gbuf(printed);
     if (last && !cursor_on_u) {
         const display = game?.nhDisplay;
         display?.setCursor?.(last.x, last.y + 1);
@@ -2848,14 +2860,14 @@ export async function flush_screen(cursor_on_u) {
             game.ttyDisplay.cury = last.y + 1;
         }
     }
-    _buildScreenOutput(cursor_on_u);
+    _buildScreenOutput(cursor_on_u, printed);
 }
 
 // C ref: display.c flush_screen() -- the gbuf loop: each spot inside a
 // row's bounding box is printed if gnew, or if it gets a frame color
 // (getpos valid spots with bgcolors); gnew is cleared and the boxes reset
 // (reset_glyph_bbox()).  Returns the last spot printed, if any.
-async function flush_gbuf() {
+async function flush_gbuf(printed = null) {
     const g = gbuf_bbox();
     let last = null;
     const st = game.getpos_state;
@@ -2869,6 +2881,7 @@ async function flush_gbuf() {
             if (loc.gnew || (framed && await mapxy_valid(x, y))) {
                 loc.gnew = 0;
                 last = { x, y };
+                printed?.add(y * COLNO + x);
             }
         }
     }
