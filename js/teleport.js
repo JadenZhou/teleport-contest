@@ -560,8 +560,14 @@ export async function scrolltele(scroll) {
     if (!tp_prop(BLINDED).intrinsic) /* !Blinded */
         await make_blinded(0, false);
 
-    if ((u.uhave?.amulet || On_W_tower_level(u.uz)) && !rn2(3))
-        throw new Error('scrolltele(): "You feel disoriented for a moment." not ported yet');
+    if ((u.uhave?.amulet || On_W_tower_level_tp(u.uz)) && !rn2(3)) {
+        await You_feel_lt("disoriented for a moment.");
+        /* don't discover the scroll [at least not yet for wizard override];
+           disorientation doesn't reveal that this is a teleport attempt */
+        if (!game.flags?.debug
+            || await tty_yn_function_tp("Override?", "yn", 'n') !== 'y') /* y_n() */
+            return;
+    }
     if (((tp_prop(TELEPORT_CONTROL).intrinsic || tp_prop(TELEPORT_CONTROL).extrinsic
           || (scroll && scroll.blessed)) && !tp_prop(STUNNED).intrinsic
          && !tp_prop(STUNNED).extrinsic)
@@ -749,12 +755,6 @@ async function dotele(break_the_rules) { /* True: wizard mode ^T */
     return 1;
 }
 
-/* C ref: dungeon.h On_W_tower_level() -- Vlad's Tower isn't reachable
-   in the JS port yet */
-function On_W_tower_level(lev) {
-    void lev;
-    return false;
-}
 
 /* C ref: decl.c You_feel/You1 message strings */
 const shudder_for_moment = "shudder for a moment.";
@@ -1625,8 +1625,16 @@ export async function rloco(obj) {
                      || (dndest.nlx
                          && within_bounded_area(tx, ty,
                                                 dndest.nlx, dndest.nly,
-                                                dndest.nhx, dndest.nhy)))));
-    /* On_W_tower_level(): the Wizard's tower isn't generated yet */
+                                                dndest.nhx, dndest.nhy))))
+             /* on the Wizard Tower levels, objects inside should
+                stay inside and objects outside should stay outside */
+             || (dndest?.nlx && On_W_tower_level_tp(game.u.uz)
+                 && within_bounded_area(tx, ty,
+                                        dndest.nlx, dndest.nly,
+                                        dndest.nhx, dndest.nhy)
+                    !== within_bounded_area(otx, oty,
+                                            dndest.nlx, dndest.nly,
+                                            dndest.nhx, dndest.nhy)));
 
     if (await flooreffects(obj, tx, ty, "fall")) {
         /* update old location (if any) since flooreffects() couldn't;
@@ -1652,3 +1660,5 @@ import { done as done_lt } from './end.js';
 import { NO_KILLER_PREFIX as NO_KILLER_PREFIX_LT, DIED as DIED_LT } from './const.js';
 import { tty_display_nhwindow as tty_display_nhwindow_lt } from './wintty.js';
 import { You_feel as You_feel_lt } from './display.js';
+import { tty_yn_function as tty_yn_function_tp } from './wintty.js';
+import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';

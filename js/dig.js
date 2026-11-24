@@ -633,7 +633,30 @@ export async function zap_dig() {
             if (maze_dig)
                 break;
         } else if (maze_dig) {
-            throw new Error('zap_dig(): digging on a maze level not ported yet');
+            if (IS_WALL(room.typ)) {
+                if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
+                    if (in_rooms(zx, zy, SHOPBASE).length)
+                        throw new Error('zap_dig(): shop wall damage (add_damage()) not ported yet');
+                    room.typ = ROOM, room.flags = 0;
+                    unblock_point(zx, zy); /* vision */
+                } else if (!Blind_dg())
+                    await pline_The("wall glows then fades.");
+                break;
+            } else if (IS_TREE(room.typ)) { /* check trees before stone */
+                if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
+                    room.typ = ROOM, room.flags = 0;
+                    unblock_point(zx, zy); /* vision */
+                } else if (!Blind_dg())
+                    await pline_The("tree shudders but is unharmed.");
+                break;
+            } else if (room.typ === STONE_DG || room.typ === SCORR) {
+                if (!((room.wall_info || 0) & W_NONDIGGABLE)) {
+                    room.typ = CORR, room.flags = 0;
+                    unblock_point(zx, zy); /* vision */
+                } else if (!Blind_dg())
+                    await pline_The("rock glows then fades.");
+                break;
+            }
         } else if (IS_OBSTRUCTED(room.typ)) {
             if (!may_dig(zx, zy))
                 break;
@@ -719,3 +742,5 @@ export async function buried_ball_to_punishment() {
         newsym(cc.x, cc.y);
     }
 }
+import { Blind as Blind_dg } from './display.js';
+import { STONE as STONE_DG } from './const.js';
