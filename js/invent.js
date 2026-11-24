@@ -2483,8 +2483,8 @@ export function delobj_core(obj, force) {
         return;
     }
     const update_map = (obj.where === 'OBJ_FLOOR');
-    if (obj.where === 'OBJ_INVENT' || obj.unpaid || obj.cobj?.length)
-        throw new Error('delobj_core(): obfree() of carried/unpaid/container objects not ported yet');
+    /* obj_extract_self() -> freeinv() for a carried object; obfree()
+       frees contents (delete_contents()) and stops on a bill entry */
     obj_extract_self(obj);
     if (update_map) { /* floor object's coordinates are always up to date */
         maybe_unhide_at(obj.ox, obj.oy);
