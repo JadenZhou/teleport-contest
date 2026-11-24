@@ -996,8 +996,10 @@ export function paralyze_monst(mon, amt) {
 // doesn't; don't use for paralysis!
 export async function slept_monst(mon) {
     if (helpless(mon) && mon === game.u.ustuck
-        && !sticks(game.youmonst.data) && !game.u.uswallow)
-        throw new Error('slept_monst(): grip relaxes (unstuck()) not ported yet');
+        && !sticks(game.youmonst.data) && !game.u.uswallow) {
+        await pline(`${s_suffix_sm(Monnam(mon))} grip relaxes.`); /* pline_mon() */
+        await unstuck_sm(mon);
+    }
 }
 
 // C ref: mhitm.c attk_protection()
@@ -1139,3 +1141,5 @@ function is_rider_md(ptr) {
     return ptr === mons[M.PM_DEATH] || ptr === mons[M.PM_FAMINE]
         || ptr === mons[M.PM_PESTILENCE];
 }
+import { s_suffix as s_suffix_sm } from './hacklib.js';
+import { unstuck as unstuck_sm } from './mhitu.js';
