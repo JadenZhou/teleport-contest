@@ -95,11 +95,8 @@ function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
-// C ref: mondata.c sticks()
-function sticks(ptr) {
-    return attacktype(ptr, AT_ENGL) || attacktype(ptr, AT_HUGS)
-        || ptr.mattk.some((a) => a.adtyp === AD_STCK);
-}
+/* C ref: mondata.c sticks() is engrave.js sticks() */
+import { sticks } from './engrave.js';
 
 
 /* C ref: worn.c find_mac() lives in worn.js */
@@ -706,6 +703,8 @@ async function mhitm_ad_ssex(magr, mattk, mdef, mhm) {
         return;
 }
 
+import { mhitm_ad_stck } from './uhitm.js';
+
 // C ref: uhitm.c mhitm_adtyping()
 async function mhitm_adtyping(magr, mattk, mdef, mhm) {
     switch (mattk.adtyp) {
@@ -713,6 +712,7 @@ async function mhitm_adtyping(magr, mattk, mdef, mhm) {
         mhitm_ad_phys(magr, mattk, mdef, mhm);
         break;
     case AD_SSEX: await mhitm_ad_ssex(magr, mattk, mdef, mhm); break;
+    case AD_STCK: await mhitm_ad_stck(magr, mattk, mdef, mhm); break;
     case M.AD_SITM:
     case M.AD_SEDU: await mhitm_ad_sedu(magr, mattk, mdef, mhm); break;
     default:

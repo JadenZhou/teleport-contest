@@ -868,6 +868,11 @@ export async function mattacku(mtmp) {
     return 0;
 }
 
+import { W_ACCESSORY as W_ACCESSORY_MU, W_WEP as W_WEP_MU } from './const.js';
+import { WEAPON_CLASS as WEAPON_CLASS_MU } from './objects.js';
+import { is_weptool as is_weptool_mu } from './mkobj.js';
+import { protects as protects_mu } from './artifact.js';
+
 // C ref: mhitu.c magic_negation()
 /* armor that sufficiently covers the body might be able to block magic */
 export function magic_negation(mon) {
@@ -878,9 +883,7 @@ export function magic_negation(mon) {
                          /* high priests have innate protection */
                          : (mon.data === mons[M.PM_HIGH_CLERIC]);
 
-    if (!is_you)
-        throw new Error('magic_negation(): monster defender not ported yet');
-    for (let o = game.invent; o; o = o.nobj) {
+    for (let o = is_you ? game.invent : mon.minvent; o; o = o.nobj) {
         /* a_can field is only applicable for armor (which must be worn) */
         if ((o.owornmask & W_ARMOR) !== 0) {
             const armpro = objects[o.otyp].a_can;
@@ -892,6 +895,13 @@ export function magic_negation(mon) {
         /* if we've already confirmed Protection, skip additional checks */
         if (is_you || gotprot)
             continue;
+
+        /* omit W_SWAPWEP+W_QUIVER; W_ART+W_ARTI handled by protects() */
+        let wearmask = W_ARMOR | W_ACCESSORY_MU;
+        if (o.oclass === WEAPON_CLASS_MU || is_weptool_mu(o))
+            wearmask |= W_WEP_MU;
+        if (protects_mu(o, ((o.owornmask & wearmask) !== 0) ? true : false))
+            gotprot = true;
     }
 
     if (gotprot) {
