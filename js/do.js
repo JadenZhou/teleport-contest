@@ -49,6 +49,9 @@ import { close_nhfile } from './sfbase.js';
 import { LFILE_EXISTS, VISITED, WRITING, FREEING } from './const.js';
 import { m_at } from './makemon.js';
 import { mklev, place_lregion } from './mklev.js';
+import { tutorial, nhl_done } from './nhlua.js';
+import { delete_levelfile } from './files.js';
+import { maxledgerno, ledger_to_dnum } from './dungeon.js';
 import { vision_reset, vision_recalc } from './vision.js';
 import { LR_UPTELE, LR_DOWNTELE } from './const.js';
 import { getobj, any_obj_ok, freeinv, stackobj } from './invent.js';
@@ -456,6 +459,37 @@ async function familiar_level_msg() {
         await pline(mesg);
 }
 
+// C ref: mklev.c free_luathemes()
+function free_luathemes(theme_group) {
+    const g = game;
+    let i;
+
+    /*
+     * Release which group(s)?
+     *  tut_themes  => leaving tutorial, free tutorial themes only;
+     *  most_themes => entering endgame, free non-endgame themes;
+     *  all_themes  => end of game, free all themes.
+     */
+    for (i = 0; i < g.n_dgns; ++i) {
+        if ((theme_group === 'tut_themes' && i !== g.dungeon_topology.d_tutorial_dnum)
+            || (theme_group === 'most_themes'
+                && i === g.dungeon_topology.d_astral_level.dnum))
+            continue;
+        if (g.luathemes?.[i]) {
+            nhl_done(g.luathemes[i]);
+            g.luathemes[i] = null;
+        }
+    }
+}
+
+// C ref: dog.c discard_migrations()
+function discard_migrations() {
+    /* the monsters and objects scheduled to migrate get discarded (the
+       Wizard and anything bound for the endgame excepted) */
+    if (game.migrating_mons || game.migrating_objs)
+        throw new Error('discard_migrations(): discarding migrating monsters/objects not ported yet');
+}
+
 // C ref: do.c goto_level()
 export async function goto_level(newlevel, at_stairs, falling, portal) {
     const g = game;
@@ -471,12 +505,16 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (dunlev(newlevel) > dunlevs_in_dungeon(newlevel))
         newlevel.dlevel = dunlevs_in_dungeon(newlevel);
     if (newdungeon) {
-        /* In_endgame(newlevel), In_tutorial(newlevel), In_tutorial(&u.uz):
-           tutorial() and the endgame entry are not ported yet */
-        if (In_endgame(newlevel) || g.tutorial_dnum !== undefined
-            && (newlevel.dnum === g.tutorial_dnum
-                || u.uz.dnum === g.tutorial_dnum))
+        const tutorial_dnum = g.dungeon_topology.d_tutorial_dnum;
+        if (In_endgame(newlevel)) { /* 1st Endgame Level !!! */
             throw new Error('goto_level(): endgame/tutorial entry not ported yet');
+        } else if (newlevel.dnum === tutorial_dnum) { /* In_tutorial(newlevel) */
+            await tutorial(true); /* entering tutorial */
+        } else if (u.uz.dnum === tutorial_dnum) { /* In_tutorial(&u.uz) */
+            await tutorial(false); /* leaving tutorial */
+            up = false; /* re-enter level 1 as if starting new game */
+            leaving_tutorial = true;
+        }
     }
     let new_ledger = ledger_no(newlevel);
     if (new_ledger <= 0)
@@ -558,17 +596,29 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
                 m.mlstmv = g.moves;
         /* if (nhfp->structlevel) bufon(nhfp->fd): no buffering to do */
     } else {
-        /* free_luathemes(): only reachable via the endgame/tutorial
-           entry, which throws above */
-        throw new Error('goto_level(): free_luathemes() not ported yet');
+        /* only reachable when leaving the tutorial: the endgame entry
+           throws above */
+        free_luathemes(leaving_tutorial ? 'tut_themes' : 'most_themes');
     }
     const save_mode = nhfp.mode;
     nhfp.mode = cant_go_back ? FREEING : (WRITING | FREEING);
     savelev(nhfp, ledger_no(u.uz));
     nhfp.mode = save_mode;
     close_nhfile(nhfp);
-    /* if (cant_go_back): discarding unreachable levels is only reachable
-       via the endgame/tutorial entry, which throws above */
+    if (cant_go_back) {
+        const tutorial_dnum = g.dungeon_topology.d_tutorial_dnum;
+        let l_idx;
+        /* discard unreachable levels; keep #0 */
+        for (l_idx = maxledgerno(); l_idx > 0; --l_idx)
+            if (!leaving_tutorial || ledger_to_dnum(l_idx) === tutorial_dnum)
+                delete_levelfile(l_idx);
+        /* mark #overview data for all dungeon branches as uninteresting */
+        for (l_idx = 0; l_idx < g.n_dgns; ++l_idx)
+            if (!leaving_tutorial || l_idx === tutorial_dnum)
+                remdun_mapseen(l_idx);
+        /* get rid of mons & objs scheduled to migrate to discarded levels */
+        discard_migrations();
+    }
 
     if (Is_rogue_level(newlevel) || Is_rogue_level(u.uz))
         game.currentgraphics = Is_rogue_level(newlevel) ? ROGUESET : PRIMARYSET; /* assign_graphics() */

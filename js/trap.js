@@ -4116,3 +4116,42 @@ function nohands_tr(ptr) { return (ptr.mflags1 & M1_NOHANDS_TR) !== 0; }
 function webmaker_tr(ptr) {
     return ptr === mons_tr[PM_CAVE_SPIDER_TR] || ptr === mons_tr[PM_GIANT_SPIDER_TR];
 }
+
+// C ref: trap.c back_on_ground()
+/* print a message about being back on the ground after leaving a pool */
+export async function back_on_ground(rescued) {
+    const g = game;
+    const u = g.u;
+    let preposit = (Levitation() || Flying()) ? "over" : "on";
+    let surf = surface_tr(u.ux, u.uy), you_are_back;
+
+    if (is_ice_bg(u.ux, u.uy)) {
+        /* "on ice" */
+        throw new Error('back_on_ground(): ice_descr() not ported yet');
+    } else if (!strcmpi_bg(surf, "floor") || !strcmpi_bg(surf, "ground")) {
+        /* "on solid ground" */
+        surf = "solid ground";
+    } else if (!strcmpi_bg(surf, "bridge") || !strcmpi_bg(surf, "altar")
+               || !strcmpi_bg(surf, "headstone")) {
+        /* "on a bridge" */
+        surf = an_l(surf);
+    } else if (!strcmpi_bg(surf, "stairs") || !strcmpi_bg(surf, "lava")
+               || !strcmpi_bg(surf, "bottom")) {
+        /* "on the stairs" */
+        surf = the(surf);
+    } else { /* "cloud", "air", "air bubble", "wall", "fountain", "doorway" */
+        /* "in a cloud", "in the air" */
+        surf = (surf === "air") ? the(surf) : an_l(surf);
+        preposit = "in";
+    }
+    if (rescued) {
+        you_are_back = "You find yourself";
+    } else {
+        you_are_back = g.flags.verbose ? "You are back" : "Back";
+    }
+    await pline(`${you_are_back} ${preposit} ${surf}.`);
+    g.iflags.last_msg = PLNMSG_BACK_ON_GROUND_BG;
+}
+import { is_ice as is_ice_bg } from './dig.js';
+import { strcmpi as strcmpi_bg } from './hacklib.js';
+import { PLNMSG_BACK_ON_GROUND as PLNMSG_BACK_ON_GROUND_BG } from './const.js';
