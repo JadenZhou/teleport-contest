@@ -659,9 +659,8 @@ export async function lookaround() {
                 /* OR it blocks our move direction and we're not traveling */
                 if ((g.context.run !== 1 && !is_safemon(mtmp))
                     || (infront && !g.context.travel)) {
-                    /* if (flags.mention_walls) pline_xy(x, y, "%s blocks
-                       your path.", upstart(a_monnam(mtmp))): a_monnam()
-                       isn't ported yet */
+                    if (g.flags.mention_walls) /* pline_xy() */
+                        await pline(`${upstart(a_monnam(mtmp))} blocks your path.`);
                     nomul(0); /* goto stop */
                     return;
                 }
