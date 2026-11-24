@@ -104,16 +104,12 @@ import { set_ustuck } from './uhitm.js';
 import { AT_ENGL, AD_DGST } from './monsters.js';
 import { STAIRS } from './const.js';
 import {
-    Punished, Blind, Hallucination, Fumbling, HLevitation, ELevitation, Levitation, Flying
+    Punished, Blind, Hallucination, Deaf, Fumbling, HLevitation, ELevitation, Levitation,
+    Flying
 } from './youprop.js';
 import { Upolyd, u_at } from './const.js';
 import { uprop } from './youprop.js';
 
-/* C ref: youprop.h Deaf */
-function Deaf_do() {
-    const p = uprop(DEAF_DO);
-    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
-}
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
     return otmp.otyp === O.PICK_AXE || otmp.otyp === O.DWARVISH_MATTOCK;
@@ -1041,7 +1037,7 @@ export async function flooreffects(obj, /* the object landing on the floor */
         /* Reasonably bulky objects (arbitrary) splash when dropped.
          * If you're floating above the water even small things make
          * noise.  Stuff dropped near fountains always misses */
-        if ((Blind() || (Levitation() || Flying())) && !Deaf_do() && u_at(x, y)) {
+        if ((Blind() || (Levitation() || Flying())) && !Deaf() && u_at(x, y)) {
             if (!game.u.uinwater) { /* !Underwater */
                 if (weight_do(obj) > WT_SPLASH_THRESHOLD_DO) {
                     await pline("Splash!");

@@ -13,7 +13,7 @@ import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
 import { is_ammo, is_pole, ammo_and_launcher, doquiver_core } from './wield.js';
-import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP } from './const.js';
+import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP, Race_if } from './const.js';
 import { BULLWHIP, BOOMERANG, AKLYS, WAN_PROBING, WAN_OPENING, WAN_LOCKING,
          WAN_STRIKING } from './objects.js';
 import { zap_map, bhitpile } from './zap.js';
@@ -656,7 +656,7 @@ export async function thitmonst(mon,
 
     tmp += omon_adj(mon, obj, true);
     if (is_orc_dt(mon.data)
-        && (Upolyd() ? is_elf_dt(g.youmonst.data) : Race_if_elf()))
+        && (Upolyd() ? is_elf_dt(g.youmonst.data) : Race_if(PM_ELF_DT)))
         tmp++;
     if (guaranteed_hit) {
         tmp += 1000; /* Guaranteed hit */
@@ -708,11 +708,11 @@ export async function thitmonst(mon,
                  * especially their own special types of bow.
                  * Polymorphing won't make you a bow expert.
                  */
-                if ((Race_if_elf() || Role_if(PM_SAMURAI))
+                if ((Race_if(PM_ELF_DT) || Role_if(PM_SAMURAI))
                     && (!Upolyd() || your_race_dt(g.youmonst.data))
                     && objects[uwep.otyp].oc_skill === P_BOW_DT) {
                     ++tmp;
-                    if ((Race_if_elf() && uwep.otyp === ELVEN_BOW_DT)
+                    if ((Race_if(PM_ELF_DT) && uwep.otyp === ELVEN_BOW_DT)
                         || (Role_if(PM_SAMURAI) && uwep.otyp === YUMI_DT))
                         ++tmp;
                 }
@@ -1504,7 +1504,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             case SPE_WIZARD_LOCK_BH:
             case SPE_FORCE_BOLT_BH:
                 if (await doorlock_bh(obj, x, y)) {
-                    if (cansee_br(x, y) || (obj.otyp === WAN_STRIKING && !Deaf_bh()))
+                    if (cansee_br(x, y) || (obj.otyp === WAN_STRIKING && !Deaf()))
                         learnwand_bh(obj);
                     if (g.level.at(x, y).doormask === D_BROKEN_BH
                         && in_rooms_dt(x, y, SHOPBASE_DT).length) {
@@ -2265,8 +2265,6 @@ function is_axe_dt(otmp) {
     return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS_DT)
             && objects[otmp.otyp].oc_skill === P_AXE_DT);
 }
-/* C ref: you.h Race_if(PM_ELF) */
-function Race_if_elf() { return game.urace.mnum === PM_ELF_DT; }
 import { cansee as cansee_br } from './vision.js';
 import { is_crackable } from './objects.js';
 import { erode_obj } from './trap.js';
@@ -2280,11 +2278,6 @@ import { SPE_KNOCK as SPE_KNOCK_BH, SPE_WIZARD_LOCK as SPE_WIZARD_LOCK_BH,
          SPE_FORCE_BOLT as SPE_FORCE_BOLT_BH } from './objects.js';
 import { D_BROKEN as D_BROKEN_BH, SHOP_DOOR_COST as SHOP_DOOR_COST_BH,
          DEAF as DEAF_BH } from './const.js';
-/* C ref: youprop.h Deaf */
-function Deaf_bh() {
-    const q = game.u.uprops[DEAF_BH];
-    return !!(q && (q.intrinsic || q.extrinsic)) || !!game.u.uroleplay?.deaf;
-}
 import { potionbreathe } from './potion.js';
 import { haseyes } from './mondata.js';
 import { armor_simple_name, makeplural, vtense } from './objnam.js';

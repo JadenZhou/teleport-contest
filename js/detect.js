@@ -845,7 +845,7 @@ import { unmap_invisible } from './display.js';
 export async function food_detect(sobj) {
     const g = game, u = g.u;
     let ct = 0, ctu = 0;
-    const confused = !!(Confusion_dt() || (sobj && sobj.cursed));
+    const confused = !!(Confusion() || (sobj && sobj.cursed));
     const oclass = confused ? POTION_CLASS_DT : FOOD_CLASS_DT;
     const what = confused ? "something" : "food";
 
@@ -1335,7 +1335,7 @@ export async function do_mapping() {
     const unconstrained = unconstrain_map();
     for (zx = 1; zx < COLNO; zx++)
         for (zy = 0; zy < ROWNO; zy++)
-            show_map_spot(zx, zy, Confusion_dt());
+            show_map_spot(zx, zy, Confusion());
 
     if (!game.level.flags?.hero_memory || unconstrained) {
         await flush_screen(1);                 /* flush temp screen */
@@ -1663,7 +1663,3 @@ import { CONFUSION as CONFUSION_DT,
          NOSE as NOSE_DT, A_WIS as A_WIS_DT, TER_DETECT as TER_DETECT_DT } from './const.js';
 import { body_part as body_part_dt } from './insight.js';
 import { strange_feeling as strange_feeling_dt } from './potion.js';
-function Confusion_dt() {
-    const p = game.u.uprops[CONFUSION_DT];
-    return !!(p.intrinsic || p.extrinsic);
-}

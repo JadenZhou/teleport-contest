@@ -106,8 +106,8 @@ import { drag_ball, move_bc } from './ball.js';
 import { worm_cross } from './worm.js';
 import {
     Fire_resistance, Cold_resistance, Punished, Stunned, Confusion, Blind, Hallucination,
-    Fumbling, Warning, Stealth, Conflict, Levitation, Flying, HWwalking, EWwalking, Underwater,
-    Passes_walls, Protection_from_shape_changers
+    Fumbling, Warning, Stealth, Conflict, Levitation, Flying, HWwalking, EWwalking, Wwalking,
+    Swimming, Amphibious, Breathless, Underwater, Passes_walls, Protection_from_shape_changers
 } from './youprop.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
@@ -1406,7 +1406,7 @@ export async function pooleffects(newspot) /* true if called by spoteffects */ {
             await You(`pop out of the ${hliquid("water")} like a cork!`);
         } else if (sp_Flying()) {
             await You(`fly out of the ${hliquid("water")}.`);
-        } else if (pe_Wwalking()) {
+        } else if (Wwalking()) {
             await You("slowly rise above the surface.");
         } else {
             still_inwater = true;
@@ -1446,34 +1446,14 @@ export async function pooleffects(newspot) /* true if called by spoteffects */ {
         if (is_lava(u.ux, u.uy)) {
             if (await lava_effects())
                 return true;
-        } else if ((!pe_Wwalking() || is_waterwall(u.ux, u.uy))
+        } else if ((!Wwalking() || is_waterwall(u.ux, u.uy))
                    && (newspot || !u.uinwater
-                       || !(pe_Swimming() || pe_Amphibious() || pe_Breathless()))) {
+                       || !(Swimming() || Amphibious() || Breathless()))) {
             if (await drown())
                 return true;
         }
     }
     return false;
-}
-/* C ref: youprop.h Wwalking, Swimming, Amphibious, Breathless */
-function pe_Wwalking() {
-    const p = sp_prop(WWALKING);
-    return !!((p.intrinsic || p.extrinsic) && !Is_waterlevel(game.u.uz));
-}
-function pe_Swimming() {
-    const p = sp_prop(SWIMMING);
-    return !!(p.intrinsic || p.extrinsic
-              || (game.u.usteed && (game.u.usteed.data.mflags1 & M1_SWIM) !== 0));
-}
-function pe_Amphibious() {
-    const p = sp_prop(MAGICAL_BREATHING);
-    return !!(p.intrinsic || p.extrinsic
-              || (game.youmonst.data.mflags1 & M1_AMPHIBIOUS) !== 0);
-}
-function pe_Breathless() {
-    const p = sp_prop(MAGICAL_BREATHING);
-    return !!(p.intrinsic || p.extrinsic
-              || (game.youmonst.data.mflags1 & M1_BREATHLESS) !== 0);
 }
 import { drown, lava_effects, is_waterwall, set_uinwater, back_on_ground } from './trap.js';
 import { docrt as docrt_pe } from './display.js';

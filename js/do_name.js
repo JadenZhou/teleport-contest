@@ -977,15 +977,9 @@ const hcolors = [
 
 // C ref: do_name.c hcolor()
 export function hcolor(colorpref) {
-    return (Hallucination_dn() || !colorpref)
+    return (Hallucination() || !colorpref)
         ? hcolors[rn2_on_display_rng(hcolors.length)]
         : colorpref;
 }
 
-/* C ref: youprop.h Hallucination */
-function Hallucination_dn() {
-    const p = game.u.uprops;
-    return !!(p[HALLUC_DN].intrinsic
-              && !(p[HALLUC_RES_DN].intrinsic || p[HALLUC_RES_DN].extrinsic));
-}
 import { HALLUC as HALLUC_DN, HALLUC_RES as HALLUC_RES_DN } from './const.js';

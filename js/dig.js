@@ -20,7 +20,7 @@ import { hideunder_async as hideunder, m_at } from './makemon.js';
 import { stop_occupation } from './allmain.js';
 import { obfree, stackobj } from './invent.js';
 import { M1_CONCEAL } from './monsters.js';
-import { Hallucination, Unaware, Blind as Blind_dg } from './youprop.js';
+import { Hallucination, Levitation, Unaware, Blind as Blind_dg } from './youprop.js';
 
 /* C ref: mondata.h hides_under() */
 function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
@@ -829,11 +829,6 @@ import { You_cant, There } from './display.js';
 import { d } from './rng.js';
 import { OBJ_NAME } from './objects.js';
 
-/* C ref: youprop.h Levitation */
-function Levitation_dg() {
-    const p = game.u.uprops[LEVITATION];
-    return !!((p.intrinsic || p.extrinsic) && !p.blocked);
-}
 
 /* C ref: context.h struct dig_info (svc.context.digging); C's context
    starts zeroed */
@@ -939,7 +934,7 @@ export async function use_pick_axe2(obj) {
     } else if (u.uinwater) { /* Underwater */
         await pline(`Turbulence torpedoes your ${verbing} attempts.`);
     } else if (u.dz < 0) {
-        if (Levitation_dg())
+        if (Levitation())
             await You_zd("don't have enough leverage.");
         else
             await You_cant(`reach the ${ceiling_zd(u.ux, u.uy)}.`);

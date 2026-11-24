@@ -60,8 +60,8 @@ import { newsym, see_monsters } from './display.js';
 import { set_itimeout, make_confused, make_stunned, make_blinded, make_deaf,
          make_hallucinated, make_glib, set_mimic_blocking } from './potion.js';
 import {
-    Fire_resistance, Stunned, Confusion, Blind, Halluc_resistance, Deaf, See_invisible, Invis,
-    HWwalking, EWwalking, Breathless
+    Fire_resistance, Stunned, Confusion, Blind, Halluc_resistance, Hallucination, Deaf,
+    See_invisible, Invis, HWwalking, EWwalking, Breathless
 } from './youprop.js';
 import { Role_if } from './const.js';
 
@@ -213,10 +213,6 @@ function cantvomit(ptr) {
     return ptr.mlet === S_RODENT && ptr !== mons[PM_ROCK_MOLE]
            && ptr !== mons[PM_WOODCHUCK];
 }
-function Hallucination_to() {
-    return !!(up(HALLUC).intrinsic
-              && !(up(HALLUC_RES).intrinsic || up(HALLUC_RES).extrinsic));
-}
 /* C ref: trap.c unconscious() */
 function unconscious() {
     const g = game;
@@ -342,7 +338,7 @@ async function vomiting_dialogue() {
         txt = vomiting_texts[4];
         if (cantvomit(g.youmonst.data))
             txt = "gag uncontrollably.";
-        else if (Hallucination_to())
+        else if (Hallucination())
             /* "hurl" is short for "hurl chunks" which is slang for
                relatively violent vomiting... */
             txt = "are about to hurl!";
@@ -354,7 +350,7 @@ async function vomiting_dialogue() {
             /* case 2 used to be "You suddenly vomit!" ... give one here to
                have more specific point at which hero became unable to move */
             if (g.u.uhs < FAINTING)
-                await You(`${!Hallucination_to() ? "vomit" : "hurl chunks"}!`);
+                await You(`${!Hallucination() ? "vomit" : "hurl chunks"}!`);
         }
         await vomit();
         break;
@@ -426,7 +422,7 @@ async function sickness_dialogue() {
         /* change the message slightly for food poisoning */
         if ((game.u.usick_type & SICK_NONVOMITABLE) === 0)
             buf = buf.replace("illness", "sickness"); /* strsubst() */
-        if (Hallucination_to() && buf.includes("Death's door"))
+        if (Hallucination() && buf.includes("Death's door"))
             throw new Error('sickness_dialogue(): hallucinatory "inviting you in" (mhe()) not ported yet');
         await urgent_pline(buf);
     }
@@ -502,7 +498,7 @@ async function slime_dialogue() {
                 if (!Blind()) /* [what if you're already green?] */
                     await urgent_pline(buf.replace("%s", hcolor(NH_GREEN)));
             } else {
-                if (Hallucination_to())
+                if (Hallucination())
                     throw new Error('slime_dialogue(): rndmonnam() not ported yet');
                 await urgent_pline(buf.replace("%s", an("green slime")));
             }
@@ -1553,7 +1549,7 @@ async function lantern_message(obj) {
     switch (obj.where) {
     case 'OBJ_INVENT':
         await Your_to("lantern is getting dim.");
-        if (Hallucination_to())
+        if (Hallucination())
             await pline("Batteries have not been invented yet.");
         break;
     case 'OBJ_FLOOR':
@@ -1773,7 +1769,7 @@ async function burn_object(arg, timeout) {
                     }
 
                     /* post message */
-                    await pline(Hallucination_to()
+                    await pline(Hallucination()
                                     ? (many ? "They shriek!" : "It shrieks!")
                                     : Blind() ? "" : (many ? "Their flames die."
                                                            : "Its flame dies."));

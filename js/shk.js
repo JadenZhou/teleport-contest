@@ -99,8 +99,8 @@ import { saleable } from './shknam.js';
 import { paydoname } from './objnam.js';
 import { simpleonames, thesimpleoname } from './iactions.js';
 import {
-    Blind, Hallucination, Deaf, Blind_telepat, Detect_monsters, Invis, Displaced, Conflict,
-    Passes_walls, Fast
+    Punished, Blind, Hallucination, Deaf, Blind_telepat, Detect_monsters, Invis, Displaced,
+    Conflict, Passes_walls, Fast
 } from './youprop.js';
 import { Role_if, m_next2u } from './const.js';
 import { noit_mhis, noit_mhe, noit_mhim } from './mhitu.js';
@@ -835,7 +835,7 @@ async function litter_scatter(
        that's inside the shop; caller guarantees that */
     {
         /* Scatter objects haphazardly into the shop */
-        if (Punished_sk() && !g.u.uswallow
+        if (Punished() && !g.u.uswallow
             && ((g.uchain.ox === x && g.uchain.oy === y)
                 || (g.uball.where === 'OBJ_FLOOR'
                     && g.uball.ox === x && g.uball.oy === y))) {
@@ -1032,8 +1032,6 @@ async function repair_damage(
         disposition = 2;
     return disposition;
 }
-/* C ref: youprop.h Punished */
-function Punished_sk() { return !!game.uball; }
 import { D_BROKEN as D_BROKEN_SK, D_CLOSED as D_CLOSED_SK,
          IS_WALL as IS_WALL_SK, ZAP_POS } from './const.js';
 import { BOULDER as BOULDER_SK, ROCK as ROCK_SK, LAND_MINE as LAND_MINE_SK,

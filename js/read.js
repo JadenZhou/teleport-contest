@@ -17,7 +17,7 @@
 
 import { rn2, rnd, rn1, d } from './rng.js';
 import { livelog_printf } from './display.js';
-import { LL_CONDUCT } from './const.js';
+import { LL_CONDUCT, Luck } from './const.js';
 import { CANDY_BAR } from './objects.js';
 import { game } from './gstate.js';
 import {
@@ -98,8 +98,8 @@ import { PM_TOURIST, PM_WIZARD, PM_ACID_BLOB, PM_BLACK_LIGHT,
          S_HUMAN, M1_AMORPHOUS, M1_WALLWALK, M1_UNSOLID, S_GHOST, S_VORTEX, PM_AIR_ELEMENTAL } from './monsters.js';
 import { placebc, set_bc } from './ball.js';
 import {
-    Confusion, HConfusion, HStun, Fire_resistance, Passes_walls, Invisible, Underwater,
-    Punished, Blind, Hallucination
+    Fire_resistance, Punished, HStun, HConfusion, Confusion, Blind, Hallucination, Deaf,
+    Invisible, Underwater, Passes_walls
 } from './youprop.js';
 import { Role_if, u_at } from './const.js';
 
@@ -1801,7 +1801,7 @@ async function seffect_identify(sobjp) {
         if (sblessed || (!scursed && !rn2(5))) {
             cval = rn2(5);
             /* note: if cval==0, identify all items */
-            if (cval === 1 && sblessed && Luck_rd() > 0)
+            if (cval === 1 && sblessed && Luck() > 0)
                 ++cval;
         }
         await identify_pack(cval, !already_known);
@@ -2057,7 +2057,7 @@ export async function drop_boulder_on_monster(x, y, confused, byu) {
             if (hard_helmet(helmet)) {
                 if (canspotmon(mtmp))
                     await pline(`Fortunately, ${mon_nam(mtmp)} is wearing a hard helmet.`);
-                else if (!Deaf_rd())
+                else if (!Deaf())
                     await You_hear("a clanging sound.");
                 if (mdmg > 2)
                     mdmg = 2;
@@ -2319,12 +2319,6 @@ import { monstseesu as monstseesu_rd, monstunseesu as monstunseesu_rd } from './
 import { SDOOR as SDOOR_RD, CORR as CORR_RD,
          W_ARMH as W_ARMH_RD, DEAF as DEAF_RD, In_sokoban as In_sokoban_rd } from './const.js';
 function is_whirly_rd(ptr) { return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL]; }
-function Deaf_rd() {
-    const p = game.u.uprops[DEAF_RD];
-    return !!(p.intrinsic || p.extrinsic || game.u.uroleplay?.deaf);
-}
-/* C ref: you.h Luck */
-function Luck_rd() { return (game.u.uluck || 0) + (game.u.moreluck || 0); }
 
 /* C ref: read.c tshirt_text() shirt_msgs[], hawaiian_motif()
    hawaiian_motifs[], hawaiian_design() hawaiian_bgs[], apron_text()
