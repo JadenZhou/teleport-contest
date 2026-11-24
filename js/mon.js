@@ -55,7 +55,8 @@ import {
     PM_PAPER_GOLEM, PM_STRAW_GOLEM, PM_IRON_GOLEM, PM_WOOD_GOLEM,
     PM_LEATHER_GOLEM, PM_STEAM_VORTEX, S_KOP,
 } from './monsters.js';
-import { t_at, TRAPNUM, fixed_tele_trap, m_harmless_trap } from './trap.js';
+import { t_at, TRAPNUM, fixed_tele_trap, m_harmless_trap, fire_damage_chain,
+         water_damage_chain as water_damage_chain_mn } from './trap.js';
 import { hastrack } from './track.js';
 import { mon_knows_traps } from './mondata.js';
 import { monsndx, is_flyer, is_floater, is_swimmer, passes_walls,
@@ -1345,9 +1346,10 @@ async function minliquid_core(mtmp) {
             if (DEADMONSTER(mtmp))
                 return 1;
         }
-        /* water_damage_chain(mtmp->minvent, FALSE) */
-        if (mtmp.minvent?.length)
-            throw new Error('minliquid(): water_damage_chain() not ported yet');
+        /* water_damage_chain(mtmp->minvent, FALSE): minvent in C's chain
+           order (newest first) */
+        await water_damage_chain_mn(mtmp.minvent ? mtmp.minvent.slice().reverse()
+                                                 : null, false);
         return 0;
     }
 
@@ -1398,7 +1400,12 @@ async function minliquid_core(mtmp) {
                        * and become a flyer so not need to teleport */
                 } else {
                     /* (likes_lava case is hypothetical) */
-                    throw new Error('minliquid(): fire_damage_chain() not ported yet');
+                    /* mtmp->minvent in C's chain order (newest first) */
+                    await fire_damage_chain(mtmp.minvent ? mtmp.minvent.slice().reverse()
+                                                         : null,
+                                            false, false, mtmp.mx, mtmp.my);
+                    if (!(await rloc(mtmp, RLOC_MSG)))
+                        throw new Error('minliquid(): deal_with_overcrowding() not ported yet');
                 }
                 return 0;
             }

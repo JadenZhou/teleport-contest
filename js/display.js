@@ -1575,8 +1575,10 @@ export function magic_map_background(x, y, show) {
             glyph = rememb_glyph(S_corr_g);
     }
     if (game.level.flags?.hero_memory
-        /* glyph_is_unexplored(lev->glyph) || glyph_is_cmap(lev->glyph) */
-        && glyph_kind(lev.remembered_glyph) === 'cmap')
+        /* glyph_is_unexplored(lev->glyph) || glyph_is_cmap(lev->glyph);
+           engraving glyphs (S_engroom, S_engrcorr) are cmap glyphs in C */
+        && (glyph_kind(lev.remembered_glyph) === 'cmap'
+            || glyph_kind(lev.remembered_glyph) === 'engr'))
         lev.remembered_glyph = glyph;
     if (show)
         show_glyph(x, y, glyph);

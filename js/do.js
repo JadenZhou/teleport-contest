@@ -29,7 +29,7 @@ import {
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR, MAGIC_PORTAL, Is_qstart } from './const.js';
 import * as O from './objects.js';
 import { is_pool, is_lava, u_at } from './makemon.js';
-import { t_at, is_pit, is_hole, set_utrap, seetrap } from './trap.js';
+import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
@@ -1014,7 +1014,7 @@ export async function flooreffects(obj, /* the object landing on the floor */
                                    verb) { /* "fall", "drop", "land", &c */
     const g = game;
     let t;
-    const res = false;
+    let res = false;
 
     void verb;
     if (obj.where !== 'OBJ_FREE')
@@ -1034,7 +1034,7 @@ export async function flooreffects(obj, /* the object landing on the floor */
                && (is_pit(t.ttyp) || is_hole(t.ttyp))) {
         throw new Error('flooreffects(): boulder filling a pit not ported yet');
     } else if (is_lava(x, y)) {
-        throw new Error('flooreffects(): lava_damage() not ported yet');
+        res = await lava_damage(obj, x, y);
     } else if (is_pool(x, y)) {
         throw new Error('flooreffects(): water_damage() not ported yet');
     } else if (u_at(x, y) && (t = t_at(x, y))

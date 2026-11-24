@@ -59,6 +59,18 @@ import { ROWNO as ROWNO_DG, LAVAPOOL as LAVAPOOL_DG, MOAT as MOAT_DG,
 import { is_moat as is_moat_dg, is_pool as is_pool_dg,
          is_lava as is_lava_dg } from './makemon.js';
 import { mb_trapped } from './monmove.js';
+import { is_pool_or_lava as is_pool_or_lava_dg,
+         pooleffects as pooleffects_dg } from './hack.js';
+import { delfloortrap as delfloortrap_dg,
+         fire_damage_chain as fire_damage_chain_dg,
+         water_damage_chain as water_damage_chain_dg } from './trap.js';
+import { obj_ice_effects as obj_ice_effects_dg,
+         place_object as place_object_dg } from './mkobj.js';
+import { hliquid as hliquid_dg } from './potion.js';
+import { minliquid as minliquid_dg } from './mon.js';
+import { stop_timer as stop_timer_dg } from './timeout.js';
+import { stackobj as stackobj_dg } from './invent.js';
+import { vobj_at as vobj_at_dg } from './display.js';
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -333,6 +345,85 @@ export function fillholetyp(x, y,
         return POOL_DG;
     else
         return ROOM;
+}
+
+/* C ref: svl.level.objects[x][y] -- the pile at <x,y>, top first (the
+   ->nexthere chain); the JS floor chain is fobj, newest first, and
+   place_object() keeps a boulder on top of the pile */
+function level_objects_at_dg(x, y) {
+    const pile = (game.level.objects || []).filter(
+        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    const top = vobj_at_dg(x, y);
+    if (top && pile[0] !== top) {
+        pile.splice(pile.indexOf(top), 1);
+        pile.unshift(top);
+    }
+    return pile;
+}
+
+// C ref: dig.c liquid_flow()
+/*
+ * Called from dighole(); also from do_break_wand() in apply.c
+ * and do_earthquake() in music.c.
+ */
+export async function liquid_flow(x, y, typ, ttmp, fillmsg) {
+    let objchain;
+    let mon;
+    const u_spot = u_at(x, y);
+
+    /* caller should have changed levl[x][y].typ to POOL, MOAT, or LAVA */
+    if (!is_pool_or_lava_dg(x, y)) {
+        /* iflags.sanity_check: impossible("Insane liquid_flow(...)") */
+        return;
+    }
+
+    if (ttmp)
+        await delfloortrap_dg(ttmp); /* will untrap monster if one is here */
+    /* if any objects were frozen here, they're released now */
+    obj_ice_effects_dg(x, y, true);
+    await unearth_objs(x, y);
+
+    if (fillmsg)
+        await pline(fillmsg.replace('%s',
+                                    hliquid_dg(typ === LAVAPOOL_DG ? "lava" : "water")));
+    /* handle object damage before hero damage; affects potential bones */
+    if ((objchain = level_objects_at_dg(x, y)).length) {
+        if (typ === LAVAPOOL_DG)
+            await fire_damage_chain_dg(objchain, true, true, x, y);
+        else
+            await water_damage_chain_dg(objchain, true);
+    }
+    /* damage to the hero */
+    if (u_spot) {
+        await pooleffects_dg(false);
+    } else if ((mon = m_at(x, y)) !== null && mon) {
+        await minliquid_dg(mon);
+    }
+}
+
+// C ref: dig.c unearth_objs()
+export async function unearth_objs(x, y) {
+    const u = game.u;
+    const cc = { x, y };
+
+    /* debugpline2("unearth_objs: at <%d,%d>", x, y) */
+    const bball = buried_ball(cc);
+    for (const otmp of [...(game.level.buriedobjlist || [])]) {
+        if (otmp.ox === x && otmp.oy === y) {
+            if (bball && otmp === bball
+                && u.utrap && u.utraptype === TT_BURIEDBALL) {
+                await buried_ball_to_punishment();
+            } else {
+                mkobj_obj_extract_self(otmp);
+                if (otmp.timed)
+                    stop_timer_dg(ROT_ORGANIC, obj_to_any(otmp));
+                place_object_dg(otmp, x, y);
+                stackobj_dg(otmp);
+            }
+        }
+    }
+    del_engr_at(x, y);
+    newsym(x, y);
 }
 
 // C ref: dig.c is_digging()
