@@ -4892,7 +4892,7 @@ function ensure_way_out() {
 }
 
 // C ref: sp_lev.c load_special()
-export function load_special(name) {
+export async function load_special(name) {
     let result = FALSE;
     const sbi = { flags: NHL_SB_SAFE, memlimit: 1 * 1024 * 1024, steps: 0,
                   perpcall: 1 * 1024 * 1024 };
@@ -4930,7 +4930,7 @@ export function load_special(name) {
 
         /* This must be done before premap_detect(),
          * otherwise branch stairs won't be premapped. */
-        fixup_special();
+        await fixup_special();
 
         if (game.coder.premapped)
             premap_detect();
