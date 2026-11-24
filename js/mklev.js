@@ -40,7 +40,7 @@ import {
     SDOOR, SCORR, IRONBARS, FOUNTAIN, SINK, ALTAR, GRAVE,
     DIR_N, DIR_S, DIR_E, DIR_W, DIR_180,
     IS_WALL, IS_STWALL, IS_DOOR, IS_OBSTRUCTED, IS_FURNITURE, IS_POOL,
-    SPACE_POS, isok, W_NONDIGGABLE, FILL_NORMAL,
+    SPACE_POS, isok, W_NONDIGGABLE, W_NONPASSWALL, FILL_NORMAL,
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
     LR_UPTELE, LR_TELE, LR_DOWNTELE, LR_BRANCH, LR_PORTAL, LR_DOWNSTAIR,
@@ -83,6 +83,7 @@ import {
 } from './monsters.js';
 import {
     IS_THRONE, THRONE, IS_ROOM, OBJ_AT, AM_SHRINE, MM_ASLEEP, A_NONE, NON_PM,
+    Is_earthlevel,
 } from './const.js';
 import { MACE, LUMP_OF_ROYAL_JELLY } from './objects.js';
 import { makeroguerooms, makerogueghost } from './extralev.js';
@@ -395,7 +396,9 @@ export async function mklev() {
     if (await getbones()) return;
     g.in_mklev = true;
     await makelevel();
-    count_level_features();
+    /* C's mklev() doesn't recount fountains/sinks here: nfountains and
+       nsinks come from mkfount()/mksink() (and load_special() for special
+       levels), so a themed room's des.feature("fountain") isn't counted */
     level_finalize_topology();
     g.in_mklev = false;
 }

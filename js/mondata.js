@@ -22,7 +22,7 @@ import { objects, ALCHEMY_SMOCK, WEAPON_CLASS, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALE_MAIL, LENSES, CREAM_PIE, BLINDING_VENOM,
          POT_BLINDNESS, ARMOR_CLASS } from "./objects.js";
 import { objdescr_is } from './o_init.js';
-import { defends } from './artifact.js';
+import { defends, defends_when_carried } from './artifact.js';
 import { Unaware } from './eat.js';
 import { is_weptool } from './mkobj.js';
 import { which_armor } from './worn.js';
@@ -107,11 +107,11 @@ export function resists_blnd_by_arti(mon) {
     const is_you = (mon === g.youmonst);
 
     let o = is_you ? g.uwep : mon.mw;
-    if (o && o.oartifact)
-        throw new Error('resists_blnd_by_arti(): defends() not ported yet');
+    if (o && o.oartifact && defends(M.AD_BLND, o))
+        return true;
     for (o of invent_chain(mon, is_you))
-        if (o.oartifact) /* defends_when_carried(AD_BLND, o) */
-            throw new Error('resists_blnd_by_arti(): defends_when_carried() not ported yet');
+        if (defends_when_carried(M.AD_BLND, o))
+            return true;
     return false;
 }
 
@@ -417,8 +417,8 @@ export function Resists_Elem(mon, propindx) {
         return true;
     /* check for resistance granted by wielded weapon */
     let o = is_you ? g.uwep : mon.mw;
-    if (o && o.oartifact)
-        throw new Error('Resists_Elem(): artifact defends() not ported yet');
+    if (o && o.oartifact && defends(damgtype, o))
+        return true;
     /* check for resistance granted by worn or carried items */
     let slotmask = W_ARMOR | W_ACCESSORY;
     if (!is_you /* assumes monsters don't wield non-weapons */
@@ -434,10 +434,9 @@ export function Resists_Elem(mon, propindx) {
                    objects[ALCHEMY_SMOCK].oc_oprop can only represent one;
                    we check both so won't need to know which one that is */
                 && o.otyp === ALCHEMY_SMOCK
-                && (propindx === POISON_RES || propindx === ACID_RES)))
+                && (propindx === POISON_RES || propindx === ACID_RES))
+            || (o.oartifact && defends_when_carried(damgtype, o)))
             return true;
-        else if (o.oartifact)
-            throw new Error('Resists_Elem(): defends_when_carried() not ported yet');
     return false;
 }
 /* C ref: monst.h resists_fire()/resists_sleep() */
@@ -495,8 +494,8 @@ export function resists_magm(mon) {
         return true;
     /* check for magic resistance granted by wielded weapon */
     let o = is_you ? g.uwep : mon.mw;
-    if (o && o.oartifact)
-        throw new Error('resists_magm(): artifact defends() not ported yet');
+    if (o && o.oartifact && defends(AD_MAGM, o))
+        return true;
     /* check for magic resistance granted by worn or carried items */
     let slotmask = W_ARMOR | W_ACCESSORY;
     if (!is_you /* assumes monsters don't wield non-weapons */
@@ -505,11 +504,10 @@ export function resists_magm(mon) {
     if (is_you && u.twoweap)
         slotmask |= W_SWAPWEP;
     for (o of invent_chain(mon, is_you))
-        if ((o.owornmask & slotmask) !== 0
-            && objects[o.otyp].oc_oprop === ANTIMAGIC)
+        if (((o.owornmask & slotmask) !== 0
+             && objects[o.otyp].oc_oprop === ANTIMAGIC)
+            || (o.oartifact && defends_when_carried(AD_MAGM, o)))
             return true;
-        else if (o.oartifact)
-            throw new Error('resists_magm(): defends_when_carried() not ported yet');
     return false;
 }
 

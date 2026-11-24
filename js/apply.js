@@ -109,6 +109,104 @@ async function its_dead(rx, ry, resp) {
 /* C ref: apply.c hollow_str[] */
 const hollow_str = (what) => `a hollow sound.  This must be a secret ${what}!`;
 
+// C ref: apply.c use_bell()
+async function use_bell(obj) {
+    const u = game.u;
+    let wakem = false, learno = false;
+    const ordinary = (obj.otyp !== O.BELL_OF_OPENING || !obj.spe),
+        invoking = (obj.otyp === O.BELL_OF_OPENING
+                    && invocation_pos_bl(u.ux, u.uy)
+                    && !stairway_at_bl(u.ux, u.uy)); /* !On_stairs() */
+
+    /* Hero_playnotes(obj_to_instr(obj), "C", 100): sound only */
+    await You(`ring ${the_ap(xname_ap(obj))}.`);
+
+    if (u.uinwater /* Underwater */ || (u.uswallow && ordinary)) {
+        await pline("But the sound is muffled.");
+
+    } else if (invoking && ordinary) {
+        /* needs to be recharged... */
+        await pline("But it makes no sound.");
+        learno = true; /* help player figure out why */
+
+    } else if (ordinary) {
+        if (obj.cursed && !rn2(4)
+            /* note: once any of them are gone, we stop all of them */
+            && !(game.mvitals[MM_bl.PM_WOOD_NYMPH].mvflags & G_GONE_bl)
+            && !(game.mvitals[MM_bl.PM_WATER_NYMPH].mvflags & G_GONE_bl)
+            && !(game.mvitals[MM_bl.PM_MOUNTAIN_NYMPH].mvflags & G_GONE_bl))
+            throw new Error('use_bell(): summoning a nymph not ported yet');
+        wakem = true;
+
+    } else {
+        /* charged Bell of Opening */
+        consume_obj_charge(obj, true);
+
+        if (u.uswallow) {
+            if (!obj.cursed)
+                await openit_bl();
+            else
+                await pline(nothing_happens_ap);
+
+        } else if (obj.cursed) {
+            /* mm = u.ux,u.uy; mkundead(&mm, FALSE, NO_MINVENT) */
+            throw new Error('use_bell(): mkundead() not ported yet');
+
+        } else if (invoking) {
+            await pline(`${Tobjnam_lp(obj, "issue")} an unsettling shrill sound...`);
+            obj.age = game.moves;
+            learno = true;
+            wakem = true;
+
+        } else if (obj.blessed) {
+            let res = 0;
+
+            if (game.uchain) {
+                await unpunish_bl();
+                res = 1;
+            } else if (u.utrap && u.utraptype === TT_BURIEDBALL_bl) {
+                throw new Error('use_bell(): buried_ball_to_freedom() not ported yet');
+            }
+            res += await openit_bl();
+            switch (res) {
+            case 0:
+                await pline(nothing_happens_ap);
+                break;
+            case 1:
+                await pline("Something opens..."); /* Something */
+                learno = true;
+                break;
+            default:
+                await pline("Things open around you...");
+                learno = true;
+                break;
+            }
+
+        } else { /* uncursed */
+            if (await findit_bl() !== 0)
+                learno = true;
+            else
+                await pline(nothing_happens_ap);
+        }
+
+    } /* charged BofO */
+
+    if (learno) {
+        discover_object(O.BELL_OF_OPENING, true, true, true); /* makeknown() */
+        obj.known = 1;
+    }
+    if (wakem)
+        await wake_nearby_bl(true);
+}
+import { invocation_pos as invocation_pos_bl } from './mklev.js';
+import { stairway_at as stairway_at_bl } from './display.js';
+import { wake_nearby as wake_nearby_bl } from './mon.js';
+import { G_GONE as G_GONE_bl } from './const.js';
+import * as MM_bl from './monsters.js';
+import { openit as openit_bl, findit as findit_bl } from './detect.js';
+import { unpunish as unpunish_bl } from './read.js';
+import { TT_BURIEDBALL as TT_BURIEDBALL_bl } from './const.js';
+
 // C ref: apply.c use_stethoscope()
 /* Strictly speaking it makes no sense for usage of a stethoscope to
    not take any time; however, unless it did, the stethoscope would be
@@ -611,7 +709,8 @@ export async function doapply() {
         throw new Error('doapply(): use_mirror() not ported yet');
     case O.BELL:
     case O.BELL_OF_OPENING:
-        throw new Error('doapply(): use_bell() not ported yet');
+        await use_bell(obj);
+        break;
     case O.CANDELABRUM_OF_INVOCATION:
         throw new Error('doapply(): use_candelabrum() not ported yet');
     case O.WAX_CANDLE:

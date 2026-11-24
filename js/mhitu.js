@@ -900,7 +900,13 @@ export function magic_negation(mon) {
                          /* high priests have innate protection */
                          : (mon.data === mons[M.PM_HIGH_CLERIC]);
 
-    for (let o = is_you ? game.invent : mon.minvent; o; o = o.nobj) {
+    /* C walks invent/minvent via nobj; JS minvent is an array, oldest first */
+    const chain = [];
+    if (is_you)
+        for (let o = game.invent; o; o = o.nobj) chain.push(o);
+    else
+        chain.push(...(mon.minvent || []).slice().reverse());
+    for (const o of chain) {
         /* a_can field is only applicable for armor (which must be worn) */
         if ((o.owornmask & W_ARMOR) !== 0) {
             const armpro = objects[o.otyp].a_can;
