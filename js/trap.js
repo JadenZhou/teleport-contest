@@ -925,7 +925,7 @@ export function locomotion(ptr, def) {
 }
 
 // C ref: trap.c conjoined_pits()
-function conjoined_pits(trap2, trap1, u_entering_trap2) {
+export function conjoined_pits(trap2, trap1, u_entering_trap2) {
     const u = game.u;
 
     if (!trap1 || !trap2)
