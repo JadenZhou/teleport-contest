@@ -113,6 +113,14 @@ function RING_ON_SECONDARY() { return game.u.uhandedness ? game.uright : game.ul
 export function findgold(argchain) {
     let chain = argchain; /* allow arg to be nonnull */
 
+    if (Array.isArray(chain)) {
+        /* a monster's minvent: JS arrays are oldest first, C's chain
+           starts with the newest object */
+        for (let i = chain.length - 1; i >= 0; i--)
+            if (chain[i].otyp === O.GOLD_PIECE)
+                return chain[i];
+        return null;
+    }
     while (chain && chain.otyp !== O.GOLD_PIECE)
         chain = chain.nobj;
     return chain;

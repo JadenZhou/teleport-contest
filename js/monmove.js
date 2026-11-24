@@ -1059,7 +1059,8 @@ export async function dochug(mtmp) {
        to move. Movement itself is handled by the m_move() function. */
     if (!d.nearby || mtmp.mflee || d.scared || mtmp.mconf || mtmp.mstun
         || (mtmp.minvis && !rn2(3))
-        || (mdat.mlet === M.S_LEPRECHAUN && leprechaun_check(mtmp))
+        || (mdat.mlet === M.S_LEPRECHAUN && !findgold_mm(game.invent)
+            && (findgold_mm(mtmp.minvent) || rn2(2)))
         || (is_wanderer(mdat) && !rn2(4)) || (Conflict() && !mtmp.iswiz)
         || (!mtmp.mcansee && !rn2(4)) || mtmp.mpeaceful) {
 
@@ -1163,11 +1164,6 @@ export async function dochug(mtmp) {
     return (status === MMOVE_DIED) ? 1 : 0;
 }
 
-/* (mdat->mlet == S_LEPRECHAUN && !findgold(invent)
-    && (findgold(mtmp->minvent) || rn2(2))) */
-function leprechaun_check(mtmp) {
-    throw new Error('dochug(): leprechaun findgold() not ported yet');
-}
 
 // ── C ref: monmove.c mon_track_add() ──
 export function mon_track_add(mtmp, x, y) {
@@ -2182,8 +2178,8 @@ export async function m_move(mtmp, after) {
                  || ptr.mlet === M.S_LIGHT) && !rn2(3)))
             appr = 0;
 
-        if (appr === 1 && ptr.mlet === M.S_LEPRECHAUN)
-            throw new Error('m_move(): leppie_avoidance() not ported yet');
+        if (appr === 1 && leppie_avoidance(mtmp))
+            appr = -1;
 
         /* hostiles with ranged weapon or attack try to stay away */
         appr = m_balks_at_approaching(appr, mtmp, pr);
@@ -2701,6 +2697,20 @@ export async function dissolve_bars(x, y) {
 import { DOOR as DOOR_MM, ROOM as ROOM_MM, CORR as CORR_MM } from './const.js';
 import { Is_special as Is_special_mm } from './dungeon.js';
 import { switch_terrain as switch_terrain_mm } from './hack.js';
+
+// C ref: monmove.c leppie_avoidance()
+/* does leprechaun want to avoid the hero? */
+function leppie_avoidance(mtmp) {
+    let lepgold, ygold;
+
+    if (mtmp.data === mons_mm[PM_LEPRECHAUN_MM]
+        && ((lepgold = findgold_mm(mtmp.minvent))
+            && (lepgold.quan
+                > ((ygold = findgold_mm(game.invent)) ? ygold.quan : 0))))
+        return true;
+
+    return false;
+}
 
 // C ref: monmove.c leppie_stash()
 /* leprechaun might bury its gold after teleporting away */
