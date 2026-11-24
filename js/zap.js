@@ -1146,7 +1146,8 @@ export async function zapyourself(obj, ordinary) {
 
     case O_zy.WAN_CANCELLATION:
     case O_zy.SPE_CANCELLATION:
-        throw new Error('zapyourself(): cancel_monst() not ported yet');
+        await cancel_monst(game.youmonst, obj, true, true, true);
+        break;
 
     case O_zy.SPE_DRAIN_LIFE:
         if (!uhave_zp(DRAIN_RES_ZP)) { /* !Drain_resistance */
@@ -4083,3 +4084,206 @@ import { RIN_GAIN_STRENGTH as RIN_GAIN_STRENGTH_DI,
          HELM_OF_BRILLIANCE as HELM_OF_BRILLIANCE_DI,
          GAUNTLETS_OF_DEXTERITY as GAUNTLETS_OF_DEXTERITY_DI } from './objects.js';
 import { killer_xname as killer_xname_zp } from './mthrowu.js';
+
+// C ref: zap.c cancel_item()
+/* cancel obj, possibly carried by you or a monster */
+export function cancel_item(obj) {
+    const u = game.u;
+    const otyp = obj.otyp;
+
+    if (obj.where === 'OBJ_INVENT') { /* carried(obj) */
+        /* handle items being worn by hero */
+        switch (otyp) {
+        case O_ci.RIN_GAIN_STRENGTH:
+            if ((obj.owornmask & W_RING_CI) !== 0) {
+                u.abon.a[A_STR_CI] -= obj.spe;
+                game.disp_botl = true;
+            }
+            break;
+        case O_ci.RIN_GAIN_CONSTITUTION:
+            if ((obj.owornmask & W_RING_CI) !== 0) {
+                u.abon.a[A_CON_CI] -= obj.spe;
+                game.disp_botl = true;
+            }
+            break;
+        case O_ci.RIN_ADORNMENT:
+            if ((obj.owornmask & W_RING_CI) !== 0) {
+                u.abon.a[A_CHA_CI] -= obj.spe;
+                game.disp_botl = true;
+            }
+            break;
+        case O_ci.RIN_INCREASE_ACCURACY:
+            if ((obj.owornmask & W_RING_CI) !== 0)
+                u.uhitinc -= obj.spe;
+            break;
+        case O_ci.RIN_INCREASE_DAMAGE:
+            if ((obj.owornmask & W_RING_CI) !== 0)
+                u.udaminc -= obj.spe;
+            break;
+        case O_ci.RIN_PROTECTION:
+            if ((obj.owornmask & W_RING_CI) !== 0)
+                game.disp_botl = true;
+            break;
+        case O_ci.GAUNTLETS_OF_DEXTERITY:
+            if ((obj.owornmask & W_ARMG_CI) !== 0) {
+                u.abon.a[A_DEX_CI] -= obj.spe;
+                game.disp_botl = true;
+            }
+            break;
+        case O_ci.HELM_OF_BRILLIANCE:
+            if ((obj.owornmask & W_ARMH_CI) !== 0) {
+                u.abon.a[A_INT_CI] -= obj.spe;
+                u.abon.a[A_WIS_CI] -= obj.spe;
+                game.disp_botl = true;
+            }
+            break;
+        default:
+            if ((obj.owornmask & W_ARMOR_CI) !== 0) /* AC */
+                game.disp_botl = true;
+            break;
+        }
+    }
+    /* cancelled item might not be in hero's possession but
+       cancellation is presumed to be instigated by hero */
+    if (O_ci.objects[otyp].oc_magic
+        || (obj.spe && (obj.oclass === O_ci.ARMOR_CLASS
+                        || obj.oclass === O_ci.WEAPON_CLASS || is_weptool_ci(obj)))
+        || otyp === O_ci.POT_ACID
+        || otyp === O_ci.POT_SICKNESS
+        || (otyp === O_ci.POT_WATER && (obj.blessed || obj.cursed))
+        /* not magic; cancels to blank spellbook */
+        || otyp === O_ci.SPE_NOVEL) {
+        const cancelled_spe = (obj.oclass === O_ci.WAND_CLASS
+                               || otyp === O_ci.CRYSTAL_BALL) ? -1 : 0;
+
+        if (obj.spe !== cancelled_spe
+            && otyp !== O_ci.WAN_CANCELLATION /* can't cancel cancellation */
+            && otyp !== O_ci.MAGIC_LAMP /* cancelling doesn't remove djinni */
+            && otyp !== O_ci.CANDELABRUM_OF_INVOCATION) {
+            costly_alteration_ci(obj, COST_CANCEL_CI);
+            obj.spe = cancelled_spe;
+        }
+        switch (obj.oclass) {
+        case O_ci.SCROLL_CLASS:
+            costly_alteration_ci(obj, COST_CANCEL_CI);
+            obj.otyp = O_ci.SCR_BLANK_PAPER;
+            obj.spe = 0;
+            break;
+        case O_ci.SPBOOK_CLASS:
+            if (otyp !== O_ci.SPE_CANCELLATION && otyp !== O_ci.SPE_BOOK_OF_THE_DEAD) {
+                costly_alteration_ci(obj, COST_CANCEL_CI);
+                obj.otyp = O_ci.SPE_BLANK_PAPER;
+                /* cancelling a novel is more involved than a spellbook */
+                if (otyp === O_ci.SPE_NOVEL) /* old type */
+                    throw new Error('cancel_item(): blank_novel() not ported yet');
+            }
+            break;
+        case O_ci.POTION_CLASS:
+            costly_alteration_ci(obj, (otyp !== O_ci.POT_WATER) ? COST_CANCEL_CI
+                                 : obj.cursed ? COST_UNCURS_CI : COST_UNBLSS_CI);
+            if (otyp === O_ci.POT_SICKNESS || otyp === O_ci.POT_SEE_INVISIBLE) {
+                /* sickness is "biologically contaminated" fruit juice;
+                   cancel it and it just becomes fruit juice...
+                   whereas see invisible tastes like "enchanted" fruit
+                   juice, it similarly cancels */
+                obj.otyp = O_ci.POT_FRUIT_JUICE;
+            } else {
+                obj.otyp = O_ci.POT_WATER;
+                obj.odiluted = 0; /* same as any other water */
+            }
+            break;
+        }
+    }
+    /* cancelling a troll's corpse prevents it from reviving (on its own;
+       does not affect undead turning induced revival) */
+    if (obj.otyp === O_ci.CORPSE && obj.timed
+        && !is_rider_rv(mons_rv[obj.corpsenm])) {
+        const a = obj_to_any_ci(obj);
+        const timout = peek_timer_ci(REVIVE_MON_RV, a);
+
+        if (timout) {
+            stop_timer_ci(REVIVE_MON_RV, a);
+            start_timer_zp(timout, TIMER_OBJECT_RV, ROT_CORPSE_RV, a);
+        }
+    }
+
+    unbless_ci(obj);
+    uncurse_ci(obj);
+    return;
+}
+
+// C ref: zap.c cancel_monst()
+/* cancel a monster (possibly the hero); inventory is cancelled only
+   if the monster is zapping itself directly, since otherwise the
+   effect is too strong.  currently non-hero monsters do not zap
+   themselves with cancellation. */
+export async function cancel_monst(mdef, obj, youattack, allow_cancel_kill, self_cancel) {
+    const u = game.u;
+    const writing_vanishes = (whose) => `Some writing vanishes from ${whose} head!`;
+    const your = "your"; /* should be extern */
+    const youdefend = (mdef === game.youmonst);
+
+    if (youdefend ? (!youattack && uhave_zp(ANTIMAGIC_CI))
+                  : resist(mdef, obj.oclass, 0, NOTELL_CI))
+        return false; /* resisted cancellation */
+
+    if (self_cancel) { /* 1st cancel inventory */
+        let otmp;
+
+        if (youdefend) {
+            for (otmp = game.invent; otmp; otmp = otmp.nobj)
+                cancel_item(otmp);
+        } else {
+            for (otmp of (mdef.minvent || []))
+                cancel_item(otmp);
+        }
+
+        if (youdefend) {
+            game.disp_botl = true; /* potential AC change */
+            find_ac_ci();
+            /* update_inventory(); -- handled by caller */
+        }
+    }
+
+    /* now handle special cases */
+    if (youdefend) {
+        if (u.umonnum !== u.umonster) { /* Upolyd: includes lycanthrope in creature form */
+            /*
+             * Return to normal form unless Unchanging.
+             * Hero in clay golem form dies if Unchanging.
+             * Does not cure lycanthropy or stop timed random polymorph.
+             */
+            if (u.umonnum === PM_CLAY_GOLEM_CI) {
+                if (!uhave_zp(BLINDED_CI))
+                    await pline(writing_vanishes(your));
+                else /* note: "dark" rather than "heavy" is intentional... */
+                    await You_feel_ci(`${Hallucination_ci() ? "dark" : "light"} headed.`);
+                u.mh = 0; /* fatal; death handled by rehumanize() */
+            }
+            if (uhave_zp(UNCHANGING_ZP) && u.mh > 0)
+                await pline("Your amulet grows hot for a moment, then cools.");
+            else
+                await rehumanize_ci();
+        }
+    } else {
+        mdef.mcan = 1;
+        /* force shapeshifter into its base form or mimic to unhide */
+        throw new Error('cancel_monst(): normal_shape() not ported yet');
+    }
+    return true;
+}
+import * as O_ci from './objects.js';
+import { W_RING as W_RING_CI, W_ARMG as W_ARMG_CI, W_ARMH as W_ARMH_CI,
+         W_ARMOR as W_ARMOR_CI, A_STR as A_STR_CI, A_CON as A_CON_CI,
+         A_CHA as A_CHA_CI, A_DEX as A_DEX_CI, A_INT as A_INT_CI, A_WIS as A_WIS_CI,
+         COST_CANCEL as COST_CANCEL_CI, COST_UNCURS as COST_UNCURS_CI,
+         COST_UNBLSS as COST_UNBLSS_CI, ANTIMAGIC as ANTIMAGIC_CI,
+         NOTELL as NOTELL_CI, BLINDED as BLINDED_CI } from './const.js';
+import { PM_CLAY_GOLEM as PM_CLAY_GOLEM_CI } from './monsters.js';
+import { is_weptool as is_weptool_ci, costly_alteration as costly_alteration_ci,
+         unbless as unbless_ci, uncurse as uncurse_ci } from './mkobj.js';
+import { obj_to_any as obj_to_any_ci, peek_timer as peek_timer_ci,
+         stop_timer as stop_timer_ci } from './timeout.js';
+import { find_ac as find_ac_ci } from './u_init.js';
+import { rehumanize as rehumanize_ci } from './polyself.js';
+import { You_feel as You_feel_ci, Hallucination as Hallucination_ci } from './display.js';
