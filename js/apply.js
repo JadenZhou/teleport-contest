@@ -581,7 +581,8 @@ export async function doapply() {
     case O.TINNING_KIT:
         throw new Error('doapply(): use_tinning_kit() not ported yet');
     case O.LEASH:
-        throw new Error('doapply(): use_leash() not ported yet');
+        res = await use_leash(obj);
+        break;
     case O.SADDLE:
         throw new Error('doapply(): use_saddle() not ported yet');
     case O.MAGIC_WHISTLE:
@@ -611,7 +612,8 @@ export async function doapply() {
     case POT_OIL:
         throw new Error('doapply(): light_cocktail() not ported yet');
     case O.EXPENSIVE_CAMERA:
-        throw new Error('doapply(): use_camera() not ported yet');
+        res = await use_camera(obj);
+        break;
     case O.TOWEL:
         throw new Error('doapply(): use_towel() not ported yet');
     case O.CRYSTAL_BALL:
@@ -1124,3 +1126,167 @@ import { is_lava as is_lava_wh } from './makemon.js';
 import { dbon } from './weapon.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { dropx } from './do.js';
+
+// C ref: invent.c consume_obj_charge()
+function consume_obj_charge(obj,
+                            maybe_unpaid) { /* false if caller handles shop billing */
+    if (maybe_unpaid)
+        check_unpaid_cam(obj);
+    obj.spe -= 1;
+    /* if (obj->known) update_inventory(): no perm_invent */
+}
+
+// C ref: apply.c use_camera()
+async function use_camera(obj) {
+    const u = game.u;
+
+    if (u.uinwater) { /* Underwater */
+        await pline("Using your camera underwater would void the warranty.");
+        return ECMD_OK;
+    }
+    if (!(await getdir(null)))
+        return ECMD_CANCEL;
+
+    if (obj.spe <= 0) {
+        await pline(nothing_happens_ap);
+        return ECMD_TIME;
+    }
+    consume_obj_charge(obj, true);
+
+    if (obj.cursed && !rn2(2)) {
+        await zapyourself_cam(obj, true);
+    } else if (u.uswallow) {
+        await You(`take a picture of ${s_suffix_cam(mon_nam_cam(u.ustuck))} ${
+            mbodypart_cam(u.ustuck, STOMACH_CAM)}.`);
+    } else if (u.dz) {
+        await You(`take a picture of the ${
+            (u.dz > 0) ? surface(u.ux, u.uy) : ceiling_wh(u.ux, u.uy)}.`);
+    } else if (!u.dx && !u.dy) {
+        /* TODO:  we ought to have a "selfie" joke here... */
+        await zapyourself_cam(obj, true);
+    } else {
+        throw new Error('use_camera(): do_blinding_ray() not ported yet');
+    }
+    return ECMD_TIME;
+}
+import { check_unpaid as check_unpaid_cam, zapyourself as zapyourself_cam } from './zap.js';
+import { s_suffix as s_suffix_cam } from './hacklib.js';
+import { mon_nam as mon_nam_cam } from './do_name.js';
+import { mbodypart as mbodypart_cam } from './insight.js';
+import { STOMACH as STOMACH_CAM } from './const.js';
+
+// C ref: apply.c number_leashed()
+function number_leashed() {
+    let i = 0;
+
+    for (let obj = game.invent; obj; obj = obj.nobj)
+        if (obj.otyp === O.LEASH && obj.leashmon)
+            i++;
+    return i;
+}
+
+/* C ref: mondata.h unsolid(), nolimbs(), has_head() */
+function unsolid_ls(ptr) { return (ptr.mflags1 & M1_UNSOLID_LS) !== 0; }
+function nolimbs_ls(ptr) { return (ptr.mflags1 & M1_NOLIMBS_LS) !== 0; }
+function has_head_ls(ptr) { return (ptr.mflags1 & M1_NOHEAD_LS) === 0; }
+
+// C ref: apply.c leashable()
+function leashable(mtmp) {
+    return (mtmp.data !== mons_ls[PM_LONG_WORM_LS] /* mtmp->mnum */
+            && !unsolid_ls(mtmp.data)
+            && (!nolimbs_ls(mtmp.data) || has_head_ls(mtmp.data)));
+}
+
+// C ref: apply.c use_leash()
+async function use_leash(obj) {
+    const u = game.u;
+    const cc = { x: 0, y: 0 };
+    let mtmp;
+
+    if (u.uswallow) {
+        /* if the leash isn't in use, assume we're trying to leash
+           the engulfer; if it is use, distinguish between removing
+           it from the engulfer versus from some other creature
+           (note: the two in-use cases can't actually occur; all
+           leashes are released when the hero gets engulfed) */
+        const what = noit_mon_nam_ls(u.ustuck);
+        await You_cant(!obj.leashmon ? `leash ${what} from inside.`
+                       : (obj.leashmon === u.ustuck.m_id)
+                         ? `unleash ${what} from inside.`
+                         : `unleash anything from inside ${what}.`);
+        return ECMD_OK;
+    }
+    if (!obj.leashmon && number_leashed() >= 2 /* MAXLEASHED */) {
+        await You("cannot leash any more pets.");
+        return ECMD_OK;
+    }
+
+    if (!(await get_adjacent_loc_ls(null, null, u.ux, u.uy, cc)))
+        return ECMD_OK;
+
+    if (cc.x === u.ux && cc.y === u.uy) { /* u_at() */
+        if (u.usteed && u.dz > 0) {
+            mtmp = u.usteed;
+            await use_leash_core(obj, mtmp, cc, 1);
+            return ECMD_TIME;
+        }
+        await pline("Leash yourself?  Very funny...");
+        return ECMD_OK;
+    }
+
+    /*
+     * From here on out, return value is 1 == a move is used.
+     */
+
+    if (!(mtmp = m_at(cc.x, cc.y))) {
+        await There("is no creature there.");
+        unmap_invisible(cc.x, cc.y);
+        return ECMD_TIME;
+    }
+
+    await use_leash_core(obj, mtmp, cc, canspotmon(mtmp));
+    return ECMD_TIME;
+}
+
+// C ref: apply.c use_leash_core()
+async function use_leash_core(obj, mtmp, cc, spotmon) {
+    if (!spotmon
+        && !glyph_is_invisible_ls(game.level.at(cc.x, cc.y).remembered_glyph)) {
+        /* for the unleash case, we don't verify whether this unseen
+           monster is the creature attached to the current leash */
+        await You(`fail to ${obj.leashmon ? "un" : ""}leash something.`);
+        /* trying again will work provided the monster is tame
+           (and also that it doesn't change location by retry time) */
+        map_invisible(cc.x, cc.y);
+    } else if (!mtmp.mtame) {
+        await pline(`${Monnam_ls(mtmp)} ${(!obj.leashmon) ? "cannot be" : "is not"} leashed!`);
+    } else if (!obj.leashmon) {
+        /* applying a leash which isn't currently in use */
+        if (mtmp.mleashed) {
+            await pline(`This ${spotmon ? l_monnam_ls(mtmp) : "creature"} is already leashed.`);
+        } else if (unsolid_ls(mtmp.data)) {
+            await pline("The leash would just fall off.");
+        } else if (nolimbs_ls(mtmp.data) && !has_head_ls(mtmp.data)) {
+            await pline(`${Monnam_ls(mtmp)} has no extremities the leash would fit.`);
+        } else if (!leashable(mtmp)) {
+            let lmonnam = l_monnam_ls(mtmp);
+
+            if (cc.x !== mtmp.mx || cc.y !== mtmp.my)
+                lmonnam = `${s_suffix_cam(lmonnam)} tail`;
+            await pline(`The leash won't fit onto ${spotmon ? "your " : ""}${lmonnam}.`);
+        } else {
+            /* mtmp->mleashed = 1; obj->leashmon = mtmp->m_id: leashed pets
+               (check_leash(), next_to_u(), dog movement) aren't ported */
+            throw new Error('use_leash_core(): leashing a pet not ported yet');
+        }
+    } else {
+        /* applying a leash which is currently in use */
+        throw new Error('use_leash_core(): removing a leash not ported yet');
+    }
+}
+import { noit_mon_nam as noit_mon_nam_ls, Monnam as Monnam_ls,
+         l_monnam as l_monnam_ls } from './do_name.js';
+import { get_adjacent_loc as get_adjacent_loc_ls } from './cmd.js';
+import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
+import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
+         M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
