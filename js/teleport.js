@@ -1025,7 +1025,7 @@ export async function level_tele() {
         /* can only get here via life-saving (or declining to die in
            explore|debug mode); the hero has now left the dungeon... */
         escape_by_flying = "find yourself back on the surface";
-        u.uz = lsav; /* restore u.uz so escape code works */
+        u.uz.dnum = lsav.dnum, u.uz.dlevel = lsav.dlevel; /* restore u.uz so escape code works */
     }
 
     /* calls done(ESCAPED) if newlevel==0 */
