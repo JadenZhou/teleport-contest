@@ -1720,6 +1720,8 @@ export async function dohelp() {
             await dispfile_debughelp();
         else if (f === 'dispfile_usagehelp')
             await dispfile_usagehelp();
+        else if (f === 'option_help')
+            await option_help_pg();
         else if (f === 'domenucontrols')
             await domenucontrols();
         else
@@ -2701,3 +2703,4 @@ import { ceiling_hider as ceiling_hider_pg } from './engrave.js';
 import { M1_CONCEAL as M1_CONCEAL_PG, M1_HIDE as M1_HIDE_PG,
          S_EEL as S_EEL_PG } from './monsters.js';
 import { S_poisoncloud as S_poisoncloud_pg } from './region.js';
+import { option_help as option_help_pg } from './options.js';
