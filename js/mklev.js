@@ -395,7 +395,9 @@ export async function mklev() {
     if (await getbones()) return;
     g.in_mklev = true;
     await makelevel();
-    count_level_features();
+    /* C's mklev() doesn't recount fountains/sinks here: nfountains and
+       nsinks come from mkfount()/mksink() (and load_special() for special
+       levels), so a themed room's des.feature("fountain") isn't counted */
     level_finalize_topology();
     g.in_mklev = false;
 }
