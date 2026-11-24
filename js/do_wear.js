@@ -1642,15 +1642,25 @@ export async function Helmet_off() {
 export async function Gloves_off() {
     const g = game;
     const tk = takeoff_ctx();
+    const oldprop =
+        uprop(objects[g.uarmg.otyp].oc_oprop).extrinsic & ~W_ARMG; /* WORN_GLOVES */
     tk.mask &= ~W_ARMG;
 
     switch (g.uarmg.otyp) {
     case O.LEATHER_GLOVES:
         break;
     case O.GAUNTLETS_OF_FUMBLING:
+        if (!oldprop && !(uprop(FUMBLING).intrinsic & ~TIMEOUT))
+            uprop(FUMBLING).intrinsic = uprop(FUMBLING).extrinsic = 0; /* HFumbling = EFumbling = 0 */
+        break;
     case O.GAUNTLETS_OF_POWER:
+        makeknown(g.uarmg.otyp);
+        g.disp_botl = true; /* taken care of in attrib.c */
+        break;
     case O.GAUNTLETS_OF_DEXTERITY:
-        throw new Error('Gloves_off(): magic gloves not ported yet');
+        if (!tk.cancelled_don)
+            adj_abon(g.uarmg, -g.uarmg.spe);
+        break;
     default:
         impossible(`Gloves_off(): unknown type of gloves (${g.uarmg.otyp})`);
     }
