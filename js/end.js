@@ -771,7 +771,7 @@ function clearpriests() {
     for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
         if (mtmp.mhp < 1) /* DEADMONSTER */
             continue;
-        if (mtmp.ispriest && !on_level(mtmp.mextra.epri.shrlevel, game.u.uz))
+        if (mtmp.ispriest && !on_level(mtmp.epri.shrlevel, game.u.uz))
             mongone(mtmp);
     }
 }

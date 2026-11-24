@@ -17,6 +17,7 @@ import { Is_branchlev, In_hell, level_difficulty, on_level, dungeon_branch,
          induced_align, find_level, init_mapseen } from './dungeon.js';
 import { makemaz, mazexy, mkportal } from './mkmaze.js';
 import { PM_LEPRECHAUN, PM_KILLER_BEE, PM_SOLDIER, PM_COCKATRICE, S_HUMAN,
+         PM_SMALL_MIMIC, PM_LARGE_MIMIC, PM_GIANT_MIMIC, S_MIMIC,
          PM_ELF, PM_DWARF, PM_ORC, PM_GNOME, PM_HUMAN, PM_ARCHEOLOGIST,
          PM_WIZARD, PM_GIANT_SPIDER, mons } from './monsters.js';
 import { set_levltyp } from './mkmaze.js';
@@ -67,7 +68,8 @@ import {
     CORPSTAT_INIT, weight, add_to_container, mk_tt_object,
 } from './mkobj.js';
 import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon, is_pool,
-         is_lava } from './makemon.js';
+         is_lava, set_mimic_sym } from './makemon.js';
+import { in_rooms } from './hack.js';
 import { priestini } from './priest.js';
 import { dist2, distmin } from './hacklib.js';
 import { del_engr_at } from './engrave.js';
@@ -378,8 +380,7 @@ function dealloc_obj(otmp) { /* garbage collected */ }
 /* mazexy(): mkmaze.js */
 
 
-// in_rooms stub
-function in_rooms(x, y, rtype) { return []; }
+/* in_rooms(): hack.js */
 
 // ============================================================
 // Core mklev functions (ported from main project's mklev.js)
@@ -1948,7 +1949,7 @@ function dosdoor(x, y, aroom, type) {
     const map = game.level;
     const loc = map.at(x, y);
     if (!loc) return;
-    const shdoor = in_rooms(x, y, 0).length > 0;
+    const shdoor = in_rooms(x, y, SHOPBASE).length > 0;
     if (!IS_WALL(loc.typ)) type = DOOR;
     loc.typ = type;
     if (type === DOOR) {
@@ -1969,8 +1970,16 @@ function dosdoor(x, y, aroom, type) {
             loc.flags = D_NODOOR;
 
         if (loc.flags & D_TRAPPED) {
-            if (level_difficulty() >= 9 && !rn2(5)) {
+            const mv = game.mvitals;
+            if (level_difficulty() >= 9 && !rn2(5)
+                && !((mv[PM_SMALL_MIMIC].mvflags & G_GONE)
+                     && (mv[PM_LARGE_MIMIC].mvflags & G_GONE)
+                     && (mv[PM_GIANT_MIMIC].mvflags & G_GONE))) {
+                /* make a mimic instead */
                 loc.flags = D_NODOOR;
+                const mtmp = makemon(mkclass(S_MIMIC, 0), x, y, NO_MM_FLAGS);
+                if (mtmp)
+                    set_mimic_sym(mtmp);
             }
         }
     } else {

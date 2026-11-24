@@ -114,7 +114,7 @@ import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR, ART_SNICKERSNEE } from './artilist.js';
 import { In_hell } from './dungeon.js';
 import { stop_occupation } from './allmain.js';
-import { shk_move, costly_spot, after_shk_move, inhishop } from './shk.js';
+import { shk_move, costly_spot, after_shk_move, inhishop, add_damage } from './shk.js';
 import { in_rooms, in_town } from './hack.js';
 import { pri_move, in_your_sanctuary } from './priest.js';
 import { quest_stat_check, quest_talk } from './quest.js';
@@ -1872,8 +1872,8 @@ async function maybe_spin_web(mtmp) {
                 await pline(`${mbuf.charAt(0).toUpperCase()}${mbuf.slice(1)} spins a web.`); /* pline_mon(), upstart() */
                 trap.tseen = 1;
             }
-            if (in_shop(mtmp.mx, mtmp.my))
-                throw new Error('maybe_spin_web(): add_damage() not ported yet');
+            if (in_shop(mtmp.mx, mtmp.my)) /* *in_rooms(mx, my, SHOPBASE) */
+                add_damage(mtmp.mx, mtmp.my, 0);
         }
     }
 }
@@ -2429,8 +2429,8 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
                     }
                 }
                 /* if it's a shop door, schedule repair */
-                if (in_shop(mtmp.mx, mtmp.my))
-                    throw new Error('postmov(): add_damage() not ported yet');
+                if (in_shop(mtmp.mx, mtmp.my)) /* *in_rooms(mx, my, SHOPBASE) */
+                    add_damage(mtmp.mx, mtmp.my, 0);
             }
         } else if (lev.at(mtmp.mx, mtmp.my).typ === IRONBARS) {
             /* 3.6.2: was using may_dig() but that doesn't handle bars;
