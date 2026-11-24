@@ -9,7 +9,7 @@
 // filter toggles, and the dungeon-feature symbol search.
 
 import { game } from './gstate.js';
-import { pline, newsym, flush_screen, glyph_at, glyph_kind,
+import { pline, newsym, newsym_force, flush_screen, glyph_at, glyph_kind,
          back_to_glyph } from './display.js';
 import { invocation_pos } from './mklev.js';
 import { t_at } from './trap.js';
@@ -435,7 +435,7 @@ export async function getpos_sethilite(gp_hilitef, gp_getvalidf) {
     if (st.getvalid !== old_getvalid || st.map_frame_color !== old_map_frame_color) {
         /* selection_force_newsyms(sel) */
         for (const k of sel)
-            newsym(k % COLNO, Math.trunc(k / COLNO));
+            newsym_force(k % COLNO, Math.trunc(k / COLNO));
     }
     /* selection_free(sel, TRUE) */
 }

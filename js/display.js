@@ -13,6 +13,7 @@ import { NOT_HUNGRY, UNENCUMBERED, SICK, SICK_VOMITABLE, SICK_NONVOMITABLE, TT_L
          STONED, STRANGLED, STUNNED, GLIB } from './const.js';
 import { ACURR } from './attrib.js';
 import { Unaware } from './eat.js';
+import { mapxy_valid } from './getpos.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS, LADDER, SDOOR, SCORR,
     IRONBARS, TREE, POOL, MOAT, FOUNTAIN, SINK, ALTAR, GRAVE, THRONE,
@@ -829,6 +830,14 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
         decgfx = false;
         color = NO_COLOR;
     }
+    /* C ref: display.c show_glyph() -- the spot needs flushing (gnew,
+       inside the row's changed-glyph bounding box) only if the glyph or
+       its glyphinfo differs from what the 3rd screen (gbuf) has */
+    if (loc.disp_ch !== ch || loc.disp_color !== color
+        || !!loc.disp_decgfx !== !!decgfx || (loc.disp_attr | 0) !== (attr | 0)
+        || loc.disp_kind !== kind || !!loc.disp_objpile !== !!objpile
+        || !same_gid(loc.disp_gid, gid))
+        gbuf_mark_new(loc, x, y);
     loc.disp_ch = ch;
     loc.disp_color = color;
     loc.disp_decgfx = !!decgfx;
@@ -838,7 +847,35 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
     loc.disp_kind = kind;
     loc.disp_objpile = !!objpile;
     loc.disp_gid = gid;
+}
+
+/* the glyph identity of two shown glyphs (show_glyph_cell() 'gid') */
+function same_gid(a, b) {
+    if (!a || !b)
+        return !a === !b;
+    return a.otyp === b.otyp && a.corpsenm === b.corpsenm
+        && a.cmapidx === b.cmapidx && a.mndx === b.mndx
+        && !!a.unexplored === !!b.unexplored;
+}
+
+// C ref: display.c gbuf_start[]/gbuf_stop[] -- per map row, the bounding
+// box of the spots changed since the last flush_screen()
+function gbuf_bbox() {
+    if (!game.gbuf_start) {
+        game.gbuf_start = new Array(ROWNO).fill(COLNO - 1);
+        game.gbuf_stop = new Array(ROWNO).fill(0);
+    }
+    return game;
+}
+
+/* gbuf[y][x].gnew = 1, and widen the row's changed-glyph bounding box */
+function gbuf_mark_new(loc, x, y) {
+    const g = gbuf_bbox();
     loc.gnew = 1;
+    if (g.gbuf_start[y] > x)
+        g.gbuf_start[y] = x;
+    if (g.gbuf_stop[y] < x)
+        g.gbuf_stop[y] = x;
 }
 
 /* the glyph identity fields of a glyph (see show_glyph_cell()) */
@@ -1815,7 +1852,7 @@ export function newsym_force(x, y) {
     newsym(x, y);
     const loc = game.level?.at(x, y);
     if (loc)
-        loc.gnew = 1;
+        gbuf_mark_new(loc, x, y);
 }
 
 /* C ref: display.h tmp_at() styles */
@@ -2799,7 +2836,47 @@ export async function flush_screen(cursor_on_u) {
         bot();
     else if (game.disp_time_botl)
         timebot();
+    /* print_glyph() of each spot inside the changed-glyph bounding boxes
+       that is gnew (or has a getpos frame color): the tty cursor is left
+       just past the last one printed */
+    const last = await flush_gbuf();
+    if (last && !cursor_on_u) {
+        const display = game?.nhDisplay;
+        display?.setCursor?.(last.x, last.y + 1);
+        if (game.ttyDisplay) {
+            game.ttyDisplay.curx = last.x;
+            game.ttyDisplay.cury = last.y + 1;
+        }
+    }
     _buildScreenOutput(cursor_on_u);
+}
+
+// C ref: display.c flush_screen() -- the gbuf loop: each spot inside a
+// row's bounding box is printed if gnew, or if it gets a frame color
+// (getpos valid spots with bgcolors); gnew is cleared and the boxes reset
+// (reset_glyph_bbox()).  Returns the last spot printed, if any.
+async function flush_gbuf() {
+    const g = gbuf_bbox();
+    let last = null;
+    const st = game.getpos_state;
+    const framed = !!(st?.map_frame_color && game.iflags?.bgcolors !== false
+                      && st.getvalid);
+    for (let y = 0; y < ROWNO; y++) {
+        for (let x = g.gbuf_start[y]; x <= g.gbuf_stop[y]; x++) {
+            const loc = game.level?.at(x, y);
+            if (!loc)
+                continue;
+            if (loc.gnew || (framed && await mapxy_valid(x, y))) {
+                loc.gnew = 0;
+                last = { x, y };
+            }
+        }
+    }
+    for (let i = 0; i < ROWNO; i++) {
+        g.gbuf_start[i] = COLNO - 1;
+        g.gbuf_stop[i] = 0;
+    }
+    return last;
 }
 
 // ── cls ──
@@ -2823,11 +2900,19 @@ function clear_glyph_buffer() {
         return;
     for (let x = 1; x < COLNO; x++)
         for (let y = 0; y < ROWNO; y++)
-            if (game.level.at(x, y))
+            if (game.level.at(x, y)) {
                 /* GLYPH_UNEXPLORED: glyph_at() reports it as 'unexplored'
                    until something else is shown there */
                 show_glyph_cell(x, y, ' ', NO_COLOR, false, 0, 'cmap', false,
                                 { unexplored: true });
+                /* nul_gbuf.gnew: the unexplored glyph is a blank */
+                game.level.at(x, y).gnew = 0;
+            }
+    const g = gbuf_bbox();
+    for (let y = 0; y < ROWNO; y++) {
+        g.gbuf_start[y] = 1;
+        g.gbuf_stop[y] = COLNO - 1;
+    }
 }
 
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
