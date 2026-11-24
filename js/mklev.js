@@ -40,7 +40,7 @@ import {
     SDOOR, SCORR, IRONBARS, FOUNTAIN, SINK, ALTAR, GRAVE,
     DIR_N, DIR_S, DIR_E, DIR_W, DIR_180,
     IS_WALL, IS_STWALL, IS_DOOR, IS_OBSTRUCTED, IS_FURNITURE, IS_POOL,
-    SPACE_POS, isok, W_NONDIGGABLE, FILL_NORMAL,
+    SPACE_POS, isok, W_NONDIGGABLE, W_NONPASSWALL, FILL_NORMAL,
     ICE, MOAT, POOL, WATER, LAVAPOOL, LAVAWALL, DBWALL,
     A_LAWFUL, Align2amask,
     LR_UPTELE, LR_TELE, LR_DOWNTELE, LR_BRANCH, LR_PORTAL, LR_DOWNSTAIR,
@@ -83,6 +83,7 @@ import {
 } from './monsters.js';
 import {
     IS_THRONE, THRONE, IS_ROOM, OBJ_AT, AM_SHRINE, MM_ASLEEP, A_NONE, NON_PM,
+    Is_earthlevel,
 } from './const.js';
 import { MACE, LUMP_OF_ROYAL_JELLY } from './objects.js';
 import { makeroguerooms, makerogueghost } from './extralev.js';
@@ -3459,13 +3460,22 @@ export function get_level_extends() {
 
 function bound_digging() {
     const map = game.level;
+
+    if (Is_earthlevel(game.u.uz))
+        return; /* everything diggable here */
+
     const { xmin, xmax, ymin, ymax } = get_level_extends();
     for (let x = 0; x < COLNO; x++)
         for (let y = 0; y < ROWNO; y++) {
             const loc = map.at(x, y);
             if (!loc) continue;
-            if (IS_STWALL(loc.typ) && (y <= ymin || y >= ymax || x <= xmin || x >= xmax)) {
-                loc.wall_info = (loc.wall_info || 0) | W_NONDIGGABLE;
+            if (IS_STWALL(loc.typ)) {
+                /* undiggable walls at edges, ... */
+                if (y <= ymin || y >= ymax || x <= xmin || x >= xmax)
+                    loc.wall_info = (loc.wall_info || 0) | W_NONDIGGABLE;
+                /* one tile past that, everything is also unphaseable */
+                if (y < ymin || y > ymax || x < xmin || x > xmax)
+                    loc.wall_info = (loc.wall_info || 0) | W_NONPASSWALL;
             }
         }
 }
