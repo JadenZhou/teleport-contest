@@ -490,7 +490,7 @@ export function droppables(mon) {
 }
 
 // ── C ref: dogmove.c cursed_object_at() ──
-function cursed_object_at(x, y) {
+export function cursed_object_at(x, y) {
     for (const otmp of objects_at(x, y))
         if (otmp.cursed)
             return true;
@@ -1387,8 +1387,14 @@ export async function dog_move(mtmp, after) {
             return MMOVE_DONE;
         }
         if ((mfp.info[i] & ALLOW_MDISP) && MON_AT(nx, ny)
-            && better_with_displacing)
-            throw new Error('dog_move(): mdisplacem() not ported yet');
+            && better_with_displacing && !undesirable_disp_dm(mtmp, nx, ny)) {
+            const mtmp2 = m_at(nx, ny);
+
+            const mstatus = await mdisplacem_dm(mtmp, mtmp2, false); /* displace monster */
+            if (mstatus & M_ATTK_DEF_DIED)
+                return MMOVE_DIED;
+            return MMOVE_NOTHING;
+        }
 
         /* avoid a location hero just kicked */
         if (m_avoid_kicked_loc(mtmp, nx, ny))
@@ -1539,3 +1545,5 @@ export async function dog_move(mtmp, after) {
     }
     return MMOVE_MOVED;
 }
+import { undesirable_disp as undesirable_disp_dm } from './monmove.js';
+import { mdisplacem as mdisplacem_dm } from './mhitm.js';

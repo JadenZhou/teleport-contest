@@ -2076,9 +2076,68 @@ export async function mongrantswish(monp) {
 
 // C ref: potion.c djinni_from_bottle()
 export async function djinni_from_bottle(obj) {
-    void obj;
-    /* makemon(PM_DJINNI), the wish/tame/peaceful/vanish/hostile outcomes */
-    throw new Error('djinni_from_bottle() not ported yet');
+    const u = game.u;
+    let mtmp;
+    let chance;
+
+    if (!(mtmp = makemon(mons[PM_DJINNI], u.ux, u.uy, MM_NOMSG))) {
+        await pline("It turns out to be empty.");
+        return;
+    }
+
+    if (!Blind()) {
+        await pline(`In a cloud of smoke, ${a_monnam_dj(mtmp)} emerges!`);
+        await pline(`${Monnam(mtmp)} speaks.`);
+    } else {
+        await You("smell acrid fumes.");
+        await pline(`${Something} speaks.`);
+    }
+
+    chance = rn2(5);
+    if (obj.blessed)
+        chance = (chance === 4) ? rnd(4) : 0;
+    else if (obj.cursed)
+        chance = (chance === 0) ? rn2(4) : 4;
+    /* 0,1,2,3,4:  b=80%,5,5,5,5; nc=20%,20,20,20,20; c=5%,5,5,5,80 */
+
+    /* SetVoice(mtmp, 0, 80, 0): no voice interface */
+    switch (chance) {
+    case 0: {
+        await verbalize_dj("I am in your debt.  I will grant one wish!");
+        /* give a wish and discard the monster (mtmp set to null) */
+        const monp = { mon: mtmp };
+        await mongrantswish(monp);
+        mtmp = monp.mon;
+        break;
+    }
+    case 1:
+        await verbalize_dj("Thank you for freeing me!");
+        await tamedog_dj(mtmp, null, false);
+        break;
+    case 2:
+        await verbalize_dj("You freed me!");
+        mtmp.mpeaceful = 1;
+        set_malign_dj(mtmp);
+        break;
+    case 3:
+        await verbalize_dj("It is about time!");
+        if (canspotmon(mtmp))
+            await pline(`${Monnam(mtmp)} vanishes.`);
+        mongone(mtmp);
+        break;
+    default:
+        await verbalize_dj("You disturbed me, fool!");
+        mtmp.mpeaceful = 0;
+        set_malign_dj(mtmp);
+        break;
+    }
+}
+/* C ref: pline.c verbalize() */
+async function verbalize_dj(line) {
+    if (game.u.uprops?.[DEAF_DJ]?.intrinsic || game.u.uprops?.[DEAF_DJ]?.extrinsic
+        || game.u.uroleplay?.deaf)
+        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
+    await pline(`"${line}"`);
 }
 
 // C ref: potion.c split_mon() -- clone a gremlin or mold
@@ -2434,3 +2493,7 @@ function dip_pair_of(o) {
                     || objects[o.otyp].oc_armcat === O.ARM_BOOTS)));
 }
 import { clone_mon as clone_mon_sm } from './makemon.js';
+import { a_monnam as a_monnam_dj } from './do_name.js';
+import { tamedog as tamedog_dj } from './dog.js';
+import { set_malign as set_malign_dj } from './makemon.js';
+import { DEAF as DEAF_DJ } from './const.js';

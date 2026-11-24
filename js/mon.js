@@ -332,6 +332,49 @@ export async function mnearto(
     return res;
 }
 
+// C ref: mon.c replmon()
+/* replace a non-shopkeeper monster with another one */
+export function replmon(mtmp, mtmp2) {
+    const u = game.u;
+
+    /* transfer the monster's inventory (minvent is an array here) */
+    for (const otmp of mtmp2.minvent || []) {
+        if (otmp.where !== 'OBJ_MINVENT' || otmp.ocarry !== mtmp)
+            console.error('impossible: replmon: minvent inconsistency');
+        otmp.ocarry = mtmp2;
+    }
+    mtmp.minvent = null;
+    /* before relmon(mtmp), because it could clear polearm.hitmon */
+    if (game.context?.polearm?.hitmon === mtmp)
+        game.context.polearm.hitmon = mtmp2;
+
+    /* remove the old monster from the map and from `fmon' list */
+    relmon(mtmp, null);
+
+    /* finish adding its replacement */
+    if (mtmp !== u.usteed) /* don't place steed onto the map */
+        place_monster(mtmp2, mtmp2.mx, mtmp2.my);
+    if (mtmp2.wormno)      /* update level.monsters[wseg->wx][wseg->wy] */
+        place_wsegs_rm(mtmp2, mtmp); /* locations to mtmp2 not mtmp. */
+    if (emits_light(mtmp2.data)) {
+        /* since this is so rare, we don't have any `mon_move_light_source' */
+        new_light_source(mtmp2.mx, mtmp2.my, emits_light(mtmp2.data),
+                         LS_MONSTER, monst_to_any(mtmp2));
+        /* here we rely on fact that `mtmp' hasn't actually been deleted */
+        del_light_source(LS_MONSTER, monst_to_any(mtmp));
+    }
+    mtmp2.nmon = game.fmon;
+    game.fmon = mtmp2;
+    if (u.ustuck === mtmp)
+        set_ustuck_rm(mtmp2);
+    if (u.usteed === mtmp)
+        u.usteed = mtmp2;
+    if (mtmp2.isshk)
+        throw new Error('replmon(): replshk() not ported yet');
+
+    /* discard the old monster: dealloc_monst(mtmp) */
+}
+
 // C ref: mon.c relmon()
 /* remove a monster from the fmon list (and the map); 'list' is the name
    of the game list to put it on ('migrating_mons' or 'mydogs') or null */
@@ -2146,8 +2189,18 @@ function* newcham_g(mtmp, mdat, ncflags) {
     check_gear_next_turn(mtmp);
 
     /* former giants can't continue carrying boulders */
-    if (mtmp.minvent?.length && !throws_rocks(mdat))
-        throw new Error('newcham(): dropping boulders not ported yet');
+    if (mtmp.minvent?.length && !throws_rocks(mdat)) {
+        /* DEADMONSTER(): it is possible for flooreffects() to kill mtmp;
+           the rest of its inventory would be dropped making otmp2 stale */
+        for (const otmp of mtmp.minvent.slice()) {
+            if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+                break;
+            if (otmp.otyp === BOULDER)
+                /* bypass_obj() if polyspot, obj_extract_self(), then the
+                   async flooreffects() or place_object() */
+                throw new Error('newcham(): dropping boulders (flooreffects()) not ported yet');
+        }
+    }
     if (mtmp === game.u.usteed)
         throw new Error('newcham(): poly_steed() not ported yet');
 
@@ -3430,3 +3483,5 @@ import { shkgone } from './shk.js';
 
 import { gd_move } from './vault.js';
 import { rloc_to as rloc_to_mn } from './teleport.js';
+import { place_wsegs as place_wsegs_rm } from './worm.js';
+import { set_ustuck as set_ustuck_rm } from './uhitm.js';

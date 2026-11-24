@@ -1242,7 +1242,7 @@ import { losehp, Maybe_Half_Phys } from './trap.js';
 import { dropx } from './do.js';
 
 // C ref: invent.c consume_obj_charge()
-function consume_obj_charge(obj,
+export function consume_obj_charge(obj,
                             maybe_unpaid) { /* false if caller handles shop billing */
     if (maybe_unpaid)
         check_unpaid_cam(obj);

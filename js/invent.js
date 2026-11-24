@@ -2027,7 +2027,7 @@ export async function doprgold() {
         else
             await You("have no money.");
     }
-    shopper_financial_report();
+    await shopper_financial_report_iv();
 
     if (umoney && game.iflags.menu_requested) {
         /* mustn't use TRUE or gold wouldn't show up unless it was quivered */
@@ -2037,14 +2037,7 @@ export async function doprgold() {
     return ECMD_OK;
 }
 
-// C ref: shk.c shopper_financial_report() -- the report for the shop the
-// hero is in (shop_keeper(inside_shop(u.ux, u.uy))) and the level's other
-// shops (next_shkp()); without a shopkeeper there is nothing to report
-function shopper_financial_report() {
-    for (let shkp = game.fmon; shkp; shkp = shkp.nmon)
-        if (shkp.isshk && !shkp.dead)
-            throw new Error('shopper_financial_report(): shopkeepers not ported yet');
-}
+/* C ref: shk.c shopper_financial_report() is shk.js shopper_financial_report() */
 
 // C ref: invent.c doprwep() -- the #seeweapon command
 export async function doprwep() {
@@ -2483,8 +2476,8 @@ export function delobj_core(obj, force) {
         return;
     }
     const update_map = (obj.where === 'OBJ_FLOOR');
-    if (obj.where === 'OBJ_INVENT' || obj.unpaid || obj.cobj?.length)
-        throw new Error('delobj_core(): obfree() of carried/unpaid/container objects not ported yet');
+    /* obj_extract_self() -> freeinv() for a carried object; obfree()
+       frees contents (delete_contents()) and stops on a bill entry */
     obj_extract_self(obj);
     if (update_map) { /* floor object's coordinates are always up to date */
         maybe_unhide_at(obj.ox, obj.oy);
@@ -3047,3 +3040,4 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
          BILLED_TYPES as BILLED_TYPES_IV, BUC_UNKNOWN as BUC_UNKNOWN_IV,
          JUSTPICKED as JUSTPICKED_IV,
          INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
+import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';

@@ -2541,11 +2541,25 @@ async function carrying_too_much() {
 /* C ref: hack.c slippery_ice_fumbling() */
 function slippery_ice_fumbling() {
     const u = game.u;
-    const on_ice = !Levitation() && game.level.at(u.ux, u.uy).typ === ICE;
-    if (on_ice)
-        throw new Error('slippery_ice_fumbling(): ice not ported yet');
-    /* if (!on_ice && (HFumbling & FROMOUTSIDE)) HFumbling &= ~FROMOUTSIDE:
-       nothing sets FROMOUTSIDE fumbling yet */
+    let on_ice = !sp_Levitation() && is_ice_sf(u.ux, u.uy);
+    const iceskater = u.usteed ? u.usteed : game.youmonst;
+    const HFumbling = sp_prop(FUMBLING);
+
+    if (on_ice) {
+        const isd = iceskater.data;
+        if ((game.uarmf && objdescr_is_sf(game.uarmf, "snow boots"))
+            || resists_cold_sf(iceskater) || sp_Flying()
+            || is_floater(isd) || is_clinger(isd)
+            || is_whirly(isd)) {
+            on_ice = false;
+        } else if (!rn2((uhave(COLD_RES_SF)) ? 3 : 2)) {
+            HFumbling.intrinsic |= FROMOUTSIDE;
+            HFumbling.intrinsic &= ~TIMEOUT;
+            HFumbling.intrinsic += 1; /* slip on next move */
+        }
+    }
+    if (!on_ice && (HFumbling.intrinsic & FROMOUTSIDE))
+        HFumbling.intrinsic &= ~FROMOUTSIDE;
 }
 
 /* C ref: hack.c impaired_movement() -- change movement dir if impaired.
@@ -3253,3 +3267,7 @@ function glyph_to_obj_hk(glyph) {
     return (glyph && glyph.kind === 'obj' && glyph.otyp !== undefined
             && glyph.otyp !== null) ? glyph.otyp : -1;
 }
+import { is_ice as is_ice_sf } from './dig.js';
+import { objdescr_is as objdescr_is_sf } from './o_init.js';
+import { resists_cold as resists_cold_sf } from './mondata.js';
+import { COLD_RES as COLD_RES_SF } from './const.js';

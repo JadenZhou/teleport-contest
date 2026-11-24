@@ -1972,9 +1972,25 @@ export async function hurtle_step(arg, x, y) {
     await check_special_room(false);
 
     if (is_pool(x, y) && !u.uinwater) {
-        throw new Error('hurtle_step(): moving over water not ported yet');
+        const Flying_ht = !!((u.uprops?.[FLYING]?.intrinsic || u.uprops?.[FLYING]?.extrinsic)
+                             && !u.uprops?.[FLYING]?.blocked);
+        /* Wwalking: hurtle_jump()'s EWwalking |= I_SPECIAL is
+           game.hurtle_via_jumping */
+        const Wwalking_ht = !!((u.uprops?.[WWALKING_HT]?.intrinsic
+                                || u.uprops?.[WWALKING_HT]?.extrinsic
+                                || game.hurtle_via_jumping)
+                               && !Is_waterlevel_tg(u.uz));
+        if (is_waterwall_hu(x, y) || !(Levitation() || Flying_ht || Wwalking_ht)) {
+            /* couldn't move while hurtling; allow movement now so that
+               drown() will give a chance to crawl out of pool and survive */
+            game.multi = 0;
+            await drown_ht();
+            return false;
+        } else if (!Is_waterlevel_tg(u.uz) && !stopping_short) {
+            await Norep_ht(`You move over ${an(is_moat_ht(x, y) ? "moat" : "pool")}.`);
+        }
     } else if (is_lava(x, y) && !stopping_short) {
-        throw new Error('hurtle_step(): moving over lava not ported yet');
+        await Norep_ht("You move over some lava.");
     }
 
     if ((ttmp = t_at(x, y)) !== null && ttmp !== undefined) {
@@ -2296,3 +2312,7 @@ import { M1_BREATHLESS, PM_CYCLOPS, PM_FLOATING_EYE, PM_PYROLISK } from './monst
 import { LOW_PM } from './const.js';
 import { delobj } from './invent.js';
 import { dist2 } from './hacklib.js';
+import { WWALKING as WWALKING_HT } from './const.js';
+import { drown as drown_ht } from './trap.js';
+import { Norep as Norep_ht } from './display.js';
+import { is_moat as is_moat_ht } from './makemon.js';
