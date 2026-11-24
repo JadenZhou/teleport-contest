@@ -2002,18 +2002,11 @@ export async function test_move(ux, uy, dx, dy, mode) {
                     /* soko restriction stays even after puzzle is solved */
                     await pline_The("Sokoban walls resist your ability.");
                 } else if (game.flags.mention_walls) {
-                    /* back_to_glyph(x, y) for the obstructed terrain types
-                       that reach here, and defsyms[sym].explanation */
-                    const arboreal = !!game.level.flags?.arboreal;
-                    let expl;
-                    if (tmpr.typ === STONE || tmpr.typ === SCORR)
-                        expl = arboreal ? "tree" : null; /* S_tree : S_stone */
-                    else if (tmpr.typ === TREE
-                             || (tmpr.typ === SDOOR && tmpr.arboreal_sdoor))
-                        expl = "tree"; /* S_tree */
-                    else /* walls and SDOOR: wall_angle() or S_stone */
-                        expl = tmpr.seenv ? "wall" : null;
-                    const buf = (expl === null) ? "solid stone" : an(expl);
+                    /* glyph = back_to_glyph(x, y), sym = glyph_to_cmap(glyph)
+                       (a background glyph is always a cmap one) */
+                    const sym = back_to_cmap(x, y);
+                    const buf = (sym === 0 /* S_stone */) ? "solid stone"
+                                : an(defsyms_explanation[sym]);
                     /* pline_dir(xytodir(dx, dy), ...) */
                     await pline(`It's ${buf}.`);
                 }

@@ -34,7 +34,7 @@ import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { extcmdlist } from './func_tab.js';
 import { cmd_from_func, key2extcmddesc, key2txt, dokeylist } from './cmd.js';
 import { visctrl } from './hacklib.js';
-import { canspotmon, vobj_at, pline, Hallucination, Blind } from './display.js';
+import { canspotmon, vobj_at, pline, Hallucination, Blind, back_to_glyph } from './display.js';
 import { cansee } from './vision.js';
 import { m_at, closed_door, is_pool, is_lava } from './makemon.js';
 import { t_at } from './trap.js';
@@ -273,7 +273,9 @@ export function back_to_cmap(x, y) {
     case TDWALL:
     case TLWALL:
     case TRWALL:
-        return ptr.seenv ? 1 /* wall_angle(ptr): some wall */ : S_stone;
+        /* idx = ptr->seenv ? wall_angle(ptr) : S_stone; display.js's
+           back_to_glyph() runs wall_angle() and carries the S_* index */
+        return ptr.seenv ? (back_to_glyph(x, y).cmapidx ?? S_stone) : S_stone;
     case DOOR:
         if (ptr.doormask) {
             if (ptr.doormask & D_BROKEN)

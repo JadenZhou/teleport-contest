@@ -1498,9 +1498,13 @@ async function openone(zx, zy, num_p) {
             newsym(zx, zy);
             num_p.v++;
         }
-        /* openholdingtrap(mon, &dummy) || openfallingtrap(mon, TRUE, &dummy) */
-        throw new Error('openone(): openholdingtrap()/openfallingtrap() not ported yet');
-    } else if (find_drawbridge_dt({ x: zx, y: zy })) {
+        const mon = (zx === game.u.ux && zy === game.u.uy) ? game.youmonst /* u_at() */
+                    : m_at(zx, zy);
+        /* openholdingtrap(mon, &dummy) || openfallingtrap(mon, TRUE, &dummy):
+           both return FALSE at once when there's no monster here */
+        if (mon)
+            throw new Error('openone(): openholdingtrap()/openfallingtrap() not ported yet');
+    } else if (find_drawbridge_dt(zx, zy)) {
         throw new Error('openone(): open_drawbridge() not ported yet');
     }
 }
