@@ -631,7 +631,7 @@ export async function done2() {
     }
 
     if (g.flags.debug) { /* wizard (UNIX) */
-        const c = await tty_yn_function("Dump core?", "ynq", 'n'); /* ynq() */
+        const c = await tty_yn_function("Dump core?", "ynq", 'q'); /* ynq() */
 
         if (c === 'y') {
             throw new Error('done2(): NH_abort() not ported yet');

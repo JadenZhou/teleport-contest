@@ -935,7 +935,16 @@ function conjoined_pits(trap2, trap1, u_entering_trap2) {
         || !is_pit(trap1.ttyp)
         || (u_entering_trap2 && !(u.utrap && u.utraptype === TT_PIT)))
         return false;
-    throw new Error('conjoined_pits(): conjoined pit directions not ported yet');
+    const dx = sgn_tr(trap2.tx - trap1.tx);
+    const dy = sgn_tr(trap2.ty - trap1.ty);
+    const diridx = xytodir_tr(dx, dy);
+    if (diridx !== DIR_ERR_TR) {
+        const adjidx = DIR_180_TR(diridx);
+        if ((trap1.conjoined & (1 << diridx))
+            && (trap2.conjoined & (1 << adjidx)))
+            return true;
+    }
+    return false;
 }
 
 // C ref: trap.c adj_nonconjoined_pit()
@@ -944,10 +953,15 @@ function adj_nonconjoined_pit(adjtrap) {
     const trap_with_u = t_at(u.ux0, u.uy0);
 
     if (trap_with_u && adjtrap && u.utrap && u.utraptype === TT_PIT
-        && is_pit(trap_with_u.ttyp) && is_pit(adjtrap.ttyp))
-        throw new Error('adj_nonconjoined_pit(): xytodir() not ported yet');
+        && is_pit(trap_with_u.ttyp) && is_pit(adjtrap.ttyp)) {
+        if (xytodir_tr(u.dx, u.dy) !== DIR_ERR_TR)
+            return true;
+    }
     return false;
 }
+import { xytodir as xytodir_tr } from './hack.js';
+import { DIR_180 as DIR_180_TR, DIR_ERR as DIR_ERR_TR } from './const.js';
+function sgn_tr(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 // C ref: trap.c dotrap()
 export async function dotrap(trap, trflags) {
@@ -2437,7 +2451,134 @@ async function trapeffect_pit(mtmp, trap, trflags) {
     let relevant_spikes = ttype === SPIKED_PIT;
 
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_pit(): hero branch not ported yet');
+        const u = game.u;
+        const Sokoban = game.level.flags.sokoban_rules;
+        const plunged = (trflags & TOOKPLUNGE) !== 0;
+        const viasitting = (trflags & VIASITTING) !== 0;
+        const conj_pit = conjoined_pits(trap, t_at(u.ux0, u.uy0), true);
+        const adj_pit = adj_nonconjoined_pit(trap);
+        const already_known = trap.tseen ? true : false;
+        const madeby_u = trap.madeby_u ? 1 : 0;
+        const A_Your = ["A", "Your"];
+        let deliberate = false;
+        let steed_article = ARTICLE_THE_TR;
+
+        /* suppress article in various steed messages when using its
+           name (which won't occur when hallucinating) */
+        if (u.usteed && has_mgivenname_tr(u.usteed) && !Hallucination())
+            steed_article = ARTICLE_NONE_TR;
+
+        /* KMH -- You can't escape the Sokoban level traps */
+        if (!Sokoban && (Levitation() || (Flying() && !plunged && !viasitting)))
+            return Trap_Effect_Finished;
+        feeltrap(trap);
+        if (!Sokoban && is_clinger(game.youmonst.data) && !plunged) {
+            if (already_known) {
+                await You_see_l(`${a_your[madeby_u]} ${
+                    ttype === SPIKED_PIT ? "spiked " : ""}pit below you.`);
+            } else {
+                await pline(`${A_Your[madeby_u]} pit ${
+                    ttype === SPIKED_PIT ? "full of spikes " : ""}opens up under you!`);
+                await You("don't fall in!");
+            }
+            return Trap_Effect_Finished;
+        }
+        if (!Sokoban) {
+            let verbbuf = '';
+
+            if (u.usteed) {
+                if ((trflags & RECURSIVETRAP) !== 0)
+                    verbbuf = `and ${x_monnam_tr(u.usteed, steed_article, null,
+                                                 SUPPRESS_SADDLE_TR, false)} fall`;
+                else
+                    verbbuf = `lead ${x_monnam_tr(u.usteed, steed_article, "poor",
+                                                  SUPPRESS_SADDLE_TR, false)}`;
+            } else if (game.iflags.menu_requested && already_known) {
+                await You(`carefully ${u_locomotion("lower yourself")} into the pit.`);
+                deliberate = true;
+            } else if (conj_pit) {
+                await You("move into an adjacent pit.");
+            } else if (adj_pit) {
+                await You(`stumble over debris${
+                    !rn2(5) ? " between the pits" : ""}.`);
+            } else {
+                verbbuf = !plunged ? "fall" : (Flying() ? "dive" : "plunge");
+            }
+            if (verbbuf)
+                await You(`${verbbuf} into ${a_your[madeby_u]} pit!`);
+        }
+        /* wumpus reference */
+        if (game.urole.mnum === PM_RANGER_TR && !trap.madeby_u && !trap.once
+            && In_quest(u.uz) && on_level_tr(u.uz, game.dungeon_topology.d_qlocate_level)) {
+            await pline("Fortunately it has a bottom after all...");
+            trap.once = 1;
+        } else if (u.umonnum === PM_PIT_VIPER || u.umonnum === PM_PIT_FIEND) {
+            await pline("How pitiful.  Isn't that the pits?");
+        }
+        if (relevant_spikes && wearing_iron_shoes(mtmp)) {
+            await pline(`${Yname2_fd(game.uarmf)} protects you from the sharp iron spikes.`);
+            relevant_spikes = false;
+        } else if (relevant_spikes) {
+            const predicament = "on a set of sharp iron spikes";
+
+            if (u.usteed) {
+                await pline(`${upstart_tr(x_monnam_tr(u.usteed, steed_article, "poor",
+                                                      SUPPRESS_SADDLE_TR, false))} ${
+                    conj_pit ? "steps" : "lands"} ${predicament}!`);
+            } else
+                await You(`${conj_pit ? "step" : "land"} ${predicament}!`);
+        }
+        /* FIXME:
+         * if hero gets killed here, setting u.utrap in advance will
+         * show "you were trapped in a pit" during disclosure's display
+         * of enlightenment, but hero is dying *before* becoming trapped.
+         */
+        set_utrap(rn1(6, 2), TT_PIT);
+        if (!await steedintrap(trap, null)) {
+            if (relevant_spikes) {
+                const oldumort = u.umortality;
+
+                await losehp(Maybe_Half_Phys(rnd(conj_pit ? 4 : adj_pit ? 6 : 10)),
+                       /* note: these don't need locomotion() handling;
+                          if fatal while poly'd and Unchanging, the
+                          death reason will be overridden with
+                          "killed while stuck in creature form" */
+                       plunged
+                       ? "deliberately plunged into a pit of iron spikes"
+                       : (conj_pit || deliberate)
+                         ? "stepped into a pit of iron spikes"
+                         : adj_pit
+                           ? "stumbled into a pit of iron spikes"
+                           : "fell into a pit of iron spikes",
+                       NO_KILLER_PREFIX_TR);
+                if (!rn2(6))
+                    await poisoned("spikes", A_STR,
+                             (conj_pit || adj_pit || deliberate)
+                             ? "stepping on poison spikes"
+                             : "fall onto poison spikes",
+                             /* if damage triggered life-saving,
+                                poison is limited to attrib loss */
+                             (u.umortality > oldumort) ? 0 : 8, false);
+            } else {
+                /* plunging flyers take spike damage but not pit damage */
+                if (!conj_pit && !deliberate
+                    && !(plunged && (Flying() || is_clinger(game.youmonst.data))))
+                    await losehp(Maybe_Half_Phys(rnd(adj_pit ? 3 : 6)),
+                           plunged ? "deliberately plunged into a pit"
+                           : "fell into a pit",
+                           NO_KILLER_PREFIX_TR);
+            }
+            if (game.uball /* Punished */ && game.uball.where !== 'OBJ_INVENT') {
+                unplacebc_tr();
+                await ballfall_tr();
+                await placebc_tr();
+            }
+            if (!conj_pit)
+                await selftouch("Falling, you");
+            game.vision_full_recalc = 1; /* vision limits change */
+            exercise(A_STR, false);
+            exercise(A_DEX, false);
+        }
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
         let trapkilled = false;
@@ -2483,6 +2624,18 @@ async function trapeffect_pit(mtmp, trap, trflags) {
             ? Trap_Caught_Mon : Trap_Effect_Finished;
     }
 }
+
+import { x_monnam as x_monnam_tr } from './do_name.js';
+import { ARTICLE_THE as ARTICLE_THE_TR, ARTICLE_NONE as ARTICLE_NONE_TR,
+         SUPPRESS_SADDLE as SUPPRESS_SADDLE_TR,
+         NO_KILLER_PREFIX as NO_KILLER_PREFIX_TR,
+         has_mgivenname as has_mgivenname_tr,
+         RECURSIVETRAP } from './const.js';
+import { PM_RANGER as PM_RANGER_TR } from './monsters.js';
+import { on_level as on_level_tr } from './dungeon.js';
+import { unplacebc as unplacebc_tr, ballfall as ballfall_tr,
+         placebc as placebc_tr } from './ball.js';
+function upstart_tr(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: trap.c trapeffect_hole()
 async function trapeffect_hole(mtmp, trap, trflags) {
@@ -2815,11 +2968,16 @@ async function steedintrap(trap, otmp) {
         }
         steedhit = true;
         break;
+    case PIT:
+    case SPIKED_PIT:
+        trapkilled = (steed.mhp < 1 /* DEADMONSTER(steed) */
+                      || await thitm(0, steed, null, rnd((tt === PIT) ? 6 : 10),
+                                     false));
+        steedhit = true;
+        break;
     case ARROW_TRAP:
     case DART_TRAP:
     case LANDMINE:
-    case PIT:
-    case SPIKED_PIT:
     case POLY_TRAP:
         throw new Error(`steedintrap(): steed hit by trap type ${tt} not ported yet`);
     default:
@@ -3888,7 +4046,7 @@ function dng_bottom(lev) {
     /* when in the upper half of the quest, don't fall past the
        middle "quest locate" level if hero hasn't been there yet */
     if (In_quest(lev)) {
-        const qlocate_depth = game.dungeon_topology?.d_qlocate_level?.dlevel;
+        const qlocate_depth = game.dungeon_topology.d_qlocate_level?.dlevel;
         /* dunlev_reached() is not ported; the quest isn't generated yet */
         if (qlocate_depth != null && dunlev(lev) < qlocate_depth)
             bottom = qlocate_depth; /* early cut-off */
