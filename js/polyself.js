@@ -1170,7 +1170,11 @@ export async function polymon(mntmp) {
         if (lays_eggs(uptr) && game.flags.female
             && !(uptr === mons[M.PM_GIANT_EEL]
                  || uptr === mons[M.PM_ELECTRIC_EEL]))
-            throw new Error('polymon(): "#sit to lay an egg" hint (eggs_in_water()) not ported yet');
+            await pline(use_thec("sit",
+                                 /* eggs_in_water(uptr) */
+                                 (lays_eggs(uptr) && uptr.mlet === M.S_EEL
+                                  && is_swimmer(uptr))
+                                     ? "spawn in the water" : "lay an egg"));
     }
     return 1;
 }

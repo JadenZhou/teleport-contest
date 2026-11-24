@@ -966,9 +966,9 @@ export async function dozap() {
         /* make him pay for knowing !NODIR */
     } else if (need_dir && !u.dx && !u.dy && !u.dz) {
         if ((damage = await zapyourself(obj, true)) !== 0) {
-            /* Sprintf(buf, "zapped %sself with %s", uhim(), killer_xname(obj));
-               losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX); */
-            throw new Error('dozap(): self-zap damage (killer_xname()) not ported yet');
+            const buf = `zapped ${uhim_zy()}self with ${killer_xname_zp(obj)}`;
+
+            await losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX_ZY);
         }
     } else {
         /*      Are we having fun yet?
@@ -3905,3 +3905,4 @@ import { RIN_GAIN_STRENGTH as RIN_GAIN_STRENGTH_DI,
          RIN_PROTECTION as RIN_PROTECTION_DI,
          HELM_OF_BRILLIANCE as HELM_OF_BRILLIANCE_DI,
          GAUNTLETS_OF_DEXTERITY as GAUNTLETS_OF_DEXTERITY_DI } from './objects.js';
+import { killer_xname as killer_xname_zp } from './mthrowu.js';
