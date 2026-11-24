@@ -201,7 +201,7 @@ export function stairway_at(x, y) {
 }
 
 // C ref: stairs.c known_branch_stairs() -- hero knows where the stairs go
-function known_branch_stairs(sway) {
+export function known_branch_stairs(sway) {
     return !!(sway && sway.tolev.dnum !== game.u?.uz?.dnum && sway.u_traversed);
 }
 
