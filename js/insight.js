@@ -72,6 +72,8 @@ import { genders } from './role.js';
 import { newuexp } from './exper.js';
 import { night, midnight } from './calendar.js';
 import { depth, dunlev, on_level } from './dungeon.js';
+import { endgamelevelname as endgamelevelname_in } from './dungeon.js';
+import { observable_depth as observable_depth_in } from './topten.js';
 import { find_ac, money_cnt } from './u_init.js';
 import { near_capacity, inv_weight, in_rooms } from './hack.js';
 import { SHOPBASE, NO_ROOM, ROOMOFFSET } from './const.js';
@@ -1220,7 +1222,11 @@ function background_enlightenment(unused_mode, final) {
     /* dungeon level */
     buf = tmpbuf = "";
     if (In_endgame(u.uz)) {
-        throw new Error('background_enlightenment(): endgame level name not ported yet');
+        const egdepth = observable_depth_in(u.uz);
+
+        tmpbuf = endgamelevelname_in(egdepth);
+        buf = `in the endgame, on the ${
+                tmpbuf.startsWith("Plane") ? "Elemental " : ""}${tmpbuf}`;
     } else if (Is_knox(u.uz)) {
         /* this gives away the fact that the knox branch is only 1 level */
         buf = `on the ${game.dungeons[u.uz.dnum].dname} level`;
