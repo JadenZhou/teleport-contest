@@ -147,6 +147,19 @@ rule: per-session proof that the lost credit came after the step where JS's key 
 differed from C's. Label them `approved-regression: unported-command …`. Then port the
 commands sessions actually use, starting with `O` (doset/options menu).
 
+**E. option_help() is ported as C reads it, path not modelled (2026-11-24).** The owner
+approved A60's port (978fe12, re-applied in a6c3beb). Its "List of game options." intro shows
+the config file as `.nethackrc`; C shows the recording machine's temp path. Don't model that
+path. The 8 screens per wizard-quaff-zap-read session that differ only on that line stay lost.
+The other two owner decisions stand: don't model `u.ubirthday`/shopkeeper names, or runs of 5+
+blanks inside inverse video in menu headings.
+
+**Gate: browser playability (2026-11-24).** The leaderboard's "Playable" column runs
+`bash frozen/play.sh`: every public session in one Node process, one `moveloop_core()` per key.
+It fails if any session throws (a "not ported yet" stop included), not only when it is slower
+than 5 ms/move. After each merge it should print `PLAYABLE`. Keep per-game state in `game`, not
+in module-level variables, because a second game in the same process must start clean.
+
 **Run hygiene (learned 2026-11-20).**
 - Each agent task uses about 0.3–0.5M tokens. Budget about 3M per 5-hour usage window.
 - If a usage limit hits, resume stopped agents with SendMessage (no work is lost), and run
