@@ -9,6 +9,10 @@
 import { use_pole, could_pole_mon } from './apply.js';
 import { end_burn } from './timeout.js';
 import { get_obj_location } from './shk.js';
+import { shop_keeper, costly_spot, stolen_value, subfrombill, is_unpaid,
+         contained_gold, donate_gold } from './shk.js';
+import { in_rooms } from './hack.js';
+import { SHOPBASE, Has_contents } from './const.js';
 import { Shk_Your } from './wield.js';
 import { container_impact_dmg } from './dokick.js';
 import { explode } from './explode.js';
@@ -861,7 +865,7 @@ export async function thitmonst(mon,
                that hmon() might have destroyed so obj is intact */
             if (should_mulch_missile_dt(obj)) {
                 if ((u.ushops && u.ushops.length) || obj.unpaid)
-                    throw new Error('thitmonst(): check_shop_obj() not ported yet');
+                    await check_shop_obj(obj, g.bhitpos.x, g.bhitpos.y, true);
                 obfree_dt(obj, null);
                 return 1;
             }
@@ -1140,7 +1144,7 @@ async function throwit(obj,
         /* charge for items thrown out of shop;
            shk takes possession for items thrown into one */
         if (((u.ushops && u.ushops.length) || obj.unpaid) && obj !== g.uball)
-            throw new Error('throwit(): check_shop_obj() not ported yet');
+            await check_shop_obj(obj, g.bhitpos.x, g.bhitpos.y, false);
 
         stackobj(obj);
         if (obj === g.uball)
@@ -1152,6 +1156,45 @@ async function throwit(obj,
     }
 
     throwit_return(false);
+}
+
+// C ref: dothrow.c check_shop_obj()
+/* charge for an object thrown out of a shop (or into a different shop), or
+   let the shopkeeper take possession of one thrown into his shop */
+async function check_shop_obj(obj, x, y, broken) {
+    const u = game.u;
+    const ushops = (u.ushops || '').charCodeAt(0) || 0; /* *u.ushops */
+    const shkp = shop_keeper(ushops);
+
+    if (!shkp)
+        return;
+
+    const costly_xy = costly_spot(x, y);
+    if (broken || !costly_xy
+        || ((in_rooms(x, y, SHOPBASE).charCodeAt(0) || 0) !== ushops)) {
+        /* thrown out of a shop or into a different shop */
+        if (is_unpaid(obj))
+            await stolen_value(obj, u.ux, u.uy, !!shkp.mpeaceful, false);
+        if (broken)
+            obj.no_charge = 1;
+    } else if (costly_xy) {
+        const oshops = in_rooms(x, y, SHOPBASE).charCodeAt(0) || 0;
+
+        /* ushops0: in case we threw while levitating and recoiled
+           out of shop (most likely to the shk's spot in front of door) */
+        if (oshops === ushops
+            || oshops === ((u.ushops0 || '').charCodeAt(0) || 0)) {
+            if (is_unpaid(obj)) {
+                const gtg = Has_contents(obj) ? contained_gold(obj, true) : 0;
+
+                subfrombill(obj, shkp);
+                if (gtg > 0)
+                    await donate_gold(gtg, shkp, true);
+            } else if (x !== shkp.mx || y !== shkp.my) {
+                await sellobj(obj, x, y);
+            }
+        }
+    }
 }
 
 // C ref: dothrow.c omon_adj()
@@ -1354,7 +1397,7 @@ export async function breakobj(
     if (hero_caused) {
         if (from_invent || obj.unpaid) {
             if ((u.ushops && u.ushops.length) || obj.unpaid)
-                throw new Error('breakobj(): check_shop_obj() not ported yet');
+                await check_shop_obj(obj, x, y, true);
         } else if (!obj.no_charge && costly_spot_br(x, y)) {
             /* it is assumed that the obj is a floor-object */
             throw new Error('breakobj(): breaking a shop floor object not ported yet');

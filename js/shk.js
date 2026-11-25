@@ -1774,7 +1774,7 @@ async function special_stock(obj, shkp, quietly) {
 }
 
 // C ref: shk.c donate_gold()
-async function donate_gold(
+export async function donate_gold(
     gltmp,
     shkp,
     selling) { /* T: dropped in shop; F: kicked and landed in shop */
