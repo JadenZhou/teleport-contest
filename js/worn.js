@@ -671,17 +671,15 @@ function* m_dowear_type(
     let m_delay = 0;
     const sawmon = canseemon(mon), sawloc = cansee(mon.mx, mon.my);
     let autocurse;
-    let nambuf = null;
+    let nambuf;
 
     if (mon.mfrozen)
         return; /* probably putting previous item on */
 
-    /* Get a copy of monster's name before altering its visibility;
-       only the "Suddenly you cannot see" message below uses it, which needs
-       !creation and sawmon (mon was seen and now isn't), so it isn't
-       formatted otherwise */
-    if (!creation && sawmon)
-        nambuf = See_invisible() ? Monnam(mon) : mon_nam(mon);
+    /* Get a copy of monster's name before altering its visibility
+       (always formatted, as in C: while hallucinating, x_monnam()'s
+       rndmonnam() draws on the display RNG even when unused) */
+    nambuf = See_invisible() ? Monnam(mon) : mon_nam(mon);
 
     old = which_armor(mon, flag);
     if (old && old.cursed)

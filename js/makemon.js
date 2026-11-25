@@ -1419,7 +1419,8 @@ export function makemon(ptr, x, y, mmflags) {
     propagate(mndx, countbirth, false);
     /* newmonst(); *mtmp = cg.zeromonst; */
     mtmp = {
-        data: null, mnum: 0, m_id: 0, mx: 0, my: 0, m_lev: 0, mhp: 0,
+        data: null, mnum: 0, m_id: 0, mx: 0, my: 0, mux: 0, muy: 0,
+        m_lev: 0, mhp: 0,
         mhpmax: 0, female: 0, msleeping: 0, mpeaceful: 0, mtame: 0,
         minvis: 0, perminvis: 0, mcansee: 0, mcanmove: 0, mgenmklev: 0,
         seen_resistance: 0, cham: NON_PM, iswiz: 0, isminion: 0, mspec_used: 0,

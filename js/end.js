@@ -16,7 +16,7 @@ import { observe_quantum_cat } from './pickup.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_LIFESAVE } from './const.js';
-import { pline, You, Your, bot, canspotmon } from './display.js';
+import { pline, You, Your, bot, canspotmon, You_feel, pline_The } from './display.js';
 import { accessible } from './makemon.js';
 import {
     DIED, CHOKING, STARVING, BURNING, DISSOLVED, STONING, TURNED_SLIME,
@@ -749,8 +749,8 @@ export async function done(how) {
         await Your(`medallion ${!Blind() ? "begins to glow" : "feels warm"}!`);
         if (how === CHOKING)
             await You("vomit ...");
-        await pline("You feel much better!"); /* You_feel() */
-        await pline("The medallion crumbles to dust!"); /* pline_The() */
+        await You_feel("much better!");
+        await pline_The("medallion crumbles to dust!");
         if (g.uamul)
             await useup(g.uamul);
 
