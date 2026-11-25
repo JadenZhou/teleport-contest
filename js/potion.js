@@ -2107,6 +2107,7 @@ export async function split_mon(
                 await pline(`${Monnam(mon)} multiplies${reason}!`);
         }
     }
+    return mtmp2;
 }
 
 // C ref: potion.c speed_up() -- Character becomes very fast temporarily.
