@@ -3091,6 +3091,32 @@ function clear_glyph_buffer() {
     }
 }
 
+/* the fields of a location that are its gg.gbuf[y][x] entry (the glyph
+   shown there and its gnew flag) */
+const GBUF_FIELDS = ['disp_ch', 'disp_color', 'disp_decgfx', 'disp_attr',
+                     'disp_objpile', 'disp_kind', 'disp_gid', 'gnew'];
+
+// C ref: display.c gg.gbuf[ROWNO][COLNO] -- the third screen is a global
+// of its own, not part of svl.level: savelev(), clear_level_structures()
+// and getlev() replace levl[][] but leave gbuf showing the old level until
+// docrt() clears it (a "Get bones?" prompt in mklev() is shown over the
+// level being left).  The port keeps each gbuf entry on its location, so
+// when a new level structure replaces game.level, its locations take over
+// the entries the old ones held.
+export function gbuf_keep(oldlev) {
+    const newlev = game.level;
+    if (!oldlev?.at || !newlev?.at || oldlev === newlev)
+        return;
+    for (let x = 0; x < COLNO; x++)
+        for (let y = 0; y < ROWNO; y++) {
+            const o = oldlev.at(x, y), n = newlev.at(x, y);
+            if (!o || !n)
+                continue;
+            for (const k of GBUF_FIELDS)
+                n[k] = o[k];
+        }
+}
+
 // C ref: display.h display_self() -- the hero's glyph at <u.ux,u.uy>
 export function display_self() {
     const u = game.u;
