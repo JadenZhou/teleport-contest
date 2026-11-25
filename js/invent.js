@@ -83,6 +83,34 @@ import { s_suffix as s_suffix_iv } from './hacklib.js';
 import { noit_Monnam as noit_Monnam_iv } from './do_name.js';
 import { allow_all as allow_all_iv } from './pickup.js';
 import { mons as mons_iv } from './monsters.js';
+import { discover_object as discover_object_iv,
+         observe_object as observe_object_iv } from './o_init.js';
+import { discover_artifact } from './artifact.js';
+import { not_fully_identified as not_fully_identified_iv } from './objnam.js';
+import { query_objlist as query_objlist_iv } from './pickup.js';
+import { sortloot as sortloot_pk } from './pickup.js';
+import { SORTLOOT_INUSE } from './const.js';
+import { little_to_big } from './mondata.js';
+import { MV_KNOWS_EGG, SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
+         INVORDER_SORT, PICK_ANY, thats_enough_tries,
+         MENU_TRADITIONAL as MENU_TRADITIONAL_IV, MENU_FULL as MENU_FULL_IV,
+         HALLUC as HALLUC_IV, HALLUC_RES as HALLUC_RES_IV } from './const.js';
+import { inv_cnt as inv_cnt_iv } from './hack.js';
+import { ECMD_CANCEL as ECMD_CANCEL_IV, ECMD_FAIL as ECMD_FAIL_IV } from './const.js';
+import { ECMD_TIME as ECMD_TIME_IV, ICE as ICE_IV, is_pit as is_pit_iv,
+         Is_airlevel as Is_airlevel_iv,
+         Is_waterlevel as Is_waterlevel_iv } from './const.js';
+import { can_reach_floor as can_reach_floor_iv } from './engrave.js';
+import { surface as surface_iv } from './iactions.js';
+import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_IV } from './const.js';
+import { query_category as query_category_iv } from './pickup.js';
+import { doinvbill as doinvbill_iv } from './shk.js';
+import { mungspaces as mungspaces_iv } from './hacklib.js';
+import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
+         BILLED_TYPES as BILLED_TYPES_IV, BUC_UNKNOWN as BUC_UNKNOWN_IV,
+         JUSTPICKED as JUSTPICKED_IV,
+         INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
+import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
 
 const invlet_basic = 52;
 const GOLD_SYM = '$';
@@ -2660,33 +2688,13 @@ function Is_container_iv(otmp) {
     return otmp.otyp >= O.LARGE_BOX && otmp.otyp <= O.BAG_OF_TRICKS;
 }
 
-import { discover_object as discover_object_iv,
-         observe_object as observe_object_iv } from './o_init.js';
-import { discover_artifact } from './artifact.js';
-import { not_fully_identified as not_fully_identified_iv } from './objnam.js';
-import { query_objlist as query_objlist_iv } from './pickup.js';
-import { sortloot as sortloot_pk } from './pickup.js';
-import { SORTLOOT_INUSE } from './const.js';
-import { little_to_big } from './mondata.js';
-import { MV_KNOWS_EGG, SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
-         INVORDER_SORT, PICK_ANY, thats_enough_tries,
-         MENU_TRADITIONAL as MENU_TRADITIONAL_IV, MENU_FULL as MENU_FULL_IV,
-         HALLUC as HALLUC_IV, HALLUC_RES as HALLUC_RES_IV } from './const.js';
 
-import { inv_cnt as inv_cnt_iv } from './hack.js';
-import { ECMD_CANCEL as ECMD_CANCEL_IV, ECMD_FAIL as ECMD_FAIL_IV } from './const.js';
-import { ECMD_TIME as ECMD_TIME_IV, ICE as ICE_IV, is_pit as is_pit_iv,
-         Is_airlevel as Is_airlevel_iv,
-         Is_waterlevel as Is_waterlevel_iv } from './const.js';
-import { can_reach_floor as can_reach_floor_iv } from './engrave.js';
-import { surface as surface_iv } from './iactions.js';
 /* C ref: rm.h SURFACE_AT() */
 function SURFACE_AT_iv(x, y) {
     const lev = game.level.at(x, y);
     return (lev.typ === DRAWBRIDGE_UP_IV) ? db_under_typ_iv(lev.drawbridgemask || 0)
                                           : lev.typ;
 }
-import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_IV } from './const.js';
 
 // C ref: hacklib.c letter()
 function letter_iv(c) {
@@ -3051,14 +3059,6 @@ async function doorganize_core(obj) {
     return ECMD_OK;
 }
 
-import { query_category as query_category_iv } from './pickup.js';
-import { doinvbill as doinvbill_iv } from './shk.js';
-import { mungspaces as mungspaces_iv } from './hacklib.js';
-import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
-         BILLED_TYPES as BILLED_TYPES_IV, BUC_UNKNOWN as BUC_UNKNOWN_IV,
-         JUSTPICKED as JUSTPICKED_IV,
-         INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
-import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
 
 // C ref: invent.c invdisp_nothing()
 /* used by display_minventory() and display_cinventory() */

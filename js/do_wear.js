@@ -89,6 +89,43 @@ import { uprop } from './youprop.js';
 import { setnotworn as setnotworn_dw } from './worn.js';
 import { arti_light_description } from './light.js';
 import { Yname2, otense } from './objnam.js';
+import { rn2 as rn2_dw } from './rng.js';
+import { which_armor as which_armor_dw } from './worn.js';
+import { erode_obj } from './trap.js';
+import { stop_occupation as stop_occupation_dw } from './allmain.js';
+import { is_flammable, is_rustprone, is_crackable, is_rottable,
+         is_corrodeable, erosion_matters, is_damageable } from './mkobj.js';
+import { ERODE_BURN, ERODE_RUST, ERODE_CRACK, ERODE_ROT, ERODE_CORRODE,
+         ERODE_NONE, ER_NOTHING, ER_DESTROYED, EF_PAY,
+         EF_DESTROY } from './const.js';
+import { WORN_BLINDF as WORN_BLINDF_DW, W_WEP as W_WEP_DW,
+         WORN_SHIELD as WORN_SHIELD_DW, WORN_GLOVES as WORN_GLOVES_DW,
+         LEFT_RING as LEFT_RING_DW, RIGHT_RING as RIGHT_RING_DW,
+         WORN_CLOAK as WORN_CLOAK_DW, WORN_HELMET as WORN_HELMET_DW,
+         WORN_AMUL as WORN_AMUL_DW, WORN_ARMOR as WORN_ARMOR_DW,
+         WORN_SHIRT as WORN_SHIRT_DW, WORN_BOOTS as WORN_BOOTS_DW,
+         W_SWAPWEP as W_SWAPWEP_DW, W_QUIVER as W_QUIVER_DW,
+         MENU_FULL as MENU_FULL_DW, MENU_TRADITIONAL as MENU_TRADITIONAL_DW,
+         MENU_COMBINATION as MENU_COMBINATION_DW, WORN_TYPES as WORN_TYPES_DW,
+         ALL_TYPES as ALL_TYPES_DW, UNPAID_TYPES as UNPAID_TYPES_DW,
+         BUCX_TYPES as BUCX_TYPES_DW, PICK_ANY as PICK_ANY_DW,
+         ALL_TYPES_SELECTED as ALL_TYPES_SELECTED_DW,
+         SIGNAL_NOMENU as SIGNAL_NOMENU_DW, USE_INVLET as USE_INVLET_DW,
+         INVORDER_SORT as INVORDER_SORT_DW } from './const.js';
+import { empty_handed as empty_handed_dw } from './insight.js';
+import { set_occupation as set_occupation_dw } from './allmain.js';
+import { wearing_armor as wearing_armor_dw, is_worn as is_worn_dw } from './invent.js';
+import { add_valid_menu_class as add_valid_menu_class_dw,
+         menu_class_present as menu_class_present_dw,
+         is_worn_by_type as is_worn_by_type_dw,
+         query_category as query_category_dw,
+         query_objlist as query_objlist_dw } from './pickup.js';
+import { is_pool as is_pool_bo, is_lava as is_lava_bo } from './makemon.js';
+import { M1_CLING as M1_CLING_BO } from './monsters.js';
+import { has_ceiling as has_ceiling_bo } from './insight.js';
+import { spoteffects as spoteffects_bo } from './hack.js';
+import { float_down as float_down_bo } from './trap.js';
+import { FROMOUTSIDE as FROMOUTSIDE_BO } from './const.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -2680,15 +2717,6 @@ export function count_worn_armor() {
     return ret;
 }
 
-import { rn2 as rn2_dw } from './rng.js';
-import { which_armor as which_armor_dw } from './worn.js';
-import { erode_obj } from './trap.js';
-import { stop_occupation as stop_occupation_dw } from './allmain.js';
-import { is_flammable, is_rustprone, is_crackable, is_rottable,
-         is_corrodeable, erosion_matters, is_damageable } from './mkobj.js';
-import { ERODE_BURN, ERODE_RUST, ERODE_CRACK, ERODE_ROT, ERODE_CORRODE,
-         ERODE_NONE, ER_NOTHING, ER_DESTROYED, EF_PAY,
-         EF_DESTROY } from './const.js';
 
 /* C ref: do_wear.c takeoff_order[] */
 const takeoff_order = [
@@ -2951,31 +2979,3 @@ async function menu_remarm(retry) {
     }
     return 0;
 }
-import { WORN_BLINDF as WORN_BLINDF_DW, W_WEP as W_WEP_DW,
-         WORN_SHIELD as WORN_SHIELD_DW, WORN_GLOVES as WORN_GLOVES_DW,
-         LEFT_RING as LEFT_RING_DW, RIGHT_RING as RIGHT_RING_DW,
-         WORN_CLOAK as WORN_CLOAK_DW, WORN_HELMET as WORN_HELMET_DW,
-         WORN_AMUL as WORN_AMUL_DW, WORN_ARMOR as WORN_ARMOR_DW,
-         WORN_SHIRT as WORN_SHIRT_DW, WORN_BOOTS as WORN_BOOTS_DW,
-         W_SWAPWEP as W_SWAPWEP_DW, W_QUIVER as W_QUIVER_DW,
-         MENU_FULL as MENU_FULL_DW, MENU_TRADITIONAL as MENU_TRADITIONAL_DW,
-         MENU_COMBINATION as MENU_COMBINATION_DW, WORN_TYPES as WORN_TYPES_DW,
-         ALL_TYPES as ALL_TYPES_DW, UNPAID_TYPES as UNPAID_TYPES_DW,
-         BUCX_TYPES as BUCX_TYPES_DW, PICK_ANY as PICK_ANY_DW,
-         ALL_TYPES_SELECTED as ALL_TYPES_SELECTED_DW,
-         SIGNAL_NOMENU as SIGNAL_NOMENU_DW, USE_INVLET as USE_INVLET_DW,
-         INVORDER_SORT as INVORDER_SORT_DW } from './const.js';
-import { empty_handed as empty_handed_dw } from './insight.js';
-import { set_occupation as set_occupation_dw } from './allmain.js';
-import { wearing_armor as wearing_armor_dw, is_worn as is_worn_dw } from './invent.js';
-import { add_valid_menu_class as add_valid_menu_class_dw,
-         menu_class_present as menu_class_present_dw,
-         is_worn_by_type as is_worn_by_type_dw,
-         query_category as query_category_dw,
-         query_objlist as query_objlist_dw } from './pickup.js';
-import { is_pool as is_pool_bo, is_lava as is_lava_bo } from './makemon.js';
-import { M1_CLING as M1_CLING_BO } from './monsters.js';
-import { has_ceiling as has_ceiling_bo } from './insight.js';
-import { spoteffects as spoteffects_bo } from './hack.js';
-import { float_down as float_down_bo } from './trap.js';
-import { FROMOUTSIDE as FROMOUTSIDE_BO } from './const.js';

@@ -384,6 +384,7 @@ import { vision_recalc } from './vision.js';
 import { set_uinwater } from './trap.js';
 import { docrt } from './display.js';
 import { ustatusline } from './insight.js';
+import { unearth_objs as unearth_objs_dg } from './dig.js';
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -3814,7 +3815,6 @@ function bury_objs_zp(x, y) {
 function unearth_objs_zp(x, y) {
     unearth_objs_dg(x, y);
 }
-import { unearth_objs as unearth_objs_dg } from './dig.js';
 
 // C ref: zap.c zap_over_floor()
 export async function zap_over_floor(

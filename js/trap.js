@@ -208,6 +208,107 @@ import { m_next2u as m_next2u_ht, A_LAWFUL as A_LAWFUL_HT,
          NOWEBMSG as NOWEBMSG_HT } from './const.js';
 import { G_UNIQ as G_UNIQ_HT, S_HUMAN as S_HUMAN_HT,
          M1_MINDLESS as M1_MINDLESS_HT } from './monsters.js';
+import { BRASS_LANTERN as BRASS_LANTERN_TR, OIL_LAMP as OIL_LAMP_TR,
+         MAGIC_LAMP as MAGIC_LAMP_TR, TALLOW_CANDLE as TALLOW_CANDLE_TR,
+         WAX_CANDLE as WAX_CANDLE_TR, POT_OIL as POT_OIL_TR,
+         CANDELABRUM_OF_INVOCATION as CANDELABRUM_OF_INVOCATION_TR } from './objects.js';
+import { destroy_items as destroy_items_tr,
+         burn_floor_objects as burn_floor_objects_tr,
+         melt_ice as melt_ice_tr } from './zap.js';
+import { minuhpmax as minuhpmax_tr, setuhpmax as setuhpmax_tr } from './attrib.js';
+import { losexp as losexp_tr } from './exper.js';
+import { burn_away_slime as burn_away_slime_tr } from './potion.js';
+import { M_SEEN_FIRE as M_SEEN_FIRE_TR } from './const.js';
+import { Drain_resistance as Drain_resistance_tr } from './youprop.js';
+import { AD_FIRE as AD_FIRE_TR } from './monsters.js';
+import { is_ice as is_ice_tr } from './dig.js';
+import { x_monnam as x_monnam_tr } from './do_name.js';
+import { ARTICLE_THE as ARTICLE_THE_TR, ARTICLE_NONE as ARTICLE_NONE_TR,
+         SUPPRESS_SADDLE as SUPPRESS_SADDLE_TR,
+         NO_KILLER_PREFIX as NO_KILLER_PREFIX_TR,
+         has_mgivenname as has_mgivenname_tr,
+         RECURSIVETRAP } from './const.js';
+import { PM_RANGER as PM_RANGER_TR } from './monsters.js';
+import { on_level as on_level_tr } from './dungeon.js';
+import { unplacebc as unplacebc_tr, ballfall as ballfall_tr,
+         placebc as placebc_tr } from './ball.js';
+import { ECMD_OK as ECMD_OK_TR, ECMD_TIME as ECMD_TIME_TR,
+         HVY_ENCUMBER as HVY_ENCUMBER_TR, HAND as HAND_TR } from './const.js';
+import { near_capacity as near_capacity_tr } from './hack.js';
+import { getdir as getdir_tr } from './cmd.js';
+import { sticks as sticks_tr, can_reach_floor as can_reach_floor_tr } from './engrave.js';
+import { welded as welded_tr, bimanual as bimanual_tr } from './wield.js';
+import { makeplural as makeplural_tr } from './objnam.js';
+import { body_part as body_part_tr } from './insight.js';
+import { mon_nam as mon_nam_tr } from './do_name.js';
+import { surface as surface_tr } from './iactions.js';
+import { I_SPECIAL, WWALKING, SWIMMING, W_SADDLE, NO_TRAP_FLAGS } from './const.js';
+import { pickup as pickup_tr } from './pickup.js';
+import { M1_NOHANDS as M1_NOHANDS_TR, mons as mons_tr, PM_CAVE_SPIDER as PM_CAVE_SPIDER_TR,
+         PM_GIANT_SPIDER as PM_GIANT_SPIDER_TR } from './monsters.js';
+import { is_ice as is_ice_bg } from './dig.js';
+import { strcmpi as strcmpi_bg } from './hacklib.js';
+import { PLNMSG_BACK_ON_GROUND as PLNMSG_BACK_ON_GROUND_BG } from './const.js';
+import { SWIMMING as SWIMMING_DR, MAGICAL_BREATHING as MAGICAL_BREATHING_DR,
+         TELEPORT as TELEPORT_DR, TELEPORT_CONTROL as TELEPORT_CONTROL_DR,
+         FIRE_RES as FIRE_RES_DR, LIFESAVED as LIFESAVED_DR,
+         IS_WATERWALL as IS_WATERWALL_DR, IS_AIR as IS_AIR_DR,
+         Is_waterlevel as Is_waterlevel_dr, UNENCUMBERED as UNENCUMBERED_DR,
+         SLT_ENCUMBER as SLT_ENCUMBER_DR, DROWNING as DROWNING_DR,
+         BURNING as BURNING_DR, DISSOLVED as DISSOLVED_DR, STONE as STONE_DR,
+         TELEDS_ALLOW_DRAG as TELEDS_ALLOW_DRAG_DR,
+         TELEDS_TELEPORT as TELEDS_TELEPORT_DR, TT_LAVA as TT_LAVA_DR } from './const.js';
+import { M1_SWIM as M1_SWIM_DR, M1_AMPHIBIOUS as M1_AMPHIBIOUS_DR,
+         M1_BREATHLESS as M1_BREATHLESS_DR, PM_GREMLIN as PM_GREMLIN_DR,
+         PM_IRON_GOLEM as PM_IRON_GOLEM_DR, PM_WATER_ELEMENTAL as PM_WATER_ELEMENTAL_DR,
+         PM_STEAM_VORTEX as PM_STEAM_VORTEX_DR, PM_FOG_CLOUD as PM_FOG_CLOUD_DR } from './monsters.js';
+import { LEASH as LEASH_DR, LOADSTONE as LOADSTONE_DR, SCR_FIRE as SCR_FIRE_DR,
+         SPE_FIREBALL as SPE_FIREBALL_DR, SPE_BOOK_OF_THE_DEAD as SPE_BOOK_OF_THE_DEAD_DR,
+         objects as objects_dr, POTION_CLASS as POTION_CLASS_DR,
+         is_organic as is_organic_dr } from './objects.js';
+import { switch_terrain as switch_terrain_dr, inv_cnt as inv_cnt_dr,
+         near_capacity as near_capacity_dr, spoteffects as spoteffects_dr } from './hack.js';
+import { welded as welded_dr } from './wield.js';
+import { mons as mons_dr, PM_FIRE_ELEMENTAL as PM_FIRE_ELEMENTAL_DR,
+         PM_SALAMANDER as PM_SALAMANDER_DR } from './monsters.js';
+import { remove_worn_item as remove_worn_item_dr } from './steal.js';
+import { dropx as dropx_dr } from './do.js';
+import { feel_newsym as feel_newsym_dr, update_lastseentyp as update_lastseentyp_dr } from './display.js';
+import { waterbody_name as waterbody_name_dr } from './pager.js';
+import { can_teleport as can_teleport_dr } from './mondata.js';
+import { unmul as unmul_dr } from './allmain.js';
+import { teleds as teleds_dr, safe_teleds as safe_teleds_dr } from './teleport.js';
+import { done as done_dr } from './end.js';
+import { burn_away_slime as burn_away_slime_dr } from './potion.js';
+import { useupall as useupall_dr } from './invent.js';
+import { obj_resists as obj_resists_dr } from './dogmove.js';
+import { setnotworn as setnotworn_fd } from './worn.js';
+import { otense as otense_fd, Yname2 as Yname2_fd } from './objnam.js';
+import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
+         FIRE_HORN as FIRE_HORN_FD } from './objects.js';
+import { liquid_flow as liquid_flow_l } from './dig.js';
+import { ceiling as ceiling_tr } from './dungeon.js';
+import { hard_helmet as hard_helmet_tr } from './objnam.js';
+import { mbodypart as mbodypart_tr } from './insight.js';
+import { schedule_goto, UTOTYPE_FALLING, UTOTYPE_NONE } from './do.js';
+import { impact_drop } from './dokick.js';
+import { next_to_u } from './teleport.js';
+import { ceiling_hider } from './engrave.js';
+import { find_hell, assign_level, depth } from './dungeon.js';
+import { Is_stronghold } from './const.js';
+import { polyself as polyself_tp } from './polyself.js';
+import { newcham as newcham_tp } from './mon.js';
+import { POLY_NOFLAGS as POLY_NOFLAGS_TP, NC_SHOW_MSG as NC_SHOW_MSG_TP } from './const.js';
+import { WAND_CLASS as WAND_CLASS_TP } from './objects.js';
+import { resists_blnd as resists_blnd_tr } from './mondata.js';
+import { make_blinded as make_blinded_tr, incr_itimeout as incr_itimeout_tr } from './potion.js';
+import { monstseesu as monstseesu_tr, monstunseesu as monstunseesu_tr } from './uhitm.js';
+import { M_SEEN_SLEEP as M_SEEN_SLEEP_TR, NOWEBMSG as NOWEBMSG_TR,
+         FAILEDUNTRAP as FAILEDUNTRAP_TR, VIASITTING as VIASITTING_TR,
+         A_STR as A_STR_TR, TT_WEB as TT_WEB_TR } from './const.js';
+import { fall_asleep as fall_asleep_tr } from './timeout.js';
+import { ACURR as ACURR_tr } from './attrib.js';
+import { SLIMED as SLIMED_SL, TIMEOUT as TIMEOUT_SL } from './const.js';
 export { is_hole, is_pit };
 
 /* C ref: mondata.h resists_ston() */
@@ -2343,10 +2444,6 @@ export async function catch_lit(obj) {
     }
     return false;
 }
-import { BRASS_LANTERN as BRASS_LANTERN_TR, OIL_LAMP as OIL_LAMP_TR,
-         MAGIC_LAMP as MAGIC_LAMP_TR, TALLOW_CANDLE as TALLOW_CANDLE_TR,
-         WAX_CANDLE as WAX_CANDLE_TR, POT_OIL as POT_OIL_TR,
-         CANDELABRUM_OF_INVOCATION as CANDELABRUM_OF_INVOCATION_TR } from './objects.js';
 
 // C ref: trap.c trapeffect_fire_trap()
 async function trapeffect_fire_trap(mtmp, trap, trflags) {
@@ -2436,14 +2533,6 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
             ? Trap_Caught_Mon : Trap_Effect_Finished;
     }
 }
-import { destroy_items as destroy_items_tr,
-         burn_floor_objects as burn_floor_objects_tr,
-         melt_ice as melt_ice_tr } from './zap.js';
-import { minuhpmax as minuhpmax_tr, setuhpmax as setuhpmax_tr } from './attrib.js';
-import { losexp as losexp_tr } from './exper.js';
-import { burn_away_slime as burn_away_slime_tr } from './potion.js';
-import { M_SEEN_FIRE as M_SEEN_FIRE_TR } from './const.js';
-import { Drain_resistance as Drain_resistance_tr } from './youprop.js';
 
 
 // C ref: trap.c dofiretrap()
@@ -2530,8 +2619,6 @@ async function dofiretrap(
     if (is_ice_tr(u.ux, u.uy))
         await melt_ice_tr(u.ux, u.uy, null);
 }
-import { AD_FIRE as AD_FIRE_TR } from './monsters.js';
-import { is_ice as is_ice_tr } from './dig.js';
 
 // C ref: trap.c selftouch()
 export async function selftouch(arg) {
@@ -2743,16 +2830,6 @@ async function trapeffect_pit(mtmp, trap, trflags) {
     }
 }
 
-import { x_monnam as x_monnam_tr } from './do_name.js';
-import { ARTICLE_THE as ARTICLE_THE_TR, ARTICLE_NONE as ARTICLE_NONE_TR,
-         SUPPRESS_SADDLE as SUPPRESS_SADDLE_TR,
-         NO_KILLER_PREFIX as NO_KILLER_PREFIX_TR,
-         has_mgivenname as has_mgivenname_tr,
-         RECURSIVETRAP } from './const.js';
-import { PM_RANGER as PM_RANGER_TR } from './monsters.js';
-import { on_level as on_level_tr } from './dungeon.js';
-import { unplacebc as unplacebc_tr, ballfall as ballfall_tr,
-         placebc as placebc_tr } from './ball.js';
 function upstart_tr(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: trap.c trapeffect_hole()
@@ -4742,20 +4819,6 @@ export async function untrap(force, rx, ry, container) {
     }
     throw new Error('untrap(): autounlock untrap not ported yet');
 }
-import { ECMD_OK as ECMD_OK_TR, ECMD_TIME as ECMD_TIME_TR,
-         HVY_ENCUMBER as HVY_ENCUMBER_TR, HAND as HAND_TR } from './const.js';
-import { near_capacity as near_capacity_tr } from './hack.js';
-import { getdir as getdir_tr } from './cmd.js';
-import { sticks as sticks_tr, can_reach_floor as can_reach_floor_tr } from './engrave.js';
-import { welded as welded_tr, bimanual as bimanual_tr } from './wield.js';
-import { makeplural as makeplural_tr } from './objnam.js';
-import { body_part as body_part_tr } from './insight.js';
-import { mon_nam as mon_nam_tr } from './do_name.js';
-import { surface as surface_tr } from './iactions.js';
-import { I_SPECIAL, WWALKING, SWIMMING, W_SADDLE, NO_TRAP_FLAGS } from './const.js';
-import { pickup as pickup_tr } from './pickup.js';
-import { M1_NOHANDS as M1_NOHANDS_TR, mons as mons_tr, PM_CAVE_SPIDER as PM_CAVE_SPIDER_TR,
-         PM_GIANT_SPIDER as PM_GIANT_SPIDER_TR } from './monsters.js';
 /* C ref: mondata.h nohands(), webmaker() */
 function nohands_tr(ptr) { return (ptr.mflags1 & M1_NOHANDS_TR) !== 0; }
 function webmaker_tr(ptr) {
@@ -4797,9 +4860,6 @@ export async function back_on_ground(rescued) {
     await pline(`${you_are_back} ${preposit} ${surf}.`);
     g.iflags.last_msg = PLNMSG_BACK_ON_GROUND_BG;
 }
-import { is_ice as is_ice_bg } from './dig.js';
-import { strcmpi as strcmpi_bg } from './hacklib.js';
-import { PLNMSG_BACK_ON_GROUND as PLNMSG_BACK_ON_GROUND_BG } from './const.js';
 
 /* C ref: mondata.h likes_lava() */
 function likes_lava_dr(ptr) {
@@ -5236,39 +5296,6 @@ export async function lava_effects() {
     await ignite_items(g.invent);
     return false;
 }
-import { SWIMMING as SWIMMING_DR, MAGICAL_BREATHING as MAGICAL_BREATHING_DR,
-         TELEPORT as TELEPORT_DR, TELEPORT_CONTROL as TELEPORT_CONTROL_DR,
-         FIRE_RES as FIRE_RES_DR, LIFESAVED as LIFESAVED_DR,
-         IS_WATERWALL as IS_WATERWALL_DR, IS_AIR as IS_AIR_DR,
-         Is_waterlevel as Is_waterlevel_dr, UNENCUMBERED as UNENCUMBERED_DR,
-         SLT_ENCUMBER as SLT_ENCUMBER_DR, DROWNING as DROWNING_DR,
-         BURNING as BURNING_DR, DISSOLVED as DISSOLVED_DR, STONE as STONE_DR,
-         TELEDS_ALLOW_DRAG as TELEDS_ALLOW_DRAG_DR,
-         TELEDS_TELEPORT as TELEDS_TELEPORT_DR, TT_LAVA as TT_LAVA_DR } from './const.js';
-import { M1_SWIM as M1_SWIM_DR, M1_AMPHIBIOUS as M1_AMPHIBIOUS_DR,
-         M1_BREATHLESS as M1_BREATHLESS_DR, PM_GREMLIN as PM_GREMLIN_DR,
-         PM_IRON_GOLEM as PM_IRON_GOLEM_DR, PM_WATER_ELEMENTAL as PM_WATER_ELEMENTAL_DR,
-         PM_STEAM_VORTEX as PM_STEAM_VORTEX_DR, PM_FOG_CLOUD as PM_FOG_CLOUD_DR } from './monsters.js';
-import { LEASH as LEASH_DR, LOADSTONE as LOADSTONE_DR, SCR_FIRE as SCR_FIRE_DR,
-         SPE_FIREBALL as SPE_FIREBALL_DR, SPE_BOOK_OF_THE_DEAD as SPE_BOOK_OF_THE_DEAD_DR,
-         objects as objects_dr, POTION_CLASS as POTION_CLASS_DR,
-         is_organic as is_organic_dr } from './objects.js';
-import { switch_terrain as switch_terrain_dr, inv_cnt as inv_cnt_dr,
-         near_capacity as near_capacity_dr, spoteffects as spoteffects_dr } from './hack.js';
-import { welded as welded_dr } from './wield.js';
-import { mons as mons_dr, PM_FIRE_ELEMENTAL as PM_FIRE_ELEMENTAL_DR,
-         PM_SALAMANDER as PM_SALAMANDER_DR } from './monsters.js';
-import { remove_worn_item as remove_worn_item_dr } from './steal.js';
-import { dropx as dropx_dr } from './do.js';
-import { feel_newsym as feel_newsym_dr, update_lastseentyp as update_lastseentyp_dr } from './display.js';
-import { waterbody_name as waterbody_name_dr } from './pager.js';
-import { can_teleport as can_teleport_dr } from './mondata.js';
-import { unmul as unmul_dr } from './allmain.js';
-import { teleds as teleds_dr, safe_teleds as safe_teleds_dr } from './teleport.js';
-import { done as done_dr } from './end.js';
-import { burn_away_slime as burn_away_slime_dr } from './potion.js';
-import { useupall as useupall_dr } from './invent.js';
-import { obj_resists as obj_resists_dr } from './dogmove.js';
 
 // C ref: trap.c fire_damage()
 /* Set an item on fire.  Return whether the object was destroyed. */
@@ -5452,32 +5479,6 @@ export async function lava_damage(obj, x, y) {
     }
     return await fire_damage(obj, true, x, y);
 }
-import { setnotworn as setnotworn_fd } from './worn.js';
-import { otense as otense_fd, Yname2 as Yname2_fd } from './objnam.js';
-import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
-         FIRE_HORN as FIRE_HORN_FD } from './objects.js';
-import { liquid_flow as liquid_flow_l } from './dig.js';
-import { ceiling as ceiling_tr } from './dungeon.js';
-import { hard_helmet as hard_helmet_tr } from './objnam.js';
-import { mbodypart as mbodypart_tr } from './insight.js';
-import { schedule_goto, UTOTYPE_FALLING, UTOTYPE_NONE } from './do.js';
-import { impact_drop } from './dokick.js';
-import { next_to_u } from './teleport.js';
-import { ceiling_hider } from './engrave.js';
-import { find_hell, assign_level, depth } from './dungeon.js';
-import { Is_stronghold } from './const.js';
-import { polyself as polyself_tp } from './polyself.js';
-import { newcham as newcham_tp } from './mon.js';
-import { POLY_NOFLAGS as POLY_NOFLAGS_TP, NC_SHOW_MSG as NC_SHOW_MSG_TP } from './const.js';
-import { WAND_CLASS as WAND_CLASS_TP } from './objects.js';
-import { resists_blnd as resists_blnd_tr } from './mondata.js';
-import { make_blinded as make_blinded_tr, incr_itimeout as incr_itimeout_tr } from './potion.js';
-import { monstseesu as monstseesu_tr, monstunseesu as monstunseesu_tr } from './uhitm.js';
-import { M_SEEN_SLEEP as M_SEEN_SLEEP_TR, NOWEBMSG as NOWEBMSG_TR,
-         FAILEDUNTRAP as FAILEDUNTRAP_TR, VIASITTING as VIASITTING_TR,
-         A_STR as A_STR_TR, TT_WEB as TT_WEB_TR } from './const.js';
-import { fall_asleep as fall_asleep_tr } from './timeout.js';
-import { ACURR as ACURR_tr } from './attrib.js';
 
 // C ref: trap.c sink_into_lava()
 /* called each turn by moveloop() while hero is trapped in lava */
@@ -5526,7 +5527,6 @@ export async function sink_into_lava() {
         }
     }
 }
-import { SLIMED as SLIMED_SL, TIMEOUT as TIMEOUT_SL } from './const.js';
 
 /* C ref: decl.c c_common_strings.c_the_your[] */
 const the_your_ht = ["the", "your"];

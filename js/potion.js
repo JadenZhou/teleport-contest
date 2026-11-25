@@ -109,6 +109,11 @@ import { Upolyd, Role_if } from './const.js';
 import { uprop } from './youprop.js';
 import { yname } from './objnam.js';
 import { new_were } from './were.js';
+import { clone_mon as clone_mon_sm } from './makemon.js';
+import { a_monnam as a_monnam_dj } from './do_name.js';
+import { tamedog as tamedog_dj } from './dog.js';
+import { set_malign as set_malign_dj } from './makemon.js';
+import { DEAF as DEAF_DJ } from './const.js';
 
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
@@ -2437,8 +2442,3 @@ function dip_pair_of(o) {
                 && (objects[o.otyp].oc_armcat === O.ARM_GLOVES
                     || objects[o.otyp].oc_armcat === O.ARM_BOOTS)));
 }
-import { clone_mon as clone_mon_sm } from './makemon.js';
-import { a_monnam as a_monnam_dj } from './do_name.js';
-import { tamedog as tamedog_dj } from './dog.js';
-import { set_malign as set_malign_dj } from './makemon.js';
-import { DEAF as DEAF_DJ } from './const.js';

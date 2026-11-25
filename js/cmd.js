@@ -106,6 +106,7 @@ import { PM_GRID_BUG, mons, PM_CAVE_SPIDER, PM_GIANT_SPIDER, PM_MIND_FLAYER,
          PM_MASTER_MIND_FLAYER, PM_GREMLIN, AT_BREA, AT_SPIT, AT_GAZE, S_NYMPH,
          S_UNICORN, M1_HIDE, M1_CONCEAL, M2_JEWELS, MS_SHRIEK } from './monsters.js';
 import { is_were, is_vampire, is_vampshifter } from './mondata.js';
+import { show_menu_controls as show_menu_controls_cm } from './pager.js';
 export { domove };
 
 // C ref: cmd.c extcmds_match() -- the indices of the extcmdlist[]
@@ -2785,4 +2786,3 @@ export async function getdir(s) {
         confdir(false);
     return 1;
 }
-import { show_menu_controls as show_menu_controls_cm } from './pager.js';

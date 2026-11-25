@@ -115,6 +115,62 @@ import { makemon as makemon_bw } from './makemon.js';
 import { bot as bot_bw } from './display.js';
 import { pay_for_damage as pay_for_damage_bw } from './shk.js';
 import { litroom as litroom_bw } from './read.js';
+import { M_AP_TYPE as M_AP_TYPE_AP, M_AP_OBJECT as M_AP_OBJECT_AP,
+         M_AP_MONSTER as M_AP_MONSTER_AP,
+         M_AP_FURNITURE as M_AP_FURNITURE_AP } from './const.js';
+import { obj_typename as obj_typename_ap } from './objnam.js';
+import { pmname as pmname_ap, Mgender as Mgender_ap } from './do_name.js';
+import { defsyms_explanation as defsyms_explanation_ap } from './pager.js';
+import { seemimic as seemimic_ap } from './mon.js';
+import { splitobj as splitobj_ap, costly_alteration as costly_alteration_ap,
+         obj_extract_self as obj_extract_self_ap } from './mkobj.js';
+import { makeplural as makeplural_ap, xname as xname_ap } from './objnam.js';
+import { the as the_ap } from './iactions.js';
+import { can_blnd as can_blnd_ap } from './mondata.js';
+import { AT_WEAP as AT_WEAP_AP } from './monsters.js';
+import { make_blinded as make_blinded_ap } from './potion.js';
+import { setnotworn as setnotworn_ap } from './worn.js';
+import { delobj as delobj_ap } from './invent.js';
+import { FACE as FACE_AP, BLINDED as BLINDED_AP, TIMEOUT as TIMEOUT_AP,
+         COST_SPLAT as COST_SPLAT_AP } from './const.js';
+import { wield_tool as wield_tool_ap } from './wield.js';
+import { rn1 as rn1_ap } from './rng.js';
+import { djinni_from_bottle as djinni_from_bottle_ap } from './potion.js';
+import { nothing_happens as nothing_happens_ap } from './const.js';
+import { nothing_seems_to_happen as nothing_seems_to_happen_lp, GLIB as GLIB_LP } from './const.js';
+import { Shk_Your as Shk_Your_lp } from './wield.js';
+import { yname as yname_lp, Tobjnam as Tobjnam_lp, otense as otense_lp } from './objnam.js';
+import { Your as Your_lp } from './display.js';
+import { begin_burn as begin_burn_lp, end_burn as end_burn_lp } from './timeout.js';
+import { make_glib as make_glib_lp } from './potion.js';
+import { fingers_or_gloves as fingers_or_gloves_lp } from './do_wear.js';
+import { Blindf_on as Blindf_on_dw, Blindf_off as Blindf_off_dw,
+         cursed as cursed_dw } from './do_wear.js';
+import { d as d_lp } from './rng.js';
+import { check_unpaid as check_unpaid_lp } from './zap.js';
+import { FUMBLING as FUMBLING_WH, GLIB as GLIB_WH, LEVITATION as LEVITATION_WH,
+         FLYING as FLYING_WH, A_DEX as A_DEX_WH, TT_PIT as TT_PIT_WH,
+         NO_KILLER_PREFIX as NO_KILLER_PREFIX_WH, FOOT as FOOT_WH,
+         IS_WATERWALL, LAVAWALL } from './const.js';
+import { PM_ARCHEOLOGIST as PM_ARCHEOLOGIST_WH } from './monsters.js';
+import { ceiling as ceiling_wh } from './dungeon.js';
+import { is_pool_or_lava } from './hack.js';
+import { is_lava as is_lava_wh } from './makemon.js';
+import { dbon } from './weapon.js';
+import { losehp, Maybe_Half_Phys } from './trap.js';
+import { dropx } from './do.js';
+import { check_unpaid as check_unpaid_cam, zapyourself as zapyourself_cam } from './zap.js';
+import { s_suffix as s_suffix_cam } from './hacklib.js';
+import { mon_nam as mon_nam_cam } from './do_name.js';
+import { mbodypart as mbodypart_cam } from './insight.js';
+import { STOMACH as STOMACH_CAM } from './const.js';
+import { noit_mon_nam as noit_mon_nam_ls, Monnam as Monnam_ls,
+         l_monnam as l_monnam_ls } from './do_name.js';
+import { get_adjacent_loc as get_adjacent_loc_ls } from './cmd.js';
+import { use_pick_axe } from './dig.js';
+import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
+import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
+         M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
 /* C ref: mondata.h is_whirly() */
 function is_whirly(ptr) {
     return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
@@ -434,10 +490,6 @@ async function flip_through_book(obj) {
     return ECMD_TIME;
 }
 
-import { M_AP_TYPE as M_AP_TYPE_AP, M_AP_OBJECT as M_AP_OBJECT_AP,
-         M_AP_MONSTER as M_AP_MONSTER_AP,
-         M_AP_FURNITURE as M_AP_FURNITURE_AP } from './const.js';
-import { obj_typename as obj_typename_ap } from './objnam.js';
 /* C ref: mextra.h has_mcorpsenm() */
 function has_mcorpsenm_ap(mtmp) { return mtmp.mextra?.mcorpsenm !== undefined; }
 /* C ref: objnam.c simple_typename() -- obj_typename() without the
@@ -452,9 +504,6 @@ function simple_typename_ap(otyp) {
         bufp = bufp.slice(0, pp); /* strip the appended description */
     return bufp;
 }
-import { pmname as pmname_ap, Mgender as Mgender_ap } from './do_name.js';
-import { defsyms_explanation as defsyms_explanation_ap } from './pager.js';
-import { seemimic as seemimic_ap } from './mon.js';
 
 // C ref: apply.c use_cream_pie()
 async function use_cream_pie(obj) {
@@ -493,17 +542,6 @@ async function use_cream_pie(obj) {
     delobj_ap(obj);
     return ECMD_OK;
 }
-import { splitobj as splitobj_ap, costly_alteration as costly_alteration_ap,
-         obj_extract_self as obj_extract_self_ap } from './mkobj.js';
-import { makeplural as makeplural_ap, xname as xname_ap } from './objnam.js';
-import { the as the_ap } from './iactions.js';
-import { can_blnd as can_blnd_ap } from './mondata.js';
-import { AT_WEAP as AT_WEAP_AP } from './monsters.js';
-import { make_blinded as make_blinded_ap } from './potion.js';
-import { setnotworn as setnotworn_ap } from './worn.js';
-import { delobj as delobj_ap } from './invent.js';
-import { FACE as FACE_AP, BLINDED as BLINDED_AP, TIMEOUT as TIMEOUT_AP,
-         COST_SPLAT as COST_SPLAT_AP } from './const.js';
 
 // C ref: apply.c rub_ok() -- getobj callback for object to rub
 function rub_ok(obj) {
@@ -581,21 +619,6 @@ export async function dorub() {
         await pline(nothing_happens_ap);
     return ECMD_TIME;
 }
-import { wield_tool as wield_tool_ap } from './wield.js';
-import { rn1 as rn1_ap } from './rng.js';
-import { djinni_from_bottle as djinni_from_bottle_ap } from './potion.js';
-import { nothing_happens as nothing_happens_ap } from './const.js';
-import { nothing_seems_to_happen as nothing_seems_to_happen_lp, GLIB as GLIB_LP } from './const.js';
-import { Shk_Your as Shk_Your_lp } from './wield.js';
-import { yname as yname_lp, Tobjnam as Tobjnam_lp, otense as otense_lp } from './objnam.js';
-import { Your as Your_lp } from './display.js';
-import { begin_burn as begin_burn_lp, end_burn as end_burn_lp } from './timeout.js';
-import { make_glib as make_glib_lp } from './potion.js';
-import { fingers_or_gloves as fingers_or_gloves_lp } from './do_wear.js';
-import { Blindf_on as Blindf_on_dw, Blindf_off as Blindf_off_dw,
-         cursed as cursed_dw } from './do_wear.js';
-import { d as d_lp } from './rng.js';
-import { check_unpaid as check_unpaid_lp } from './zap.js';
 
 // C ref: apply.c apply_ok() -- getobj callback for object to apply
 function apply_ok(obj) {
@@ -1509,17 +1532,6 @@ async function use_whip(obj) {
     void otmp;
     return ECMD_TIME;
 }
-import { FUMBLING as FUMBLING_WH, GLIB as GLIB_WH, LEVITATION as LEVITATION_WH,
-         FLYING as FLYING_WH, A_DEX as A_DEX_WH, TT_PIT as TT_PIT_WH,
-         NO_KILLER_PREFIX as NO_KILLER_PREFIX_WH, FOOT as FOOT_WH,
-         IS_WATERWALL, LAVAWALL } from './const.js';
-import { PM_ARCHEOLOGIST as PM_ARCHEOLOGIST_WH } from './monsters.js';
-import { ceiling as ceiling_wh } from './dungeon.js';
-import { is_pool_or_lava } from './hack.js';
-import { is_lava as is_lava_wh } from './makemon.js';
-import { dbon } from './weapon.js';
-import { losehp, Maybe_Half_Phys } from './trap.js';
-import { dropx } from './do.js';
 
 /* C ref: apply.c -- use_pole() messages */
 const not_enough_room = "There's not enough room here to use that.",
@@ -1869,11 +1881,6 @@ async function use_camera(obj) {
     }
     return ECMD_TIME;
 }
-import { check_unpaid as check_unpaid_cam, zapyourself as zapyourself_cam } from './zap.js';
-import { s_suffix as s_suffix_cam } from './hacklib.js';
-import { mon_nam as mon_nam_cam } from './do_name.js';
-import { mbodypart as mbodypart_cam } from './insight.js';
-import { STOMACH as STOMACH_CAM } from './const.js';
 
 // C ref: apply.c number_leashed()
 function number_leashed() {
@@ -1984,10 +1991,3 @@ async function use_leash_core(obj, mtmp, cc, spotmon) {
         throw new Error('use_leash_core(): removing a leash not ported yet');
     }
 }
-import { noit_mon_nam as noit_mon_nam_ls, Monnam as Monnam_ls,
-         l_monnam as l_monnam_ls } from './do_name.js';
-import { get_adjacent_loc as get_adjacent_loc_ls } from './cmd.js';
-import { use_pick_axe } from './dig.js';
-import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
-import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
-         M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';

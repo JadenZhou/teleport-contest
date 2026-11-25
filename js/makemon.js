@@ -98,6 +98,11 @@ import { get_wormno, initworm, count_wsegs, place_worm_tail_randomly,
 import { Is_waterlevel, Is_firelevel, Is_airlevel, G_GENOD,
          G_EXTINCT } from './const.js';
 import { is_flyer } from './mondata.js';
+import { G_EXTINCT as G_EXTINCT_CM, isok as isok_cm, MGIVENNAME as MGIVENNAME_cm,
+         has_mgivenname as has_mgivenname_cm } from './const.js';
+import { enexto as enexto_cm } from './teleport.js';
+import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
+import { tamedog as tamedog_cm } from './dog.js';
 export {
     NO_MM_FLAGS, NO_MINVENT, MM_NOWAIT, MM_NOCOUNTBIRTH, MM_IGNOREWATER,
     MM_ADJACENTOK, MM_NONAME, MM_EDOG, MM_ASLEEP, MM_NOGRP, MM_MALE,
@@ -2555,11 +2560,6 @@ export function rnd_misc_item(mtmp) {
     /*NOTREACHED*/
     return 0;
 }
-import { G_EXTINCT as G_EXTINCT_CM, isok as isok_cm, MGIVENNAME as MGIVENNAME_cm,
-         has_mgivenname as has_mgivenname_cm } from './const.js';
-import { enexto as enexto_cm } from './teleport.js';
-import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
-import { tamedog as tamedog_cm } from './dog.js';
 const DF_NONE = 0x00; /* hack.h */
 
 const NON_PM = -1;

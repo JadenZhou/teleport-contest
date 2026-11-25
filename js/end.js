@@ -79,6 +79,19 @@ import {
 } from './wintty.js';
 import { Blind, Hallucination, Lifesaved } from './youprop.js';
 import { Race_if, Role_if } from './const.js';
+import * as O_EN from './objects.js';
+import { arti_cost as arti_cost_en, artiname as artiname_en } from './artifact.js';
+import { the_unique_obj as the_unique_obj_en } from './objnam.js';
+import { mon_nam as mon_nam_en } from './do_name.js';
+import { adj_lev as adj_lev_en } from './makemon.js';
+import { mons as mons_en, PM_HOUSECAT as PM_HOUSECAT_EN } from './monsters.js';
+import { d as d_en } from './rng.js';
+import { mksobj as mksobj_en } from './mkobj.js';
+import { obfree as obfree_en } from './invent.js';
+import { expels, unstuck } from './mhitu.js';
+import { sticks as sticks_end } from './engrave.js';
+import { Monnam as Monnam_end } from './do_name.js';
+import { flush_screen as flush_screen_end } from './display.js';
 
 const EXIT_SUCCESS = 0;
 const BUFSZ = 256;
@@ -1313,16 +1326,3 @@ export async function container_contents(list, identified, all_containers,
             break;
     }
 }
-import * as O_EN from './objects.js';
-import { arti_cost as arti_cost_en, artiname as artiname_en } from './artifact.js';
-import { the_unique_obj as the_unique_obj_en } from './objnam.js';
-import { mon_nam as mon_nam_en } from './do_name.js';
-import { adj_lev as adj_lev_en } from './makemon.js';
-import { mons as mons_en, PM_HOUSECAT as PM_HOUSECAT_EN } from './monsters.js';
-import { d as d_en } from './rng.js';
-import { mksobj as mksobj_en } from './mkobj.js';
-import { obfree as obfree_en } from './invent.js';
-import { expels, unstuck } from './mhitu.js';
-import { sticks as sticks_end } from './engrave.js';
-import { Monnam as Monnam_end } from './do_name.js';
-import { flush_screen as flush_screen_end } from './display.js';

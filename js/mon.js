@@ -169,6 +169,22 @@ import { dryup } from './fountain.js';
 import { explode } from './explode.js';
 import { p_coaligned } from './priest.js';
 import { A_NONE } from './const.js';
+import { AD_ELEC as AD_ELEC_MN, AD_FIRE as AD_FIRE_MN,
+         AD_COLD as AD_COLD_MN } from './monsters.js';
+import { mon_adjust_speed as mon_adjust_speed_mn } from './worn.js';
+import { d } from './rng.js';
+import { pmname } from './do_name.js';
+import { There as There_mn } from './display.js';
+import { body_part as body_part_mn } from './insight.js';
+import { STOMACH as STOMACH_MN, KILLED_BY_AN as KILLED_BY_AN_MN } from './const.js';
+import { killer as killer_mn } from './topten.js';
+import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
+import { mon_explodes } from './explode.js';
+import { shkgone } from './shk.js';
+import { gd_move } from './vault.js';
+import { rloc_to as rloc_to_mn } from './teleport.js';
+import { place_wsegs as place_wsegs_rm } from './worm.js';
+import { set_ustuck as set_ustuck_rm } from './uhitm.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -3123,9 +3139,6 @@ export async function golemeffects(mon, damtype, dam) {
         }
     }
 }
-import { AD_ELEC as AD_ELEC_MN, AD_FIRE as AD_FIRE_MN,
-         AD_COLD as AD_COLD_MN } from './monsters.js';
-import { mon_adjust_speed as mon_adjust_speed_mn } from './worn.js';
 
 /* C ref: obj.h ofood(), polyfood(), mlevelgain(), mhealup();
    mon.c mstoning(); mondata.h flesh_petrifies() */
@@ -3536,17 +3549,3 @@ export async function angry_guards(silent) {
     }
     return false;
 }
-import { d } from './rng.js';
-import { pmname } from './do_name.js';
-import { There as There_mn } from './display.js';
-import { body_part as body_part_mn } from './insight.js';
-import { STOMACH as STOMACH_MN, KILLED_BY_AN as KILLED_BY_AN_MN } from './const.js';
-import { killer as killer_mn } from './topten.js';
-import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
-import { mon_explodes } from './explode.js';
-import { shkgone } from './shk.js';
-
-import { gd_move } from './vault.js';
-import { rloc_to as rloc_to_mn } from './teleport.js';
-import { place_wsegs as place_wsegs_rm } from './worm.js';
-import { set_ustuck as set_ustuck_rm } from './uhitm.js';
