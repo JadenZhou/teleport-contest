@@ -163,6 +163,7 @@ import { M_ATTK_HIT as M_ATTK_HIT_MM, M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MM,
          M_ATTK_AGR_DIED as M_ATTK_AGR_DIED_MM } from './const.js';
 import { bare_artifactname } from './iactions.js';
 import { yname } from './objnam.js';
+import { aggravate as aggravate_mm } from './potion.js';
 
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
@@ -753,8 +754,9 @@ export function m_respond(mtmp) {
         throw new Error('m_respond_shrieker() not ported yet');
     if (mtmp.data === mons[M.PM_MEDUSA] && couldsee(mtmp.mx, mtmp.my))
         throw new Error('m_respond_medusa() not ported yet');
+    /* Erinyes will inform surrounding monsters of your crimes */
     if (mtmp.data === mons[M.PM_ERINYS] && !mtmp.mpeaceful && m_canseeu(mtmp))
-        throw new Error('aggravate() not ported yet');
+        aggravate_mm();
 }
 
 // C ref: monmove.c m_arrival()

@@ -144,6 +144,15 @@ import { unleash_all } from './trap.js';
 import { vtense } from './objnam.js';
 import { pline_The } from './display.js';
 import { number_leashed } from './apply.js';
+import { haseyes as haseyes_mu, resists_fire as resists_fire_mu,
+         resists_elec as resists_elec_mu } from './mondata.js';
+import { pmname as pmname_mu } from './do_name.js';
+import { MALE as MALE_MU } from './const.js';
+import { mon_reflects as mon_reflects_mu } from './muse.js';
+import { paralyze_monst as paralyze_monst_mu } from './mhitm.js';
+import { shieldeff as shieldeff_mu } from './display.js';
+import { golemeffects as golemeffects_mu } from './mon.js';
+import { stagger as stagger_mu } from './uhitm.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -239,7 +248,7 @@ export async function u_slow_down() {
         await pline("You slow down."); /* You() */
     else /* speed boots */
         await pline("Your quickness feels less natural."); /* Your() */
-    exercise(A_DEX, false);
+    await exercise(A_DEX, false);
 }
 
 // C ref: mhitu.c diseasemu()
@@ -1584,7 +1593,7 @@ async function gulpmu(mtmp, mattk) {
             await pline(`${Monnam(mtmp)}${
                 (u.uswldtim === 2) ? " thoroughly"
                 : (u.uswldtim === 1) ? " utterly" : ""} digests you!`);
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
         }
         break;
     case AD_PHYS:
@@ -1607,7 +1616,7 @@ async function gulpmu(mtmp, mattk) {
         } else {
             await pline(`You are ${enfolds(mtmp.data) ? "being squashed"
                                                        : "pummeled with debris"}!`); /* You() */
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
         }
         break;
     case AD_ACID:
@@ -1622,7 +1631,7 @@ async function gulpmu(mtmp, mattk) {
                 await pline("Ouch!  You've been slimed!");
             else
                 await pline("You are covered in slime!  It burns!"); /* You() */
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             monstunseesu(M_SEEN_ACID);
         }
         break;
@@ -1757,7 +1766,7 @@ export async function ugolemeffects(damtype, dam) {
             u.mh = u.mhmax;
         game.disp_botl = true;
         await pline("Strangely, you feel better than before.");
-        exercise(A_STR, true);
+        await exercise(A_STR, true);
     }
 }
 
@@ -2049,20 +2058,20 @@ export async function doseduce(mon) {
             await You_feel("drained of energy.");
             u.uen = 0;
             u.uenmax -= rnd(Half_physical_damage() ? 5 : 10);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             if (u.uenmax < 0)
                 u.uenmax = 0;
             break;
         case 1:
             await pline("You are down in the dumps."); /* You() */
             await adjattrib(A_CON, -1, true);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             game.disp_botl = true;
             break;
         case 2:
             await pline("Your senses are dulled."); /* Your() */
             await adjattrib(A_WIS, -1, true);
-            exercise(A_WIS, false);
+            await exercise(A_WIS, false);
             game.disp_botl = true;
             break;
         case 3:
@@ -2072,15 +2081,15 @@ export async function doseduce(mon) {
             } else {
                 await pline("You have a curious feeling..."); /* You() */
             }
-            exercise(A_CON, false);
-            exercise(A_DEX, false);
-            exercise(A_WIS, false);
+            await exercise(A_CON, false);
+            await exercise(A_DEX, false);
+            await exercise(A_WIS, false);
             break;
         case 4: {
             let tmp;
 
             await You_feel("exhausted.");
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             tmp = rn1(10, 6);
             await losehp(Maybe_Half_Phys(tmp), "exhaustion", KILLED_BY);
             break;
@@ -2092,7 +2101,7 @@ export async function doseduce(mon) {
         switch (rn2(5)) {
         case 0:
             await You_feel("raised to your full potential.");
-            exercise(A_CON, true);
+            await exercise(A_CON, true);
             u.uen = (u.uenmax += rnd(5));
             if (u.uenmax > (u.uenpeak || 0))
                 u.uenpeak = u.uenmax;
@@ -2100,26 +2109,26 @@ export async function doseduce(mon) {
         case 1:
             await You_feel("good enough to do it again.");
             await adjattrib(A_CON, 1, true);
-            exercise(A_CON, true);
+            await exercise(A_CON, true);
             game.disp_botl = true;
             break;
         case 2:
             await pline(`You will always remember ${noit_mon_nam(mon)}...`); /* You() */
             await adjattrib(A_WIS, 1, true);
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             game.disp_botl = true;
             break;
         case 3:
             await pline("That was a very educational experience.");
             await pluslvl(false);
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             break;
         case 4:
             await You_feel("restored to health!");
             u.uhp = u.uhpmax;
             if (Upolyd())
                 u.mh = u.mhmax;
-            exercise(A_STR, true);
+            await exercise(A_STR, true);
             game.disp_botl = true;
             break;
         }
@@ -2257,11 +2266,39 @@ async function passiveum(olduasmon, mtmp, mattk) {
                 return await assess_dmg_mu(mtmp, tmp);
             }
             break;
+        case M.AD_PLYS: /* Floating eye */
+            if (tmp > 127)
+                tmp = 127;
+            if (game.u.umonnum === M.PM_FLOATING_EYE) {
+                if (!rn2(4))
+                    tmp = 127;
+                if (mtmp.mcansee && haseyes_mu(mtmp.data) && rn2(3)
+                    && (perceives(mtmp.data) || !Invis())) {
+                    if (Blind()) {
+                        await pline(`As a blind ${
+                            pmname_mu(game.youmonst.data,
+                                      game.flags.female ? FEMALE : MALE_MU)
+                        }, you cannot defend yourself.`);
+                    } else {
+                        if (await mon_reflects_mu(mtmp,
+                                                  "Your gaze is reflected by %s %s."))
+                            return 1;
+                        await pline(`${Monnam(mtmp)} is frozen by your gaze!`); /* pline_mon() */
+                        paralyze_monst_mu(mtmp, tmp);
+                        return M_ATTK_AGR_DONE;
+                    }
+                }
+            } else { /* gelatinous cube */
+                await pline(`${Monnam(mtmp)} is frozen by you.`); /* pline_mon() */
+                paralyze_monst_mu(mtmp, tmp);
+                return M_ATTK_AGR_DONE;
+            }
+            return M_ATTK_HIT;
         case AD_COLD: /* Brown mold or blue jelly */
             if (resists_cold_mu(mtmp)) {
-                /* shieldeff(mtmp->mx, mtmp->my): transient display only */
+                await shieldeff_mu(mtmp.mx, mtmp.my);
                 await pline(`${Monnam(mtmp)} is mildly chilly.`); /* pline_mon() */
-                /* golemeffects(mtmp, AD_COLD, tmp): no effect for cold */
+                await golemeffects_mu(mtmp, AD_COLD, tmp);
                 tmp = 0;
                 break;
             }
@@ -2272,11 +2309,34 @@ async function passiveum(olduasmon, mtmp, mattk) {
             if (game.u.mhmax > ((game.youmonst.data.mlevel + 1) * 8))
                 await split_mon(game.youmonst, mtmp);
             break;
-        case M.AD_PLYS: /* Floating eye */
         case M.AD_STUN: /* Yellow mold */
+            if (!mtmp.mstun) {
+                mtmp.mstun = 1;
+                await pline(`${Monnam(mtmp)} ${
+                    makeplural(stagger_mu(mtmp.data, "stagger"))}.`); /* pline_mon() */
+            }
+            tmp = 0;
+            break;
         case M.AD_FIRE: /* Red mold */
+            if (resists_fire_mu(mtmp)) {
+                await shieldeff_mu(mtmp.mx, mtmp.my);
+                await pline(`${Monnam(mtmp)} is mildly warm.`); /* pline_mon() */
+                await golemeffects_mu(mtmp, M.AD_FIRE, tmp);
+                tmp = 0;
+                break;
+            }
+            await pline(`${Monnam(mtmp)} is suddenly very hot!`); /* pline_mon() */
+            break;
         case M.AD_ELEC:
-            throw new Error('passiveum(): polymorphed hero passive damage types not ported yet');
+            if (resists_elec_mu(mtmp)) {
+                await shieldeff_mu(mtmp.mx, mtmp.my);
+                await pline(`${Monnam(mtmp)} is slightly tingled.`); /* pline_mon() */
+                await golemeffects_mu(mtmp, M.AD_ELEC, tmp);
+                tmp = 0;
+                break;
+            }
+            await pline(`${Monnam(mtmp)} is jolted with your electricity!`); /* pline_mon() */
+            break;
         default:
             tmp = 0;
             break;

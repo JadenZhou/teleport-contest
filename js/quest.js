@@ -157,7 +157,7 @@ export async function artitouch(obj) {
         /* only give this message once */
         Qstat().touched_artifact = true;
         await qt_pager("gotit");
-        exercise(A_WIS, true);
+        await exercise(A_WIS, true);
     }
 }
 
@@ -341,7 +341,7 @@ async function chat_with_leader(mtmp) {
 
         if (not_capable()) {
             await qt_pager("badlevel");
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             expulsion(false);
         } else if ((purity = await is_pure(true)) < 0) {
             if (!Qstat().pissed_off) {
@@ -357,11 +357,11 @@ async function chat_with_leader(mtmp) {
         } else if (purity === 0) {
             await qt_pager("badalign");
             Qstat().not_ready = 1;
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             expulsion(false);
         } else { /* You are worthy! */
             await qt_pager("assignquest");
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             Qstat().got_quest = true;
 
             /* phrasing is a bit clumsy but allows #chronicle to provide a

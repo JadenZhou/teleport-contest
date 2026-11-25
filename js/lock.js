@@ -196,7 +196,7 @@ async function picklock() {
 
     if (xl.usedtime++ >= 50 || nohands(game.youmonst.data)) {
         await You(`give up your attempt at ${lock_action()}.`);
-        exercise(A_DEX, true); /* even if you don't succeed */
+        await exercise(A_DEX, true); /* even if you don't succeed */
         return (xl.usedtime = 0);
     }
 
@@ -224,7 +224,7 @@ async function picklock() {
         if (xl.box.otrapped)
             await chest_trap(xl.box, FINGER, false);
     }
-    exercise(A_DEX, true);
+    await exercise(A_DEX, true);
     return (xl.usedtime = 0);
 }
 
@@ -784,7 +784,7 @@ export async function doopen_indir(x, y) {
         feel_newsym(cc.x, cc.y); /* the hero knows she opened it */
         recalc_block_point(cc.x, cc.y); /* vision: new see through there */
     } else {
-        exercise(A_STR, true);
+        await exercise(A_STR, true);
         await pline_The("door resists!"); /* set_msg_xy() */
     }
 
@@ -1088,7 +1088,7 @@ async function forcelock() {
     if (xl.usedtime++ >= 50 || !uwep || nohands(game.youmonst.data)) {
         await You("give up your attempt to force the lock.");
         if (xl.usedtime >= 50) /* you made the effort */
-            exercise((xl.picktyp) ? A_DEX : A_STR, true);
+            await exercise((xl.picktyp) ? A_DEX : A_STR, true);
         return (xl.usedtime = 0);
     }
 
@@ -1102,7 +1102,7 @@ async function forcelock() {
                 xname(uwep)} broke!`);
             useup(uwep);
             await You("give up your attempt to force the lock.");
-            exercise(A_DEX, true);
+            await exercise(A_DEX, true);
             return (xl.usedtime = 0);
         }
     } else             /* blunt */
@@ -1112,7 +1112,7 @@ async function forcelock() {
         return 1; /* still busy */
 
     await You("succeed in forcing the lock.");
-    exercise(xl.picktyp ? A_DEX : A_STR, true);
+    await exercise(xl.picktyp ? A_DEX : A_STR, true);
     /* breakchestlock() might destroy xlock.box; if so, xlock context will
        be cleared (delobj -> obfree -> maybe_reset_pick); but it might not,
        so explicitly clear that manually */
@@ -1314,7 +1314,7 @@ export async function doclose() {
             feel_newsym(x, y); /* the hero knows she closed it */
             block_point(x, y); /* vision:  no longer see there */
         } else {
-            exercise(A_STR, true);
+            await exercise(A_STR, true);
             await pline_The("door resists!");
         }
     }

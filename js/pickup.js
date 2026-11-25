@@ -1884,7 +1884,7 @@ async function rider_corpse_revival(obj, remotely) {
 
     await pline(`At your ${remotely ? "attempted acquisition" : "touch"}, the corpse suddenly moves...`);
     await revive_corpse(obj);
-    exercise(A_WIS, false);
+    await exercise(A_WIS, false);
     return true;
 }
 

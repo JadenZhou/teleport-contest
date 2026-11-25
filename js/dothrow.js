@@ -826,7 +826,7 @@ export async function thitmonst(mon,
                 if (mon.wormno)
                     await cutworm_dt(mon, g.bhitpos.x, g.bhitpos.y, chopper);
             }
-            exercise(A_DEX_DT, true);
+            await exercise(A_DEX_DT, true);
             /* if hero was swallowed and projectile killed the engulfer,
                'obj' got added to engulfer's inventory and then dropped,
                so we can't safely use that pointer anymore; it escapes
@@ -851,11 +851,11 @@ export async function thitmonst(mon,
         }
 
     } else if (otyp === HEAVY_IRON_BALL_DT) {
-        exercise(A_STR_DT, true);
+        await exercise(A_STR_DT, true);
         if (tmp >= dieroll) {
             const was_swallowed = guaranteed_hit;
 
-            exercise(A_DEX_DT, true);
+            await exercise(A_DEX_DT, true);
             if (!await hmon_dt(mon, obj, hmode, dieroll)) { /* mon killed */
                 if (was_swallowed && !u.uswallow && obj === g.uball)
                     return 1; /* already did placebc() */
@@ -865,9 +865,9 @@ export async function thitmonst(mon,
         }
 
     } else if (otyp === BOULDER) {
-        exercise(A_STR_DT, true);
+        await exercise(A_STR_DT, true);
         if (tmp >= dieroll) {
-            exercise(A_DEX_DT, true);
+            await exercise(A_DEX_DT, true);
             await hmon_dt(mon, obj, hmode, dieroll);
         } else {
             await tmiss(obj, mon, true);
@@ -964,7 +964,7 @@ async function throwit(obj,
         && obj.owt > ((Upolyd() ? u.mh : u.uhp) * 2)
         && !Is_airlevel(u.uz)) {
         await You(`have so little stamina, ${the(xname(obj))} drops from your grasp.`);
-        exercise(A_CON, false);
+        await exercise(A_CON, false);
         u.dx = u.dy = 0;
         u.dz = 1;
     }
