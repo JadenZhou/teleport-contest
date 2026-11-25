@@ -49,7 +49,7 @@ import { Is_candle, Is_container } from './mkobj.js';
 import { STAIRS, LADDER, WEB, IS_WATERWALL, LAVAWALL } from './const.js';
 import { IS_TREE, IS_STWALL, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE,
          P_AXE } from './const.js';
-import { splitobj, obj_extract_self } from './mkobj.js';
+import { splitobj, obj_extract_self, bill_dummy_object } from './mkobj.js';
 import { distant_name, doname } from './objnam.js';
 import { mpickobj } from './steal.js';
 import { You_hear } from './sounds.js';
@@ -2428,7 +2428,7 @@ async function m_break_boulder(mtmp, x, y) {
            if the boulder isn't already on the bill, don't charge for it */
         if (otmp.unpaid) {
             /* remove original from bill + add cloned copy to used-up bill */
-            throw new Error('m_break_boulder(): bill_dummy_object() not ported yet');
+            await bill_dummy_object(otmp);
         }
         /* fracturing keeps otmp, changing its otyp from BOULDER to ROCK */
         await fracture_rock(otmp);

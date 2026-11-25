@@ -3745,6 +3745,30 @@ export function set_cost(obj, shkp) {
     return tmp;
 }
 
+// C ref: shk.c alter_cost()
+/* change the price of an object that's on some shopkeeper's bill */
+export function alter_cost(obj,
+                           amt) { /* if 0, use regular shop pricing, otherwise
+                                     force amount; if negative, use abs(amt)
+                                     even if it's less than old cost */
+    let bp = null;
+    let shkp;
+    let new_price;
+
+    /* (as in C, the loop steps with next_shkp(shkp, TRUE), which returns
+       shkp itself again) */
+    for (shkp = next_shkp(game.fmon, true); shkp; shkp = next_shkp(shkp, true))
+        if ((bp = onbill(obj, shkp, true)) != null) {
+            new_price = !amt ? get_cost(obj, shkp) : (amt < 0) ? -amt : amt;
+            if (new_price > bp.price || amt < 0) {
+                bp.price = new_price;
+                /* update_inventory(): perm_invent isn't ported */
+            }
+            break; /* done */
+        }
+    return;
+}
+
 // C ref: shk.c unpaid_cost()
 /* returns the price of an unpaid item, or of its contents */
 export function unpaid_cost(unp_obj, cost_type) {
