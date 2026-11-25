@@ -2313,7 +2313,8 @@ import { BRASS_LANTERN as BRASS_LANTERN_TR, OIL_LAMP as OIL_LAMP_TR,
 // C ref: trap.c trapeffect_fire_trap()
 async function trapeffect_fire_trap(mtmp, trap, trflags) {
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_fire_trap(): dofiretrap() not ported yet');
+        seetrap(trap);
+        await dofiretrap(null);
     } else {
         const tx = trap.tx, ty = trap.ty;
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
@@ -2322,10 +2323,19 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
         const mptr = mtmp.data;
         const orig_dmg = d(2, 4);
 
-        if (in_sight || see_it)
-            throw new Error('trapeffect_fire_trap(): surface() message not ported yet');
+        if (in_sight)
+            await pline(`A ${tower_of_flame} erupts from the ${
+                surface_tr(mtmp.mx, mtmp.my)} under ${mon_nam(mtmp)}!`); /* pline_mon() */
+        else if (see_it) { /* evidently `mtmp' is invisible */
+            /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
+            await You_see_l(`a ${tower_of_flame} erupt from the ${
+                surface_tr(mtmp.mx, mtmp.my)}!`);
+        }
         if (resists_fire(mtmp)) {
-            /* in_sight: shieldeff() and "is uninjured" (not in sight here) */
+            if (in_sight) {
+                /* shieldeff(mtmp->mx, mtmp->my): display effect only */
+                await pline(`${Monnam(mtmp)} is uninjured.`);
+            }
         } else {
             let num = orig_dmg, alt;
             let immolate = false;
@@ -2378,7 +2388,7 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
             && !see_it && dist2(tx, ty, game.u.ux, game.u.uy) <= 3 * 3)
             await You("smell smoke.");
         if (is_ice_tr(tx, ty))
-            throw new Error('trapeffect_fire_trap(): melt_ice() not ported yet');
+            await melt_ice_tr(tx, ty, null);
         if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
             trapkilled = true;
         if (see_it && t_at(tx, ty))
@@ -2389,7 +2399,99 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
     }
 }
 import { destroy_items as destroy_items_tr,
-         burn_floor_objects as burn_floor_objects_tr } from './zap.js';
+         burn_floor_objects as burn_floor_objects_tr,
+         melt_ice as melt_ice_tr } from './zap.js';
+import { minuhpmax as minuhpmax_tr, setuhpmax as setuhpmax_tr } from './attrib.js';
+import { losexp as losexp_tr } from './exper.js';
+import { burn_away_slime as burn_away_slime_tr } from './potion.js';
+import { M_SEEN_FIRE as M_SEEN_FIRE_TR } from './const.js';
+import { Drain_resistance as Drain_resistance_tr } from './youprop.js';
+
+
+// C ref: trap.c dofiretrap()
+async function dofiretrap(
+    box) { /* null for floor trap */
+    const u = game.u;
+    const see_it = !Blind();
+    let orig_dmg, num, alt;
+    orig_dmg = num = d(2, 4);
+
+    /* Bug: for box case, the equivalent of burn_floor_objects() ought
+     * to be done upon its contents.
+     */
+
+    if ((box && box.where !== 'OBJ_INVENT' /* !carried(box) */)
+        ? is_pool(box.ox, box.oy) : Underwater()) {
+        await pline(`A cascade of steamy bubbles erupts from ${
+            the(box ? xname(box) : surface_tr(u.ux, u.uy))}!`);
+        if (Fire_resistance())
+            await You("are uninjured.");
+        else
+            await losehp(rnd(3), "boiling water", KILLED_BY);
+        return;
+    }
+    await pline(`A ${tower_of_flame} ${box ? "bursts" : "erupts"} from ${
+        the(box ? xname(box) : surface_tr(u.ux, u.uy))}!`);
+    if (Fire_resistance()) {
+        /* shieldeff(u.ux, u.uy): display effect only */
+        monstseesu_tr(M_SEEN_FIRE_TR);
+        num = rn2(2);
+    } else if (Upolyd()) {
+        switch (u.umonnum) {
+        case PM_PAPER_GOLEM:
+            alt = u.mhmax;
+            break;
+        case PM_STRAW_GOLEM:
+            alt = Math.trunc(u.mhmax / 2);
+            break;
+        case PM_WOOD_GOLEM:
+            alt = Math.trunc(u.mhmax / 4);
+            break;
+        case PM_LEATHER_GOLEM:
+            alt = Math.trunc(u.mhmax / 8);
+            break;
+        default:
+            alt = 0;
+            break;
+        }
+        if (alt > num)
+            num = alt;
+        if (u.mhmax > mons[u.umonnum].mlevel)
+            u.mhmax -= rn2(Math.min(u.mhmax, num + 1)), game.disp_botl = true;
+        if (u.mh > u.mhmax)
+            u.mh = u.mhmax, game.disp_botl = true;
+        monstunseesu_tr(M_SEEN_FIRE_TR);
+    } else {
+        const uhpmin = minuhpmax_tr(1), olduhpmax = u.uhpmax;
+
+        num = d(2, 4);
+        if (u.uhpmax > uhpmin) {
+            u.uhpmax -= rn2(Math.min(u.uhpmax, num + 1)), game.disp_botl = true;
+        } /* note: no 'else' here */
+        if (u.uhpmax < uhpmin) {
+            setuhpmax_tr(Math.min(olduhpmax, uhpmin), false); /* sets disp.botl */
+            if (!Drain_resistance_tr())
+                await losexp_tr(null); /* never fatal when 'drainer' is Null */
+        }
+        if (u.uhp > u.uhpmax)
+            u.uhp = u.uhpmax, game.disp_botl = true;
+        monstunseesu_tr(M_SEEN_FIRE_TR);
+    }
+    if (!num)
+        await You("are uninjured.");
+    else
+        await losehp(num, tower_of_flame, KILLED_BY_AN); /* fire damage */
+    await burn_away_slime_tr();
+
+    if (await burnarmor(game.youmonst) || rn2(3)) {
+        await destroy_items_tr(game.youmonst, AD_FIRE_TR, orig_dmg);
+        await ignite_items(game.invent);
+    }
+    if (!box && await burn_floor_objects_tr(u.ux, u.uy, see_it, true) && !see_it)
+        await You("smell paper burning.");
+    if (is_ice_tr(u.ux, u.uy))
+        await melt_ice_tr(u.ux, u.uy, null);
+}
 import { AD_FIRE as AD_FIRE_TR } from './monsters.js';
 import { is_ice as is_ice_tr } from './dig.js';
 
@@ -3108,7 +3210,8 @@ async function domagictrap() {
             break;
         }
         case 12: /* a flash of fire */
-            throw new Error('domagictrap(): dofiretrap() not ported yet');
+            await dofiretrap(null);
+            break;
 
         /* odd feelings */
         case 13:
@@ -4478,7 +4581,8 @@ export async function chest_trap(obj, bodypart, disarm) {
         case 11:
         case 10:
         case 9:
-            throw new Error('chest_trap(): dofiretrap() not ported yet');
+            await dofiretrap(obj);
+            break;
         case 8:
         case 7:
         case 6:
