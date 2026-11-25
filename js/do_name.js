@@ -15,7 +15,8 @@ import { canspotmon } from './display.js';
 import { highc, s_suffix, dist2 } from './hacklib.js';
 import { just_an, vtense, makeplural } from './objnam.js';
 import { genders } from './role.js';
-import { is_neuter } from './mondata.js';
+import { is_neuter, type_is_pname, humanoid, is_animal,
+         mindless } from './mondata.js';
 import { M1_HUMANOID, M1_ANIMAL, M1_MINDLESS, G_NOGEN, LOW_PM, SPECIAL_PM,
          PM_SHOPKEEPER, PM_ALIGNED_CLERIC, PM_HIGH_CLERIC } from './monsters.js';
 import { MALE, FEMALE, NEUTRAL, NUM_MGENDERS, M_AP_MONSTER, W_SADDLE,
@@ -427,7 +428,6 @@ export const AUGMENT_IT = 0x40;
 /* C ref: monst.h has_mgivenname(); mondata.h type_is_pname(),
    is_mplayer() */
 function has_mgivenname(mtmp) { return !!mtmp.mgivenname; }
-function type_is_pname(ptr) { return (ptr.mflags2 & M2_PNAME) !== 0; }
 function is_mplayer(ptr) {
     const n = mons.indexOf(ptr);
     return n >= PM_ARCHEOLOGIST && n <= PM_WIZARD;
@@ -455,10 +455,6 @@ export function Mgender(mtmp) {
     }
     return mgender;
 }
-/* C ref: mondata.h humanoid(), is_animal(), mindless() */
-function humanoid(ptr) { return (ptr.mflags1 & M1_HUMANOID) !== 0; }
-function is_animal(ptr) { return (ptr.mflags1 & M1_ANIMAL) !== 0; }
-function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
 
 // C ref: do_name.c bogon_codes[]
 export const bogon_codes = "-_+|="; /* see dat/bonusmon.txt */

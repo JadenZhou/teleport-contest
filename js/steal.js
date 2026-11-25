@@ -46,7 +46,8 @@ import { welded, bimanual } from './wield.js';
 import { can_carry } from './dogmove.js';
 import { subfrombill, shop_keeper, mbodypart, find_objowner } from './shk.js';
 import { encumber_msg } from './pickup.js';
-import { dmgtype, can_teleport } from './mondata.js';
+import { dmgtype, can_teleport, is_animal, slithy,
+         throws_rocks } from './mondata.js';
 import { body_part } from './insight.js';
 import { urgent_pline } from './display.js';
 import { add_to_minv as add_to_minv_core } from './mkobj.js';
@@ -77,9 +78,6 @@ import { SHOPBASE } from './const.js';
 const LARGEST_INT = 32767;
 
 /* C ref: mondata.h is_animal(), slithy(), throws_rocks(), touch_petrifies() */
-function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
-function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }

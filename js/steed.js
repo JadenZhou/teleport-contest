@@ -22,7 +22,7 @@ import { SLT_ENCUMBER, M_AP_FURNITURE, M_AP_OBJECT, TEST_MOVE, W_SADDLE,
          LEVITATION, HALF_PHDAM, MAXULEV, STONE_RES } from './const.js';
 import { mons, PM_LONG_WORM, PM_KNIGHT, M1_HUMANOID, MZ_SMALL, MZ_LARGE,
          PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
-import { is_swimmer, is_flyer, is_floater } from './mondata.js';
+import { is_swimmer, is_flyer, is_floater, throws_rocks } from './mondata.js';
 
 import { ECMD_OK, ECMD_TIME, ECMD_CANCEL } from './const.js';
 import { DISMOUNT_BYCHOICE, DISMOUNT_THROWN, DISMOUNT_KNOCKED, DISMOUNT_FELL,
@@ -57,8 +57,6 @@ import { killed, monkilled } from './mon.js';
 import { AD_PHYS } from './monsters.js';
 import { adjalign } from './attrib.js';
 
-/* C ref: mondata.h throws_rocks() */
-function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
 // C ref: cmd.c dirtocoord()
 function dirtocoord(cc, dd) {
     if (dd > DIR_ERR && dd < N_DIRS_Z) {

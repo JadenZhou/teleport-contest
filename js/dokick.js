@@ -94,7 +94,8 @@ import { monflee, set_apparxy } from './monmove.js';
 import { goodpos, place_monster } from './makemon.js';
 import { m_in_out_region } from './region.js';
 import { mintrap, Trap_Killed_Mon } from './trap.js';
-import { is_flyer, is_floater, haseyes, can_teleport } from './mondata.js';
+import { is_flyer, is_floater, haseyes, can_teleport, slithy, verysmall,
+         bigmonst, nohands } from './mondata.js';
 import { map_invisible, There, glyph_at, show_glyph,
          glyph_is_invisible } from './display.js';
 import { a_monnam } from './do_name.js';
@@ -129,8 +130,6 @@ function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 /* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
 function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
-function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
-function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 function is_giant(ptr) { return (ptr.mflags2 & M2_GIANT) !== 0; }
 /* C ref: skills.h martial_bonus(); dokick.c is_bigfoot(), martial() */
 function martial_bonus() { return Role_if(PM_SAMURAI) || Role_if(PM_MONK); }
@@ -443,8 +442,6 @@ const kick_passes_thru = "kick passes harmlessly through";
 
 /* C ref: mondata.h thick_skinned(), bigmonst(), nohands(), haseyes() */
 function thick_skinned(ptr) { return (ptr.mflags1 & M1_THICK_HIDE) !== 0; }
-function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 
 // C ref: dokick.c kickdmg()

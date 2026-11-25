@@ -99,9 +99,8 @@ import { surface } from './iactions.js';
 import { You_cant, There } from './display.js';
 import { d } from './rng.js';
 import { OBJ_NAME } from './objects.js';
+import { hides_under } from './mondata.js';
 
-/* C ref: mondata.h hides_under() */
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
 /* C ref: mondata.h is_whirly() */

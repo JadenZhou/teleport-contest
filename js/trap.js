@@ -41,8 +41,9 @@ import { mons, S_UNICORN, M2_JEWELS, S_VORTEX, M1_AMORPHOUS, M1_UNSOLID,
          M1_MINDLESS, M1_METALLIVORE, MZ_HUGE, PM_PIT_FIEND,
        } from './monsters.js';
 import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
-         resists_magm, mon_knows_traps, mon_learns_traps,
-         mons_see_trap } from './mondata.js';
+         resists_magm, mon_knows_traps, mon_learns_traps, mons_see_trap,
+         likes_gems, mindless, hides_under, amorphous, unsolid,
+         is_whirly } from './mondata.js';
 import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
          GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
 import { rnd, d } from './rng.js';
@@ -337,7 +338,6 @@ function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: mondata.h likes_gems(), is_unicorn()
-function likes_gems(ptr) { return (ptr.mflags2 & M2_JEWELS) !== 0; }
 function is_unicorn(ptr) { return ptr.mlet === S_UNICORN && likes_gems(ptr); }
 // C ref: hacklib.c sgn()
 function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
@@ -1148,7 +1148,6 @@ export const Trap_Killed_Mon = 2;
 export const Trap_Moved_Mon = 3; /* new location, or new level */
 
 /* mondata.h */
-function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
 
 // C ref: trap.c trapeffect_sqky_board()
@@ -3224,7 +3223,6 @@ async function trapeffect_web(mtmp, trap, trflags) {
 /* C ref: obj.h has_omonst(); mondata.h unique_corpstat(), hides_under() */
 function has_omonst(obj) { return !!obj.oextra?.omonst; }
 function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ_HT) !== 0; }
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 /* C ref: invent.c nxtobj(obj, type, TRUE) -- the floor's nexthere chain
    (level.objects, top first, restricted to obj's spot) */
 function nxtobj_here(obj, type) {
@@ -4509,12 +4507,7 @@ export async function mintrap(mtmp, mintrapflags) {
 }
 
 /* mondata.h */
-function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
-function unsolid(ptr) { return (ptr.mflags1 & M1_UNSOLID) !== 0; }
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
-function is_whirly(ptr) {
-    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
-}
 function webmaker(ptr) {
     return ptr === mons[PM_CAVE_SPIDER] || ptr === mons[PM_GIANT_SPIDER];
 }

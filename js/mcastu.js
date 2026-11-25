@@ -18,8 +18,8 @@ import { nomul } from './hack.js';
 import { Monnam, mon_nam, pmname, bogusmon, pronoun_gender,
          PRONOUN_HALLU } from './do_name.js';
 import { an, makeplural, makesingular, vtense, the_unique_pm } from './objnam.js';
-import { perceives, is_demon, haseyes,
-         cvt_adtyp_to_mseenres } from './mondata.js';
+import { perceives, is_demon, haseyes, cvt_adtyp_to_mseenres,
+         type_is_pname } from './mondata.js';
 import { m_seenres } from './muse.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { mdamageu, mhe } from './mhitu.js';
@@ -143,8 +143,6 @@ function eyecount(ptr) {
            : (ptr === mons[M.PM_CYCLOPS] || ptr === mons[M.PM_FLOATING_EYE]) ? 1
              : 2;
 }
-/* C ref: mondata.h type_is_pname() */
-function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 /* C ref: hacklib.c plur() */
 function plur(x) { return (x === 1) ? "" : "s"; }
 /* C ref: hacklib.c upstart() */

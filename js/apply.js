@@ -126,7 +126,7 @@ import { splitobj as splitobj_ap, costly_alteration as costly_alteration_ap,
          obj_extract_self as obj_extract_self_ap } from './mkobj.js';
 import { makeplural as makeplural_ap, xname as xname_ap } from './objnam.js';
 import { the as the_ap } from './iactions.js';
-import { can_blnd as can_blnd_ap } from './mondata.js';
+import { can_blnd as can_blnd_ap, is_whirly, nohands } from './mondata.js';
 import { AT_WEAP as AT_WEAP_AP } from './monsters.js';
 import { make_blinded as make_blinded_ap } from './potion.js';
 import { setnotworn as setnotworn_ap } from './worn.js';
@@ -171,13 +171,7 @@ import { use_pick_axe } from './dig.js';
 import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
 import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
          M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
-/* C ref: mondata.h is_whirly() */
-function is_whirly(ptr) {
-    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
-}
 
-/* C ref: mondata.h nohands() */
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
     return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;

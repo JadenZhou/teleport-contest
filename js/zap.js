@@ -23,7 +23,7 @@ import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
 import { The, xname, Tobjnam, vtense } from './objnam.js';
 import { mon_nam } from './do_name.js';
-import { resists_blnd, resists_blnd_by_arti } from './mondata.js';
+import { resists_blnd, resists_blnd_by_arti, nohands } from './mondata.js';
 import { make_blinded } from './potion.js';
 import { body_part } from './insight.js';
 import { ARM, POLY_NOFLAGS } from './const.js';
@@ -385,9 +385,6 @@ import { set_uinwater } from './trap.js';
 import { docrt } from './display.js';
 import { ustatusline } from './insight.js';
 import { unearth_objs as unearth_objs_dg } from './dig.js';
-
-/* C ref: mondata.h nohands() */
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 
 // C ref: zap.c learnwand()
 export function learnwand(obj) {

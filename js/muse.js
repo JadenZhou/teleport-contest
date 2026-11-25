@@ -26,7 +26,8 @@ import { seemimic } from './mon.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { losehp } from './trap.js';
 import { find_mac } from './worn.js';
-import { resists_magm } from './mondata.js';
+import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
+         likes_gems, noncorporeal, amorphous, unsolid } from './mondata.js';
 import { hit, miss, exclam, buzz, dobuzz, bhito,
          find_drawbridge, resist_async } from './zap.js';
 import { TELL } from './const.js';
@@ -204,13 +205,7 @@ const MUSE_SCR_EARTH = 36;
 const MUSE_CAMERA = 37;
 
 /* mondata.h */
-function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
-function mindless(ptr) { return (ptr.mflags1 & M.M1_MINDLESS) !== 0; }
-function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
-function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function is_mercenary(ptr) { return (ptr.mflags2 & M.M2_MERC) !== 0; }
-function likes_gems(ptr) { return (ptr.mflags2 & M.M2_JEWELS) !== 0; }
 function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
@@ -236,9 +231,6 @@ function m_carrying(mtmp, type) {
 function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
 function resists_acid(mon) { return !!Resists_Elem(mon, ACID_RES); }
 function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
-function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
-function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
 function slimeproof(ptr) {
     return ptr === mons[M.PM_GREEN_SLIME]
            || ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]

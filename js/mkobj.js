@@ -20,7 +20,8 @@ import * as O from './objects.js';
 import { objects } from './objects.js';
 import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD } from './const.js';
 import { rndmonst_adj } from './makemon.js';
-import { monsndx, little_to_big, big_to_little, is_human } from './mondata.js';
+import { monsndx, little_to_big, big_to_little, is_human,
+         verysmall } from './mondata.js';
 import * as M from './monsters.js';
 import { assign_candy_wrapper } from './read.js';
 import { noveltitle, oname } from './do_name.js';
@@ -83,7 +84,6 @@ const ROT_AGE = 250;            /* age when corpses rot away */
 function is_male(ptr) { return (ptr.mflags2 & M2_MALE) !== 0; }
 function is_female(ptr) { return (ptr.mflags2 & M2_FEMALE) !== 0; }
 function is_neuter(ptr) { return (ptr.mflags2 & M2_NEUTER) !== 0; }
-function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 function is_rider(ptr) {
     return (ptr === mons[PM_DEATH] || ptr === mons[PM_FAMINE]
             || ptr === mons[PM_PESTILENCE]);

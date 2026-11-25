@@ -23,7 +23,8 @@ import { M1_SWIM, M1_AMPHIBIOUS } from './monsters.js';
 import { cantweararm } from './worn.js';
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
-import { is_flyer } from './mondata.js';
+import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
+         noncorporeal, is_whirly, mindless } from './mondata.js';
 import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
@@ -134,18 +135,7 @@ const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
     c_sword = "sword", c_axe = "axe", c_that_ = "that";
 void c_helmet;
 
-/* C ref: mondata.h nohands(), verysmall() &c */
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
-function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
-function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
-function humanoid(ptr) { return (ptr.mflags1 & M1_HUMANOID) !== 0; }
-function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
-function is_whirly(ptr) {
-    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
-}
 function has_head(ptr) { return (ptr.mflags1 & M1_NOHEAD) === 0; }
-function mindless(ptr) { return (ptr.mflags1 & M1_MINDLESS) !== 0; }
 function breathless(ptr) { return (ptr.mflags1 & M1_BREATHLESS) !== 0; }
 // C ref: mondata.c sliparm()
 function sliparm(ptr) {

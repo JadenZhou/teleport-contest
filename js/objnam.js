@@ -36,10 +36,9 @@ import { observe_object } from './o_init.js';
 import { oname } from './do_name.js';
 import { mons, LOW_PM, S_PUDDING, PM_GRAY_OOZE, PM_BLACK_PUDDING,
          PM_GRAY_DRAGON, PM_YELLOW_DRAGON } from './monsters.js';
-import {
-    name_to_mon, name_to_monplus, is_male, is_female, is_neuter,
-    is_were, is_human, is_elf, is_dwarf, is_gnome, is_orc,
-} from './mondata.js';
+import { name_to_mon, name_to_monplus, is_male, is_female, is_neuter, is_were,
+         is_human, is_elf, is_dwarf, is_gnome, is_orc,
+         verysmall } from './mondata.js';
 import { ismnum } from './const.js';
 import { dead_species, set_corpsenm, can_be_hatched } from './mkobj.js';
 import { zombie_form } from './mon.js';
@@ -75,9 +74,6 @@ const vowels = "aeiouAEIOU";
 function not_ported(what) {
     throw new Error(`readobjnam: ${what} is not ported yet`);
 }
-
-/* C ref: mondata.h verysmall() */
-function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
 
 // C ref: were.c counter_were()
 function counter_were(pm) {

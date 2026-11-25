@@ -45,7 +45,9 @@ import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
          nonliving, is_golem, is_mplayer, closed_door, hideunder,
          In_endgame, is_placeholder, mbirth_limit, newmonhp,
          pm_to_cham } from './makemon.js';
-import { is_male, is_female, is_neuter, pm_invisible } from './mondata.js';
+import { is_male, is_female, is_neuter, pm_invisible, humanoid, is_animal,
+         throws_rocks, verysmall, bigmonst, slithy, amorphous,
+         is_whirly } from './mondata.js';
 import { set_mon_data, emits_light } from './mondata.js';
 import { new_light_source, del_light_source, any_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
@@ -1747,8 +1749,6 @@ export function dmonsfree() {
 
 /* mondata.h */
 function polyok(ptr) { return (ptr.mflags2 & MM.M2_NOPOLY) === 0; }
-function humanoid(ptr) { return (ptr.mflags1 & MM.M1_HUMANOID) !== 0; }
-function is_animal(ptr) { return (ptr.mflags1 & MM.M1_ANIMAL) !== 0; }
 
 // C ref: mon.c mon_animal_list()
 export function mon_animal_list(construct) {
@@ -1793,7 +1793,6 @@ function has_head(ptr) { return (ptr.mflags1 & MM.M1_NOHEAD) === 0; }
 function is_vampire(ptr) { return ptr.mlet === MM.S_VAMPIRE; }
 /* C ref: mondata.h ismnum() */
 function ismnum(mndx) { return mndx >= LOW_PM && mndx < NUMMONS; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
 /* C ref: ncflags for newcham() (monst.h) */
 const NC_SHOW_MSG = 0x01;
 const NC_VIA_WAND_OR_SPELL = 0x02;
@@ -2518,16 +2517,9 @@ export function monnear(mon, x, y) {
 function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 
 /* mondata.h */
-function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 
-function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
-function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
-function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
 function tunnels(ptr) { return (ptr.mflags1 & M1_TUNNEL) !== 0; }
 function needspick(ptr) { return (ptr.mflags1 & M1_NEEDPICK) !== 0; }
-function is_whirly(ptr) {
-    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
-}
 function is_rider(ptr) {
     const n = monsndx(ptr);
     return n === PM_DEATH || n === PM_FAMINE || n === PM_PESTILENCE;

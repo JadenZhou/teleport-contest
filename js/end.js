@@ -40,7 +40,7 @@ import { AMULET_OF_LIFE_SAVING, LARGE_BOX, STATUE, TIN, CORPSE,
 import { pmname, Mgender, m_monnam } from './do_name.js';
 import { shkname, shkname_is_pname } from './shknam.js';
 import { an, the_unique_pm } from './objnam.js';
-import { is_vampshifter } from './mondata.js';
+import { is_vampshifter, type_is_pname } from './mondata.js';
 import { strstri } from './hacklib.js';
 import { zombie_maker, mongone } from './mon.js';
 import { night, midnight, getnow } from './calendar.js';
@@ -130,8 +130,6 @@ function inc_done_stopprint() {
     game.program_state.stopprint = (game.program_state.stopprint || 0) + 1;
 }
 
-/* C ref: mondata.h type_is_pname() */
-function type_is_pname(ptr) { return (ptr.mflags2 & M2_PNAME) !== 0; }
 /* C ref: obj.h SchroedingersBox() */
 function SchroedingersBox(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
 /* C ref: hacklib.c upstart() */

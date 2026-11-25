@@ -32,8 +32,8 @@ import { AD_PHYS, AD_MAGM, AD_FIRE, AD_COLD, AD_DISN, AD_ELEC, AD_DRST,
          AD_PEST, AD_SPC2, AD_RBRE, AD_DGST, AT_ENGL, PM_CLERIC, PM_MONK,
          PM_WIZARD, PM_HEALER, PM_KNIGHT } from './monsters.js';
 import { resists_magm, resists_fire, resists_cold, resists_disint,
-         resists_elec, resists_poison, resists_acid, is_demon,
-         is_vampshifter } from './mondata.js';
+         resists_elec, resists_poison, resists_acid, is_demon, is_vampshifter,
+         hides_under, bigmonst } from './mondata.js';
 import { nonliving } from './makemon.js';
 import { Monnam, rndmonnam, pmname } from './do_name.js';
 import { s_suffix, lowc, strstri } from './hacklib.js';
@@ -719,9 +719,6 @@ function level_objects_top(x, y) {
             return o;
     return null;
 }
-/* C ref: mondata.h hides_under(), bigmonst() */
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
-function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
 
 // C ref: explode.c scatter()
 /*

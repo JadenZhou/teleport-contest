@@ -105,7 +105,8 @@ import { COLNO, ROWNO, xdir, ydir, zdir } from './const.js';
 import { PM_GRID_BUG, mons, PM_CAVE_SPIDER, PM_GIANT_SPIDER, PM_MIND_FLAYER,
          PM_MASTER_MIND_FLAYER, PM_GREMLIN, AT_BREA, AT_SPIT, AT_GAZE, S_NYMPH,
          S_UNICORN, M1_HIDE, M1_CONCEAL, M2_JEWELS, MS_SHRIEK } from './monsters.js';
-import { is_were, is_vampire, is_vampshifter } from './mondata.js';
+import { is_were, is_vampire, is_vampshifter,
+         hides_under } from './mondata.js';
 import { show_menu_controls as show_menu_controls_cm } from './pager.js';
 export { domove };
 
@@ -858,7 +859,6 @@ async function here_cmd_menu() {
 /* C ref: mondata.h is_hider(), hides_under(), webmaker(), can_breathe(),
    attacktype(), is_mind_flayer(), likes_gems(), is_unicorn() */
 function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 function webmaker(ptr) {
     return ptr === mons[PM_CAVE_SPIDER] || ptr === mons[PM_GIANT_SPIDER];
 }

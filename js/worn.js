@@ -37,7 +37,8 @@ import { Monnam, mon_nam } from './do_name.js';
 import { distant_name, doname } from './objnam.js';
 import { curse } from './mkobj.js';
 import { strncmpi, strcmpi } from './hacklib.js';
-import { monsndx } from './mondata.js';
+import { monsndx, verysmall, bigmonst, nohands, is_animal, mindless, humanoid,
+         slithy, noncorporeal, is_whirly } from './mondata.js';
 import { W_RINGL, W_RINGR, W_WEP, W_SWAPWEP, W_QUIVER, W_BALL, W_CHAIN,
          W_ARMOR, I_SPECIAL, W_ART, BOLT_LIM, M_SEEN_NOTHING, M_SEEN_MAGR,
          M_SEEN_FIRE, M_SEEN_COLD, M_SEEN_SLEEP, M_SEEN_DISINT, M_SEEN_ELEC,
@@ -128,17 +129,6 @@ function is_elven_armor(otmp) {
 }
 
 /* mondata.h / mondata.c */
-function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
-function bigmonst(ptr) { return ptr.msize >= M.MZ_LARGE; }
-function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
-function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
-function mindless(ptr) { return (ptr.mflags1 & M.M1_MINDLESS) !== 0; }
-function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
-function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
-function is_whirly(ptr) {
-    return ptr.mlet === M.S_VORTEX || ptr === mons[M.PM_AIR_ELEMENTAL];
-}
 // C ref: mondata.c sliparm()
 function sliparm(ptr) {
     return is_whirly(ptr) || ptr.msize <= M.MZ_SMALL || noncorporeal(ptr);

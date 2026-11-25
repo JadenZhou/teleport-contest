@@ -29,12 +29,12 @@ import {
     PM_VAMPIRE, PM_VAMPIRE_LEADER, PM_VAMPIRE_BAT, PM_FOG_CLOUD, PM_WOLF,
     LOW_PM, NUMMONS,
 } from './monsters.js';
-import {
-    set_mon_data, is_vampire, resists_drli, dmgtype, dmgtype_fromattack,
-    is_bat, perceives, telepathic, infravision, pm_invisible, can_teleport,
-    control_teleport, is_floater, is_flyer, is_swimmer, passes_walls,
-    regenerates, haseyes,
-} from './mondata.js';
+import { set_mon_data, is_vampire, resists_drli, dmgtype, dmgtype_fromattack,
+         is_bat, perceives, telepathic, infravision, pm_invisible,
+         can_teleport, control_teleport, is_floater, is_flyer, is_swimmer,
+         passes_walls, regenerates, haseyes, nohands, verysmall, bigmonst,
+         humanoid, slithy, amorphous, unsolid, noncorporeal, hides_under,
+         type_is_pname, likes_gems, is_whirly } from './mondata.js';
 import * as M from './monsters.js';
 import * as O from './objects.js';
 import {
@@ -290,16 +290,7 @@ function polysense() {
    drop_weapon() and their helpers                                    */
 
 /* C ref: mondata.h predicates used below */
-function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
-function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
-function bigmonst(ptr) { return ptr.msize >= M.MZ_LARGE; }
-function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
-function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
-function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
-function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
-function hides_under(ptr) { return (ptr.mflags1 & M.M1_CONCEAL) !== 0; }
 function is_hider(ptr) { return (ptr.mflags1 & M.M1_HIDE) !== 0; }
 export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
 function polyok(ptr) { return (ptr.mflags2 & M.M2_NOPOLY) === 0; }
@@ -308,16 +299,11 @@ function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
 function is_male(ptr) { return (ptr.mflags2 & M.M2_MALE) !== 0; }
 function is_female(ptr) { return (ptr.mflags2 & M.M2_FEMALE) !== 0; }
 function is_neuter(ptr) { return (ptr.mflags2 & M.M2_NEUTER) !== 0; }
-function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
-function likes_gems(ptr) { return (ptr.mflags2 & M.M2_JEWELS) !== 0; }
 function cantwield(ptr) { return nohands(ptr) || verysmall(ptr); }
 function could_twoweap(ptr) {
     return ((ptr.mattk[0].aatyp === M.AT_WEAP ? 1 : 0)
             + (ptr.mattk[1].aatyp === M.AT_WEAP ? 1 : 0)
             + (ptr.mattk[2].aatyp === M.AT_WEAP ? 1 : 0)) > 1;
-}
-function is_whirly(ptr) {
-    return ptr.mlet === M.S_VORTEX || ptr === mons[M.PM_AIR_ELEMENTAL];
 }
 function flaming(ptr) {
     return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]

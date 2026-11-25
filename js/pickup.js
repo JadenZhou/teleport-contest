@@ -130,6 +130,7 @@ import { revive_corpse } from './zap.js';
 import { exercise } from './attrib.js';
 import { A_WIS } from './const.js';
 import { uteetering_at_seen_pit, uescaped_shaft } from './engrave.js';
+import { hides_under } from './mondata.js';
 
 /* C ref: invent.c invlet_basic */
 const invlet_basic = 52;
@@ -283,7 +284,6 @@ export async function pickup(what) /* should be a long */ {
 
 /* C ref: mondata.h notake(), hides_under() */
 function notake(ptr) { return (ptr.mflags1 & M1_NOTAKE) !== 0; }
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 
 // C ref: pickup.c describe_decor()
 /* handle 'mention_decor' (when walking onto a dungeon feature such as

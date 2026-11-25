@@ -21,7 +21,9 @@ import { newsym, pline, canseemon, canspotmon, vobj_at } from './display.js';
 import { can_hide_under_obj, nonliving } from './makemon.js';
 import { Monnam, Adjmonnam } from './do_name.js';
 import { W_NONDIGGABLE as W_NONDIGGABLE_MM } from './const.js';
-import { dmgtype as dmgtype_mm } from './mondata.js';
+import { dmgtype as dmgtype_mm, is_animal, mindless, nohands, verysmall,
+         hides_under, amorphous, likes_gems,
+         throws_rocks } from './mondata.js';
 import { Norep as Norep_mm } from './display.js';
 import { makeplural as makeplural_mm } from './objnam.js';
 import { locomotion as locomotion_mm } from './trap.js';
@@ -173,15 +175,9 @@ async function You_see(msg) {
 }
 
 /* mondata.h */
-function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
-function mindless(ptr) { return (ptr.mflags1 & M.M1_MINDLESS) !== 0; }
-function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
-function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
 function tunnels(ptr) { return (ptr.mflags1 & M.M1_TUNNEL) !== 0; }
 function needspick(ptr) { return (ptr.mflags1 & M.M1_NEEDPICK) !== 0; }
-function hides_under(ptr) { return (ptr.mflags1 & M.M1_CONCEAL) !== 0; }
 function is_hider(ptr) { return (ptr.mflags1 & M.M1_HIDE) !== 0; }
-function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
 function is_rider(ptr) {
     const n = monsndx(ptr);
     return n === M.PM_DEATH || n === M.PM_FAMINE || n === M.PM_PESTILENCE;
@@ -190,10 +186,8 @@ function is_covetous(ptr) { return (ptr.mflags3 & M.M3_COVETOUS) !== 0; }
 function is_wanderer(ptr) { return (ptr.mflags2 & M.M2_WANDER) !== 0; }
 function is_mercenary(ptr) { return (ptr.mflags2 & M.M2_MERC) !== 0; }
 function likes_gold(ptr) { return (ptr.mflags2 & M.M2_GREEDY) !== 0; }
-function likes_gems(ptr) { return (ptr.mflags2 & M.M2_JEWELS) !== 0; }
 function likes_objs(ptr) { return (ptr.mflags2 & M.M2_COLLECT) !== 0 || is_armed(ptr); }
 function likes_magic(ptr) { return (ptr.mflags2 & M.M2_MAGIC) !== 0; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
 function likes_lava(ptr) {
     return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];

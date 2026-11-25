@@ -34,7 +34,8 @@ import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
 import { pline } from './display.js';
 import { In_hell } from './dungeon.js';
-import { is_demon, is_undead, is_vampshifter } from './mondata.js';
+import { is_demon, is_undead, is_vampshifter, nohands,
+         throws_rocks } from './mondata.js';
 import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attrib.js';
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
@@ -302,8 +303,6 @@ function a_align(x, y) {
     return Amask2align(game.level.at(x, y).altarmask & AM_MASK);
 }
 /* C ref: mondata.h nohands(), nolimbs(), throws_rocks() */
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
 /* C ref: obj.h Cursed_obj() */
 function Cursed_obj(obj, typ) { return !!(obj && obj.otyp === typ && obj.cursed); }
 

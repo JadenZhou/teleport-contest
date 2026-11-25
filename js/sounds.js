@@ -39,7 +39,8 @@ import { night } from './calendar.js';
 import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
-import { is_flyer, is_undead, is_vampshifter, same_race } from './mondata.js';
+import { is_flyer, is_undead, is_vampshifter, same_race,
+         is_animal } from './mondata.js';
 import { Blind, Strangled, Hallucination, Deaf, Unaware } from './youprop.js';
 import { S_NYMPH as S_NYMPH_SN } from './monsters.js';
 import { could_seduce as could_seduce_sn, doseduce as doseduce_sn } from './mhitu.js';
@@ -49,7 +50,6 @@ import { M1_HUMANOID as M1_HUMANOID_SN } from './monsters.js';
 /* C ref: mondata.h predicates */
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
 function is_prince(ptr) { return (ptr.mflags2 & M2_PRINCE) !== 0; }
-function is_animal(ptr) { return (ptr.mflags1 & M1_ANIMAL) !== 0; }
 function is_mercenary(ptr) { return (ptr.mflags2 & M2_MERC) !== 0; }
 
 

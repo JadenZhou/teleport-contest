@@ -83,7 +83,7 @@ import { safe_qbuf } from './pickup.js';
 import { getdir } from './cmd.js';
 import { is_drawbridge_wall } from './dbridge.js';
 import { bottlename, potionbreathe } from './potion.js';
-import { haseyes } from './mondata.js';
+import { haseyes, nohands } from './mondata.js';
 import { M1_BREATHLESS } from './monsters.js';
 /* boxlock() */
 import { Role_if as Role_if_lk } from './const.js';
@@ -255,7 +255,6 @@ export function maybe_reset_pick(container) {
 }
 
 function carried(obj) { return obj.where === 'OBJ_INVENT'; }
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 
 /* C ref: lock.c PICKLOCK_* */
 const PICKLOCK_LEARNED_SOMETHING = -1; /* time passes */

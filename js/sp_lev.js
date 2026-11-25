@@ -83,10 +83,9 @@ import {
 import { ONAME_LEVEL_DEF, IS_DRAWBRIDGE, DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST,
          DB_WEST } from './const.js';
 import { create_drawbridge } from './dbridge.js';
-import {
-    name_to_monplus, is_male, is_female, monsndx, is_vampshifter, is_vampire, is_swimmer, is_flyer,
-    is_floater, passes_walls, your_race, Resists_Elem, poly_when_stoned,
-} from './mondata.js';
+import { name_to_monplus, is_male, is_female, monsndx, is_vampshifter,
+         is_vampire, is_swimmer, is_flyer, is_floater, passes_walls, your_race,
+         Resists_Elem, poly_when_stoned, noncorporeal } from './mondata.js';
 import {
     def_char_to_monclass, def_monsyms, def_char_to_objclass,
 } from './drawing.js';
@@ -2105,7 +2104,6 @@ function pm_to_humidity(pm) {
 
 // C ref: mondata.h amphibious(), noncorporeal(), likes_lava(), likes_fire()
 function amphibious(ptr) { return (ptr.mflags1 & M1_AMPHIBIOUS) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
 function likes_lava(ptr) {
     return ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER];
 }

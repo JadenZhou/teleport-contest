@@ -50,6 +50,7 @@ import { arti_light_description } from './light.js';
 import { begin_burn, end_burn } from './timeout.js';
 import { Tobjnam } from './objnam.js';
 import { Blind } from './youprop.js';
+import { nohands, verysmall } from './mondata.js';
 
 // C ref: obj.h is_weptool()
 export function is_weptool(o) {
@@ -246,8 +247,6 @@ export function uqwepgone() {
 function cantwield(ptr) {
     return (nohands(ptr) || verysmall(ptr));
 }
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
-function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
 
 // C ref: artifact.c retouch_object() (ported in artifact.js)
 export { retouch_object };

@@ -26,7 +26,7 @@ import { monkilled, zombie_maker, monnear, seemimic } from './mon.js';
 import { thrwmm, spitmm, breamm } from './mthrowu.js';
 import { canspotmon, newsym, pline, map_invisible } from './display.js';
 import { Monnam, mon_nam, mon_nam_too } from './do_name.js';
-import { is_elf, is_orc } from './mondata.js';
+import { is_elf, is_orc, unsolid } from './mondata.js';
 import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC, W_SADDLE, W_ARMG,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, ERODE_BURN,
@@ -147,8 +147,6 @@ function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
-// C ref: mondata.h unsolid()
-function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
 // C ref: mondata.c attacktype()
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);

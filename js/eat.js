@@ -20,7 +20,8 @@ import { yobjnam } from './objnam.js';
 import { explode } from './explode.js';
 import { You_hear } from './sounds.js';
 import { fall_asleep } from './timeout.js';
-import { olfaction } from './mondata.js';
+import { olfaction, type_is_pname, humanoid,
+         noncorporeal } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
@@ -656,15 +657,12 @@ function obj_here(obj, x, y) {
     return false;
 }
 /* C ref: mondata.h */
-function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
 function flesh_petrifies(pm) { return touch_petrifies(pm) || pm === mons[M.PM_MEDUSA]; }
 function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
 export function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
-function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
 function flaming(ptr) {
     return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
            || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];

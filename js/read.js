@@ -32,7 +32,7 @@ import { mons, G_UNIQ, PM_GUARD, PM_SHOPKEEPER, PM_HIGH_CLERIC,
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { mungspaces, strstri, strncmpi } from './hacklib.js';
-import { name_to_mon } from './mondata.js';
+import { name_to_mon, amorphous, noncorporeal, unsolid } from './mondata.js';
 import { makemon, makemon_flush_msg } from './makemon.js';
 import { SCROLL_CLASS, SPBOOK_CLASS } from './objects.js';
 import { GETOBJ_EXCLUDE, GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_PROMPT,
@@ -153,10 +153,7 @@ function is_shield(o) {
 }
 /* C ref: mondata.h amorphous(), passes_walls(), noncorporeal(),
    unsolid() */
-function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
 function passes_walls(ptr) { return (ptr.mflags1 & M1_WALLWALK) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
-function unsolid(ptr) { return (ptr.mflags1 & M1_UNSOLID) !== 0; }
 /* C ref: hack.h distu() */
 function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;

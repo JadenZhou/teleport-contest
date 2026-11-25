@@ -16,7 +16,9 @@ import { DEADMONSTER } from './mon.js';
 import { helpless } from './monmove.js';
 import { is_art } from './artifact.js';
 import { passes_rocks } from './trap.js';
-import { resists_poison } from './mondata.js';
+import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
+         nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
+         is_whirly } from './mondata.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
@@ -235,15 +237,11 @@ import { clone_mon } from './makemon.js';
 import { mintrap } from './trap.js';
 import { NO_TRAP_FLAGS } from './const.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
-function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
     return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
            || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }
 function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
-/* C ref: mondata.h is_animal(), type_is_pname() */
-function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
-function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 
@@ -2191,18 +2189,8 @@ export async function do_attack(mtmp) {
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
-function hides_under(ptr) { return (ptr.mflags1 & M.M1_CONCEAL) !== 0; }
-function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
-function verysmall(ptr) { return ptr.msize < M.MZ_SMALL; }
-function bigmonst(ptr) { return ptr.msize >= M.MZ_LARGE; }
 function cantwield(ptr) { return nohands(ptr) || verysmall(ptr); }
 function thick_skinned(ptr) { return (ptr.mflags1 & M.M1_THICK_HIDE) !== 0; }
-function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
-function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
-function is_whirly(ptr) {
-    return ptr.mlet === M.S_VORTEX || ptr === mons[M.PM_AIR_ELEMENTAL];
-}
 function is_watch(ptr) {
     return ptr === mons[M.PM_WATCHMAN] || ptr === mons[M.PM_WATCH_CAPTAIN];
 }

@@ -24,7 +24,7 @@ import { yelp, growl, You_hear } from './sounds.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
 import { poly_gender } from './polyself.js';
-import { is_demon } from './mondata.js';
+import { is_demon, type_is_pname } from './mondata.js';
 import { search_special } from './sounds.js';
 import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
@@ -3910,9 +3910,6 @@ export function billable(shkpp, obj, roomno, reset_nocharge) {
 
 /* C ref: shk.c the_your[] */
 const the_your = ["the", "your"];
-
-/* C ref: mondata.h type_is_pname() */
-function type_is_pname(ptr) { return (ptr.mflags2 & M2_PNAME) !== 0; }
 
 // C ref: shk.c shk_your()
 /* "your " or "Foobar's " (note the trailing space) */

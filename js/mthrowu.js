@@ -11,7 +11,8 @@
 import { DEADMONSTER } from './mon.js';
 import { ordin } from './hacklib.js';
 import { passes_rocks } from './trap.js';
-import { resists_poison } from './mondata.js';
+import { resists_poison, noncorporeal, amorphous, bigmonst, likes_gems,
+         throws_rocks, nohands } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rnl, rn2_on_display_rng, ROLL_FROM } from './rng.js';
@@ -130,13 +131,7 @@ function is_flimsy(otmp) {
 }
 /* C ref: mondata.h */
 function passes_walls(ptr) { return (ptr.mflags1 & M.M1_WALLWALK) !== 0; }
-function unsolid(ptr) { return (ptr.mflags1 & M.M1_UNSOLID) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === M.S_GHOST; }
-function amorphous(ptr) { return (ptr.mflags1 & M.M1_AMORPHOUS) !== 0; }
-function bigmonst(ptr) { return ptr.msize >= M.MZ_LARGE; }
-function likes_gems(ptr) { return (ptr.mflags2 & M.M2_JEWELS) !== 0; }
 function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
-function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
@@ -709,7 +704,6 @@ async function u_catch_thrown_obj(otmp) {
     }
     return false;
 }
-function nohands(ptr) { return (ptr.mflags1 & M.M1_NOHANDS) !== 0; }
 
 /* C ref: mthrowu.c MT_FLIGHTCHECK() -- singleref is the { obj } holder
    for hits_bars() (the missile is set to null if it breaks) */

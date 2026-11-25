@@ -145,8 +145,8 @@ import { obfree as obfree_dt } from './invent.js';
 import { hot_pursuit as hot_pursuit_dt, inside_shop as inside_shop_sk } from './shk.js';
 import { in_rooms as in_rooms_dt } from './hack.js';
 import { distmin as distmin_dt } from './hacklib.js';
-import { your_race as your_race_dt, is_orc as is_orc_dt,
-         is_elf as is_elf_dt } from './mondata.js';
+import { your_race as your_race_dt, is_orc as is_orc_dt, is_elf as is_elf_dt,
+         nohands, throws_rocks } from './mondata.js';
 import { is_quest_artifact as is_quest_artifact_dt } from './questpgr.js';
 import { Is_candle as Is_candle_dt } from './mkobj.js';
 import { is_domestic as is_domestic_dt } from './makemon.js';
@@ -210,7 +210,6 @@ function touch_petrifies(ptr) {
 }
 
 /* C ref: mondata.h nohands(), notake() */
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 function notake(ptr) { return (ptr.mflags1 & M1_NOTAKE) !== 0; }
 
 /* C ref: dothrow.c AutoReturn() -- uwep might already be removed from
@@ -244,7 +243,6 @@ async function ok_to_throw() {
 function is_pick(otmp) {
     return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
 }
-function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
 
 // C ref: dothrow.c multishot_class_bonus()
 export function multishot_class_bonus(pm, ammo, launcher) /* can be NULL */ {

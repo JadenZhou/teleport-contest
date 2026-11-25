@@ -28,9 +28,8 @@ import { wipeout_text } from './engrave.js';
 import { hold_another_object } from './wizcmds.js';
 import { observe_object, discover_object } from './o_init.js';
 import { Glib, Blind, Hallucination } from './youprop.js';
+import { nohands } from './mondata.js';
 
-/* C ref: mondata.h nohands() */
-function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
 /* C ref: hack.h makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: hacklib.c upstart() */

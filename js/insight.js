@@ -96,7 +96,8 @@ import { P_SKILL, P_MAX_SKILL, P_ADVANCE, P_RESTRICTED, weapon_type,
 import { oc_to_str } from './options.js';
 import { is_pool, is_lava } from './makemon.js';
 import { ART_OGRESMASHER } from './artilist.js';
-import { hates_silver, defended, is_male, is_female, is_neuter } from './mondata.js';
+import { hates_silver, defended, is_male, is_female, is_neuter, humanoid,
+         type_is_pname } from './mondata.js';
 import { pmname } from './do_name.js';
 import { magic_negation } from './mhitu.js';
 import { stone_luck } from './attrib.js';
@@ -172,7 +173,6 @@ function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, bloc
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
 
 /* C ref: mondata.h humanoid(), haseyes() */
-function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
 function haseyes(ptr) { return (ptr.mflags1 & M.M1_NOEYES) === 0; }
 
 /* C ref: obj.h is_ammo(), is_wet_towel(), is_graystone(); u_wield_art() */
@@ -3094,7 +3094,6 @@ function is_rider(ptr) {
     return ptr === M.mons[M.PM_DEATH] || ptr === M.mons[M.PM_FAMINE]
            || ptr === M.mons[M.PM_PESTILENCE];
 }
-function type_is_pname(ptr) { return (ptr.mflags2 & M.M2_PNAME) !== 0; }
 
 // C ref: insight.c list_vanquished()
 export async function list_vanquished(defquery, ask) {

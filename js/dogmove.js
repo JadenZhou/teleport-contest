@@ -31,7 +31,9 @@ import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, m_avoid_soko_push_loc, mon_track_add,
          m_digweapon_check, is_mines_prize, is_soko_prize } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
-         is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater, same_race } from './mondata.js';
+         is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater,
+         same_race, is_animal, mindless, throws_rocks,
+         humanoid } from './mondata.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
@@ -69,12 +71,8 @@ const DOG_STARVE = 750;
 /* mondata.h */
 function carnivorous(ptr) { return (ptr.mflags1 & M.M1_CARNIVORE) !== 0; }
 function herbivorous(ptr) { return (ptr.mflags1 & M.M1_HERBIVORE) !== 0; }
-function is_animal(ptr) { return (ptr.mflags1 & M.M1_ANIMAL) !== 0; }
-function mindless(ptr) { return (ptr.mflags1 & M.M1_MINDLESS) !== 0; }
 function tunnels(ptr) { return (ptr.mflags1 & M.M1_TUNNEL) !== 0; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M.M2_ROCKTHROW) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M.M1_METALLIVORE) !== 0; }
-function humanoid(ptr) { return (ptr.mflags1 & M.M1_HUMANOID) !== 0; }
 // C ref: mondata.c attacktype()
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);

@@ -16,7 +16,8 @@ import { abuse_dog } from './dog.js';
 import { adjalign } from './attrib.js';
 import { livelog_printf, You_feel } from './display.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
-import { monsndx } from './mondata.js';
+import { monsndx, throws_rocks, amorphous, verysmall, bigmonst, hides_under,
+         is_whirly, slithy, noncorporeal } from './mondata.js';
 import { breaktest } from './dothrow.js';
 import { splitobj } from './mkobj.js';
 import { setuwep } from './wield.js';
@@ -164,7 +165,6 @@ function is_axe(otmp) {
 }
 
 function strongmonst(ptr) { return (ptr.mflags2 & M2_STRONG) !== 0; }
-function throws_rocks(ptr) { return (ptr.mflags2 & M2_ROCKTHROW) !== 0; }
 
 // C ref: hack.c weight_cap()
 export function weight_cap() {
@@ -1011,16 +1011,7 @@ function Sokoban() { return !!game.level.flags.sokoban_rules; }
    noncorporeal(), NODIAG() */
 function tunnels(ptr) { return (ptr.mflags1 & M1_TUNNEL) !== 0; }
 function needspick(ptr) { return (ptr.mflags1 & M1_NEEDPICK) !== 0; }
-function amorphous(ptr) { return (ptr.mflags1 & M1_AMORPHOUS) !== 0; }
-function verysmall(ptr) { return ptr.msize < MZ_SMALL; }
-function bigmonst(ptr) { return ptr.msize >= MZ_LARGE; }
-function hides_under(ptr) { return (ptr.mflags1 & M1_CONCEAL) !== 0; }
 function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
-function is_whirly(ptr) {
-    return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
-}
-function slithy(ptr) { return (ptr.mflags1 & M1_SLITHY) !== 0; }
-function noncorporeal(ptr) { return ptr.mlet === S_GHOST; }
 function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 /* C ref: monst.h helpless(), mundisplaceable() */
 function mundisplaceable(mon) {
