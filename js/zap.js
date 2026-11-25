@@ -101,7 +101,7 @@ import { SCROLL_CLASS, FOOD_CLASS, GLOB_OF_GREEN_SLIME, SCR_FIRE, SPE_FIREBALL,
          WAX_CANDLE } from './objects.js';
 import { nomul } from './hack.js';
 import { stop_occupation } from './allmain.js';
-import { wakeup, monkilled, killed } from './mon.js';
+import { wakeup, monkilled, killed, shieldeff_mon } from './mon.js';
 import { AD_RBRE } from './monsters.js';
 import { STONE, LAVAWALL, IRONBARS, FOUNTAIN, ICE, STRAT_WAITMASK, WEB,
          IS_ROOM, IS_WALL, In_mines, Is_airlevel, ZAP_POS, SDOOR } from './const.js';
@@ -473,7 +473,13 @@ export function resist(mtmp, oclass, damage, tell, deadout = null) {
 
     resisted = rn2(100 + alev - dlev) < mtmp.data.mr;
     if (resisted) {
-        /* if (tell) shieldeff_mon(mtmp): transient display only */
+        if (tell) {
+            /* shieldeff_mon(mtmp) prints "<Mon> resists!": the async
+               caller resist_async() awaits it */
+            if (!deadout)
+                throw new Error('resist(): shieldeff_mon() from a synchronous caller not ported yet (use resist_async())');
+            deadout.shield = true;
+        }
         damage = Math.trunc((damage + 1) / 2);
     }
 
@@ -491,8 +497,10 @@ export function resist(mtmp, oclass, damage, tell, deadout = null) {
 // C ref: zap.c resist() -- for async callers: the fatal-damage path awaits
 // monkilled()/killed()
 export async function resist_async(mtmp, oclass, damage, tell) {
-    const out = { dead: false };
+    const out = { dead: false, shield: false };
     const resisted = resist(mtmp, oclass, damage, tell, out);
+    if (out.shield) /* if (tell) shieldeff_mon(mtmp), before the damage */
+        await shieldeff_mon(mtmp);
     if (out.dead) {
         if (game.m_using)
             await monkilled(mtmp, "", AD_RBRE);
@@ -733,7 +741,7 @@ export async function bhitm(mtmp, otmp) {
         } else if (resists_magm_zp(mtmp)) {
             /* magic resistance protects from polymorph traps, so make
                it guard against involuntary polymorph attacks too... */
-            /* shieldeff_mon(mtmp): transient display only */
+            await shieldeff_mon(mtmp);
         } else if (!resist(mtmp, otmp.oclass, 0, NOTELL_ZP)) {
             const polyspot = (otyp !== POT_POLYMORPH),
                 give_msg = (!Hallucination()
@@ -995,7 +1003,7 @@ export async function bhitm(mtmp, otmp) {
         if (otyp === SPE_DRAIN_LIFE_BM)
             dmg = spell_damage_bonus(dmg);
         if (resists_drli_bm(mtmp)) {
-            /* shieldeff_mon(mtmp): transient display only */
+            await shieldeff_mon(mtmp);
         } else if (!(await resist_async(mtmp, otmp.oclass, dmg, NOTELL_ZP))
                    && !DEADMONSTER_BM(mtmp)) {
             mtmp.mhp -= dmg;

@@ -36,7 +36,7 @@ import {
     Hallucination as Hallucination_dt
 } from './youprop.js';
 
-import { tty_display_nhwindow } from './wintty.js';
+import { tty_display_nhwindow, tty_display_map_nhwindow as tty_display_map_nhwindow_dt } from './wintty.js';
 import { seemimic } from './mon.js';
 import { y_monnam, a_monnam } from './do_name.js';
 import { cmd_safety_prevention } from './hack.js';
@@ -85,7 +85,7 @@ import { GOLD_PIECE as GOLD_PIECE_DT, CHEST as CHEST_DT, COIN_CLASS as COIN_CLAS
          GOLD as GOLD_MAT_DT, NUM_OBJECTS as NUM_OBJECTS_DT,
          FIRST_OBJECT as FIRST_OBJECT_DT } from './objects.js';
 import { PM_GOLD_GOLEM as PM_GOLD_GOLEM_DT } from './monsters.js';
-import { unmap_object, cls as cls_dt } from './display.js';
+import { unmap_object, cls as cls_dt, display_self as display_self_dt } from './display.js';
 import { MAXOCLASSES as MAXOCLASSES_DT } from './objects.js';
 import { objects as objects_dt, POTION_CLASS as POTION_CLASS_DT,
          FOOD_CLASS as FOOD_CLASS_DT, LARGE_BOX as LARGE_BOX_DT } from './objects.js';
@@ -255,6 +255,8 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
 
 // C ref: detect.c find_trap()
 async function find_trap(trap) {
+    let cleared = false;
+
     trap.tseen = 1;
     await exercise(A_WIS, true);
     feel_newsym(trap.tx, trap.ty);
@@ -266,15 +268,21 @@ async function find_trap(trap) {
     const tg = trap_to_glyph(trap);
     if (Hallucination_ft()
         || !(rg && rg.trap && rg.ch === tg.ch && rg.color === tg.color)) {
-        /* There's too much clutter to see your find otherwise:
-           cls(); map_trap(trap, 1); display_self(); ...
-           display_nhwindow(WIN_MAP, TRUE); docrt(); */
-        throw new Error('find_trap(): showing a covered trap (display_nhwindow(WIN_MAP)) not ported yet');
+        /* There's too much clutter to see your find otherwise */
+        await cls_dt();
+        map_trap(trap, 1);
+        display_self_dt();
+        cleared = true;
     }
 
     /* set_msg_xy(trap->tx, trap->ty): only positions the message for
        screen readers */
     await pline(`You find ${an_ft(trapname_ft(trap.ttyp, false))}.`);
+
+    if (cleared) {
+        await tty_display_map_nhwindow_dt(true); /* display_nhwindow(WIN_MAP, TRUE): wait */
+        await docrt();
+    }
 }
 
 // C ref: detect.c dosearch() -- the 's' command

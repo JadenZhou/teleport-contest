@@ -40,7 +40,7 @@ import {
 } from './const.js';
 import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
-import { newsym, pline, glyph_is_invisible, unmap_object } from './display.js';
+import { newsym, pline, glyph_is_invisible, unmap_object, shieldeff } from './display.js';
 import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible, nonliving,
          is_golem, closed_door, hideunder, In_endgame, mbirth_limit, newmonhp,
          pm_to_cham } from './makemon.js';
@@ -3507,4 +3507,12 @@ export async function angry_guards(silent) {
         return true;
     }
     return false;
+}
+
+// C ref: mon.c shieldeff_mon()
+export async function shieldeff_mon(mtmp) {
+    await shieldeff(mtmp.mx, mtmp.my);
+    /* does not depend on seeing the monster; the shield effect is visible */
+    if (cansee(mtmp.mx, mtmp.my))
+        await pline(`${Monnam(mtmp)} resists!`); /* pline_mon() */
 }

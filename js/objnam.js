@@ -56,13 +56,13 @@ import { donning, doffing, hard_helmet } from './do_wear.js';
 import { the as the_article } from './iactions.js';
 import { is_unpaid, unpaid_cost, get_cost_of_shop_item,
          record_price_quote, append_price_quote } from './shk.js';
-import { currency } from './insight.js';
+import { currency, body_part } from './insight.js';
 import { candy_wrapper_text } from './read.js';
 import { mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
          is_rottable, is_damageable, is_poisonable, permapoisoned, Is_candle,
          rnd_class } from './mkobj.js';
 import { delete_contents } from './invent.js';
-import { Luck } from './const.js';
+import { Luck, HAND } from './const.js';
 import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';
 import { is_plural } from './wield.js';
 import { peek_timer, obj_to_any } from './timeout.js';
@@ -3670,7 +3670,7 @@ function doname_base(obj, doname_flags) {
         if (obj.owornmask & W_RINGL)
             bp += " (on left ";
         if (obj.owornmask & (W_RINGL | W_RINGR)) /* either left or right */
-            bp += "hand)"; /* body_part(HAND) for an unpolymorphed hero */
+            bp += `${body_part(HAND)})`;
         if (known && objects[obj.otyp].oc_charged)
             prefix += `${obj.spe >= 0 ? "+" : ""}${obj.spe} `;
         break;
@@ -3718,9 +3718,7 @@ function doname_base(obj, doname_flags) {
             && !twoweap_primary) {
             bp += " (wielded)";
         } else {
-            /* body_part(HAND) for an unpolymorphed hero; body_part() and
-               polymorph are not ported yet */
-            let hand_s = "hand";
+            let hand_s = body_part(HAND);
             if (objects[obj.otyp].oc_bimanual) /* bimanual(): "hands" */
                 hand_s = makeplural(hand_s);
             else /* "right hand" or "left hand" */
@@ -3732,8 +3730,8 @@ function doname_base(obj, doname_flags) {
         }
     }
     if (obj.owornmask & W_SWAPWEP) {
-        if (game.u?.twoweap) /* URIGHTY; body_part(HAND) for an unpolymorphed hero */
-            bp += ` (wielded in ${(game.u?.uhandedness ?? 0) === 0 ? "left" : "right"} hand)`;
+        if (game.u?.twoweap) /* URIGHTY */
+            bp += ` (wielded in ${(game.u?.uhandedness ?? 0) === 0 ? "left" : "right"} ${body_part(HAND)})`;
         else
             bp += ` (alternate weapon${obj.quan === 1 ? "" : "s"}; not wielded)`;
     }

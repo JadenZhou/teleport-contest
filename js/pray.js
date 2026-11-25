@@ -49,7 +49,7 @@ import { tty_yn_function } from './wintty.js';
 import { couldsee } from './vision.js';
 import { killed } from './mon.js';
 import { monflee } from './monmove.js';
-import { resist } from './zap.js';
+import { resist, resist_async } from './zap.js';
 import { aggravate } from './potion.js';
 import { GLIB, PLNMSG_OBJ_GLOWS, TELEDS_NO_FLAGS, STOMACH, SICK_ALL, FIXED_ABIL, EYE } from "./const.js";
 import { AMULET_OF_STRANGULATION } from './objects.js';
@@ -1285,7 +1285,7 @@ async function maybe_turn_mon_iter(mtmp) {
             mtmp.mflee = 0;
             mtmp.mfrozen = 0;
             mtmp.mcanmove = 1;
-        } else if (!resist(mtmp, 0, 0, TELL)) {
+        } else if (!(await resist_async(mtmp, 0, 0, TELL))) {
             let xlev = 6;
             let flee = true;
 
