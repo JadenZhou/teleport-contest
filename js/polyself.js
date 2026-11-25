@@ -1539,7 +1539,7 @@ function armor_to_dragon(atyp) {
 
 // C ref: timeout.c learn_egg_type()
 /* give the hero knowledge of an egg type */
-function learn_egg_type(mnum) {
+export function learn_egg_type(mnum) {
     /* baby monsters hatch from grown-up eggs */
     mnum = little_to_big(mnum);
     game.mvitals[mnum].mvflags |= MV_KNOWS_EGG;

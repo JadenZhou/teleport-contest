@@ -115,7 +115,21 @@ import { which_armor } from './worn.js';
 import { dismount_steed } from './steed.js';
 import { mhe } from './mhitu.js';
 import { Your } from './display.js';
-
+/* hatch_egg() */
+import { NON_PM as NON_PM_HE, NO_MINVENT as NO_MINVENT_HE, MM_NOMSG as MM_NOMSG_HE,
+         G_GENOD as G_GENOD_HE, G_EXTINCT as G_EXTINCT_HE } from './const.js';
+import { S_DRAGON as S_DRAGON_HE, MS_SILENT as MS_SILENT_HE } from './monsters.js';
+import { big_to_little as big_to_little_he } from './mondata.js';
+import { enexto as enexto_he } from './teleport.js';
+import { makemon as makemon_he, hideunder_async as hideunder_async_he } from './makemon.js';
+import { tamedog as tamedog_he } from './dog.js';
+import { m_monnam as m_monnam_he, a_monnam as a_monnam_he } from './do_name.js';
+import { locomotion as locomotion_he } from './trap.js';
+import { ing_suffix as ing_suffix_he } from './hacklib.js';
+import { cry_sound as cry_sound_he } from './sounds.js';
+import { canseemon as canseemon_he, You_feel as You_feel_he } from './display.js';
+import { learn_egg_type as learn_egg_type_he } from './polyself.js';
+import { container_weight as container_weight_he } from './mkobj.js';
 
 // C ref: timeout.c propertynames[]
 /* used by wizard mode #timeout and #wizintrinsic; order by 'interest'
@@ -1580,7 +1594,156 @@ export function relink_timers(ghostly) {
 // C ref: timeout.c hatch_egg()
 /* timer callback routine: hatch the given egg */
 async function hatch_egg(arg, timeout) {
-    throw new Error('hatch_egg() not ported yet');
+    const g = game;
+    const flags = g.flags;
+    let egg;
+    let mon, mon2;
+    const cc = { x: 0, y: 0 };
+    let x = 0, y = 0;
+    let yours, silent, knows_egg = false;
+    let cansee_hatchspot = false;
+    let i, mnum, hatchcount = 0;
+    const carried = (o) => o.where === 'OBJ_INVENT';
+
+    egg = arg.a_obj;
+    /* sterilized while waiting */
+    if (egg.corpsenm === NON_PM_HE)
+        return;
+
+    mon = mon2 = null;
+    mnum = big_to_little_he(egg.corpsenm);
+    /* The identity of one's father is learned, not innate */
+    yours = !!(egg.spe || (!flags.female && carried(egg) && !rn2(2)));
+    silent = (timeout !== g.moves); /* hatched while away */
+
+    /* only can hatch when in INVENT, FLOOR, MINVENT;
+       get_obj_location() will fail for MIGRATING, also for CONTAINED
+       and BURIED when the flags for those aren't included in the call */
+    const loc = get_obj_location(egg, 0);
+    if (loc) {
+        [x, y] = loc;
+        hatchcount = rnd(egg.quan);
+        cansee_hatchspot = cansee_to(x, y) && !silent;
+        if (!(mons[mnum].geno & G_UNIQ_TO)
+            && !(g.mvitals[mnum].mvflags & (G_GENOD_HE | G_EXTINCT_HE))) {
+            for (i = hatchcount; i > 0; i--) {
+                if (!enexto_he(cc, x, y, mons[mnum])
+                    || !(mon = makemon_he(mons[mnum], cc.x, cc.y,
+                                          NO_MINVENT_HE | MM_NOMSG_HE)))
+                    break;
+                /* tame if your own egg hatches while you're on the
+                   same dungeon level, or any dragon egg which hatches
+                   while it's in your inventory */
+                if ((yours && !silent)
+                    || (carried(egg) && mon.data.mlet === S_DRAGON_HE)) {
+                    if (await tamedog_he(mon, null, false)) {
+                        if (carried(egg) && mon.data.mlet !== S_DRAGON_HE)
+                            mon.mtame = 20;
+                    }
+                }
+                if (g.mvitals[mnum].mvflags & G_EXTINCT_HE)
+                    break;  /* just made last one */
+                mon2 = mon; /* in case makemon() fails on 2nd egg */
+            }
+            if (!mon)
+                mon = mon2;
+            hatchcount -= i;
+            egg.quan -= hatchcount;
+        }
+    }
+
+    if (mon) {
+        let monnambuf = '', carriedby = '';
+        const siblings = (hatchcount > 1);
+        let redraw = false;
+
+        if (cansee_hatchspot) {
+            /* [bug?  m_monnam() yields accurate monster type
+               regardless of hallucination] */
+            monnambuf = `${siblings ? "some " : ""}${siblings
+                ? makeplural(m_monnam_he(mon)) : an(m_monnam_he(mon))}`;
+            /* we don't learn the egg type here because learning
+               an egg type requires either seeing the egg hatch
+               or being familiar with the egg already,
+               as well as being able to see the resulting
+               monster, checked below
+            */
+        }
+        switch (egg.where) {
+        case 'OBJ_INVENT':
+            knows_egg = true; /* true even if you are blind */
+            if (!cansee_hatchspot)
+                await You_feel_he(`something ${locomotion_he(mon.data, "drop")
+                                  } from your pack!`);
+            else
+                await You_see_to(`${monnambuf} ${locomotion_he(mon.data, "drop")
+                                 } out of your pack!`);
+            if (yours) {
+                await pline(`${siblings ? "Their" : "Its"} ${
+                    ing_suffix_he(cry_sound_he(mon))} ${
+                    (mon.data.msound === MS_SILENT_HE || Deaf())
+                        ? "seems" : "sounds"} like "${
+                    flags.female ? "mommy" : "daddy"}${egg.spe ? "." : "?"}"`);
+            } else if (mon.data.mlet === S_DRAGON_HE && !Deaf()) {
+                /* SetVoice(mon, 0, 80, 0): no voice interface */
+                await pline(`"Gleep!"`); /* verbalize(): Mything eggs :-) */
+            }
+            break;
+
+        case 'OBJ_FLOOR':
+            if (cansee_hatchspot) {
+                knows_egg = true;
+                await You_see_to(`${monnambuf} hatch.`);
+                redraw = true; /* update egg's map location */
+            }
+            break;
+
+        case 'OBJ_MINVENT':
+            if (cansee_hatchspot) {
+                /* egg carrying monster might be invisible */
+                mon2 = egg.ocarry;
+                if (canseemon_he(mon2)
+                    && (!mon2.wormno || cansee_to(mon2.mx, mon2.my))) {
+                    carriedby = `${s_suffix_to(a_monnam_he(mon2))} pack`;
+                    knows_egg = true;
+                } else if (is_pool(mon.mx, mon.my)) {
+                    carriedby = "empty water";
+                } else {
+                    carriedby = "thin air";
+                }
+                await You_see_to(`${monnambuf} ${locomotion_he(mon.data, "drop")
+                                 } out of ${carriedby}!`);
+            }
+            break;
+        default:
+            throw new Error(`egg hatched where? (${egg.where})`);
+        }
+
+        if (cansee_hatchspot && knows_egg)
+            learn_egg_type_he(mnum);
+
+        if (egg.quan > 0) {
+            /* still some eggs left; we didn't split the stack, just
+               subtracted from quantity so weight needs to be updated;
+               for remainder of stack, add a new, short hatch timer */
+            attach_egg_hatch_timeout(egg, rnd(12));
+            /* container_weight(arg) updates arg->owt, and if contained,
+               its enclosing container arg->ocontainer (recursively)
+               [egg won't be contained due to conditions imposed above] */
+            container_weight_he(egg);
+        } else if (carried(egg)) {
+            useup_to(egg);
+        } else {
+            /* free egg here because we use it above */
+            obj_extract_self_to(egg);
+            obfree_to(egg, null);
+            if ((mon = m_at_to(x, y)) && !(await hideunder_async_he(mon))
+                && cansee_to(x, y))
+                redraw = true;
+        }
+        if (redraw)
+            newsym(x, y);
+    }
 }
 
 // C ref: timeout.c see_lamp_flicker()

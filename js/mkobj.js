@@ -1346,6 +1346,14 @@ export function weight(obj) {
     return (wt ? wt * obj.quan : (obj.quan + 1) >> 1);
 }
 
+// C ref: mkobj.c container_weight()
+/* recompute an object's weight, and that of its enclosing containers */
+export function container_weight(object) {
+    object.owt = weight(object);
+    if (object.where === 'OBJ_CONTAINED')
+        container_weight(object.ocontainer);
+}
+
 // C ref: mkobj.c costly_alteration()
 /* possibly bill for an object which the player has just modified;
    only the "nobody is charging for it" cases are ported */

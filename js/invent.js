@@ -76,6 +76,13 @@ import {
     tty_putstr, tty_destroy_nhwindow, add_menu_str,
 } from './wintty.js';
 import { Blind, Hallucination } from './youprop.js';
+/* display_minventory() */
+import { MINV_ALL as MINV_ALL_IV, MINV_PICKMASK as MINV_PICKMASK_IV,
+         INCLUDE_HERO as INCLUDE_HERO_IV, engulfing_u as engulfing_u_iv } from './const.js';
+import { s_suffix as s_suffix_iv } from './hacklib.js';
+import { noit_Monnam as noit_Monnam_iv } from './do_name.js';
+import { allow_all as allow_all_iv } from './pickup.js';
+import { mons as mons_iv } from './monsters.js';
 
 const invlet_basic = 52;
 const GOLD_SYM = '$';
@@ -3052,3 +3059,89 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
          JUSTPICKED as JUSTPICKED_IV,
          INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
 import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
+
+// C ref: invent.c invdisp_nothing()
+/* used by display_minventory() and display_cinventory() */
+async function invdisp_nothing(hdr, txt) {
+    let win;
+
+    win = tty_create_nhwindow(NHW_MENU);
+    tty_start_menu(win, MENU_BEHAVE_STANDARD);
+    add_menu_heading(win, hdr);
+    add_menu_str(win, "");
+    add_menu_str(win, txt);
+    tty_end_menu(win, null);
+    await tty_select_menu(win, PICK_NONE); /* free(selected): nothing kept */
+    tty_destroy_nhwindow(win);
+    return;
+}
+
+// C ref: invent.c worn_wield_only()
+/* query_objlist callback: return things that are worn or wielded */
+function worn_wield_only(obj) {
+    /* check for things that *are* worn or wielded (only used for monsters,
+       so we don't worry about excluding W_CHAIN, W_ARTI and the like) */
+    return !!obj.owornmask;
+}
+
+// C ref: invent.c display_minventory()
+/*
+ * Display a monster's inventory.
+ * Returns a pointer to the object from the monster's inventory selected
+ * or NULL if nothing was selected.
+ *
+ * By default, only worn and wielded items are displayed.  The caller
+ * can pick one.  Modifier flags are:
+ *
+ *      PICK_NONE, PICK_ONE - standard menu control
+ *      PICK_ANY            - allowed, but we only return a single object
+ *      MINV_NOLET          - nothing selectable
+ *      MINV_ALL            - display all inventory
+ */
+export async function display_minventory(
+    mon,    /* monster whose minvent we're showing */
+    dflags, /* control over what to display */
+    title) { /* menu title */
+    const g = game;
+    let ret;
+    let tmp;
+    let n;
+    const selected = [];
+    const minvent = mon.minvent || [];
+    const do_all = (dflags & MINV_ALL_IV) !== 0,
+        incl_hero = (do_all && engulfing_u_iv(mon)),
+        have_inv = (minvent.length > 0),
+        have_any = (have_inv || incl_hero),
+        pickings = (dflags & MINV_PICKMASK_IV);
+
+    tmp = `${s_suffix_iv(noit_Monnam_iv(mon))} ${do_all ? "possessions" : "armament"}:`;
+
+    if (do_all ? have_any : (mon.misc_worn_check || mon.mw /* MON_WEP(mon) */)) {
+        /* Fool the 'weapon in hand' routine into
+         * displaying 'weapon in claw', etc. properly.
+         */
+        g.youmonst.data = mon.data;
+        /* in case inside a shop, don't append "for sale" prices */
+        if (!g.iflags) g.iflags = {};
+        g.iflags.suppress_price = (g.iflags.suppress_price || 0) + 1;
+
+        /* &(mon->minvent): the C chain is newest first */
+        n = await query_objlist_iv(title ? title : tmp, minvent.slice().reverse(),
+                                   (INVORDER_SORT | (incl_hero ? INCLUDE_HERO_IV : 0)),
+                                   selected, pickings,
+                                   do_all ? allow_all_iv : worn_wield_only);
+
+        g.iflags.suppress_price--;
+        /* was 'set_uasmon();' but that potentially has side-effects */
+        g.youmonst.data = mons_iv[g.u.umonnum]; /* basic part of set_uasmon() */
+    } else {
+        await invdisp_nothing(title ? title : tmp, "(none)");
+        n = 0;
+    }
+
+    if (n > 0) {
+        ret = selected[0].obj;
+    } else
+        ret = null;
+    return ret;
+}
