@@ -288,9 +288,8 @@ function u_calc_moveamt(wtcap) {
         u.umovement = 0;
 }
 
-/* C ref: allmain.c static mvl_wtcap, mvl_change */
-let mvl_wtcap = 0;
-let mvl_change = 0;
+/* C ref: allmain.c static mvl_wtcap, mvl_change -- per-game state, kept in
+   game.mvl_wtcap and game.mvl_change (zero at game start, see gstate.js) */
 
 
 /* C ref: vault.c vault_occupied(u.urooms) */
@@ -533,7 +532,7 @@ async function moveloop_core() {
             } while (monscanmove);
             g.context.mon_moving = 0;
 
-            mvl_wtcap = near_capacity();
+            g.mvl_wtcap = near_capacity();
 
             if (!monscanmove && u.umovement < NORMAL_SPEED) {
                 /* both hero and monsters are out of steam this round */
@@ -554,7 +553,7 @@ async function moveloop_core() {
                    monster effectively loses its first turn */
                 await maybe_generate_rnd_mon();
 
-                u_calc_moveamt(mvl_wtcap);
+                u_calc_moveamt(g.mvl_wtcap);
                 settrack();
 
                 g.moves++;
@@ -590,23 +589,23 @@ async function moveloop_core() {
                  */
                 if (u.uinvulnerable) {
                     /* for the moment at least, you're in tiptop shape */
-                    mvl_wtcap = UNENCUMBERED;
+                    g.mvl_wtcap = UNENCUMBERED;
                 } else if (!Upolyd() ? (u.uhp < u.uhpmax)
                            : (u.mh < u.mhmax
                               || g.youmonst.data.mlet === S_EEL)) {
                     /* maybe heal */
-                    await regen_hp(mvl_wtcap);
+                    await regen_hp(g.mvl_wtcap);
                 }
 
                 /* moving around while encumbered is hard work */
-                if (mvl_wtcap > MOD_ENCUMBER && u.umoved) {
-                    if (!(mvl_wtcap < EXT_ENCUMBER ? g.moves % 30
+                if (g.mvl_wtcap > MOD_ENCUMBER && u.umoved) {
+                    if (!(g.mvl_wtcap < EXT_ENCUMBER ? g.moves % 30
                           : g.moves % 10)) {
                         await overexert_hp();
                     }
                 }
 
-                await regen_pw(mvl_wtcap);
+                await regen_pw(g.mvl_wtcap);
 
                 if (!u.uinvulnerable) {
                     if ((P[TELEPORT].intrinsic || P[TELEPORT].extrinsic) /* Teleportation */
@@ -616,22 +615,22 @@ async function moveloop_core() {
                     }
                     const Polymorph = P[POLYMORPH].intrinsic || P[POLYMORPH].extrinsic;
                     /* delayed change may not be valid anymore */
-                    if ((mvl_change === 1 && !Polymorph)
-                        || (mvl_change === 2 && u.ulycn === NON_PM))
-                        mvl_change = 0;
+                    if ((g.mvl_change === 1 && !Polymorph)
+                        || (g.mvl_change === 2 && u.ulycn === NON_PM))
+                        g.mvl_change = 0;
                     if (Polymorph && !rn2(100))
-                        mvl_change = 1;
+                        g.mvl_change = 1;
                     else if (u.ulycn >= LOW_PM /* ismnum(u.ulycn) */ && !Upolyd()
                              && !rn2(80 - (20 * night())))
-                        mvl_change = 2;
-                    if (mvl_change && !(P[UNCHANGING].intrinsic || P[UNCHANGING].extrinsic)) {
+                        g.mvl_change = 2;
+                    if (g.mvl_change && !(P[UNCHANGING].intrinsic || P[UNCHANGING].extrinsic)) {
                         if (g.multi >= 0) {
                             await stop_occupation();
-                            if (mvl_change === 1)
+                            if (g.mvl_change === 1)
                                 await polyself(POLY_NOFLAGS);
                             else
                                 await you_were();
-                            mvl_change = 0;
+                            g.mvl_change = 0;
                         }
                     }
                 }
