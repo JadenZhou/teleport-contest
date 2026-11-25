@@ -79,7 +79,7 @@ import {
 import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
          LOCK_PICK, EGG, CORPSE, AMULET_OF_LIFE_SAVING, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
-         YELLOW_DRAGON_SCALE_MAIL, TIN, GLOB_OF_GREEN_SLIME, CARROT,
+         YELLOW_DRAGON_SCALE_MAIL, TIN, GLOB_OF_GREEN_SLIME, CARROT, ICE_BOX,
          objects } from './objects.js';
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES, M_POISONGAS_OK, M_POISONGAS_MINOR, M_POISONGAS_BAD,
@@ -143,7 +143,10 @@ import { quest_info } from './questpgr.js';
 import { is_lightblocker_mappear, does_block, unblock_point,
          couldsee } from './vision.js';
 import { M1_HUMANOID } from './monsters.js';
-import { vtense } from './objnam.js';
+import { vtense, The, distant_name, xname } from './objnam.js';
+import { removed_from_icebox } from './pickup.js';
+import { mpickobj } from './steal.js';
+import { surface } from './iactions.js';
 import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
@@ -3161,6 +3164,35 @@ export function mstoning(obj) {
             && flesh_petrifies(mons[obj.corpsenm]));
 }
 
+// C ref: mon.c meatbox()
+/* dispose of contents of an eaten container; used for pets and other mons */
+export async function meatbox(mon, otmp) {
+    const engulf_contents = (mon.data === mons[MM.PM_GELATINOUS_CUBE]);
+    const x = mon.mx, y = mon.my;
+    let cobj;
+
+    if (!(otmp.cobj && otmp.cobj.length) || !isok(x, y)) /* !Has_contents() */
+        return;
+
+    /* contents of eaten containers become engulfed or dropped onto
+      the floor; this is arbitrary, but otherwise g-cubes are too
+      powerful */
+    if (!engulf_contents && cansee(x, y)) {
+        await pline(`${s_suffix(The(distant_name(otmp, xname)))} contents spill out onto the ${surface(x, y)}.`);
+    }
+    while ((cobj = (otmp.cobj && otmp.cobj.length) ? otmp.cobj[0] : null) !== null) {
+        obj_extract_self(cobj);
+        if (otmp.otyp === ICE_BOX)
+            removed_from_icebox(cobj);
+        if (engulf_contents) {
+            mpickobj(mon, cobj);
+        } else {
+            if (!await flooreffects(cobj, x, y, ""))
+                place_object(cobj, x, y);
+        }
+    }
+}
+
 // C ref: mon.c m_consume_obj()
 /* monster mtmp eats object otmp; caller handles messages */
 export async function m_consume_obj(mtmp, otmp) {
@@ -3171,7 +3203,7 @@ export async function m_consume_obj(mtmp, otmp) {
         healmon(mtmp, objects[otmp.otyp].oc_weight, 0);
     }
     if (otmp.cobj && otmp.cobj.length) /* Has_contents(otmp) */
-        throw new Error('m_consume_obj(): meatbox() not ported yet');
+        await meatbox(mtmp, otmp);
     if (otmp === game.uball) {
         await unpunish();
         delobj(otmp);
