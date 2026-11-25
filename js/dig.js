@@ -99,18 +99,10 @@ import { surface } from './iactions.js';
 import { You_cant, There } from './display.js';
 import { d } from './rng.js';
 import { OBJ_NAME } from './objects.js';
-import { hides_under } from './mondata.js';
+import { hides_under, is_whirly, digests } from './mondata.js';
 
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
-/* C ref: mondata.h is_whirly() */
-function is_whirly_zd(ptr) {
-    return ptr.mlet === S_VORTEX_ZD || ptr === mons_zd[PM_AIR_ELEMENTAL_ZD];
-}
-/* C ref: mondata.h digests() */
-function digests_zd(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL_ZD && a.adtyp === AD_DGST_ZD);
-}
 
 /* C ref: obj.h is_pick(), is_axe() */
 function is_pick(otmp) {
@@ -596,15 +588,15 @@ export async function zap_dig() {
     if (u.uswallow) {
         const mtmp = u.ustuck;
 
-        if (!is_whirly_zd(mtmp.data)) {
-            if (digests_zd(mtmp.data))
+        if (!is_whirly(mtmp.data)) {
+            if (digests(mtmp.data))
                 await You_zd(`pierce ${s_suffix_zd(mon_nam_zd(mtmp))} ${
                     mbodypart_zd(mtmp, STOMACH_ZD)} wall!`);
             if (mtmp.data.geno & G_UNIQ_ZD) /* unique_corpstat() */
                 mtmp.mhp = Math.trunc((mtmp.mhp + 1) / 2);
             else
                 mtmp.mhp = 1; /* almost dead */
-            await expels_zd(mtmp, mtmp.data, !digests_zd(mtmp.data));
+            await expels_zd(mtmp, mtmp.data, !digests(mtmp.data));
         }
         return;
     } /* swallowed */

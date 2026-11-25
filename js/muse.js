@@ -219,8 +219,6 @@ function m_carrying(mtmp, type) {
     return null;
 }
 
-/* C ref: mondata.h resists_ston(), resists_acid(), acidic(), slimeproof(),
-   noncorporeal(), amorphous(), unsolid() */
 /* C ref: hacklib.c upstart() */
 function upstart(s) { return s ? highc(s[0]) + s.slice(1) : s; }
 /* C ref: hacklib.c strsubst() -- replace the first instance of orig */

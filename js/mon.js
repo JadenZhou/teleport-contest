@@ -687,7 +687,7 @@ export async function corpse_chance(mon, magr, was_swallowed) {
     return !rn2(tmp);
 }
 
-/* C ref: mondata.h is_reviver(), unique_corpstat() */
+/* C ref: mondata.h is_reviver() */
 function is_reviver(ptr) { return is_rider(ptr) || ptr.mlet === MM.S_TROLL; }
 
 /* C ref: mon.c KEEPTRAITS() -- for deciding whether corpse will carry
@@ -911,7 +911,7 @@ export async function monkilled(mdef, fltxt, how) {
     }
 }
 
-/* C ref: mondata.h always_hostile(), is_unicorn(); hack.h sgn() */
+/* C ref: hack.h sgn() */
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 /* C ref: align.h ALIGNLIM */
 function ALIGNLIM() { return 10 + Math.trunc(game.moves / 200); }

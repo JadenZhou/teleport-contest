@@ -126,7 +126,6 @@ import { Is_stronghold, In_endgame, Is_botlevel } from './const.js';
 import { stairway_at } from './display.js';
 import { down_gate } from './do.js';
 
-/* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
 /* C ref: skills.h martial_bonus(); dokick.c is_bigfoot(), martial() */
 function martial_bonus() { return Role_if(PM_SAMURAI) || Role_if(PM_MONK); }
 function is_bigfoot(x) { return x === mons[PM_SASQUATCH]; }
@@ -432,7 +431,6 @@ function finish_meating(mtmp) {
 
 const kick_passes_thru = "kick passes harmlessly through";
 
-/* C ref: mondata.h thick_skinned(), bigmonst(), nohands(), haseyes() */
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 
 // C ref: dokick.c kickdmg()

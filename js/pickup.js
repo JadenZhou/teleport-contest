@@ -282,8 +282,6 @@ export async function pickup(what) /* should be a long */ {
     return (n_tried > 0) ? 1 : 0;
 }
 
-/* C ref: mondata.h notake(), hides_under() */
-
 // C ref: pickup.c describe_decor()
 /* handle 'mention_decor' (when walking onto a dungeon feature such as
    stairs or altar, describe it even if it isn't covered up by an object) */

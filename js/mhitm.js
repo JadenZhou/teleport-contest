@@ -27,7 +27,7 @@ import { thrwmm, spitmm, breamm } from './mthrowu.js';
 import { canspotmon, newsym, pline, map_invisible } from './display.js';
 import { Monnam, mon_nam, mon_nam_too } from './do_name.js';
 import { is_elf, is_orc, unsolid, touch_petrifies, mon_hates_silver,
-         resist_conflict } from './mondata.js';
+         resist_conflict, is_rider } from './mondata.js';
 import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC, W_SADDLE, W_ARMG,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, ERODE_BURN,
@@ -127,7 +127,6 @@ function is_pole(otmp) {
                || objects[otmp.otyp].oc_skill === P_LANCE
                || otmp.oartifact === ART_SNICKERSNEE);
 }
-// C ref: mondata.c mon_hates_silver(), hates_silver()
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
@@ -1226,15 +1225,10 @@ export async function mdisplacem(magr, mdef, quietly) {
 
     if (game.vis && !quietly)
         await pline(`${Monnam(magr)} moves ${mon_nam(mdef)} out of ${
-            is_rider_md(pa) ? "the" : mhis_md(magr)} way!`);
+            is_rider(pa) ? "the" : mhis_md(magr)} way!`);
     newsym_md(fx, fy);  /* see it       */
     newsym_md(tx, ty);  /*   all happen */
     await flush_screen_md(0); /* make sure it shows up */
 
     return M_ATTK_HIT;
-}
-/* C ref: mondata.h is_rider() */
-function is_rider_md(ptr) {
-    return ptr === mons[M.PM_DEATH] || ptr === mons[M.PM_FAMINE]
-        || ptr === mons[M.PM_PESTILENCE];
 }

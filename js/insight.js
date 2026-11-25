@@ -173,8 +173,6 @@ function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, bloc
 
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
 
-/* C ref: mondata.h humanoid(), haseyes() */
-
 /* C ref: obj.h is_ammo(), is_wet_towel(), is_graystone(); u_wield_art() */
 function is_ammo(otmp) {
     return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === GEM_CLASS)
@@ -191,7 +189,7 @@ function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
 /* C ref: youprop.h -- the rest of the property macros that
    attributes_enlightenment() checks */
 
-/* C ref: mondata.h is_clinger(), lays_eggs(); monst.h vampshifted() */
+/* C ref: mondata.h lays_eggs(); monst.h vampshifted() */
 function vampshifted(mon) {
     return (mon.cham === M.PM_VAMPIRE || mon.cham === M.PM_VAMPIRE_LEADER
             || mon.cham === M.PM_VLAD_THE_IMPALER) /* is_vampshifter() */
@@ -3084,8 +3082,6 @@ function vanqsort_cmp(indx1, indx2) {
         res = indx1 - indx2; /* mndx low to high */
     return res;
 }
-
-/* C ref: mondata.h is_rider(), type_is_pname() */
 
 // C ref: insight.c list_vanquished()
 export async function list_vanquished(defquery, ask) {

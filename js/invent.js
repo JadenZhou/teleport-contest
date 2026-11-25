@@ -2263,7 +2263,7 @@ function inv_Is_pudding(o) {
     return (o.otyp === O.GLOB_OF_GRAY_OOZE || o.otyp === O.GLOB_OF_BROWN_PUDDING
             || o.otyp === O.GLOB_OF_GREEN_SLIME || o.otyp === O.GLOB_OF_BLACK_PUDDING);
 }
-/* C ref: mondata.h is_rider(), is_reviver() */
+/* C ref: mondata.h is_reviver() */
 function inv_is_reviver(ptr) {
     const n = mons.indexOf(ptr);
     return n === M.PM_DEATH || n === M.PM_FAMINE || n === M.PM_PESTILENCE

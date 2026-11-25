@@ -38,7 +38,7 @@ import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
 import { strncmpi, lowc, strstri } from './hacklib.js';
 import { CapitalMon } from './rumors.js';
-import { cantwield, could_twoweap } from './mondata.js';
+import { cantwield, could_twoweap, metallivorous, vegan } from './mondata.js';
 export { shield_simple_name, shirt_simple_name };
 
 const IA_NONE = 0,
@@ -112,7 +112,6 @@ export function is_graystone(obj) {
 }
 /* C ref: you.h Blind etc. are not needed here */
 
-/* C ref: mondata.h nohands(), verysmall(), cantwield(), could_twoweap() */
 function hero_data() {
     const d = game.youmonst?.data;
     if (!d)
@@ -125,18 +124,6 @@ function body_part_hand() {
     if (game.u.mtimedone) /* Upolyd */
         ia_not_ported('body_part() for a polymorphed hero');
     return "hand"; /* humanoid_parts[HAND] */
-}
-
-/* C ref: mondata.h metallivorous(), noncorporeal(), vegan() */
-function ia_metallivorous(ptr) { return (ptr.mflags1 & M.M1_METALLIVORE) !== 0; }
-function ia_vegan(ptr) {
-    return (ptr.mlet === M.S_BLOB || ptr.mlet === M.S_JELLY
-            || ptr.mlet === M.S_FUNGUS || ptr.mlet === M.S_VORTEX
-            || ptr.mlet === M.S_LIGHT
-            || (ptr.mlet === M.S_ELEMENTAL && ptr !== M.mons[M.PM_STALKER])
-            || (ptr.mlet === M.S_GOLEM && ptr !== M.mons[M.PM_FLESH_GOLEM]
-                && ptr !== M.mons[M.PM_LEATHER_GOLEM])
-            || ptr.mlet === M.S_GHOST /* noncorporeal() */);
 }
 
 // C ref: eat.c is_edible()
@@ -152,13 +139,13 @@ export function is_edible(obj) {
     if (ydata === M.mons[M.PM_FIRE_ELEMENTAL] && is_flammable(obj))
         return true;
 
-    if (ia_metallivorous(ydata) && O.is_metallic(obj)
+    if (metallivorous(ydata) && O.is_metallic(obj)
         && (ydata !== M.mons[M.PM_RUST_MONSTER] || O.is_rustprone(obj)))
         return true;
 
     /* Ghouls only eat non-veggy corpses or eggs (see dogfood()) */
     if (game.u.umonnum === M.PM_GHOUL)
-        return ((obj.otyp === O.CORPSE && !ia_vegan(M.mons[obj.corpsenm]))
+        return ((obj.otyp === O.CORPSE && !vegan(M.mons[obj.corpsenm]))
                 || obj.otyp === O.EGG);
 
     if (game.u.umonnum === M.PM_GELATINOUS_CUBE && O.is_organic(obj)

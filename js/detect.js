@@ -95,8 +95,6 @@ import { body_part as body_part_dt } from './insight.js';
 import { strange_feeling as strange_feeling_dt } from './potion.js';
 import { openholdingtrap, openfallingtrap, activate_statue_trap } from './trap.js';
 
-// C ref: mondata.h is_hider(), hides_under()
-
 // C ref: lock.c cvt_sdoor_to_door()
 export function cvt_sdoor_to_door(lev) {
     let newmask = (lev.doormask || 0) & ~WM_MASK;

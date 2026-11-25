@@ -246,8 +246,6 @@ export function confers_luck(obj) {
 function up(p) { return game.u.uprops[p]; }
 /* C ref: color.h NH_BLUE, NH_GREEN (color names for hcolor()) */
 const NH_BLUE = "blue", NH_GREEN = "green";
-/* C ref: mondata.h nolimbs(), breathless(), cantvomit(); youprop.h
-   Breathless */
 /* C ref: trap.c unconscious() */
 function unconscious() {
     const g = game;

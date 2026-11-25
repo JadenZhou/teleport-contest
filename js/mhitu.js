@@ -1328,8 +1328,7 @@ export function could_seduce(magr, mdef, mattk) {
     return (genagr === 1 - gendef) ? 1 : (pagr.mlet === M.S_NYMPH) ? 2 : 0;
 }
 
-/* C ref: mondata.h digests(), enfolds(), is_whirly(), amorphous(),
-   attacktype() */
+/* C ref: mondata.h enfolds() */
 function enfolds(ptr) {
     return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL) !== null; /* 't' */
 }

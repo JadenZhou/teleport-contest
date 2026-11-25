@@ -480,8 +480,6 @@ export async function intemple(roomno) {
     }
 }
 
-/* C ref: mondata.h is_minion(), is_rider() */
-
 // C ref: priest.c mk_roamer()
 /* synchronous, as sp_lev.c create_monster() calls it while making a level;
    uses rloc_mklev() for the "insurance" rloc() */

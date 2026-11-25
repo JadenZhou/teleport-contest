@@ -126,7 +126,8 @@ import { splitobj as splitobj_ap, costly_alteration as costly_alteration_ap,
          obj_extract_self as obj_extract_self_ap } from './mkobj.js';
 import { makeplural as makeplural_ap, xname as xname_ap } from './objnam.js';
 import { the as the_ap } from './iactions.js';
-import { can_blnd as can_blnd_ap, is_whirly, nohands } from './mondata.js';
+import { can_blnd as can_blnd_ap, is_whirly, nohands, unsolid, nolimbs,
+         has_head } from './mondata.js';
 import { AT_WEAP as AT_WEAP_AP } from './monsters.js';
 import { make_blinded as make_blinded_ap } from './potion.js';
 import { setnotworn as setnotworn_ap } from './worn.js';
@@ -1889,16 +1890,11 @@ function number_leashed() {
     return i;
 }
 
-/* C ref: mondata.h unsolid(), nolimbs(), has_head() */
-function unsolid_ls(ptr) { return (ptr.mflags1 & M1_UNSOLID_LS) !== 0; }
-function nolimbs_ls(ptr) { return (ptr.mflags1 & M1_NOLIMBS_LS) !== 0; }
-function has_head_ls(ptr) { return (ptr.mflags1 & M1_NOHEAD_LS) === 0; }
-
 // C ref: apply.c leashable()
 function leashable(mtmp) {
     return (mtmp.data !== mons_ls[PM_LONG_WORM_LS] /* mtmp->mnum */
-            && !unsolid_ls(mtmp.data)
-            && (!nolimbs_ls(mtmp.data) || has_head_ls(mtmp.data)));
+            && !unsolid(mtmp.data)
+            && (!nolimbs(mtmp.data) || has_head(mtmp.data)));
 }
 
 // C ref: apply.c use_leash()
@@ -1968,9 +1964,9 @@ async function use_leash_core(obj, mtmp, cc, spotmon) {
         /* applying a leash which isn't currently in use */
         if (mtmp.mleashed) {
             await pline(`This ${spotmon ? l_monnam_ls(mtmp) : "creature"} is already leashed.`);
-        } else if (unsolid_ls(mtmp.data)) {
+        } else if (unsolid(mtmp.data)) {
             await pline("The leash would just fall off.");
-        } else if (nolimbs_ls(mtmp.data) && !has_head_ls(mtmp.data)) {
+        } else if (nolimbs(mtmp.data) && !has_head(mtmp.data)) {
             await pline(`${Monnam_ls(mtmp)} has no extremities the leash would fit.`);
         } else if (!leashable(mtmp)) {
             let lmonnam = l_monnam_ls(mtmp);

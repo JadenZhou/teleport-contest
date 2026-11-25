@@ -989,9 +989,7 @@ export function nomul(nval) {
 
 /* C ref: rm.h Sokoban -- svl.level.flags.sokoban_rules */
 function Sokoban() { return !!game.level.flags.sokoban_rules; }
-/* C ref: mondata.h tunnels(), needspick(), amorphous(), verysmall(),
-   bigmonst(), hides_under(), is_hider(), is_whirly(), slithy(),
-   noncorporeal(), NODIAG() */
+/* C ref: hack.h NODIAG() */
 function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 /* C ref: monst.h helpless(), mundisplaceable() */
 function mundisplaceable(mon) {
@@ -2447,7 +2445,7 @@ async function moverock_core(sx, sy) {
     return 0;
 }
 
-/* C ref: mondata.c attacktype(), sticks() */
+/* C ref: mondata.c sticks() */
 function hero_sticks(ptr) {
     return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL || a.aatyp === AT_HUGS
                                        || a.adtyp === AD_STCK);

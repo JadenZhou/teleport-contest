@@ -422,8 +422,7 @@ export function make_grave(x, y, str) {
     return;
 }
 
-/* C ref: mondata.c attacktype(); mondata.h sticks(), is_hider(),
-   is_clinger(), ceiling_hider() */
+/* C ref: mondata.c sticks(); mondata.h ceiling_hider() */
 export function sticks(ptr) {
     return dmgtype(ptr, AD_STCK)
            || (dmgtype(ptr, AD_WRAP) && !attacktype(ptr, AT_ENGL))
@@ -490,7 +489,6 @@ export function u_wipe_engr(cnt) {
         wipe_engr_at(game.u.ux, game.u.uy, cnt, false);
 }
 
-/* C ref: mondata.h is_animal(), is_whirly(), cantwield() */
 /* C ref: obj.h is_blade(); objclass.h is_boots(); artifact.h is_art() */
 function is_blade(otmp) {
     return otmp.oclass === WEAPON_CLASS

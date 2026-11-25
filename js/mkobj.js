@@ -79,8 +79,6 @@ const TAINT_AGE = 50;           /* age when corpses go bad */
 const TROLL_REVIVE_CHANCE = 37; /* 1/37 chance for 50 turns ~ 75% chance */
 const ROT_AGE = 250;            /* age when corpses rot away */
 
-// C ref: mondata.h is_male(), is_female(), is_neuter(), verysmall(),
-
 // C ref: mkobj.c rndmonnum()
 /* select a random, common monster type */
 export function rndmonnum() {

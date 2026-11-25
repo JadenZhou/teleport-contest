@@ -295,9 +295,7 @@ function polysense() {
 
 /* C ref: mondata.h predicates used below */
 export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
-// C ref: mondata.c sliparm()
 /* creature will slide out of armor */
-// C ref: mondata.c breakarm()
 /* creature will break out of armor */
 export function has_horns(ptr) { return num_horns(ptr) > 0; }
 /* C ref: obj.h is_flimsy(), is_sword(), WrappingAllowed(),

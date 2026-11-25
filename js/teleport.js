@@ -1164,8 +1164,6 @@ export async function level_tele() {
                                   : null);
 }
 
-/* C ref: mondata.h is_dlord(), is_dprince(), is_covetous() */
-
 // C ref: teleport.c m_blocks_teleporting()
 /* does monster block others from teleporting? */
 function m_blocks_teleporting(mtmp) {

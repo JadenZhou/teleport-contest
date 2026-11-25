@@ -33,7 +33,7 @@ import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { mungspaces, strstri, strncmpi } from './hacklib.js';
 import { name_to_mon, amorphous, noncorporeal, unsolid, unique_corpstat,
-         passes_walls, is_male, is_female } from './mondata.js';
+         passes_walls, is_male, is_female, is_whirly } from './mondata.js';
 import { makemon, makemon_flush_msg } from './makemon.js';
 import { SCROLL_CLASS, SPBOOK_CLASS } from './objects.js';
 import { GETOBJ_EXCLUDE, GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_PROMPT,
@@ -152,8 +152,6 @@ function Is_dragon_scales(o) {
 function is_shield(o) {
     return o.oclass === ARMOR_CLASS && objects[o.otyp].oc_armcat === O.ARM_SHIELD;
 }
-/* C ref: mondata.h amorphous(), passes_walls(), noncorporeal(),
-   unsolid() */
 /* C ref: hack.h distu() */
 function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;
@@ -2273,7 +2271,7 @@ export async function punish(sobj) {
         g.uball.owt += WT_IRON_BALL_INCR * (1 + cursed_levy);
         return;
     }
-    if (amorphous(g.youmonst.data) || is_whirly_rd(g.youmonst.data)
+    if (amorphous(g.youmonst.data) || is_whirly(g.youmonst.data)
         || unsolid(g.youmonst.data)) {
         if (!reuse_ball) {
             await pline("A ball and chain appears, then falls away.");
@@ -2340,7 +2338,6 @@ async function do_stinking_cloud(sobj, mention_stinking) {
 }
 
 /* C ref: detect.c -- the detection routines (detect.js) */
-function is_whirly_rd(ptr) { return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL]; }
 
 /* C ref: read.c tshirt_text() shirt_msgs[], hawaiian_motif()
    hawaiian_motifs[], hawaiian_design() hawaiian_bgs[], apron_text()
@@ -2502,8 +2499,6 @@ function new_create_particular_data() {
 
 /* C ref: monsters.h MAXMCLASSES */
 const MAXMCLASSES = 61;
-
-/* C ref: mondata.h is_male(), is_female(), unique_corpstat() */
 
 // C ref: read.c cant_revive()
 /* some creatures have special data structures that only make sense in their

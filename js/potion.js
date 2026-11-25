@@ -121,7 +121,6 @@ import { NEUTRAL } from './const.js';
    like aren't modeled here: only the polymorphed form's own defenses */
 /* C ref: monst.h ismnum() */
 function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
-/* C ref: mondata.h breathless(), likes_fire(), is_silent(), is_human() */
 /* C ref: monst.h mon_perma_blind(), DEADMONSTER() */
 function mon_perma_blind(mon) { return !mon.mcansee && !mon.mblinded; }
 /* C ref: hack.h makeknown(), distu() */

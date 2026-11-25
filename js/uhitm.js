@@ -238,7 +238,6 @@ import { angry_guards } from './mon.js';
 import { clone_mon } from './makemon.js';
 import { mintrap } from './trap.js';
 import { NO_TRAP_FLAGS } from './const.js';
-/* C ref: mondata.h slithy(), flaming(), has_head() */
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 

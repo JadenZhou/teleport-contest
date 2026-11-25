@@ -23,8 +23,9 @@ import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
 import { The, xname, Tobjnam, vtense } from './objnam.js';
 import { mon_nam } from './do_name.js';
-import { resists_blnd, resists_blnd_by_arti, nohands,
-         is_mplayer } from './mondata.js';
+import { resists_blnd, resists_blnd_by_arti, nohands, is_mplayer, is_whirly,
+         mindless, digests, is_rider, eyecount,
+         breathless } from './mondata.js';
 import { make_blinded } from './potion.js';
 import { body_part } from './insight.js';
 import { ARM, POLY_NOFLAGS } from './const.js';
@@ -507,19 +508,6 @@ function has_mcorpsenm_bm(mon) {
         && mon.mextra.mcorpsenm !== NON_PM_ZP;
 }
 
-/* C ref: mondata.h is_whirly() */
-function is_whirly_bm(ptr) {
-    return ptr.mlet === S_VORTEX_ZY || ptr === mons_zy[PM_AIR_ELEMENTAL_BM];
-}
-
-/* C ref: mondata.h mindless() */
-function mindless_bm(ptr) { return (ptr.mflags1 & M1_MINDLESS_BM) !== 0; }
-
-/* C ref: mondata.h digests() */
-function digests_bm(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL_BM
-                                       && a.adtyp === AD_DGST_BM);
-}
 
 // C ref: display.c knowninvisible() (display.h _knowninvisible())
 function knowninvisible(mon) {
@@ -689,7 +677,7 @@ export async function bhitm(mtmp, otmp) {
             await mon_adjust_speed_rv(mtmp, -1, otmp);
             check_gear_next_turn_bm(mtmp); /* might want speed boots */
 
-            if (engulfing_u_zp(mtmp) && is_whirly_bm(mtmp.data)) {
+            if (engulfing_u_zp(mtmp) && is_whirly(mtmp.data)) {
                 await You(`disrupt ${mon_nam(mtmp)}!`);
                 await pline("A huge hole opens up...");
                 await expels_bm(mtmp, mtmp.data, true);
@@ -883,7 +871,7 @@ export async function bhitm(mtmp, otmp) {
                         await pline(`${Monnam(mtmp)} doesn't budge.`);
                 }
                 if (!DEADMONSTER_BM(mtmp)) {
-                    await wakeup(mtmp, !mindless_bm(mtmp.data));
+                    await wakeup(mtmp, !mindless(mtmp.data));
                     await abuse_dog_bm(mtmp);
                 }
             } else if ((obj = which_armor_zp(mtmp, W_SADDLE_BM))) {
@@ -1052,7 +1040,7 @@ export async function release_hold() {
     if (!mtmp) {
         impossible("release_hold when not held?");
     } else if (u.uswallow) { /* possible for sticky hero to be swallowed */
-        if (digests_bm(mtmp.data)) {
+        if (digests(mtmp.data)) {
             if (!Blind())
                 await pline(`${Monnam(mtmp)} opens its mouth!`);
             else
@@ -3267,7 +3255,7 @@ async function maybe_destroy_item(
         }
         if (u_carry) { /* effects that happen only to the player */
             if (osym === POTION_CLASS && dmgtyp !== AD_COLD
-                && (!breathless_zp(game.youmonst.data)
+                && (!breathless(game.youmonst.data)
                     || haseyes_zp(game.youmonst.data))) {
                 await potionbreathe_zp(obj);
             }
@@ -3635,13 +3623,13 @@ export async function dobuzz(
                         const tmp = await zhitm(mon, type, nd, ootmp);
                         otmp = ootmp.v;
 
-                        if (is_rider_zp(mon.data)
+                        if (is_rider(mon.data)
                             && Math.abs(type) === ZT_BREATH(ZT_DEATH)) {
                             if (canseemon(mon)) {
                                 await hit(flash_str(fltyp, false), mon, ".");
                                 await pline(`${Monnam(mon)} disintegrates.`);
                                 await pline(`${s_suffix(Monnam(mon))} body reintegrates before your ${
-                                    (eyecount_zp(g.youmonst.data) === 1)
+                                    (eyecount(g.youmonst.data) === 1)
                                         ? body_part(EYE_ZP)
                                         : makeplural(body_part(EYE_ZP))}!`);
                                 await pline(`${Monnam(mon)} resurrects!`);
@@ -4282,18 +4270,6 @@ function uhave_zp(p) {
     const q = game.u.uprops[p];
     return !!(q && (q.intrinsic || q.extrinsic));
 }
-/* C ref: mondata.h is_rider(), eyecount() */
-function is_rider_zp(ptr) {
-    return ptr === mons_zy[PM_DEATH_ZP] || ptr === mons_zy[PM_FAMINE_ZP]
-           || ptr === mons_zy[PM_PESTILENCE_ZP];
-}
-function eyecount_zp(ptr) {
-    return !haseyes_zp(ptr) ? 0
-           : (ptr === mons_zy[PM_CYCLOPS_ZP] || ptr === mons_zy[PM_FLOATING_EYE_ZP])
-             ? 1 : 2;
-}
-/* C ref: mondata.h breathless() */
-function breathless_zp(ptr) { return (ptr.mflags1 & M1_BREATHLESS_ZP) !== 0; }
 // C ref: uhitm.c disguised_as_non_mon()
 function disguised_as_non_mon(mtmp) {
     return (!sensemon_zp(mtmp)
@@ -4316,13 +4292,8 @@ async function u_slow_down_zp() {
 const ERODE_CORRODE_ZP = 3;
 
 
-/* C ref: mondata.h is_rider(), is_reviver(), is_displacer(),
-   dmgtype() for AD_SEDU */
-function is_rider_rv(ptr) {
-    return ptr === mons_rv[PM_DEATH_RV] || ptr === mons_rv[PM_FAMINE_RV]
-        || ptr === mons_rv[PM_PESTILENCE_RV];
-}
-function is_reviver_rv(ptr) { return is_rider_rv(ptr) || ptr.mlet === S_TROLL_RV; }
+/* C ref: mondata.h is_reviver(), is_displacer() */
+function is_reviver_rv(ptr) { return is_rider(ptr) || ptr.mlet === S_TROLL_RV; }
 function is_displacer_rv(ptr) { return ((ptr.mflags3 || 0) & M3_DISPLACES_RV) !== 0; }
 /* C ref: obj.h has_omonst(), has_omid(), OMID(); mextra.c free_omonst(),
    free_omid() */
@@ -4385,7 +4356,7 @@ export async function montraits(
         /* save_mtraits() validated mtmp2->mnum */
         mtmp2.data = mons_rv[mtmp2.mnum];
 
-        if (mtmp2.mhpmax > 0 || is_rider_rv(mtmp2.data)) {
+        if (mtmp2.mhpmax > 0 || is_rider(mtmp2.data)) {
             mtmp = await makemon_revive(mtmp2.data, cc.x, cc.y,
                            (NO_MINVENT_RV | MM_NOWAIT_RV | MM_NOCOUNTBIRTH_RV
                             /* in case mtmp2 is a long worm; saved traits for
@@ -4869,12 +4840,12 @@ export async function revive_mon(arg, timeout) {
         let when;
         let action;
 
-        if (is_rider_rv(mptr) && rn2(99)) { /* Rider usually tries again */
+        if (is_rider(mptr) && rn2(99)) { /* Rider usually tries again */
             /* action = REVIVE_MON; when = rider_revival_time(body, TRUE); */
             throw new Error('revive_mon(): rider_revival_time() not ported yet');
         } else { /* rot this corpse away */
             if (!obj_has_timer_rv(body, ROT_CORPSE_RV))
-                await You_feel(`${is_rider_rv(mptr) ? "much " : ""}less hassled.`);
+                await You_feel(`${is_rider(mptr) ? "much " : ""}less hassled.`);
             action = ROT_CORPSE_RV;
             when = d(5, 50) - (game.moves - body.age);
             if (when < 1)
@@ -5022,7 +4993,7 @@ export function cancel_item(obj) {
     /* cancelling a troll's corpse prevents it from reviving (on its own;
        does not affect undead turning induced revival) */
     if (obj.otyp === O_ci.CORPSE && obj.timed
-        && !is_rider_rv(mons_rv[obj.corpsenm])) {
+        && !is_rider(mons_rv[obj.corpsenm])) {
         const a = obj_to_any_ci(obj);
         const timout = peek_timer_ci(REVIVE_MON_RV, a);
 

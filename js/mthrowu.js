@@ -97,8 +97,6 @@ import { WT_IRON_BALL_INCR } from './const.js';
 /* C ref: youprop.h -- (H* || E*) && !B* */
 function verbose() { return game.flags.verbose ?? true; }
 
-/* C ref: mondata.c poly_when_stoned() -- golems other than stone golem
-   turn into stone golems */
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;

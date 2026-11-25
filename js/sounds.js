@@ -40,7 +40,8 @@ import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
 import { is_flyer, is_undead, is_vampshifter, same_race, is_animal,
-         is_mercenary, is_silent, is_lord, is_prince } from './mondata.js';
+         is_mercenary, is_silent, is_lord, is_prince,
+         humanoid } from './mondata.js';
 import { Blind, Strangled, Hallucination, Deaf, Unaware } from './youprop.js';
 import { S_NYMPH as S_NYMPH_SN } from './monsters.js';
 import { could_seduce as could_seduce_sn, doseduce as doseduce_sn } from './mhitu.js';
@@ -933,12 +934,10 @@ async function dochat() {
     return await domonnoise(mtmp);
 }
 
-/* C ref: mondata.h humanoid() */
-function humanoid_sn(ptr) { return (ptr.mflags1 & M1_HUMANOID_SN) !== 0; }
 /* C ref: polyself.c poly_gender() -- gender of polymorphed player;
    0/1=same meaning as flags.female, 2=none */
 function poly_gender_sn() {
-    if (is_neuter_sn(game.youmonst.data) || !humanoid_sn(game.youmonst.data))
+    if (is_neuter_sn(game.youmonst.data) || !humanoid(game.youmonst.data))
         return 2;
     return game.flags.female ? 1 : 0;
 }

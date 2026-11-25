@@ -44,8 +44,8 @@ import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          resists_magm, mon_knows_traps, mon_learns_traps, mons_see_trap,
          likes_gems, mindless, hides_under, amorphous, unsolid, is_whirly,
          metallivorous, breathless, acidic, extra_nasty, unique_corpstat,
-         is_clinger, resists_ston, is_unicorn, flaming, webmaker,
-         attacktype } from './mondata.js';
+         is_clinger, resists_ston, is_unicorn, flaming, webmaker, attacktype,
+         throws_rocks, nohands, likes_lava } from './mondata.js';
 import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
          GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
 import { rnd, d } from './rng.js';
@@ -336,7 +336,6 @@ export { is_hole, is_pit };
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
-// C ref: mondata.h likes_gems(), is_unicorn()
 // C ref: hacklib.c sgn()
 function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
@@ -1186,8 +1185,8 @@ const a_your = ["a", "your"];
 const tower_of_flame = "tower of flame";
 const A_gush_of_water_hits = "A gush of water hits";
 
-/* C ref: mondata.h passes_rocks(), grounded(), breathless(), flaming(),
-   acidic(), extra_nasty(); obj.h stone_missile(); trap.c completelyrusts */
+/* C ref: mondata.h passes_rocks(), grounded(); obj.h stone_missile();
+   trap.c completelyrusts */
 export function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
 function grounded(ptr) {
     /* has_ceiling(&u.uz): no air or water levels are generated yet */
@@ -4001,9 +4000,6 @@ function launch_drop_spot(obj, x, y) {
     }
 }
 
-/* C ref: mondata.h throws_rocks() */
-function throws_rocks_l(ptr) { return (ptr.mflags2 & M2_ROCKTHROW_L) !== 0; }
-
 // C ref: trap.c launch_obj()
 /*
  * Move obj from (x1,y1) to (x2,y2)
@@ -4135,7 +4131,7 @@ export async function launch_obj(otyp, x1, y1, x2, y2, style) {
         y = (g.bhitpos.y += dy);
 
         if ((mtmp = m_at(x, y)) != null) {
-            if (otyp === BOULDER && throws_rocks_l(mtmp.data)) {
+            if (otyp === BOULDER && throws_rocks(mtmp.data)) {
                 if (rn2(3)) {
                     if (cansee(x, y))
                         await pline(`${Monnam(mtmp)} snatches the boulder.`);
@@ -5009,7 +5005,7 @@ export async function could_untrap(verbosely, check_floor) {
 
     if (near_capacity_tr() >= HVY_ENCUMBER_TR) {
         buf = "You're too strained to do that.";
-    } else if ((nohands_tr(ptr) && !webmaker_tr(ptr)) || !ptr.mmove) {
+    } else if ((nohands(ptr) && !webmaker(ptr)) || !ptr.mmove) {
         buf = "And just how do you expect to do that?";
     } else if (game.u.ustuck && sticks_tr(ptr)) {
         buf = `You'll have to let go of ${mon_nam_tr(game.u.ustuck)} first.`;
@@ -5041,11 +5037,6 @@ export async function untrap(force, rx, ry, container) {
         throw new Error('untrap(): untrapping in a direction not ported yet');
     }
     throw new Error('untrap(): autounlock untrap not ported yet');
-}
-/* C ref: mondata.h nohands(), webmaker() */
-function nohands_tr(ptr) { return (ptr.mflags1 & M1_NOHANDS_TR) !== 0; }
-function webmaker_tr(ptr) {
-    return ptr === mons_tr[PM_CAVE_SPIDER_TR] || ptr === mons_tr[PM_GIANT_SPIDER_TR];
 }
 
 // C ref: trap.c back_on_ground()
@@ -5082,11 +5073,6 @@ export async function back_on_ground(rescued) {
     }
     await pline(`${you_are_back} ${preposit} ${surf}.`);
     g.iflags.last_msg = PLNMSG_BACK_ON_GROUND_BG;
-}
-
-/* C ref: mondata.h likes_lava() */
-function likes_lava_dr(ptr) {
-    return ptr === mons_dr[PM_FIRE_ELEMENTAL_DR] || ptr === mons_dr[PM_SALAMANDER_DR];
 }
 
 // C ref: hack.c is_waterwall()
@@ -5361,7 +5347,7 @@ export async function lava_effects() {
     }
     feel_newsym_dr(u.ux, u.uy); /* in case Blind, map the lava here */
     await burn_away_slime_dr();
-    if (likes_lava_dr(g.youmonst.data))
+    if (likes_lava(g.youmonst.data))
         return false;
 
     usurvive = Fire_resistance() || (Wwalking() && dmg < u.uhp);

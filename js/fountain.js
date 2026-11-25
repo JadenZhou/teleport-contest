@@ -90,8 +90,6 @@ import { uprop } from './youprop.js';
 /* C ref: youprop.h -- the property macros used here */
 void HALLUC; void HALLUC_RES; void BLINDED;
 
-/* C ref: mondata.h breathless(), is_watch(), nolimbs() */
-
 /* C ref: rm.h fountain/sink flag macros (looted == flags) */
 function lev(x, y) { return game.level.at(x, y); }
 function FOUNTAIN_IS_WARNED(x, y) { return (lev(x, y).flags || 0) & F_WARNED; }

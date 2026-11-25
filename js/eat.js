@@ -22,8 +22,8 @@ import { You_hear } from './sounds.js';
 import { fall_asleep } from './timeout.js';
 import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
          herbivorous, metallivorous, is_giant, acidic, vegan, flesh_petrifies,
-         slimeproof, poly_when_stoned, attacktype,
-         cantvomit } from './mondata.js';
+         slimeproof, poly_when_stoned, attacktype, cantvomit,
+         is_rider } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
@@ -145,10 +145,7 @@ const tintxts = [
 ];
 const TTSZ = tintxts.length;
 
-/* C ref: mondata.h is_rider(), vegan(), vegetarian() */
-function is_rider_pm(mnum) {
-    return mnum === M.PM_DEATH || mnum === M.PM_FAMINE || mnum === M.PM_PESTILENCE;
-}
+/* C ref: mondata.h vegetarian() */
 export function vegetarian(ptr) {
     return vegan(ptr)
         || (ptr.mlet === M.S_PUDDING && ptr !== mons[M.PM_BLACK_PUDDING]);
@@ -156,7 +153,7 @@ export function vegetarian(ptr) {
 /* C ref: eat.c nonrotting_corpse() */
 function nonrotting_corpse(mnum) {
     return mnum === M.PM_LIZARD || mnum === M.PM_LICHEN
-        || is_rider_pm(mnum) || mnum === M.PM_ACID_BLOB;
+        || is_rider(mons[mnum]) || mnum === M.PM_ACID_BLOB;
 }
 
 // C ref: eat.c tin_variety()

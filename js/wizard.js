@@ -318,7 +318,7 @@ const random_malediction = [
     "Verily, thou shalt be one dead"
 ];
 
-/* C ref: mondata.h is_minion(), is_lminion() */
+/* C ref: mondata.h is_lminion() */
 function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
 }

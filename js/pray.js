@@ -302,7 +302,6 @@ function on_shrine() {
 function a_align(x, y) {
     return Amask2align(game.level.at(x, y).altarmask & AM_MASK);
 }
-/* C ref: mondata.h nohands(), nolimbs(), throws_rocks() */
 /* C ref: obj.h Cursed_obj() */
 function Cursed_obj(obj, typ) { return !!(obj && obj.otyp === typ && obj.cursed); }
 

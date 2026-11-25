@@ -77,7 +77,6 @@ import { SHOPBASE } from './const.js';
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
 
-/* C ref: mondata.h is_animal(), slithy(), throws_rocks(), touch_petrifies() */
 /* C ref: hack.h distu() */
 function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;

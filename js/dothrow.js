@@ -146,7 +146,8 @@ import { hot_pursuit as hot_pursuit_dt, inside_shop as inside_shop_sk } from './
 import { in_rooms as in_rooms_dt } from './hack.js';
 import { distmin as distmin_dt } from './hacklib.js';
 import { your_race as your_race_dt, is_orc as is_orc_dt, is_elf as is_elf_dt,
-         nohands, throws_rocks, notake, touch_petrifies } from './mondata.js';
+         nohands, throws_rocks, notake, touch_petrifies, digests,
+         is_unicorn } from './mondata.js';
 import { is_quest_artifact as is_quest_artifact_dt } from './questpgr.js';
 import { Is_candle as Is_candle_dt } from './mkobj.js';
 import { is_domestic as is_domestic_dt } from './makemon.js';
@@ -202,8 +203,6 @@ import { is_moat as is_moat_ht } from './makemon.js';
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
 const WT_SPLASH_THRESHOLD = 9;
-
-/* C ref: mondata.h nohands(), notake() */
 
 /* C ref: dothrow.c AutoReturn() -- uwep might already be removed from
    inventory so test for W_WEP instead */
@@ -501,7 +500,7 @@ async function throw_gold(obj) {
     if (u.uswallow) {
         let swallower = mon_nam(u.ustuck);
 
-        if (digests_tg(u.ustuck.data))
+        if (digests(u.ustuck.data))
             swallower = s_suffix(swallower) + " entrails";
         await pline_The(`gold disappears into ${swallower}.`);
         add_to_minv(u.ustuck, obj);
@@ -550,11 +549,6 @@ async function throw_gold(obj) {
     stackobj(obj);
     newsym(g.bhitpos.x, g.bhitpos.y);
     return ECMD_TIME;
-}
-
-/* C ref: mondata.h digests() */
-function digests_tg(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
 }
 
 // C ref: dothrow.c throwing_weapon()
@@ -666,10 +660,7 @@ function special_obj_hits_leader(obj, mon) {
             && mon.m_id === game.quest_status.leader_m_id);
 }
 
-/* C ref: mondata.h is_unicorn(), befriend_with_obj() */
-function is_unicorn_dt(ptr) {
-    return ptr.mlet === S_UNICORN_DT && (ptr.mflags2 & M2_JEWELS_DT) !== 0;
-}
+/* C ref: mondata.h befriend_with_obj() */
 function befriend_with_obj_dt(ptr, obj) {
     return (ptr === mons[PM_MONKEY_DT] || ptr === mons[PM_APE_DT])
         ? obj.otyp === BANANA_DT
@@ -761,7 +752,7 @@ export async function thitmonst(mon,
        throwing worthless glass doesn't affect Luck but doesn't anger them;
        5.0: treat rocks and gray stones as attacks rather than like glass
        and also treat gems or glass shot via sling as attacks */
-    if (obj.oclass === GEM_CLASS && is_unicorn_dt(mon.data)
+    if (obj.oclass === GEM_CLASS && is_unicorn(mon.data)
         && objects[obj.otyp].oc_material !== MINERAL_DT && !uslinging()) {
         if (mon.msleeping || !mon.mcanmove) { /* helpless(mon) */
             await tmiss(obj, mon, false);
@@ -2164,11 +2155,11 @@ async function mhurtle_step(mon, x, y) {
             await pline(`${Monnam_dt(mon)} bumps into ${a_monnam_hu(mtmp)}.`);
         await wakeup_hu(mtmp, !game.context.mon_moving);
         /* check whether 'mon' is turned to stone by touching 'mtmp' */
-        if (touch_petrifies_hu(mtmp.data)
+        if (touch_petrifies(mtmp.data)
             && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
             throw new Error('mhurtle_step(): minstapetrify() not ported yet');
         /* and whether 'mtmp' is turned to stone by being touched by 'mon' */
-        if (touch_petrifies_hu(mon.data)
+        if (touch_petrifies(mon.data)
             && !which_armor_hu(mtmp, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
             throw new Error('mhurtle_step(): minstapetrify() not ported yet');
     } else if (u.ux === x && u.uy === y) {
@@ -2176,21 +2167,16 @@ async function mhurtle_step(mon, x, y) {
         await pline(`${Some_Monnam_hu(mon)} bumps into you.`);
         await stop_occupation_hu();
         /* check whether 'mon' is turned to stone by touching poly'd hero */
-        if (u.umonnum !== u.umonster && touch_petrifies_hu(game.youmonst.data)
+        if (u.umonnum !== u.umonster && touch_petrifies(game.youmonst.data)
             && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
             throw new Error('mhurtle_step(): minstapetrify() not ported yet');
         /* and whether hero is turned to stone by being touched by 'mon' */
-        if (touch_petrifies_hu(mon.data)
+        if (touch_petrifies(mon.data)
             && !(game.uarmu || game.uarm || game.uarmc))
             throw new Error('mhurtle_step(): instapetrify() not ported yet');
     }
 
     return false;
-}
-
-/* C ref: mondata.h touch_petrifies() */
-function touch_petrifies_hu(ptr) {
-    return ptr === mons_hu[PM_COCKATRICE_HU] || ptr === mons_hu[PM_CHICKATRICE_HU];
 }
 
 // C ref: dothrow.c hurtle()

@@ -77,7 +77,7 @@ import { SHOPBASE, LARGEST_INT, MAY_FRACTURE, MAY_DESTROY, MAY_HITMON,
          STONE } from './const.js';
 import { BOULDER, STATUE, GLASS, EGG, GOLD_PIECE } from './objects.js';
 
-/* C ref: mondata.h digests(), sticks() */
+/* C ref: mondata.h sticks() */
 /* C ref: monst.h monstseesu_ad(), monstunseesu_ad() */
 function monstseesu_ad(adtyp) { monstseesu(cvt_adtyp_to_mseenres(adtyp)); }
 function monstunseesu_ad(adtyp) { monstunseesu(cvt_adtyp_to_mseenres(adtyp)); }

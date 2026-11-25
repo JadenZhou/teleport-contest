@@ -30,7 +30,6 @@ import { d as d_mu } from './rng.js';
 import { NOTELL as NOTELL_MU } from './const.js';
 import { mindless, unique_corpstat, can_blow } from './mondata.js';
 
-/* C ref: mondata.h unique_corpstat(), mindless() */
 /* C ref: hack.h mdistu() */
 function mdistu(mtmp) { return dist2(mtmp.mx, mtmp.my, game.u.ux, game.u.uy); }
 

@@ -2103,7 +2103,7 @@ function pm_to_humidity(pm) {
     return loc;
 }
 
-// C ref: mondata.h amphibious(), noncorporeal(), likes_lava(), likes_fire()
+// C ref: mondata.h amphibious()
 function amphibious(ptr) { return (ptr.mflags1 & M1_AMPHIBIOUS) !== 0; }
 
 // C ref: sp_lev.c create_monster()

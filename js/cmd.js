@@ -857,9 +857,6 @@ async function here_cmd_menu() {
     return '\0';
 }
 
-/* C ref: mondata.h is_hider(), hides_under(), webmaker(), can_breathe(),
-   attacktype(), is_mind_flayer(), likes_gems(), is_unicorn() */
-
 // C ref: cmd.c domonability() -- #monster command - use special monster
 // ability while polymorphed
 async function domonability() {

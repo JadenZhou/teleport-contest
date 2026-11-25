@@ -24,7 +24,8 @@ import { yelp, growl, You_hear } from './sounds.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
 import { poly_gender } from './polyself.js';
-import { is_demon, type_is_pname, resist_conflict } from './mondata.js';
+import { is_demon, type_is_pname, resist_conflict,
+         nolimbs } from './mondata.js';
 import { search_special } from './sounds.js';
 import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
@@ -3264,15 +3265,10 @@ async function reject_purchase(shkp, obj, billed_quan) {
                          simpleonames(obj)} before buying ${which}.`);
     } else {
         await pline(`${Shknam(shkp)} ${ANGRY(shkp) ? "angrily " : ""}${
-                     nolimbs_shk(shkp.data) ? "motions to" : "points out"
+                     nolimbs(shkp.data) ? "motions to" : "points out"
                      } your bill for the other ${simpleonames(obj)} first.`);
     }
     obj.quan = intact_quan;
-}
-
-/* C ref: mondata.h nolimbs() */
-function nolimbs_shk(ptr) {
-    return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS;
 }
 
 // C ref: shk.c insufficient_funds()

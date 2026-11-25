@@ -70,8 +70,8 @@ import { monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
          noncorporeal, is_whirly, is_mercenary, strongmonst, extra_nasty,
          is_giant, likes_gold, always_hostile, is_minion, unique_corpstat,
          is_armed, is_lord, is_prince, is_rider, is_dlord, is_dprince,
-         is_unicorn, is_mplayer, is_placeholder,
-         attacktype } from './mondata.js';
+         is_unicorn, is_mplayer, is_placeholder, attacktype,
+         is_vampshifter } from './mondata.js';
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
@@ -2484,11 +2484,6 @@ export function rnd_offensive_item(mtmp) {
     return 0;
 }
 
-// C ref: mondata.h is_vampshifter()
-function is_vampshifter_mon(mon) {
-    return mon.cham === M.PM_VAMPIRE || mon.cham === M.PM_VAMPIRE_LEADER
-           || mon.cham === M.PM_VLAD_THE_IMPALER;
-}
 // C ref: youprop.h See_invisible -- intrinsics aren't tracked yet
 
 // C ref: muse.c rnd_misc_item()
@@ -2506,7 +2501,7 @@ export function rnd_misc_item(mtmp) {
     if (difficulty < 6 && !rn2(30))
         return rn2(6) ? O.POT_POLYMORPH : O.WAN_POLYMORPH;
 
-    if (!rn2(40) && !nonliving(pm) && !is_vampshifter_mon(mtmp))
+    if (!rn2(40) && !nonliving(pm) && !is_vampshifter(mtmp))
         return O.AMULET_OF_LIFE_SAVING;
 
     switch (rn2(3)) {
