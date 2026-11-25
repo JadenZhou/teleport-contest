@@ -59,6 +59,8 @@ import { Hallucination, Conflict } from './youprop.js';
 import { u_at } from './const.js';
 import { undesirable_disp as undesirable_disp_dm } from './monmove.js';
 import { mdisplacem as mdisplacem_dm } from './mhitm.js';
+import { mon_reflects } from './muse.js';
+import { resists_ston, touch_petrifies } from './mondata.js';
 
 const DOG_HUNGRY = 300;
 const DOG_WEAK = 500;
@@ -1257,6 +1259,7 @@ export async function dog_move(mtmp, after) {
     let nx, ny; /* temporary coordinates */
     let cnt, uncursedcnt, chcnt;
     let chi = -1, nidist, ndist;
+    let ranged_only;
     const gg = game.gg || (game.gg = { gtyp: 0, gx: 0, gy: 0 });
     const GDIST = (x, y) => dist2(x, y, gg.gx, gg.gy);
 
@@ -1346,6 +1349,8 @@ export async function dog_move(mtmp, after) {
         if (!edog && (j = distu(nx, ny)) > 16 && j >= udist)
             continue;
 
+        ranged_only = false;
+
         if ((mfp.info[i] & ALLOW_M) && MON_AT(nx, ny)) {
             const mtmp2 = m_at(nx, ny);
             const balk = mtmp.m_lev + Math.trunc((5 * mtmp.mhp) / mtmp.mhpmax) - 2;
@@ -1359,11 +1364,21 @@ export async function dog_move(mtmp, after) {
                     && mtmp2.mpeaceful && !Conflict())) {
                 continue;
             }
-            if (mtmp2.data === mons[M.PM_FLOATING_EYE]
-                || mtmp2.data === mons[M.PM_GELATINOUS_CUBE]
-                || mtmp2.data === mons[M.PM_COCKATRICE]
-                || mtmp2.data === mons[M.PM_CHICKATRICE])
-                throw new Error('dog_move(): floating eye/cube/cockatrice foes not ported yet');
+            if ((mtmp2.data === mons[M.PM_FLOATING_EYE] && rn2(10)
+                 && mtmp.mcansee && haseyes(mtmp.data) && mtmp2.mcansee
+                 && (!mtmp2.minvis || perceives(mtmp.data))
+                 && !await mon_reflects(mtmp, null))
+                || (mtmp2.data === mons[M.PM_GELATINOUS_CUBE] && rn2(10))
+                || (touch_petrifies(mtmp2.data) && !resists_ston(mtmp))) {
+                /* only skip this foe if a ranged attack isn't viable */
+                if (dist2(mtmp.mx, mtmp.my, mtmp2.mx, mtmp2.my) <= 2
+                    || best_target(mtmp, false) !== mtmp2)
+                    continue;
+                ranged_only = true;
+            }
+            /** FIXME: 'ranged_only' isn't used as intended yet **/
+            if (ranged_only)
+                continue;
 
             if (after)
                 return MMOVE_NOTHING; /* hit only once each move */

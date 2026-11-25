@@ -108,7 +108,11 @@ import { touch_petrifies as touch_petrifies_md, resists_ston as resists_ston_md 
 import { s_suffix as s_suffix_sm } from './hacklib.js';
 import { unstuck as unstuck_sm } from './mhitu.js';
 import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';
-import { mhitm_knockback } from './uhitm.js';
+import { mhitm_knockback, stagger } from './uhitm.js';
+import { mon_reflects } from './muse.js';
+import { golemeffects, healmon } from './mon.js';
+import { split_mon } from './potion.js';
+import { haseyes, perceives } from './mondata.js';
 
 /* C ref: obj.h is_pole() */
 function is_pole(otmp) {
@@ -881,6 +885,7 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
 // C ref: mhitm.c passivemm()
 async function passivemm(magr, mdef, mhitb, mdead, mwep) {
     const mddat = mdef.data;
+    const madat = magr.data;
     let i, tmp;
     const mhit = mhitb ? M_ATTK_HIT : M_ATTK_MISS;
 
@@ -912,12 +917,81 @@ async function passivemm(magr, mdef, mhitb, mdead, mwep) {
     /* These affect the enemy only if defender is still alive */
     if (rn2(3))
         switch (mddat.mattk[i].adtyp) {
-        case M.AD_PLYS:
+        case M.AD_PLYS: /* Floating eye */
+            if (tmp > 127)
+                tmp = 127;
+            if (mddat === mons[M.PM_FLOATING_EYE]) {
+                if (!rn2(4))
+                    tmp = 127;
+                if (magr.mcansee && haseyes(madat) && mdef.mcansee
+                    && (perceives(madat) || !mdef.minvis)) {
+                    /* construct format string; guard against '%' in Monnam */
+                    let buf = s_suffix_sm(Monnam(mdef));
+                    buf += " gaze is reflected by %s %s.";
+                    if (await mon_reflects(magr,
+                                           canseemon(magr) ? buf : null))
+                        return (mdead | mhit);
+                    buf = Monnam(magr);
+                    if (canseemon(magr))
+                        await pline(`${buf} is frozen by ${s_suffix_sm(mon_nam(mdef))} gaze!`);
+                    paralyze_monst(magr, tmp);
+                    return (mdead | mhit);
+                }
+            } else { /* gelatinous cube */
+                const buf = Monnam(magr);
+                if (canseemon(magr))
+                    await pline(`${buf} is frozen by ${mon_nam(mdef)}.`);
+                paralyze_monst(magr, tmp);
+                return (mdead | mhit);
+            }
+            return 1;
         case M.AD_COLD:
+            if (resists_cold(magr)) {
+                if (canseemon(magr)) {
+                    await pline(`${Monnam(magr)} is mildly chilly.`); /* pline_mon() */
+                    await golemeffects(magr, M.AD_COLD, tmp);
+                }
+                tmp = 0;
+                break;
+            }
+            if (canseemon(magr))
+                await pline(`${Monnam(magr)} is suddenly very cold!`); /* pline_mon() */
+            healmon(mdef, Math.trunc(tmp / 2), Math.trunc(tmp / 2));
+            if (mdef.mhpmax > ((mdef.m_lev + 1) * 8))
+                await split_mon(mdef, magr);
+            break;
         case M.AD_STUN:
+            if (!magr.mstun) {
+                magr.mstun = 1;
+                if (canseemon(magr))
+                    await pline(`${Monnam(magr)} ${makeplural(stagger(magr.data, "stagger"))}...`); /* pline_mon() */
+            }
+            tmp = 0;
+            break;
         case M.AD_FIRE:
+            if (resists_fire(magr)) {
+                if (canseemon(magr)) {
+                    await pline(`${Monnam(magr)} is mildly warmed.`); /* pline_mon() */
+                    await golemeffects(magr, M.AD_FIRE, tmp);
+                }
+                tmp = 0;
+                break;
+            }
+            if (canseemon(magr))
+                await pline(`${Monnam(magr)} is suddenly very hot!`); /* pline_mon() */
+            break;
         case M.AD_ELEC:
-            throw new Error('passivemm(): elemental passives not ported yet');
+            if (resists_elec(magr)) {
+                if (canseemon(magr)) {
+                    await pline(`${Monnam(magr)} is mildly tingled.`); /* pline_mon() */
+                    await golemeffects(magr, M.AD_ELEC, tmp);
+                }
+                tmp = 0;
+                break;
+            }
+            if (canseemon(magr))
+                await pline(`${Monnam(magr)} is jolted with electricity!`); /* pline_mon() */
+            break;
         default:
             tmp = 0;
             break;
