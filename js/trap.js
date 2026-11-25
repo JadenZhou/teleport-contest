@@ -4377,9 +4377,11 @@ function dng_bottom(lev) {
     /* when in the upper half of the quest, don't fall past the
        middle "quest locate" level if hero hasn't been there yet */
     if (In_quest(lev)) {
-        const qlocate_depth = game.dungeon_topology.d_qlocate_level?.dlevel;
-        /* dunlev_reached() is not ported; the quest isn't generated yet */
-        if (qlocate_depth != null && dunlev(lev) < qlocate_depth)
+        const qlocate_depth = game.dungeon_topology.d_qlocate_level.dlevel;
+
+        /* deepest reached < qlocate implies current < qlocate */
+        /* dunlev_reached(lev): svd.dungeons[lev->dnum].dunlev_ureached */
+        if (game.dungeons[lev.dnum].dunlev_ureached < qlocate_depth)
             bottom = qlocate_depth; /* early cut-off */
     } else if (In_hell(lev)) {
         if (!game.u.uevent?.invoked)

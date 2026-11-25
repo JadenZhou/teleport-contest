@@ -2117,8 +2117,10 @@ export function newcham_sync(mtmp, mdat, ncflags) {
     }
     return r.value;
 }
-/* the body of newcham(); yields the messages it gives */
-function* newcham_g(mtmp, mdat, ncflags) {
+/* the body of newcham(); yields the messages it gives.  The generator is
+   named newcham (an object-literal method, taken out as newcham_g) so that
+   js/rng.js credits its roll, rn2(5) for initworm(), to newcham as in C */
+const newcham_g = ({ *newcham(mtmp, mdat, ncflags) {
     const polyspot = ((ncflags & NC_VIA_WAND_OR_SPELL) !== 0);
     /* "The oldmon turns into a newmon!" */
     let msg = ((ncflags & NC_SHOW_MSG) !== 0);
@@ -2315,7 +2317,7 @@ function* newcham_g(mtmp, mdat, ncflags) {
         yield NEWCHAM_MON_MOVING; /* set_apparxy()/monflee(), in newcham() */
 
     return 1;
-}
+} }).newcham;
 // C ref: mon.c usmellmon()
 export async function usmellmon(mdat) {
     const gen = usmellmon_g(mdat);
