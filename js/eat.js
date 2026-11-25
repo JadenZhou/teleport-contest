@@ -9,6 +9,17 @@
 // start_tin(), opentin(), consume_tin().  Non-food and edibility prompts
 // are not ported yet.
 
+import { selftouch } from './trap.js';
+import { Levitation, Deaf } from './youprop.js';
+import { melt_ice } from './zap.js';
+import { were_beastie } from './were.js';
+import { polyself } from './polyself.js';
+import { POLY_NOFLAGS, EXPL_FIERY } from './const.js';
+import { attrcurse } from './sit.js';
+import { yobjnam } from './objnam.js';
+import { explode } from './explode.js';
+import { You_hear } from './sounds.js';
+import { fall_asleep } from './timeout.js';
 import { olfaction } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
@@ -213,6 +224,13 @@ function carnivorous(ptr) { return (ptr.mflags1 & M1_CARNIVORE) !== 0; }
 function herbivorous(ptr) { return (ptr.mflags1 & M1_HERBIVORE) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
 
+/* C ref: pline.c verbalize() */
+async function verbalize(line) {
+    if (Deaf())
+        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
+    await pline(`"${line}"`);
+}
+
 // C ref: eat.c init_uhunger()
 export async function init_uhunger() {
     const g = game;
@@ -410,12 +428,8 @@ export async function newuhs(incr) {
                 g.nomovemsg = "You regain consciousness.";
                 g.afternmv = unfaint;
                 newhs = FAINTED;
-                /* if (!Levitation) selftouch("Falling, you"): only acts
-                   when wielding a cockatrice corpse, not ported yet */
-                if (g.uwep && g.uwep.otyp === CORPSE
-                    && (g.uwep.corpsenm === M.PM_COCKATRICE
-                        || g.uwep.corpsenm === M.PM_CHICKATRICE))
-                    throw new Error('newuhs(): selftouch() not ported yet');
+                if (!Levitation())
+                    await selftouch("Falling, you");
             }
 
         /* this used to be -(200 + 20 * Con) but that was when being asleep
@@ -778,8 +792,9 @@ export async function vomit() {
         /* if poly'd into acidic form, stomach acid is stronger than normal */
         if ((ptr.mflags1 & M.M1_ACID) !== 0) {
             /* TODO: if there's a web here, destroy that too (before ice) */
-            if (g.level.at(u.ux, u.uy).typ === ICE_TYP)
-                throw new Error('vomit(): melt_ice() not ported yet');
+            if (g.level.at(u.ux, u.uy).typ === ICE_TYP) /* is_ice() */
+                await melt_ice(u.ux, u.uy,
+                               "Your stomach acid melts straight through the ice!");
         }
     }
 }
@@ -1032,8 +1047,8 @@ async function maybe_cannibal(pm, allowmsg) {
         && (your_race(fptr)
             || (Upolyd() && (fptr.mflags2 & game.youmonst.data.mflags2
                              & M.M2_RACEMASK) !== 0) /* same_race() */
-            || (u.ulycn >= M.LOW_PM
-                && (() => { throw new Error('maybe_cannibal(): were_beastie() not ported yet'); })()))) {
+            || (u.ulycn >= M.LOW_PM /* ismnum(u.ulycn) */
+                && were_beastie(pm) === u.ulycn))) {
         if (allowmsg) {
             if (Upolyd() && your_race(fptr))
                 await You("have a bad feeling deep inside.");
@@ -1311,13 +1326,29 @@ async function cpostfx(pm) {
         if (Unchanging()) {
             await You_feel("momentarily different."); /* same as poly trap */
         } else {
-            throw new Error('cpostfx(): polyself() not ported yet');
+            /* polyself() is potentially fatal; if food is a tin, use it up
+               early to keep it out of bones */
+            const tc = tin_ctx();
+            if (tc.tin) {
+                use_up_tin(tc.tin);
+                /* most tin effects end up being skipped */
+                await lesshungry(200 + (metallivorous(game.youmonst.data) ? 5 : 0));
+            }
+
+            await You(`${(pm === M.PM_GENETIC_ENGINEER)
+                          ? "undergo a freakish metamorphosis"
+                          : "feel a change coming over you"}.`);
+            await polyself(POLY_NOFLAGS);
         }
         break;
     case M.PM_DISPLACER_BEAST:
         throw new Error('cpostfx(): toggle_displacement() not ported yet');
     case M.PM_DISENCHANTER:
-        throw new Error('cpostfx(): attrcurse() not ported yet');
+        /* picks an intrinsic at random and removes it; there's
+           no feedback if hero already lacks the chosen ability */
+        /* debugpline0("using attrcurse to strip an intrinsic") */
+        await attrcurse();
+        break;
     case M.PM_DEATH:
     case M.PM_PESTILENCE:
     case M.PM_FAMINE:
@@ -1645,7 +1676,27 @@ async function start_tin(otmp) {
     } else if (uwep && [TIN_OPENER, DAGGER, SILVER_DAGGER, ELVEN_DAGGER,
                         ORCISH_DAGGER, ATHAME, KNIFE, STILETTO, CRYSKNIFE,
                         PICK_AXE, AXE].includes(uwep.otyp)) {
-        throw new Error('start_tin(): opening a tin with a wielded tool (yobjnam()) not ported yet');
+        switch (uwep.otyp) {
+        case TIN_OPENER:
+            mesg = "You easily open the tin."; /* iff tmp==0 */
+            tmp = rn2(uwep.cursed ? 3 : !uwep.blessed ? 2 : 1);
+            break;
+        case DAGGER:
+        case SILVER_DAGGER:
+        case ELVEN_DAGGER:
+        case ORCISH_DAGGER:
+        case ATHAME:
+        case KNIFE:
+        case STILETTO:
+        case CRYSKNIFE:
+            tmp = 3;
+            break;
+        case PICK_AXE:
+        case AXE:
+            tmp = 6;
+            break;
+        }
+        await pline(`Using ${yobjnam(uwep, null)} you try to open the tin.`);
     } else {
         /* no_opener: */
         await pline("It is not so easy to open this tin.");
@@ -1946,7 +1997,12 @@ async function fprefx(otmp) {
     switch (otmp.otyp) {
     case EGG:
         if (otmp.corpsenm === M.PM_PYROLISK) {
-            throw new Error('fprefx(): pyrolisk egg explode() not ported yet');
+            if (carried(otmp))
+                useup(otmp);
+            else
+                useupf(otmp, 1);
+            await explode(u.ux, u.uy, -11, d(3, 6), 0, EXPL_FIERY);
+            return false;
         } else if (stale_egg(otmp)) {
             await pline("Ugh.  Rotten egg."); /* perhaps others like it */
             /* increasing existing nausea means that it will take longer
@@ -2119,8 +2175,20 @@ async function fpostfx(otmp) {
             await make_vomiting(0, true);
         break;
     case APPLE:
-        if (otmp.cursed && !Sleep_resistance())
-            throw new Error('fpostfx(): cursed apple fall_asleep() not ported yet');
+        if (otmp.cursed && !Sleep_resistance()) {
+            /* Snow White; 'poisoned' applies to [a subset of] weapons,
+               not food, so we substitute cursed; fortunately our hero
+               won't have to wait for a prince to be rescued/revived */
+            if (Race_if(M.PM_DWARF) && Hallucination()) {
+                await verbalize("Heigh-ho, ho-hum, I think I'll skip work today.");
+            } else if (Deaf() || !game.flags.acoustics) {
+                await You("fall asleep.");
+            } else {
+                /* Soundeffect(se_sinister_laughter, 100) */
+                await You_hear("sinister laughter as you fall asleep...");
+            }
+            await fall_asleep(-rn1(11, 20), true);
+        }
         break;
     }
     return;

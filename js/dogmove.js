@@ -29,7 +29,7 @@ import { gettrack } from './track.js';
 import { onscary, should_displace, m_avoid_kicked_loc, m_avoid_soko_push_loc, mon_track_add,
          m_digweapon_check, is_mines_prize, is_soko_prize } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
-         is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater } from './mondata.js';
+         is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater, same_race } from './mondata.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
@@ -206,9 +206,12 @@ export function dogfood(mon, obj) {
                 throw new Error('dogfood(): polyfood() not ported yet');
             else if (vegan(fp))
                 return herbi ? CADAVER : MANFOOD;
-            /* most humanoids will avoid cannibalism unless starving */
-            else if (humanoid(mptr))
-                throw new Error('dogfood(): same_race() not ported yet');
+            /* most humanoids will avoid cannibalism unless starving;
+               arbitrary: elves won't eat other elves even then */
+            else if (humanoid(mptr) && same_race(mptr, fp)
+                     && (!is_undead(mptr) && fp.mlet !== M.S_KOBOLD
+                         && fp.mlet !== M.S_ORC && fp.mlet !== M.S_OGRE))
+                return (starving && carni && !is_elf(mptr)) ? ACCFOOD : TABU;
             else
                 return carni ? CADAVER : MANFOOD;
         case O.GLOB_OF_GREEN_SLIME: /* other globs use the default case */
@@ -1187,7 +1190,15 @@ async function pet_ranged_attk(mtmp, forced) {
         let mstatus = M_ATTK_MISS;
 
         if (mtarg === game.youmonst) {
-            throw new Error('pet_ranged_attk(): mattacku() not ported yet');
+            if (await mattacku(mtmp))
+                return MMOVE_DIED;
+            /* Treat this as the pet having initiated an attack even if it
+             * didn't, so it will lose its move.  This isn't entirely fair,
+             * but mattacku doesn't distinguish between "did not attack"
+             * and "attacked but didn't die" cases, and this is preferable
+             * to letting the pet attack the player and continuing to move.
+             */
+            mstatus = M_ATTK_HIT;
         } else {
             game.bhitpos = { x: mtmp.mx, y: mtmp.my };
             game.notonhead = false;

@@ -8,6 +8,18 @@
 // common amulets, Blindf_on(), #takeoff with the X_off() routines, and
 // donning()/doffing()/cancel_don()/cancel_doff().
 
+import { x_monnam, hcolor } from './do_name.js';
+import { ARTICLE_YOUR, SUPPRESS_SADDLE, SUPPRESS_HALLUCINATION, NECK,
+         Is_waterlevel, Is_airlevel } from './const.js';
+import { curse } from './mkobj.js';
+import { Hallucination, Underwater, Swimming, Breathless } from './youprop.js';
+import { ACURR, ABASE, ABON, ATEMP } from './attrib.js';
+import { begin_burn, end_burn } from './timeout.js';
+import { hliquid } from './potion.js';
+import { drown } from './trap.js';
+import { is_pool_or_lava } from './hack.js';
+import { set_bc } from './ball.js';
+import { M1_SWIM, M1_AMPHIBIOUS } from './monsters.js';
 import { cantweararm } from './worn.js';
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
@@ -271,6 +283,15 @@ async function on_msg(otmp) {
     }
 }
 
+/* C ref: color.h NH_BLACK */
+const NH_BLACK = "black";
+
+/* C ref: mondata.h cant_drown() */
+function cant_drown(ptr) {
+    return ((ptr.mflags1 & M1_SWIM) !== 0 || (ptr.mflags1 & M1_AMPHIBIOUS) !== 0
+            || breathless(ptr));
+}
+
 // C ref: do_wear.c toggle_stealth() -- putting on or taking off an item
 // which confers stealth; give feedback and discover it iff stealth state
 // is changing
@@ -297,9 +318,13 @@ async function toggle_stealth(obj,
             else
                 await You("walk very quietly.");
         } else {
-            if (g.u.usteed)
-                throw new Error('toggle_stealth(): x_monnam() of the steed not ported yet');
-            await You("sure are noisy.");
+            const riding = (g.u.usteed != null);
+
+            await You(`${riding ? "and " : "sure"}${
+                riding ? x_monnam(g.u.usteed, ARTICLE_YOUR, null,
+                                  (SUPPRESS_SADDLE | SUPPRESS_HALLUCINATION),
+                                  false)
+                       : ""} are noisy.`);
         }
     }
 }
@@ -370,7 +395,7 @@ async function Boots_on() {
         /* spoteffects() doesn't get called here; pooleffects() is called
            during movement and u.uinwater is already False after setworn() */
         if (u.uinwater)
-            throw new Error('Boots_on(): spoteffects() while underwater not ported yet');
+            await spoteffects_bo(true);
         /* init'd in accessory_or_armor_on() and only used here */
         if (g.wasinwater) {
             if (!u.uinwater)
@@ -479,8 +504,37 @@ async function Helmet_on() {
         break;
     case O.HELM_OF_OPPOSITE_ALIGNMENT:
         throw new Error('Helmet_on(): uchangealign() not ported yet');
-    case O.DUNCE_CAP:
-        throw new Error('Helmet_on(): dunce cap (curse(), hcolor()) not ported yet');
+    case O.DUNCE_CAP: {
+        const uarmh = g.uarmh;
+        if (uarmh && !uarmh.cursed) {
+            if (Blind())
+                await pline(`${Tobjnam(uarmh, "vibrate")} for a moment.`);
+            else
+                await pline(`${Tobjnam(uarmh, "glow")} ${hcolor(NH_BLACK)} for a moment.`);
+            curse(uarmh);
+            /* curse() doesn't touch bknown so doesn't update persistent
+               inventory; do so now [set_bknown() calls update_inventory()] */
+            if (Blind())
+                uarmh.bknown = 0; /* set_bknown(uarmh, 0): lose bknown if previously set */
+            else if (Role_if(PM_CLERIC))
+                uarmh.bknown = 1; /* set_bknown(uarmh, 1): (bknown should already be set) */
+            /* else if (uarmh->bknown) update_inventory(): no perm_invent */
+        }
+        g.disp_botl = true; /* reveal new alignment or INT & WIS */
+        if (Hallucination()) {
+            await pline("My brain hurts!"); /* Monty Python's Flying Circus */
+        } else if (g.uarmh && g.uarmh.otyp === O.DUNCE_CAP) {
+            await You_feel(`${ /* track INT change; ignore WIS */
+                ACURR(A_INT)
+                    <= (ABASE(A_INT) + ABON(A_INT) + ATEMP(A_INT))
+                    ? "like sitting in a corner"
+                    : "giddy"}.`);
+        } else {
+            /* [message formerly given here moved to uchangealign()] */
+            makeknown(O.HELM_OF_OPPOSITE_ALIGNMENT);
+        }
+        break;
+    }
     default:
         impossible(`Unknown type of helmet (${g.uarmh.otyp})`);
     }
@@ -580,8 +634,11 @@ async function Armor_on() {
     await dragon_armor_handling(g.uarm, true, true);
     /* gold DSM requires extra handling since it emits light when worn;
        do that after the special armor handling */
-    if (artifact_light(g.uarm) && !g.uarm.lamplit)
-        throw new Error('Armor_on(): begin_burn() for gold dragon armor not ported yet');
+    if (artifact_light(g.uarm) && !g.uarm.lamplit) {
+        begin_burn(g.uarm, false);
+        if (!Blind())
+            throw new Error('Armor_on(): arti_light_description() not ported yet');
+    }
     return 0;
 }
 
@@ -695,18 +752,33 @@ export async function Amulet_off() {
         await off_msg(amul); /* 'uamul' has been set to Null */
         early_off_msg = true;
 
-        if (g.u.uinwater)
-            throw new Error('Amulet_off(): drown() while Underwater not ported yet');
-        if (region_danger())
-            throw new Error('Amulet_off(): breathing poison gas not ported yet');
+        if (Underwater()) {
+            if (!cant_drown(game.youmonst.data) && !Swimming()) {
+                await You(`suddenly inhale an unhealthy amount of ${hliquid("water")}!`);
+                mkn = true; /* in case of life-saving */
+                await drown();
+            }
+        }
+        if (region_danger()) {
+            /* "breathing": wouldn't get here otherwise */
+            await You("are breathing poison gas!");
+            mkn = true;
+        }
         break;
     case O.AMULET_OF_STRANGULATION:
         setworn(null, W_AMUL);
         await off_msg(amul);
         early_off_msg = true;
 
-        if (uprop(STRANGLED).intrinsic)
-            throw new Error('Amulet_off(): ending strangulation not ported yet');
+        if (uprop(STRANGLED).intrinsic) { /* Strangled */
+            uprop(STRANGLED).intrinsic = 0; /* Strangled = 0L */
+            g.disp_botl = true;
+            if (Breathless())
+                await Your(`${body_part(NECK)} is no longer constricted!`);
+            else
+                await You("can breathe more easily!");
+            mkn = true;
+        }
         break;
     case O.AMULET_OF_RESTFUL_SLEEP:
         setworn(null, W_AMUL);
@@ -724,8 +796,16 @@ export async function Amulet_off() {
         early_off_msg = true;
 
         float_vs_flight(); /* probably not needed here */
-        if (was_flying && !Flying())
-            throw new Error('Amulet_off(): landing (spoteffects()) not ported yet');
+        if (was_flying && !Flying()) {
+            const u = g.u;
+            g.disp_botl = true; /* status: 'Fly' Off */
+            await You(`${(is_pool_or_lava(u.ux, u.uy)
+                          || Is_waterlevel(u.uz) || Is_airlevel(u.uz))
+                             ? "stop flying"
+                             : "land"}.`);
+            mkn = true; /* makeknown(AMULET_OF_FLYING) */
+            await spoteffects_bo(true);
+        }
         break;
     }
     case O.AMULET_OF_GUARDING:
@@ -867,8 +947,8 @@ export async function Blindf_on(otmp) {
         if (game.flags?.verbose ?? true)
             await You_cant("see any more.");
         /* set ball&chain variables before the hero goes blind */
-        if (game.uball)
-            throw new Error('Blindf_on(): set_bc() not ported yet');
+        if (game.uball) /* Punished */
+            set_bc(0);
     } else if (already_blind && !Blind()) {
         changed = true;
         /* "You are now wearing the Eyes of the Overworld." */
@@ -915,8 +995,8 @@ export async function Blindf_off(otmp) {
             /* "You were wearing the Eyes of the Overworld." */
             await You_cant("see anything now!");
             /* set ball&chain variables before the hero goes blind */
-            if (g.uball)
-                throw new Error('Blindf_off(): set_bc() not ported yet');
+            if (g.uball) /* Punished */
+                set_bc(0);
         }
     } else if (was_blind) {
         if (!gulp_blnd_check()) {
@@ -1602,16 +1682,20 @@ export async function Helmet_off() {
         g.disp_botl = true;
         break;
     case O.CORNUTHAUM:
-        if (!tk.cancelled_don)
-            throw new Error('Helmet_off(): cornuthaum ABON(A_CHA) not ported yet');
+        if (!tk.cancelled_don) {
+            g.u.abon.a[A_CHA] += (Role_if(PM_WIZARD) ? -1 : 1);
+            g.disp_botl = true;
+        }
         break;
     case O.HELM_OF_TELEPATHY:
     case O.HELM_OF_CAUTION:
         /* need to update ability before calling see_monsters() */
-        throw new Error('Helmet_off(): helm of telepathy/caution see_monsters() not ported yet');
+        setworn(null, W_ARMH);
+        see_monsters();
+        return 0;
     case O.HELM_OF_BRILLIANCE:
         if (!tk.cancelled_don)
-            throw new Error('Helmet_off(): adj_abon() not ported yet');
+            adj_abon(g.uarmh, -g.uarmh.spe);
         break;
     case O.HELM_OF_OPPOSITE_ALIGNMENT:
         throw new Error('Helmet_off(): uchangealign() not ported yet');
@@ -1721,9 +1805,8 @@ export async function Armor_off() {
     const g = game;
     const otmp = g.uarm;
     const tk = takeoff_ctx();
+    const was_arti_light = otmp && otmp.lamplit && artifact_light(otmp);
 
-    if (otmp && otmp.lamplit)
-        throw new Error('Armor_off(): artifact_light() end_burn() not ported yet');
     tk.mask &= ~W_ARM;
     setworn(null, W_ARM);
     tk.cancelled_don = false;
@@ -1732,6 +1815,11 @@ export async function Armor_off() {
        comes from gold dragon scales/mail so they don't overlap, but
        conceptually the non-fatal change should be done before the
        potentially fatal change in case the latter results in bones */
+    if (was_arti_light && !artifact_light(otmp)) {
+        end_burn(otmp, false);
+        if (!Blind())
+            await pline(`${Tobjnam(otmp, "stop")} shining.`);
+    }
     await dragon_armor_handling(otmp, false, true);
 
     return 0;
@@ -1746,8 +1834,8 @@ export async function Armor_gone() {
     const otmp = g.uarm;
     const tk = takeoff_ctx();
 
-    if (otmp && otmp.lamplit)
-        throw new Error('Armor_gone(): artifact_light() end_burn() not ported yet');
+    const was_arti_light = otmp && otmp.lamplit && artifact_light(otmp);
+
     tk.mask &= ~W_ARM;
     setnotworn_dw(g.uarm);
     tk.cancelled_don = false;
@@ -1756,6 +1844,11 @@ export async function Armor_gone() {
        comes from gold dragon scales/mail so they don't overlap, but
        conceptually the non-fatal change should be done before the
        potentially fatal change in case the latter results in bones */
+    if (was_arti_light && !artifact_light(otmp)) {
+        end_burn(otmp, false);
+        if (!Blind())
+            await pline(`${Tobjnam(otmp, "stop")} shining.`);
+    }
     await dragon_armor_handling(otmp, false, false);
 
     return 0;
@@ -2104,7 +2197,7 @@ async function armor_or_accessory_off(obj) {
     } else {
         impossible(`removing strange accessory: ${obj.otyp}`);
         if (obj.owornmask)
-            throw new Error('armor_or_accessory_off(): remove_worn_item() not ported yet');
+            await remove_worn_item(obj, false);
     }
     return ECMD_TIME;
 }

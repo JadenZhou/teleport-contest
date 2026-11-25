@@ -8,6 +8,11 @@
 // DUMPLOG isn't defined in this build, so the dumplog calls are no-ops;
 // HANGUPHANDLING's done_hup never happens in a recorded session.
 
+import { make_sick } from './potion.js';
+import { SICK_ALL, UTOTYPE_ATSTAIRS } from './const.js';
+import { reset_utrap } from './trap.js';
+import { schedule_goto } from './do.js';
+import { observe_quantum_cat } from './pickup.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_LIFESAVE } from './const.js';
@@ -441,7 +446,7 @@ async function savelife(how) {
     /* cure impending doom of sickness hero won't have time to fix
        [shouldn't this also be applied to other fatal timeouts?] */
     if (((u.uprops[SICK]?.intrinsic || 0) & TIMEOUT) === 1)
-        throw new Error('savelife(): make_sick() not ported yet');
+        await make_sick(0, null, false, SICK_ALL);
     g.nomovemsg = "You survived that attempt on your life.";
     g.context.move = 0;
 
@@ -454,7 +459,7 @@ async function savelife(how) {
                                          : "attempting to cheat Death";
 
     if (u.utrap && u.utraptype === TT_LAVA)
-        throw new Error('savelife(): reset_utrap() of lava not ported yet');
+        await reset_utrap(false);
     g.disp_botl = true;
     u.ugrave_arise = NON_PM;
     if (u.uprops[UNCHANGING])
@@ -654,7 +659,8 @@ export async function done2() {
         }
 
         if (abandon_tutorial)
-            throw new Error('done2(): schedule_goto() out of the tutorial not ported yet');
+            schedule_goto(u.ucamefrom, UTOTYPE_ATSTAIRS,
+                          "Resuming regular play.", null);
         return 0; /* ECMD_OK */
     }
 
@@ -944,7 +950,12 @@ async function really_done(how) {
                live cat has to be the same both times */
             if (SchroedingersBox(obj)) {
                 if (!Schroedingers_cat()) {
-                    throw new Error('really_done(): observe_quantum_cat() not ported yet');
+                    /* tell observe_quantum_cat() not to create a cat; if it
+                       chooses live cat in this situation, it will leave the
+                       SchroedingersBox flag set (for container_contents()) */
+                    await observe_quantum_cat(obj, false, false);
+                    if (SchroedingersBox(obj))
+                        g.Schroedingers_cat = true;
                 } else
                     obj.spe = 0; /* ordinary box with cat corpse in it */
             }

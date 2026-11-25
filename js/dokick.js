@@ -8,6 +8,10 @@
 // furniture (thrones, altars, fountains, graves, trees, sinks) are not
 // ported yet.
 
+import { find_drawbridge } from './zap.js';
+import { scatter } from './explode.js';
+import { VIS_EFFECTS, MAY_HIT } from './const.js';
+import { ROLL_FROM } from './rng.js';
 import { DEADMONSTER } from './mon.js';
 import { game } from './gstate.js';
 import { in_town } from './hack.js';
@@ -209,8 +213,16 @@ async function kick_ouch(x, y, kickobjnam) {
     if (isok(x, y)) {
         if (Blind())
             feel_location(x, y); /* we know we hit it */
-        if (is_drawbridge_wall(x, y) >= 0)
-            throw new Error('kick_ouch(): drawbridge (find_drawbridge()) not ported yet');
+        if (is_drawbridge_wall(x, y) >= 0) {
+            await pline_The("drawbridge is unaffected.");
+            /* update maploc to refer to the drawbridge */
+            const db = find_drawbridge(x, y);
+            if (db) {
+                x = db.x;
+                y = db.y;
+            }
+            game.maploc = game.level.at(x, y);
+        }
         await wake_nearto(x, y, 5 * 5);
     }
     if (!rn2(3))
@@ -1059,8 +1071,26 @@ async function really_kick_object(x, y) {
         return (!rn2(3) || martial()) ? 1 : 0;
     }
 
-    if (kobj.quan > 1 && isgold)
-        throw new Error('really_kick_object(): kicking a stack of coins (scatter()) not ported yet');
+    if (kobj.quan > 1 && isgold) {
+        if (rn2(20)) {
+            const flyingcoinmsg = [
+                "scatter the coins", "knock coins all over the place",
+                "send coins flying in all directions",
+            ];
+
+            if (!Deaf())
+                await pline("Thwwpingg!"); /* pline1() */
+            await You(`${ROLL_FROM(flyingcoinmsg)}!`);
+            await scatter(x, y, rnd(3), VIS_EFFECTS | MAY_HIT, kobj);
+            newsym(x, y);
+            return 1;
+        }
+        if (kobj.quan > 300) {
+            await pline("Thump!");
+            return (!rn2(3) || martial()) ? 1 : 0;
+        }
+    }
+    /* kobj->quan > 1L && !isgold: splitobj(kobj, 1L) -- with the flight below */
     void slide; void costly;
     throw new Error('really_kick_object(): kicked object flight (bhit(KICKED_WEAPON)) not ported yet');
 }
