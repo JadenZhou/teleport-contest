@@ -273,6 +273,45 @@ export async function u_left_shop(leavestring, newlev) {
     }
 }
 
+// C ref: shk.c credit_report()
+/* C's static credit_snap[2][3] lives in game.credit_snap (per-game state);
+   [BEFORE=0][...] and [NOW=1][...] hold credit, debit and loan */
+export async function credit_report(shkp, idx, silent) {
+    const eshkp = shkp.mextra.eshk;
+    if (!game.credit_snap)
+        game.credit_snap = [[0, 0, 0], [0, 0, 0]];
+    const credit_snap = game.credit_snap;
+    const BEFORE = 0, NOW = 1;
+
+    if (!idx) {
+        credit_snap[BEFORE][0] = credit_snap[NOW][0] = 0;
+        credit_snap[BEFORE][1] = credit_snap[NOW][1] = 0;
+        credit_snap[BEFORE][2] = credit_snap[NOW][2] = 0;
+    } else {
+        idx = 1;
+    }
+
+    credit_snap[idx][0] = eshkp.credit;
+    credit_snap[idx][1] = eshkp.debit;
+    credit_snap[idx][2] = eshkp.loan;
+
+    if (idx && !silent) {
+        let amt = 0;
+        let msg = "debt has increased";
+
+        if (credit_snap[NOW][0] < credit_snap[BEFORE][0]) {
+            amt = credit_snap[BEFORE][0] - credit_snap[NOW][0];
+            msg = "credit has been reduced";
+        } else if (credit_snap[NOW][1] > credit_snap[BEFORE][1]) {
+            amt = credit_snap[NOW][1] - credit_snap[BEFORE][1];
+        } else if (credit_snap[NOW][2] > credit_snap[BEFORE][2]) {
+            amt = credit_snap[NOW][2] - credit_snap[BEFORE][2];
+        }
+        if (amt)
+            await Your(`${msg} by ${amt} ${currency(amt)}.`);
+    }
+}
+
 // C ref: shk.c rob_shop()
 /* shop merchandise has been taken; pay for it with any credit available;
    return false if the debt is fully covered by credit, true otherwise */
