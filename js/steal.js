@@ -37,14 +37,14 @@ import { maybe_finished_meal } from './eat.js';
 import { unconscious, is_fainted } from './eat.js';
 import { doffing, stop_donning } from './do_wear.js';
 import { stop_occupation } from './allmain.js';
-import { freeinv } from './invent.js';
+import { freeinv, count_unpaid } from './invent.js';
 import { armor_simple_name, yname, makeplural } from './objnam.js';
 import { s_suffix } from './hacklib.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { monflee } from './monmove.js';
 import { welded, bimanual } from './wield.js';
 import { can_carry } from './dogmove.js';
-import { subfrombill, shop_keeper, mbodypart } from './shk.js';
+import { subfrombill, shop_keeper, mbodypart, find_objowner } from './shk.js';
 import { encumber_msg } from './pickup.js';
 import { dmgtype, can_teleport } from './mondata.js';
 import { body_part } from './insight.js';
@@ -789,8 +789,10 @@ export function mpickobj(mtmp, otmp) {
         game.kickedobj = null;
     /* an unpaid item can be on the floor; if a monster picks it up, take
        it off the shop bill */
-    if (otmp.unpaid || (otmp.cobj && otmp.cobj.some(o => o.unpaid)))
-        throw new Error('mpickobj(): subfrombill(): find_objowner() not ported yet');
+    if (otmp.unpaid || (otmp.cobj && otmp.cobj.length /* Has_contents() */
+                        && count_unpaid(otmp.cobj))) {
+        subfrombill(otmp, find_objowner(otmp, otmp.ox, otmp.oy));
+    }
     /* don't want hidden light source inside the monster; assumes that
        engulfers won't have external inventories; whirly monsters cause
        the light to be extinguished rather than letting it shine through */

@@ -3,7 +3,7 @@
 //        xprname()
 
 import { fingers_or_gloves } from './do_wear.js';
-import { addtobill, stolen_value } from './shk.js';
+import { addtobill, stolen_value, get_obj_location } from './shk.js';
 import { in_rooms } from './hack.js';
 import { hideunder_async } from './makemon.js';
 import { get_count, GC_SAVEHIST } from './cmd.js';
@@ -3160,8 +3160,16 @@ export function count_contents(
     let shoppy = false;
     let count = 0;
 
-    if (!everything && !newdrop)
-        throw new Error('count_contents(): costly_spot() of the top container not ported yet');
+    if (!everything && !newdrop) {
+        let topc;
+        let loc;
+
+        for (topc = container; topc.where === 'OBJ_CONTAINED';
+             topc = topc.ocontainer)
+            continue;
+        if (topc.where === 'OBJ_FLOOR' && (loc = get_obj_location(topc, 0)) != null)
+            shoppy = costly_spot(loc[0], loc[1]);
+    }
     for (const otmp of container.cobj || []) {
         if (nested && otmp.cobj && otmp.cobj.length) /* Has_contents() */
             count += count_contents(otmp, nested, quantity, everything,
