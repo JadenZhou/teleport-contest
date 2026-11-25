@@ -5,7 +5,7 @@
 // parts), mfind0(), warnreveal() and lock.c cvt_sdoor_to_door().
 
 import { expels } from './mhitu.js';
-import { dmgtype_fromattack, hides_under } from './mondata.js';
+import { dmgtype_fromattack, hides_under, is_hider } from './mondata.js';
 import { Monnam } from './do_name.js';
 import { AD_DGST, AT_ENGL } from './monsters.js';
 import { feel_newsym } from './display.js';
@@ -96,7 +96,6 @@ import { strange_feeling as strange_feeling_dt } from './potion.js';
 import { openholdingtrap, openfallingtrap, activate_statue_trap } from './trap.js';
 
 // C ref: mondata.h is_hider(), hides_under()
-function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
 
 // C ref: lock.c cvt_sdoor_to_door()
 export function cvt_sdoor_to_door(lev) {

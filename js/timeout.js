@@ -6,7 +6,7 @@
 // generic timer queue (start_timer() ... relink_timers()) and the egg and
 // figurine timer attachment.
 
-import { is_flyer } from './mondata.js';
+import { is_flyer, nolimbs } from './mondata.js';
 import { vobj_at } from './display.js';
 import { inv_weight } from './hack.js';
 import { wake_nearby } from './mon.js';
@@ -248,7 +248,6 @@ function up(p) { return game.u.uprops[p]; }
 const NH_BLUE = "blue", NH_GREEN = "green";
 /* C ref: mondata.h nolimbs(), breathless(), cantvomit(); youprop.h
    Breathless */
-function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
 function cantvomit(ptr) {
     return ptr.mlet === S_RODENT && ptr !== mons[PM_ROCK_MOLE]
            && ptr !== mons[PM_WOODCHUCK];

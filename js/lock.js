@@ -83,7 +83,7 @@ import { safe_qbuf } from './pickup.js';
 import { getdir } from './cmd.js';
 import { is_drawbridge_wall } from './dbridge.js';
 import { bottlename, potionbreathe } from './potion.js';
-import { haseyes, nohands } from './mondata.js';
+import { haseyes, nohands, breathless } from './mondata.js';
 import { M1_BREATHLESS } from './monsters.js';
 /* boxlock() */
 import { Role_if as Role_if_lk } from './const.js';
@@ -1398,6 +1398,3 @@ function An(str) {
     const s = an(str);
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
-
-/* C ref: mondata.h breathless() */
-function breathless(ptr) { return (ptr.mflags1 & M1_BREATHLESS) !== 0; }

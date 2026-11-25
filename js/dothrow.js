@@ -146,7 +146,7 @@ import { hot_pursuit as hot_pursuit_dt, inside_shop as inside_shop_sk } from './
 import { in_rooms as in_rooms_dt } from './hack.js';
 import { distmin as distmin_dt } from './hacklib.js';
 import { your_race as your_race_dt, is_orc as is_orc_dt, is_elf as is_elf_dt,
-         nohands, throws_rocks } from './mondata.js';
+         nohands, throws_rocks, notake } from './mondata.js';
 import { is_quest_artifact as is_quest_artifact_dt } from './questpgr.js';
 import { Is_candle as Is_candle_dt } from './mkobj.js';
 import { is_domestic as is_domestic_dt } from './makemon.js';
@@ -210,7 +210,6 @@ function touch_petrifies(ptr) {
 }
 
 /* C ref: mondata.h nohands(), notake() */
-function notake(ptr) { return (ptr.mflags1 & M1_NOTAKE) !== 0; }
 
 /* C ref: dothrow.c AutoReturn() -- uwep might already be removed from
    inventory so test for W_WEP instead */

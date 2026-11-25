@@ -20,7 +20,7 @@ import { mkobj, curse, uncurse, SPBOOK_no_NOVEL } from './mkobj.js';
 import { mpickobj } from './steal.js';
 import { which_armor } from './worn.js';
 import { rloc_mklev } from './teleport.js';
-import { mon_learns_traps } from './mondata.js';
+import { mon_learns_traps, is_minion } from './mondata.js';
 import { pm_good_location } from './sp_lev.js';
 import { mfndpos } from './mon.js';
 import { mon_allowflags } from './mon.js';
@@ -488,7 +488,6 @@ export async function intemple(roomno) {
 }
 
 /* C ref: mondata.h is_minion(), is_rider() */
-function is_minion(ptr) { return (ptr.mflags2 & M2_MINION) !== 0; }
 function is_rider(ptr) {
     return ptr === mons[PM_DEATH] || ptr === mons[PM_FAMINE]
            || ptr === mons[PM_PESTILENCE];

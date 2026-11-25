@@ -28,10 +28,9 @@ import { slept_monst as slept_monst_mu } from './mhitm.js';
 import { tamedog as tamedog_mu } from './dog.js';
 import { d as d_mu } from './rng.js';
 import { NOTELL as NOTELL_MU } from './const.js';
-import { mindless } from './mondata.js';
+import { mindless, unique_corpstat } from './mondata.js';
 
 /* C ref: mondata.h unique_corpstat(), mindless() */
-function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
 /* C ref: hack.h mdistu() */
 function mdistu(mtmp) { return dist2(mtmp.mx, mtmp.my, game.u.ux, game.u.uy); }
 

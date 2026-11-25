@@ -20,8 +20,8 @@ import { yobjnam } from './objnam.js';
 import { explode } from './explode.js';
 import { You_hear } from './sounds.js';
 import { fall_asleep } from './timeout.js';
-import { olfaction, type_is_pname, humanoid,
-         noncorporeal } from './mondata.js';
+import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
+         herbivorous, metallivorous, is_giant, acidic } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
@@ -220,11 +220,6 @@ export function tin_details(obj, mnum, buf) {
     }
     return buf;
 }
-
-/* C ref: mondata.h carnivorous(), herbivorous(), metallivorous() */
-function carnivorous(ptr) { return (ptr.mflags1 & M1_CARNIVORE) !== 0; }
-function herbivorous(ptr) { return (ptr.mflags1 & M1_HERBIVORE) !== 0; }
-function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
 
 /* C ref: pline.c verbalize() */
 async function verbalize(line) {
@@ -500,9 +495,6 @@ export async function newuhs(incr) {
     }
 }
 
-/* C ref: mondata.h is_giant() */
-function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
-
 // C ref: eat.c intrinsic_possible()
 /* intrinsic_possible() returns TRUE iff a monster can potentially
  * convey an intrinsic to the hero (or a pet) when its corpse is eaten */
@@ -661,7 +653,6 @@ function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }
 function flesh_petrifies(pm) { return touch_petrifies(pm) || pm === mons[M.PM_MEDUSA]; }
-function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
 export function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
 function flaming(ptr) {
     return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]

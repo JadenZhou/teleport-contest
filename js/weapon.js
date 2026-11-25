@@ -35,7 +35,8 @@ import { is_weptool } from './mkobj.js';
 import { is_pool } from './makemon.js';
 import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
          is_vampshifter, Resists_Elem, throws_rocks, likes_gems, mindless,
-         is_animal, bigmonst } from './mondata.js';
+         is_animal, bigmonst, strongmonst, is_giant, thick_skinned,
+         is_covetous } from './mondata.js';
 import { dist2 } from './hacklib.js';
 import { couldsee } from './vision.js';
 import { pline } from './display.js';
@@ -225,12 +226,8 @@ export function propellor() { return game.propellor ?? null; }
 function set_propellor(p) { game.propellor = p; }
 
 /* mondata.h */
-function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
-function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
-function thick_skinned(ptr) { return (ptr.mflags1 & M.M1_THICK_HIDE) !== 0; }
 function is_wooden(ptr) { return ptr === M.mons[M.PM_WOOD_GOLEM]; }
 function hates_light(ptr) { return ptr === M.mons[M.PM_GREMLIN]; }
-function is_covetous(ptr) { return (ptr.mflags3 & M.M3_COVETOUS) !== 0; }
 function is_rider(ptr) {
     return ptr === M.mons[M.PM_DEATH] || ptr === M.mons[M.PM_FAMINE]
         || ptr === M.mons[M.PM_PESTILENCE];

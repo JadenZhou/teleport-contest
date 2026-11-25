@@ -34,7 +34,8 @@ import { set_mon_data, is_vampire, resists_drli, dmgtype, dmgtype_fromattack,
          can_teleport, control_teleport, is_floater, is_flyer, is_swimmer,
          passes_walls, regenerates, haseyes, nohands, verysmall, bigmonst,
          humanoid, slithy, amorphous, unsolid, noncorporeal, hides_under,
-         type_is_pname, likes_gems, is_whirly } from './mondata.js';
+         type_is_pname, likes_gems, is_whirly, has_head, is_hider, polyok,
+         strongmonst, is_giant } from './mondata.js';
 import * as M from './monsters.js';
 import * as O from './objects.js';
 import {
@@ -290,12 +291,7 @@ function polysense() {
    drop_weapon() and their helpers                                    */
 
 /* C ref: mondata.h predicates used below */
-function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
-function is_hider(ptr) { return (ptr.mflags1 & M.M1_HIDE) !== 0; }
 export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
-function polyok(ptr) { return (ptr.mflags2 & M.M2_NOPOLY) === 0; }
-function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
-function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
 function is_male(ptr) { return (ptr.mflags2 & M.M2_MALE) !== 0; }
 function is_female(ptr) { return (ptr.mflags2 & M.M2_FEMALE) !== 0; }
 function is_neuter(ptr) { return (ptr.mflags2 & M.M2_NEUTER) !== 0; }

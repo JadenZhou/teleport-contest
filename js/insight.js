@@ -97,7 +97,7 @@ import { oc_to_str } from './options.js';
 import { is_pool, is_lava } from './makemon.js';
 import { ART_OGRESMASHER } from './artilist.js';
 import { hates_silver, defended, is_male, is_female, is_neuter, humanoid,
-         type_is_pname } from './mondata.js';
+         type_is_pname, is_clinger } from './mondata.js';
 import { pmname } from './do_name.js';
 import { magic_negation } from './mhitu.js';
 import { stone_luck } from './attrib.js';
@@ -192,7 +192,6 @@ function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
    attributes_enlightenment() checks */
 
 /* C ref: mondata.h is_clinger(), lays_eggs(); monst.h vampshifted() */
-function is_clinger(ptr) { return (ptr.mflags1 & M.M1_CLING) !== 0; }
 function vampshifted(mon) {
     return (mon.cham === M.PM_VAMPIRE || mon.cham === M.PM_VAMPIRE_LEADER
             || mon.cham === M.PM_VLAD_THE_IMPALER) /* is_vampshifter() */

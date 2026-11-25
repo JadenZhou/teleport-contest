@@ -39,8 +39,8 @@ import { night } from './calendar.js';
 import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
 import { getdir } from './cmd.js';
-import { is_flyer, is_undead, is_vampshifter, same_race,
-         is_animal } from './mondata.js';
+import { is_flyer, is_undead, is_vampshifter, same_race, is_animal,
+         is_mercenary, is_silent } from './mondata.js';
 import { Blind, Strangled, Hallucination, Deaf, Unaware } from './youprop.js';
 import { S_NYMPH as S_NYMPH_SN } from './monsters.js';
 import { could_seduce as could_seduce_sn, doseduce as doseduce_sn } from './mhitu.js';
@@ -50,7 +50,6 @@ import { M1_HUMANOID as M1_HUMANOID_SN } from './monsters.js';
 /* C ref: mondata.h predicates */
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
 function is_prince(ptr) { return (ptr.mflags2 & M2_PRINCE) !== 0; }
-function is_mercenary(ptr) { return (ptr.mflags2 & M2_MERC) !== 0; }
 
 
 // C ref: pline.c You_hear()
@@ -365,9 +364,6 @@ export async function dosounds() {
 
 // ── C ref: sounds.c #chat: dotalk(), dochat(), domonnoise() (the animal
 //    noises and other simple cases; the talking monsters aren't ported) ──
-
-/* C ref: mondata.h is_silent() */
-function is_silent(ptr) { return ptr.msound === MS_SILENT; }
 
 /* C ref: sounds.c h_sounds[] */
 const h_sounds = [

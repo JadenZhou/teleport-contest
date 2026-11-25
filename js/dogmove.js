@@ -32,8 +32,9 @@ import { onscary, should_displace, m_avoid_kicked_loc, m_avoid_soko_push_loc, mo
          m_digweapon_check, is_mines_prize, is_soko_prize } from './monmove.js';
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater,
-         same_race, is_animal, mindless, throws_rocks,
-         humanoid } from './mondata.js';
+         same_race, is_animal, mindless, throws_rocks, humanoid, carnivorous,
+         herbivorous, tunnels, metallivorous, acidic,
+         strongmonst } from './mondata.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
@@ -69,15 +70,10 @@ const DOG_WEAK = 500;
 const DOG_STARVE = 750;
 
 /* mondata.h */
-function carnivorous(ptr) { return (ptr.mflags1 & M.M1_CARNIVORE) !== 0; }
-function herbivorous(ptr) { return (ptr.mflags1 & M.M1_HERBIVORE) !== 0; }
-function tunnels(ptr) { return (ptr.mflags1 & M.M1_TUNNEL) !== 0; }
-function metallivorous(ptr) { return (ptr.mflags1 & M.M1_METALLIVORE) !== 0; }
 // C ref: mondata.c attacktype()
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
 }
-function acidic(ptr) { return (ptr.mflags1 & M.M1_ACID) !== 0; }
 function likes_lava(ptr) {
     return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }
@@ -263,9 +259,6 @@ export function dogfood(mon, obj) {
         return UNDEF;
     }
 }
-
-/* C ref: mondata.h strongmonst() */
-function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
 
 // ── C ref: mon.c curr_mon_load() ──
 export function curr_mon_load(mtmp) {

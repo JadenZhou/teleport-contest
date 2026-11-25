@@ -24,7 +24,8 @@ import { cantweararm } from './worn.js';
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
 import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
-         noncorporeal, is_whirly, mindless } from './mondata.js';
+         noncorporeal, is_whirly, mindless, has_head,
+         breathless } from './mondata.js';
 import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
@@ -135,8 +136,6 @@ const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
     c_sword = "sword", c_axe = "axe", c_that_ = "that";
 void c_helmet;
 
-function has_head(ptr) { return (ptr.mflags1 & M1_NOHEAD) === 0; }
-function breathless(ptr) { return (ptr.mflags1 & M1_BREATHLESS) !== 0; }
 // C ref: mondata.c sliparm()
 function sliparm(ptr) {
     return is_whirly(ptr) || ptr.msize <= MZ_SMALL || noncorporeal(ptr);

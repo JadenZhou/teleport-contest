@@ -23,7 +23,7 @@ import { find_offensive, use_offensive } from './muse.js';
 import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer, perceives,
          is_orc, dmgtype, is_neuter, is_animal, unsolid, hides_under,
-         is_whirly } from './mondata.js';
+         is_whirly, thick_skinned, nolimbs } from './mondata.js';
 import { midnight, night } from './calendar.js';
 import { new_were, were_summon } from './were.js';
 import { growl_sound } from './sounds.js';
@@ -150,8 +150,6 @@ const LARGEST_INT = 32767;
 let mon_currwep = null;
 
 /* mondata.h */
-function thick_skinned(ptr) { return (ptr.mflags1 & M.M1_THICK_HIDE) !== 0; }
-function nolimbs(ptr) { return (ptr.mflags1 & M.M1_NOLIMBS) === M.M1_NOLIMBS; }
 function touch_petrifies(ptr) {
     return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
 }

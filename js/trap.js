@@ -42,8 +42,9 @@ import { mons, S_UNICORN, M2_JEWELS, S_VORTEX, M1_AMORPHOUS, M1_UNSOLID,
        } from './monsters.js';
 import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          resists_magm, mon_knows_traps, mon_learns_traps, mons_see_trap,
-         likes_gems, mindless, hides_under, amorphous, unsolid,
-         is_whirly } from './mondata.js';
+         likes_gems, mindless, hides_under, amorphous, unsolid, is_whirly,
+         metallivorous, breathless, acidic, extra_nasty, unique_corpstat,
+         is_clinger } from './mondata.js';
 import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
          GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
 import { rnd, d } from './rng.js';
@@ -1148,7 +1149,6 @@ export const Trap_Killed_Mon = 2;
 export const Trap_Moved_Mon = 3; /* new location, or new level */
 
 /* mondata.h */
-function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
 
 // C ref: trap.c trapeffect_sqky_board()
 async function trapeffect_sqky_board(mtmp, trap, trflags) {
@@ -1196,13 +1196,10 @@ function grounded(ptr) {
     /* has_ceiling(&u.uz): no air or water levels are generated yet */
     return !is_flyer(ptr) && !is_floater(ptr) && !is_clinger(ptr);
 }
-function breathless(ptr) { return (ptr.mflags1 & M1_BREATHLESS) !== 0; }
 function flaming(ptr) {
     return ptr === mons[PM_FIRE_VORTEX] || ptr === mons[PM_FLAMING_SPHERE]
            || ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER];
 }
-function acidic(ptr) { return (ptr.mflags1 & M1_ACID) !== 0; }
-function extra_nasty(ptr) { return (ptr.mflags2 & M2_NASTY) !== 0; }
 function stone_missile(o) {
     return ((objects[o.otyp].oc_material === GEMSTONE
              || objects[o.otyp].oc_material === MINERAL)
@@ -3222,7 +3219,6 @@ async function trapeffect_web(mtmp, trap, trflags) {
 
 /* C ref: obj.h has_omonst(); mondata.h unique_corpstat(), hides_under() */
 function has_omonst(obj) { return !!obj.oextra?.omonst; }
-function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ_HT) !== 0; }
 /* C ref: invent.c nxtobj(obj, type, TRUE) -- the floor's nexthere chain
    (level.objects, top first, restricted to obj's spot) */
 function nxtobj_here(obj, type) {
@@ -4507,7 +4503,6 @@ export async function mintrap(mtmp, mintrapflags) {
 }
 
 /* mondata.h */
-function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 function webmaker(ptr) {
     return ptr === mons[PM_CAVE_SPIDER] || ptr === mons[PM_GIANT_SPIDER];
 }

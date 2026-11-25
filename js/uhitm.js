@@ -18,7 +18,7 @@ import { is_art } from './artifact.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
-         is_whirly } from './mondata.js';
+         is_whirly, has_head, thick_skinned } from './mondata.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
@@ -241,7 +241,6 @@ function flaming(ptr) {
     return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
            || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }
-function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 
@@ -2190,7 +2189,6 @@ function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 function cantwield(ptr) { return nohands(ptr) || verysmall(ptr); }
-function thick_skinned(ptr) { return (ptr.mflags1 & M.M1_THICK_HIDE) !== 0; }
 function is_watch(ptr) {
     return ptr === mons[M.PM_WATCHMAN] || ptr === mons[M.PM_WATCH_CAPTAIN];
 }

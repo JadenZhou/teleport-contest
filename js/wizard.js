@@ -22,7 +22,7 @@ import { add_to_minv, mksobj } from './mkobj.js';
 import { FAKE_AMULET_OF_YENDOR } from './objects.js';
 import { newsym } from './display.js';
 import { monster_census } from './minion.js';
-import { big_to_little } from './mondata.js';
+import { big_to_little, is_minion, is_covetous } from './mondata.js';
 import { def_monsyms } from './drawing.js';
 import { pline } from './display.js';
 import { Monnam } from './do_name.js';
@@ -319,7 +319,6 @@ const random_malediction = [
 ];
 
 /* C ref: mondata.h is_minion(), is_lminion() */
-function is_minion(ptr) { return (ptr.mflags2 & MM.M2_MINION) !== 0; }
 function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
 }
@@ -380,8 +379,6 @@ export async function cuss(mtmp) {
 
 /* C ref: obj.h any_quest_artifact() */
 export function any_quest_artifact(o) { return (o.oartifact || 0) >= ART_ORB_OF_DETECTION; }
-/* C ref: mondata.h is_covetous() */
-function is_covetous(ptr) { return (ptr.mflags3 & MM.M3_COVETOUS) !== 0; }
 /* C ref: hack.h distu() */
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: wizard.c M_Wants() */

@@ -46,8 +46,9 @@ import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
          In_endgame, is_placeholder, mbirth_limit, newmonhp,
          pm_to_cham } from './makemon.js';
 import { is_male, is_female, is_neuter, pm_invisible, humanoid, is_animal,
-         throws_rocks, verysmall, bigmonst, slithy, amorphous,
-         is_whirly } from './mondata.js';
+         throws_rocks, verysmall, bigmonst, slithy, amorphous, is_whirly,
+         unique_corpstat, always_hostile, is_clinger, polyok, notake, has_head,
+         tunnels, needspick } from './mondata.js';
 import { set_mon_data, emits_light } from './mondata.js';
 import { new_light_source, del_light_source, any_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
@@ -687,7 +688,6 @@ export async function corpse_chance(mon, magr, was_swallowed) {
 
 /* C ref: mondata.h is_reviver(), unique_corpstat() */
 function is_reviver(ptr) { return is_rider(ptr) || ptr.mlet === MM.S_TROLL; }
-function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
 
 /* C ref: mon.c KEEPTRAITS() -- for deciding whether corpse will carry
    along full monster data */
@@ -911,7 +911,6 @@ export async function monkilled(mdef, fltxt, how) {
 }
 
 /* C ref: mondata.h always_hostile(), is_unicorn(); hack.h sgn() */
-function always_hostile(ptr) { return (ptr.mflags2 & MM.M2_HOSTILE) !== 0; }
 function is_unicorn(ptr) {
     return ptr.mlet === S_UNICORN && (ptr.mflags2 & M2_JEWELS) !== 0;
 }
@@ -1416,9 +1415,6 @@ export function completelyrots(ptr) {
     return ptr === mons[PM_WOOD_GOLEM] || ptr === mons[PM_LEATHER_GOLEM];
 }
 
-/* C ref: mondata.h is_clinger() */
-function is_clinger(ptr) { return (ptr.mflags1 & MM.M1_CLING) !== 0; }
-
 // C ref: mon.c minliquid()
 /* check mtmp and water/lava for compatibility, 0 (survived), 1 (died) */
 export async function minliquid(mtmp) {
@@ -1748,7 +1744,6 @@ export function dmonsfree() {
 }
 
 /* mondata.h */
-function polyok(ptr) { return (ptr.mflags2 & MM.M2_NOPOLY) === 0; }
 
 // C ref: mon.c mon_animal_list()
 export function mon_animal_list(construct) {
@@ -1788,8 +1783,6 @@ function pick_animal() {
     return res;
 }
 function is_shapeshifter(ptr) { return (ptr.mflags2 & MM.M2_SHAPESHIFTER) !== 0; }
-function notake(ptr) { return (ptr.mflags1 & MM.M1_NOTAKE) !== 0; }
-function has_head(ptr) { return (ptr.mflags1 & MM.M1_NOHEAD) === 0; }
 function is_vampire(ptr) { return ptr.mlet === MM.S_VAMPIRE; }
 /* C ref: mondata.h ismnum() */
 function ismnum(mndx) { return mndx >= LOW_PM && mndx < NUMMONS; }
@@ -2518,8 +2511,6 @@ function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 
 /* mondata.h */
 
-function tunnels(ptr) { return (ptr.mflags1 & M1_TUNNEL) !== 0; }
-function needspick(ptr) { return (ptr.mflags1 & M1_NEEDPICK) !== 0; }
 function is_rider(ptr) {
     const n = monsndx(ptr);
     return n === PM_DEATH || n === PM_FAMINE || n === PM_PESTILENCE;

@@ -5,7 +5,7 @@
 // Not ported yet: teleds, safe_teleds, tele, rloc and the rest of
 // teleport.c.
 
-import { is_demon } from './mondata.js';
+import { is_demon, is_covetous } from './mondata.js';
 import { game } from './gstate.js';
 import { make_blinded } from './potion.js';
 import { remove_worm, place_worm_tail_randomly } from './worm.js';
@@ -1174,7 +1174,6 @@ function is_dlord(ptr) { return is_lord(ptr) && is_demon(ptr); }
 function is_dprince(ptr) { return is_prince(ptr) && is_demon(ptr); }
 function is_lord(ptr) { return (ptr.mflags2 & M2_LORD) !== 0; }
 function is_prince(ptr) { return (ptr.mflags2 & M2_PRINCE) !== 0; }
-function is_covetous(ptr) { return (ptr.mflags3 & M3_COVETOUS) !== 0; }
 
 // C ref: teleport.c m_blocks_teleporting()
 /* does monster block others from teleporting? */

@@ -32,7 +32,8 @@ import { mons, G_UNIQ, PM_GUARD, PM_SHOPKEEPER, PM_HIGH_CLERIC,
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
 import { mungspaces, strstri, strncmpi } from './hacklib.js';
-import { name_to_mon, amorphous, noncorporeal, unsolid } from './mondata.js';
+import { name_to_mon, amorphous, noncorporeal, unsolid,
+         unique_corpstat } from './mondata.js';
 import { makemon, makemon_flush_msg } from './makemon.js';
 import { SCROLL_CLASS, SPBOOK_CLASS } from './objects.js';
 import { GETOBJ_EXCLUDE, GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_PROMPT,
@@ -2506,7 +2507,6 @@ const MAXMCLASSES = 61;
 /* C ref: mondata.h is_male(), is_female(), unique_corpstat() */
 function is_male(ptr) { return (ptr.mflags2 & 0x00010000) !== 0; }   /* M2_MALE */
 function is_female(ptr) { return (ptr.mflags2 & 0x00020000) !== 0; } /* M2_FEMALE */
-function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
 
 // C ref: read.c cant_revive()
 /* some creatures have special data structures that only make sense in their

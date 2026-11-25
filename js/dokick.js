@@ -95,7 +95,8 @@ import { goodpos, place_monster } from './makemon.js';
 import { m_in_out_region } from './region.js';
 import { mintrap, Trap_Killed_Mon } from './trap.js';
 import { is_flyer, is_floater, haseyes, can_teleport, slithy, verysmall,
-         bigmonst, nohands } from './mondata.js';
+         bigmonst, nohands, nolimbs, is_giant, likes_gold, is_mercenary,
+         thick_skinned } from './mondata.js';
 import { map_invisible, There, glyph_at, show_glyph,
          glyph_is_invisible } from './display.js';
 import { a_monnam } from './do_name.js';
@@ -129,8 +130,6 @@ import { down_gate } from './do.js';
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 /* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
-function nolimbs(ptr) { return (ptr.mflags1 & M1_NOLIMBS) === M1_NOLIMBS; }
-function is_giant(ptr) { return (ptr.mflags2 & M2_GIANT) !== 0; }
 /* C ref: skills.h martial_bonus(); dokick.c is_bigfoot(), martial() */
 function martial_bonus() { return Role_if(PM_SAMURAI) || Role_if(PM_MONK); }
 function is_bigfoot(x) { return x === mons[PM_SASQUATCH]; }
@@ -423,10 +422,6 @@ export async function ghitm(mtmp, gold) {
     return false;
 }
 
-/* C ref: mondata.h likes_gold(), is_mercenary() */
-function likes_gold(ptr) { return (ptr.mflags2 & M2_GREEDY) !== 0; }
-function is_mercenary(ptr) { return (ptr.mflags2 & M2_MERC) !== 0; }
-
 // C ref: dogmove.c finish_meating()
 function finish_meating(mtmp) {
     mtmp.meating = 0;
@@ -441,7 +436,6 @@ function finish_meating(mtmp) {
 const kick_passes_thru = "kick passes harmlessly through";
 
 /* C ref: mondata.h thick_skinned(), bigmonst(), nohands(), haseyes() */
-function thick_skinned(ptr) { return (ptr.mflags1 & M1_THICK_HIDE) !== 0; }
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 
 // C ref: dokick.c kickdmg()

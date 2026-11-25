@@ -60,7 +60,7 @@ import { the } from './iactions.js';
 import { genders } from './role.js';
 import { pronoun_gender } from './do_name.js';
 import { nexttodoor } from './mklev.js';
-import { haseyes } from './mondata.js';
+import { haseyes, breathless, nolimbs } from './mondata.js';
 import { ART_EXCALIBUR } from './artilist.js';
 import * as M from './monsters.js';
 import { mons, PM_WATER_MOCCASIN, PM_WATER_DEMON, PM_WATER_NYMPH,
@@ -91,12 +91,8 @@ import { uprop } from './youprop.js';
 void HALLUC; void HALLUC_RES; void BLINDED;
 
 /* C ref: mondata.h breathless(), is_watch(), nolimbs() */
-function breathless(ptr) { return (ptr.mflags1 & M.M1_BREATHLESS) !== 0; }
 function is_watch(ptr) {
     return ptr === mons[PM_WATCHMAN] || ptr === mons[PM_WATCH_CAPTAIN];
-}
-function nolimbs(ptr) {
-    return (ptr.mflags1 & M.M1_NOLIMBS) === M.M1_NOLIMBS;
 }
 
 /* C ref: rm.h fountain/sink flag macros (looted == flags) */

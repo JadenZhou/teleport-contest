@@ -18,7 +18,7 @@
 // mixtype(), H2Opotion_dip()) is not ported yet.
 
 import { DEADMONSTER } from './mon.js';
-import { resists_poison } from './mondata.js';
+import { resists_poison, breathless, is_silent, has_head } from './mondata.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { swallowed } from './display.js';
@@ -121,10 +121,7 @@ import { NEUTRAL } from './const.js';
 /* C ref: monst.h ismnum() */
 function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
 /* C ref: mondata.h breathless(), likes_fire(), is_silent(), is_human() */
-function breathless(ptr) { return (ptr.mflags1 & M.M1_BREATHLESS) !== 0; }
-function is_silent(ptr) { return ptr.msound === M.MS_SILENT; }
 function is_human(ptr) { return (ptr.mflags2 & M.M2_HUMAN) !== 0; }
-function has_head(ptr) { return (ptr.mflags1 & M.M1_NOHEAD) === 0; }
 function likes_lava(ptr) {
     return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
 }

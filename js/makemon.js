@@ -67,7 +67,9 @@ import { monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
          is_neuter, is_undead, is_swimmer, is_floater, passes_walls, haseyes,
          is_bat, little_to_big, pm_invisible, emits_light, throws_rocks,
          likes_gems, is_animal, mindless, humanoid, amorphous, unsolid,
-         noncorporeal, is_whirly } from './mondata.js';
+         noncorporeal, is_whirly, is_mercenary, strongmonst, extra_nasty,
+         is_giant, likes_gold, always_hostile, is_minion,
+         unique_corpstat } from './mondata.js';
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
@@ -131,19 +133,12 @@ function attacktype(ptr, atyp) {
     return false;
 }
 export function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
-function is_mercenary(ptr) { return (ptr.mflags2 & M.M2_MERC) !== 0; }
-function strongmonst(ptr) { return (ptr.mflags2 & M.M2_STRONG) !== 0; }
 export function is_lord(ptr) { return (ptr.mflags2 & M.M2_LORD) !== 0; }
 export function is_prince(ptr) { return (ptr.mflags2 & M.M2_PRINCE) !== 0; }
-function extra_nasty(ptr) { return (ptr.mflags2 & M.M2_NASTY) !== 0; }
-function is_giant(ptr) { return (ptr.mflags2 & M.M2_GIANT) !== 0; }
-function likes_gold(ptr) { return (ptr.mflags2 & M.M2_GREEDY) !== 0; }
 export function is_domestic(ptr) { return (ptr.mflags2 & M.M2_DOMESTIC) !== 0; }
 function always_peaceful(ptr) { return (ptr.mflags2 & M.M2_PEACEFUL) !== 0; }
-function always_hostile(ptr) { return (ptr.mflags2 & M.M2_HOSTILE) !== 0; }
 function race_peaceful(ptr) { return (ptr.mflags2 & game.urace.lovemask) !== 0; }
 function race_hostile(ptr) { return (ptr.mflags2 & game.urace.hatemask) !== 0; }
-function is_minion(ptr) { return (ptr.mflags2 & M.M2_MINION) !== 0; }
 export function is_golem(ptr) { return ptr.mlet === M.S_GOLEM; }
 function is_rider(ptr) {
     return ptr === mons[M.PM_DEATH] || ptr === mons[M.PM_FAMINE]
@@ -159,7 +154,6 @@ export function weirdnonliving(ptr) { return is_golem(ptr) || ptr.mlet === M.S_V
 export function nonliving(ptr) {
     return is_undead(ptr) || ptr === mons[M.PM_MANES] || weirdnonliving(ptr);
 }
-function unique_corpstat(ptr) { return (ptr.geno & G_UNIQ) !== 0; }
 export function is_mplayer(ptr) {
     return ptr.pmidx >= M.PM_ARCHEOLOGIST && ptr.pmidx <= M.PM_WIZARD;
 }
