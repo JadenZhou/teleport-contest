@@ -102,6 +102,8 @@ import { MIGR_TO_SPECIES, MIGR_NOBREAK, MIGR_NOSCATTER, MIGR_WITH_HERO,
          NON_PM, In_mines, has_mgivenname, has_oname, ONAME } from './const.js';
 import { add_to_minv } from './mkobj.js';
 import { stairway_find_from } from './mklev.js';
+import { add_to_migration } from './mkobj.js';
+import { ROCK as ROCK_DK } from './objects.js';
 import { breaks } from './dothrow.js';
 import { delobj } from './invent.js';
 import { rloco } from './teleport.js';
@@ -1147,19 +1149,96 @@ export async function impact_drop(
     missile,  /* caused impact, won't drop itself */
     x, y,     /* location affected */
     dlev) {   /* if !0 send to dlev near player */
-    void missile;
-    void dlev;
+    let toloc;
+    let shkp;
+    let oct, dct, price, debit, robbed;
+    let angry, costly, isrock;
+
     if (!OBJ_AT(x, y))
         return;
 
-    const toloc = down_gate(x, y);
+    toloc = down_gate(x, y);
     const cc = drop_to(toloc, x, y);
     if (!cc.y)
         return;
 
-    /* each object that falls (rn2(3)/rn2(30) for boulders) migrates:
-       add_to_migration(), obj_delivery() */
-    throw new Error('impact_drop(): objects falling to another level not ported yet');
+    if (dlev) {
+        /* send objects next to player falling through trap door.
+         * checked in obj_delivery().
+         */
+        toloc = MIGR_WITH_HERO;
+        cc.y = dlev;
+    }
+
+    costly = costly_spot(x, y);
+    price = debit = robbed = 0;
+    angry = false;
+    shkp = null;
+    /* if 'costly', we must keep a record of ESHK(shkp) before
+     * it undergoes changes through the calls to stolen_value.
+     * the angry bit must be reset, if needed, in this fn, since
+     * stolen_value is called under the 'silent' flag to avoid
+     * unsavory pline repetitions.
+     */
+    if (costly) {
+        const rooms = in_rooms(x, y, SHOPBASE);
+        if ((shkp = shop_keeper(rooms.length ? rooms.charCodeAt(0) : 0)) != null) {
+            debit = shkp.mextra.eshk.debit;
+            robbed = shkp.mextra.eshk.robbed;
+            angry = !shkp.mpeaceful;
+        }
+    }
+
+    isrock = (missile && missile.otyp === ROCK_DK);
+    oct = dct = 0;
+    /* svl.level.objects[x][y] via ->nexthere, top first */
+    const pile = game.level.objects.filter(o => o.ox === x && o.oy === y
+                                                && o.where === 'OBJ_FLOOR');
+    for (const obj of pile) {
+        if (obj === missile)
+            continue;
+        /* number of objects in the pile */
+        oct += obj.quan;
+        if (obj === game.uball || obj === game.uchain)
+            continue;
+        /* boulders can fall too, but rarely & never due to rocks */
+        if ((isrock && obj.otyp === BOULDER)
+            || rn2(obj.otyp === BOULDER ? 30 : 3))
+            continue;
+        obj_extract_self(obj);
+
+        if (costly) {
+            /* price += stolen_value(...); picked_container(); no_charge */
+            throw new Error('impact_drop(): stolen_value() not ported yet');
+        }
+
+        add_to_migration(obj);
+        obj.ox = cc.x;
+        obj.oy = cc.y;
+        obj.owornmask = toloc;
+
+        /* number of fallen objects */
+        dct += obj.quan;
+    }
+
+    if (dct && cansee(x, y)) { /* at least one object fell */
+        const what = (dct === 1 ? "object falls" : "objects fall");
+
+        if (missile)
+            await pline(`From the impact, ${
+                dct === oct ? "the " : dct === 1 ? "an" : ""}other ${what}.`);
+        else if (oct === dct)
+            await pline(`${dct === 1 ? "The" : "All the"} adjacent ${what} ${
+                game.gate_str}.`);
+        else
+            await pline(`${dct === 1 ? "One of the" : "Some of the"} adjacent ${
+                dct === 1 ? "objects falls" : what} ${game.gate_str}.`);
+    }
+
+    if (costly && shkp && price) {
+        /* (unreachable until stolen_value() is ported) */
+        void debit; void robbed; void angry;
+    }
 }
 
 // C ref: dokick.c obj_delivery()
