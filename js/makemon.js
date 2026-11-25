@@ -155,7 +155,7 @@ function is_ndemon(ptr) {
     return is_demon(ptr) && !is_dlord(ptr) && !is_dprince(ptr);
 }
 function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
-function weirdnonliving(ptr) { return is_golem(ptr) || ptr.mlet === M.S_VORTEX; }
+export function weirdnonliving(ptr) { return is_golem(ptr) || ptr.mlet === M.S_VORTEX; }
 export function nonliving(ptr) {
     return is_undead(ptr) || ptr === mons[M.PM_MANES] || weirdnonliving(ptr);
 }
