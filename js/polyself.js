@@ -5,7 +5,7 @@
 // polymon(), polyman(), rehumanize(), break_armor(), drop_weapon(),
 // uunstick(), skinback().  newman() is not ported yet.
 
-import { is_golem } from './makemon.js';
+import { is_golem, nonliving, weirdnonliving } from './makemon.js';
 import { is_pool_or_lava, rounddiv } from './hack.js';
 import { new_light_source, del_light_source } from './light.js';
 import { monst_to_any } from './timeout.js';
@@ -1521,4 +1521,25 @@ export async function dobreathe() {
 
     /* getdir(), then ubreatheu() or ubuzz(BZ_U_BREATH(...)) */
     throw new Error('dobreathe(): getdir()/ubuzz() of a hero breath weapon not ported yet');
+}
+
+// C ref: polyself.c ugenocided()
+/* has hero genocided self (role or race) */
+export function ugenocided() {
+    return !!((game.mvitals[game.urole.mnum].mvflags & G_GENOD)
+              || (game.mvitals[game.urace.mnum].mvflags & G_GENOD));
+}
+
+// C ref: polyself.c udeadinside()
+/* how hero feels "inside" after self-genocide of role or race */
+export function udeadinside() {
+    /* self-genocide used to always say "you feel dead inside" but that
+       seems silly when you're polymorphed into something undead;
+       monkilled() distinguishes between living (killed) and non (destroyed)
+       for monster death message; we refine the nonliving aspect a bit */
+    return !nonliving(game.youmonst.data)
+             ? "dead"          /* living, including demons */
+             : !weirdnonliving(game.youmonst.data)
+                 ? "condemned" /* undead plus manes */
+                 : "empty";    /* golems plus vortices */
 }

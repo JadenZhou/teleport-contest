@@ -71,6 +71,27 @@ import { invocation_pos as invocation_pos_bl } from './mklev.js';
 import { stairway_at as stairway_at_bl } from './display.js';
 import { wake_nearby as wake_nearby_bl } from './mon.js';
 import { G_GONE as G_GONE_bl } from './const.js';
+import { couldsee } from './vision.js';
+import { isqrt } from './hacklib.js';
+import { glyph_at, tmp_at, DISP_BEAM, DISP_END, sensemon } from './display.js';
+import { uwep_skill_type, P_SKILL } from './weapon.js';
+import { P_NONE, P_BASIC, P_SKILLED, STATUE_TRAP, IS_FURNITURE, STONE,
+         COLNO, ROWNO } from './const.js';
+import { DEADMONSTER, wake_nearto } from './mon.js';
+import { attack_checks, check_caitiff } from './uhitm.js';
+import { overexertion } from './hack.js';
+import { thitmonst } from './dothrow.js';
+import { u_wipe_engr } from './engrave.js';
+import { accessible } from './makemon.js';
+import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
+import { Confusion, Stunned } from './youprop.js';
+import { ART_SNICKERSNEE } from './artilist.js';
+import { simpleonames as simpleonames_ap } from './iactions.js';
+import { NON_PM as NON_PM_AP } from './const.js';
+import { arti_speak } from './artifact.js';
+import { stucksteed } from './steed.js';
+import { legs_in_no_shape } from './dokick.js';
+import { reset_utrap, fire_damage } from './trap.js';
 import * as MM_bl from './monsters.js';
 import { openit as openit_bl, findit as findit_bl } from './detect.js';
 import { unpunish as unpunish_bl } from './read.js';
@@ -291,7 +312,16 @@ async function use_stethoscope(obj) {
                    we want the same thing '//' or ';' shows: "slime mold"
                    or "grape" or "slice of pizza" */
                 if (otyp === O.SLIME_MOLD && has_mcorpsenm_ap(mtmp)) {
-                    throw new Error('use_stethoscope(): mimic shown as a named fruit (simpleonames()) not ported yet');
+                    /* odummy = init_dummyobj(&dummyobj, mappearance, 1L);
+                       odummy->spe = MCORPSENM(mtmp); */
+                    const odummy = {
+                        otyp, oclass: objects[otyp].oc_class, dknown: 0,
+                        /* default is "on" for types which don't use it */
+                        known: !objects[otyp].oc_uses_known ? 1 : 0,
+                        quan: 1, corpsenm: NON_PM_AP,
+                        spe: mtmp.mextra.mcorpsenm,
+                    };
+                    what = simpleonames_ap(odummy);
                 } else {
                     what = simple_typename_ap(otyp);
                 }
@@ -516,7 +546,7 @@ export async function dorub() {
             uwep.spe = 0; /* for safety */
             uwep.age = rn1_ap(500, 1000);
             if (uwep.lamplit)
-                throw new Error('dorub(): begin_burn() of a lit lamp not ported yet');
+                begin_burn_lp(uwep, true);
             await djinni_from_bottle_ap(uwep);
             discover_object(MAGIC_LAMP, true, true, true); /* makeknown() */
             /* update_inventory(): no perm_invent */
@@ -763,7 +793,8 @@ export async function doapply() {
     default:
         /* Pole-weapons can strike at a distance */
         if (is_pole(obj)) {
-            throw new Error('doapply(): use_pole() not ported yet');
+            res = await use_pole(obj, false);
+            break;
         } else if (is_pick(obj) || is_axe(obj)) {
             res = await use_pick_axe(obj);
             break;
@@ -773,8 +804,9 @@ export async function doapply() {
     }
     /* This assumes that anything that potentially destroyed obj has kept
      * track of it and set obj to null before this point. */
-    if (obj && obj.oartifact)
-        throw new Error('doapply(): arti_speak() not ported yet');
+    if (obj && obj.oartifact) {
+        res |= await arti_speak(obj); /* sets ECMD_TIME bit if artifact speaks */
+    }
     return res;
 }
 
@@ -892,9 +924,23 @@ async function get_valid_jump_position(x, y) {
 }
 
 // C ref: apply.c display_jump_positions()
-function display_jump_positions(on_off) {
-    /* tmp_at(DISP_BEAM, cmap_to_glyph(S_goodpos)) ... */
-    throw new Error('display_jump_positions(): tmp_at() not ported yet');
+async function display_jump_positions(on_off) {
+    let x, y, dx, dy;
+
+    if (on_off) {
+        /* on */
+        tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
+        for (dx = -4; dx <= 4; dx++)
+            for (dy = -4; dy <= 4; dy++) {
+                x = dx + game.u.ux;
+                y = dy + game.u.uy;
+                if (await get_valid_jump_position(x, y) && !u_at(x, y))
+                    tmp_at(x, y);
+            }
+    } else {
+        /* off */
+        tmp_at(DISP_END, 0);
+    }
 }
 
 // C ref: apply.c jump()
@@ -918,8 +964,9 @@ export async function jump(magic) {
         await You_cant("jump very far.");
         return ECMD_OK;
     /* if steed is immobile, can't do physical jump but can do spell one */
-    } else if (!magic && u.usteed) {
-        throw new Error('jump(): stucksteed() not ported yet');
+    } else if (!magic && u.usteed && await stucksteed(false)) {
+        /* stucksteed gave "<steed> won't move" message */
+        return ECMD_OK;
     } else if (u.uswallow) {
         if (magic) {
             await You("bounce around a little.");
@@ -950,7 +997,8 @@ export async function jump(magic) {
         await You("lack the strength to jump!");
         return ECMD_OK;
     } else if (!magic && Wounded_legs()) {
-        throw new Error('jump(): legs_in_no_shape() not ported yet');
+        await legs_in_no_shape("jumping", !!u.usteed);
+        return ECMD_OK;
     } else if (u.usteed && u.utrap) {
         throw new Error('jump(): steed in a trap not ported yet');
     }
@@ -979,14 +1027,16 @@ export async function jump(magic) {
                 throw new Error(`jump(): jumping out of trap type ${u.utraptype} not ported yet`);
             }
             /* if we reach here, hero is no longer trapped */
-            throw new Error('jump(): reset_utrap() not ported yet');
+            await reset_utrap(true);
         }
         /* jumping on hero's same spot doesn't use walk_path() and isn't
            allowed when riding (handled above) */
         if (u_at(cc.x, cc.y)) {
             /* escaping from a trap takes precedence over jumping in place */
-            if (wastrapped)
-                throw new Error('jump(): morehungry() after escaping a trap not ported yet');
+            if (wastrapped) {
+                await morehungry(rnd(10));
+                return ECMD_TIME;
+            }
             /* jumping in place on a trap will trigger it */
             if (t_at(cc.x, cc.y))
                 throw new Error('jump(): jumping in place on a trap not ported yet');
@@ -1166,7 +1216,7 @@ async function use_whip(obj) {
     } else if (!u.dz && (IS_WATERWALL(loc.typ) || loc.typ === LAVAWALL)) {
         await You("cause a small splash.");
         if (loc.typ === LAVAWALL)
-            throw new Error('use_whip(): fire_damage() of a lava wall not ported yet');
+            await fire_damage(g.uwep, false, rx, ry);
         return ECMD_TIME;
     } else if ((!u.dx && !u.dy) || (u.dz > 0)) {
         let dam;
@@ -1178,7 +1228,7 @@ async function use_whip(obj) {
             || IS_WATERWALL(loc.typ) || loc.typ === LAVAWALL) {
             await You("cause a small splash.");
             if (is_lava_wh(u.ux, u.uy))
-                throw new Error('use_whip(): fire_damage() of lava not ported yet');
+                await fire_damage(g.uwep, false, u.ux, u.uy);
             return ECMD_TIME;
         }
         if (Levitation || u.usteed || Flying) {
@@ -1226,6 +1276,312 @@ import { is_lava as is_lava_wh } from './makemon.js';
 import { dbon } from './weapon.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { dropx } from './do.js';
+
+/* C ref: apply.c -- use_pole() messages */
+const not_enough_room = "There's not enough room here to use that.",
+    where_to_hit = "Where do you want to hit?",
+    cant_see_spot = "won't hit anything if you can't see that spot.",
+    cant_reach = "can't reach that spot from here.";
+
+/* C ref: display.h glyph_is_*() for a glyph_at() glyph; glyph_to_obj()
+   and glyph_to_cmap() -- an object glyph keeps its objects[] index in
+   'otyp', a cmap glyph its defsyms[] index in 'cmapidx' */
+function glyph_is_monster_pl(glyph) { return glyph.kind === 'mon'; }
+function glyph_is_statue_pl(glyph) {
+    return glyph.kind === 'obj' && glyph.otyp === O.STATUE;
+}
+function glyph_is_cmap_pl(glyph) {
+    return glyph.kind === 'cmap' && glyph.cmapidx !== undefined
+           && glyph.cmapidx !== null;
+}
+function glyph_to_obj_pl(glyph) {
+    return (glyph.kind === 'obj' && glyph.otyp !== undefined
+            && glyph.otyp !== null) ? glyph.otyp : -1; /* NUM_OBJECTS */
+}
+/* C ref: apply.c glyph_is_poleable() */
+function glyph_is_poleable(G) {
+    return glyph_is_monster_pl(G) || glyph_is_invisible_ls(G)
+           || glyph_is_statue_pl(G);
+}
+/* C ref: monst.h mdistu() */
+function mdistu_pl(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
+/* C ref: artifact.h u_wield_art() */
+function u_wield_art_pl(art) { return !!game.uwep && game.uwep.oartifact === art; }
+/* C ref: context.h svc.context.polearm (zeroed with the context) */
+function polearm_ctx() {
+    if (!game.context.polearm)
+        game.context.polearm = { hitmon: null };
+    return game.context.polearm;
+}
+
+// C ref: apply.c find_poleable_mon()
+/* find pos of monster in range, if only one monster */
+function find_poleable_mon(pos) {
+    const u = game.u;
+    let mtmp;
+    const mpos = { x: 0, y: 0 }; /* no candidate location yet */
+    let x, y;
+    let glyph;
+
+    const impaired = (Confusion() || Stunned() || Hallucination());
+    const rt = isqrt(game.polearm_range_max);
+    const lo_x = Math.max(u.ux - rt, 1), hi_x = Math.min(u.ux + rt, COLNO - 1);
+    const lo_y = Math.max(u.uy - rt, 0), hi_y = Math.min(u.uy + rt, ROWNO - 1);
+    for (x = lo_x; x <= hi_x; ++x) {
+        for (y = lo_y; y <= hi_y; ++y) {
+            if (!get_valid_polearm_position(x, y))
+                continue;
+            glyph = glyph_at(x, y);
+            if (!impaired
+                && glyph_is_monster_pl(glyph)
+                && (mtmp = m_at(x, y)) != null
+                && (mtmp.mtame || (mtmp.mpeaceful && game.flags.confirm)))
+                continue;
+            if (glyph_is_poleable(glyph)
+                && (!glyph_is_statue_pl(glyph) || impaired)) {
+                if (mpos.x)
+                    return false; /* more than one candidate location */
+                mpos.x = x, mpos.y = y;
+            }
+        }
+    }
+    if (!mpos.x)
+        return false; /* no candidate location */
+    pos.x = mpos.x;
+    pos.y = mpos.y;
+    return true;
+}
+
+// C ref: apply.c get_valid_polearm_position()
+function get_valid_polearm_position(x, y) {
+    const glyph = glyph_at(x, y);
+
+    return (isok(x, y) && distu(x, y) >= game.polearm_range_min
+            && distu(x, y) <= game.polearm_range_max
+            && (cansee(x, y) || (couldsee(x, y)
+                                 && glyph_is_poleable(glyph))));
+}
+
+// C ref: apply.c display_polearm_positions()
+function display_polearm_positions(on_off) {
+    let x, y, dx, dy;
+
+    if (on_off) {
+        /* on */
+        tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
+        for (dx = -3; dx <= 3; dx++)
+            for (dy = -3; dy <= 3; dy++) {
+                x = dx + game.u.ux;
+                y = dy + game.u.uy;
+                if (get_valid_polearm_position(x, y)) {
+                    tmp_at(x, y);
+                }
+            }
+    } else {
+        /* off */
+        tmp_at(DISP_END, 0);
+    }
+}
+
+// C ref: apply.c calc_pole_range()
+/*
+ * Calculate allowable range (pole's reach is always 2 steps):
+ *  unskilled and basic: orthogonal direction, 4..4;
+ *  skilled: as basic, plus knight's jump position, 4..5;
+ *  expert: as skilled, plus diagonal, 4..8.
+ *  (Note: no roles in NetHack can become expert or better
+ *  for polearm skill; Yeoman in slash'em can become expert.)
+ */
+function calc_pole_range(range) {
+    const typ = uwep_skill_type();
+
+    range.min = 4;
+    if (typ === P_NONE || P_SKILL(typ) <= P_BASIC)
+        range.max = 4;
+    else if (P_SKILL(typ) === P_SKILLED)
+        range.max = 5;
+    else
+        range.max = 8; /* (P_SKILL(typ) >= P_EXPERT) */
+
+    game.polearm_range_min = range.min;
+    game.polearm_range_max = range.max;
+}
+
+// C ref: apply.c could_pole_mon()
+/* return TRUE if hero is wielding a polearm and there's
+   at least one monster they could hit with it */
+export function could_pole_mon() {
+    const range = { min: 0, max: 0 };
+    const cc = { x: 0, y: 0 };
+    const hitm = polearm_ctx().hitmon;
+
+    if (!game.uwep || !is_pole(game.uwep))
+        return false;
+
+    calc_pole_range(range);
+
+    cc.x = game.u.ux;
+    cc.y = game.u.uy;
+    if (!find_poleable_mon(cc)) {
+        if (hitm && !DEADMONSTER(hitm) && sensemon(hitm)
+            && mdistu_pl(hitm) <= range.max && mdistu_pl(hitm) >= range.min)
+            return true;
+    } else {
+        return true;
+    }
+    return false;
+}
+
+// C ref: apply.c snickersnee_used_dist_attk()
+/* was Snickersnee used to attack at distance this turn already? */
+function snickersnee_used_dist_attk(obj) {
+    if (obj && obj === game.uwep && u_wield_art_pl(ART_SNICKERSNEE)
+        && game.context.snickersnee_turn === game.moves)
+        return true;
+    return false;
+}
+
+// C ref: apply.c use_pole()
+/* Distance attacks by pole-weapons */
+export async function use_pole(obj, autohit) {
+    const g = game;
+    const u = g.u;
+    const thump = (what) => `Thump!  Your blow bounces harmlessly off the ${what}.`;
+    const res = ECMD_OK;
+    const range = { min: 0, max: 0 };
+    let glyph;
+    const cc = { x: 0, y: 0 };
+    let mtmp;
+    const hitm = polearm_ctx().hitmon;
+    let freehit = false;
+
+    /* Are you allowed to use the pole? */
+    if (u.uswallow) {
+        await pline(not_enough_room);
+        return ECMD_OK;
+    }
+    if (obj !== g.uwep) {
+        if (await wield_tool_ap(obj, "swing")) {
+            cmdq_add_ec("doapply"); /* cmdq_add_ec(CQ_CANNED, doapply) */
+            cmdq_add_key(obj.invlet); /* cmdq_add_key(CQ_CANNED, obj->invlet) */
+            return ECMD_TIME;
+        }
+        return ECMD_OK;
+    }
+    /* assert(obj == uwep); */
+
+    calc_pole_range(range);
+    const min_range = range.min, max_range = range.max;
+
+    /* Prompt for a location */
+    if (!autohit)
+        await pline(where_to_hit);
+    cc.x = u.ux;
+    cc.y = u.uy;
+    if (!find_poleable_mon(cc) && hitm
+        && !DEADMONSTER(hitm) && sensemon(hitm)
+        && mdistu_pl(hitm) <= max_range && mdistu_pl(hitm) >= min_range) {
+        cc.x = hitm.mx;
+        cc.y = hitm.my;
+    }
+    if (!autohit) {
+        await getpos_sethilite(display_polearm_positions,
+                               get_valid_polearm_position);
+        if (await getpos(cc, true, "the spot to hit") < 0)
+            /* ESC; uses turn iff polearm became wielded */
+            return (res | ECMD_CANCEL);
+    }
+
+    glyph = glyph_at(cc.x, cc.y);
+    if (distu(cc.x, cc.y) > max_range) {
+        await pline("Too far!");
+        return ECMD_FAIL;
+    } else if (distu(cc.x, cc.y) < min_range) {
+        if (autohit && u_at(cc.x, cc.y))
+            await pline("Don't know what to hit.");
+        else
+            await pline("Too close!");
+        return ECMD_FAIL;
+    } else if (!cansee(cc.x, cc.y) && !glyph_is_poleable(glyph)) {
+        await You(cant_see_spot);
+        return ECMD_FAIL;
+    } else if (!couldsee(cc.x, cc.y)) { /* Eyes of the Overworld */
+        await You(cant_reach);
+        return ECMD_FAIL;
+    }
+
+    polearm_ctx().hitmon = null;
+    /* Attack the monster there */
+    g.bhitpos = { x: cc.x, y: cc.y };
+    if ((mtmp = m_at(g.bhitpos.x, g.bhitpos.y)) != null) {
+        if (await attack_checks(mtmp, g.uwep)) /* can attack proceed? */
+            /* no, abort the attack attempt; result depends on
+               res: 1 => polearm became wielded, 0 => already wielded;
+               svc.context.move: 1 => discovered hidden monster at target spot,
+               0 => answered 'n' to "Really attack?" prompt */
+            return res | (g.context.move ? ECMD_TIME : ECMD_OK);
+        if (await overexertion())
+            return ECMD_TIME; /* burn nutrition; maybe pass out */
+        polearm_ctx().hitmon = mtmp;
+
+        if (snickersnee_used_dist_attk(obj)) {
+            await pline_The("blade doesn't reach there!");
+            return ECMD_FAIL;
+        }
+
+        await check_caitiff(mtmp);
+        g.notonhead = (g.bhitpos.x !== mtmp.mx || g.bhitpos.y !== mtmp.my);
+
+        /* Snickersnee allows one free hit from a distance per turn */
+        if (obj === g.uwep && u_wield_art_pl(ART_SNICKERSNEE)) {
+            freehit = (g.moves !== g.context.snickersnee_turn);
+            g.context.snickersnee_turn = g.moves;
+            if (freehit && !Deaf()) {
+                /* Soundeffect(se_sword_blade_rings, 100): no sound */
+                await pline("Shkinng!"); /* /sha-kin!/ */
+            }
+        }
+
+        await thitmonst(mtmp, g.uwep);
+    } else if (glyph_is_statue_pl(glyph) /* might be hallucinatory */
+               && sobj_at(O.STATUE, g.bhitpos.x, g.bhitpos.y)) {
+        const t = t_at(g.bhitpos.x, g.bhitpos.y);
+
+        if (t && t.ttyp === STATUE_TRAP)
+            throw new Error('use_pole(): activate_statue_trap() not ported yet');
+        /* Since statues look like monsters now, we say something
+           different from "you miss" or "there's nobody there".
+           Note:  we only do this when a statue is displayed here,
+           because the player is probably attempting to attack it;
+           other statues obscured by anything are just ignored. */
+        await pline(thump("statue"));
+        await wake_nearto(g.bhitpos.x, g.bhitpos.y, 25);
+    } else {
+        /* no monster here and no statue seen or remembered here */
+        unmap_invisible(g.bhitpos.x, g.bhitpos.y);
+
+        if (glyph_to_obj_pl(glyph) === BOULDER
+            && sobj_at(BOULDER, g.bhitpos.x, g.bhitpos.y)) {
+            await pline(thump("boulder"));
+            await wake_nearto(g.bhitpos.x, g.bhitpos.y, 25);
+        } else if (!accessible(g.bhitpos.x, g.bhitpos.y)
+                   || IS_FURNITURE(g.level.at(g.bhitpos.x, g.bhitpos.y).typ)) {
+            /* similar to 'F'orcefight with a melee weapon; we know that
+               the spot can be seen or we wouldn't have gotten this far */
+            const ltyp = g.level.at(g.bhitpos.x, g.bhitpos.y).typ;
+            await You(`uselessly attack ${
+                (ltyp === STONE || ltyp === SCORR)
+                ? "stone"
+                : glyph_is_cmap_pl(glyph)
+                  ? the_ap(defsyms_explanation_ap[glyph.cmapidx])
+                  : "an unknown obstacle"}.`);
+        } else {
+            await You("miss; there is no one there to hit.");
+        }
+    }
+    u_wipe_engr(2); /* same as for melee or throwing */
+    return freehit ? ECMD_OK : ECMD_TIME;
+}
 
 // C ref: invent.c consume_obj_charge()
 export function consume_obj_charge(obj,

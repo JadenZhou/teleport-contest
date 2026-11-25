@@ -834,10 +834,13 @@ async function dochat() {
         const typ = game.level.at(tx, ty).typ;
         if (!Deaf() && (IS_WALL(typ) || typ === SDOOR)) {
             /* Talking to a wall; secret door remains hidden by behaving
-               like a wall */
-            if (Blind())
-                throw new Error('dochat(): blind wall talk (lastseentyp) not ported yet');
-            else if (!Hallucination()) {
+               like a wall; IS_WALL() test excludes solid rock even when
+               that serves as a wall bordering a corridor */
+            if (Blind() && !IS_WALL(game.level.lastseentyp?.[tx]?.[ty] ?? 0)) {
+                /* when blind, you can only talk to a wall if it has
+                   already been mapped as a wall */
+                ;
+            } else if (!Hallucination()) {
                 await pline("It's like talking to a wall.");
             } else {
                 const walltalk = [
