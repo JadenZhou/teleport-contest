@@ -83,7 +83,7 @@ import { canletgo, flooreffects, obj_no_longer_held, ship_object,
 import { u_wipe_engr } from './engrave.js';
 import { splitobj, place_object, is_flammable, weight, unsplitobj } from './mkobj.js';
 import { encumber_msg } from './pickup.js';
-import { remove_worn_item } from './steal.js';
+import { remove_worn_item, mpickobj } from './steal.js';
 import { weapon_type, P_SKILL, hitval } from './weapon.js';
 import { add_to_minv } from './mkobj.js';
 import { mon_nam } from './do_name.js';
@@ -154,7 +154,7 @@ import { in_rooms as in_rooms_dt } from './hack.js';
 import { distmin as distmin_dt } from './hacklib.js';
 import { your_race as your_race_dt, is_orc as is_orc_dt, is_elf as is_elf_dt,
          nohands, throws_rocks, notake, touch_petrifies, digests,
-         is_unicorn } from './mondata.js';
+         is_unicorn, is_whirly, is_animal } from './mondata.js';
 import { is_quest_artifact as is_quest_artifact_dt } from './questpgr.js';
 import { Is_candle as Is_candle_dt } from './mkobj.js';
 import { is_domestic as is_domestic_dt } from './makemon.js';
@@ -570,6 +570,16 @@ function throwit_return(clear_thrownobj) {
         game.thrownobj = null;
 }
 
+// C ref: dothrow.c swallowit()
+/* engulfer gets the thrown object */
+function swallowit(obj) {
+    if (obj !== game.uball) {
+        mpickobj(game.u.ustuck, obj); /* clears 'gt.thrownobj' */
+        throwit_return(false);
+    } else
+        throwit_return(true);
+}
+
 // C ref: dothrow.c throwit_mon_hit()
 /* thrown object hits a monster.
    mon may be NULL.
@@ -884,7 +894,20 @@ export async function thitmonst(mon,
             mon.mstrategy &= ~STRAT_WAITMASK;
         }
     } else if (guaranteed_hit) {
-        throw new Error('thitmonst(): object vanishing into an engulfer not ported yet');
+        const md = u.ustuck.data;
+
+        /* this assumes that guaranteed_hit is due to swallowing */
+        await wakeup(mon, true);
+        if (obj.otyp === CORPSE && touch_petrifies(mons[obj.corpsenm])) {
+            if (is_animal(md))
+                throw new Error('thitmonst(): minstapetrify() of the engulfer not ported yet');
+        }
+        const trail = digests(md) ? " entrails"
+                      : is_whirly(md) ? " currents" : "";
+        let monname = mon_nam(mon);
+        if (trail)
+            monname = s_suffix(monname);
+        await pline(`${Tobjnam(obj, "vanish")} into ${monname}${trail}.`);
     } else {
         await tmiss(obj, mon, true);
     }
@@ -953,7 +976,15 @@ async function throwit(obj,
        will be left with a stale pointer. */
 
     if (u.uswallow) {
-        throw new Error('throwit(): throwing while engulfed not ported yet');
+        if (obj === g.uball) {
+            g.uball.ox = g.uchain.ox = u.ux;
+            g.uball.oy = g.uchain.oy = u.uy;
+        }
+        mon = u.ustuck;
+        g.bhitpos.x = mon.mx;
+        g.bhitpos.y = mon.my;
+        if (tethered_weapon) /* tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng)) */
+            throw new Error('throwit(): tethered weapon while engulfed not ported yet');
     } else if (u.dz) {
         /* toss_up(), hitfloor(), potionhit() on the steed */
         throw new Error('throwit(): throwing up or down not ported yet');
@@ -1052,7 +1083,8 @@ async function throwit(obj,
         /* missile has already been handled */
         /* if (tethered_weapon) tmp_at(DISP_END, 0): display only */
     } else if (u.uswallow && !g.iflags.returning_missile) {
-        throw new Error('throwit(): swallowit() not ported yet');
+        swallowit(obj);
+        return;
     } else {
         /* Mjollnir must be wielded to be thrown--caller verifies this;
            aklys must be wielded as primary to return when thrown */

@@ -20,7 +20,10 @@ import { near_capacity } from './hack.js';
 import { You, Your, You_cant, pline } from './display.js';
 import { rn2, rn2_on_display_rng } from './rng.js';
 import { check_capacity, nomul } from './hack.js';
-import { flush_screen, obj_to_glyph } from './display.js';
+import { flush_screen, obj_to_glyph, what_mon } from './display.js';
+import { self_lookat } from './pager.js';
+import { digests } from './mondata.js';
+import { CONTAINED_SYM } from './const.js';
 import { look_here } from './invent.js';
 import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
@@ -1308,8 +1311,11 @@ export async function query_objlist(qstr, /* query string */
                               && game.u.uswallow && olist[0].ocarry === game.u.ustuck);
     if (engulfer_minvent && n === 1 && olist[0].owornmask)
         qflags &= ~AUTOSELECT_SINGLE;
-    if (engulfer)
-        throw new Error('query_objlist(): the engulfed hero as a menu entry not ported yet');
+    if (engulfer) {
+        ++n;
+        /* don't autoselect swallowed hero if it's the only choice */
+        qflags &= ~AUTOSELECT_SINGLE;
+    }
 
     if (n === 0) /* nothing to pick here */
         return (qflags & SIGNAL_NOMENU) ? -1 : 0;
@@ -1383,6 +1389,21 @@ export async function query_objlist(qstr, /* query string */
         pi++;
     } while (sorted && pi < pack.length);
 
+    let fake_hero_object = null;
+    if (engulfer) {
+        if (sorted && n > 1)
+            add_menu_heading(win, `${digests(game.u.ustuck.data) ? "Swallowed" : "Engulfed"} Creatures`);
+        fake_hero_object = { quan: 1 }; /* cg.zeroobj; quan not strictly necessary... */
+        /* mon_to_glyph(&gy.youmonst, rn2_on_display_rng); map_glyphinfo():
+           tty menus don't show the glyph */
+        const tmpglyph = what_mon(game.youmonst.data.pmidx, rn2_on_display_rng);
+        void tmpglyph;
+        tty_add_menu(win, null, fake_hero_object,
+                     /* fake inventory letter, no group accelerator */
+                     CONTAINED_SYM, 0, ATR_NONE, NO_COLOR, an(self_lookat()),
+                     MENU_ITEMFLAGS_NONE);
+    }
+
     tty_end_menu(win, qstr);
     const res = await tty_select_menu(win, how);
     n = res.n;
@@ -1394,6 +1415,13 @@ export async function query_objlist(qstr, /* query string */
         /* fix up counts:  -1 means no count used => pick all */
         for (const mi of res.selected) {
             const curr = mi.item;
+            if (curr === fake_hero_object) {
+                /* this isn't actually possible; fake item representing
+                   hero is only included for look here (':'), not pickup,
+                   and that's PICK_NONE so we can't get here from there */
+                await You_cant("pick yourself up!");
+                continue;
+            }
             if (engulfer_minvent && curr.owornmask) {
                 await You_cant(`pick ${ysimple_name(curr)} up.`);
                 continue;

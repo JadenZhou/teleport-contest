@@ -405,8 +405,11 @@ export function self_lookat() {
     /* include race with role unless polymorphed */
     if (!u.mtimedone) /* !Upolyd */
         race = `${game.urace.adj} `;
+    /* mons[u.umonnum], not gy.youmonst.data (display_minventory() points
+       that at an engulfer's data while listing its stomach); Ugender */
+    const Ugender = (u.umonnum !== u.umonster) ? u.mfemale : game.flags.female;
     let outbuf = `${Invis() && !Blind() ? "invisible " : ""}${race}`
-        + `${pmname(game.youmonst.data, game.flags.female ? FEMALE : MALE)}`
+        + `${pmname(mons[u.umonnum], Ugender ? FEMALE : MALE)}`
         + ` called ${game.plname}`;
     if (u.usteed)
         outbuf += `, mounted on ${y_monnam_pg(u.usteed)}`;
