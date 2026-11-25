@@ -107,6 +107,14 @@ import { name_to_mon as name_to_mon_to } from './mondata.js';
 import { LOW_PM as LOW_PM_TO } from './const.js';
 import { mons as mons_to, M2_PNAME as M2_PNAME_TO, G_UNIQ as G_UNIQ_TO } from './monsters.js';
 import { the as the_to } from './iactions.js';
+import { UNCHANGING, W_SADDLE, DISMOUNT_FELL } from './const.js';
+import { is_were } from './mondata.js';
+import { rehumanize } from './polyself.js';
+import { float_down } from './trap.js';
+import { which_armor } from './worn.js';
+import { dismount_steed } from './steed.js';
+import { mhe } from './mhitu.js';
+import { Your } from './display.js';
 
 
 // C ref: timeout.c propertynames[]
@@ -438,8 +446,11 @@ async function sickness_dialogue() {
         /* change the message slightly for food poisoning */
         if ((game.u.usick_type & SICK_NONVOMITABLE) === 0)
             buf = buf.replace("illness", "sickness"); /* strsubst() */
-        if (Hallucination() && buf.includes("Death's door"))
-            throw new Error('sickness_dialogue(): hallucinatory "inviting you in" (mhe()) not ported yet');
+        if (Hallucination() && buf.includes("Death's door")) { /* strstri() */
+            /* youmonst: for Hallucination, mhe()'s mon argument isn't used */
+            const pronounbuf = mhe(game.youmonst);
+            buf += `  ${upstart(pronounbuf)} ${vtense(pronounbuf, "are")} inviting you in.`;
+        }
         await urgent_pline(buf);
     }
     exercise(A_CON, false);
@@ -651,9 +662,13 @@ export async function nh_timeout() {
     if (P[SLEEPY].intrinsic & TIMEOUT)
         await sleep_dialogue();
     if (u.mtimedone && !--u.mtimedone) {
-        /* Unchanging / you_unwere() / rehumanize(): polymorphing isn't
-           ported yet */
-        throw new Error('nh_timeout(): rehumanize() not ported yet');
+        if (P[UNCHANGING].intrinsic || P[UNCHANGING].extrinsic) /* Unchanging */
+            u.mtimedone = rnd(100 * game.youmonst.data.mlevel + 1);
+        else if (is_were(game.youmonst.data))
+            /* if polycontrl, asks whether to rehumanize */
+            throw new Error('nh_timeout(): you_unwere() not ported yet');
+        else
+            await rehumanize();
     }
     if (u.ucreamed)
         u.ucreamed--;
@@ -815,8 +830,16 @@ export async function nh_timeout() {
                 }
                 break;
             case LEVITATION:
-                /* float_down(I_SPECIAL | TIMEOUT, 0L) */
-                throw new Error('nh_timeout(): float_down() not ported yet');
+                /* timed Levitation is ordinary, timed Flying is via
+                   #wizintrinsic only; still, we want to avoid float_down()
+                   reporting "you have stopped levitating and are now flying"
+                   when both are timing out together; if that is about to
+                   happen, end Flying early to skip feedback about it;
+                   assumes Levitation is handled before Flying */
+                if ((P[FLYING].intrinsic & TIMEOUT) === 1)
+                    set_itimeout(FLYING, 0); /* bypass 'case FLYING' */
+                await float_down(I_SPECIAL_TO | TIMEOUT, 0);
+                break;
             case PASSES_WALLS:
             case MAGICAL_BREATHING:
                 /* stuck_in_wall(), region_danger() feedback */
@@ -964,7 +987,24 @@ async function slip_or_trip() {
         /* mounted; saddle should never end up being Null here;
            don't fall off when it happens to be cursed */
         } else {
-            throw new Error('slip_or_trip(): mounted fumbling (dismount_steed()) not ported yet');
+            const saddle = which_armor(u.usteed, W_SADDLE);
+            if (!saddle || !saddle.cursed) {
+                switch (rn2(4)) {
+                case 1:
+                    await Your(`${makeplural(body_part(FOOT))} slip out of the stirrups.`);
+                    break;
+                case 2:
+                    await You("let go of the reins.");
+                    break;
+                case 3:
+                    await You("bang into the saddle-horn.");
+                    break;
+                default:
+                    await You("slide to one side of the saddle.");
+                    break;
+                }
+                await dismount_steed(DISMOUNT_FELL);
+            }
         }
     }
 }

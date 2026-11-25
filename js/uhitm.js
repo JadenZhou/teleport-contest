@@ -379,8 +379,18 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                         || u.umonnum === M.PM_BROWN_PUDDING))
                     throw new Error('mhitm_ad_phys(): cloneu() not ported yet');
                 await rustm(game.youmonst, otmp);
-                if (was_poisoned && game.mhitu_dieroll <= 5)
-                    throw new Error('mhitm_ad_phys(): poisoned() not ported yet');
+                if (was_poisoned && game.mhitu_dieroll <= 5) {
+                    /* similar to mhitm_really_poison, but we don't use the
+                     * exact same values, nor do we want same 1/8 chance of
+                     * poison taking (use 1/4, same as in the mhitm case). */
+                    const buf = `${s_suffix(Monnam(magr))} ${mpoisons_subj(magr, mattk)}`;
+                    /* arbitrary, but most poison sources in the game are
+                     * strength-based. With hpdamchance = 10, HP damage occurs
+                     * 1/2 of the time and it will hit Str rest of the time.
+                     * (This is the same as poisoned ammo.) */
+                    await poisoned(buf, A_STR, pmname(magr.data, Mgender(magr)),
+                                   10, false);
+                }
             } else if (mattk.aatyp !== AT_TUCH || mhm.damage !== 0
                        || magr !== u.ustuck) {
                 await hitmsg(magr, mattk);
