@@ -78,7 +78,7 @@ import { You as You_mp, You_feel as You_feel_mp } from './display.js';
 import { polyself as polyself_mp } from './polyself.js';
 import { resists_magm as resists_magm_mp, can_teleport as can_teleport_mp,
          monsndx as monsndx_mp } from './mondata.js';
-import { resist as resist_mp } from './zap.js';
+import { resist as resist_mp, resist_async as resist_async_mp } from './zap.js';
 import { pm_to_cham as pm_to_cham_mp } from './makemon.js';
 import { xkilled as xkilled_mp, newcham as newcham_mp } from './mon.js';
 import { tele as tele_mp } from './teleport.js';
@@ -1031,7 +1031,7 @@ export async function mon_poly(magr, mdef, dmg) {
         if (resists_magm_mp(mdef)) {
             /* Magic resistance */
             /* if (gv.vis) shieldeff_mon(mdef): transient display only */
-        } else if (resist_mp(mdef, WAND_CLASS_MP, 0, TELL_MP)) {
+        } else if (await resist_async_mp(mdef, WAND_CLASS_MP, 0, TELL_MP)) {
             /* general resistance to magic... */
             ;
         } else if (!rn2(25) && mdef.cham === NON_PM_MP
