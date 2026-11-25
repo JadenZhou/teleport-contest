@@ -58,7 +58,7 @@ import { You_hear } from './sounds.js';
 import { useup, obfree } from './invent.js';
 import { killer_xname } from './mthrowu.js';
 import { breaktest, hero_breaks } from './dothrow.js';
-import { t_at, chest_trap } from './trap.js';
+import { t_at, chest_trap, activate_statue_trap } from './trap.js';
 import { PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { is_ice } from './dig.js';
 import { ART_MJOLLNIR } from './artilist.js';
@@ -936,8 +936,10 @@ async function really_kick_object(x, y) {
     if ((trap = t_at(x, y)) != null) {
         if ((is_pit(trap.ttyp) && !Passes_walls()) || trap.ttyp === WEB)
             throw new Error('really_kick_object(): object in a pit or web not ported yet');
-        if (trap.ttyp === STATUE_TRAP)
-            throw new Error('really_kick_object(): activate_statue_trap() not ported yet');
+        if (trap.ttyp === STATUE_TRAP) {
+            await activate_statue_trap(trap, x, y, false);
+            return 1;
+        }
     }
 
     if (Fumbling() && !rn2(3)) {

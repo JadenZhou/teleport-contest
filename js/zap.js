@@ -46,7 +46,7 @@ import { objects, WAND_CLASS, SPBOOK_CLASS, DWARVISH_CLOAK, NODIR, IMMEDIATE,
 import { PIT, SPIKED_PIT, STATUE_TRAP, HEADSTONE, DOOR, DBWALL,
          DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST, DB_WEST, IS_DRAWBRIDGE,
          isok } from './const.js';
-import { t_at } from './trap.js';
+import { t_at, activate_statue_trap } from './trap.js';
 import { sobj_at, is_pool, is_lava } from './makemon.js';
 import { delobj } from './invent.js';
 import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
@@ -1641,8 +1641,21 @@ export async function bhitpile(
 
     if (obj.otyp === SPE_FORCE_BOLT || obj.otyp === WAN_STRIKING) {
         const t = t_at(tx, ty);
-        if (t && t.ttyp === STATUE_TRAP)
-            throw new Error('bhitpile(): activate_statue_trap() not ported yet');
+        const topofpile = pile_at()[0] || null; /* svl.level.objects[tx][ty] */
+
+        /* We can't settle for the default calling sequence of
+           bhito(otmp) -> break_statue(otmp) -> activate_statue_trap(ox,oy)
+           because that last call might end up operating on our `next_obj'
+           (below), rather than on the current object, if it happens to
+           encounter a statue which mustn't become animated. */
+        if (t && t.ttyp === STATUE_TRAP
+            && await activate_statue_trap(t, tx, ty, true))
+            learnwand(obj);
+        /* assume zapping up or down while hiding under the top item can
+           still activate the trap even if it's below (when zapping up)
+           or above (when zapping down) */
+        if ((pile_at()[0] || null) !== topofpile)
+            first = false; /* top item was statue which activated */
     }
 
     g.poly_zapped = -1;

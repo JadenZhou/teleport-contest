@@ -91,7 +91,7 @@ import { NON_PM as NON_PM_AP } from './const.js';
 import { arti_speak } from './artifact.js';
 import { stucksteed } from './steed.js';
 import { legs_in_no_shape } from './dokick.js';
-import { reset_utrap, fire_damage } from './trap.js';
+import { reset_utrap, fire_damage, activate_statue_trap } from './trap.js';
 import * as MM_bl from './monsters.js';
 import { openit as openit_bl, findit as findit_bl } from './detect.js';
 import { unpunish as unpunish_bl } from './read.js';
@@ -1803,15 +1803,18 @@ export async function use_pole(obj, autohit) {
                && sobj_at(O.STATUE, g.bhitpos.x, g.bhitpos.y)) {
         const t = t_at(g.bhitpos.x, g.bhitpos.y);
 
-        if (t && t.ttyp === STATUE_TRAP)
-            throw new Error('use_pole(): activate_statue_trap() not ported yet');
-        /* Since statues look like monsters now, we say something
-           different from "you miss" or "there's nobody there".
-           Note:  we only do this when a statue is displayed here,
-           because the player is probably attempting to attack it;
-           other statues obscured by anything are just ignored. */
-        await pline(thump("statue"));
-        await wake_nearto(g.bhitpos.x, g.bhitpos.y, 25);
+        if (t && t.ttyp === STATUE_TRAP
+            && await activate_statue_trap(t, t.tx, t.ty, false)) {
+            ; /* feedback has been give by animate_statue() */
+        } else {
+            /* Since statues look like monsters now, we say something
+               different from "you miss" or "there's nobody there".
+               Note:  we only do this when a statue is displayed here,
+               because the player is probably attempting to attack it;
+               other statues obscured by anything are just ignored. */
+            await pline(thump("statue"));
+            await wake_nearto(g.bhitpos.x, g.bhitpos.y, 25);
+        }
     } else {
         /* no monster here and no statue seen or remembered here */
         unmap_invisible(g.bhitpos.x, g.bhitpos.y);

@@ -62,6 +62,9 @@ import {
 import { M1_NOHEAD } from './monsters.js';
 import { mongone } from './mon.js';
 import { angry_guards } from './mon.js';
+import { ismnum } from './const.js';
+import { M2_PNAME } from './monsters.js';
+import { the_unique_pm } from './objnam.js';
 import { S_KOP, PM_WATCHMAN, PM_WATCH_CAPTAIN, PM_TOURIST, PM_ELF,
          G_UNIQ } from './monsters.js';
 import {
@@ -3902,6 +3905,48 @@ export function billable(shkpp, obj, roomno, reset_nocharge) {
         }
     }
     return shkp ? true : false;
+}
+
+/* C ref: shk.c the_your[] */
+const the_your = ["the", "your"];
+
+/* C ref: mondata.h type_is_pname() */
+function type_is_pname(ptr) { return (ptr.mflags2 & M2_PNAME) !== 0; }
+
+// C ref: shk.c shk_your()
+/* "your " or "Foobar's " (note the trailing space) */
+export function shk_your(obj) {
+    const chk_pm = obj.otyp === CORPSE && ismnum(obj.corpsenm);
+    let buf = '';
+
+    if (chk_pm && type_is_pname(mons[obj.corpsenm]))
+        return buf; /* skip ownership prefix and space: "Medusa's corpse" */
+    else if (chk_pm && the_unique_pm(mons[obj.corpsenm]))
+        buf = "the"; /* override ownership: "the Oracle's corpse" */
+    else if ((buf = shk_owns(obj)) == null && (buf = mon_owns(obj)) == null)
+        buf = the_your[obj.where === 'OBJ_INVENT' /* carried() */ ? 1 : 0];
+    return buf + " ";
+}
+
+// C ref: shk.c shk_owns()
+function shk_owns(obj) {
+    let shkp;
+    const loc = get_obj_location(obj, 0);
+
+    if (loc
+        && (obj.unpaid || (obj.where === 'OBJ_FLOOR' && !obj.no_charge
+                           && costly_spot(loc[0], loc[1])))) {
+        shkp = shop_keeper(inside_shop(loc[0], loc[1]));
+        return shkp ? s_suffix(shkname(shkp)) : the_your[0];
+    }
+    return null;
+}
+
+// C ref: shk.c mon_owns()
+function mon_owns(obj) {
+    if (obj.where === 'OBJ_MINVENT')
+        return s_suffix(y_monnam(obj.ocarry));
+    return null;
 }
 
 // C ref: shk.c stolen_container()
