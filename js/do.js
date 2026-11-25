@@ -812,7 +812,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
         await placebc();
     /* obj_delivery(FALSE) */
     if (g.migrating_objs)
-        obj_delivery(false);
+        await obj_delivery(false);
     await losedogs();
     kill_genocided_monsters(); /* for those wiped out while in limbo */
     /*
@@ -964,7 +964,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     /* deliver objects traveling with player */
     /* obj_delivery(TRUE) */
     if (g.migrating_objs)
-        obj_delivery(true);
+        await obj_delivery(true);
 
     /* assume this will always return TRUE when changing level */
     /* (void) */ await in_out_region(u.ux, u.uy);

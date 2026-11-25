@@ -101,6 +101,11 @@ import { MIGR_TO_SPECIES, MIGR_NOBREAK, MIGR_NOSCATTER, MIGR_WITH_HERO,
          MIGR_RANDOM, MIGR_STAIRS_UP, MIGR_LADDER_UP, MIGR_SSTAIRS, MIGR_NOWHERE,
          NON_PM, In_mines, has_mgivenname, has_oname, ONAME } from './const.js';
 import { add_to_minv } from './mkobj.js';
+import { stairway_find_from } from './mklev.js';
+import { breaks } from './dothrow.js';
+import { delobj } from './invent.js';
+import { rloco } from './teleport.js';
+import { IS_SOFT } from './const.js';
 import { christen_orc } from './do_name.js';
 import {
     Stone_resistance, Blind, Deaf, Fumbling, Wounded_legs, Levitation, Passes_walls
@@ -1161,10 +1166,15 @@ export async function impact_drop(
 /* migrating objects arrive on the level the hero has just reached; objects
    bound for a monster species (MIGR_TO_SPECIES) wait for makemon()/
    mon_arrive() to hand them out via deliver_obj_to_mon() */
-export function obj_delivery(near_hero) {
+export async function obj_delivery(near_hero) {
     const u = game.u;
     let otmp, otmp2;
+    let nx = 0, ny = 0;
     let where;
+    let nobreak, noscatter;
+    let stway;
+    const fromdlev = { dnum: 0, dlevel: 0 };
+    let isladder;
 
     for (otmp = game.migrating_objs; otmp; otmp = otmp2) {
         otmp2 = otmp.nobj;
@@ -1175,14 +1185,67 @@ export function obj_delivery(near_hero) {
         if ((where & MIGR_TO_SPECIES) !== 0)
             continue;
 
+        nobreak = (where & MIGR_NOBREAK) !== 0;
+        noscatter = (where & MIGR_WITH_HERO) !== 0;
         where &= ~(MIGR_NOBREAK | MIGR_NOSCATTER);
 
         if (!near_hero ^ (where === MIGR_WITH_HERO))
             continue;
 
-        /* nothing in the port sends an object to another level yet
-           (only orctown loot migrates, and that goes MIGR_TO_SPECIES) */
-        throw new Error('obj_delivery(): delivering a migrating object not ported yet');
+        obj_extract_self(otmp);
+        otmp.owornmask = 0;
+        fromdlev.dnum = otmp.omigr_from_dnum;
+        fromdlev.dlevel = otmp.omigr_from_dlevel;
+
+        isladder = false;
+
+        switch (where) {
+        case MIGR_LADDER_UP:
+            isladder = true;
+            /* FALLTHRU */
+        case MIGR_STAIRS_UP:
+        case MIGR_SSTAIRS:
+            if ((stway = stairway_find_from(fromdlev, isladder)) != null) {
+                nx = stway.sx;
+                ny = stway.sy;
+            }
+            break;
+        case MIGR_WITH_HERO:
+            nx = u.ux, ny = u.uy;
+            break;
+        default:
+        case MIGR_RANDOM:
+            nx = ny = 0;
+            break;
+        }
+        otmp.omigr_from_dnum = 0;
+        otmp.omigr_from_dlevel = 0;
+        if (nx > 0) {
+            place_object(otmp, nx, ny);
+            if (!nobreak && !IS_SOFT(game.level.at(nx, ny).typ)) {
+                if (where === MIGR_WITH_HERO) {
+                    if (await breaks(otmp, nx, ny))
+                        continue;
+                } else if (breaktest(otmp)) {
+                    /* assume it broke before player arrived, no messages */
+                    delobj(otmp);
+                    continue;
+                }
+            }
+            stackobj(otmp);
+            if (!noscatter)
+                await scatter(nx, ny, rnd(2), 0, otmp);
+            else
+                newsym(nx, ny);
+        } else { /* random location */
+            /* set dummy coordinates because there's no
+               current position for rloco() to update */
+            otmp.ox = otmp.oy = 0;
+            if (await rloco(otmp) && !nobreak && breaktest(otmp)) {
+                /* assume it broke before player arrived, no messages */
+                delobj(otmp);
+            }
+        }
     }
 }
 
