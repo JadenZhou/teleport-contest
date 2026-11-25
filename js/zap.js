@@ -1165,7 +1165,7 @@ export async function bhito(obj, otmp) {
 
             /* any saved lock context will be dangerously obsolete */
             if (Is_box(obj))
-                throw new Error('bhito(): boxlock() on a polymorphed box not ported yet');
+                await boxlock_zy(obj, otmp);
 
             if (obj_shudders(obj)) {
                 const top = (g.level.objects || []).find(o => o.ox === u.ux

@@ -107,6 +107,8 @@ import {
 } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
 import { uprop } from './youprop.js';
+import { yname } from './objnam.js';
+import { new_were } from './were.js';
 
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
@@ -916,8 +918,10 @@ async function peffect_invisibility(otmp) {
     const is_spell = (otmp.oclass === SPBOOK_CLASS);
 
     /* spell cannot penetrate mummy wrapping */
-    if (is_spell && BInvis() && game.uarmc.otyp === O.MUMMY_WRAPPING)
-        throw new Error('peffect_invisibility(): mummy wrapping message (yname()) not ported yet');
+    if (is_spell && BInvis() && game.uarmc.otyp === O.MUMMY_WRAPPING) {
+        await You_feel(`rather itchy under ${yname(game.uarmc)}.`);
+        return;
+    }
     if (Invis() || Blind() || BInvis()) {
         game.potion_nothing++;
     } else {
@@ -1698,7 +1702,7 @@ export async function potionhit(mon, obj, how) {
                     if (DEADMONSTER(mon))
                         await killed(mon);
                     else if (is_were(mon.data) && !is_human(mon.data))
-                        throw new Error('potionhit(): new_were() not ported yet');
+                        await new_were(mon);
                 } else if (obj.cursed) {
                     angermon = false;
                     if (canseemon(mon))
@@ -1707,7 +1711,7 @@ export async function potionhit(mon, obj, how) {
                     if (is_were(mon.data) && is_human(mon.data)
                         && !(uprop(PROT_FROM_SHAPE_CHANGERS).intrinsic
                              || uprop(PROT_FROM_SHAPE_CHANGERS).extrinsic))
-                        throw new Error('potionhit(): new_were() not ported yet');
+                        await new_were(mon);
                 }
             } else if (mon.data === mons[PM_GREMLIN]) {
                 angermon = false;

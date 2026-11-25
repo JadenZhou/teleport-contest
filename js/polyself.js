@@ -105,6 +105,9 @@ import { Upolyd } from './const.js';
 import { done as done_ps } from './end.js';
 import { killer as killer_ps } from './topten.js';
 import { DIED as DIED_PS } from './const.js';
+import { arti_light_radius } from './light.js';
+import { maybe_adjust_light } from './mkobj.js';
+import { artifact_light } from './worn.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -1488,14 +1491,17 @@ export async function uunstick() {
 // C ref: polyself.c skinback()
 export async function skinback(silently) {
     if (game.uskin) {
-        if (game.uskin.lamplit) /* arti_light_radius()/artifact_light() */
-            throw new Error('skinback(): maybe_adjust_light() not ported yet');
+        const old_light = arti_light_radius(game.uskin);
+
         if (!silently)
             await Your("skin returns to its original form.");
         game.uarm = game.uskin;
         game.uskin = null;
         /* undo save/restore hack */
         game.uarm.owornmask &= ~I_SPECIAL;
+
+        if (artifact_light(game.uarm))
+            await maybe_adjust_light(game.uarm, old_light);
     }
 }
 

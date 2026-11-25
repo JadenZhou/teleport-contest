@@ -146,6 +146,7 @@ import { is_ice as is_ice_sf } from './dig.js';
 import { objdescr_is as objdescr_is_sf } from './o_init.js';
 import { resists_cold as resists_cold_sf } from './mondata.js';
 import { COLD_RES as COLD_RES_SF } from './const.js';
+import { hideunder } from './makemon.js';
 /* C ref: mondata.h is_clinger() */
 function is_clinger(ptr) { return (ptr.mflags1 & M1_CLING) !== 0; }
 
@@ -3277,10 +3278,9 @@ async function domove_core() {
     if (!Levitation() && !Flying() && !Stealth()
         && game.youmonst.data.cwt >= Math.trunc(WT_ELF / 2))
         disturb_buried_zombies(u.ux, u.uy);
-    /* hideunder(&youmonst): only a hider form can hide */
-    if (u.umonnum !== u.umonster
-        && (hides_under(game.youmonst.data) || game.youmonst.data.mlet === S_EEL))
-        throw new Error('domove_core(): hideunder() not ported yet');
+    if (hides_under(game.youmonst.data) || game.youmonst.data.mlet === S_EEL
+        || u.dx || u.dy)
+        hideunder(game.youmonst);
 
     /* check_leash(u.ux0, u.uy0): leashes aren't ported */
 

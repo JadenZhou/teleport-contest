@@ -129,6 +129,7 @@ import { monster_census } from './minion.js';
 import { mkclass, rndmonst, set_malign, put_saddle_on_mon, can_saddle } from './makemon.js';
 import { NO_NC_FLAGS } from './const.js';
 import { newcham } from './mon.js';
+import { light_hits_gremlin } from './uhitm.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -2250,7 +2251,10 @@ export async function litroom(on, /* True: make nearby area lit; False: cursed s
         vision_recalc(0);
         /* after vision has been updated, monsters who are affected
            when hit by light can now be hit by it */
-        throw new Error('litroom(): light_hits_gremlin() not ported yet');
+        do { /* C's list is newest first */
+            const gremlin = g.gremlins_rd.pop();
+            await light_hits_gremlin(gremlin, rnd(5));
+        } while (g.gremlins_rd.length);
     }
     return;
 }
