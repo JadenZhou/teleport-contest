@@ -87,6 +87,8 @@ import { Blind, Glib, Invisible, Levitation, Flying } from './youprop.js';
 import { Upolyd, Role_if } from './const.js';
 import { uprop } from './youprop.js';
 import { setnotworn as setnotworn_dw } from './worn.js';
+import { arti_light_description } from './light.js';
+import { Yname2, otense } from './objnam.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -637,7 +639,8 @@ async function Armor_on() {
     if (artifact_light(g.uarm) && !g.uarm.lamplit) {
         begin_burn(g.uarm, false);
         if (!Blind())
-            throw new Error('Armor_on(): arti_light_description() not ported yet');
+            await pline(`${Yname2(g.uarm)} ${otense(g.uarm, "begin")} to shine ${
+                arti_light_description(g.uarm)}!`);
     }
     return 0;
 }

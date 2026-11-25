@@ -93,6 +93,7 @@ import { CONFUSION as CONFUSION_DT,
          NOSE as NOSE_DT, A_WIS as A_WIS_DT, TER_DETECT as TER_DETECT_DT } from './const.js';
 import { body_part as body_part_dt } from './insight.js';
 import { strange_feeling as strange_feeling_dt } from './potion.js';
+import { openholdingtrap, openfallingtrap } from './trap.js';
 
 // C ref: mondata.h is_hider(), hides_under()
 function is_hider(ptr) { return (ptr.mflags1 & M1_HIDE) !== 0; }
@@ -1535,10 +1536,10 @@ async function openone(zx, zy, num_p) {
         }
         const mon = (zx === game.u.ux && zy === game.u.uy) ? game.youmonst /* u_at() */
                     : m_at(zx, zy);
-        /* openholdingtrap(mon, &dummy) || openfallingtrap(mon, TRUE, &dummy):
-           both return FALSE at once when there's no monster here */
-        if (mon)
-            throw new Error('openone(): openholdingtrap()/openfallingtrap() not ported yet');
+        const dummy = { v: false };
+        if (await openholdingtrap(mon, dummy)
+            || await openfallingtrap(mon, true, dummy))
+            num_p.v++;
     } else if (find_drawbridge_dt(zx, zy)) {
         throw new Error('openone(): open_drawbridge() not ported yet');
     }

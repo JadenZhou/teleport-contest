@@ -138,6 +138,9 @@ import { xkilled as xkilled_mu } from './mon.js';
 import { resists_cold as resists_cold_mu } from './mondata.js';
 import { XKILL_NOMSG as XKILL_NOMSG_MU } from './const.js';
 import { mon_explodes } from './explode.js';
+import { unleash_all } from './trap.js';
+import { vtense } from './objnam.js';
+import { pline_The } from './display.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -1565,8 +1568,12 @@ async function gulpmu(mtmp, mattk) {
         }
 
         i = number_leashed();
-        if (i > 0)
-            throw new Error('gulpmu(): unleash_all() not ported yet');
+        if (i > 0) {
+            const s = (i > 1) ? "leashes" : "leash";
+
+            await pline_The(`${s} ${vtense(s, "snap")} loose.`);
+            unleash_all();
+        }
 
         if (touch_petrifies(game.youmonst.data) && !resists_ston(mtmp))
             throw new Error('gulpmu(): minstapetrify() of the engulfer not ported yet');
@@ -2212,7 +2219,7 @@ export async function doseduce(mon) {
         } else {
             await pline(`${noit_Monnam(mon)} takes ${cost} ${
                 currency(cost)} for services rendered!`); /* pline_mon() */
-            money2mon(mon, cost);
+            await money2mon(mon, cost);
             game.disp_botl = true;
         }
     }

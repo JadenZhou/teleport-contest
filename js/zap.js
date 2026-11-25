@@ -364,6 +364,26 @@ import { WAN_UNDEAD_TURNING as WAN_UNDEAD_TURNING_BM,
          SPE_STONE_TO_FLESH as SPE_STONE_TO_FLESH_BM,
          SPE_DRAIN_LIFE as SPE_DRAIN_LIFE_BM, FIGURINE as FIGURINE_BM,
          TIN as TIN_BM } from './objects.js';
+import { glyph_at, db_under_typ } from './display.js';
+import { show_map_spot, cvt_sdoor_to_door } from './detect.js';
+import { recalc_block_point } from './vision.js';
+import { Is_rogue_level, IS_FURNITURE, SCORR, CORR, VIBRATING_SQUARE } from './const.js';
+import { draft_message } from './dig.js';
+import { trapname } from './trap.js';
+import { Invocation_lev } from './mklev.js';
+import { the } from './iactions.js';
+import { an } from './objnam.js';
+import { unpunish } from './read.js';
+import { hideunder_async } from './makemon.js';
+import { maybe_unhide_at } from './mon.js';
+import { fill_pit } from './muse.js';
+import { Ring_gone } from './do_wear.js';
+import { dead_species } from './mkobj.js';
+import { attach_egg_hatch_timeout } from './timeout.js';
+import { vision_recalc } from './vision.js';
+import { set_uinwater } from './trap.js';
+import { docrt } from './display.js';
+import { ustatusline } from './insight.js';
 
 /* C ref: mondata.h nohands() */
 function nohands(ptr) { return (ptr.mflags1 & M1_NOHANDS) !== 0; }
@@ -1126,7 +1146,11 @@ export async function bhito(obj, otmp) {
     if (obj === g.uball) {
         res = 0;
     } else if (obj === g.uchain) {
-        throw new Error('bhito(): zapping the iron chain (unpunish()) not ported yet');
+        if (otmp.otyp === WAN_OPENING || otmp.otyp === SPE_KNOCK) {
+            learn_it = true;
+            await unpunish();
+        } else
+            res = 0;
     } else
         switch (otmp.otyp) {
         case WAN_POLYMORPH:
@@ -1141,7 +1165,7 @@ export async function bhito(obj, otmp) {
 
             /* any saved lock context will be dangerously obsolete */
             if (Is_box(obj))
-                throw new Error('bhito(): boxlock() on a polymorphed box not ported yet');
+                await boxlock_zy(obj, otmp);
 
             if (obj_shudders(obj)) {
                 const top = (g.level.objects || []).find(o => o.ox === u.ux
@@ -1154,7 +1178,7 @@ export async function bhito(obj, otmp) {
                 do_osshock(obj);
                 /* eek - your cover might have been blown */
                 if (cover)
-                    throw new Error('bhito(): hideunder() after do_osshock() not ported yet');
+                    await hideunder_async(g.youmonst);
                 break;
             }
             obj = await poly_obj(obj, STRANGE_OBJECT);
@@ -1655,15 +1679,9 @@ export async function bhitpile(
     }
 
     if (hidingunder) /* pile might have been destroyed or dispersed */
-        throw new Error('bhitpile(): maybe_unhide_at() not ported yet');
+        maybe_unhide_at(tx, ty);
 
-    /* fill_pit(tx, ty) */
-    {
-        const t = t_at(tx, ty);
-        if (t && (t.ttyp === PIT || t.ttyp === SPIKED_PIT)
-            && sobj_at(BOULDER, tx, ty))
-            throw new Error('bhitpile(): fill_pit() not ported yet');
-    }
+    await fill_pit(tx, ty);
 
     return hitanything;
 }
@@ -1722,9 +1740,85 @@ export async function zap_map(x, y, obj) { /* zapped wand, or book for cast spel
         } /* find_drawbridge */
     } /* !u.uz */
 
-    if (obj.otyp === WAN_PROBING)
-        throw new Error('zap_map(): probing (show_map_spot()) not ported yet');
-    /* learn_it is only set by the unported cases above */
+    let learn_it = false;
+    if (obj.otyp === WAN_PROBING) {
+        /*
+         * Probing, either up/down or lateral.
+         */
+        const lv = game.level;
+
+        /* map terrain; might reveal a special room which is already within
+           view that hasn't been entered yet */
+        const oldtyp = lv.lastseentyp?.[x]?.[y] ?? 0;
+        const oldglyph = glyph_at(x, y);
+        show_map_spot(x, y, false);
+        if (oldtyp !== (lv.lastseentyp?.[x]?.[y] ?? 0) || oldglyph !== glyph_at(x, y)) {
+            /* TODO: ought to give some message */
+            learn_it = true;
+        }
+        const lev = lv.at(x, y);
+        const ltyp = (lev.typ === DRAWBRIDGE_UP_ZP) /* SURFACE_AT(x, y) */
+            ? db_under_typ(lev.drawbridgemask || 0) : lev.typ;
+        /* secret door gets revealed, converted into regular door */
+        if (ltyp === SDOOR) {
+            cvt_sdoor_to_door(lev); /* .typ = DOOR */
+            recalc_block_point(x, y);
+            newsym(x, y);
+            if (cansee(x, y)) {
+                await pline("Probing reveals a secret door.");
+                learn_it = true;
+            } else if (Is_rogue_level(u.uz)) { /* from zap_over_floor() */
+                await draft_message(false); /* "You feel a draft." (open doorway) */
+            }
+
+        /* secret corridor likewise, although only ones within view will
+           still be secret; for the !cansee(x,y) case, show_map_spot()
+           above has already converted the spot to regular corridor */
+        } else if (ltyp === SCORR) {
+            lev.typ = CORR;
+            unblock_point(x, y);
+            newsym(x, y);
+            await pline("Probing exposes a secret corridor.");
+            learn_it = true;
+
+        /* if on or over ice, describe it ("solid ice", "thin ice", &c);
+           likewise for furniture in case hero is levitating while blind */
+        } else if (ltyp === ICE || IS_FURNITURE(ltyp)) {
+            if (u.dz > 0) { /* down, which also means x,y == u.ux,u.uy */
+                throw new Error('zap_map(): probing down at ice/furniture (force_decor()) not ported yet');
+            }
+        }
+        /*
+         * Probing reveals undiscovered traps.
+         *
+         * FIXME?  This finds floor traps even when zapping up and
+         * ceiling traps even when zapping down.
+         */
+        if (ttmp) {
+            const t_already_seen = ttmp.tseen;
+            const hallu = Hallucination();
+
+            /* should probably be changed to use sense_trap(detect.c)
+               so that trap can temporarily be forced to be shown and
+               map browsing can take place before it reverts to being
+               covered by monster or object(s) */
+            ttmp.tseen = 1;
+            newsym(x, y);
+
+            if (!t_already_seen || hallu) {
+                const ttmpname = trapname(ttmp.ttyp, false);
+                const use_the = !hallu ? (ttmp.ttyp === VIBRATING_SQUARE
+                                          && Invocation_lev(u.uz))
+                                       : !rn2(4);
+                await You(`find ${use_the ? the(ttmpname) : an(ttmpname)}${
+                    use_the ? '!' : '.'}`);
+                learn_it = !hallu;
+            }
+        } /* t_at() */
+    } /* probing */
+
+    if (learn_it)
+        learnwand(obj);
 }
 
 // C ref: zap.c zappable()
@@ -2185,8 +2279,16 @@ export async function zapyourself(obj, ordinary) {
     case O_zy.SPE_DETECT_UNSEEN:
     case WAN_NOTHING:
         break;
-    case WAN_PROBING:
-        throw new Error('zapyourself(): probe_objchain() not ported yet');
+    case WAN_PROBING: {
+        const inv = []; /* probe_objchain(invent): invent is a nobj chain */
+        for (let o = game.invent; o; o = o.nobj)
+            inv.push(o);
+        probe_objchain(inv);
+        /* update_inventory(): no perm_invent */
+        learn_it = true;
+        await ustatusline();
+        break;
+    }
     case O_zy.SPE_STONE_TO_FLESH:
         throw new Error('zapyourself(): stone to flesh on yourself not ported yet');
     default:
@@ -3159,7 +3261,7 @@ async function maybe_destroy_item(
             }
             if (obj.owornmask) { /* m_useup handles these for monster */
                 if (obj.owornmask & W_RING) /* ring being worn */
-                    throw new Error('maybe_destroy_item(): Ring_gone() not ported yet');
+                    await Ring_gone(obj);
                 else
                     setnotworn_zp(obj);
             }
@@ -3311,8 +3413,8 @@ function revive_egg(obj) { /* nonnull */
      */
     if (obj.otyp !== EGG)
         return;
-    if (obj.corpsenm !== NON_PM_ZP)
-        throw new Error('revive_egg(): dead_species()/attach_egg_hatch_timeout() not ported yet');
+    if (obj.corpsenm !== NON_PM_ZP && !dead_species(obj.corpsenm, true))
+        attach_egg_hatch_timeout(obj, 0);
 }
 
 // C ref: zap.c unturn_dead()
@@ -3656,7 +3758,7 @@ export async function melt_ice(x, y, msg) {
     obj_ice_effects_zp(x, y, false);
     unearth_objs_zp(x, y);
     if (g.u.uinwater) /* Underwater */
-        throw new Error('melt_ice(): vision_recalc() while Underwater not ported yet');
+        vision_recalc(1);
     newsym(x, y);
     if (cansee(x, y) || u_at(x, y))
         await Norep_zp(msg);
@@ -3868,7 +3970,11 @@ export async function zap_over_floor(
                 let mon;
                 if (u_at(x, y)) {
                     if (g.u.uinwater) { /* not just `if (Underwater)' */
-                        throw new Error('zap_over_floor(): freezing the water the hero is in (set_uinwater()) not ported yet');
+                        /* leave the no longer existent water */
+                        await set_uinwater(0); /* u.uinwater = 0 */
+                        g.u.uundetected = 0;
+                        await docrt();
+                        g.vision_full_recalc = 1;
                     } else if (g.u.utrap && g.u.utraptype === TT_LAVA_ZP) {
                         throw new Error('zap_over_floor(): hero stuck in cooling lava not ported yet');
                     }
@@ -3967,7 +4073,7 @@ export async function zap_over_floor(
         if (see_it)
             await pline(`${yourzap ? "Your" : "The"} ${zapverb} reveals a secret door.`);
         else if (Is_rogue_level_zp(g.u.uz))
-            throw new Error('zap_over_floor(): draft_message() not ported yet');
+            await draft_message(false); /* "You feel a draft." (open doorway) */
     }
 
     /* regular door absorbs remaining zap range, possibly gets destroyed */

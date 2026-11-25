@@ -2060,17 +2060,15 @@ export async function hideunder_async(mtmp) {
 function* hideunder_core(mtmp) {
     let t, otmp;
     let seenmon = null, seenobj = null, locomo = null;
-    const seeit = game.in_mklev ? false : canseemon(mtmp);
-    let oldundetctd, undetected = false;
     const is_u = (mtmp === game.youmonst);
-
-    if (is_u)
-        throw new Error('hideunder(): the hero hiding is not ported yet');
-    const x = mtmp.mx, y = mtmp.my;
+    /* seeit only feeds the monster's "You see" message; the hero has none */
+    const seeit = (game.in_mklev || is_u) ? false : canseemon(mtmp);
+    let oldundetctd, undetected = false;
+    const x = is_u ? game.u.ux : mtmp.mx, y = is_u ? game.u.uy : mtmp.my;
 
     if (mtmp === game.u.ustuck) {
         ; /* undetected==FALSE; can't hide if holding you or held by you */
-    } else if (mtmp.mtrapped
+    } else if ((is_u ? game.u.utrap : mtmp.mtrapped)
                || ((t = t_at(x, y)) !== null && !(t.ttyp === PIT || t.ttyp === SPIKED_PIT))) {
         ; /* undetected==FALSE; can't hide while trapped or on/in/under
              any non-pit trap when not trapped */
@@ -2099,7 +2097,9 @@ function* hideunder_core(mtmp) {
             seenobj = ansimpleoname(otmp);
         /* most monsters won't hide under a cockatrice corpse but they
            can hide under a pile containing more than just such corpses */
-        if (!Resists_Elem(mtmp, STONE_RES)) {
+        if (is_u ? !(game.u.uprops[STONE_RES].intrinsic
+                     || game.u.uprops[STONE_RES].extrinsic) /* Stone_resistance */
+                 : !Resists_Elem(mtmp, STONE_RES)) {
             const pile = floor_pile(x, y);
             let i = 0;
             while (otmp && otmp.otyp === O.CORPSE
@@ -2111,20 +2111,26 @@ function* hideunder_core(mtmp) {
             undetected = true;
     }
 
-    if (seeit)
-        seenmon = y_monnam(mtmp);
-    oldundetctd = mtmp.mundetected !== 0;
-    mtmp.mundetected = undetected ? 1 : 0;
-    /* the "you see" message won't be shown for monster hiding during
-       level creation because 'seeit' will be 0 so 'seenmon' and 'seenobj'
-       will be Null */
-    if (undetected && seenmon && seenobj) {
-        if (!locomo)
-            locomo = locomotion(mtmp.data, "hide");
-        /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
-        yield `${seenmon} ${locomo} under ${seenobj}.`; /* You_see() */
-        game.iflags.last_msg = PLNMSG_HIDE_UNDER;
-        game.last_hider = mtmp.m_id;
+    if (is_u) {
+        oldundetctd = !!game.u.uundetected; /* u.uundetected != 0 */
+        game.u.uundetected = undetected ? 1 : 0;
+        /* #if 0: feedback handled via #monster */
+    } else {
+        if (seeit)
+            seenmon = y_monnam(mtmp);
+        oldundetctd = mtmp.mundetected !== 0;
+        mtmp.mundetected = undetected ? 1 : 0;
+        /* the "you see" message won't be shown for monster hiding during
+           level creation because 'seeit' will be 0 so 'seenmon' and 'seenobj'
+           will be Null */
+        if (undetected && seenmon && seenobj) {
+            if (!locomo)
+                locomo = locomotion(mtmp.data, "hide");
+            /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
+            yield `${seenmon} ${locomo} under ${seenobj}.`; /* You_see() */
+            game.iflags.last_msg = PLNMSG_HIDE_UNDER;
+            game.last_hider = mtmp.m_id;
+        }
     }
     if (undetected !== oldundetctd)
         newsym(x, y);

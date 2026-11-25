@@ -227,6 +227,13 @@ import { monflee as monflee_fh } from './monmove.js';
 import { Deaf as Deaf_fh } from './youprop.js';
 import { cansee as cansee_fh } from './vision.js';
 import { tty_display_nhwindow as tty_display_nhwindow_fh } from './wintty.js';
+import { m_canseeu as m_canseeu_mm } from './monmove.js';
+import { rehumanize } from './polyself.js';
+import { dopay } from './shk.js';
+import { angry_guards } from './mon.js';
+import { clone_mon } from './makemon.js';
+import { mintrap } from './trap.js';
+import { NO_TRAP_FLAGS } from './const.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -290,18 +297,9 @@ export function monstunseesu(seenres) {
         if (mtmp.mhp > 0 && m_canseeu_nyi(mtmp))
             mtmp.seen_resistance &= ~seenres;
 }
-/* C ref: monmove.h m_canseeu() -- only the cases that don't need
-   invisibility/underwater/burial handling */
+/* C ref: monmove.h m_canseeu() is monmove.js m_canseeu() */
 function m_canseeu_nyi(m) {
-    const u = game.u;
-    if (u.uinwater || u.uburied || m.mburied)
-        throw new Error('monstunseesu(): m_canseeu() underwater/buried not ported yet');
-    return m_canseeu_couldsee(m);
-}
-function m_canseeu_couldsee(m) {
-    const p = game.u.uprops[INVIS];
-    const Invis = !!((p.intrinsic || p.extrinsic) && !p.blocked);
-    return (!Invis || perceives(m.data)) ? couldsee(m.mx, m.my) : false;
+    return m_canseeu_mm(m);
 }
 
 // C ref: uhitm.c mhitm_mgc_atk_negated()
@@ -364,8 +362,18 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                                       || permapoisoned(otmp));
 
                 if (otmp.otyp === CORPSE
-                    && touch_petrifies(mons[otmp.corpsenm]))
-                    throw new Error('mhitm_ad_phys(): cockatrice corpse hit (do_stone_u()) not ported yet');
+                    && touch_petrifies(mons[otmp.corpsenm])) {
+                    mhm.damage = 1;
+                    await pline(`${Monnam(magr)} hits you with the ${
+                        mons[otmp.corpsenm].pmnames[NEUTRAL]} corpse.`); /* pline_mon() */
+                    if (!Stoned()) {
+                        if (await do_stone_u(magr)) {
+                            mhm.hitflags = M_ATTK_HIT;
+                            mhm.done = 1;
+                            return;
+                        }
+                    }
+                }
                 mhm.damage += dmgval(otmp, mdef);
                 if ((marmg = which_armor(magr, W_ARMG)) != null
                     && marmg.otyp === GAUNTLETS_OF_POWER)
@@ -401,8 +409,18 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                         || u.umonnum === M.PM_BROWN_PUDDING))
                     throw new Error('mhitm_ad_phys(): cloneu() not ported yet');
                 await rustm(game.youmonst, otmp);
-                if (was_poisoned && game.mhitu_dieroll <= 5)
-                    throw new Error('mhitm_ad_phys(): poisoned() not ported yet');
+                if (was_poisoned && game.mhitu_dieroll <= 5) {
+                    /* similar to mhitm_really_poison, but we don't use the
+                     * exact same values, nor do we want same 1/8 chance of
+                     * poison taking (use 1/4, same as in the mhitm case). */
+                    const buf = `${s_suffix(Monnam(magr))} ${mpoisons_subj(magr, mattk)}`;
+                    /* arbitrary, but most poison sources in the game are
+                     * strength-based. With hpdamchance = 10, HP damage occurs
+                     * 1/2 of the time and it will hit Str rest of the time.
+                     * (This is the same as poisoned ammo.) */
+                    await poisoned(buf, A_STR, pmname(magr.data, Mgender(magr)),
+                                   10, false);
+                }
             } else if (mattk.aatyp !== AT_TUCH || mhm.damage !== 0
                        || magr !== u.ustuck) {
                 await hitmsg(magr, mattk);
@@ -679,7 +697,7 @@ async function do_stone_u(mtmp) {
     const u = game.u;
     if (!Stoned() && !Stone_resistance()
         && !(poly_when_stoned(game.youmonst.data)
-             && polymon_nyi(M.PM_STONE_GOLEM))) {
+             && await polymon(M.PM_STONE_GOLEM))) {
         let kformat = KILLED_BY_AN;
         let kname = pmname(mtmp.data, Mgender(mtmp));
 
@@ -694,11 +712,6 @@ async function do_stone_u(mtmp) {
     }
     void u;
     return 0;
-}
-/* C ref: polyself.c polymon() -- not ported */
-function polymon_nyi(mntmp) {
-    void mntmp;
-    throw new Error('polymon() not ported yet');
 }
 
 // C ref: uhitm.c mhitm_ad_ston()
@@ -740,11 +753,6 @@ async function mhitm_ad_ston(magr, mattk, mdef, mhm) {
     }
 }
 
-/* C ref: polyself.c rehumanize() -- not ported; only reached by a
-   polymorphed hero */
-function rehumanize_nyi(who) {
-    throw new Error(`${who}: rehumanize() not ported yet`);
-}
 
 // C ref: uhitm.c erode_armor()
 export async function erode_armor(mdef, hurt) {
@@ -821,7 +829,7 @@ async function mhitm_ad_rust(magr, mattk, mdef, mhm) {
         if (completelyrusts(pd)) {
             await You("rust!");
             /* KMH -- this is okay with unchanging */
-            rehumanize_nyi('mhitm_ad_rust()');
+            await rehumanize();
             return;
         }
         await erode_armor(game.youmonst, ERODE_RUST);
@@ -861,7 +869,7 @@ async function mhitm_ad_dcay(magr, mattk, mdef, mhm) {
         if (completelyrots(pd)) {
             await You("rot!");
             /* KMH -- this is okay with unchanging */
-            rehumanize_nyi('mhitm_ad_dcay()');
+            await rehumanize();
             return;
         }
         await erode_armor(mdef, ERODE_ROT);
@@ -990,7 +998,7 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
                 await You("go up in flames!");
                 monstunseesu(M_SEEN_FIRE);
                 /* KMH -- this is okay with unchanging */
-                rehumanize_nyi('mhitm_ad_fire()');
+                await rehumanize();
                 return;
             } else if (Fire_resistance()) {
                 await pline_The("fire doesn't feel hot!");
@@ -1165,7 +1173,7 @@ async function mhitm_ad_curs(magr, mattk, mdef, mhm) {
             if (u.umonnum === M.PM_CLAY_GOLEM) {
                 await pline("Some writing vanishes from your head!");
                 /* KMH -- this is okay with unchanging */
-                rehumanize_nyi('mhitm_ad_curs()');
+                await rehumanize();
                 return;
             }
             await mon_give_prop(magr, await attrcurse());
@@ -2045,8 +2053,10 @@ export async function do_attack(mtmp) {
             }
             if (inshop || foo) {
                 if (!ctx.travel && !ctx.run)
-                    if (canspotmon(mtmp) && mtmp.isshk)
-                        throw new Error('do_attack(): dopay() not ported yet');
+                    if (canspotmon(mtmp) && mtmp.isshk) {
+                        await dopay(); /* return ECMD_TIME | dopay(): nonzero */
+                        return true;
+                    }
 
                 if (mtmp.mtame) /* see 'additional considerations' above */
                     await monflee(mtmp, rnd(6), false, false);
@@ -2709,7 +2719,7 @@ export async function hmon(mon, obj,
     if (mon.ispriest && !rn2(2))
         throw new Error('hmon(): ghod_hitsu() not ported yet');
     if (anger_guards)
-        throw new Error('hmon(): angry_guards() not ported yet');
+        await angry_guards(!!Deaf());
     return result;
 }
 
@@ -3355,7 +3365,7 @@ async function hmon_hitmon_pet(hmd, mon, obj) {
 }
 
 // C ref: uhitm.c hmon_hitmon_splitmon()
-function hmon_hitmon_splitmon(hmd, mon, obj) {
+async function hmon_hitmon_splitmon(hmd, mon, obj) {
     const u = game.u;
     if ((hmd.mdat === mons[M.PM_BLACK_PUDDING]
          || hmd.mdat === mons[M.PM_BROWN_PUDDING])
@@ -3369,8 +3379,18 @@ function hmon_hitmon_splitmon(hmd, mon, obj) {
              || hmd.material === METAL)
             /* but not bashing with darts, arrows or ya */
             && !(is_ammo(obj) || is_missile(obj)))
-        && hmd.hand_to_hand)
-        throw new Error('hmon_hitmon_splitmon(): clone_mon() not ported yet');
+        && hmd.hand_to_hand) {
+        let mclone;
+        let withwhat = '';
+
+        if ((mclone = await clone_mon(mon, 0, 0)) !== null && mclone !== undefined) {
+            if (u.twoweap && game.flags.verbose)
+                withwhat = ` with ${yname(obj)}`;
+            await pline(`${Monnam(mon)} divides as you hit it${withwhat}!`);
+            hmd.hittxt = true;
+            await mintrap(mclone, NO_TRAP_FLAGS);
+        }
+    }
 }
 
 // C ref: uhitm.c hmon_hitmon_msg_hit()
@@ -3540,7 +3560,7 @@ async function hmon_hitmon(
             && thrown !== HMON_THROWN && thrown !== HMON_KICKED)
             /* this gives "harmlessly passes through" feedback even when
                hero doesn't see it happen; presumably sensed by touch? */
-            throw new Error('hmon_hitmon(): shade_miss() not ported yet');
+            hmd.hittxt = await shade_miss(game.youmonst, mon, obj, false, true);
     }
 
     if (hmd.jousting) {
@@ -3586,7 +3606,7 @@ async function hmon_hitmon(
 
     await hmon_hitmon_pet(hmd, mon, obj);
 
-    hmon_hitmon_splitmon(hmd, mon, obj);
+    await hmon_hitmon_splitmon(hmd, mon, obj);
 
     await hmon_hitmon_msg_hit(hmd, mon, obj);
 
