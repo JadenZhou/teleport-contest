@@ -24,7 +24,7 @@ import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
 import { seemimic } from './mon.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
-import { losehp } from './trap.js';
+import { losehp, unconscious as unconscious_mu } from './trap.js';
 import { find_mac } from './worn.js';
 import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
          likes_gems, noncorporeal, amorphous, unsolid, is_mercenary, acidic,
@@ -159,7 +159,6 @@ import { cls as cls_mu, show_glyph as show_glyph_mu, mon_to_glyph as mon_to_glyp
          You_feel as You_feel_mu } from './display.js';
 import { rn2_on_display_rng as rn2_on_display_rng_mu } from './rng.js';
 import { tty_display_map_nhwindow as tty_display_map_nhwindow_mu } from './wintty.js';
-import { unconscious as unconscious_mu } from './eat.js';
 import { removed_from_icebox } from './pickup.js';
 import { cancel_monst } from './zap.js';
 

@@ -31,7 +31,7 @@ import { newsym, canseemon, canspotmon, sensemon, see_monsters } from './display
 import { couldsee, vision_recalc } from './vision.js';
 import { u_on_newpos, somexyspace } from './mklev.js';
 import { nomul, spoteffects, switch_terrain } from './hack.js';
-import { VIBRATING_SQUARE, deltrap } from './trap.js';
+import { VIBRATING_SQUARE, deltrap, unconscious } from './trap.js';
 import { PASSES_WALLS, ANTIMAGIC } from './const.js';
 import { M1_FLY } from './monsters.js';
 import { resists_magm } from './mondata.js';
@@ -639,19 +639,6 @@ export async function scrolltele(scroll) {
         learnscroll(scroll);
 
     await safe_teleds(TELEDS_TELEPORT);
-}
-
-// C ref: hack.c unconscious()
-function unconscious() {
-    const g = game;
-    if (g.multi >= 0)
-        return false;
-
-    return !!(g.u.usleep
-              || (g.nomovemsg
-                  && (g.nomovemsg.startsWith("You awake")
-                      || g.nomovemsg.startsWith("You regain con")
-                      || g.nomovemsg.startsWith("You are consci"))));
 }
 
 // C ref: teleport.c dotelecmd() -- the #teleport command; 'm ^T' ==

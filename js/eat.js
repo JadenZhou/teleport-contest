@@ -239,18 +239,6 @@ export function is_fainted() {
 }
 
 
-// C ref: trap.c unconscious()
-export function unconscious() {
-    const g = game;
-    if (g.multi >= 0)
-        return false;
-    return !!(g.u.usleep
-              || (g.nomovemsg
-                  && (g.nomovemsg.startsWith("You awake")
-                      || g.nomovemsg.startsWith("You regain con")
-                      || g.nomovemsg.startsWith("You are consci"))));
-}
-
 // C ref: eat.c gethungry()
 /* as time goes by - called by moveloop(every move) & domove(melee attack) */
 export async function gethungry() {

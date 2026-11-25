@@ -15,7 +15,7 @@
 import { DEADMONSTER } from './mon.js';
 import { helpless } from './monmove.js';
 import { is_art } from './artifact.js';
-import { passes_rocks } from './trap.js';
+import { passes_rocks, unconscious } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
          is_whirly, has_head, thick_skinned, flaming, touch_petrifies,
@@ -142,7 +142,7 @@ import { completelyrusts, completelyrots, completelyburns, mon_give_prop,
 import { burn_away_slime, hliquid, make_blinded, make_confused, make_stunned,
          make_slimed, make_sick, delayed_killer } from './potion.js';
 import { tele } from './teleport.js';
-import { unconscious, is_fainted, morehungry } from './eat.js';
+import { is_fainted, morehungry } from './eat.js';
 import { can_blnd } from './mondata.js';
 import { night } from './calendar.js';
 import { attrcurse } from './sit.js';

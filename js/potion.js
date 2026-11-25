@@ -126,17 +126,6 @@ function mon_perma_blind(mon) { return !mon.mcansee && !mon.mblinded; }
 /* C ref: hack.h makeknown(), distu() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
-/* C ref: hack.c unconscious() */
-function unconscious() {
-    const g = game;
-    if (g.multi >= 0)
-        return false;
-    return !!(g.u.usleep
-              || (g.nomovemsg
-                  && (g.nomovemsg.startsWith("You awake")
-                      || g.nomovemsg.startsWith("You regain con")
-                      || g.nomovemsg.startsWith("You are consci"))));
-}
 /* C ref: decl.c c_common_strings */
 const You_can_move_again = "You can move again.";
 const vision_clears = "vision quickly clears.";

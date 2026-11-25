@@ -152,7 +152,6 @@ import { del_engr_at as del_engr_at_l } from './engrave.js';
 import { is_drawbridge_wall as is_drawbridge_wall_l } from './dbridge.js';
 import { find_drawbridge as find_drawbridge_l } from './zap.js';
 import { fillholetyp as fillholetyp_l, unearth_objs as unearth_objs_l } from './dig.js';
-import { unconscious as unconscious_l } from './eat.js';
 import { M1_SLITHY, M1_NOLIMBS } from './monsters.js';
 import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
          GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL, GRAY_DRAGON_SCALES,
@@ -3871,7 +3870,7 @@ async function trapeffect_landmine(mtmp, trap, trflags) {
         await fill_pit(tx, ty); /* thitm may have already destroyed the trap */
         if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
             trapkilled = true;
-        if (unconscious_l()) {
+        if (unconscious()) {
             game.multi = -1;
             game.nomovemsg = "The explosion awakens you!";
         }
@@ -5326,6 +5325,18 @@ export async function drown() {
         await set_uinwater(0); /* u.uinwater = 0 */
     await rescued_from_terrain(DROWNING_DR);
     return true;
+}
+
+// C ref: trap.c unconscious()
+export function unconscious() {
+    if (game.multi >= 0)
+        return false;
+
+    return !!(game.u.usleep
+              || (game.nomovemsg
+                  && (game.nomovemsg.startsWith("You awake")
+                      || game.nomovemsg.startsWith("You regain con")
+                      || game.nomovemsg.startsWith("You are consci"))));
 }
 
 const lava_killer = "molten lava";

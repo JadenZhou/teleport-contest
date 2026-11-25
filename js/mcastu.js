@@ -123,16 +123,6 @@ const mon_wizard_spells = [
     MCAST_AGGRAVATION, MCAST_SUMMON_MONS, MCAST_CLONE_WIZ, MCAST_DEATH_TOUCH,
 ];
 
-/* C ref: hack.c unconscious() */
-function unconscious() {
-    if (game.multi >= 0)
-        return false;
-    return !!(game.u.usleep
-              || (game.nomovemsg
-                  && (game.nomovemsg.startsWith("You awake")
-                      || game.nomovemsg.startsWith("You regain con")
-                      || game.nomovemsg.startsWith("You are consci"))));
-}
 /* C ref: eat.c is_fainted() */
 function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
 /* C ref: rm.h IS_WATERWALL(), is_waterwall() */

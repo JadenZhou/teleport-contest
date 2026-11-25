@@ -71,7 +71,7 @@ import { PM_ARCHEOLOGIST } from './monsters.js';
 import { FEDORA, LUCKSTONE } from './objects.js';
 import { stone_luck } from './attrib.js';
 import { carrying } from './invent.js';
-import { heal_legs } from './trap.js';
+import { heal_legs, unconscious } from './trap.js';
 import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
 import { Popeye, morehungry, vomit } from './eat.js';
@@ -246,17 +246,6 @@ export function confers_luck(obj) {
 function up(p) { return game.u.uprops[p]; }
 /* C ref: color.h NH_BLUE, NH_GREEN (color names for hcolor()) */
 const NH_BLUE = "blue", NH_GREEN = "green";
-/* C ref: trap.c unconscious() */
-function unconscious() {
-    const g = game;
-    if (g.multi >= 0)
-        return false;
-    return !!(g.u.usleep
-              || (g.nomovemsg
-                  && (g.nomovemsg.startsWith("You awake")
-                      || g.nomovemsg.startsWith("You regain con")
-                      || g.nomovemsg.startsWith("You are consci"))));
-}
 /* C ref: pline.c urgent_pline() -- pline() that overrides msgtype
    suppression; no MSGTYPE patterns are set, so it's plain pline() */
 async function urgent_pline(line) { await pline(line); }

@@ -11,7 +11,7 @@ import { FUMBLING, TIMEOUT, DRAWBRIDGE_UP, ICE, STONE, IS_POOL, IS_LAVA,
 import { db_under_typ } from './display.js';
 import { dfeature_at } from './invent.js';
 import { waterbody_name } from './pager.js';
-import { back_on_ground } from './trap.js';
+import { back_on_ground, unconscious } from './trap.js';
 import { an } from './objnam.js';
 import { game } from './gstate.js';
 import { is_pool, is_lava } from './makemon.js';
@@ -123,7 +123,6 @@ import { more_experienced, newexplevel } from './exper.js';
 import { currency } from './insight.js';
 import { container_contents } from './end.js';
 import { discover_object } from './o_init.js';
-import { unconscious } from './eat.js';
 import { hideunder } from './makemon.js';
 import { fix_ghostly_obj } from './bones.js';
 import { revive_corpse } from './zap.js';
