@@ -805,7 +805,7 @@ function ranged_attk_available(mtmp) {
 }
 
 // ── C ref: mon.c m_respond() ──
-function m_respond(mtmp) {
+export function m_respond(mtmp) {
     if (mtmp.data.msound === M.MS_SHRIEK
         && !(Math.abs(mtmp.mx - game.u.ux) > 1 || Math.abs(mtmp.my - game.u.uy) > 1))
         throw new Error('m_respond_shrieker() not ported yet');

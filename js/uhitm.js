@@ -3787,7 +3787,7 @@ async function missum(mdef, mattk, wouldhavehit) {
 
 // C ref: uhitm.c m_is_steadfast()
 /* check whether equipment protects against knockback */
-function m_is_steadfast(mtmp) {
+export function m_is_steadfast(mtmp) {
     const u = game.u;
     const is_u = (mtmp === game.youmonst);
     const otmp = is_u ? game.uwep : (mtmp.mw || null);

@@ -89,6 +89,9 @@ import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';
 import { inhishop, make_angry_shk, costly_spot, find_objowner,
          onshopbill } from './shk.js';
 import { inhistemple } from './priest.js';
+import { in_rooms as in_rooms_utm } from './hack.js';
+import { unstuck as unstuck_utm } from './mhitu.js';
+import { TEMPLE as TEMPLE_UTM, engulfing_u as engulfing_u_utm } from './const.js';
 
 
 /* C ref: mondata.h is_rider() */
@@ -1758,5 +1761,37 @@ export async function rloco(obj) {
     place_object(obj, tx, ty);
     /* note: block_point() for boulder handled by place_object() */
     newsym(tx, ty);
+    return true;
+}
+
+// C ref: teleport.c u_teleport_mon()
+/* you teleport a monster (via wand, spell, or poly'd q.mechanic attack);
+   return false iff the attempt fails */
+export async function u_teleport_mon(mtmp, give_feedback) {
+    const u = game.u;
+    const cc = { x: 0, y: 0 };
+
+    if ((game.level.flags.stasis_until || 0) >= game.moves) {
+        if (give_feedback)
+            await pline(`A mysterious force prevents you teleporting ${
+                mon_nam(mtmp)}!`);
+        return false;
+    } else if (mtmp.ispriest && in_rooms_utm(mtmp.mx, mtmp.my, TEMPLE_UTM).length) {
+        if (give_feedback)
+            await pline(`${Monnam(mtmp)} resists your magic!`);
+        return false;
+    } else if (engulfing_u_utm(mtmp) && noteleport_level(mtmp)) {
+        if (give_feedback)
+            await You(`are no longer inside ${mon_nam(mtmp)}!`);
+        await unstuck_utm(mtmp);
+        if (!(await rloc(mtmp, RLOC_MSG)))
+            throw new Error('u_teleport_mon(): m_into_limbo() not ported yet');
+    } else if ((is_rider(mtmp.data) || control_teleport(mtmp.data))
+               && rn2(13) && enexto(cc, u.ux, u.uy, mtmp.data)) {
+        await rloc_to(mtmp, cc.x, cc.y);
+    } else {
+        if (!(await rloc(mtmp, RLOC_MSG)))
+            return false;
+    }
     return true;
 }

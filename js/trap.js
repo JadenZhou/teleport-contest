@@ -182,6 +182,19 @@ import { LEVITATION, FLYING, FUMBLING, ANTIMAGIC, HALF_PHDAM, HALF_SPDAM,
        } from './const.js';
 import { xytodir as xytodir_tr } from './hack.js';
 import { DIR_180 as DIR_180_TR, DIR_ERR as DIR_ERR_TR } from './const.js';
+import { wakeup as wakeup_ht } from './mon.js';
+import { noit_Monnam as noit_Monnam_ht, y_monnam as y_monnam_ht } from './do_name.js';
+import { vision_recalc as vision_recalc_ht } from './vision.js';
+import { adjalign as adjalign_ht } from './attrib.js';
+import { You_feel as You_feel_ht } from './display.js';
+import { set_malign as set_malign_ht } from './makemon.js';
+import { m_next2u as m_next2u_ht, A_LAWFUL as A_LAWFUL_HT,
+         TT_LAVA as TT_LAVA_HT, TT_INFLOOR as TT_INFLOOR_HT,
+         TT_BURIEDBALL as TT_BURIEDBALL_HT, TT_BEARTRAP as TT_BEARTRAP_HT,
+         TT_PIT as TT_PIT_HT, TT_WEB as TT_WEB_HT, FORCETRAP as FORCETRAP_HT,
+         NOWEBMSG as NOWEBMSG_HT } from './const.js';
+import { G_UNIQ as G_UNIQ_HT, S_HUMAN as S_HUMAN_HT,
+         M1_MINDLESS as M1_MINDLESS_HT } from './monsters.js';
 export { is_hole, is_pit };
 
 /* C ref: mondata.h resists_ston() */
@@ -5299,3 +5312,217 @@ export async function sink_into_lava() {
     }
 }
 import { SLIMED as SLIMED_SL, TIMEOUT as TIMEOUT_SL } from './const.js';
+
+/* C ref: decl.c c_common_strings.c_the_your[] */
+const the_your_ht = ["the", "your"];
+
+// C ref: trap.c reward_untrap()
+async function reward_untrap(ttmp, mtmp) {
+    if (!ttmp.madeby_u) {
+        if (rnl(10) < 8 && !mtmp.mpeaceful && !helpless(mtmp)
+            && !mtmp.mfrozen && !(mtmp.data.mflags1 & M1_MINDLESS_HT) /* mindless() */
+            && !(mtmp.data.geno & G_UNIQ_HT) /* unique_corpstat() */
+            && mtmp.data.mlet !== S_HUMAN_HT) {
+            mtmp.mpeaceful = 1;
+            set_malign_ht(mtmp); /* reset alignment */
+            await pline(`${Monnam(mtmp)} is grateful.`);
+        }
+        /* Helping someone out of a trap is a nice thing to do.
+           A lawful may be rewarded, but not too often.  */
+        if (!rn2(3) && !rnl(8) && game.u.ualign.type === A_LAWFUL_HT) {
+            adjalign_ht(1);
+            await You_feel_ht("that you did the right thing.");
+        }
+    }
+}
+
+// C ref: trap.c openholdingtrap()
+/* for magic unlocking; returns true if targeted monster (which might
+   be hero) gets untrapped; the trap remains intact */
+export async function openholdingtrap(
+    mon,
+    noticed) { /* noticed.v set to true iff hero notices the effect;
+                * otherwise left with its previous value intact */
+    const u = game.u;
+    let t;
+    let buf;
+    let trapdescr = null, which = null;
+    let ishero = (mon === game.youmonst);
+
+    if (!mon)
+        return false;
+    if (mon === u.usteed)
+        ishero = true;
+
+    t = t_at(ishero ? u.ux : mon.mx, ishero ? u.uy : mon.my);
+
+    if (ishero && u.utrap) { /* all u.utraptype values are holding traps */
+        /* there might not be any trap at hero's spot for tt_buriedball;
+           conversely, there might be an unrelated trap at that spot */
+        if (!t) {
+            t = { tseen: 0, madeby_u: 0, tx: 0, ty: 0, ttyp: 0 };
+            /* fallback 't' is now nonNull, t->tseen and t->madeby_u are 0 */
+        }
+        which = the_your_ht[(!t || !t.tseen || !t.madeby_u) ? 0 : 1];
+
+        switch (u.utraptype) {
+        case TT_LAVA_HT:
+            trapdescr = "molten lava";
+            break;
+        case TT_INFLOOR_HT:
+            /* solidified lava, so not "floor" even if within a room */
+            trapdescr = "ground";
+            break;
+        case TT_BURIEDBALL_HT:
+            trapdescr = "your anchor";
+            which = "";
+            break;
+        case TT_BEARTRAP_HT:
+        case TT_PIT_HT:
+        case TT_WEB_HT:
+            /* defsyms[S_web / S_pit / S_bear_trap].explanation */
+            trapdescr = (u.utraptype === TT_WEB_HT) ? "web"
+                        : (u.utraptype === TT_PIT_HT) ? "pit"
+                          : "bear trap";
+            break;
+        default:
+            /* lint suppression in case 't' is unexpectedly Null
+               or u.utraptype has new value we don't know about yet */
+            trapdescr = "trap";
+            break;
+        }
+    } else {
+        /* if no trap here or it's not a holding trap, we're done */
+        if (!t || (t.ttyp !== BEAR_TRAP && t.ttyp !== WEB))
+            return false;
+        trapdescr = trapname(t.ttyp, false);
+    }
+    if (which === null)
+        which = t.tseen ? the_your_ht[t.madeby_u ? 1 : 0]
+                        : "aeiouAEIOU".includes(trapdescr[0]) ? "an" : "a"; /* vowels[] */
+    if (which)
+        which = which + " ";
+
+    if (ishero) {
+        if (!u.utrap)
+            return false;
+        noticed.v = true;
+        if (!u.usteed)
+            buf = "You are";
+        else if (u.utraptype === TT_BURIEDBALL_HT)
+            buf = `You and ${y_monnam_ht(u.usteed)} are`;
+        else
+            buf = `${noit_Monnam_ht(u.usteed)} is`;
+        /* give release message before untrap in case it triggers a message */
+        await pline(`${buf} released from ${which}${trapdescr}.`);
+        /* might float up if Levitation is being unblocked */
+        game.vision_full_recalc = 1; /* vision limits can change (pit escape) */
+        await reset_utrap(true);
+        if (game.vision_full_recalc)
+            vision_recalc_ht(0);
+    } else {
+        if (!mon.mtrapped)
+            return false;
+        mon.mtrapped = 0;
+        if (canspotmon_l(mon)) {
+            noticed.v = true;
+            await pline(`${Monnam(mon)} is released from ${which}${trapdescr}.`);
+        } else if (cansee(t.tx, t.ty) && t.tseen) {
+            noticed.v = true;
+            if (t.ttyp === WEB)
+                await pline(`Something is released from ${which}${trapdescr}.`);
+            else /* BEAR_TRAP */
+                await pline(`${which ? which[0].toUpperCase() + which.slice(1)
+                                     : which}${trapdescr} opens.`); /* upstart() */
+        }
+        /* might pacify monster if adjacent */
+        if (rn2(2) && m_next2u_ht(mon))
+            await reward_untrap(t, mon);
+    }
+    return true;
+}
+
+// C ref: trap.c closeholdingtrap()
+/* for magic locking; returns true if targeted monster (which might
+   be hero) gets hit by a trap (might avoid actually becoming trapped) */
+export async function closeholdingtrap(
+    mon,
+    noticed) { /* noticed.v set to true iff hero notices the effect;
+                * otherwise left with its previous value intact */
+    const u = game.u;
+    let t;
+    let dotrapflags;
+    let ishero = (mon === game.youmonst), result;
+
+    if (!mon)
+        return false;
+    if (mon === u.usteed)
+        ishero = true;
+    t = t_at(ishero ? u.ux : mon.mx, ishero ? u.uy : mon.my);
+    /* if no trap here or it's not a holding trap, we're done */
+    if (!t || (t.ttyp !== BEAR_TRAP && t.ttyp !== WEB))
+        return false;
+
+    if (ishero) {
+        if (u.utrap)
+            return false; /* already trapped */
+        noticed.v = true;
+        dotrapflags = FORCETRAP_HT;
+        /* dotrap calls mintrap when mounted hero encounters a web */
+        if (u.usteed)
+            dotrapflags |= NOWEBMSG_HT;
+        await dotrap(t, dotrapflags | FORCETRAP_HT);
+        result = (u.utrap !== 0);
+    } else {
+        if (mon.mtrapped)
+            return false; /* already trapped */
+        /* you notice it if you see the trap close/tremble/whatever
+           or if you sense the monster who becomes trapped */
+        noticed.v = cansee(t.tx, t.ty) || canspotmon_l(mon);
+        result = ((await mintrap(mon, FORCETRAP_HT)) !== Trap_Effect_Finished);
+    }
+    return result;
+}
+
+// C ref: trap.c openfallingtrap()
+/* for magic unlocking; returns true if targeted monster (which might
+   be hero) gets hit by a trap (target might avoid its effect) */
+export async function openfallingtrap(
+    mon,
+    trapdoor_only,
+    noticed) { /* noticed.v set to true iff hero notices the effect; */
+               /* otherwise left with its previous value intact */
+    const u = game.u;
+    let t;
+    let ishero = (mon === game.youmonst), result;
+
+    if (!mon)
+        return false;
+    if (mon === u.usteed)
+        ishero = true;
+    t = t_at(ishero ? u.ux : mon.mx, ishero ? u.uy : mon.my);
+    /* if no trap here or it's not a falling trap, we're done
+       (note: falling rock traps have a trapdoor in the ceiling) */
+    if (!t || ((t.ttyp !== TRAPDOOR && t.ttyp !== ROCKTRAP)
+               && (trapdoor_only || (t.ttyp !== HOLE && !is_pit(t.ttyp)))))
+        return false;
+
+    if (ishero) {
+        if (u.utrap)
+            return false; /* already trapped */
+        noticed.v = true;
+        await dotrap(t, FORCETRAP_HT);
+        result = (u.utrap !== 0);
+    } else {
+        if (mon.mtrapped)
+            return false; /* already trapped */
+        /* you notice it if you see the trap close/tremble/whatever
+           or if you sense the monster who becomes trapped */
+        noticed.v = cansee(t.tx, t.ty) || canspotmon_l(mon);
+        /* monster will be angered; mintrap doesn't handle that */
+        await wakeup_ht(mon, true);
+        result = ((await mintrap(mon, FORCETRAP_HT)) !== Trap_Effect_Finished);
+        /* mon might now be on the migrating monsters list */
+    }
+    return result;
+}
