@@ -17,8 +17,8 @@ import { game } from './gstate.js';
 import { rn2, rnd, rn1, rne, rnz } from './rng.js';
 import { depth, level_difficulty, In_hell } from './dungeon.js';
 import * as O from './objects.js';
-import { objects, is_weptool, Is_mbag, Is_container,
-         bimanual } from './objects.js';
+import { objects, is_weptool, Is_mbag, Is_container, bimanual, is_rustprone,
+         is_crackable, is_corrodeable } from './objects.js';
 import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD } from './const.js';
 import { rndmonst_adj } from './makemon.js';
 import { monsndx, little_to_big, big_to_little, is_human, verysmall, is_male,
@@ -550,17 +550,7 @@ export function is_rottable(otmp) {
             || objects[otyp].oc_material === O.DRAGON_HIDE);
 }
 
-// C ref: objclass.h is_rustprone(), is_crackable(), is_corrodeable(),
-// is_damageable()
-export function is_rustprone(otmp) { return objects[otmp.otyp].oc_material === O.IRON; }
-export function is_crackable(otmp) {
-    return (objects[otmp.otyp].oc_material === O.GLASS
-            && otmp.oclass === ARMOR_CLASS); /* erosion_matters() */
-}
-export function is_corrodeable(otmp) {
-    return (objects[otmp.otyp].oc_material === O.COPPER
-            || objects[otmp.otyp].oc_material === O.IRON);
-}
+// C ref: mkobj.c is_damageable()
 export function is_damageable(otmp) {
     return (is_rustprone(otmp) || is_flammable(otmp)
             || is_rottable(otmp) || is_corrodeable(otmp)

@@ -32,7 +32,9 @@ import { exercise } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
-import { The, xname, Tobjnam, vtense } from './objnam.js';
+import { The, xname, Tobjnam, vtense, cloak_simple_name, suit_simple_name,
+         helm_simple_name, gloves_simple_name, boots_simple_name,
+         shirt_simple_name, shield_simple_name } from './objnam.js';
 import { mon_nam } from './do_name.js';
 import { resists_blnd, resists_blnd_by_arti, nohands, is_mplayer, is_whirly,
          mindless, digests, is_rider, eyecount,
@@ -57,7 +59,8 @@ import { objects, WAND_CLASS, SPBOOK_CLASS, DWARVISH_CLOAK, NODIR, IMMEDIATE,
          WAN_CANCELLATION, SPE_CANCELLATION, SPE_KNOCK, SPE_WIZARD_LOCK,
          WAN_PROBING, SchroedingersBox, Is_box,
          Is_container as Is_container_bm, is_weptool as is_weptool_ci,
-         is_weptool as is_weptool_di } from './objects.js';
+         is_weptool as is_weptool_di, is_rustprone, is_crackable,
+         is_corrodeable } from './objects.js';
 import { PIT, SPIKED_PIT, STATUE_TRAP, HEADSTONE, DOOR, DBWALL,
          DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST, DB_WEST, IS_DRAWBRIDGE,
          isok } from './const.js';
@@ -65,8 +68,7 @@ import { t_at, activate_statue_trap } from './trap.js';
 import { sobj_at, is_pool, is_lava } from './makemon.js';
 import { delobj } from './invent.js';
 import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
-         is_rustprone, is_crackable, is_corrodeable, is_rottable,
-         is_damageable, is_poisonable } from './mkobj.js';
+         is_rottable, is_damageable, is_poisonable } from './mkobj.js';
 import { obj_resists } from './dogmove.js';
 import { cansee, does_block, block_point, unblock_point } from './vision.js';
 import { newsym } from './display.js';
@@ -111,10 +113,7 @@ import {
     W_WEP, W_ART, W_ARMC, W_ARM, W_ARMU, W_ARMH, W_ARMG, W_ARMF, W_ARMS,
     W_AMUL, W_TOOL, W_RING, W_RINGL,
 } from './const.js';
-import {
-    cloak_simple_name, suit_simple_name, shirt_simple_name, helm_simple_name,
-    gloves_simple_name, boots_simple_name, shield_simple_name, simpleonames,
-} from './iactions.js';
+import { simpleonames } from './iactions.js';
 import { Sleep_resistance, Antimagic, Blind, Hallucination, Deaf, Reflecting } from './youprop.js';
 import { Luck } from './const.js';
 import { breaks as breaks_zb, hero_breaks as hero_breaks_zb } from './dothrow.js';

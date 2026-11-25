@@ -83,7 +83,7 @@ import { enexto_core, enexto_gpflags } from './teleport.js';
 import { newedog } from './dog.js';
 import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS, PROT_FROM_SHAPE_CHANGERS } from './const.js';
-import { dist2, sgn } from './hacklib.js';
+import { dist2, sgn, ARM_BONUS } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
@@ -109,6 +109,7 @@ import { G_EXTINCT as G_EXTINCT_CM, isok as isok_cm, MGIVENNAME as MGIVENNAME_cm
 import { enexto as enexto_cm } from './teleport.js';
 import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
 import { tamedog as tamedog_cm } from './dog.js';
+import { hard_helmet } from './do_wear.js';
 export {
     NO_MM_FLAGS, NO_MINVENT, MM_NOWAIT, MM_NOCOUNTBIRTH, MM_IGNOREWATER,
     MM_ADJACENTOK, MM_NONAME, MM_EDOG, MM_ASLEEP, MM_NOGRP, MM_MALE,
@@ -810,12 +811,6 @@ export function mkmonmoney(mtmp, amount) {
         gold.owt = weight(gold);
         add_to_minv(mtmp, gold);
     }
-}
-
-// C ref: hack.h ARM_BONUS()
-function ARM_BONUS(obj) {
-    return objects[obj.otyp].a_ac + (obj.spe || 0)
-           - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac);
 }
 
 // C ref: makemon.c m_initinv()
@@ -2418,13 +2413,6 @@ export function rnd_defensive_item(mtmp) {
         /*NOTREACHED*/
         return 0;
     }
-}
-
-// C ref: objclass.h is_metallic(); do_wear.c hard_helmet()
-function hard_helmet(otmp) {
-    if (!otmp) return false;
-    const mat = objects[otmp.otyp].oc_material;
-    return mat >= 11 /* IRON */ && mat <= 17 /* MITHRIL */;
 }
 
 // C ref: muse.c rnd_offensive_item()

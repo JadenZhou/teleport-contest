@@ -92,14 +92,10 @@ import { AMULET_OF_UNCHANGING } from './objects.js';
 import { gloves_simple_name } from './objnam.js';
 import { rehumanize } from './polyself.js';
 import { make_glib } from './potion.js';
+import { mdistu } from './hacklib.js';
 /* C ref: defsym.h S_altar (cmap index) */
 const S_altar = 33;
 const NH_BLACK = "black"; /* color.h */
-/* C ref: hack.h mdistu() */
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
-}
 
 // C ref: pray.c Moloch
 const Moloch = "Moloch";

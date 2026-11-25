@@ -93,7 +93,7 @@ import { mondead, wake_nearto } from './mon.js';
 import { WATER, PASSES_WALLS, SLOW_DIGESTION, SHOCK_RES, TT_WEB, RLOC_NOMSG, IS_OBSTRUCTED, TREE, IRONBARS, MAGICAL_BREATHING, ACID_RES, FIRE_RES, M_SEEN_ACID, M_SEEN_ELEC, M_SEEN_COLD, M_SEEN_FIRE } from './const.js';
 import { closed_door, sobj_at, place_monster } from './makemon.js';
 import { BOULDER } from './objects.js';
-import { s_suffix, upstart } from './hacklib.js';
+import { s_suffix, upstart, mdistu } from './hacklib.js';
 import { set_ustuck, monstseesu, monstunseesu } from './uhitm.js';
 import { placebc, unplacebc } from './ball.js';
 import { docrt, newsym, flush_screen, swallowed } from './display.js';
@@ -152,11 +152,6 @@ const LARGEST_INT = 32767;
 let mon_currwep = null;
 
 /* mondata.h */
-/* C ref: hack.h mdistu() */
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
-}
 /* C ref: mondata.h gender() / pronoun_gender() subset */
 function gender(mon) { return mon.female ? 1 : 0; }
 

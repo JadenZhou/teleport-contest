@@ -21,7 +21,8 @@ import { tty_display_nhwindow } from './wintty.js';
 import { create_gas_cloud } from './region.js';
 import { A_STR, FREE_ACTION } from './const.js';
 import { the } from './iactions.js';
-import { xname } from './objnam.js';
+import { xname, suit_simple_name, cloak_simple_name, gloves_simple_name,
+         helm_simple_name } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { poisoned } from './attrib.js';
 import { A_CON, UNCHANGING } from './const.js';
@@ -50,7 +51,8 @@ import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          throws_rocks, nohands, likes_lava } from './mondata.js';
 import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL, GEMSTONE,
          MINERAL, RING_CLASS, IRON, stone_missile, Is_container,
-         bimanual as bimanual_tr, bimanual } from './objects.js';
+         bimanual as bimanual_tr, bimanual, is_corrodeable,
+         is_crackable } from './objects.js';
 import { rnd, d } from './rng.js';
 import { FAILEDUNTRAP, W_ARMF, W_ARMH, W_ARMS, W_ARMG, W_ARMC, W_ARM, W_ARMU,
          W_WEP, W_SWAPWEP, WT_ELF, STONE_RES } from './const.js';
@@ -102,7 +104,7 @@ import { just_an } from './objnam.js';
 import { seemimic } from './mon.js';
 import { resist } from './zap.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, NOTELL } from './const.js';
-import { dist2, sgn, upstart } from './hacklib.js';
+import { dist2, sgn, upstart, mdistu } from './hacklib.js';
 import { rn1 } from './rng.js';
 import { nomul, end_running } from './hack.js';
 import { exercise, ATEMP } from './attrib.js';
@@ -112,8 +114,7 @@ import { You, Your, pline_The, Norep } from './display.js';
 import { fill_pit } from './muse.js';
 import { YMonnam } from './do_name.js';
 import { tty_clear_nhwindow } from './wintty.js';
-import { is_rottable, is_corrodeable, is_crackable,
-         costly_alteration } from './mkobj.js';
+import { is_rottable, costly_alteration } from './mkobj.js';
 import { remove_worn_item, extract_from_minvent } from './steal.js';
 import { delobj } from './invent.js';
 import { Yobjnam2 } from './objnam.js';
@@ -197,7 +198,7 @@ import { begin_burn } from './timeout.js';
 import { dismount_steed } from './steed.js';
 import { DISMOUNT_POLY, DISMOUNT_GENERIC } from './const.js';
 import { setmangry, mlifesaver } from './mon.js';
-import { Boots_off } from './do_wear.js';
+import { Boots_off, hard_helmet as hard_helmet_tr } from './do_wear.js';
 import { discover_object } from './o_init.js';
 import { costly_spot } from './shk.js';
 import { noit_Monnam as noit_Monnam_ht, y_monnam as y_monnam_ht } from './do_name.js';
@@ -292,7 +293,6 @@ import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
          FIRE_HORN as FIRE_HORN_FD } from './objects.js';
 import { liquid_flow as liquid_flow_l } from './dig.js';
 import { ceiling as ceiling_tr } from './dungeon.js';
-import { hard_helmet as hard_helmet_tr } from './objnam.js';
 import { mbodypart as mbodypart_tr } from './insight.js';
 import { schedule_goto, UTOTYPE_FALLING, UTOTYPE_NONE } from './do.js';
 import { impact_drop } from './dokick.js';
@@ -333,9 +333,6 @@ import { MS_GUARDIAN, PM_DOPPELGANGER, PM_FLESH_GOLEM, PM_ARCHEOLOGIST,
          M1_CONCEAL } from './monsters.js';
 export { is_hole, is_pit };
 
-
-/* C ref: hack.h mdistu() */
-function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: trap.c mk_trap_statue()
 /* create a "living" statue at x,y */
@@ -2086,58 +2083,6 @@ export async function grease_protect(otmp, ostr, victim) {
         return true;
     }
     return false;
-}
-
-/* C ref: objnam.c suit_simple_name(), cloak_simple_name(),
-   helm_simple_name() */
-function suit_simple_name(suit) {
-    if (suit) {
-        if (suit.otyp >= GRAY_DRAGON_SCALE_MAIL && suit.otyp <= YELLOW_DRAGON_SCALE_MAIL)
-            return "dragon mail"; /* <color> dragon scale mail */
-        else if (suit.otyp >= GRAY_DRAGON_SCALES && suit.otyp <= YELLOW_DRAGON_SCALES)
-            return "dragon scales";
-        const suitnm = OBJ_NAME(objects[suit.otyp]);
-        if (suitnm.length > 5 && suitnm.endsWith(" mail"))
-            return "mail"; /* most suits fall into this category */
-        else if (suitnm.length > 7 && suitnm.endsWith(" jacket"))
-            return "jacket"; /* leather jacket */
-    }
-    /* "suit" is lame but "armor" is ambiguous and "body armor" is absurd */
-    return "suit";
-}
-function cloak_simple_name(cloak) {
-    if (cloak) {
-        switch (cloak.otyp) {
-        case ROBE:
-            return "robe";
-        case MUMMY_WRAPPING:
-            return "wrapping";
-        case ALCHEMY_SMOCK:
-            return (objects[cloak.otyp].oc_name_known && cloak.dknown)
-                       ? "smock" : "apron";
-        default:
-            break;
-        }
-    }
-    return "cloak";
-}
-function gloves_simple_name(gloves) {
-    const gauntlets = "gauntlets";
-
-    if (gloves && gloves.dknown) {
-        const ocl = objects[gloves.otyp];
-        const actualn = OBJ_NAME(ocl), descrpn = OBJ_DESCR(ocl);
-
-        if ((ocl.oc_name_known ? actualn : descrpn || '').toLowerCase()
-                .includes(gauntlets))
-            return gauntlets;
-    }
-    return "gloves";
-}
-function helm_simple_name(helmet) {
-    /* hard_helmet(): metallic helmets other than the elven leather helm */
-    const hard = helmet && is_metallic(helmet);
-    return !hard ? "hat" : "helm";
 }
 
 // C ref: trap.c trapeffect_rust_trap()

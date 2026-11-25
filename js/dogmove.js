@@ -17,7 +17,7 @@ import { eaten_stat, peek_at_iced_corpse_age } from './eat.js';
 import { mon_wield_item } from './weapon.js';
 import { rn2, rnd } from './rng.js';
 import { mattacku } from './mhitu.js';
-import { dist2, distmin } from './hacklib.js';
+import { dist2, distmin, distu } from './hacklib.js';
 import { cansee, couldsee, clear_path, do_clear_area } from './vision.js';
 import {
     m_at, MON_AT, place_monster, is_pool, is_lava, sobj_at, may_passwall
@@ -74,7 +74,6 @@ const DOG_STARVE = 750;
 function mresists(mon, mr) {
     return (((mon.data.mresists | (mon.mextrinsics ?? 0)) & mr) !== 0);
 }
-function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: stairs.c On_stairs() */
 export function On_stairs(x, y) {
     for (let s = game.stairs; s; s = s.next)

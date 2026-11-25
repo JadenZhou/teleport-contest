@@ -93,6 +93,7 @@ import { expels, unstuck } from './mhitu.js';
 import { sticks as sticks_end } from './engrave.js';
 import { Monnam as Monnam_end } from './do_name.js';
 import { flush_screen as flush_screen_end } from './display.js';
+import { findgd } from './vault.js';
 
 const EXIT_SUCCESS = 0;
 const BUFSZ = 256;
@@ -780,17 +781,6 @@ export async function done(how) {
     }
     await really_done(how);
     /*NOTREACHED*/
-}
-
-// C ref: vault.c findgd()
-function findgd() {
-    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
-        if (mtmp.mhp < 1) /* DEADMONSTER */
-            continue;
-        if (mtmp.isgd && on_level(mtmp.egd.gdlevel, game.u.uz))
-            return mtmp;
-    }
-    return null;
 }
 
 // C ref: vault.c paygd()

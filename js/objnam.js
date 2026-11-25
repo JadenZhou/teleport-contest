@@ -16,7 +16,7 @@
 // tins of a monster, lit light sources, novels, ...) raise not_ported().
 
 import { shk_your } from './shk.js';
-import { letter } from './hacklib.js';
+import { letter, strsubst } from './hacklib.js';
 import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
 import { ART_ORB_OF_DETECTION as ART_ORB_OF_DETECTION_ON } from './artilist.js';
@@ -27,7 +27,8 @@ import {
 import { cansee } from './vision.js';
 import * as O from './objects.js';
 import { objects, OBJ_NAME, OBJ_DESCR, Is_box, is_missile, is_ammo, is_weptool,
-         Is_container } from './objects.js';
+         Is_container, is_rustprone, is_crackable,
+         is_corrodeable } from './objects.js';
 import {
     NON_PM, MALE, FEMALE, NEUTRAL, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, BLINDED, HALLUC,
     Has_contents, has_oname, ONAME, W_ARMOR, W_AMUL, W_WEP, W_SWAPWEP, W_QUIVER, W_RINGL,
@@ -51,15 +52,14 @@ import {
     artifact_exists, nartifact_exist,
 } from './artifact.js';
 import { tin_details } from './eat.js';
-import { donning, doffing } from './do_wear.js';
+import { donning, doffing, hard_helmet } from './do_wear.js';
 import { the as the_article } from './iactions.js';
 import { is_unpaid, unpaid_cost, get_cost_of_shop_item,
          record_price_quote, append_price_quote } from './shk.js';
 import { currency } from './insight.js';
 import { candy_wrapper_text } from './read.js';
 import { mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
-         is_rustprone, is_crackable, is_corrodeable, is_rottable,
-         is_damageable, is_poisonable, permapoisoned, Is_candle,
+         is_rottable, is_damageable, is_poisonable, permapoisoned, Is_candle,
          rnd_class } from './mkobj.js';
 import { delete_contents } from './invent.js';
 import { Luck } from './const.js';
@@ -1121,14 +1121,6 @@ function wishymatch(u_str, o_str, retry_inverted) {
     }
 
     return false;
-}
-
-// C ref: hacklib.c strsubst() — replace the first occurrence of 'orig'
-function strsubst(bp, orig, replacement) {
-    const found = bp.indexOf(orig);
-    if (found < 0)
-        return bp;
-    return bp.slice(0, found) + replacement + bp.slice(found + orig.length);
 }
 
 // C ref: objnam.c o_ranges[]
@@ -2578,7 +2570,6 @@ export function readobjnam(bp, no_wish) {
     return d.otmp;
 }
 
-
 // C ref: artifact.c is_quest_artifact() — otmp->oartifact == urole.questarti
 function is_quest_artifact(otmp) {
     return !!otmp.oartifact && otmp.oartifact === game.urole?.questarti;
@@ -2733,17 +2724,6 @@ function xn_Hallucination() {
 // C ref: objnam.c xcalled()
 function xcalled(pfx, sfx) {
     return `${pfx}${pfx[0] ? " " : ""}called ${sfx}`;
-}
-
-/* C ref: do_wear.c hard_helmet(); obj.h is_helmet(); objclass.h
-   is_metallic() */
-export function hard_helmet(obj) {
-    if (!obj || !(obj.oclass === O.ARMOR_CLASS
-                  && objects[obj.otyp].oc_armcat === O.ARM_HELM))
-        return false;
-    return ((objects[obj.otyp].oc_material >= O.IRON
-             && objects[obj.otyp].oc_material <= O.MITHRIL)
-            || is_crackable(obj)) ? true : false;
 }
 
 // C ref: objnam.c armor_simple_name()

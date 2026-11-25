@@ -27,7 +27,7 @@ import { find_mac, setnotworn } from './worn.js';
 import { omon_adj, hitfloor } from './dothrow.js';
 import { hmon } from './uhitm.js';
 import { miss } from './zap.js';
-import { xname, yname, Yname2, otense, hard_helmet } from './objnam.js';
+import { xname, yname, Yname2, otense } from './objnam.js';
 import { welded, setuwep, setuswapwep, setuqwep } from './wield.js';
 import { freeinv } from './invent.js';
 import { encumber_msg } from './pickup.js';
@@ -38,6 +38,7 @@ import { exercise } from './attrib.js';
 import { Blind, Levitation } from './youprop.js';
 import { Luck } from './const.js';
 import { carried } from './objects.js';
+import { hard_helmet } from './do_wear.js';
 
 /* C ref: you.h bc_order values, bc_felt bits */
 export const BCPOS_DIFFER = 0, BCPOS_CHAIN = 1, BCPOS_BALL = 2;

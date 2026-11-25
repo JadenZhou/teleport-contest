@@ -18,7 +18,7 @@
 
 import { getnow } from './calendar.js';
 import { lays_eggs, ugenocided, udeadinside } from './polyself.js';
-import { ordin, plur } from './hacklib.js';
+import { ordin, plur, strsubst } from './hacklib.js';
 import { spellid } from './spell.js';
 import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
@@ -70,7 +70,8 @@ import { objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS, COIN_CLASS,
          is_graystone } from './objects.js';
 import * as M from './monsters.js';
 import { rank_of, rank_to_xlev } from './botl.js';
-import { an, just_an, makeplural, makesingular } from './objnam.js';
+import { an, just_an, makeplural, makesingular,
+         shield_simple_name } from './objnam.js';
 import { strstri, highc, lowc, mungspaces } from './hacklib.js';
 import { align_gname, u_gname, can_pray } from './pray.js';
 import { genders } from './role.js';
@@ -104,7 +105,7 @@ import { magic_negation } from './mhitu.js';
 import { stone_luck } from './attrib.js';
 import { carrying } from './invent.js';
 import { u_adtyp_resistance_obj, item_what } from './zap.js';
-import { shield_simple_name, ansimpleoname } from './iactions.js';
+import { ansimpleoname } from './iactions.js';
 import { pline, livelog_printf } from './display.js';
 import { NHW_TEXT, LL_WISH, LL_ACHIEVE, LL_UMONST, LL_DIVINEGIFT, LL_LIFESAVE,
          LL_ARTIFACT, LL_GENOCIDE, LL_DUMP, LL_SPOILER, LL_MINORAC } from './const.js';
@@ -215,12 +216,6 @@ export function has_ceiling(lev) {
     if (In_endgame(lev) && !Is_earthlevel(lev))
         return false;
     return true;
-}
-
-/* C ref: hacklib.c plur(), strsubst() (first occurrence only) */
-function strsubst(bp, orig, replacement) {
-    const at = bp.indexOf(orig);
-    return (at < 0) ? bp : bp.slice(0, at) + replacement + bp.slice(at + orig.length);
 }
 
 /* C ref: eat.c hu_stat[], botl.c enc_stat[], attrib.c attrname[] */

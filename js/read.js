@@ -34,7 +34,8 @@ import { mons, G_UNIQ, PM_GUARD, PM_SHOPKEEPER, PM_HIGH_CLERIC,
          PM_HUMAN_ZOMBIE, PM_DOPPELGANGER } from './monsters.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
-import { mungspaces, strstri, strncmpi, sgn, upstart } from './hacklib.js';
+import { mungspaces, strstri, strncmpi, sgn, upstart,
+         distu } from './hacklib.js';
 import { name_to_mon, amorphous, noncorporeal, unsolid, unique_corpstat,
          passes_walls, is_male, is_female, is_whirly } from './mondata.js';
 import { makemon, makemon_flush_msg } from './makemon.js';
@@ -72,11 +73,11 @@ import { study_book, can_chant, losespells } from './spell.js';
 import { outrumor } from './rumors.js';
 import { bcsign, curse, bless, uncurse, blessorcurse, costly_alteration,
          weight, mksobj, mkobj, erosion_matters } from './mkobj.js';
-import { some_armor, adj_abon, destroy_arm, disintegrate_arm,
-         count_worn_armor, any_worn_armor_ok } from './do_wear.js';
+import { some_armor, adj_abon, destroy_arm, disintegrate_arm, count_worn_armor,
+         any_worn_armor_ok, hard_helmet } from './do_wear.js';
 import { remove_worn_item } from './steal.js';
 import { Yobjnam2, Yname2, otense, an, xname, doname, makeplural,
-         suit_simple_name, vtense, singular, hard_helmet } from './objnam.js';
+         suit_simple_name, vtense, singular } from './objnam.js';
 import { hcolor, Monnam, mon_nam, pmname } from './do_name.js';
 import { simpleonames } from './iactions.js';
 import { level_tele, scrolltele, enexto } from './teleport.js';
@@ -145,11 +146,6 @@ function is_elven_armor(o) {
     return o.otyp === O.ELVEN_LEATHER_HELM || o.otyp === O.ELVEN_MITHRIL_COAT
            || o.otyp === O.ELVEN_CLOAK || o.otyp === O.ELVEN_SHIELD
            || o.otyp === O.ELVEN_BOOTS;
-}
-/* C ref: hack.h distu() */
-function distu(x, y) {
-    const dx = x - game.u.ux, dy = y - game.u.uy;
-    return dx * dx + dy * dy;
 }
 /* C ref: hacklib.c sgn(), upwords() */
 function upwords(s) {

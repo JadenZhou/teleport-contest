@@ -53,7 +53,7 @@ import { mon_nam as mon_nam_zd } from './do_name.js';
 import { mbodypart as mbodypart_zd, body_part as body_part_zd } from './insight.js';
 import { uhis, expels as expels_zd } from './mhitu.js';
 import { ceiling as ceiling_zd } from './dungeon.js';
-import { hard_helmet as hard_helmet_zd, xname as xname_zd } from './objnam.js';
+import { xname as xname_zd } from './objnam.js';
 import { losehp as losehp_zd, Maybe_Half_Phys as Maybe_Half_Phys_zd } from './trap.js';
 import { ROCK as ROCK_ZD } from './objects.js';
 import { HEAVY_IRON_BALL } from './objects.js';
@@ -104,6 +104,7 @@ import { You_cant, There } from './display.js';
 import { d } from './rng.js';
 import { OBJ_NAME } from './objects.js';
 import { hides_under, is_whirly, digests } from './mondata.js';
+import { hard_helmet as hard_helmet_zd } from './do_wear.js';
 
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }

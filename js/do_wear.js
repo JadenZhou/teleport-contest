@@ -37,7 +37,8 @@ import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          ECMD_TIME, W_ARMOR, W_ACCESSORY } from './const.js';
 import { ARMOR_CLASS, RING_CLASS, AMULET_CLASS, MEAT_RING, BLINDFOLD, TOWEL,
          LENSES, is_helmet, is_shield, is_cloak, is_shirt, is_suit, is_sword,
-         is_flimsy, is_boots, is_gloves, bimanual } from './objects.js';
+         is_flimsy, is_boots, is_gloves, bimanual, is_metallic, is_crackable,
+         is_rustprone, is_corrodeable } from './objects.js';
 import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, MZ_HUGE, M1_NOLIMBS, M1_HUMANOID,
          M1_NOHEAD, M1_SLITHY, M1_FLY, M1_MINDLESS, M1_BREATHLESS, S_CENTAUR,
          S_GHOST, S_VORTEX, mons, PM_AIR_ELEMENTAL, PM_MARILITH,
@@ -96,8 +97,8 @@ import { rn2 as rn2_dw } from './rng.js';
 import { which_armor as which_armor_dw } from './worn.js';
 import { erode_obj } from './trap.js';
 import { stop_occupation as stop_occupation_dw } from './allmain.js';
-import { is_flammable, is_rustprone, is_crackable, is_rottable,
-         is_corrodeable, erosion_matters, is_damageable } from './mkobj.js';
+import { is_flammable, is_rottable, erosion_matters,
+         is_damageable } from './mkobj.js';
 import { ERODE_BURN, ERODE_RUST, ERODE_CRACK, ERODE_ROT, ERODE_CORRODE,
          ERODE_NONE, ER_NOTHING, ER_DESTROYED, EF_PAY,
          EF_DESTROY } from './const.js';
@@ -520,6 +521,13 @@ async function Helmet_on() {
         /* update_inventory(): no perm_invent */
     }
     return 0;
+}
+
+// C ref: do_wear.c hard_helmet() -- headgear that protects against bonks
+export function hard_helmet(obj) {
+    if (!obj || !is_helmet(obj))
+        return false;
+    return (is_metallic(obj) || is_crackable(obj)) ? true : false;
 }
 
 // C ref: do_wear.c Gloves_on()

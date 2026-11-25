@@ -48,7 +48,7 @@ import { cansee } from './vision.js';
 import { distant_name, doname } from './objnam.js';
 import { obj_extract_self } from './mkobj.js';
 import { mpickobj } from './steal.js';
-import { dist2, isok, sgn } from './hacklib.js';
+import { dist2, isok, sgn, distu } from './hacklib.js';
 import { Deaf } from './youprop.js';
 import { MAGIC_PORTAL as MAGIC_PORTAL_WZ, STRAT_WAITMASK as STRAT_WAITMASK_WZ } from './const.js';
 import { Tobjnam as Tobjnam_wz } from './objnam.js';
@@ -371,8 +371,6 @@ export async function cuss(mtmp) {
 
 /* C ref: obj.h any_quest_artifact() */
 export function any_quest_artifact(o) { return (o.oartifact || 0) >= ART_ORB_OF_DETECTION; }
-/* C ref: hack.h distu() */
-function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: wizard.c M_Wants() */
 function M_Wants(mtmp, mask) { return (mtmp.data.mflags3 & mask) !== 0; }
 

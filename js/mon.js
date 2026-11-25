@@ -5,8 +5,8 @@
 // monnear(), mon_allowflags().
 
 import { may_dig } from './dig.js';
-import { monhaskey } from './monmove.js';
-import { online2, sgn, plur } from './hacklib.js';
+import { monhaskey, m_can_break_boulder } from './monmove.js';
+import { online2, sgn, plur, NODIAG } from './hacklib.js';
 import { game } from './gstate.js';
 import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
          has_mgivenname, MGIVENNAME } from './const.js';
@@ -2496,18 +2496,9 @@ export function monnear(mon, x, y) {
         return false;
     return (distance < 3);
 }
-/* C ref: mondata.h NODIAG() */
-function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 
 /* mondata.h */
 
-/* C ref: monmove.c m_can_break_boulder() */
-function m_can_break_boulder(mtmp) {
-    return (is_rider(mtmp.data)
-            || (!mtmp.mspec_used
-                && (mtmp.isshk || mtmp.ispriest
-                    || (mtmp.data.msound === MS_LEADER))));
-}
 /* C ref: mthrowu.c m_carrying() */
 function m_carrying(mtmp, type) {
     for (const otmp of minv(mtmp))

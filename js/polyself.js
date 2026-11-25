@@ -68,9 +68,9 @@ import { name_to_mon, your_race, is_vampshifter, is_were, is_orc, is_elf,
          is_dwarf, is_gnome, is_undead, poly_when_stoned,
          little_to_big } from './mondata.js';
 import { pmname, Some_Monnam, Monnam, mon_nam, Mgender } from './do_name.js';
-import { an, the_unique_pm, vtense, yname, makeplural } from './objnam.js';
-import { the, simpleonames, surface, cloak_simple_name,
-         helm_simple_name } from './iactions.js';
+import { an, the_unique_pm, vtense, yname, makeplural, cloak_simple_name,
+         helm_simple_name } from './objnam.js';
+import { the, simpleonames, surface } from './iactions.js';
 import { unmul } from './allmain.js';
 import { make_glib, set_mimic_blocking, set_itimeout, make_blinded,
          make_sick, make_stoned, make_slimed } from './potion.js';

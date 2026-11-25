@@ -9,7 +9,7 @@
 // throw a 'not ported yet' error instead of skipping their rolls.
 
 import { DEADMONSTER } from './mon.js';
-import { ordin, sgn, upstart, plur } from './hacklib.js';
+import { ordin, sgn, upstart, plur, mdistu } from './hacklib.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, noncorporeal, amorphous, bigmonst, likes_gems,
          throws_rocks, nohands, is_unicorn, touch_petrifies, resists_acid,
@@ -98,11 +98,6 @@ import { WT_IRON_BALL_INCR } from './const.js';
 /* C ref: youprop.h -- (H* || E*) && !B* */
 function verbose() { return game.flags.verbose ?? true; }
 
-/* C ref: hack.h mdistu() */
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
-}
 /* C ref: mondata.h */
 
 /* gm.m_shot (decl.h) -- multishot volley feedback */

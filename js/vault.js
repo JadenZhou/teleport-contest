@@ -47,7 +47,7 @@ import { hidden_gold } from './insight.js';
 import { adjalign } from './attrib.js';
 import { stop_occupation, unmul } from './allmain.js';
 import { tty_getlin } from './wintty.js';
-import { mungspaces, upstart } from './hacklib.js';
+import { mungspaces, upstart, distu, dist2 } from './hacklib.js';
 import { Monnam, noit_Monnam, Some_Monnam, x_monnam, pmname, Mgender,
          noit_mon_nam, ARTICLE_A } from './do_name.js';
 import { sticks } from './engrave.js';
@@ -60,9 +60,6 @@ import { Deaf, Strangled, Blind } from './youprop.js';
 import { u_at } from './const.js';
 import { noit_mhis } from './mhitu.js';
 
-/* C ref: hack.h distu(), um_dist() */
-function distu(x, y) { return (x - game.u.ux) ** 2 + (y - game.u.uy) ** 2; }
-function dist2(x0, y0, x1, y1) { return (x0 - x1) ** 2 + (y0 - y1) ** 2; }
 /* C ref: invent.c g_at() */
 export function g_at(x, y) {
     for (const o of game.level.objects || [])

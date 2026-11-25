@@ -39,7 +39,7 @@ import { doffing, stop_donning } from './do_wear.js';
 import { stop_occupation } from './allmain.js';
 import { freeinv, count_unpaid } from './invent.js';
 import { armor_simple_name, yname, makeplural } from './objnam.js';
-import { s_suffix } from './hacklib.js';
+import { s_suffix, distu, strsubst } from './hacklib.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { monflee } from './monmove.js';
 import { welded } from './wield.js';
@@ -78,18 +78,6 @@ import { bimanual } from './objects.js';
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
 
-/* C ref: hack.h distu() */
-function distu(x, y) {
-    const dx = x - game.u.ux, dy = y - game.u.uy;
-    return dx * dx + dy * dy;
-}
-/* C ref: hacklib.c strsubst() -- replace the first instance */
-function strsubst(bp, orig, replacement) {
-    const found = bp.indexOf(orig);
-    if (found < 0)
-        return bp;
-    return bp.slice(0, found) + replacement + bp.slice(found + orig.length);
-}
 /* C ref: shk.c shop_keeper(*u.ushops) */
 function ushops_keeper() {
     return shop_keeper(game.u.ushops ? (game.u.ushops.charCodeAt(0) || 0) : 0);

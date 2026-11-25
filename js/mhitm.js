@@ -19,7 +19,7 @@ import { you_were, you_unwere } from './were.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { ACURR as ACURR_mm } from './attrib.js';
 import { A_CHA as A_CHA_mm, NORMAL_SPEED as NORMAL_SPEED_mm } from './const.js';
-import { distmin, isok } from './hacklib.js';
+import { distmin, isok, mdistu } from './hacklib.js';
 import { cansee } from './vision.js';
 import { m_at, grow_up } from './makemon.js';
 import { monkilled, zombie_maker, monnear, seemimic } from './mon.js';
@@ -123,10 +123,6 @@ import { hliquid } from './potion.js';
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
-}
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
 }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 

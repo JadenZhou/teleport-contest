@@ -5,7 +5,7 @@
 // Paths no session reaches yet throw a 'not ported yet' error.
 
 import { helpless } from './monmove.js';
-import { online2, plur } from './hacklib.js';
+import { online2, plur, distu, mdistu, onlineu } from './hacklib.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
 import { arti_cost } from './artifact.js';
@@ -152,16 +152,11 @@ function muteshk(shkp) {
 }
 /* C ref: shk.c IS_SHOP() */
 function IS_SHOP(x) { return game.level.rooms[x].rtype >= SHOPBASE; }
-/* C ref: hack.h distu() */
-function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
-/* C ref: hack.h mdistu() */
-function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 /* C ref: hack.h um_dist() */
 export function um_dist(x, y, n) {
     return Math.abs(game.u.ux - x) > n || Math.abs(game.u.uy - y) > n;
 }
 /* C ref: hacklib.c online2(); hack.h onlineu() */
-function onlineu(xx, yy) { return online2(xx, yy, game.u.ux, game.u.uy); }
 /* C ref: hacklib.c strncmpi() -- nonzero when the strings differ */
 function strncmpi(s1, s2, n) {
     return (s1 || '').slice(0, n).toLowerCase()

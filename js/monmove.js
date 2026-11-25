@@ -16,7 +16,7 @@ import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
 import { picking_lock } from './lock.js';
 import { is_digging, watch_dig } from './dig.js';
 import { rn2, rnd, d } from './rng.js';
-import { dist2, distmin } from './hacklib.js';
+import { dist2, distmin, mdistu } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc,
          recalc_block_point } from './vision.js';
 import { newsym, pline, canseemon, canspotmon, vobj_at } from './display.js';
@@ -212,8 +212,6 @@ export function m_canseeu(m) {
             && !(Underwater() || game.u.uburied || m.mburied))
         ? couldsee(m.mx, m.my) : false;
 }
-/* C ref: hack.h mdistu() */
-function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: monmove.c mb_trapped()
 /* monster has triggered trapped door lock or was present when it got
@@ -2420,7 +2418,7 @@ async function m_break_boulder(mtmp, x, y) {
 }
 
 // C ref: monmove.c m_can_break_boulder()
-function m_can_break_boulder(mtmp) {
+export function m_can_break_boulder(mtmp) {
     return (is_rider(mtmp.data)
             || (!mtmp.mspec_used
                 && (mtmp.isshk || mtmp.ispriest

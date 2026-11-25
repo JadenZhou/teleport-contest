@@ -52,7 +52,7 @@ import { IS_OBSTRUCTED, SHOPBASE, ROOMOFFSET } from './const.js';
 import { PM_LONG_WORM, PM_LONG_WORM_TAIL } from './monsters.js';
 import { passes_walls } from './mondata.js';
 import { ART_STORMBRINGER } from './artilist.js';
-import { highc, sgn, plur } from './hacklib.js';
+import { highc, sgn, plur, NODIAG } from './hacklib.js';
 import { monflee } from './monmove.js';
 import { is_safemon, end_running, in_rooms } from './hack.js';
 import { rnl, d } from './rng.js';
@@ -2171,7 +2171,6 @@ export async function do_attack(mtmp) {
 
 /* C ref: youprop.h and mondata.h/obj.h predicates used below */
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
-function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 function mon_hates_light(mon) { return mon.data === mons[M.PM_GREMLIN]; }
 function is_blunt_weapon(o) {

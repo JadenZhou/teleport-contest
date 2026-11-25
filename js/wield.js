@@ -52,7 +52,6 @@ import { Tobjnam } from './objnam.js';
 import { Blind } from './youprop.js';
 import { nohands, verysmall, could_twoweap, cantwield } from './mondata.js';
 
-
 // C ref: worn.c setworn() -- in worn.js
 export { setworn };
 

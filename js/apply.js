@@ -60,7 +60,7 @@ import { dowrite } from './write.js';
 import { cansee } from './vision.js';
 import { closed_door, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
-import { dist2 } from './hacklib.js';
+import { dist2, distu, mdistu } from './hacklib.js';
 import { ACURR } from './attrib.js';
 import { SPE_JUMPING, BOULDER } from './objects.js';
 import { ECMD_TIME, ECMD_FAIL, JUMPING, PASSES_WALLS, LEVITATION, WOUNDED_LEGS,
@@ -1076,8 +1076,6 @@ const jAny = 0, /* any direction => magical jump */
     jVert = 2,
     jDiag = 3; /* jHorz|jVert */
 
-function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
-
 // C ref: apply.c check_jump() -- callback routine for walk_path()
 function check_jump(arg, x, y) {
     const traj = arg.traj;
@@ -1546,8 +1544,6 @@ function glyph_is_poleable(G) {
     return glyph_is_monster_pl(G) || glyph_is_invisible_ls(G)
            || glyph_is_statue_pl(G);
 }
-/* C ref: monst.h mdistu() */
-function mdistu_pl(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 /* C ref: artifact.h u_wield_art() */
 function u_wield_art_pl(art) { return !!game.uwep && game.uwep.oartifact === art; }
 /* C ref: context.h svc.context.polearm (zeroed with the context) */
@@ -1667,7 +1663,7 @@ export function could_pole_mon() {
     cc.y = game.u.uy;
     if (!find_poleable_mon(cc)) {
         if (hitm && !DEADMONSTER(hitm) && sensemon(hitm)
-            && mdistu_pl(hitm) <= range.max && mdistu_pl(hitm) >= range.min)
+            && mdistu(hitm) <= range.max && mdistu(hitm) >= range.min)
             return true;
     } else {
         return true;
@@ -1723,7 +1719,7 @@ export async function use_pole(obj, autohit) {
     cc.y = u.uy;
     if (!find_poleable_mon(cc) && hitm
         && !DEADMONSTER(hitm) && sensemon(hitm)
-        && mdistu_pl(hitm) <= max_range && mdistu_pl(hitm) >= min_range) {
+        && mdistu(hitm) <= max_range && mdistu(hitm) >= min_range) {
         cc.x = hitm.mx;
         cc.y = hitm.my;
     }

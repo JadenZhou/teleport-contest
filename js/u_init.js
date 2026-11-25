@@ -38,6 +38,7 @@ import { max_rank_sz } from './botl.js';
 import { assigninvlet, reorder_invent, merged, addinv } from './invent.js';
 import { Japanese_item_name } from './objnam.js';
 import { setworn } from './worn.js';
+import { ARM_BONUS } from './hacklib.js';
 
 /* C ref: spell.h SPELL_LEV_PW() */
 function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
@@ -1299,12 +1300,6 @@ export function money_cnt(otmp) {
         if (otmp.oclass === O.COIN_CLASS)
             return otmp.quan;
     return 0;
-}
-
-// C ref: hack.h ARM_BONUS()
-function ARM_BONUS(obj) {
-    return (objects[obj.otyp].a_ac + (obj.spe || 0)
-            - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac));
 }
 
 // C ref: wield.c setuwep(), setuqwep(), setuswapwep() -- slot only

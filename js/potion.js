@@ -73,7 +73,7 @@ import { makemon } from './makemon.js';
 import { Tobjnam, makeplural, makesingular, vtense, an, xname,
          doname } from './objnam.js';
 import { mon_nam, Monnam, x_monnam, rndmonnam } from './do_name.js';
-import { s_suffix, dist2, mungspaces } from './hacklib.js';
+import { s_suffix, dist2, mungspaces, distu } from './hacklib.js';
 import { cansee } from './vision.js';
 import { healmon, wakeup, wake_nearto, killed, monkilled, mongone } from './mon.js';
 import { makewish } from './wizcmds.js';
@@ -123,7 +123,6 @@ function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
 /* C ref: monst.h mon_perma_blind(), DEADMONSTER() */
 function mon_perma_blind(mon) { return !mon.mcansee && !mon.mblinded; }
 /* C ref: hack.h makeknown(), distu() */
-function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: decl.c c_common_strings */
 const You_can_move_again = "You can move again.";
 const vision_clears = "vision quickly clears.";

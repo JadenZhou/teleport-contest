@@ -51,7 +51,7 @@ import {
 } from './const.js';
 import { waterbody_name } from './pager.js';
 import { has_ceiling } from './insight.js';
-import { ing_suffix, visctrl, upstart } from './hacklib.js';
+import { ing_suffix, visctrl, upstart, NODIAG } from './hacklib.js';
 import { cmd_from_func } from './cmd.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_GRID_BUG, mons, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, MZ_SMALL,
@@ -979,8 +979,6 @@ export function nomul(nval) {
 
 /* C ref: rm.h Sokoban -- svl.level.flags.sokoban_rules */
 function Sokoban() { return !!game.level.flags.sokoban_rules; }
-/* C ref: hack.h NODIAG() */
-function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 /* C ref: monst.h helpless(), mundisplaceable() */
 function mundisplaceable(mon) {
     return !!(mon.ispriest || mon.isshk || mon.isgd

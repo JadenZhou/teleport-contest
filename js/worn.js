@@ -38,7 +38,7 @@ import { canseemon } from './display.js';
 import { Monnam, mon_nam } from './do_name.js';
 import { distant_name, doname } from './objnam.js';
 import { curse } from './mkobj.js';
-import { strncmpi, strcmpi, sgn } from './hacklib.js';
+import { strncmpi, strcmpi, sgn, ARM_BONUS } from './hacklib.js';
 import { monsndx, verysmall, bigmonst, nohands, is_animal, mindless, humanoid,
          slithy, noncorporeal, is_whirly, sliparm,
          breakarm } from './mondata.js';
@@ -93,11 +93,6 @@ function run_msgs_sync(gen) {
 /* C ref: monst.h MON_WEP() */
 export function MON_WEP(mon) { return mon.mw || null; }
 
-/* C ref: hack.h ARM_BONUS() */
-function ARM_BONUS(obj) {
-    return objects[obj.otyp].a_ac + (obj.spe || 0)
-           - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac);
-}
 /* C ref: obj.h is_elven_armor() */
 function is_elven_armor(otmp) {
     return otmp.otyp === O.ELVEN_LEATHER_HELM
