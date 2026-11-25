@@ -2332,7 +2332,7 @@ export function feel_location(x, y) {
             } else {
                 /* lev->glyph >= cmap_to_glyph(S_stone)
                    && lev->glyph < cmap_to_glyph(S_darkroom) */
-                const idx = !rg ? 0 /* never seen: S_stone */
+                const idx = !rg ? -1 /* never seen: GLYPH_UNEXPLORED, not a cmap glyph */
                     : (rg.cmapidx !== undefined) ? rg.cmapidx
                       : (rg.cmap === 'S_stone') ? 0 : undefined;
                 if (idx === undefined && !rg.obj && !rg.kind)
