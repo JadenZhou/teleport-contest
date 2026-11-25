@@ -130,6 +130,7 @@ import { cry_sound as cry_sound_he } from './sounds.js';
 import { canseemon as canseemon_he, You_feel as You_feel_he } from './display.js';
 import { learn_egg_type as learn_egg_type_he } from './polyself.js';
 import { container_weight as container_weight_he } from './mkobj.js';
+import { arti_light_radius } from './light.js';
 
 // C ref: timeout.c propertynames[]
 /* used by wizard mode #timeout and #wizintrinsic; order by 'interest'
@@ -2123,7 +2124,7 @@ export function begin_burn(obj, already_lit) {
         if (artifact_light(obj)) {
             obj.lamplit = 1;
             do_timer = false;
-            throw new Error('begin_burn(): arti_light_radius() not ported yet');
+            radius = arti_light_radius(obj);
         } else {
             /* impossible("begin burn: unexpected %s", xname(obj)) */
             console.error(`impossible: begin burn: unexpected ${obj.otyp}`);
