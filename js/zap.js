@@ -184,7 +184,7 @@ import { hcolor as hcolor_zp, Monnam } from './do_name.js';
 import { recharge as recharge_zp } from './read.js';
 import { Yname2 as Yname2_zp, yname as yname_zp, makeplural,
          distant_name } from './objnam.js';
-import { s_suffix } from './hacklib.js';
+import { s_suffix, upstart } from './hacklib.js';
 import { mon_reflects } from './muse.js';
 import { slept_monst } from './mhitm.js';
 import { canseemon, sensemon as sensemon_zp, zapdir_to_glyph } from './display.js';
@@ -4304,8 +4304,6 @@ function free_omid_rv(obj) {
     if (obj.oextra) delete obj.oextra.omid;
     delete obj.omid;
 }
-/* C ref: hacklib.c upstart() */
-function upstart_rv(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: zap.c get_container_location() -- returns the following
 // information about the outermost container: loc.v gets set to
@@ -4570,7 +4568,7 @@ export async function revive(corpse, by_hero) {
         || (mons_rv[montype.v].mlet === S_EEL_RV
             && !IS_POOL_RV(game.level.at(x, y).typ))) {
         if (cansee(x, y))
-            await pline(`${upstart_rv(corpse_xname_rv(corpse, null,
+            await pline(`${upstart(corpse_xname_rv(corpse, null,
                                                       CXN_PFX_THE_RV))} twitches feebly.`);
         return null;
     }

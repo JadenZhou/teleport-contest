@@ -92,7 +92,7 @@ import { mondead, wake_nearto } from './mon.js';
 import { WATER, PASSES_WALLS, SLOW_DIGESTION, SHOCK_RES, TT_WEB, RLOC_NOMSG, IS_OBSTRUCTED, TREE, IRONBARS, MAGICAL_BREATHING, ACID_RES, FIRE_RES, M_SEEN_ACID, M_SEEN_ELEC, M_SEEN_COLD, M_SEEN_FIRE } from './const.js';
 import { closed_door, sobj_at, place_monster } from './makemon.js';
 import { BOULDER } from './objects.js';
-import { s_suffix } from './hacklib.js';
+import { s_suffix, upstart } from './hacklib.js';
 import { set_ustuck, monstseesu, monstunseesu } from './uhitm.js';
 import { placebc, unplacebc } from './ball.js';
 import { docrt, newsym, flush_screen, swallowed } from './display.js';
@@ -572,8 +572,6 @@ export function mtrapped_in_pit(mtmp) {
  * mattacku: monster attacks you
  *      returns 1 if monster dies (e.g. "yellow light"), 0 otherwise
  */
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: mhitu.c summonmu() -- demons summoning demons, were creatures
 // changing form and summoning critters; extracted from mattacku()

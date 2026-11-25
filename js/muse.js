@@ -9,7 +9,7 @@ import { stairway_at } from './display.js';
 import { game } from './gstate.js';
 import { worm_move } from './worm.js';
 import { rn2, rnd, rn1, d } from './rng.js';
-import { distmin } from './hacklib.js';
+import { distmin, upstart, sgn } from './hacklib.js';
 import { cansee, couldsee } from './vision.js';
 import {
     pline, urgent_pline, pline_The, canseemon, canspotmon, map_invisible
@@ -218,8 +218,6 @@ function m_carrying(mtmp, type) {
     return null;
 }
 
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? highc(s[0]) + s.slice(1) : s; }
 /* C ref: hacklib.c strsubst() -- replace the first instance of orig */
 function strsubst(bp, orig, replacement) {
     const i = bp.indexOf(orig);
@@ -2139,8 +2137,6 @@ function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
     return dx * dx + dy * dy;
 }
-/* C ref: hacklib.c sgn() */
-function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 /* C ref: obj.h makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 

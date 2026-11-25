@@ -63,6 +63,7 @@ import { Upolyd, u_at } from './const.js';
 import { uprop } from './youprop.js';
 import { burnarmor, ignite_items } from './trap.js';
 import { destroy_items } from './zap.js';
+import { sgn, upstart } from './hacklib.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -129,10 +130,6 @@ function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
 function is_waterwall(x, y) { return game.level.at(x, y).typ === WATER; }
 /* C ref: hacklib.c plur() */
 function plur(x) { return (x === 1) ? "" : "s"; }
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-/* C ref: hack.h sgn() */
-function sgn(x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }
 /* C ref: pline.c verbalize() -- SetVoice() only matters for speech
    output, which the tty doesn't do */
 async function verbalize(line) {

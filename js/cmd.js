@@ -31,7 +31,8 @@ import { extcmdlist, CMD_NOT_AVAILABLE, INTERNALCMD, WIZMODECMD, AUTOCOMPLETE,
          ECM_IGNOREAC, ECM_EXACTMATCH, ECM_NO1CHARCMD, IFBURIED, PREFIXCMD,
          MOVEMENTCMD, CMD_PARAM, CMD_M_PREFIX, CMD_gGF_PREFIX,
          GENERALCMD } from './func_tab.js';
-import { strcmpi, strncmpi, highc, visctrl, strstri } from './hacklib.js';
+import { strcmpi, strncmpi, highc, visctrl, strstri, sgn,
+         upstart } from './hacklib.js';
 import { dosearch } from './detect.js';
 import { level_tele, dotelecmd } from './teleport.js';
 import { wiz_level_change, wiz_wish, wiz_identify, wiz_intrinsic, wiz_map,
@@ -317,10 +318,6 @@ export function cmdq_add_dir(dx, dy, dz) {
 const CLICK_1 = 1, CLICK_2 = 2;
 /* C ref: defsym.h S_sink, S_fountain (defsyms[] indices) */
 const S_sink = 36, S_fountain = 37;
-
-function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: cmd.c doherecmdmenu() -- #herecmdmenu command
 async function doherecmdmenu() {

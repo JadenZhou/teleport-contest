@@ -12,7 +12,7 @@ import { W_WEP } from './const.js';
 import { game } from './gstate.js';
 import { rn2, rn1, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { canspotmon } from './display.js';
-import { highc, s_suffix, dist2 } from './hacklib.js';
+import { highc, s_suffix, dist2, upstart } from './hacklib.js';
 import { just_an, vtense, makeplural } from './objnam.js';
 import { genders } from './role.js';
 import { is_neuter, type_is_pname, humanoid, is_animal, mindless,
@@ -324,9 +324,6 @@ export function rndghostname() {
     return rn2(7) ? ROLL_FROM(ghostnames)
                   : game.plname;
 }
-
-/* C ref: hacklib.c upstart() -- capitalize the first letter of a string */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: do_name.c rndorcname()
 export function rndorcname() {

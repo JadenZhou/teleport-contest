@@ -31,7 +31,7 @@ import { mons, G_UNIQ, PM_GUARD, PM_SHOPKEEPER, PM_HIGH_CLERIC,
          PM_HUMAN_ZOMBIE, PM_DOPPELGANGER } from './monsters.js';
 import { pline } from './display.js';
 import { tty_getlin } from './wintty.js';
-import { mungspaces, strstri, strncmpi } from './hacklib.js';
+import { mungspaces, strstri, strncmpi, sgn, upstart } from './hacklib.js';
 import { name_to_mon, amorphous, noncorporeal, unsolid, unique_corpstat,
          passes_walls, is_male, is_female, is_whirly } from './mondata.js';
 import { makemon, makemon_flush_msg } from './makemon.js';
@@ -158,7 +158,6 @@ function distu(x, y) {
     return dx * dx + dy * dy;
 }
 /* C ref: hacklib.c sgn(), upwords() */
-function sgn(n) { return (n < 0) ? -1 : (n !== 0) ? 1 : 0; }
 function upwords(s) {
     let space = true;
     let out = '';
@@ -176,8 +175,6 @@ function upwords(s) {
     }
     return out;
 }
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 /* C ref: objnam.c shk_your() -- shop and monster ownership aren't
    ported yet */
 function shk_your(obj) {

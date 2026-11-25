@@ -41,7 +41,7 @@ import { pmname, Mgender, m_monnam } from './do_name.js';
 import { shkname, shkname_is_pname } from './shknam.js';
 import { an, the_unique_pm } from './objnam.js';
 import { is_vampshifter, type_is_pname } from './mondata.js';
-import { strstri } from './hacklib.js';
+import { strstri, upstart } from './hacklib.js';
 import { zombie_maker, mongone } from './mon.js';
 import { night, midnight, getnow } from './calendar.js';
 import { record_achievement } from './do.js';
@@ -132,8 +132,6 @@ function inc_done_stopprint() {
 
 /* C ref: obj.h SchroedingersBox() */
 function SchroedingersBox(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, false, true); }
 /* C ref: integer.h nowrap_add() */

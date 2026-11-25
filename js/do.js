@@ -139,6 +139,7 @@ import { map_background as map_background_do } from './display.js';
 import { use_pick_axe2 } from './dig.js';
 import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTROYED_DO,
          DEAF as DEAF_DO } from './const.js';
+import { upstart } from './hacklib.js';
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -1465,7 +1466,7 @@ async function otransit_msg(otmp, nodrop, chainthere, num) {
     if (otmp.otyp === O.CORPSE) {
         /* Tobjnam() calls xname() and would yield "The corpse";
            we want more specific "The newt corpse" or "Medusa's corpse" */
-        optr = upstart_do(corpse_xname(otmp, null, CXN_PFX_THE));
+        optr = upstart(corpse_xname(otmp, null, CXN_PFX_THE));
     } else {
         optr = Tobjnam(otmp, null);
     }
@@ -1486,9 +1487,6 @@ async function otransit_msg(otmp, nodrop, chainthere, num) {
     } else if (!nodrop)
         await pline(`${obuf} ${otense(otmp, "fall")} ${game.gate_str}.`);
 }
-
-/* C ref: hacklib.c upstart() */
-function upstart_do(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: dokick.c ship_object()
 /* NOTE: ship_object assumes otmp was FREED from fobj or invent.

@@ -100,7 +100,7 @@ import { just_an } from './objnam.js';
 import { seemimic } from './mon.js';
 import { resist } from './zap.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, NOTELL } from './const.js';
-import { dist2 } from './hacklib.js';
+import { dist2, sgn, upstart } from './hacklib.js';
 import { rn1 } from './rng.js';
 import { nomul, end_running } from './hack.js';
 import { exercise, ATEMP } from './attrib.js';
@@ -334,9 +334,6 @@ export { is_hole, is_pit };
 
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
-
-// C ref: hacklib.c sgn()
-function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: trap.c mk_trap_statue()
 /* create a "living" statue at x,y */
@@ -1047,8 +1044,8 @@ export function conjoined_pits(trap2, trap1, u_entering_trap2) {
         || !is_pit(trap1.ttyp)
         || (u_entering_trap2 && !(u.utrap && u.utraptype === TT_PIT)))
         return false;
-    const dx = sgn_tr(trap2.tx - trap1.tx);
-    const dy = sgn_tr(trap2.ty - trap1.ty);
+    const dx = sgn(trap2.tx - trap1.tx);
+    const dy = sgn(trap2.ty - trap1.ty);
     const diridx = xytodir_tr(dx, dy);
     if (diridx !== DIR_ERR_TR) {
         const adjidx = DIR_180_TR(diridx);
@@ -1071,7 +1068,6 @@ function adj_nonconjoined_pit(adjtrap) {
     }
     return false;
 }
-function sgn_tr(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 // C ref: trap.c dotrap()
 export async function dotrap(trap, trflags) {
@@ -2733,7 +2729,7 @@ async function trapeffect_pit(mtmp, trap, trflags) {
             const predicament = "on a set of sharp iron spikes";
 
             if (u.usteed) {
-                await pline(`${upstart_tr(x_monnam_tr(u.usteed, steed_article, "poor",
+                await pline(`${upstart(x_monnam_tr(u.usteed, steed_article, "poor",
                                                       SUPPRESS_SADDLE_TR, false))} ${
                     conj_pit ? "steps" : "lands"} ${predicament}!`);
             } else
@@ -2833,8 +2829,6 @@ async function trapeffect_pit(mtmp, trap, trflags) {
             ? Trap_Caught_Mon : Trap_Effect_Finished;
     }
 }
-
-function upstart_tr(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: trap.c trapeffect_hole()
 async function trapeffect_hole(mtmp, trap, trflags) {
@@ -3333,7 +3327,7 @@ export async function animate_statue(statue, x, y, cause, fail_reason) {
              && (mon !== shkp || statue.where === 'OBJ_INVENT' /* carried() */))
                 ? xname(statue)
                 : "statue"}`;
-        await pline(`${upstart_tr(statuename)} ${comes_to_life}!`);
+        await pline(`${upstart(statuename)} ${comes_to_life}!`);
     } else if (Hallucination()) { /* They don't know it's a statue */
         await pline_The(`${rndmonnam(null)} suddenly seems more animated.`);
     } else if (cause === ANIMATE_SHATTER) {

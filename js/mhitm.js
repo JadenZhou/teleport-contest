@@ -135,7 +135,6 @@ function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
     return dx * dx + dy * dy;
 }
-function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
 

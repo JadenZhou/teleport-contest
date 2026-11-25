@@ -48,7 +48,7 @@ import { cansee } from './vision.js';
 import { distant_name, doname } from './objnam.js';
 import { obj_extract_self } from './mkobj.js';
 import { mpickobj } from './steal.js';
-import { dist2, isok } from './hacklib.js';
+import { dist2, isok, sgn } from './hacklib.js';
 import { Deaf } from './youprop.js';
 import { MAGIC_PORTAL as MAGIC_PORTAL_WZ, STRAT_WAITMASK as STRAT_WAITMASK_WZ } from './const.js';
 import { Tobjnam as Tobjnam_wz } from './objnam.js';
@@ -126,8 +126,6 @@ export function pick_nasty(
 }
 
 /* C ref: monst.h DEADMONSTER(), helpless(); mondata.c attacktype() */
-/* C ref: hack.h sgn() */
-function sgn(x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }
 
 // C ref: wizard.c wizapp[]
 const wizapp = [

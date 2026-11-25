@@ -34,7 +34,7 @@ import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
 import { NO_COLOR, ATR_NONE } from './terminal.js';
 import { extcmdlist } from './func_tab.js';
 import { cmd_from_func, key2extcmddesc, key2txt, dokeylist } from './cmd.js';
-import { visctrl } from './hacklib.js';
+import { visctrl, upstart } from './hacklib.js';
 import {
     canspotmon, vobj_at, pline, back_to_glyph, known_branch_stairs,
     stairway_at
@@ -2184,8 +2184,6 @@ function coord_prefix(cmode, coordbuf) {
            : `${coordbuf.padStart(12)}  `;
 }
 
-function upstart_pg(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-
 // C ref: pager.c look_region_nearby()
 function look_region_nearby(nearby) {
     const u = game.u;
@@ -2248,7 +2246,7 @@ async function look_all(nearby, /* True => within BOLTLIM, False => entire map *
                 if (count === 1) {
                     const which = do_mons ? "monsters" : "objects";
                     if (nearby)
-                        outbuf = `${upstart_pg(which)} currently shown near ${
+                        outbuf = `${upstart(which)} currently shown near ${
                             (cmode !== GPCOORDS_COMPASS)
                             ? coord_desc(game.u.ux, game.u.uy, cmode)
                             : !canspotself() ? "your position" : "you"}:`;
@@ -2315,7 +2313,7 @@ async function look_traps(nearby) {
                 if (count === 1) {
                     outbuf = `${nearby ? "nearby " : ""}seen or remembered traps${
                         nearby ? "" : " on this level"}:`;
-                    await tty_putstr(win, 0, upstart_pg(outbuf));
+                    await tty_putstr(win, 0, upstart(outbuf));
                     /* hack alert! Qt watches a text window for any line
                        with 4 consecutive spaces */
                     await tty_putstr(win, 0, "    "); /* separator */
@@ -2389,7 +2387,7 @@ async function look_engrs(nearby) {
                 if (count === 1) {
                     outbuf = `${nearby ? "nearby " : ""}seen or remembered engravings${
                         nearby ? "" : " on this level"}:`;
-                    await tty_putstr(win, 0, upstart_pg(outbuf));
+                    await tty_putstr(win, 0, upstart(outbuf));
                     /* hack alert! Qt watches a text window for any line
                        with 4 consecutive spaces */
                     await tty_putstr(win, 0, "    "); /* separator */

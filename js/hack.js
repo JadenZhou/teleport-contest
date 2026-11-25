@@ -51,7 +51,7 @@ import {
 } from './const.js';
 import { waterbody_name } from './pager.js';
 import { has_ceiling } from './insight.js';
-import { ing_suffix, visctrl } from './hacklib.js';
+import { ing_suffix, visctrl, upstart } from './hacklib.js';
 import { cmd_from_func } from './cmd.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_GRID_BUG, mons, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, MZ_SMALL,
@@ -2209,9 +2209,6 @@ async function test_move_rest(ux, uy, dx, dy, mode, x, y) {
     /* OK, it is a legal place to move. */
     return true;
 }
-
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
 // C ref: hack.c movobj()
 export function movobj(obj, ox, oy) {

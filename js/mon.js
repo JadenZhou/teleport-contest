@@ -6,7 +6,7 @@
 
 import { may_dig } from './dig.js';
 import { monhaskey } from './monmove.js';
-import { online2 } from './hacklib.js';
+import { online2, sgn } from './hacklib.js';
 import { game } from './gstate.js';
 import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
          has_mgivenname, MGIVENNAME } from './const.js';
@@ -911,8 +911,6 @@ export async function monkilled(mdef, fltxt, how) {
     }
 }
 
-/* C ref: hack.h sgn() */
-function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 /* C ref: align.h ALIGNLIM */
 function ALIGNLIM() { return 10 + Math.trunc(game.moves / 200); }
 

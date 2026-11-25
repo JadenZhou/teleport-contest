@@ -83,7 +83,7 @@ import { enexto_core, enexto_gpflags } from './teleport.js';
 import { newedog } from './dog.js';
 import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS, PROT_FROM_SHAPE_CHANGERS } from './const.js';
-import { dist2 } from './hacklib.js';
+import { dist2, sgn } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
@@ -2529,9 +2529,6 @@ function monmax_difficulty(levdif) { return Math.trunc((levdif + game.u.ulevel) 
 function monmin_difficulty(levdif) { return Math.trunc(levdif / 6); }
 function montoostrong(monindx, lev) { return mons[monindx].difficulty > lev; }
 function montooweak(monindx, lev) { return mons[monindx].difficulty < lev; }
-
-// C ref: hacklib.c sgn()
-function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: mondata.h pm_resistance()
 export function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }

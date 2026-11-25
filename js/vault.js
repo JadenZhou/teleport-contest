@@ -43,7 +43,7 @@ import { hidden_gold } from './insight.js';
 import { adjalign } from './attrib.js';
 import { stop_occupation, unmul } from './allmain.js';
 import { tty_getlin } from './wintty.js';
-import { mungspaces } from './hacklib.js';
+import { mungspaces, upstart } from './hacklib.js';
 import { Monnam, noit_Monnam, Some_Monnam, x_monnam, pmname, Mgender,
          noit_mon_nam, ARTICLE_A } from './do_name.js';
 import { sticks } from './engrave.js';
@@ -74,8 +74,6 @@ async function verbalize(line) {
         return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
     await pline(`"${line}"`);
 }
-/* C ref: hacklib.c upstart() */
-function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 /* C ref: rm.h levl[x][y].flags -- the fields that share C's 'flags' bits */
 function lev_flags(lev) {
     return { doormask: lev.doormask, wall_info: lev.wall_info };

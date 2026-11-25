@@ -36,7 +36,7 @@ import { canseemon } from './display.js';
 import { Monnam, mon_nam } from './do_name.js';
 import { distant_name, doname } from './objnam.js';
 import { curse } from './mkobj.js';
-import { strncmpi, strcmpi } from './hacklib.js';
+import { strncmpi, strcmpi, sgn } from './hacklib.js';
 import { monsndx, verysmall, bigmonst, nohands, is_animal, mindless, humanoid,
          slithy, noncorporeal, is_whirly, sliparm,
          breakarm } from './mondata.js';
@@ -91,7 +91,6 @@ function run_msgs_sync(gen) {
 
 /* C ref: monst.h MON_WEP() */
 export function MON_WEP(mon) { return mon.mw || null; }
-function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 
 /* C ref: obj.h greatest_erosion() */
 function greatest_erosion(otmp) {

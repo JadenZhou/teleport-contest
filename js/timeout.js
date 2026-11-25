@@ -32,7 +32,7 @@ import { artifact_light } from './worn.js';
 import { get_obj_location } from './shk.js';
 import { Yname2 as Yname2_to, xname as xname_to, an as an_to } from './objnam.js';
 import { You_see as You_see_to, Your as Your_to } from './display.js';
-import { s_suffix as s_suffix_to } from './hacklib.js';
+import { s_suffix as s_suffix_to, upstart } from './hacklib.js';
 import { Monnam as Monnam_to } from './do_name.js';
 import { cansee as cansee_to } from './vision.js';
 import { Shk_Your as Shk_Your_to } from './wield.js';
