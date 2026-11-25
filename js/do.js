@@ -50,6 +50,15 @@ import {
 } from './dungeon.js';
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR, MAGIC_PORTAL, Is_qstart } from './const.js';
 import * as O from './objects.js';
+import { mpickobj as mpickobj_do } from './steal.js';
+import { touch_petrifies as touch_petrifies_do } from './mondata.js';
+import { mons as mons_do, PM_WRAITH as PM_WRAITH_do, PM_NURSE as PM_NURSE_do,
+         PM_GREEN_SLIME as PM_GREEN_SLIME_do } from './monsters.js';
+import { polyfood as polyfood_do, newcham as newcham_do, healmon as healmon_do } from './mon.js';
+import { NC_SHOW_MSG as NC_SHOW_MSG_do, NO_NC_FLAGS as NO_NC_FLAGS_do } from './const.js';
+import { grow_up as grow_up_do } from './makemon.js';
+import { mcureblindness as mcureblindness_do } from './muse.js';
+import { delobj as delobj_do } from './invent.js';
 import { is_pool, is_lava } from './makemon.js';
 import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
 import { cansee } from './vision.js';
@@ -1522,7 +1531,15 @@ export async function dropz(obj, with_impact) {
         setuswapwep(null);
 
     if (game.u.uswallow) {
-        throw new Error('dropz(): dropping into an engulfer not ported yet');
+        /* hero has dropped an item while inside an engulfer */
+        if (obj !== game.uball) { /* mon doesn't pick up ball */
+            /* moving shop item into engulfer's inventory treated as theft */
+            if (is_unpaid(obj))
+                await stolen_value(obj, game.u.ux, game.u.uy, true, false);
+            /* add to engulfer's inventory if not immediately eaten */
+            if (!(await engulfer_digests_food(obj)))
+                mpickobj_do(game.u.ustuck, obj);
+        }
     } else {
         if (await flooreffects(obj, game.u.ux, game.u.uy, "drop"))
             return;
@@ -1539,6 +1556,51 @@ export async function dropz(obj, with_impact) {
         newsym(game.u.ux, game.u.uy); /* remap location under self */
     }
     await encumber_msg();
+}
+
+// C ref: do.c engulfer_digests_food()
+/* when swallowed, move dropped object from OBJ_FREE to u.ustuck's inventory;
+   for purple worm, immediately eat any corpse, glob, or special meat item
+   from object polymorph; return True if object is used up, False otherwise */
+async function engulfer_digests_food(obj) {
+    const u = game.u;
+    /* animal swallower (purple worn) eats any
+       corpse, glob, or meat <item> but not other types of food */
+    if (digests(u.ustuck.data)
+        && (obj.otyp === O.CORPSE || obj.globby
+            || obj.otyp === O.MEATBALL || obj.otyp === O.ENORMOUS_MEATBALL
+            || obj.otyp === O.MEAT_RING || obj.otyp === O.MEAT_STICK)) {
+        let could_petrify = false,
+            could_poly = false, could_slime = false,
+            could_grow = false, could_heal = false;
+
+        if (obj.otyp === O.CORPSE) {
+            could_petrify = touch_petrifies_do(mons_do[obj.corpsenm]);
+            could_poly = polyfood_do(obj);
+            could_grow = (obj.corpsenm === PM_WRAITH_do);
+            could_heal = (obj.corpsenm === PM_NURSE_do);
+        } else if (obj.otyp === O.GLOB_OF_GREEN_SLIME) {
+            could_slime = true;
+        }
+        /* see or feel the effect */
+        await pline(`${Tobjnam(obj, "are")} instantly digested!`);
+
+        if (could_poly || could_slime) {
+            await newcham_do(u.ustuck, could_slime ? mons_do[PM_GREEN_SLIME_do] : null,
+                             could_slime ? NC_SHOW_MSG_do : NO_NC_FLAGS_do);
+        } else if (could_petrify) {
+            throw new Error('engulfer_digests_food(): minstapetrify() not ported yet');
+        } else if (could_grow) {
+            await grow_up_do(u.ustuck, null);
+        } else if (could_heal) {
+            healmon_do(u.ustuck, u.ustuck.mhpmax, 0);
+            /* False: don't realize that sight is cured from inside */
+            await mcureblindness_do(u.ustuck, false);
+        }
+        delobj_do(obj); /* always used up */
+        return true;
+    }
+    return false;
 }
 
 // C ref: hack.c impact_disturbs_zombies()
