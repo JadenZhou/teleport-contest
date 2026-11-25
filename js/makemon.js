@@ -10,6 +10,10 @@
 // Not ported yet: newcham (shapechangers),
 // set_mimic_sym, rndghostname, worm tail segments.
 
+import { shkname } from './shknam.js';
+import { sensemon } from './display.js';
+import { mhidden_description } from './pager.js';
+import { MHID_ARTICLE, MHID_ALTMON } from './const.js';
 import { db_under_typ } from './display.js';
 import { impossible } from './hack.js';
 import { rnd_class } from './mkobj.js';
@@ -1152,7 +1156,7 @@ export async function clone_mon(
     if (has_mgivenname_cm(mon)) {
         m2 = christen_monst(m2, MGIVENNAME_cm(mon));
     } else if (mon.isshk) {
-        throw new Error('clone_mon(): cloning a shopkeeper (shkname()) not ported yet');
+        m2 = christen_monst(m2, shkname(mon));
     }
 
     /* not all clones caused by player are tame or peaceful */
@@ -1705,13 +1709,14 @@ export function makemon(ptr, x, y, mmflags) {
 
             if ((canseemon(mtmp) && (ap_type === M_AP_NOTHING
                                      || ap_type === M_AP_MONSTER))
-                || makemon_sensemon(mtmp)) {
+                || sensemon(mtmp)) {
                 what = Amonnam(mtmp);
                 if (ap_type === M_AP_MONSTER)
                     exclaim = true;
             } else if (canseemon(mtmp)) {
                 /* mimic masquerading as furniture or object and not sensed */
-                throw new Error('makemon(): mhidden_description() not ported yet');
+                const mbuf = mhidden_description(mtmp, MHID_ARTICLE | MHID_ALTMON);
+                what = mbuf ? mbuf[0].toUpperCase() + mbuf.slice(1) : mbuf; /* upstart() */
             }
             if (what) {
                 /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
@@ -1764,17 +1769,6 @@ export async function makemon_flush_msg() {
     game.makemon_dochugw = null;
     if (mtmp)
         await dochugw(mtmp, false);
-}
-
-/* C ref: display.h sensemon() -- telepathy, extended detection and
-   warning are not ported yet */
-function makemon_sensemon(mtmp) {
-    void mtmp;
-    const tel = game.u.uprops?.[TELEPAT], det = game.u.uprops?.[DETECT_MONSTERS];
-    if ((tel && (tel.intrinsic || tel.extrinsic))
-        || (det && (det.intrinsic || det.extrinsic)))
-        throw new Error('makemon(): sensemon() not ported yet');
-    return false;
 }
 
 // C ref: monst.h STRAT_* bits

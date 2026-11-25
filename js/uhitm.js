@@ -378,7 +378,7 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                     && (u.umonnum === M.PM_BLACK_PUDDING
                         || u.umonnum === M.PM_BROWN_PUDDING))
                     throw new Error('mhitm_ad_phys(): cloneu() not ported yet');
-                rustm(game.youmonst, otmp);
+                await rustm(game.youmonst, otmp);
                 if (was_poisoned && game.mhitu_dieroll <= 5)
                     throw new Error('mhitm_ad_phys(): poisoned() not ported yet');
             } else if (mattk.aatyp !== AT_TUCH || mhm.damage !== 0

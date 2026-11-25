@@ -4,6 +4,10 @@
 // Ported so far: dosearch0() (not its feel_location()/unmap_invisible()
 // parts), mfind0(), warnreveal() and lock.c cvt_sdoor_to_door().
 
+import { expels } from './mhitu.js';
+import { dmgtype_fromattack } from './mondata.js';
+import { Monnam } from './do_name.js';
+import { AD_DGST, AT_ENGL } from './monsters.js';
 import { feel_newsym } from './display.js';
 import { game } from './gstate.js';
 import { rnl } from './rng.js';
@@ -1639,8 +1643,18 @@ export async function openit() {
     const u = game.u;
     const num = { v: 0 };
 
-    if (u.uswallow)
-        throw new Error('openit(): engulfed (expels()) not ported yet');
+    if (u.uswallow) {
+        /* digests(u.ustuck->data) */
+        if (dmgtype_fromattack(u.ustuck.data, AD_DGST, AT_ENGL)) {
+            /* purple worm */
+            if (Blind())
+                await pline("Its mouth opens!");
+            else
+                await pline(`${Monnam(u.ustuck)} opens its mouth!`);
+        }
+        await expels(u.ustuck, u.ustuck.data, true);
+        return -1;
+    }
 
     await do_clear_area_async(u.ux, u.uy, BOLT_LIM_DT, openone, num);
     return num.v;

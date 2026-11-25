@@ -149,13 +149,13 @@ import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
 import { fightm, resist_conflict } from './mhitm.js';
 import { BOLT_LIM as BOLT_LIM_mn } from './const.js';
-import { in_rooms } from './hack.js';
+import { in_rooms, spoteffects } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
 import { stinky_nemesis } from './questpgr.js';
 import { Hallucination, Conflict } from './youprop.js';
 import { m_next2u } from './const.js';
-import { uhis } from './mhitu.js';
+import { uhis, unstuck } from './mhitu.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -267,7 +267,11 @@ export function mongone(mdef) {
     m_detach(mdef, mdef.data, false);
 }
 
-// C ref: mon.c mon_leaving_level() -- the parts reached so far
+// C ref: mon.c mon_leaving_level()
+// unstuck() is async (docrt() after an engulfer lets go), so when 'mon' is
+// holding or engulfing the hero this returns a promise that the async caller
+// (m_detach() for a death) awaits; otherwise it runs synchronously, which
+// keeps the level-creation callers of mongone()/relmon() synchronous.
 function mon_leaving_level(mon) {
     const mx = mon.mx, my = mon.my;
     const lst = game.level.monsters || [];
@@ -276,25 +280,36 @@ function mon_leaving_level(mon) {
 
     /* to prevent an infinite relobj-flooreffects-hmon-killed loop */
     mon.mtrapped = 0;
-    /* unstuck(mon) */
-    if (game.u.ustuck === mon)
-        throw new Error('mon_leaving_level(): unstuck() not ported yet');
 
-    if (onmap) {
-        if (mon.wormno)
-            remove_worm(mon);
-        else
-            lst.splice(i, 1); /* remove_monster(mx, my) */
+    const leave_map = () => {
+        if (onmap) {
+            if (mon.wormno)
+                remove_worm(mon);
+            else
+                lst.splice(lst.indexOf(mon), 1); /* remove_monster(mx, my) */
+        }
+        if (onmap) {
+            mon.mundetected = 0; /* for migration; doesn't matter for death */
+            /* unhide mimic in case its shape has been blocking line of sight
+               or it is accompanying the hero to another level */
+            if (mon.m_ap_type && mon.m_ap_type !== M_AP_MONSTER)
+                seemimic(mon);
+            /* fill_pit(mx, my): boulders dropping into pits not ported */
+            newsym(mx, my);
+        }
+        /* if mon is a remembered target, forget it since it isn't here anymore */
+        if (game.context?.polearm && mon === game.context.polearm.hitmon)
+            game.context.polearm.hitmon = null;
+    };
+
+    if (game.u.ustuck === mon) {
+        return (async () => {
+            await unstuck(mon); /* mon is not swallowing or holding you nor held by you */
+            leave_map();
+        })();
     }
-    if (onmap) {
-        mon.mundetected = 0; /* for migration; doesn't matter for death */
-        /* unhide mimic in case its shape has been blocking line of sight
-           or it is accompanying the hero to another level */
-        if (mon.m_ap_type && mon.m_ap_type !== M_AP_MONSTER)
-            seemimic(mon);
-        /* fill_pit(mx, my): boulders dropping into pits not ported */
-        newsym(mx, my);
-    }
+    leave_map();
+    return undefined;
 }
 
 // C ref: mon.c mnearto()
@@ -391,6 +406,8 @@ export function relmon(mon, list) {
         throw new Error('relmon: no fmon available.'); /* panic() */
 
     /* take 'mon' off the map */
+    if (game.u.ustuck === mon) /* relmon() and its callers are synchronous */
+        throw new Error('relmon(): async unstuck() under synchronous relmon() not ported yet');
     mon_leaving_level(mon);
 
     /* remove 'mon' from the 'fmon' list */
@@ -432,11 +449,16 @@ function m_detach(mtmp, mptr, due_to_death) {
     if (mx > 0 && emits_light(mptr))
         del_light_source(LS_MONSTER, monst_to_any(mtmp));
 
-    mon_leaving_level(mtmp);
+    if (!due_to_death && game.u.ustuck === mtmp) /* mongone() is synchronous */
+        throw new Error('m_detach(): async unstuck() under synchronous mongone() not ported yet');
+    /* a promise only when mtmp holds or engulfs the hero (unstuck()) */
+    const leaving = mon_leaving_level(mtmp);
 
-    mtmp.mhp = 0; /* simplify some tests: force mhp to 0 */
-    if (mtmp.iswiz)
-        throw new Error('m_detach(): wizdeadorgone() not ported yet');
+    const after_leaving = () => {
+        mtmp.mhp = 0; /* simplify some tests: force mhp to 0 */
+        if (mtmp.iswiz)
+            throw new Error('m_detach(): wizdeadorgone() not ported yet');
+    };
 
     const after_relobj = () => {
         if (game.stealmid && mtmp.m_id === game.stealmid)
@@ -460,6 +482,9 @@ function m_detach(mtmp, mptr, due_to_death) {
        away without having been killed */
     if (due_to_death) {
         return (async () => {
+            if (leaving)
+                await leaving;
+            after_leaving();
             if (mtmp.data.msound === MS_NEMESIS) {
                 await nemdead();
                 /* The Archeologist, Caveman, and Priest quest texts describe
@@ -475,6 +500,7 @@ function m_detach(mtmp, mptr, due_to_death) {
             after_relobj();
         })();
     }
+    after_leaving();
     after_relobj();
     return undefined;
 }
@@ -1002,8 +1028,16 @@ export async function xkilled(
             }
         }
 
-        if (wasinside)
-            throw new Error('xkilled(): killing an engulfer from inside (spoteffects()) not ported yet');
+        if (wasinside) {
+            /* spoteffects() can end up clearing level of monsters; grab a copy */
+            const museum = Object.assign(Object.create(Object.getPrototypeOf(mtmp)), mtmp);
+            museum.nmon = null;
+            museum.minvent = null;
+            museum.mextra = null;
+            delete museum.mgivenname; /* JS keeps the given name beside mextra */
+            await spoteffects(true); /* poor man's expels() */
+            mtmp = museum; /* use the reference copy now */
+        }
         /* monster is gone, corpse or other object might now be visible */
         newsym(x, y);
     }

@@ -2,6 +2,12 @@
 // C ref: invent.c assigninvlet(), reorder_invent(), obj_to_let(), prinv(),
 //        xprname()
 
+import { fingers_or_gloves } from './do_wear.js';
+import { addtobill } from './shk.js';
+import { in_rooms } from './hack.js';
+import { hideunder_async } from './makemon.js';
+import { get_count, GC_SAVEHIST } from './cmd.js';
+import { LARGEST_INT } from './const.js';
 import { game } from './gstate.js';
 import { pline, You, pline_The, newsym, There } from './display.js';
 import { obj_resists } from './dogmove.js';
@@ -195,15 +201,23 @@ export function xprname(obj, txt, let_, dot, cost, quan) {
     if (!txt)
         txt = doname(obj);
 
+    let txtwidth = 0; /* "%c - %.*s%s", or "%c - %-45.*s%s" for costs */
     if (cost !== 0 || let_ === '*') {
-        throw new Error('xprname(): cost/total lines (currency()) are not ported yet');
+        const menu_tab_sep = !!game.iflags?.menu_tab_sep;
+        /* if dot is true, we're doing Iu, otherwise Ix */
+        if (dot && use_invlet)
+            let_ = obj.invlet;
+        suffix = `${menu_tab_sep ? '\t' : ' '}${String(cost).padStart(6)} ${
+            currency(cost).slice(0, 50)}`;
+        if (!menu_tab_sep)
+            txtwidth = 45;
     } else {
         /* ordinary inventory display or pickup message */
         if (use_invlet)
             let_ = obj.invlet;
         suffix = dot ? "." : "";
     }
-    const li = `${let_} - ${txt}${suffix}`; /* "%c - %.*s%s" */
+    const li = `${let_} - ${txt.padEnd(txtwidth)}${suffix}`; /* Sprintf(li, fmt, ...) */
 
     if (savequan)
         obj.quan = savequan;
@@ -1067,7 +1081,7 @@ export function any_obj_ok(obj) {
 // hands based on action
 function getobj_hands_txt(action) {
     if (action === "grease") {
-        throw new Error('getobj_hands_txt(): fingers_or_gloves() not ported yet');
+        return `your ${fingers_or_gloves(false)}`;
     } else if (action === "write with") {
         return `your ${body_part(FINGERTIP)}`;
     } else if (action === "wield") {
@@ -1236,7 +1250,13 @@ export async function getobj(word, /* usually a direct verb such as "drop" */
                 await pline("No count allowed with this command.");
                 continue;
             }
-            throw new Error('getobj(): get_count() is not ported yet');
+            const tmpkey = await get_count(null, ilet.charCodeAt(0), LARGEST_INT,
+                                           'getobj_tmpcnt', GC_SAVEHIST);
+            ilet = String.fromCharCode(tmpkey);
+            if (game.getobj_tmpcnt) {
+                cnt = game.getobj_tmpcnt;
+                cntgiven = true;
+            }
         }
         if (quitchars.includes(ilet)) {
             if (game.flags?.verbose ?? true)
@@ -2480,7 +2500,7 @@ export function delobj_core(obj, force) {
 
 // C ref: invent.c useupf()
 /* use up an object that's on the floor, charging for it as needed */
-export function useupf(obj, numused) {
+export async function useupf(obj, numused) {
     let otmp;
     const at_u = (obj.ox === game.u.ux && obj.oy === game.u.uy);
 
@@ -2490,12 +2510,18 @@ export function useupf(obj, numused) {
         otmp = splitobj(obj, numused);
     else
         otmp = obj;
-    if (!game.context.mon_moving && costly_spot(otmp.ox, otmp.oy))
-        throw new Error('useupf(): addtobill()/stolen_value() not ported yet');
+    if (!game.context.mon_moving && costly_spot(otmp.ox, otmp.oy)) {
+        /* strchr(u.urooms, *in_rooms(...)) also matches the terminator */
+        const r0 = in_rooms(otmp.ox, otmp.oy, 0).charAt(0);
+        if (r0 === '' || (game.u.urooms || '').includes(r0))
+            await addtobill(otmp, false, false, false);
+        else
+            throw new Error('useupf(): stolen_value() not ported yet');
+    }
     delobj(otmp);
     if (at_u && game.u.uundetected
         && (game.youmonst.data.mflags1 & M.M1_CONCEAL) !== 0) /* hides_under() */
-        throw new Error('useupf(): hideunder() not ported yet');
+        await hideunder_async(game.youmonst);
 }
 
 // C ref: invent.c set_cknown_lknown()

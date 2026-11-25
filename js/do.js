@@ -7,6 +7,8 @@
 // messages.  Portal/falling arrival and returning to a saved level are not
 // ported yet.
 
+import { sellobj_state } from './pickup.js';
+import { SELL_NORMAL, SELL_DELIBERATE } from './const.js';
 import { game } from './gstate.js';
 import { fix_shop_damage } from './shk.js';
 import { livelog_printf } from './display.js';
@@ -31,7 +33,7 @@ import {
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR, MAGIC_PORTAL, Is_qstart } from './const.js';
 import * as O from './objects.js';
 import { is_pool, is_lava } from './makemon.js';
-import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage } from './trap.js';
+import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
@@ -245,7 +247,8 @@ export async function doup() {
 
     /* "up" to get out of a pit... */
     if (u.utrap && u.utraptype === TT_PIT) {
-        throw new Error('doup(): climb_pit() not ported yet');
+        await climb_pit();
+        return ECMD_TIME;
     }
 
     if (!stway || (stway && !stway.up)) {
@@ -1081,9 +1084,11 @@ export async function dodrop() {
     let result;
 
     if (game.u.ushops)
-        throw new Error('dodrop(): sellobj_state() not ported yet');
+        sellobj_state(SELL_DELIBERATE);
     result = await drop(await getobj("drop", any_obj_ok,
                                      GETOBJ_PROMPT | GETOBJ_ALLOWCNT));
+    if (game.u.ushops)
+        sellobj_state(SELL_NORMAL);
     if (result)
         reset_occupations();
 
@@ -1100,11 +1105,13 @@ export async function doddrop() {
     }
     add_valid_menu_class(0); /* clear any classes already there */
     if (game.u.ushops)
-        throw new Error('doddrop(): sellobj_state() not ported yet');
+        sellobj_state(SELL_DELIBERATE);
     if ((game.flags.menu_style ?? MENU_FULL) !== MENU_TRADITIONAL)
         result = await menu_drop(result);
     else
         throw new Error('doddrop(): ggetobj() (menustyle:traditional) not ported yet');
+    if (game.u.ushops)
+        sellobj_state(SELL_NORMAL);
     if (result)
         reset_occupations();
 

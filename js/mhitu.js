@@ -4,6 +4,9 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { Ring_gone } from './do_wear.js';
+import { split_mon } from './potion.js';
+import { You } from './display.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { poly_gender, rehumanize } from './polyself.js';
@@ -1520,7 +1523,7 @@ async function gulpmu(mtmp, mattk) {
         if (u.utrap) {
             await pline(`You are released from the ${
                 (u.utraptype === TT_WEB) ? "web" : "trap"}!`); /* You() */
-            reset_utrap(false);
+            await reset_utrap(false);
         }
 
         i = number_leashed();
@@ -1971,11 +1974,19 @@ export async function doseduce(mon) {
                    but trying to figure that out in advance in order to use
                    alternate wording is not worth the effort */
                 await pline(`${Who} replaces ${yname(game.uright)} with ${yname(ring)}.`);
-                throw new Error('doseduce(): Ring_gone() not ported yet');
+                await Ring_gone(game.uright);
+                /* ring removal might cause loss of levitation which could
+                   drop hero onto trap that transports hero somewhere else */
+                if (u.utotype || !m_next2u(mon))
+                    return 1;
+                setworn(ring, RIGHT_RING);
             } else if (game.uleft && game.uleft.otyp !== RIN_ADORNMENT) {
                 /* see "replaces" note above */
                 await pline(`${Who} replaces ${yname(game.uleft)} with ${yname(ring)}.`);
-                throw new Error('doseduce(): Ring_gone() not ported yet');
+                await Ring_gone(game.uleft);
+                if (u.utotype || !m_next2u(mon))
+                    return 1;
+                setworn(ring, LEFT_RING);
             } else {
                 /* impossible("ring replacement") */
             }
@@ -2256,8 +2267,12 @@ async function passiveum(olduasmon, mtmp, mattk) {
     if (rn2(3))
         switch (oldu_mattk.adtyp) {
         case AD_PHYS:
-            if (oldu_mattk.aatyp === AT_BOOM)
-                throw new Error('passiveum(): exploding hero (rehumanize()) not ported yet');
+            if (oldu_mattk.aatyp === AT_BOOM) {
+                await You("explode!");
+                /* KMH, balance patch -- this is okay with unchanging */
+                await rehumanize();
+                return await assess_dmg_mu(mtmp, tmp);
+            }
             break;
         case AD_COLD: /* Brown mold or blue jelly */
             if (resists_cold_mu(mtmp)) {
@@ -2272,7 +2287,7 @@ async function passiveum(olduasmon, mtmp, mattk) {
             if (game.u.mhmax < game.u.mh)
                 game.u.mhmax = game.u.mh;
             if (game.u.mhmax > ((game.youmonst.data.mlevel + 1) * 8))
-                throw new Error('passiveum(): split_mon() not ported yet');
+                await split_mon(game.youmonst, mtmp);
             break;
         case M.AD_PLYS: /* Floating eye */
         case M.AD_STUN: /* Yellow mold */

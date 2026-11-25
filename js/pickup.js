@@ -2414,7 +2414,7 @@ function Ysimple_name2(obj) {
 }
 
 // C ref: shk.c sellobj_state()
-function sellobj_state(deliberate) {
+export function sellobj_state(deliberate) {
     /* If we're deliberately dropping something, there's no automatic
        response to the shopkeeper's "want to sell" query; however, if we
        accidentally drop anything, the shk will buy it/them without asking.

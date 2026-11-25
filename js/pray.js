@@ -832,7 +832,7 @@ async function fix_worst_trouble(trouble) {
         /*FALLTHRU*/
     case TROUBLE_HUNGRY:
         await Your(`${body_part(STOMACH)} feels content.`);
-        init_uhunger();
+        await init_uhunger();
         g.disp_botl = true;
         break;
     case TROUBLE_SICK:
