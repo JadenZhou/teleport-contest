@@ -183,6 +183,19 @@ import { LEVITATION, FLYING, FUMBLING, ANTIMAGIC, HALF_PHDAM, HALF_SPDAM,
 import { xytodir as xytodir_tr } from './hack.js';
 import { DIR_180 as DIR_180_TR, DIR_ERR as DIR_ERR_TR } from './const.js';
 import { wakeup as wakeup_ht } from './mon.js';
+import { melt_ice } from './zap.js';
+import { split_mon } from './potion.js';
+import { AD_RUST, AD_ELEC } from './monsters.js';
+import { Shock_resistance } from './youprop.js';
+import { M_SEEN_ELEC, M_SEEN_FIRE } from './const.js';
+import { useup as useup_tr } from './invent.js';
+import { begin_burn } from './timeout.js';
+import { dismount_steed } from './steed.js';
+import { DISMOUNT_POLY, DISMOUNT_GENERIC } from './const.js';
+import { setmangry, mlifesaver } from './mon.js';
+import { Boots_off } from './do_wear.js';
+import { discover_object } from './o_init.js';
+import { costly_spot } from './shk.js';
 import { noit_Monnam as noit_Monnam_ht, y_monnam as y_monnam_ht } from './do_name.js';
 import { vision_recalc as vision_recalc_ht } from './vision.js';
 import { adjalign as adjalign_ht } from './attrib.js';
@@ -1415,14 +1428,17 @@ async function trapeffect_bear_trap(mtmp, trap, trflags) {
         }
         set_utrap(rn1(4, 4), TT_BEARTRAP);
         if (u.usteed) {
-            throw new Error('trapeffect_bear_trap(): steed caught (mbodypart()) not ported yet');
+            await pline(`${A_Your[madeby_u]} bear trap closes on ${
+                s_suffix(mon_nam(u.usteed))} ${mbodypart(u.usteed, FOOT)}!`);
+            if (await thitm(0, u.usteed, null, dmg, false))
+                await reset_utrap(true); /* steed died, hero not trapped */
         } else {
             await pline(`${A_Your[madeby_u]} bear trap closes on your ${
                 body_part(FOOT)}!`);
             if (u.umonnum === PM_OWLBEAR || u.umonnum === PM_BUGBEAR)
                 await You("howl in anger!");
             if (wearing_iron_shoes(mtmp))
-                throw new Error('trapeffect_bear_trap(): Yname2(uarmf) not ported yet');
+                await pline(`${Yname2_fd(game.uarmf)} protects your leg.`);
             else {
                 await set_wounded_legs(rn2(2) ? RIGHT_SIDE : LEFT_SIDE, rn1(10, 10));
                 await losehp(Maybe_Half_Phys(dmg), "bear trap", KILLED_BY_AN);
@@ -2058,13 +2074,16 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
         /* update_inventory(): no perm_invent window */
 
         if (u.umonnum === PM_IRON_GOLEM) {
-            throw new Error('trapeffect_rust_trap(): hero iron golem rusting away not ported yet');
+            const dam = u.mhmax;
+
+            await You("are covered with rust!");
+            await losehp(Maybe_Half_Phys(dam), "rusting away", KILLED_BY);
         } else if (u.umonnum === PM_GREMLIN && rn2(3)) {
-            throw new Error('trapeffect_rust_trap(): split_mon() for the hero not ported yet');
+            await split_mon(game.youmonst, null);
         }
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
-        const trapkilled = false;
+        let trapkilled = false;
         const mptr = mtmp.data;
         let target;
 
@@ -2118,9 +2137,14 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
         }
 
         if (mptr === mons[PM_IRON_GOLEM]) { /* completelyrusts(mptr) */
-            throw new Error('trapeffect_rust_trap(): iron golem rusting away not ported yet');
+            if (in_sight)
+                await pline(`${Monnam(mtmp)} ${!mlifesaver(mtmp) ? "falls"
+                                               : "starts to fall"} to pieces!`); /* pline_mon() */
+            await monkilled(mtmp, null, AD_RUST);
+            if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
+                trapkilled = true;
         } else if (mptr === mons[PM_GREMLIN] && rn2(3)) {
-            throw new Error('trapeffect_rust_trap(): split_mon() not ported yet');
+            await split_mon(mtmp, null);
         }
 
         return trapkilled ? Trap_Killed_Mon : mtmp.mtrapped
@@ -2269,8 +2293,7 @@ export async function ignite_items(objchn) {
     }
 }
 
-// C ref: apply.c catch_lit() -- the cases where the object doesn't catch
-// light; lighting it (begin_burn()) isn't ported yet
+// C ref: apply.c catch_lit()
 /* Called when potentially lightable object is affected by fire_damage().
    Return TRUE if object becomes lit and FALSE otherwise --ALI */
 export async function catch_lit(obj) {
@@ -2284,8 +2307,8 @@ export async function catch_lit(obj) {
         || obj.otyp === TALLOW_CANDLE_TR || obj.otyp === WAX_CANDLE_TR
         || obj.otyp === POT_OIL_TR);
 
-    /* get_obj_location() succeeds for invent, minvent and floor objects */
-    if (!obj.lamplit && ignitable) {
+    let loc;
+    if (!obj.lamplit && ignitable && (loc = get_obj_location(obj, 0)) !== null) {
         if (((obj.otyp === MAGIC_LAMP_TR /* spe==0 => no djinni inside */
               /* spe==0 => no candles attached */
               || obj.otyp === CANDELABRUM_OF_INVOCATION_TR) && obj.spe === 0)
@@ -2301,7 +2324,22 @@ export async function catch_lit(obj) {
                to light is a minor inconvenience to make cursed be worse */
             && obj.cursed && !rn2(2))
             return false;
-        throw new Error('catch_lit(): begin_burn() not ported yet');
+
+        const [x, y] = loc;
+        if (obj.where === 'OBJ_INVENT' || cansee(x, y)) {
+            /* OBJ_FLOOR && cansee(x, y): set_msg_xy(x, y), accessibility only */
+            await pline(`${Yname2_fd(obj)} ${
+                /* "catches light!" or "feels warm." */
+                otense_fd(obj, Blind() ? "feel" : "catch")} ${
+                Blind() ? "warm." : "light!"}`);
+        }
+        if (obj.otyp === POT_OIL_TR)
+            discover_object(obj.otyp, true, true, true); /* makeknown() */
+        if (obj.where === 'OBJ_INVENT' /* carried(obj) */ && obj.unpaid
+            && costly_spot(game.u.ux, game.u.uy))
+            throw new Error('catch_lit(): bill_dummy_object() not ported yet');
+        begin_burn(obj, false);
+        return true;
     }
     return false;
 }
@@ -2322,10 +2360,19 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
         const mptr = mtmp.data;
         const orig_dmg = d(2, 4);
 
-        if (in_sight || see_it)
-            throw new Error('trapeffect_fire_trap(): surface() message not ported yet');
+        if (in_sight)
+            await pline(`A ${tower_of_flame} erupts from the ${
+                surface(mtmp.mx, mtmp.my)} under ${mon_nam(mtmp)}!`); /* pline_mon() */
+        else if (see_it) { /* evidently `mtmp' is invisible */
+            /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
+            await You_see_l(`a ${tower_of_flame} erupt from the ${
+                surface(mtmp.mx, mtmp.my)}!`);
+        }
         if (resists_fire(mtmp)) {
-            /* in_sight: shieldeff() and "is uninjured" (not in sight here) */
+            if (in_sight) {
+                /* shieldeff(mtmp->mx, mtmp->my): transient display only */
+                await pline(`${Monnam(mtmp)} is uninjured.`);
+            }
         } else {
             let num = orig_dmg, alt;
             let immolate = false;
@@ -2378,7 +2425,7 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
             && !see_it && dist2(tx, ty, game.u.ux, game.u.uy) <= 3 * 3)
             await You("smell smoke.");
         if (is_ice_tr(tx, ty))
-            throw new Error('trapeffect_fire_trap(): melt_ice() not ported yet');
+            await melt_ice(tx, ty, null);
         if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
             trapkilled = true;
         if (see_it && t_at(tx, ty))
@@ -2843,7 +2890,9 @@ async function trapeffect_web(mtmp, trap, trflags) {
 
         /* suppress article in various steed messages when using its
            name (which won't occur when hallucinating) */
-        /* steed_article: x_monnam() for the steed isn't ported */
+        let steed_article = ARTICLE_THE_TR;
+        if (u.usteed && has_mgivenname_tr(u.usteed) && !Hallucination())
+            steed_article = ARTICLE_NONE_TR;
 
         feeltrap(trap);
         if (await mu_maybe_destroy_web(game.youmonst, webmsgok, trap))
@@ -2860,7 +2909,8 @@ async function trapeffect_web(mtmp, trap, trflags) {
             if (forcetrap || viasitting) {
                 verbbuf = "are caught by";
             } else if (u.usteed) {
-                throw new Error('trapeffect_web(): steed message (x_monnam()) not ported yet');
+                verbbuf = `lead ${x_monnam_tr(u.usteed, steed_article, "poor",
+                                              SUPPRESS_SADDLE_TR, false)} into`;
             } else {
                 verbbuf = `${u_locomotion("stumble")} into`;
             }
@@ -3000,7 +3050,6 @@ async function steedintrap(trap, otmp) {
     const steed = u.usteed;
     let trapkilled = false, steedhit = false;
 
-    void otmp;
     if (!steed || !trap)
         return Trap_Effect_Finished;
     const tt = trap.ttyp;
@@ -3025,16 +3074,40 @@ async function steedintrap(trap, otmp) {
         steedhit = true;
         break;
     case ARROW_TRAP:
+        if (!otmp) {
+            impossible("steed hit by non-existent arrow?");
+            return Trap_Effect_Finished;
+        }
+        trapkilled = await thitm(8, steed, otmp, 0, false);
+        steedhit = true;
+        break;
     case DART_TRAP:
+        if (!otmp) {
+            impossible("steed hit by non-existent dart?");
+            return Trap_Effect_Finished;
+        }
+        trapkilled = await thitm(7, steed, otmp, 0, false);
+        steedhit = true;
+        break;
     case LANDMINE:
+        trapkilled = await thitm(0, steed, null, rnd(16), false);
+        steedhit = true;
+        break;
     case POLY_TRAP:
-        throw new Error(`steedintrap(): steed hit by trap type ${tt} not ported yet`);
+        if (!resists_magm(steed) && !resist(steed, WAND_CLASS_TP, 0, NOTELL)) {
+            /* newcham() will probably end up calling poly_steed() */
+            await newcham_tp(steed, null, NC_SHOW_MSG_TP);
+        }
+        steedhit = true;
+        break;
     default:
         break;
     }
 
-    if (trapkilled)
-        throw new Error('steedintrap(): dismount_steed() not ported yet');
+    if (trapkilled) {
+        await dismount_steed(DISMOUNT_POLY);
+        return Trap_Killed_Mon;
+    }
     return steedhit ? 1 : 0;
 }
 
@@ -4006,7 +4079,7 @@ export async function mintrap(mtmp, mintrapflags) {
            Recognizing who made the trap isn't completely
            unreasonable; everybody has their own style. */
         if (trap.madeby_u && rnl(5))
-            throw new Error('mintrap(): setmangry() not ported yet');
+            await setmangry(mtmp, false);
 
         trap_result = await trapeffect_selector(mtmp, trap, mintrapflags);
 
@@ -4481,8 +4554,24 @@ export async function chest_trap(obj, bodypart, disarm) {
             throw new Error('chest_trap(): dofiretrap() not ported yet');
         case 8:
         case 7:
-        case 6:
-            throw new Error('chest_trap(): electric shock (destroy_items()) not ported yet');
+        case 6: {
+            let dmg = d(4, 4);
+            const orig_dmg = dmg;
+
+            await You("are jolted by a surge of electricity!");
+            if (Shock_resistance()) {
+                /* shieldeff(u.ux, u.uy): transient display only */
+                await You("don't seem to be affected.");
+                monstseesu_tr(M_SEEN_ELEC);
+                dmg = 0;
+            } else {
+                monstunseesu_tr(M_SEEN_ELEC);
+            }
+            await destroy_items_tr(game.youmonst, AD_ELEC, orig_dmg);
+            if (dmg)
+                await losehp(dmg, "electric shock", KILLED_BY_AN);
+            break;
+        } /* case 6 */
         case 5:
         case 4:
         case 3:
@@ -4783,7 +4872,7 @@ export async function drown() {
     await water_damage_chain(g.invent, false);
 
     if (u.umonnum === PM_GREMLIN_DR && rn2(3)) {
-        throw new Error('drown(): split_mon() of the hero not ported yet');
+        await split_mon(g.youmonst, null);
     } else if (u.umonnum === PM_IRON_GOLEM_DR) {
         await You("rust!");
         i = Maybe_Half_Phys(d(2, 6));
@@ -4810,7 +4899,9 @@ export async function drown() {
         throw new Error('drown(): teleport spell out of the water not ported yet');
     }
     if (u.usteed) {
-        throw new Error('drown(): dismount_steed() in water not ported yet');
+        await dismount_steed(DISMOUNT_GENERIC);
+        if (!is_pool(u.ux, u.uy))
+            return true;
     }
     /* if sleeping, wake up now so that we don't crawl out of water
        while still asleep; we can't do that the same way that waking
@@ -4935,12 +5026,25 @@ export async function lava_effects() {
      */
     if (g.uarmf && (g.uarmf.in_use
                     || (is_organic_dr(g.uarmf) && !g.uarmf.oerodeproof))) {
-        throw new Error('lava_effects(): burning boots (Boots_off()) not ported yet');
+        obj = g.uarmf;
+        await pline(`${Yobjnam2(obj, "burst")} into flame!`);
+        ++burnmesgcount;
+        g.iflags.in_lava_effects = (g.iflags.in_lava_effects || 0) + 1; /* (see above) */
+        await Boots_off();
+        if (obj.o_id !== protect_oid)
+            useup_tr(obj);
+        g.iflags.in_lava_effects--;
+        ++burncount;
     }
 
+    burn_stuff: {
     if (!Fire_resistance()) {
         if (Wwalking()) {
-            throw new Error('lava_effects(): water walking on lava not ported yet');
+            await pline_The(`${hliquid("lava")} here burns you!`);
+            if (usurvive) {
+                await losehp(dmg, lava_killer, KILLED_BY); /* lava damage */
+                break burn_stuff;
+            }
         } else
             await You(`fall into the ${waterbody_name_dr(u.ux, u.uy)}!`);
 
@@ -5015,11 +5119,27 @@ export async function lava_effects() {
 
         return true;
     } else if (!Wwalking() && (!u.utrap || u.utraptype !== TT_LAVA_DR)) {
-        throw new Error('lava_effects(): sinking into lava while fire resistant not ported yet');
+        boil_away = !Fire_resistance();
+        /* if not fire resistant, sink_into_lava() will quickly be fatal;
+           hero needs to escape immediately */
+        set_utrap(rn1(4, 4) + ((boil_away ? 2 : rn1(4, 12)) << 8), TT_LAVA_DR);
+        await You(`sink into the ${waterbody_name_dr(u.ux, u.uy)}${
+            !boil_away ? ", but it only burns slightly"
+                       : " and are about to be immolated"}!`);
+        if (Fire_resistance())
+            monstseesu_tr(M_SEEN_FIRE);
+        else
+            monstunseesu_tr(M_SEEN_FIRE);
+        if (u.uhp > 1)
+            await losehp(!boil_away ? 1 : Math.trunc(u.uhp / 2), lava_killer,
+                         KILLED_BY); /* lava damage */
     }
+    } /* burn_stuff */
 
     /* burn_stuff: */
-    throw new Error('lava_effects(): destroy_items()/ignite_items() not ported yet');
+    await destroy_items_tr(g.youmonst, AD_FIRE_TR, dmg);
+    await ignite_items(g.invent);
+    return false;
 }
 import { SWIMMING as SWIMMING_DR, MAGICAL_BREATHING as MAGICAL_BREATHING_DR,
          TELEPORT as TELEPORT_DR, TELEPORT_CONTROL as TELEPORT_CONTROL_DR,
