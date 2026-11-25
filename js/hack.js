@@ -518,7 +518,7 @@ export async function overexert_hp() {
         game.disp_botl = true;
     } else {
         await You("pass out from exertion!");
-        exercise(A_CON, false);
+        await exercise(A_CON, false);
         await fall_asleep(-10, false);
     }
 }
@@ -2042,7 +2042,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
                                 throw new Error('test_move(): steed at a closed door not ported yet');
                             } else {
                                 await pline("Ouch!  You bump into a door.");
-                                exercise(A_DEX, false);
+                                await exercise(A_DEX, false);
                             }
                             /* use current move; needed for the "ouch" case
                                but done for steed case too for consistency;
@@ -2281,7 +2281,7 @@ async function dopush(sx, sy, rx, ry, otmp, costly) {
             if (givemesg)
                 await pline(`With ${easypush ? "little" : "great"} effort you move ${what}.`);
             if (!easypush)
-                exercise(A_STR, true);
+                await exercise(A_STR, true);
         } else {
             throw new Error('dopush(): steed pushing not ported yet');
         }
@@ -2520,7 +2520,7 @@ async function carrying_too_much() {
         && !Is_airlevel(u.uz)) {
         if (wtcap < OVERLOADED) {
             await You("don't have enough stamina to move.");
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
         } else
             await You("collapse under your load.");
         nomul(0);

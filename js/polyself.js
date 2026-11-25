@@ -420,7 +420,7 @@ export async function polyself(psflags) {
         if (rn2(20) > ACURR(A_CON)) {
             await You("shudder for a moment."); /* You1(shudder_for_moment) */
             await losehp(rnd(30), "system shock", KILLED_BY_AN);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             return;
         }
     }
@@ -783,7 +783,7 @@ export async function polymon(mntmp) {
 
     if (game.mvitals && (game.mvitals[mntmp]?.mvflags & G_GENOD)) { /* allow G_EXTINCT */
         await You_feel(`rather ${pmname(mons[mntmp], game.flags.female ? FEMALE : MALE)}-ish.`);
-        exercise(A_WIS, true);
+        await exercise(A_WIS, true);
         return 0;
     }
 
@@ -795,8 +795,8 @@ export async function polymon(mntmp) {
 
     /* exercise used to be at the very end but only Wis was affected
        there since the polymorph was always in effect by then */
-    exercise(A_CON, false);
-    exercise(A_WIS, true);
+    await exercise(A_CON, false);
+    await exercise(A_WIS, true);
 
     if (!Upolyd()) {
         /* Human to monster; save human stats */
@@ -1160,7 +1160,7 @@ async function break_armor() {
                 end_burn(otmp, false);
 
             await You("break out of your armor!");
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             await Armor_gone();
             useup(otmp);
         }

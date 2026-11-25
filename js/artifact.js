@@ -1473,7 +1473,7 @@ export async function touch_artifact(obj, mon) {
             dmg += Maybe_Half_Phys(tmp);
         }
         await losehp(dmg, `touching ${oart.name}`, KILLED_BY); /* magic damage, not physical */
-        exercise(A_WIS, false);
+        await exercise(A_WIS, false);
     }
 
     /* can pick it up unless you're totally non-synch'd with the artifact */
@@ -1565,7 +1565,7 @@ export async function retouch_object(obj,
             if (bane)
                 dmg += rnd(10);
             await losehp(dmg, `handling ${what}`, KILLED_BY);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
         }
     }
 

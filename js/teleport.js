@@ -740,7 +740,7 @@ async function dotele(break_the_rules) { /* True: wizard mode ^T */
 
         if (castit) {
             /* energy cost is deducted in spelleffects() */
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             if ((await spelleffects(SPE_TELEPORT_AWAY, true, false) & ECMD_TIME))
                 return 1;
             else if (!break_the_rules)

@@ -670,7 +670,7 @@ async function forget(howmuch) {
         u.bc_felt = 0; /* forget felt ball&chain */
 
     if (howmuch & ALL_SPELLS)
-        losespells();
+        await losespells();
 
     /* Forget some skills. */
     await drain_weapon_skill(rnd(howmuch ? 5 : 3));
@@ -770,8 +770,8 @@ async function seffect_enchant_armor(sobjp) {
                               ? "Your skin glows then fades."
                               : "Your skin feels warm for a moment.");
         sobjp.obj = null; /* useup() in strange_feeling() */
-        exercise(A_CON, !scursed);
-        exercise(A_STR, !scursed);
+        await exercise(A_CON, !scursed);
+        await exercise(A_STR, !scursed);
         return;
     }
     if (confused) {
@@ -940,8 +940,8 @@ async function seffect_destroy_armor(sobjp) {
         if (!otmp) {
             await strange_feeling(sobj, "Your bones itch.");
             sobjp.obj = null; /* useup() in strange_feeling() */
-            exercise(A_STR, false);
-            exercise(A_CON, false);
+            await exercise(A_STR, false);
+            await exercise(A_CON, false);
             return;
         }
         old_erodeproof = !!otmp.oerodeproof;
@@ -992,8 +992,8 @@ async function seffect_destroy_armor(sobjp) {
         } else if (!(await destroy_arm())) {
             await strange_feeling(sobj, "Your skin itches.");
             sobjp.obj = null; /* useup() in strange_feeling() */
-            exercise(A_STR, false);
-            exercise(A_CON, false);
+            await exercise(A_STR, false);
+            await exercise(A_CON, false);
             return;
         } else
             g.known = true;
@@ -1327,7 +1327,7 @@ export async function chwepon(otmp, amount) {
                 (amount >= 0) ? "twitch" : "itch"}.`;
         }
         await strange_feeling(otmp, buf); /* pline()+docall()+useup() */
-        exercise(A_DEX, amount >= 0);
+        await exercise(A_DEX, amount >= 0);
         return 0;
     }
 
@@ -1578,7 +1578,7 @@ async function seffect_amnesia(sobjp) {
         await pline("Who was that Maud person anyway?");
     else
         await pline("Thinking of Maud you forget everything else.");
-    exercise(A_WIS, false);
+    await exercise(A_WIS, false);
 }
 
 // C ref: read.c seffect_fire()
@@ -1902,7 +1902,7 @@ export async function seffects(sobj) { /* sobj - scroll or fake spellbook for sp
     const sobjp = { obj: sobj }; /* C passes &sobj */
 
     if (objects[otyp].oc_magic)
-        exercise(A_WIS, true); /* just for trying */
+        await exercise(A_WIS, true); /* just for trying */
 
     switch (otyp) {
     case O.SCR_MAIL:

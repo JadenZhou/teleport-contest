@@ -248,7 +248,7 @@ export async function u_slow_down() {
         await pline("You slow down."); /* You() */
     else /* speed boots */
         await pline("Your quickness feels less natural."); /* Your() */
-    exercise(A_DEX, false);
+    await exercise(A_DEX, false);
 }
 
 // C ref: mhitu.c diseasemu()
@@ -1593,7 +1593,7 @@ async function gulpmu(mtmp, mattk) {
             await pline(`${Monnam(mtmp)}${
                 (u.uswldtim === 2) ? " thoroughly"
                 : (u.uswldtim === 1) ? " utterly" : ""} digests you!`);
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
         }
         break;
     case AD_PHYS:
@@ -1616,7 +1616,7 @@ async function gulpmu(mtmp, mattk) {
         } else {
             await pline(`You are ${enfolds(mtmp.data) ? "being squashed"
                                                        : "pummeled with debris"}!`); /* You() */
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
         }
         break;
     case AD_ACID:
@@ -1631,7 +1631,7 @@ async function gulpmu(mtmp, mattk) {
                 await pline("Ouch!  You've been slimed!");
             else
                 await pline("You are covered in slime!  It burns!"); /* You() */
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             monstunseesu(M_SEEN_ACID);
         }
         break;
@@ -1766,7 +1766,7 @@ export async function ugolemeffects(damtype, dam) {
             u.mh = u.mhmax;
         game.disp_botl = true;
         await pline("Strangely, you feel better than before.");
-        exercise(A_STR, true);
+        await exercise(A_STR, true);
     }
 }
 
@@ -2058,20 +2058,20 @@ export async function doseduce(mon) {
             await You_feel("drained of energy.");
             u.uen = 0;
             u.uenmax -= rnd(Half_physical_damage() ? 5 : 10);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             if (u.uenmax < 0)
                 u.uenmax = 0;
             break;
         case 1:
             await pline("You are down in the dumps."); /* You() */
             await adjattrib(A_CON, -1, true);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             game.disp_botl = true;
             break;
         case 2:
             await pline("Your senses are dulled."); /* Your() */
             await adjattrib(A_WIS, -1, true);
-            exercise(A_WIS, false);
+            await exercise(A_WIS, false);
             game.disp_botl = true;
             break;
         case 3:
@@ -2081,15 +2081,15 @@ export async function doseduce(mon) {
             } else {
                 await pline("You have a curious feeling..."); /* You() */
             }
-            exercise(A_CON, false);
-            exercise(A_DEX, false);
-            exercise(A_WIS, false);
+            await exercise(A_CON, false);
+            await exercise(A_DEX, false);
+            await exercise(A_WIS, false);
             break;
         case 4: {
             let tmp;
 
             await You_feel("exhausted.");
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             tmp = rn1(10, 6);
             await losehp(Maybe_Half_Phys(tmp), "exhaustion", KILLED_BY);
             break;
@@ -2101,7 +2101,7 @@ export async function doseduce(mon) {
         switch (rn2(5)) {
         case 0:
             await You_feel("raised to your full potential.");
-            exercise(A_CON, true);
+            await exercise(A_CON, true);
             u.uen = (u.uenmax += rnd(5));
             if (u.uenmax > (u.uenpeak || 0))
                 u.uenpeak = u.uenmax;
@@ -2109,26 +2109,26 @@ export async function doseduce(mon) {
         case 1:
             await You_feel("good enough to do it again.");
             await adjattrib(A_CON, 1, true);
-            exercise(A_CON, true);
+            await exercise(A_CON, true);
             game.disp_botl = true;
             break;
         case 2:
             await pline(`You will always remember ${noit_mon_nam(mon)}...`); /* You() */
             await adjattrib(A_WIS, 1, true);
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             game.disp_botl = true;
             break;
         case 3:
             await pline("That was a very educational experience.");
             await pluslvl(false);
-            exercise(A_WIS, true);
+            await exercise(A_WIS, true);
             break;
         case 4:
             await You_feel("restored to health!");
             u.uhp = u.uhpmax;
             if (Upolyd())
                 u.mh = u.mhmax;
-            exercise(A_STR, true);
+            await exercise(A_STR, true);
             game.disp_botl = true;
             break;
         }

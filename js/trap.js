@@ -1483,7 +1483,7 @@ async function trapeffect_rocktrap(mtmp, trap, trflags) {
 
             if (!harmless) {
                 await losehp(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
-                exercise(A_STR, false);
+                await exercise(A_STR, false);
             }
         }
         return Trap_Effect_Finished;
@@ -1554,7 +1554,7 @@ async function trapeffect_bear_trap(mtmp, trap, trflags) {
                 await losehp(Maybe_Half_Phys(dmg), "bear trap", KILLED_BY_AN);
             }
         }
-        exercise(A_DEX, false);
+        await exercise(A_DEX, false);
     } else {
         const mptr = mtmp.data;
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
@@ -2729,8 +2729,8 @@ async function trapeffect_pit(mtmp, trap, trflags) {
             if (!conj_pit)
                 await selftouch("Falling, you");
             game.vision_full_recalc = 1; /* vision limits change */
-            exercise(A_STR, false);
-            exercise(A_DEX, false);
+            await exercise(A_STR, false);
+            await exercise(A_DEX, false);
         }
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
@@ -4883,7 +4883,7 @@ export async function chest_trap(obj, bodypart, disarm) {
                                false);
             else
                 await create_gas_cloud(obj.ox, obj.oy, 1, 8);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             break;
         case 16:
         case 15:
@@ -4891,7 +4891,7 @@ export async function chest_trap(obj, bodypart, disarm) {
         case 13:
             await You_feel(`a needle prick your ${body_part(bodypart)}.`);
             await poisoned("needle", A_CON, "poisoned needle", 10, false);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             break;
         case 12:
         case 11:
@@ -4926,7 +4926,7 @@ export async function chest_trap(obj, bodypart, disarm) {
                 await pline("Suddenly you are frozen in place!");
                 nomul(-d(5, 6));
                 game.multi_reason = "frozen by a trap";
-                exercise(A_DEX, false);
+                await exercise(A_DEX, false);
                 game.nomovemsg = "You can move again."; /* You_can_move_again */
             } else
                 await You("momentarily stiffen.");
