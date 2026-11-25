@@ -87,7 +87,7 @@ import {
     Sleep_resistance, Acid_resistance, Stone_resistance, Stunned, Confusion, BlindedTimeout,
     Blind, Stoned, Hallucination, Deaf, Fumbling, Underwater, Hate_silver
 } from './youprop.js';
-import { Role_if, u_at } from './const.js';
+import { Role_if, u_at, MIGR_NOWHERE } from './const.js';
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
 function verbose() { return game.flags.verbose ?? true; }
@@ -350,7 +350,7 @@ async function drop_throw(obj, ohit, x, y) {
     if (broken) {
         delobj(obj);
     } else {
-        if (down_gate(x, y) !== 'MIGR_NOWHERE')
+        if (down_gate(x, y) !== MIGR_NOWHERE)
             broken = await ship_object(obj, x, y, false);
         if (!broken) {
             let mtmp = m_at(x, y);

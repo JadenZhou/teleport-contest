@@ -2995,7 +2995,11 @@ export function The(str) {
 /* return form of the verb (input plural) for present tense 3rd person
    subj; also uses The() */
 export function Tobjnam(otmp, verb) {
-    return `${The(xname(otmp))} ${otense(otmp, verb)}`;
+    let bp = The(xname(otmp));
+
+    if (verb)
+        bp += ` ${otense(otmp, verb)}`;
+    return bp;
 }
 
 // C ref: objnam.c yname() -- xname, with "your"/"the" (shk_your())
