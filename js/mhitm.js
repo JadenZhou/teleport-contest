@@ -113,6 +113,10 @@ import { mon_reflects } from './muse.js';
 import { golemeffects, healmon } from './mon.js';
 import { split_mon } from './potion.js';
 import { haseyes, perceives } from './mondata.js';
+import { erode_armor } from './uhitm.js';
+import { acid_damage } from './trap.js';
+import { drain_item } from './zap.js';
+import { hliquid } from './potion.js';
 
 /* C ref: obj.h is_pole() */
 function is_pole(otmp) {
@@ -889,7 +893,6 @@ async function passivemm(magr, mdef, mhitb, mdead, mwep) {
     let i, tmp;
     const mhit = mhitb ? M_ATTK_HIT : M_ATTK_MISS;
 
-    void mwep;
     for (i = 0; ; i++) {
         if (i >= NATTK)
             return (mdead | mhit); /* no passive attacks */
@@ -906,8 +909,29 @@ async function passivemm(magr, mdef, mhitb, mdead, mwep) {
     /* These affect the enemy even if defender killed */
     switch (mddat.mattk[i].adtyp) {
     case M.AD_ACID:
-    case M.AD_ENCH:
-        throw new Error('passivemm(): acid/disenchant passives not ported yet');
+        if (mhitb && !rn2(2)) {
+            const buf = Monnam(magr);
+            if (canseemon(magr))
+                await pline(`${buf} is splashed by ${s_suffix_sm(mon_nam(mdef))} ${
+                    hliquid("acid")}!`);
+            if (resists_acid(magr)) {
+                if (canseemon(magr))
+                    await pline(`${Monnam(magr)} is not affected.`);
+                tmp = 0;
+            }
+        } else
+            tmp = 0;
+        if (!rn2(30))
+            await erode_armor(magr, ERODE_CORRODE);
+        if (!rn2(6))
+            await acid_damage(magr.mw || null); /* MON_WEP(magr) */
+        return assess_dmg();
+    case M.AD_ENCH: /* KMH -- remove enchantment (disenchanter) */
+        if (mhitb && !mdef.mcan && mwep) {
+            drain_item(mwep, false);
+            /* No message */
+        }
+        break;
     default:
         break;
     }
@@ -999,12 +1023,16 @@ async function passivemm(magr, mdef, mhitb, mdead, mwep) {
     else
         tmp = 0;
 
-    /* assess_dmg: */
-    if ((magr.mhp -= tmp) <= 0) {
-        await monkilled(magr, '', mddat.mattk[i].adtyp);
-        return (mdead | mhit | M_ATTK_AGR_DIED);
+    return assess_dmg();
+
+    /* assess_dmg: (C's goto label) */
+    async function assess_dmg() {
+        if ((magr.mhp -= tmp) <= 0) {
+            await monkilled(magr, '', mddat.mattk[i].adtyp);
+            return (mdead | mhit | M_ATTK_AGR_DIED);
+        }
+        return (mdead | mhit);
     }
-    return (mdead | mhit);
 }
 
 // C ref: mhitm.c mon_poly()
