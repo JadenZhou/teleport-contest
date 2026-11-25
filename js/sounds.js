@@ -380,7 +380,7 @@ const h_sounds = [
 ];
 
 // C ref: sounds.c growl_sound()
-function growl_sound(mtmp) {
+export function growl_sound(mtmp) {
     let ret;
 
     switch (mtmp.data.msound) {

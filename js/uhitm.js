@@ -179,7 +179,7 @@ import { destroy_items } from './zap.js';
 import { ignite_items } from './trap.js';
 import { resists_fire, resists_cold, resists_elec, defended } from './mondata.js';
 import { XKILL_NOCORPSE } from './const.js';
-import { artifact_hit, defends, shade_glare } from './artifact.js';
+import { artifact_hit, defends, shade_glare, retouch_equipment } from './artifact.js';
 import { will_hurtle, hurtle, mhurtle } from './dothrow.js';
 import { some_mon_nam } from './do_name.js';
 import { unstuck } from './mhitu.js';
@@ -1564,7 +1564,10 @@ async function mhitm_ad_were(magr, mattk, mdef, mhm) {
     const pa = magr.data;
 
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_were(): uhitm branch not ported yet');
+        /* uhitm */
+        await mhitm_ad_phys(magr, mattk, mdef, mhm);
+        if (mhm.done)
+            return;
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -1576,12 +1579,14 @@ async function mhitm_ad_were(magr, mattk, mdef, mhm) {
             /* set_ulycn(monsndx(pa)) */
             u.ulycn = monsndx(pa);
             set_uasmon();
-            throw new Error('mhitm_ad_were(): retouch_equipment() not ported yet');
+            await retouch_equipment(2);
         }
     } else {
-        throw new Error('mhitm_ad_were(): mhitm branch not ported yet');
+        /* mhitm */
+        await mhitm_ad_phys(magr, mattk, mdef, mhm);
+        if (mhm.done)
+            return;
     }
-    void mhm;
 }
 
 // C ref: uhitm.c mhitm_ad_heal()
@@ -1810,8 +1815,7 @@ export async function mhitm_adtyping(magr, mattk, mdef, mhm) {
     }
 }
 
-// C ref: uhitm.c mhitm_knockback() -- the hero-attacker and hero-defender
-// cases (monster-vs-monster is in mhitm.js); hf.hitflags is C's *hitflags
+// C ref: uhitm.c mhitm_knockback(); hf.hitflags is C's *hitflags
 /* monster hits another monster hard enough to knock it back? */
 export async function mhitm_knockback(
     magr,   /* attacker; might be hero */
@@ -1825,9 +1829,6 @@ export async function mhitm_knockback(
     const u_agr = (magr === game.youmonst);
     const u_def = (mdef === game.youmonst);
     const wep = weapon_used ? (u_agr ? game.uwep : (magr.mw || null)) : null;
-
-    if (!u_agr && !u_def)
-        throw new Error('mhitm_knockback(): monster-vs-monster is in mhitm.js');
 
     if (wep && is_art(wep, ART_OGRESMASHER))
         chance = 2;

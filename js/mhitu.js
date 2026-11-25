@@ -24,7 +24,9 @@ import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer,
          perceives, is_orc, dmgtype, is_neuter } from './mondata.js';
 import { midnight, night } from './calendar.js';
-import { new_were } from './were.js';
+import { new_were, were_summon } from './were.js';
+import { growl_sound } from './sounds.js';
+import { an, makeplural } from './objnam.js';
 import { In_hell } from './dungeon.js';
 import { PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { ART_STORMBRINGER, ART_VORPAL_BLADE } from './artilist.js';
@@ -572,6 +574,9 @@ export function mtrapped_in_pit(mtmp) {
  * mattacku: monster attacks you
  *      returns 1 if monster dies (e.g. "yellow light"), 0 otherwise
  */
+/* C ref: hacklib.c upstart() */
+function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+
 // C ref: mhitu.c summonmu() -- demons summoning demons, were creatures
 // changing form and summoning critters; extracted from mattacku()
 async function summonmu(mtmp, youseeit) {
@@ -609,9 +614,42 @@ async function summonmu(mtmp, youseeit) {
         /* maybe summon compatible critters;
            not blocked by Protection_from_shape_changers */
         if (!rn2(10)) {
-            void youseeit;
-            throw new Error('summonmu(): were_summon() not ported yet');
-        }
+            const out = { visible: 0, genbuf: "creature" };
+
+            if (youseeit)
+                await pline(`${Monnam(mtmp)} summons help!`); /* pline_mon() */
+            const numhelp = await were_summon(mdat, false, out);
+            const numseen = out.visible, genericwere = out.genbuf;
+            if (youseeit) {
+                if (numhelp > 0) {
+                    if (numseen === 0)
+                        await You_feel("hemmed in.");
+                } else {
+                    await pline("But none comes.");
+                }
+            } else {
+                let from_nowhere;
+
+                if (!Deaf()) {
+                    await pline(`Something ${makeplural(growl_sound(mtmp))}!`);
+                    from_nowhere = "";
+                } else {
+                    from_nowhere = " from nowhere";
+                }
+                if (numhelp > 0) {
+                    if (numseen < 1) {
+                        await You_feel("hemmed in.");
+                    } else {
+                        let buf;
+                        if (numseen === 1)
+                            buf = `${an(genericwere)} appears`;
+                        else
+                            buf = `${makeplural(genericwere)} appear`;
+                        await pline(`${upstart(buf)}${from_nowhere}!`);
+                    }
+                } /* else no help came; but you didn't know it tried */
+            }
+        } /* summon critters */
         return;
     } /* were creature */
 }

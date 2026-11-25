@@ -104,6 +104,7 @@ import { touch_petrifies as touch_petrifies_md, resists_ston as resists_ston_md 
 import { s_suffix as s_suffix_sm } from './hacklib.js';
 import { unstuck as unstuck_sm } from './mhitu.js';
 import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';
+import { mhitm_knockback } from './uhitm.js';
 
 /* C ref: obj.h is_pole() */
 function is_pole(otmp) {
@@ -789,54 +790,6 @@ async function mhitm_adtyping(magr, mattk, mdef, mhm) {
     }
 }
 
-// C ref: uhitm.c mhitm_knockback(), monster-vs-monster subset
-function mhitm_knockback(magr, mdef, mattk, hitflags, weapon_used) {
-    const knockdistance = rn2(3) ? 1 : 2; /* 67%: 1 step, 33%: 2 steps */
-    let chance = 6; /* 1/6 chance of attack knocking back a monster */
-    const wep = weapon_used ? magr.mw : null;
-
-    if (wep && wep.oartifact)
-        throw new Error('mhitm_knockback(): artifact weapons not ported yet');
-
-    if (rn2(chance))
-        return false;
-
-    /* only certain attacks qualify for knockback */
-    if (!((mattk.adtyp === AD_PHYS)
-          && (mattk.aatyp === AT_CLAW
-              || mattk.aatyp === AT_KICK
-              || mattk.aatyp === AT_BUTT
-              || mattk.aatyp === AT_WEAP)))
-        return false;
-
-    /* don't knockback if attacker also wants to grab or engulf */
-    if (attacktype(magr.data, AT_ENGL)
-        || attacktype(magr.data, AT_HUGS)
-        || sticks(magr.data))
-        return false;
-
-    const defx = mdef.mx, defy = mdef.my;
-    const dx = sgn(defx - magr.mx);
-    const dy = sgn(defy - magr.my);
-
-    if (!isok(defx + dx, defy + dy))
-        return false;
-    if (IS_DOOR(game.level.at(defx, defy).typ)
-        && (defx - magr.mx && defy - magr.my))
-        throw new Error('mhitm_knockback(): doorless_door() not ported yet');
-
-    /* monsters must be alive */
-    if (DEADMONSTER(magr) || DEADMONSTER(mdef))
-        return false;
-
-    /* attacker must be much larger than defender */
-    if (!(magr.data.msize > (mdef.data.msize + 1)))
-        return false;
-
-    void knockdistance; void hitflags;
-    throw new Error('mhitm_knockback(): knockback hurtle not ported yet');
-}
-
 // C ref: mhitm.c mdamagem()
 async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
     const pd = mdef.data;
@@ -855,7 +808,7 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
 
     await mhitm_adtyping(magr, mattk, mdef, mhm);
 
-    if (mhitm_knockback(magr, mdef, mattk, mhm, !!magr.mw)
+    if (await mhitm_knockback(magr, mdef, mattk, mhm, !!magr.mw)
         && ((mhm.hitflags & (M_ATTK_DEF_DIED | M_ATTK_HIT)) !== 0
             || mon_offmap(mdef)))
         return mhm.hitflags;
