@@ -7,7 +7,7 @@
 // 'not ported yet' error instead of skipping their rolls.
 
 import { fracture_rock } from './zap.js';
-import { pline_The, verbalize, You_see, You_hear } from './display.js';
+import { pline_The, verbalize, You_see, You_hear, You } from './display.js';
 import { rn1 } from './rng.js';
 import { minv } from './mon.js';
 import { m_lined_up, m_carrying } from './mthrowu.js';
@@ -54,7 +54,7 @@ import { distant_name, doname } from './objnam.js';
 import { mpickobj } from './steal.js';
 import { find_defensive, find_offensive, find_misc, use_defensive,
          use_misc, cures_stoning, mcould_eat_tin } from './muse.js';
-import { mattacku, unstuck } from './mhitu.js';
+import { mattacku, unstuck, expels } from './mhitu.js';
 import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
@@ -85,7 +85,7 @@ import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
 import { visible_region_at, create_gas_cloud, m_in_out_region } from './region.js';
 import { noteleport_level, tele_restrict, rloc, mnexto } from './teleport.js';
-import { wipe_engr_at } from './engrave.js';
+import { wipe_engr_at, sticks } from './engrave.js';
 import { acurrstr } from './attrib.js';
 import {
     m_at, MON_AT, place_monster, sobj_at, is_pool, is_lava, accessible,
@@ -381,6 +381,20 @@ export function mon_regen(mon, digest_meal) {
     }
 }
 
+// ── C ref: monmove.c release_hero() ──
+/* ungrab/expel held/swallowed hero */
+async function release_hero(mon) {
+    const u = game.u;
+    if (mon === u.ustuck) {
+        if (u.uswallow) {
+            await expels(mon, mon.data, true);
+        } else if (!sticks(game.youmonst.data)) {
+            await unstuck(mon); /* let go */
+            await You("get released!");
+        }
+    }
+}
+
 // ── C ref: monmove.c disturb() ──
 async function disturb(mtmp) {
     /*
@@ -413,7 +427,7 @@ export async function monflee(mtmp, fleetime, first, fleemsg) {
         return;
 
     if (mtmp === game.u.ustuck)
-        throw new Error('monflee(): release_hero() not ported yet');
+        await release_hero(mtmp); /* expels/unstuck */
 
     if (!first || !mtmp.mflee) {
         /* don't lose untimed scare */
@@ -917,9 +931,12 @@ export async function dochug(mtmp) {
         && !rn2(25))
         mtmp.mflee = 0;
 
-    /* Cease conflict-induced swallow/grab if conflict has ended. */
-    if (mtmp === u.ustuck && mtmp.mpeaceful && !mtmp.mconf && !Conflict())
-        throw new Error('dochug(): release_hero() not ported yet');
+    /* Cease conflict-induced swallow/grab if conflict has ended. Releasing
+       the hero in this way uses up the monster's turn. */
+    if (mtmp === u.ustuck && mtmp.mpeaceful && !mtmp.mconf && !Conflict()) {
+        await release_hero(mtmp);
+        return 0;
+    }
 
     /*
      * PHASE TWO: Special Movements and Actions
