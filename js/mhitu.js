@@ -58,7 +58,7 @@ import { yyyymmdd } from './calendar.js';
 import { PRONOUN_NO_IT, Mgender, mon_nam, noit_mon_nam,
          noit_Monnam } from './do_name.js';
 import { ARMOR_CLASS, ARM_GLOVES, RIN_ADORNMENT } from './objects.js';
-import { discover_object, observe_object } from './o_init.js';
+import { discover_object, observe_object, makeknown } from './o_init.js';
 import { FEMALE, A_CHA, A_INT, A_CON, A_WIS, A_DEX, A_STR, HAND, HAIR,
          RIGHT_RING, LEFT_RING, RLOC_MSG, A_CHAOTIC,
          KILLED_BY } from './const.js';
@@ -1882,8 +1882,6 @@ function u_carried_gloves() {
     }
     return gloves;
 }
-/* C ref: hack.h makeknown() */
-function makeknown(x) { discover_object(x, true, true, true); }
 
 // C ref: mhitu.c doseduce()
 /* Returns 1 if monster teleported (or hero leaves monster's vicinity) */

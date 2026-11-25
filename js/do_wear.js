@@ -77,7 +77,7 @@ import { nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
 import { racial_exception, artifact_light } from './worn.js';
 import { surface } from './iactions.js';
-import { discover_object } from './o_init.js';
+import { discover_object, makeknown } from './o_init.js';
 import { find_ac } from './u_init.js';
 import { remove_worn_item } from './steal.js';
 import { float_vs_flight } from './polyself.js';
@@ -160,8 +160,6 @@ function is_flimsy(otmp) {
     return objects[otmp.otyp].oc_material <= O.LEATHER
            || otmp.otyp === O.RUBBER_HOSE;
 }
-/* C ref: obj.h makeknown() */
-function makeknown(x) { discover_object(x, true, true, true); }
 /* C ref: pline.c You_feel() */
 async function You_feel(line) { await pline(`You feel ${line}`); }
 

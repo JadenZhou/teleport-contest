@@ -87,7 +87,7 @@ import { is_worn, count_unpaid, count_buc } from './invent.js';
 import { add_menu_str } from './wintty.js';
 import { tty_putstr, tty_display_nhwindow } from './wintty.js';
 import { PM_CLERIC } from './monsters.js';
-import { observe_object } from './o_init.js';
+import { observe_object, makeknown } from './o_init.js';
 import { touch_artifact } from './artifact.js';
 import { tty_yn_function, tty_clear_nhwindow } from './wintty.js';
 import { COIN_CLASS, BOULDER, LOADSTONE, SCR_SCARE_MONSTER,
@@ -3214,9 +3214,6 @@ async function in_or_out_menu(prompt, obj,
     }
     return (n === 0 && more_containers) ? 'n' : 'q'; /* next or quit */
 }
-
-/* C ref: hack.h makeknown() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
 
 /* C ref: obj.h age_is_relative() */
 export function age_is_relative(otmp) {

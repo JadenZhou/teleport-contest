@@ -38,7 +38,7 @@ import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
          is_animal, bigmonst, strongmonst, is_giant, thick_skinned,
          is_covetous, is_rider, touch_petrifies, resists_ston,
          attacktype } from './mondata.js';
-import { dist2 } from './hacklib.js';
+import { dist2, plur } from './hacklib.js';
 import { couldsee } from './vision.js';
 import { pline } from './display.js';
 import { canseemon } from './display.js';
@@ -1343,9 +1343,6 @@ function add_skills_to_menu(win, selectable, speedy) {
                          MENU_ITEMFLAGS_NONE);
         }
 }
-
-/* C ref: hack.h plur() */
-function plur(x) { return (x === 1) ? "" : "s"; }
 
 // C ref: weapon.c enhance_weapon_skill()
 /*

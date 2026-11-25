@@ -9,7 +9,7 @@
 // throw a 'not ported yet' error instead of skipping their rolls.
 
 import { DEADMONSTER } from './mon.js';
-import { ordin, sgn, upstart } from './hacklib.js';
+import { ordin, sgn, upstart, plur } from './hacklib.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, noncorporeal, amorphous, bigmonst, likes_gems,
          throws_rocks, nohands, is_unicorn, touch_petrifies, resists_acid,
@@ -57,7 +57,7 @@ import { splitobj, obj_extract_self, clear_dknown, place_object,
          weight } from './mkobj.js';
 import { stackobj, delobj, obfree } from './invent.js';
 import { flooreffects, ship_object, down_gate, dropy } from './do.js';
-import { observe_object, discover_object } from './o_init.js';
+import { observe_object, discover_object, makeknown } from './o_init.js';
 import { xname, doname, singular, an, The, Tobjnam, otense, vtense,
          obj_is_pname, distant_name, corpse_xname, the_unique_obj,
          makeplural, CXN_NORMAL } from './objnam.js';
@@ -121,9 +121,6 @@ function is_flimsy(otmp) {
            || otmp.otyp === O.RUBBER_HOSE;
 }
 /* C ref: mondata.h */
-/* C ref: objnam.c makeknown() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
-function plur(x) { return (x === 1) ? "" : "s"; }
 
 /* gm.m_shot (decl.h) -- multishot volley feedback */
 function m_shot() {

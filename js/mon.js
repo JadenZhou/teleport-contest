@@ -6,7 +6,7 @@
 
 import { may_dig } from './dig.js';
 import { monhaskey } from './monmove.js';
-import { online2, sgn } from './hacklib.js';
+import { online2, sgn, plur } from './hacklib.js';
 import { game } from './gstate.js';
 import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
          has_mgivenname, MGIVENNAME } from './const.js';
@@ -3500,7 +3500,6 @@ export function maybe_unhide_at(x, y) {
 export async function angry_guards(silent) {
     /* C ref: hack.h m_next2u() */
     const m_next2u = m => dist2(m.mx, m.my, game.u.ux, game.u.uy) < 3;
-    const plur = n => (n === 1 ? "" : "s");
     let ct = 0, nct = 0, sct = 0, slct = 0;
 
     for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {

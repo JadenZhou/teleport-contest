@@ -64,7 +64,7 @@ import { strange_feeling, trycall, make_confused, make_stunned,
          burn_away_slime, hliquid } from './potion.js';
 import { exercise, ACURR } from './attrib.js';
 import { more_experienced } from './exper.js';
-import { discover_object } from './o_init.js';
+import { discover_object, makeknown } from './o_init.js';
 import { study_book, can_chant, losespells } from './spell.js';
 import { outrumor } from './rumors.js';
 import { bcsign, curse, bless, uncurse, blessorcurse, costly_alteration,
@@ -137,8 +137,6 @@ const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
       NH_SILVER = "silver", NH_PURPLE = "purple", NH_RED = "red",
       NH_BLUE = "blue";
 
-/* C ref: hack.h makeknown() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: obj.h is_art(), is_elven_armor(), Is_dragon_scales(),
    is_shield() */
 function is_elven_armor(o) {

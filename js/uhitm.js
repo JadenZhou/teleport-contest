@@ -49,7 +49,7 @@ import { IS_OBSTRUCTED, SHOPBASE, ROOMOFFSET } from './const.js';
 import { PM_LONG_WORM, PM_LONG_WORM_TAIL } from './monsters.js';
 import { passes_walls } from './mondata.js';
 import { ART_STORMBRINGER } from './artilist.js';
-import { highc, sgn } from './hacklib.js';
+import { highc, sgn, plur } from './hacklib.js';
 import { monflee } from './monmove.js';
 import { is_safemon, end_running, in_rooms } from './hack.js';
 import { rnl, d } from './rng.js';
@@ -114,7 +114,7 @@ import { exclam } from './zap.js';
 import { could_seduce } from './mhitu.js';
 import { carrying } from './invent.js';
 import { abuse_dog } from './dog.js';
-import { discover_object } from './o_init.js';
+import { discover_object, makeknown } from './o_init.js';
 import { steal, stealgold, stealamulet } from './steal.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { locomotion } from './trap.js';
@@ -238,8 +238,6 @@ import { angry_guards } from './mon.js';
 import { clone_mon } from './makemon.js';
 import { mintrap } from './trap.js';
 import { NO_TRAP_FLAGS } from './const.js';
-/* C ref: hack.h makeknown() */
-function makeknown(x) { discover_object(x, true, true, true); }
 
 /* C ref: uhitm.c mhitm_ad_phys() -- !artifact_hit(magr, mdef, otmp,
    &mhm->damage, gm.mhitu_dieroll) */
@@ -2958,9 +2956,6 @@ async function hmon_hitmon_potion(hmd, mon, obj) /* obj is not NULL */ {
     hmd.mdat = mon.data;
     hmd.dmg = (hmd.mdat === mons[M.PM_SHADE]) ? 0 : 1;
 }
-
-/* C ref: hacklib.c plur() */
-function plur(x) { return (x === 1) ? "" : "s"; }
 
 // C ref: uhitm.c hmon_hitmon_misc_obj()
 async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {

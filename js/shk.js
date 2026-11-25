@@ -5,7 +5,7 @@
 // Paths no session reaches yet throw a 'not ported yet' error.
 
 import { helpless } from './monmove.js';
-import { online2 } from './hacklib.js';
+import { online2, plur } from './hacklib.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
 import { arti_cost } from './artifact.js';
@@ -48,7 +48,7 @@ import { y_monnam, pronoun_gender, PRONOUN_NO_IT,
 import { adjalign, ACURR } from './attrib.js';
 import { record_achievement } from './do.js';
 import { ACH_SHOP } from './const.js';
-import { discover_object } from './o_init.js';
+import { discover_object, makeknown } from './o_init.js';
 import { t_at } from './trap.js';
 import { passes_walls } from './mondata.js';
 import { wake_nearto } from './mon.js';
@@ -162,8 +162,6 @@ export function um_dist(x, y, n) {
 }
 /* C ref: hacklib.c online2(); hack.h onlineu() */
 function onlineu(xx, yy) { return online2(xx, yy, game.u.ux, game.u.uy); }
-/* C ref: hacklib.c plur() */
-function plur(x) { return (x === 1) ? "" : "s"; }
 /* C ref: hacklib.c strncmpi() -- nonzero when the strings differ */
 function strncmpi(s1, s2, n) {
     return (s1 || '').slice(0, n).toLowerCase()
@@ -178,8 +176,6 @@ async function verbalize(line) {
         return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
     await pline(`"${line}"`);
 }
-/* C ref: hack.h makeknown() */
-function makeknown(x) { discover_object(x, true, true, true); }
 
 const angrytexts = [ "quite upset", "ticked off", "furious" ];
 

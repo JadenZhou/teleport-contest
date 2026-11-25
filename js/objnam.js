@@ -342,7 +342,8 @@ function singplur_lookup(r, to_plural, alt_as_is) {
             && badman(basestr, to_plural))
             return true;
     }
-    for (const [sing, plur] of one_off) {
+    for (const sp of one_off) {
+        const [sing, plur] = sp; /* sp->sing, sp->plur */
         /* check whether endstring already matches */
         const same = to_plural ? plur : sing;
         al = same.length;

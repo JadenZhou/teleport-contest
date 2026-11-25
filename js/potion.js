@@ -64,7 +64,7 @@ import { newuhs } from './eat.js';
 import { losehp, Maybe_Half_Phys, heal_legs, sleep_monst } from './trap.js';
 import { bcsign, splitobj } from './mkobj.js';
 import { remove_worn_item } from './steal.js';
-import { objdescr_is, discover_object } from './o_init.js';
+import { objdescr_is, discover_object, makeknown } from './o_init.js';
 import { body_part, enlightenment } from './insight.js';
 import { nomul, in_rooms } from './hack.js';
 import { fall_asleep } from './timeout.js';
@@ -124,7 +124,6 @@ function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
 /* C ref: monst.h mon_perma_blind(), DEADMONSTER() */
 function mon_perma_blind(mon) { return !mon.mcansee && !mon.mblinded; }
 /* C ref: hack.h makeknown(), distu() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
 function distu(x, y) { return dist2(x, y, game.u.ux, game.u.uy); }
 /* C ref: decl.c c_common_strings */
 const You_can_move_again = "You can move again.";

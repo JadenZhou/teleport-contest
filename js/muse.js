@@ -18,7 +18,8 @@ import { You_hear } from './sounds.js';
 import { Monnam } from './do_name.js';
 import { an, xname, doname, singular } from './objnam.js';
 import { simpleonames } from './iactions.js';
-import { observe_object, discover_object, objdescr_is } from './o_init.js';
+import { observe_object, discover_object, objdescr_is,
+         makeknown } from './o_init.js';
 import { unknow_object, unbless } from './mkobj.js';
 import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
@@ -2137,8 +2138,6 @@ function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
     return dx * dx + dy * dy;
 }
-/* C ref: obj.h makeknown() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
 
 // C ref: muse.c mzapwand()
 /* when a monster zaps a wand give a message, deduct a charge, and if it

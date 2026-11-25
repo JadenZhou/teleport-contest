@@ -26,12 +26,10 @@ import { check_unpaid } from './zap.js';
 import { known_spell, spe_Unknown, spe_Fresh, spe_GoingStale } from './spell.js';
 import { wipeout_text } from './engrave.js';
 import { hold_another_object } from './wizcmds.js';
-import { observe_object, discover_object } from './o_init.js';
+import { observe_object, discover_object, makeknown } from './o_init.js';
 import { Glib, Blind, Hallucination } from './youprop.js';
 import { nohands } from './mondata.js';
 
-/* C ref: hack.h makeknown() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: hacklib.c strcmpi() == 0 */
 function strcmpi_eq(s1, s2) {
     return s1 != null && s2 != null && s1.toLowerCase() === s2.toLowerCase();

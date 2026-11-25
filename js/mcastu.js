@@ -53,7 +53,7 @@ import { M_ATTK_MISS, M_ATTK_HIT, M_SEEN_MAGR, M_SEEN_FIRE, M_SEEN_COLD,
          REFLECTING, W_ARMS, W_WEP, W_AMUL, W_ARM } from './const.js';
 import { STRANGE_OBJECT, SHIELD_OF_REFLECTION,
          AMULET_OF_REFLECTION } from './objects.js';
-import { discover_object } from './o_init.js';
+import { discover_object, makeknown } from './o_init.js';
 import {
     Antimagic, Half_spell_damage, Half_physical_damage, Free_action, Fire_resistance,
     Cold_resistance, Shock_resistance, HStun, Stunned, HConfusion, Confusion, Blinded, Invis,
@@ -63,7 +63,7 @@ import { Upolyd, u_at } from './const.js';
 import { uprop } from './youprop.js';
 import { burnarmor, ignite_items } from './trap.js';
 import { destroy_items } from './zap.js';
-import { sgn, upstart } from './hacklib.js';
+import { sgn, upstart, plur } from './hacklib.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -128,8 +128,6 @@ const mon_wizard_spells = [
 function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
 /* C ref: rm.h IS_WATERWALL(), is_waterwall() */
 function is_waterwall(x, y) { return game.level.at(x, y).typ === WATER; }
-/* C ref: hacklib.c plur() */
-function plur(x) { return (x === 1) ? "" : "s"; }
 /* C ref: pline.c verbalize() -- SetVoice() only matters for speech
    output, which the tty doesn't do */
 async function verbalize(line) {
@@ -137,8 +135,6 @@ async function verbalize(line) {
         return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
     await pline(`"${line}"`);
 }
-/* C ref: hack.h makeknown() */
-function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: potion.c vision_clears[] */
 const vision_clears = "vision quickly clears.";
 

@@ -161,6 +161,9 @@ export function upstart(s) {
     return s ? highc(s[0]) + s.slice(1) : s;
 }
 
+// C ref: hack.h plur()
+export function plur(x) { return (x === 1) ? "" : "s"; }
+
 // C ref: hacklib.c sgn()
 /* return the sign of a number: -1, 0, or 1 */
 export function sgn(n) {

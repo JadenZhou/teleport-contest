@@ -18,7 +18,7 @@
 
 import { getnow } from './calendar.js';
 import { lays_eggs, ugenocided, udeadinside } from './polyself.js';
-import { ordin } from './hacklib.js';
+import { ordin, plur } from './hacklib.js';
 import { spellid } from './spell.js';
 import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
@@ -228,7 +228,6 @@ export function has_ceiling(lev) {
 }
 
 /* C ref: hacklib.c plur(), strsubst() (first occurrence only) */
-function plur(x) { return (x === 1) ? "" : "s"; }
 function strsubst(bp, orig, replacement) {
     const at = bp.indexOf(orig);
     return (at < 0) ? bp : bp.slice(0, at) + replacement + bp.slice(at + orig.length);

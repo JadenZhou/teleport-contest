@@ -63,7 +63,7 @@ import { newuhs } from './eat.js';
 import { max_rank_sz } from './botl.js';
 import { losehp, selftouch, set_utrap, reset_utrap } from './trap.js';
 import { tty_getlin } from './wintty.js';
-import { mungspaces } from './hacklib.js';
+import { mungspaces, plur } from './hacklib.js';
 import { name_to_mon, your_race, is_vampshifter, is_were, is_orc, is_elf,
          is_dwarf, is_gnome, is_undead, poly_when_stoned,
          little_to_big } from './mondata.js';
@@ -326,7 +326,6 @@ function uprop_on(p) {
     const pr = game.u.uprops[p];
     return !!(pr.intrinsic || pr.extrinsic);
 }
-function plur(x) { return x === 1 ? "" : "s"; }
 const no_longer_petrify_resistant =
     "No longer petrify-resistant, you";
 
