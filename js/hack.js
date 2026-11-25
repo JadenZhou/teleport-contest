@@ -7,6 +7,25 @@
 // check_special_room() (its shop and special room messages aren't ported
 // yet).
 
+import { mintrap, Trap_Effect_Finished, Trap_Caught_Mon, Trap_Killed_Mon,
+         Trap_Moved_Mon } from './trap.js';
+import { NO_TRAP_FLAGS, LL_CONDUCT } from './const.js';
+import { abuse_dog } from './dog.js';
+import { adjalign } from './attrib.js';
+import { livelog_printf, You_feel } from './display.js';
+import { experience, more_experienced, newexplevel } from './exper.js';
+import { monsndx } from './mondata.js';
+import { breaktest } from './dothrow.js';
+import { splitobj } from './mkobj.js';
+import { setuwep } from './wield.js';
+import { freeinv } from './invent.js';
+import { AIR } from './const.js';
+import { loot_mon } from './pickup.js';
+import { dismount_steed } from './steed.js';
+import { DISMOUNT_FELL, DISMOUNT_GENERIC, BRK_BY_HERO, BRK_FROM_INV, BRK_MELEE,
+         BRK_KNOWN2BREAK, BRK_KNOWN2NOTBREAK } from './const.js';
+import { hit_bars } from './mthrowu.js';
+import { ansimpleoname } from './iactions.js';
 import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, rnd } from './rng.js';
@@ -445,7 +464,9 @@ export async function dopickup() {
     if ((ret = await pickup_checks()) >= 0) {
         return ret ? ECMD_TIME : ECMD_OK;
     } else if (ret === -2) {
-        throw new Error('dopickup(): loot_mon() not ported yet');
+        const tmpcount = { passed_info: -count };
+        return (await loot_mon(game.u.ustuck, tmpcount, null)) ? ECMD_TIME
+                                                              : ECMD_OK;
     } /* else ret == -1 */
 
     return (await pickup(-count)) ? ECMD_TIME : ECMD_OK;
@@ -1457,7 +1478,16 @@ export async function pooleffects(newspot) /* true if called by spoteffects */ {
             return false;
         } else if (u.usteed) {
             /* steed enters pool */
-            throw new Error('pooleffects(): dismount_steed() into a pool not ported yet');
+            await dismount_steed(Underwater() ? DISMOUNT_FELL : DISMOUNT_GENERIC);
+            /* dismount_steed() -> float_down() -> pickup()
+               (float_down doesn't do autopickup on Air or Water) */
+            if (Is_airlevel(u.uz) || Is_waterlevel(u.uz))
+                return false;
+            /* even if we actually end up at same location, float_down()
+               has already done trap and pickup actions of spoteffects() */
+            if (newspot)
+                await check_special_room(false); /* spoteffects */
+            return true;
         }
         /* not mounted */
 
@@ -2765,10 +2795,27 @@ async function domove_attackmon_at(mtmp, x, y, displaceu) {
 }
 
 // C ref: hack.c domove_fight_ironbars()
-function domove_fight_ironbars(x, y) {
+async function domove_fight_ironbars(x, y) {
+    const u = game.u;
     if (game.context.forcefight && game.level.at(x, y).typ === IRONBARS
-        && game.uwep)
-        throw new Error('domove_fight_ironbars(): hit_bars() not ported yet');
+        && game.uwep) {
+        let obj = game.uwep;
+        let breakflags = (BRK_BY_HERO | BRK_FROM_INV | BRK_MELEE);
+
+        if (breaktest(obj)) {
+            if (obj.quan > 1)
+                obj = splitobj(obj, 1);
+            else
+                setuwep(null);
+            freeinv(obj);
+            breakflags |= BRK_KNOWN2BREAK;
+        } else {
+            breakflags |= BRK_KNOWN2NOTBREAK;
+        }
+
+        await hit_bars({ obj }, u.ux, u.uy, x, y, breakflags);
+        return true;
+    }
     return false;
 }
 
@@ -2825,22 +2872,35 @@ async function domove_fight_empty(x, y) {
                    pick:  start digging to break the boulder or wall
                    (remembered 'I' and monster glyphs at the spot aren't
                    tracked by this port's map memory) */
+                const glyph = glyph_at(x, y);
                 if (game.context.forcefight
                     /* can we dig? */
-                    && game.uwep && dig_typ(game.uwep, x, y))
-                    throw new Error('domove_fight_empty(): use_pick_axe2() not ported yet');
+                    && game.uwep && dig_typ(game.uwep, x, y)
+                    /* should we dig? */
+                    && !glyph_is_invisible(glyph)
+                    && glyph.kind !== 'mon' /* !glyph_is_monster(glyph) */) {
+                    await use_pick_axe2(game.uwep);
+                    return true;
+                }
             }
 
             /* about to become known empty -- remove 'I' if present */
             unmap_object(x, y);
             if (boulder)
-                throw new Error('domove_fight_empty(): map_object(boulder) not ported yet');
+                map_object(boulder, true);
             newsym(x, y);
+            /* glyph = glyph_at(x, y): might have just changed; unused */
 
             if (boulder) {
-                throw new Error('domove_fight_empty(): ansimpleoname() not ported yet');
+                buf = ansimpleoname(boulder);
             } else if (Underwater() && !is_pool(x, y)) {
-                throw new Error('domove_fight_empty(): Underwater not ported yet');
+                /* Underwater, targeting non-water; the map just shows blank
+                   because you don't see remembered terrain while underwater;
+                   although the hero can attack an adjacent monster this way,
+                   assume he can't reach out far enough to distinguish terrain */
+                buf = (Is_waterlevel(u.uz) && game.level.at(x, y).typ === AIR)
+                      ? "an air bubble"
+                      : "nothing";
             } else if (solid) {
                 /* glyph might indicate unseen terrain if hero is blind;
                    unlike searching, this won't reveal what that terrain is;
@@ -2942,13 +3002,51 @@ async function domove_swap_with_pet(mtmp, x, y) {
                      (mtmp.mpeaceful && !mtmp.mtame) ? "peaceful" : null,
                      mtmp.mgivenname ? SUPPRESS_SADDLE : 0, false)}.`);
 
-        /* check for displacing it into pools and traps:
-           minliquid(mtmp) ? Trap_Killed_Mon : mintrap(mtmp, NO_TRAP_FLAGS) */
-        if (await minliquid(mtmp))
-            throw new Error('domove_swap_with_pet(): Trap_Killed_Mon (pet drowned) not ported yet');
-        if (t_at(mtmp.mx, mtmp.my))
-            throw new Error('domove_swap_with_pet(): mintrap() not ported yet');
-        /* Trap_Effect_Finished */
+        /* check for displacing it into pools and traps */
+        switch ((await minliquid(mtmp)) ? Trap_Killed_Mon
+                : await mintrap(mtmp, NO_TRAP_FLAGS)) {
+        case Trap_Effect_Finished:
+            break;
+        case Trap_Caught_Mon: /* trapped */
+        case Trap_Moved_Mon: /* changed levels */
+            /* there's already been a trap message, reinforce it */
+            await abuse_dog(mtmp);
+            adjalign(-3);
+            break;
+        case Trap_Killed_Mon:
+            /* drowned or died...
+             * you killed your pet by direct action, so get experience
+             * and possibly penalties;
+             * we want the level gain message, if it happens, to occur
+             * before the guilt message below
+             */
+            {
+                /* minliquid() and mintrap() call mondead() rather than
+                   killed() so we duplicate some of the latter here */
+                let tmp, mndx;
+
+                if (!u.uconduct.killer++)
+                    livelog_printf(LL_CONDUCT, "killed for the first time");
+                mndx = monsndx(mtmp.data);
+                tmp = experience(mtmp, game.mvitals[mndx].died);
+                more_experienced(tmp, 0);
+                await newexplevel(); /* will decide if you go up */
+            }
+            /* That's no way to treat a pet!  Your god gets angry.
+             *
+             * [This has always been pretty iffy.  Why does your
+             * patron deity care at all, let alone enough to get mad?]
+             */
+            if (rn2(4)) {
+                await You_feel("guilty about losing your pet like this.");
+                u.ugangr = (u.ugangr || 0) + 1;
+                adjalign(-15);
+            }
+            break;
+        default:
+            impossible("that's strange, unknown mintrap result!");
+            break;
+        }
     }
     return !didnt_move;
 }
@@ -3050,7 +3148,7 @@ async function domove_core() {
 
     if (!displaceu.val) {
 
-        if (domove_fight_ironbars(x, y))
+        if (await domove_fight_ironbars(x, y))
             return;
 
         if (domove_fight_web(x, y))

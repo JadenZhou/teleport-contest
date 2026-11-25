@@ -1020,7 +1020,7 @@ async function done_eating(message) {
     if (carried(piece))
         useup(piece);
     else
-        useupf(piece, 1);
+        await useupf(piece, 1);
 
     clear_victual(); /* victual.piece = 0, .o_id = 0 */
 }
@@ -1070,7 +1070,7 @@ async function cprefx(pm) {
                  && (() => { throw new Error('cprefx(): polymon(PM_STONE_GOLEM) not ported yet'); })())) {
             /* if food was a tin, use it up early to keep it out of bones */
             if (tin_ctx().tin)
-                use_up_tin(tin_ctx().tin);
+                await use_up_tin(tin_ctx().tin);
 
             killer().name = `tasting ${mons[pm].pmnames[NEUTRAL]} meat`;
             killer().format = KILLED_BY;
@@ -1330,7 +1330,7 @@ async function cpostfx(pm) {
                early to keep it out of bones */
             const tc = tin_ctx();
             if (tc.tin) {
-                use_up_tin(tc.tin);
+                await use_up_tin(tc.tin);
                 /* most tin effects end up being skipped */
                 await lesshungry(200 + (metallivorous(game.youmonst.data) ? 5 : 0));
             }
@@ -1436,13 +1436,13 @@ function costly_tin(alter_type) { /* COST_xxx */
 
 // C ref: eat.c use_up_tin()
 /* finish consume_tin(); also potentially used by cprefx() and cpostfx() */
-function use_up_tin(tin) {
+async function use_up_tin(tin) {
     const tc = tin_ctx();
 
     if (carried(tin))
         useup(tin);
     else
-        useupf(tin, 1);
+        await useupf(tin, 1);
     /* reset tin context */
     tc.tin = null;
     tc.o_id = 0;
@@ -1496,7 +1496,7 @@ async function consume_tin(mesg) {
             observe_object(tin, Hallucination());
             tin.known = 1;
             tin = costly_tin(COST_OPEN);
-            use_up_tin(tin);
+            await use_up_tin(tin);
             if (always_eat)
                 await lesshungry(5); /* metallivorous hero ate the tin itself */
             return;
@@ -1531,7 +1531,7 @@ async function consume_tin(mesg) {
                     tin.known = 1;
                 }
                 tin = costly_tin(COST_OPEN);
-                use_up_tin(tin);
+                await use_up_tin(tin);
                 return;
             }
         }
@@ -1568,7 +1568,7 @@ async function consume_tin(mesg) {
             if (always_eat)
                 nutamt += 5; /* metallivorous hero ate the tin itself */
             /* use up tin now; lesshungry() could be fatal and produce bones */
-            use_up_tin(tin), tin = null;
+            await use_up_tin(tin), tin = null;
             await lesshungry(nutamt);
         }
 
@@ -1586,7 +1586,7 @@ async function consume_tin(mesg) {
         throw new Error('consume_tin(): tin of spinach (gainstr()) not ported yet');
     }
     if (tin)
-        use_up_tin(tin);
+        await use_up_tin(tin);
 }
 
 // C ref: eat.c Popeye()
@@ -1829,7 +1829,7 @@ async function eatcorpse(otmp) {
         if (carried(otmp))
             useup(otmp);
         else
-            useupf(otmp, 1);
+            await useupf(otmp, 1);
         return 2;
     } else if (acidic(mons[mnum]) && !Acid_resistance()) {
         tp++;
@@ -1873,7 +1873,7 @@ async function eatcorpse(otmp) {
             if (carried(otmp))
                 useup(otmp);
             else
-                useupf(otmp, 1);
+                await useupf(otmp, 1);
             retcode = 2;
         }
 
@@ -2000,7 +2000,7 @@ async function fprefx(otmp) {
             if (carried(otmp))
                 useup(otmp);
             else
-                useupf(otmp, 1);
+                await useupf(otmp, 1);
             await explode(u.ux, u.uy, -11, d(3, 6), 0, EXPL_FIERY);
             return false;
         } else if (stale_egg(otmp)) {

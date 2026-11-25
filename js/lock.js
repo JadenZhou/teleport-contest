@@ -10,6 +10,8 @@
 // forcelock(), breakchestlock(), u_have_forceable_weapon(),
 // chest_shatter_msg()) and #close (doclose()).
 
+import { could_untrap, untrap } from './trap.js';
+import { cmdq_add_ec, cmdq_add_dir } from './cmd.js';
 import { impossible, is_door_mappear } from './hack.js';
 import { touch_artifact, is_magic_key } from './artifact.js';
 import { game } from './gstate.js';
@@ -363,8 +365,17 @@ export async function pick_lock(pick, rx, ry, container) {
                     verb = "pick";
 
                 const autounlock_flags = game.flags.autounlock ?? AUTOUNLOCK_APPLY_KEY;
-                if (autounlock && (autounlock_flags & AUTOUNLOCK_UNTRAP) !== 0) {
-                    throw new Error('pick_lock(): could_untrap()/untrap() of a box not ported yet');
+                if (autounlock && (autounlock_flags & AUTOUNLOCK_UNTRAP) !== 0
+                    && await could_untrap(false, true)
+                    && (c = otmp.tknown ? (otmp.otrapped ? 'y' : 'n')
+                            : await ynq(safe_qbuf("Check ", " for a trap?",
+                                                  otmp, yname, "this")))
+                       !== 'n') {
+                    if (c === 'q')
+                        return PICKLOCK_DID_NOTHING; /* c == 'q' */
+                    /* c == 'y' */
+                    await untrap(false, 0, 0, otmp);
+                    return PICKLOCK_DID_SOMETHING; /* even if no trap found */
                 } else if (autounlock
                            && (autounlock_flags & AUTOUNLOCK_APPLY_KEY) !== 0) {
                     c = 'q';
@@ -481,8 +492,15 @@ export async function pick_lock(pick, rx, ry, container) {
             return PICKLOCK_LEARNED_SOMETHING;
         default: {
             const autounlock_flags = game.flags.autounlock ?? AUTOUNLOCK_APPLY_KEY;
-            if ((autounlock_flags & AUTOUNLOCK_UNTRAP) !== 0)
-                throw new Error('pick_lock(): could_untrap() not ported yet');
+            if ((autounlock_flags & AUTOUNLOCK_UNTRAP) !== 0
+                && await could_untrap(false, false)
+                && (c = await ynq("Check this door for a trap?")) !== 'n') {
+                if (c === 'q')
+                    return PICKLOCK_DID_NOTHING;
+                /* c == 'y' */
+                await untrap(false, cc.x, cc.y, null);
+                return PICKLOCK_DID_SOMETHING; /* even if no trap found */
+            }
             /* credit cards are only good for unlocking */
             if (picktyp === CREDIT_CARD && !(door.doormask & D_LOCKED)) {
                 await You_cant("lock a door with a credit card.");
@@ -748,8 +766,11 @@ export async function doopen_indir(x, y) {
             } else if ((autounlock & AUTOUNLOCK_KICK) !== 0
                        && !u.usteed /* kicking is different when mounted */
                        && (await ynq("Kick it?")) === 'y') {
-                /* cmdq_add_ec(CQ_CANNED, dokick); cmdq_add_dir(...) */
-                throw new Error('doopen_indir(): autounlock kick (dokick()) not ported yet');
+                cmdq_add_ec("dokick"); /* CQ_CANNED */
+                cmdq_add_dir(Math.sign(cc.x - u.ux), Math.sign(cc.y - u.uy), 0);
+                /* this was 'ECMD_TIME', but time shouldn't elapse until
+                   the canned kick takes place */
+                res = ECMD_OK;
             }
         }
         return res;

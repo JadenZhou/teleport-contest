@@ -4,6 +4,8 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { split_mon } from './potion.js';
+import { You } from './display.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { poly_gender, rehumanize } from './polyself.js';
@@ -2256,8 +2258,12 @@ async function passiveum(olduasmon, mtmp, mattk) {
     if (rn2(3))
         switch (oldu_mattk.adtyp) {
         case AD_PHYS:
-            if (oldu_mattk.aatyp === AT_BOOM)
-                throw new Error('passiveum(): exploding hero (rehumanize()) not ported yet');
+            if (oldu_mattk.aatyp === AT_BOOM) {
+                await You("explode!");
+                /* KMH, balance patch -- this is okay with unchanging */
+                await rehumanize();
+                return await assess_dmg_mu(mtmp, tmp);
+            }
             break;
         case AD_COLD: /* Brown mold or blue jelly */
             if (resists_cold_mu(mtmp)) {
@@ -2272,7 +2278,7 @@ async function passiveum(olduasmon, mtmp, mattk) {
             if (game.u.mhmax < game.u.mh)
                 game.u.mhmax = game.u.mh;
             if (game.u.mhmax > ((game.youmonst.data.mlevel + 1) * 8))
-                throw new Error('passiveum(): split_mon() not ported yet');
+                await split_mon(game.youmonst, mtmp);
             break;
         case M.AD_PLYS: /* Floating eye */
         case M.AD_STUN: /* Yellow mold */

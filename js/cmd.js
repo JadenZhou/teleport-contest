@@ -305,7 +305,7 @@ export function cmdq_add_key(key) {
     if (!game.cmdq) game.cmdq = [];
     game.cmdq.push({ typ: 'key', key });
 }
-function cmdq_add_dir(dx, dy, dz) {
+export function cmdq_add_dir(dx, dy, dz) {
     if (!game.cmdq) game.cmdq = [];
     game.cmdq.push({ typ: 'dir', dirx: dx, diry: dy, dirz: dz });
 }
@@ -1832,7 +1832,7 @@ async function do_fight() {
 }
 
 /* C ref: hack.h GC_* get_count() flags */
-const GC_NOFLAGS = 0, GC_SAVEHIST = 1, GC_CONDHIST = 2, GC_ECHOFIRST = 4;
+export const GC_NOFLAGS = 0, GC_SAVEHIST = 1, GC_CONDHIST = 2, GC_ECHOFIRST = 4;
 /* C ref: global.h LARGEST_INT; integer.h AppendLongDigit() overflow
    limit -- the recorder's 64-bit LONG_MAX is beyond what a JS number
    holds exactly, but counts are capped by maxcount (LARGEST_INT) long
