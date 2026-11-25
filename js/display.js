@@ -28,7 +28,7 @@ import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_M
          M_AP_FURNITURE, WARNCOUNT, def_warnsyms, In_mines, In_sokoban,
          Is_knox_level, M_AP_NOTHING, M_AP_OBJECT, M_AP_MONSTER, M_AP_TYPE,
          PROT_FROM_SHAPE_CHANGERS, MCORPSENM, ACCESSIBLE } from './const.js';
-import { ROGUESET } from './const.js';
+import { ROGUESET, Is_rogue_level } from './const.js';
 import { visible_region_at, show_region } from './region.js';
 import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
@@ -2244,9 +2244,15 @@ export function feel_location(x, y) {
                 if (idx !== undefined && idx >= 0 && idx < 20 /* S_darkroom */)
                     do_room_glyph = true;
             }
-            if (do_room_glyph)
-                /* lev->glyph = S_darkroom/S_room/S_stone; show_glyph() */
-                throw new Error('feel_location(): levitation rules room glyph not ported yet');
+            if (do_room_glyph) {
+                lev.remembered_glyph = (game.flags.dark_room !== false
+                                        && game.iflags.wc_color !== false
+                                        && !Is_rogue_level(u.uz))
+                                           ? room_cmap_glyph(20) /* S_darkroom */
+                                           : (lev.waslit ? room_cmap_glyph(19) /* S_room */
+                                                         : room_cmap_glyph(0)); /* S_stone */
+                show_glyph(x, y, lev.remembered_glyph);
+            }
         } else {
             /* We feel it (I think hallways are the only things left). */
             map_background(x, y, 1);
@@ -2319,6 +2325,16 @@ export function feel_location(x, y) {
                         (tp_sensemon(mon) || MATCH_WARN_OF_MON(mon))
                             ? PHYSICALLY_SEEN : DETECTED,
                         is_worm_tail(mon, x, y));
+}
+
+// C ref: display.h cmap_to_glyph(S_stone / S_room / S_darkroom) -- in the
+// remembered-glyph form. S_darkroom is drawn like S_room (see newsym()).
+function room_cmap_glyph(idx) {
+    if (idx === 0) /* S_stone */
+        return { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'S_stone', cmapidx: 0 };
+    const dec = dec_symset();
+    return { ch: dec ? '~' : '.', color: NO_COLOR, decgfx: dec,
+             cmap: idx === 20 ? 'S_darkroom' : 'S_room', cmapidx: idx };
 }
 
 /* a terrain glyph in the remembered-glyph form (lev->glyph) */
