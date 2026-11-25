@@ -20,6 +20,7 @@ import { d } from './rng.js';
 import { EXPL_FIERY, NO_TRAP_FLAGS } from './const.js';
 import { hits_bars } from './mthrowu.js';
 import { glyph_at, glyph_is_warning } from './display.js';
+import { noit_mhim } from './mhitu.js';
 import { shade_miss } from './uhitm.js';
 import { switch_terrain } from './hack.js';
 import { dotrap, trapname } from './trap.js';
@@ -2035,18 +2036,22 @@ export async function hurtle_step(arg, x, y) {
     }
 
     if ((mon = m_at(x, y)) !== null && mon !== undefined) {
-        const seen = canspotmon(mon); /* glyph_is_monster(glyph_at(x, y)) */
+        const glyph = glyph_at(x, y);
 
         mon.mundetected = 0; /* wakeup() will handle mimic */
-        if (!seen)
-            throw new Error('hurtle_step(): bumping into an unseen monster not ported yet');
-        /* after unhiding; combination of a_monnam() and some_mon_nam() */
+        /* after unhiding; combination of a_monnam() and some_mon_nam();
+           yields "someone" or "something" instead of "it" for unseen mon */
         const mnam = x_monnam(mon, ARTICLE_A, null,
                               ((mon.mgivenname ? SUPPRESS_SADDLE : 0)
                                | AUGMENT_IT), false);
-        await You(`bump into ${mnam}.`);
+        if (glyph.kind !== 'mon' /* !glyph_is_monster(glyph) */
+            && !glyph_is_invisible(glyph))
+            await You(`find ${mnam} by bumping into ${noit_mhim(mon)}.`);
+        else
+            await You(`bump into ${mnam}.`);
         await wakeup(mon, false);
-        /* if (!canspotmon(mon)) map_invisible(mon->mx, mon->my): seen */
+        if (!canspotmon(mon))
+            map_invisible(mon.mx, mon.my);
         await setmangry(mon, false);
         if (touch_petrifies(mon.data) && !game.uarmu && !game.uarm && !game.uarmc)
             throw new Error('hurtle_step(): instapetrify() not ported yet');
