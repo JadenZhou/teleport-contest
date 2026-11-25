@@ -96,6 +96,25 @@ import * as MM_bl from './monsters.js';
 import { openit as openit_bl, findit as findit_bl } from './detect.js';
 import { unpunish as unpunish_bl } from './read.js';
 import { TT_BURIEDBALL as TT_BURIEDBALL_bl } from './const.js';
+/* do_break_wand() */
+import { objdescr_is as objdescr_is_bw } from './o_init.js';
+import { safe_qbuf as safe_qbuf_bw } from './pickup.js';
+import { paranoid_query as paranoid_query_bw } from './cmd.js';
+import { PARANOID_BREAKWAND as PARANOID_BREAKWAND_BW, HEAD as HEAD_BW,
+         COST_DSTROY as COST_DSTROY_BW, EXPL_MAGICAL as EXPL_MAGICAL_BW,
+         EXPL_FIERY as EXPL_FIERY_BW, EXPL_FROSTY as EXPL_FROSTY_BW,
+         N_DIRS as N_DIRS_BW, xdir as xdir_bw, ydir as ydir_bw,
+         NO_MM_FLAGS as NO_MM_FLAGS_BW, NO_KILLER_PREFIX as NO_KILLER_PREFIX_BW,
+         OBJ_AT as OBJ_AT_BW } from './const.js';
+import { freeinv as freeinv_bw } from './invent.js';
+import { zappable as zappable_bw, release_hold as release_hold_bw,
+         zapsetup as zapsetup_bw, zapwrapup as zapwrapup_bw, bhitm as bhitm_bw,
+         bhitpile as bhitpile_bw, bhito as bhito_bw } from './zap.js';
+import { explode as explode_bw } from './explode.js';
+import { makemon as makemon_bw } from './makemon.js';
+import { bot as bot_bw } from './display.js';
+import { pay_for_damage as pay_for_damage_bw } from './shk.js';
+import { litroom as litroom_bw } from './read.js';
 /* C ref: mondata.h is_whirly() */
 function is_whirly(ptr) {
     return ptr.mlet === S_VORTEX || ptr === mons[PM_AIR_ELEMENTAL];
@@ -639,6 +658,231 @@ function apply_ok(obj) {
     return GETOBJ_EXCLUDE_SELECTABLE;
 }
 
+// C ref: apply.c discard_broken_wand()
+function discard_broken_wand() {
+    let obj;
+
+    obj = game.current_wand; /* [see dozap() and destroy_items()] */
+    game.current_wand = null;
+    if (obj)
+        delobj_ap(obj);
+    nomul(0);
+}
+
+// C ref: apply.c broken_wand_explode()
+async function broken_wand_explode(obj, dmg, expltype) {
+    await explode_bw(game.u.ux, game.u.uy, -(obj.otyp), dmg, WAND_CLASS, expltype);
+    discover_object(obj.otyp, true, true, true); /* makeknown(): explode
+                                                    describes the effect */
+    discard_broken_wand();
+}
+
+// C ref: apply.c do_break_wand()
+/* return 1 if the wand is broken, hence some time elapsed */
+async function do_break_wand(obj) {
+    const nothing_else_happens = "But nothing else happens...";
+    const g = game;
+    const u = g.u;
+    let i;
+    let x, y;
+    let mon;
+    let dmg, damage;
+    let affects_objects;
+    let shop_damage = false;
+    let confirm, buf;
+    const is_fragile = (objdescr_is_bw(obj, "balsa")
+                        || objdescr_is_bw(obj, "glass"));
+
+    if (nohands(g.youmonst.data)) {
+        await You_cant(`break ${yname_lp(obj)} without hands!`);
+        return ECMD_OK;
+    } else if (!freehand()) {
+        await Your_lp(`${makeplural_ap(body_part(HAND))} are occupied!`);
+        return ECMD_OK;
+    } else if (ACURR(A_STR) < (is_fragile ? 5 : 10)) {
+        await You(`don't have the strength to break ${yname_lp(obj)}!`);
+        return ECMD_OK;
+    }
+    confirm = safe_qbuf_bw("Are you really sure you want to break ",
+                           "?", obj, yname_lp, "the wand");
+    if (!(await paranoid_query_bw(
+            (g.flags.paranoia_bits & PARANOID_BREAKWAND_BW) !== 0, /* ParanoidBreakwand */
+            confirm)))
+        return ECMD_OK;
+    await pline(`Raising ${yname_lp(obj)} high above your ${body_part(HEAD_BW)
+                }, you ${is_fragile ? "snap" : "break"} it in two!`);
+
+    /* [ALI] Do this first so that wand is removed from bill. Otherwise,
+     * the freeinv() below also hides it from setpaid() which causes problems.
+     */
+    if (obj.unpaid) {
+        check_unpaid_lp(obj); /* Extra charge for use */
+        costly_alteration_ap(obj, COST_DSTROY_BW);
+    }
+
+    g.current_wand = obj; /* destroy_items might reset this */
+    freeinv_bw(obj);      /* hide it from destroy_items instead... */
+    setnotworn_ap(obj);   /* so we need to do this ourselves */
+
+    if (!(await zappable_bw(obj))) {
+        await pline(nothing_else_happens);
+        discard_broken_wand();
+        return ECMD_TIME;
+    }
+    /* successful call to zappable() consumes a charge; put it back */
+    obj.spe++;
+    /* might have "wrested" a final charge, taking it from 0 to -1;
+       if so, we just brought it back up to 0, which wouldn't do much
+       below so give it 1..3 charges now, usually making it stronger
+       than an ordinary last charge (the wand is already gone from
+       inventory, so perm_invent can't accidentally reveal this) */
+    if (!obj.spe)
+        obj.spe = rnd(3);
+
+    obj.ox = u.ux;
+    obj.oy = u.uy;
+    dmg = obj.spe * 4;
+    affects_objects = false;
+
+    switch (obj.otyp) {
+    case O.WAN_OPENING:
+        if (u.ustuck) {
+            await release_hold_bw();
+            if (obj.dknown)
+                discover_object(O.WAN_OPENING, true, true, true); /* makeknown() */
+            discard_broken_wand();
+            return ECMD_TIME;
+        }
+        /*FALLTHRU*/
+    case O.WAN_WISHING: // eslint-disable-line no-fallthrough
+    case O.WAN_NOTHING:
+    case O.WAN_LOCKING:
+    case O.WAN_PROBING:
+    case O.WAN_ENLIGHTENMENT:
+    case O.WAN_SECRET_DOOR_DETECTION:
+    case O.WAN_STASIS:
+        await pline(nothing_else_happens);
+        discard_broken_wand();
+        return ECMD_TIME;
+    case O.WAN_DEATH:
+    case O.WAN_LIGHTNING:
+        await broken_wand_explode(obj, dmg * 4, EXPL_MAGICAL_BW);
+        return ECMD_TIME;
+    case O.WAN_FIRE:
+        await broken_wand_explode(obj, dmg * 2, EXPL_FIERY_BW);
+        return ECMD_TIME;
+    case O.WAN_COLD:
+        await broken_wand_explode(obj, dmg * 2, EXPL_FROSTY_BW);
+        return ECMD_TIME;
+    case O.WAN_MAGIC_MISSILE:
+        await broken_wand_explode(obj, dmg, EXPL_MAGICAL_BW);
+        return ECMD_TIME;
+    case O.WAN_STRIKING:
+        /* we want this before the explosion instead of at the very end */
+        /* Soundeffect(se_wall_of_force, 65): no sound interface */
+        await pline("A wall of force smashes down around you!");
+        dmg = d_lp(1 + obj.spe, 6); /* normally 2d12 */
+        /*FALLTHRU*/
+    case O.WAN_CANCELLATION: // eslint-disable-line no-fallthrough
+    case O.WAN_POLYMORPH:
+    case O.WAN_TELEPORTATION:
+    case O.WAN_UNDEAD_TURNING:
+        affects_objects = true;
+        break;
+    default:
+        break;
+    }
+
+    /* magical explosion and its visual effect occur before specific effects
+     */
+    /* [TODO?  This really ought to prevent the explosion from being
+       fatal so that we never leave a bones file where none of the
+       surrounding targets (or underlying objects) got affected yet.] */
+    await explode_bw(obj.ox, obj.oy, -(obj.otyp), rnd(dmg), WAND_CLASS,
+                     EXPL_MAGICAL_BW);
+
+    /* prepare for potential feedback from polymorph... */
+    zapsetup_bw();
+
+    /* this makes it hit us last, so that we can see the action first */
+    for (i = 0; i <= N_DIRS_BW; i++) {
+        if (!g.bhitpos)
+            g.bhitpos = { x: 0, y: 0 };
+        g.bhitpos.x = x = obj.ox + xdir_bw[i];
+        g.bhitpos.y = y = obj.oy + ydir_bw[i];
+        if (!isok(x, y))
+            continue;
+
+        if (obj.otyp === O.WAN_DIGGING) {
+            /* dig_check(BY_OBJECT, x, y), digactualhole(), fill_pit(),
+               maybe_dunk_boulders() ... */
+            throw new Error('do_break_wand(): breaking a wand of digging (dig_check()/digactualhole()) not ported yet');
+        } else if (obj.otyp === O.WAN_CREATE_MONSTER) {
+            /* u.ux,u.uy creates it near you--x,y might create it in rock */
+            makemon_bw(null, u.ux, u.uy, NO_MM_FLAGS_BW);
+            continue;
+        } else if (x !== u.ux || y !== u.uy) {
+            /*
+             * Wand breakage is targeting a square adjacent to the hero,
+             * which might contain a monster or a pile of objects or both.
+             * Handle objects last; avoids having undead turning raise an
+             * undead's corpse and then attack resulting undead monster.
+             * obj->bypass in bhitm() prevents the polymorphing of items
+             * dropped due to monster's polymorph and prevents undead
+             * turning that kills an undead from raising resulting corpse.
+             */
+            if ((mon = m_at(x, y))) {
+                await bhitm_bw(mon, obj);
+                /* if (disp.botl) bot(); */
+            }
+            if (affects_objects && OBJ_AT_BW(x, y)) {
+                await bhitpile_bw(obj, bhito_bw, x, y, 0);
+                if (g.disp_botl)
+                    bot_bw(); /* potion effects */
+            }
+        } else {
+            /*
+             * Wand breakage is targeting the hero.  Using xdir[]+ydir[]
+             * deltas for location selection causes this case to happen
+             * after all the surrounding squares have been handled.
+             * Process objects first, in case damage is fatal and leaves
+             * bones, or teleportation sends one or more of the objects to
+             * same destination as hero (lookhere/autopickup); also avoids
+             * the polymorphing of gear dropped due to hero's transformation.
+             * (Unlike with monsters being hit by zaps, we can't rely on use
+             * of obj->bypass in the zap code to accomplish that last case
+             * since it's also used by retouch_equipment() for polyself.)
+             */
+            if (affects_objects && OBJ_AT_BW(x, y)) {
+                await bhitpile_bw(obj, bhito_bw, x, y, 0);
+                if (g.disp_botl)
+                    bot_bw(); /* potion effects */
+            }
+            damage = await zapyourself_cam(obj, false);
+            if (damage) {
+                buf = `killed ${uhim()}self by breaking a wand`;
+                await losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX_BW);
+            }
+            if (g.disp_botl)
+                bot_bw(); /* blindness */
+        }
+    }
+
+    /* potentially give post zap/break feedback */
+    await zapwrapup_bw();
+
+    /* Note: if player fell thru, this call is a no-op.
+       Damage is handled in digactualhole in that case */
+    if (shop_damage)
+        await pay_for_damage_bw("dig into", false);
+
+    if (obj.otyp === O.WAN_LIGHT)
+        await litroom_bw(true, obj); /* only needs to be done once */
+
+    discard_broken_wand();
+    return ECMD_TIME;
+}
+
 // C ref: apply.c doapply() -- the #apply command
 export async function doapply() {
     if (nohands(game.youmonst.data)) {
@@ -658,7 +902,7 @@ export async function doapply() {
                              grateful that you don't drop it as well */
 
     if (obj.oclass === WAND_CLASS)
-        throw new Error('doapply(): do_break_wand() not ported yet');
+        return await do_break_wand(obj);
 
     if (obj.oclass === SPBOOK_CLASS)
         return await flip_through_book(obj);

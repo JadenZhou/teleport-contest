@@ -85,6 +85,10 @@ import { is_drawbridge_wall } from './dbridge.js';
 import { bottlename, potionbreathe } from './potion.js';
 import { haseyes } from './mondata.js';
 import { M1_BREATHLESS } from './monsters.js';
+/* boxlock() */
+import { Role_if as Role_if_lk } from './const.js';
+import { PM_WIZARD as PM_WIZARD_LK } from './monsters.js';
+import { WAN_POLYMORPH as WAN_POLYMORPH_LK, SPE_POLYMORPH as SPE_POLYMORPH_LK } from './objects.js';
 import {
     Stunned, Confusion, Blind, Deaf, Passes_walls, Protection_from_shape_changers, Unaware
 } from './youprop.js';
@@ -828,6 +832,52 @@ async function obstructed(x, y, quietly) {
         return true;
     }
     return false;
+}
+
+// C ref: lock.c boxlock()
+/* box obj was hit with spell or wand effect otmp;
+   returns true if something happened */
+export async function boxlock(obj, otmp) { /* obj *is* a box */
+    let res = false;
+
+    switch (otmp.otyp) {
+    case WAN_LOCKING:
+    case SPE_WIZARD_LOCK:
+        if (!obj.olocked) { /* lock it; fix if broken */
+            /* Soundeffect(se_klunk, 50): no sound interface */
+            await pline("Klunk!");
+            obj.olocked = 1;
+            obj.obroken = 0;
+            if (Role_if_lk(PM_WIZARD_LK))
+                obj.lknown = 1;
+            else
+                obj.lknown = 0;
+            res = true;
+        } /* else already closed and locked */
+        break;
+    case WAN_OPENING:
+    case SPE_KNOCK:
+        if (obj.olocked) { /* unlock; isn't broken so doesn't need fixing */
+            /* Soundeffect(se_klick, 50): no sound interface */
+            await pline("Klick!");
+            obj.olocked = 0;
+            res = true;
+            if (Role_if_lk(PM_WIZARD_LK))
+                obj.lknown = 1;
+            else
+                obj.lknown = 0;
+        } else /* silently fix if broken */
+            obj.obroken = 0;
+        break;
+    case WAN_POLYMORPH_LK:
+    case SPE_POLYMORPH_LK:
+        /* maybe start unlocking chest, get interrupted, then zap it;
+           we must avoid any attempt to resume unlocking it */
+        if (xlock().box === obj)
+            reset_pick();
+        break;
+    }
+    return res;
 }
 
 // C ref: lock.c doorlock()
