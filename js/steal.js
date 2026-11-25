@@ -67,6 +67,7 @@ import { engulfing_u } from './const.js';
 import { AT_ENGL } from './monsters.js';
 import { skinback } from './polyself.js';
 import { openholdingtrap, unconscious } from './trap.js';
+import { minstapetrify } from './trap.js';
 import { impossible } from './hack.js';
 import { end_burn } from './timeout.js';
 import { costly_spot } from './shk.js';
@@ -638,7 +639,8 @@ export async function steal(mtmp, objnambuf) {
             otmp.how_lost = LOST_STOLEN;
             mpickobj(mtmp, otmp); /* may free otmp */
             if (could_petrify && !((mtmp.misc_worn_check || 0) & W_ARMG)) {
-                throw new Error('steal(): minstapetrify() not ported yet');
+                await minstapetrify(mtmp, true);
+                return -1;
             }
             return (game.multi < 0) ? 0 : 1;
         }

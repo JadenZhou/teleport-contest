@@ -70,6 +70,7 @@ import { seemimic, xkilled, mondied, setmangry, monkilled,
          wake_nearto } from './mon.js';
 import { exercise, ACURR, poisoned } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
+import { minstapetrify } from './trap.js';
 import { stop_occupation } from './allmain.js';
 import { nomul, calc_capacity } from './hack.js';
 import { make_blinded, potionhit, make_stoned, hliquid } from './potion.js';
@@ -556,7 +557,7 @@ export async function ohitmon(
         }
         if (otmp.otyp === O.EGG && touch_petrifies(mons[otmp.corpsenm])) {
             if (!await munstone(mtmp, false))
-                throw new Error('ohitmon(): minstapetrify() not ported yet');
+                await minstapetrify(mtmp, false);
             if (resists_ston(mtmp))
                 damage = 0;
         }

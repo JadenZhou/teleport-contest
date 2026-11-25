@@ -119,6 +119,7 @@ import { discover_object, makeknown } from './o_init.js';
 import { steal, stealgold, stealamulet } from './steal.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { locomotion } from './trap.js';
+import { minstapetrify } from './trap.js';
 import { Adjmonnam } from './do_name.js';
 import { doseduce } from './mhitu.js';
 import { make_stoned } from './potion.js';
@@ -742,7 +743,10 @@ async function do_stone_u(mtmp) {
 // C ref: uhitm.c mhitm_ad_ston()
 async function mhitm_ad_ston(magr, mattk, mdef, mhm) {
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_ston(): uhitm branch not ported yet');
+        /* uhitm */
+        if (!await munstone(mdef, true))
+            await minstapetrify(mdef, true);
+        mhm.damage = 0;
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
@@ -2993,7 +2997,7 @@ async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {
                 obj.dknown ? CXN_PFX_THE : CXN_ARTICLE)}.`);
             observe_object(obj, Hallucination());
             if (!await munstone(mon, true))
-                throw new Error('hmon_hitmon_misc_obj(): minstapetrify() not ported yet');
+                await minstapetrify(mon, true);
             if (resists_ston(mon))
                 break;
             /* note: hp may be <= 0 even if munstoned==TRUE */
@@ -3039,7 +3043,7 @@ async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {
             useup_eggs(obj);
             obj = null;
             if (!await munstone(mon, true))
-                throw new Error('hmon_hitmon_misc_obj(): minstapetrify() not ported yet');
+                await minstapetrify(mon, true);
             if (resists_ston(mon))
                 break;
             hmd.doreturn = true;

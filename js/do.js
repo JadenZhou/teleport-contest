@@ -64,6 +64,7 @@ import { mcureblindness as mcureblindness_do } from './muse.js';
 import { delobj as delobj_do } from './invent.js';
 import { is_pool, is_lava } from './makemon.js';
 import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
+import { minstapetrify } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
@@ -1663,7 +1664,7 @@ async function engulfer_digests_food(obj) {
             await newcham_do(u.ustuck, could_slime ? mons_do[PM_GREEN_SLIME_do] : null,
                              could_slime ? NC_SHOW_MSG_do : NO_NC_FLAGS_do);
         } else if (could_petrify) {
-            throw new Error('engulfer_digests_food(): minstapetrify() not ported yet');
+            await minstapetrify(u.ustuck, true);
         } else if (could_grow) {
             await grow_up_do(u.ustuck, null);
         } else if (could_heal) {

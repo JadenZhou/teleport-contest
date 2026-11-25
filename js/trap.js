@@ -333,6 +333,12 @@ import { number_leashed } from './apply.js';
 import { buried_ball as buried_ball_tr } from './dig.js';
 import { is_animal as is_animal_tr } from './mondata.js';
 import { Lev_at_will as Lev_at_will_tr } from './youprop.js';
+import { poly_when_stoned } from './mondata.js';
+import { mon_to_stone, vamp_stone, xkilled, monstone } from './mon.js';
+import { mon_adjust_speed } from './worn.js';
+import { XKILL_NOMSG, CXN_PFX_THE } from './const.js';
+import { corpse_xname } from './objnam.js';
+import { mwepgone } from './weapon.js';
 export { is_hole, is_pit };
 
 
@@ -2654,6 +2660,30 @@ async function dofiretrap(
         await melt_ice_tr(u.ux, u.uy, null);
 }
 
+// C ref: trap.c minstapetrify()
+export async function minstapetrify(mon, byplayer) {
+    if (resists_ston(mon))
+        return;
+    if (poly_when_stoned(mon.data)) {
+        await mon_to_stone(mon);
+        return;
+    }
+    if (!(await vamp_stone(mon)))
+        return;
+
+    /* give a "<mon> is slowing down" message and also remove
+       intrinsic speed (comparable to similar effect on the hero) */
+    await mon_adjust_speed(mon, -3, null);
+
+    if (cansee(mon.mx, mon.my))
+        await pline(`${Monnam(mon)} turns to stone.`); /* pline_mon() */
+    if (byplayer) {
+        game.stoned = true;
+        await xkilled(mon, XKILL_NOMSG);
+    } else
+        await monstone(mon);
+}
+
 // C ref: trap.c selftouch()
 export async function selftouch(arg) {
     const g = game;
@@ -2680,8 +2710,17 @@ export async function mselftouch(mon, arg, byplayer) {
 
     if (mwep && mwep.otyp === CORPSE
         && (mwep.corpsenm === PM_COCKATRICE || mwep.corpsenm === PM_CHICKATRICE)
-        && !resists_ston(mon))
-        throw new Error('mselftouch(): minstapetrify() not ported yet');
+        && !resists_ston(mon)) {
+        if (cansee(mon.mx, mon.my)) {
+            await pline(`${arg ? arg : ""}${arg ? mon_nam(mon) : Monnam(mon)} touches ${
+                corpse_xname(mwep, null, CXN_PFX_THE)}.`); /* pline_mon() */
+        }
+        await minstapetrify(mon, byplayer);
+        /* if life-saved, might not be able to continue wielding */
+        if (!(mon.mhp < 1) /* !DEADMONSTER(mon) */
+            && !which_armor(mon, W_ARMG) && !resists_ston(mon))
+            mwepgone(mon);
+    }
 }
 
 // C ref: trap.c trapeffect_pit()

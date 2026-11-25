@@ -104,6 +104,8 @@ import { remove_worm as remove_worm_md,
 import { place_monster as place_monster_md } from './makemon.js';
 import { update_monster_region as update_monster_region_md } from './region.js';
 import { mhis as mhis_md } from './mhitu.js';
+import { poly_when_stoned } from './mondata.js';
+import { mon_to_stone, monstone } from './mon.js';
 import { which_armor as which_armor_md } from './worn.js';
 import { touch_petrifies as touch_petrifies_md, resists_ston as resists_ston_md } from './mondata.js';
 import { s_suffix as s_suffix_sm } from './hacklib.js';
@@ -1193,9 +1195,25 @@ export async function mdisplacem(magr, mdef, quietly) {
     game.vis = (canspotmon_md(magr) && canspotmon_md(mdef));
 
     if (touch_petrifies_md(pd) && !resists_ston_md(magr)) {
-        if (!which_armor_md(magr, W_ARMG_MD))
-            /* poly_when_stoned()/mon_to_stone(), monstone() */
-            throw new Error('mdisplacem(): displacing a petrifier not ported yet');
+        if (!which_armor_md(magr, W_ARMG_MD)) {
+            if (poly_when_stoned(pa)) {
+                await mon_to_stone(magr);
+                return M_ATTK_HIT; /* no damage during the polymorph */
+            }
+            if (!quietly && canspotmon_md(magr)) {
+                if (game.vis) {
+                    await pline(`${Monnam(magr)} tries to move ${mon_nam(mdef)} out of ${
+                        is_rider(pa) ? "the" : mhis(magr)} way.`);
+                }
+                await pline(`${Monnam(magr)} turns to stone!`); /* pline_mon() */
+            }
+            await monstone(magr);
+            if (!(magr.mhp < 1)) /* !DEADMONSTER(magr) */
+                return M_ATTK_HIT; /* lifesaved */
+            else if (magr.mtame && !game.vis)
+                await You_mp(`have a ${"peculiarly sad"} feeling for a moment, then it passes.`); /* brief_feeling */
+            return M_ATTK_AGR_DIED;
+        }
     }
 
     /* remove_monster(fx, fy); pick up from orig position --

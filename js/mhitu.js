@@ -96,6 +96,7 @@ import { BOULDER } from './objects.js';
 import { s_suffix, upstart, mdistu } from './hacklib.js';
 import { set_ustuck, monstseesu, monstunseesu } from './uhitm.js';
 import { placebc, unplacebc } from './ball.js';
+import { minstapetrify } from './trap.js';
 import { docrt, newsym, flush_screen, swallowed } from './display.js';
 import { mnexto } from './teleport.js';
 import { spoteffects } from './hack.js';
@@ -1530,8 +1531,23 @@ async function gulpmu(mtmp, mattk) {
             unleash_all();
         }
 
-        if (touch_petrifies(game.youmonst.data) && !resists_ston(mtmp))
-            throw new Error('gulpmu(): minstapetrify() of the engulfer not ported yet');
+        if (touch_petrifies(game.youmonst.data) && !resists_ston(mtmp)) {
+            /* put the attacker back where it started;
+               the resulting statue will end up there
+               [note: if poly'd hero could ride or non-poly'd hero could
+               acquire touch_petrifies() capability somehow, this code
+               would need to deal with possibility of steed having taken
+               engulfer's previous spot when hero was forcibly dismounted] */
+            /* remove_monster(mtmp->mx, mtmp->my) */ /* u.ux,u.uy */
+            place_monster(mtmp, omx, omy);
+            await minstapetrify(mtmp, true);
+            /* normally unstuck() would do this, but we're not
+               fully swallowed yet so that won't work here */
+            if (game.uball) /* Punished */
+                await placebc();
+            set_ustuck(null);
+            return (!(mtmp.mhp < 1)) ? M_ATTK_MISS : M_ATTK_AGR_DIED;
+        }
         await tty_display_nhwindow(game.WIN_MESSAGE, false);
         vision_recalc(2); /* hero can't see anything */
         u.uswallow = 1;

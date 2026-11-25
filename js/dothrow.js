@@ -205,6 +205,7 @@ import { WWALKING as WWALKING_HT } from './const.js';
 import { drown as drown_ht } from './trap.js';
 import { Norep as Norep_ht } from './display.js';
 import { is_moat as is_moat_ht } from './makemon.js';
+import { minstapetrify } from './trap.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
@@ -899,8 +900,14 @@ export async function thitmonst(mon,
         /* this assumes that guaranteed_hit is due to swallowing */
         await wakeup(mon, true);
         if (obj.otyp === CORPSE && touch_petrifies(mons[obj.corpsenm])) {
-            if (is_animal(md))
-                throw new Error('thitmonst(): minstapetrify() of the engulfer not ported yet');
+            if (is_animal(md)) {
+                await minstapetrify(u.ustuck, true);
+                /* Don't leave a cockatrice corpse available in a statue */
+                if (!u.uswallow) {
+                    delobj(obj);
+                    return 1;
+                }
+            }
         }
         const trail = digests(md) ? " entrails"
                       : is_whirly(md) ? " currents" : "";
@@ -2068,8 +2075,10 @@ export async function hurtle_step(arg, x, y) {
         await setmangry(mon, false);
         if (touch_petrifies(mon.data) && !game.uarmu && !game.uarm && !game.uarmc)
             throw new Error('hurtle_step(): instapetrify() not ported yet');
-        if (touch_petrifies(game.youmonst.data))
-            throw new Error('hurtle_step(): minstapetrify() not ported yet');
+        if (touch_petrifies(game.youmonst.data)
+            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU)) {
+            await minstapetrify(mon, true);
+        }
         await wake_nearto(x, y, 10);
         return false;
     }
@@ -2217,20 +2226,27 @@ async function mhurtle_step(mon, x, y) {
         await wakeup_hu(mtmp, !game.context.mon_moving);
         /* check whether 'mon' is turned to stone by touching 'mtmp' */
         if (touch_petrifies(mtmp.data)
-            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
-            throw new Error('mhurtle_step(): minstapetrify() not ported yet');
+            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU)) {
+            await minstapetrify(mon, !game.context.mon_moving);
+            newsym_hu(mon.mx, mon.my);
+        }
         /* and whether 'mtmp' is turned to stone by being touched by 'mon' */
         if (touch_petrifies(mon.data)
-            && !which_armor_hu(mtmp, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
-            throw new Error('mhurtle_step(): minstapetrify() not ported yet');
+            && !which_armor_hu(mtmp, W_ARMU_HU | W_ARM_HU | W_ARMC_HU)) {
+            await minstapetrify(mtmp, !game.context.mon_moving);
+            newsym_hu(mtmp.mx, mtmp.my);
+        }
     } else if (u.ux === x && u.uy === y) {
         /* a monster has caused 'mon' to hurtle against hero */
         await pline(`${Some_Monnam_hu(mon)} bumps into you.`);
         await stop_occupation_hu();
         /* check whether 'mon' is turned to stone by touching poly'd hero */
         if (u.umonnum !== u.umonster && touch_petrifies(game.youmonst.data)
-            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU))
-            throw new Error('mhurtle_step(): minstapetrify() not ported yet');
+            && !which_armor_hu(mon, W_ARMU_HU | W_ARM_HU | W_ARMC_HU)) {
+            /* give poly'd hero credit/blame despite a monster causing it */
+            await minstapetrify(mon, true);
+            newsym_hu(mon.mx, mon.my);
+        }
         /* and whether hero is turned to stone by being touched by 'mon' */
         if (touch_petrifies(mon.data)
             && !(game.uarmu || game.uarm || game.uarmc))

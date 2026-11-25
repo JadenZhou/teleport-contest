@@ -193,6 +193,20 @@ import { rloc_to as rloc_to_mn } from './teleport.js';
 import { place_wsegs as place_wsegs_rm } from './worm.js';
 import { set_ustuck as set_ustuck_rm } from './uhitm.js';
 import { m_carrying } from './mthrowu.js';
+import { extract_from_minvent } from './steal.js';
+import { obj_resists } from './dogmove.js';
+import { end_burn } from './timeout.js';
+import { add_to_container, weight } from './mkobj.js';
+import { digests } from './mondata.js';
+import { You } from './display.js';
+import { u_locomotion } from './trap.js';
+import { STATUE, ROCK } from './objects.js';
+import { MZ_TINY, PM_STONE_GOLEM, S_GOLEM, MR_STONE } from './monsters.js';
+import { CORPSTAT_HISTORIC } from './const.js';
+import { a_monnam } from './do_name.js';
+import { an } from './objnam.js';
+import { impossible } from './hack.js';
+import { POTION_CLASS } from './objects.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -623,6 +637,145 @@ export async function mondead(mtmp) {
     await m_detach(mtmp, mptr, true);
 }
 
+// C ref: mon.c monstone()
+/* drop (perhaps) a cadaver and remove monster */
+export async function monstone(mdef) {
+    let otmp, obj;
+    const oldminvent = []; /* C's oldminvent chain; [0] is its head */
+    const x = mdef.mx, y = mdef.my;
+    let wasinside = false;
+
+    /* vampshifter reverts to vampire;
+       3.6.3: also used to unshift shape-changed sandestin */
+    if (!(await vamp_stone(mdef)))
+        return;
+
+    /* we have to make the statue before calling mondead, to be able to
+     * put inventory in it, and we have to check for lifesaving before
+     * making the statue....
+     */
+    mdef.mhp = 0; /* in case caller hasn't done this */
+    lifesaved_monster(mdef);
+    if (!DEADMONSTER(mdef))
+        return;
+
+    mdef.mtrapped = 0; /* (see m_detach) */
+
+    if (mdef.data.msize > MZ_TINY
+        || !rn2(2 + ((mdef.data.geno & G_FREQ) > 2 ? 1 : 0))) {
+        let corpstatflags = CORPSTAT_NONE;
+
+        /* some objects may end up outside the statue; C walks
+           mdef->minvent from its head, the newest object, which is the
+           last element of the JS minvent array */
+        while ((obj = (mdef.minvent && mdef.minvent.length)
+                      ? mdef.minvent[mdef.minvent.length - 1] : null) !== null) {
+            extract_from_minvent(mdef, obj, true, true);
+            if (obj.otyp === BOULDER
+                /* invocation tools resist even with 0% resistance */
+                || obj_resists(obj, 0, 0)) {
+                if (await flooreffects(obj, x, y, "fall"))
+                    continue;
+                place_object(obj, x, y);
+            } else {
+                if (obj.lamplit)
+                    end_burn(obj, true);
+                oldminvent.unshift(obj); /* obj->nobj = oldminvent; oldminvent = obj */
+            }
+        }
+        /* defer statue creation until after inventory removal
+           so that saved monster traits won't retain any stale
+           item-conferred attributes */
+        if (mdef.female)
+            corpstatflags |= CORPSTAT_FEMALE;
+        else if (!is_neuter(mdef.data))
+            corpstatflags |= CORPSTAT_MALE;
+        /* Archeologists should not break unique statues */
+        if (mdef.data.geno & G_UNIQ)
+            corpstatflags |= CORPSTAT_HISTORIC;
+        otmp = mkcorpstat(STATUE, mdef, mdef.data, x, y, corpstatflags);
+        if (has_mgivenname(mdef))
+            otmp = oname(otmp, MGIVENNAME(mdef), ONAME_NO_FLAGS);
+        for (const cobj of oldminvent)
+            add_to_container(otmp, cobj);
+        otmp.owt = weight(otmp);
+    } else
+        otmp = mksobj_at(ROCK, x, y, true, false);
+
+    stackobj(otmp);
+    /* mondead() already does this, but we must do it before the newsym */
+    if (glyph_is_invisible(game.level.at(x, y).remembered_glyph))
+        unmap_object(x, y);
+    if (cansee(x, y))
+        newsym(x, y);
+    /* we don't currently trap the hero in the statue in this case but we
+       could */
+    if (engulfing_u(mdef))
+        wasinside = true;
+    await mondead(mdef);
+    if (wasinside) {
+        if (digests(mdef.data))
+            await You(`${u_locomotion("jump")} through an opening in the new ${
+                xname(otmp)}.`);
+    }
+}
+
+// C ref: mon.c set_mon_min_mhpmax()
+export function set_mon_min_mhpmax(mon, minimum_mhpmax) {
+    /* can't be less than m_lev+1 (if we just used m_lev itself, level 0
+       monsters would end up allowing a minimum of 0); since life draining
+       reduces m_lev, this usually won't give the monster much of a boost */
+    if (mon.mhpmax < mon.m_lev + 1)
+        mon.mhpmax = mon.m_lev + 1;
+    /* caller can specify an alternate minimum; we'll honor it iff it is
+       greater than m_lev+1 */
+    if (mon.mhpmax < minimum_mhpmax)
+        mon.mhpmax = minimum_mhpmax;
+}
+
+// C ref: mon.c mon_to_stone()
+/* changes the monster into a stone monster of the same type
+   this should only be called when poly_when_stoned() is true */
+export async function mon_to_stone(mtmp) {
+    if (mtmp.data.mlet === S_GOLEM) {
+        /* it's a golem, and not a stone golem */
+        if (canseemon(mtmp))
+            await pline(`${Monnam(mtmp)} solidifies...`); /* pline_mon() */
+        if (await newcham(mtmp, mons[PM_STONE_GOLEM], NO_NC_FLAGS)) {
+            if (canseemon(mtmp))
+                await pline(`Now it's ${an(pmname(mtmp.data, Mgender(mtmp)))}.`);
+        } else {
+            if (canseemon(mtmp))
+                await pline("... and returns to normal.");
+        }
+    } else
+        impossible(`Can't polystone ${a_monnam(mtmp)}!`);
+}
+
+// C ref: mon.c vamp_stone()
+export async function vamp_stone(mtmp) {
+    if (is_vampshifter(mtmp)) {
+        const mndx = mtmp.cham;
+
+        /* this only happens if shapeshifted */
+        if (mndx >= LOW_PM && mndx !== monsndx(mtmp.data)
+            && !(game.mvitals[mndx].mvflags & G_GENOD))
+            throw new Error('vamp_stone(): lapidifying vampshifter not ported yet');
+    } else if (ismnum(mtmp.cham)
+               && (mons[mtmp.cham].mresists & MR_STONE)) {
+        /* sandestins are stoning-immune so if hit by stoning damage
+           they revert to innate shape rather than become a statue */
+        mtmp.mcanmove = 1;
+        mtmp.mfrozen = 0;
+        set_mon_min_mhpmax(mtmp, 10); /* mtmp->mhpmax=max(mtmp->m_lev+1,10) */
+        mtmp.mhp = mtmp.mhpmax;
+        await newcham(mtmp, mons[mtmp.cham], NC_SHOW_MSG);
+        newsym(mtmp.mx, mtmp.my);
+        return false; /* didn't petrify */
+    }
+    return true;
+}
+
 // C ref: mon.c corpse_chance()
 /* TRUE if corpse might be dropped, magr may die if mon was swallowed */
 export async function corpse_chance(mon, magr, was_swallowed) {
@@ -970,14 +1123,26 @@ export async function xkilled(
     if (mtmp.mtame && !mtmp.isminion)
         mtmp.edog.killed_by_u = 1;
 
-    if (wasinside && game.thrownobj)
-        throw new Error('xkilled(): thrown object killing engulfer not ported yet');
+    if (wasinside && game.thrownobj && game.thrownobj !== game.uball
+        /* don't give to mon if missile is going to be destroyed */
+        && game.thrownobj.oclass !== POTION_CLASS
+        /* don't give to mon if missile is going to return to hero */
+        && game.thrownobj !== game.iflags.returning_missile) {
+        /* thrown object has killed hero's engulfer; add it to mon's
+           inventory now so that it will be placed with mon's other
+           stuff prior to lookhere/autopickup when hero is expelled
+           below (as a side-effect, this missile has immunity from
+           being consumed [for this shot/throw only]) */
+        mpickobj(mtmp, game.thrownobj);
+        /* let throwing code know that missile has been disposed of */
+        game.thrownobj = null;
+    }
 
     game.vamp_rise_msg = false; /* might get set in mondead(); checked below */
     game.disintegested = nocorpse; /* alternate vamp_rise mesg needed if true */
     /* dispose of monster and make cadaver */
     if (game.stoned)
-        throw new Error('xkilled(): monstone() not ported yet');
+        await monstone(mtmp);
     else
         await mondead(mtmp);
     game.disintegested = false; /* reset */
