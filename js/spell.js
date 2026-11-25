@@ -58,7 +58,7 @@ import { set_occupation, stop_occupation } from './allmain.js';
 import { nomul, check_capacity } from './hack.js';
 import { objdescr_is } from './o_init.js';
 import { fall_asleep } from './timeout.js';
-import { haseyes } from './mondata.js';
+import { haseyes, eyecount } from './mondata.js';
 import { mons as mons_sp, PM_CYCLOPS, PM_FLOATING_EYE } from './monsters.js';
 import { morehungry } from './eat.js';
 import { mksobj } from './mkobj.js';
@@ -1135,12 +1135,6 @@ export function force_learn_spell(otyp) {
 }
 
 function exercise(i, inc) { exercise_sp(i, inc); }
-/* C ref: mondata.h eyecount() */
-function eyecount(ptr) {
-    return !haseyes(ptr) ? 0
-           : (ptr === mons_sp[PM_CYCLOPS] || ptr === mons_sp[PM_FLOATING_EYE]) ? 1
-             : 2;
-}
 
 /* C ref: spell.c enum spl_sort_types */
 const SORTBY_LETTER = 0;

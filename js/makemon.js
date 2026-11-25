@@ -68,8 +68,9 @@ import { monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
          is_bat, little_to_big, pm_invisible, emits_light, throws_rocks,
          likes_gems, is_animal, mindless, humanoid, amorphous, unsolid,
          noncorporeal, is_whirly, is_mercenary, strongmonst, extra_nasty,
-         is_giant, likes_gold, always_hostile, is_minion,
-         unique_corpstat } from './mondata.js';
+         is_giant, likes_gold, always_hostile, is_minion, unique_corpstat,
+         is_armed, is_lord, is_prince, is_rider, is_dlord, is_dprince,
+         is_unicorn, is_mplayer, is_placeholder } from './mondata.js';
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
@@ -132,30 +133,17 @@ function attacktype(ptr, atyp) {
         if (ptr.mattk[i].aatyp === atyp) return true;
     return false;
 }
-export function is_armed(ptr) { return attacktype(ptr, M.AT_WEAP); }
-export function is_lord(ptr) { return (ptr.mflags2 & M.M2_LORD) !== 0; }
-export function is_prince(ptr) { return (ptr.mflags2 & M.M2_PRINCE) !== 0; }
 export function is_domestic(ptr) { return (ptr.mflags2 & M.M2_DOMESTIC) !== 0; }
 function always_peaceful(ptr) { return (ptr.mflags2 & M.M2_PEACEFUL) !== 0; }
 function race_peaceful(ptr) { return (ptr.mflags2 & game.urace.lovemask) !== 0; }
 function race_hostile(ptr) { return (ptr.mflags2 & game.urace.hatemask) !== 0; }
 export function is_golem(ptr) { return ptr.mlet === M.S_GOLEM; }
-function is_rider(ptr) {
-    return ptr === mons[M.PM_DEATH] || ptr === mons[M.PM_FAMINE]
-           || ptr === mons[M.PM_PESTILENCE];
-}
-function is_dlord(ptr) { return is_demon(ptr) && is_lord(ptr); }
-function is_dprince(ptr) { return is_demon(ptr) && is_prince(ptr); }
 function is_ndemon(ptr) {
     return is_demon(ptr) && !is_dlord(ptr) && !is_dprince(ptr);
 }
-function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
 export function weirdnonliving(ptr) { return is_golem(ptr) || ptr.mlet === M.S_VORTEX; }
 export function nonliving(ptr) {
     return is_undead(ptr) || ptr === mons[M.PM_MANES] || weirdnonliving(ptr);
-}
-export function is_mplayer(ptr) {
-    return ptr.pmidx >= M.PM_ARCHEOLOGIST && ptr.pmidx <= M.PM_WIZARD;
 }
 // C ref: makemon.c is_home_elemental()
 export function is_home_elemental(ptr) {
@@ -2557,10 +2545,6 @@ function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
 // C ref: mondata.h pm_resistance(), is_placeholder()
 export function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
-export function is_placeholder(ptr) {
-    return (ptr === mons[PM_ORC] || ptr === mons[PM_GIANT]
-            || ptr === mons[PM_ELF] || ptr === mons[PM_HUMAN]);
-}
 
 // C ref: dungeon.h Is_rogue_level(); In_endgame()
 function Is_rogue_level(lev) {

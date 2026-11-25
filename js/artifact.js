@@ -55,7 +55,6 @@ import { You } from './display.js';
 import { s_suffix } from './hacklib.js';
 import { the } from './iactions.js';
 import { xname } from './objnam.js';
-import { is_mplayer } from './makemon.js';
 import { mon_aligntyp } from './priest.js';
 import { A_WIS } from './const.js';
 import { KILLED_BY, A_CON, ECMD_OK, ECMD_TIME, nothing_happens } from './const.js';
@@ -70,7 +69,7 @@ import { wake_nearto as wake_nearto_art } from './mon.js';
 import { ART_TSURUGI_OF_MURAMASA, ART_VORPAL_BLADE } from './artilist.js';
 import { SLIMED as SLIMED_ART } from './const.js';
 import { defended, resists_fire, resists_cold, resists_elec, resists_poison,
-         resists_drli, Resists_Elem } from './mondata.js';
+         resists_drli, Resists_Elem, is_mplayer } from './mondata.js';
 import { STONE_RES } from './const.js';
 import { ART_GRIMTOOTH } from './artilist.js';
 import { Tobjnam } from './objnam.js';

@@ -18,7 +18,8 @@ import { is_art } from './artifact.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
-         is_whirly, has_head, thick_skinned } from './mondata.js';
+         is_whirly, has_head, thick_skinned, flaming, touch_petrifies,
+         resists_ston, cantwield, is_watch } from './mondata.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
@@ -237,20 +238,10 @@ import { clone_mon } from './makemon.js';
 import { mintrap } from './trap.js';
 import { NO_TRAP_FLAGS } from './const.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
-function flaming(ptr) {
-    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-           || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }
 
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
-/* C ref: mondata.h touch_petrifies() */
-function touch_petrifies(ptr) {
-    return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
-}
-/* C ref: mondata.h resists_ston() */
-function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
 /* C ref: uhitm.c mhitm_ad_phys() -- !artifact_hit(magr, mdef, otmp,
    &mhm->damage, gm.mhitu_dieroll) */
 async function not_artifact_hit(magr, mdef, otmp, mhm) {
@@ -2188,10 +2179,6 @@ export async function do_attack(mtmp) {
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
-function cantwield(ptr) { return nohands(ptr) || verysmall(ptr); }
-function is_watch(ptr) {
-    return ptr === mons[M.PM_WATCHMAN] || ptr === mons[M.PM_WATCH_CAPTAIN];
-}
 function mon_hates_light(mon) { return mon.data === mons[M.PM_GREMLIN]; }
 function is_blade(otmp) {
     return otmp.oclass === WEAPON_CLASS

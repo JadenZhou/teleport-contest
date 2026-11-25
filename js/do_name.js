@@ -15,8 +15,8 @@ import { canspotmon } from './display.js';
 import { highc, s_suffix, dist2 } from './hacklib.js';
 import { just_an, vtense, makeplural } from './objnam.js';
 import { genders } from './role.js';
-import { is_neuter, type_is_pname, humanoid, is_animal,
-         mindless } from './mondata.js';
+import { is_neuter, type_is_pname, humanoid, is_animal, mindless,
+         is_mplayer } from './mondata.js';
 import { M1_HUMANOID, M1_ANIMAL, M1_MINDLESS, G_NOGEN, LOW_PM, SPECIAL_PM,
          PM_SHOPKEEPER, PM_ALIGNED_CLERIC, PM_HIGH_CLERIC } from './monsters.js';
 import { MALE, FEMALE, NEUTRAL, NUM_MGENDERS, M_AP_MONSTER, W_SADDLE,
@@ -428,10 +428,6 @@ export const AUGMENT_IT = 0x40;
 /* C ref: monst.h has_mgivenname(); mondata.h type_is_pname(),
    is_mplayer() */
 function has_mgivenname(mtmp) { return !!mtmp.mgivenname; }
-function is_mplayer(ptr) {
-    const n = mons.indexOf(ptr);
-    return n >= PM_ARCHEOLOGIST && n <= PM_WIZARD;
-}
 /* C ref: mondata.c pmname(); mondata.h mon_pmname() */
 export function pmname(pm, mgender) {
     if ((mgender >= MALE && mgender < NUM_MGENDERS) && pm.pmnames[mgender])

@@ -18,7 +18,8 @@
 // mixtype(), H2Opotion_dip()) is not ported yet.
 
 import { DEADMONSTER } from './mon.js';
-import { resists_poison, breathless, is_silent, has_head } from './mondata.js';
+import { resists_poison, breathless, is_silent, has_head, is_human, likes_fire,
+         resists_acid, eyecount } from './mondata.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { swallowed } from './display.js';
@@ -121,21 +122,6 @@ import { NEUTRAL } from './const.js';
 /* C ref: monst.h ismnum() */
 function ismnum(x) { return x >= LOW_PM && x < M.NUMMONS; }
 /* C ref: mondata.h breathless(), likes_fire(), is_silent(), is_human() */
-function is_human(ptr) { return (ptr.mflags2 & M.M2_HUMAN) !== 0; }
-function likes_lava(ptr) {
-    return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
-function likes_fire(ptr) {
-    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-           || likes_lava(ptr);
-}
-function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
-/* C ref: mondata.h eyecount() */
-function eyecount(ptr) {
-    return !haseyes(ptr) ? 0
-           : (ptr === mons[M.PM_CYCLOPS] || ptr === mons[M.PM_FLOATING_EYE]) ? 1
-             : 2;
-}
 /* C ref: monst.h mon_perma_blind(), DEADMONSTER() */
 function mon_perma_blind(mon) { return !mon.mcansee && !mon.mblinded; }
 /* C ref: hack.h makeknown(), distu() */

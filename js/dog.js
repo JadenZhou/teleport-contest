@@ -23,7 +23,7 @@ import { the } from './iactions.js';
 import { xname, Tobjnam } from './objnam.js';
 import { place_object } from './mkobj.js';
 import { make_happy_shk } from './shk.js';
-import { is_human, is_demon } from './mondata.js';
+import { is_human, is_demon, emits_light } from './mondata.js';
 import { mon_wield_item } from './weapon.js';
 import { wake_nearto } from './mon.js';
 import { rnd } from './rng.js';
@@ -457,17 +457,6 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
             throw new Error('keepdogs(): leash goes slack not ported yet');
         }
     }
-}
-
-/* C ref: mondata.h emits_light() */
-function emits_light(ptr) {
-    return (ptr.mlet === S_LIGHT || ptr === mons[PM_FLAMING_SPHERE]
-            || ptr === mons[PM_SHOCKING_SPHERE]
-            || ptr === mons[PM_BABY_GOLD_DRAGON]
-            || ptr === mons[PM_FIRE_VORTEX])
-        ? 1
-        : (ptr === mons[PM_FIRE_ELEMENTAL]
-           || ptr === mons[PM_GOLD_DRAGON]) ? 1 : 0;
 }
 
 // C ref: dog.c migrate_to_level()

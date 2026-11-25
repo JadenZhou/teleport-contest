@@ -20,8 +20,8 @@ import * as O from './objects.js';
 import { objects } from './objects.js';
 import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD } from './const.js';
 import { rndmonst_adj } from './makemon.js';
-import { monsndx, little_to_big, big_to_little, is_human,
-         verysmall } from './mondata.js';
+import { monsndx, little_to_big, big_to_little, is_human, verysmall, is_male,
+         is_female, is_neuter, is_rider } from './mondata.js';
 import * as M from './monsters.js';
 import { assign_candy_wrapper } from './read.js';
 import { noveltitle, oname } from './do_name.js';
@@ -80,14 +80,6 @@ const TROLL_REVIVE_CHANCE = 37; /* 1/37 chance for 50 turns ~ 75% chance */
 const ROT_AGE = 250;            /* age when corpses rot away */
 
 // C ref: mondata.h is_male(), is_female(), is_neuter(), verysmall(),
-// is_rider()
-function is_male(ptr) { return (ptr.mflags2 & M2_MALE) !== 0; }
-function is_female(ptr) { return (ptr.mflags2 & M2_FEMALE) !== 0; }
-function is_neuter(ptr) { return (ptr.mflags2 & M2_NEUTER) !== 0; }
-function is_rider(ptr) {
-    return (ptr === mons[PM_DEATH] || ptr === mons[PM_FAMINE]
-            || ptr === mons[PM_PESTILENCE]);
-}
 
 // C ref: mkobj.c rndmonnum()
 /* select a random, common monster type */

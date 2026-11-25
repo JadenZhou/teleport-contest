@@ -27,8 +27,9 @@ import { monstseesu, monstunseesu } from './uhitm.js';
 import { losehp } from './trap.js';
 import { find_mac } from './worn.js';
 import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
-         likes_gems, noncorporeal, amorphous, unsolid, is_mercenary,
-         acidic } from './mondata.js';
+         likes_gems, noncorporeal, amorphous, unsolid, is_mercenary, acidic,
+         is_unicorn, touch_petrifies, resists_ston, resists_acid,
+         slimeproof } from './mondata.js';
 import { hit, miss, exclam, buzz, dobuzz, bhito,
          find_drawbridge, resist_async } from './zap.js';
 import { TELL } from './const.js';
@@ -206,10 +207,6 @@ const MUSE_SCR_EARTH = 36;
 const MUSE_CAMERA = 37;
 
 /* mondata.h */
-function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
-function touch_petrifies(ptr) {
-    return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
-}
 /* C ref: mondata.h NODIAG() */
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 /* C ref: mondata.c attacktype() */
@@ -228,14 +225,6 @@ function m_carrying(mtmp, type) {
 
 /* C ref: mondata.h resists_ston(), resists_acid(), acidic(), slimeproof(),
    noncorporeal(), amorphous(), unsolid() */
-function resists_ston(mon) { return !!Resists_Elem(mon, STONE_RES); }
-function resists_acid(mon) { return !!Resists_Elem(mon, ACID_RES); }
-function slimeproof(ptr) {
-    return ptr === mons[M.PM_GREEN_SLIME]
-           || ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-           || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER]
-           || noncorporeal(ptr);
-}
 /* C ref: hacklib.c upstart() */
 function upstart(s) { return s ? highc(s[0]) + s.slice(1) : s; }
 /* C ref: hacklib.c strsubst() -- replace the first instance of orig */

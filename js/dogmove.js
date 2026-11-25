@@ -33,8 +33,8 @@ import { onscary, should_displace, m_avoid_kicked_loc, m_avoid_soko_push_loc, mo
 import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater,
          same_race, is_animal, mindless, throws_rocks, humanoid, carnivorous,
-         herbivorous, tunnels, metallivorous, acidic,
-         strongmonst } from './mondata.js';
+         herbivorous, tunnels, metallivorous, acidic, strongmonst, likes_lava,
+         likes_fire, is_rider, vegan } from './mondata.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
@@ -73,27 +73,6 @@ const DOG_STARVE = 750;
 // C ref: mondata.c attacktype()
 function attacktype(ptr, atyp) {
     return ptr.mattk.some((a) => a.aatyp === atyp);
-}
-function likes_lava(ptr) {
-    return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
-function likes_fire(ptr) {
-    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-        || likes_lava(ptr);
-}
-function is_rider(ptr) {
-    const n = monsndx(ptr);
-    return n === M.PM_DEATH || n === M.PM_FAMINE || n === M.PM_PESTILENCE;
-}
-/* C ref: mondata.h vegan() */
-function vegan(ptr) {
-    return (ptr.mlet === M.S_BLOB || ptr.mlet === M.S_JELLY
-            || ptr.mlet === M.S_FUNGUS || ptr.mlet === M.S_VORTEX
-            || ptr.mlet === M.S_LIGHT
-            || ((ptr.mlet === M.S_ELEMENTAL && ptr !== mons[M.PM_STALKER]))
-            || (ptr.mlet === M.S_GOLEM && ptr !== mons[M.PM_FLESH_GOLEM]
-                && ptr !== mons[M.PM_LEATHER_GOLEM])
-            || ptr.mlet === M.S_GHOST /* noncorporeal() */);
 }
 /* C ref: mondata.h resists_poison()/resists_ston()/resists_acid() */
 function mresists(mon, mr) {

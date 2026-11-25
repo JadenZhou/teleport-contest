@@ -12,7 +12,9 @@ import { DEADMONSTER } from './mon.js';
 import { ordin } from './hacklib.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, noncorporeal, amorphous, bigmonst, likes_gems,
-         throws_rocks, nohands } from './mondata.js';
+         throws_rocks, nohands, is_unicorn, touch_petrifies, resists_acid,
+         resists_ston, eyecount, is_prince, is_lord,
+         is_mplayer } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rnl, rn2_on_display_rng, ROLL_FROM } from './rng.js';
@@ -43,10 +45,7 @@ import { ART_SNICKERSNEE } from './artilist.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon, mwelded, dmgval,
          setmnotwielded, m_carrying } from './weapon.js';
 import { lined_up, linedup } from './monmove.js';
-import {
-    m_at, closed_door, is_pool, is_lava, is_prince, is_lord, is_mplayer,
-    nonliving
-} from './makemon.js';
+import { m_at, closed_door, is_pool, is_lava, nonliving } from './makemon.js';
 import { monsndx, is_elf, is_orc, is_gnome, is_vampshifter, hates_silver,
          mon_hates_silver, Resists_Elem, get_atkdam_type,
          cvt_adtyp_to_mseenres, can_blnd, haseyes } from './mondata.js';
@@ -130,13 +129,6 @@ function is_flimsy(otmp) {
            || otmp.otyp === O.RUBBER_HOSE;
 }
 /* C ref: mondata.h */
-function passes_walls(ptr) { return (ptr.mflags1 & M.M1_WALLWALK) !== 0; }
-function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
-function touch_petrifies(ptr) {
-    return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
-}
-function resists_acid(mon) { return Resists_Elem(mon, ACID_RES); }
-function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
 /* C ref: objnam.c makeknown() */
 function makeknown(otyp) { discover_object(otyp, true, true, true); }
 /* C ref: hacklib.c upstart() */
@@ -982,12 +974,6 @@ export async function m_throw(
     }
     /* note: all early returns follow drop_throw() which clears thrownobj */
     game.thrownobj = null;
-}
-/* C ref: mondata.h eyecount() */
-function eyecount(ptr) {
-    return !haseyes(ptr) ? 0
-           : (ptr === mons[M.PM_CYCLOPS] || ptr === mons[M.PM_FLOATING_EYE])
-             ? 1 : 2;
 }
 
 // C ref: mthrowu.c return_from_mtoss()

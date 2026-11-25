@@ -130,7 +130,7 @@ import { revive_corpse } from './zap.js';
 import { exercise } from './attrib.js';
 import { A_WIS } from './const.js';
 import { uteetering_at_seen_pit, uescaped_shaft } from './engrave.js';
-import { hides_under, notake } from './mondata.js';
+import { hides_under, notake, touch_petrifies, is_rider } from './mondata.js';
 
 /* C ref: invent.c invlet_basic */
 const invlet_basic = 52;
@@ -1866,15 +1866,6 @@ async function rider_corpse_revival(obj, remotely) {
     await revive_corpse(obj);
     exercise(A_WIS, false);
     return true;
-}
-
-/* C ref: mondata.h touch_petrifies(), is_rider() */
-function touch_petrifies(ptr) {
-    return ptr === mons[PM_COCKATRICE] || ptr === mons[PM_CHICKATRICE];
-}
-function is_rider(ptr) {
-    return ptr === mons[PM_DEATH] || ptr === mons[PM_FAMINE]
-           || ptr === mons[PM_PESTILENCE];
 }
 
 // C ref: pickup.c encumber_msg()

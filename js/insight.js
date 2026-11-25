@@ -97,7 +97,7 @@ import { oc_to_str } from './options.js';
 import { is_pool, is_lava } from './makemon.js';
 import { ART_OGRESMASHER } from './artilist.js';
 import { hates_silver, defended, is_male, is_female, is_neuter, humanoid,
-         type_is_pname, is_clinger } from './mondata.js';
+         type_is_pname, is_clinger, haseyes, is_rider } from './mondata.js';
 import { pmname } from './do_name.js';
 import { magic_negation } from './mhitu.js';
 import { stone_luck } from './attrib.js';
@@ -173,7 +173,6 @@ function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, bloc
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
 
 /* C ref: mondata.h humanoid(), haseyes() */
-function haseyes(ptr) { return (ptr.mflags1 & M.M1_NOEYES) === 0; }
 
 /* C ref: obj.h is_ammo(), is_wet_towel(), is_graystone(); u_wield_art() */
 function is_ammo(otmp) {
@@ -3089,10 +3088,6 @@ function vanqsort_cmp(indx1, indx2) {
 }
 
 /* C ref: mondata.h is_rider(), type_is_pname() */
-function is_rider(ptr) {
-    return ptr === M.mons[M.PM_DEATH] || ptr === M.mons[M.PM_FAMINE]
-           || ptr === M.mons[M.PM_PESTILENCE];
-}
 
 // C ref: insight.c list_vanquished()
 export async function list_vanquished(defquery, ask) {

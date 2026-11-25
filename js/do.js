@@ -26,7 +26,7 @@ import { change_luck } from './attrib.js';
 import { obj_extract_self, add_to_migration } from './mkobj.js';
 import { obfree } from './invent.js';
 import { discard_minvent } from './steal.js';
-import { emits_light } from './mondata.js';
+import { emits_light, digests } from './mondata.js';
 import { del_light_source } from './light.js';
 import { monst_to_any } from './timeout.js';
 import { LS_MONSTER } from './const.js';
@@ -143,10 +143,6 @@ import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTR
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
     return otmp.otyp === O.PICK_AXE || otmp.otyp === O.DWARVISH_MATTOCK;
-}
-/* C ref: mondata.h digests() */
-function digests(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
 }
 
 /* C ref: cmd.c DIR_DOWN, DIR_UP (after the 8 compass directions) */

@@ -86,7 +86,7 @@ import { MONSEEN_NORMAL, MONSEEN_SEEINVIS, MONSEEN_INFRAVIS, MONSEEN_TELEPAT,
          GPCOORDS_MAP, GPCOORDS_COMPASS, GPCOORDS_COMFULL, GPCOORDS_SCREEN,
          BOLT_LIM, COLNO, ROWNO, IS_GRAVE, WARNCOUNT, def_warnsyms, SYM_NOTHING,
          SYM_UNEXPLORED, SYM_BOULDER, SYM_INVISIBLE, ROGUESET } from './const.js';
-import { perceives, is_orc } from './mondata.js';
+import { perceives, is_orc, digests } from './mondata.js';
 import { sticks } from './engrave.js';
 import { altarmask_at } from './pray.js';
 import { align_str } from './insight.js';
@@ -116,11 +116,6 @@ import { M1_CONCEAL as M1_CONCEAL_PG, M1_HIDE as M1_HIDE_PG,
          S_EEL as S_EEL_PG } from './monsters.js';
 import { S_poisoncloud as S_poisoncloud_pg } from './region.js';
 import { option_help as option_help_pg } from './options.js';
-
-/* C ref: mondata.h digests() */
-function digests(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
-}
 
 /* C ref: defsym.h PCHAR()/PCHAR2() -- defsyms[] .sym and .explanation as
    drawing.c builds them (PCHAR_DRAWING), S_stone .. S_expl_br */

@@ -44,7 +44,8 @@ import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          resists_magm, mon_knows_traps, mon_learns_traps, mons_see_trap,
          likes_gems, mindless, hides_under, amorphous, unsolid, is_whirly,
          metallivorous, breathless, acidic, extra_nasty, unique_corpstat,
-         is_clinger } from './mondata.js';
+         is_clinger, resists_ston, is_unicorn, flaming,
+         webmaker } from './mondata.js';
 import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
          GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
 import { rnd, d } from './rng.js';
@@ -331,15 +332,11 @@ import { MS_GUARDIAN, PM_DOPPELGANGER, PM_FLESH_GOLEM, PM_ARCHEOLOGIST,
          M1_CONCEAL } from './monsters.js';
 export { is_hole, is_pit };
 
-/* C ref: mondata.h resists_ston() */
-function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
-
 
 /* C ref: hack.h mdistu() */
 function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: mondata.h likes_gems(), is_unicorn()
-function is_unicorn(ptr) { return ptr.mlet === S_UNICORN && likes_gems(ptr); }
 // C ref: hacklib.c sgn()
 function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
@@ -1195,10 +1192,6 @@ export function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
 function grounded(ptr) {
     /* has_ceiling(&u.uz): no air or water levels are generated yet */
     return !is_flyer(ptr) && !is_floater(ptr) && !is_clinger(ptr);
-}
-function flaming(ptr) {
-    return ptr === mons[PM_FIRE_VORTEX] || ptr === mons[PM_FLAMING_SPHERE]
-           || ptr === mons[PM_FIRE_ELEMENTAL] || ptr === mons[PM_SALAMANDER];
 }
 function stone_missile(o) {
     return ((objects[o.otyp].oc_material === GEMSTONE
@@ -4503,9 +4496,6 @@ export async function mintrap(mtmp, mintrapflags) {
 }
 
 /* mondata.h */
-function webmaker(ptr) {
-    return ptr === mons[PM_CAVE_SPIDER] || ptr === mons[PM_GIANT_SPIDER];
-}
 
 // C ref: trap.c m_harmless_trap()
 /* is trap ttmp harmless to monster mtmp? */

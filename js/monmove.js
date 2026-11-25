@@ -6,7 +6,6 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
-import { is_armed } from './makemon.js';
 import { minv } from './mon.js';
 import { m_lined_up } from './mthrowu.js';
 import { game } from './gstate.js';
@@ -24,7 +23,10 @@ import { W_NONDIGGABLE as W_NONDIGGABLE_MM } from './const.js';
 import { dmgtype as dmgtype_mm, is_animal, mindless, nohands, verysmall,
          hides_under, amorphous, likes_gems, throws_rocks, tunnels, needspick,
          is_covetous, is_mercenary, likes_gold, likes_magic, metallivorous,
-         unique_corpstat } from './mondata.js';
+         unique_corpstat, is_rider, likes_objs, is_unicorn, likes_lava,
+         is_watch, is_mind_flayer, webmaker,
+         slimeproof as
+         slimeproof_mo, is_armed } from './mondata.js';
 import { Norep as Norep_mm } from './display.js';
 import { makeplural as makeplural_mm } from './objnam.js';
 import { locomotion as locomotion_mm } from './trap.js';
@@ -149,7 +151,6 @@ import { vegan as vegan_mm, is_rider as is_rider_mm, flesh_petrifies as flesh_pe
          resists_ston as resists_ston_mm } from './mondata.js';
 import { touch_petrifies as touch_petrifies_mo } from './mondata.js';
 import { mstoning as mstoning_mo } from './mon.js';
-import { slimeproof as slimeproof_mo } from './eat.js';
 import { revive_corpse as revive_corpse_mo } from './zap.js';
 import { objdescr_is } from './o_init.js';
 import { wake_msg as wake_msg_mm } from './mon.js';
@@ -176,16 +177,7 @@ async function You_see(msg) {
 }
 
 /* mondata.h */
-function is_rider(ptr) {
-    const n = monsndx(ptr);
-    return n === M.PM_DEATH || n === M.PM_FAMINE || n === M.PM_PESTILENCE;
-}
 function is_wanderer(ptr) { return (ptr.mflags2 & M.M2_WANDER) !== 0; }
-function likes_objs(ptr) { return (ptr.mflags2 & M.M2_COLLECT) !== 0 || is_armed(ptr); }
-function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
-function likes_lava(ptr) {
-    return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
 /* C ref: obj.h is_pick(), is_pole() */
 function is_pick(otmp) {
     return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
@@ -201,14 +193,6 @@ function corpse_eater(ptr) {
     const n = monsndx(ptr);
     return n === M.PM_PURPLE_WORM || n === M.PM_BABY_PURPLE_WORM
         || n === M.PM_GHOUL || n === M.PM_PIRANHA;
-}
-function is_watch(ptr) {
-    const n = monsndx(ptr);
-    return n === M.PM_WATCHMAN || n === M.PM_WATCH_CAPTAIN;
-}
-function is_mind_flayer(ptr) {
-    const n = monsndx(ptr);
-    return n === M.PM_MIND_FLAYER || n === M.PM_MASTER_MIND_FLAYER;
 }
 /* C ref: mondata.c attacktype() */
 function attacktype(ptr, atyp) {
@@ -2750,10 +2734,6 @@ async function mpickstuff(mtmp) {
     return false;
 }
 
-
-function webmaker(ptr) {
-    return ptr === mons[M.PM_CAVE_SPIDER] || ptr === mons[M.PM_GIANT_SPIDER];
-}
 
 // C ref: monmove.c dissolve_bars()
 export async function dissolve_bars(x, y) {

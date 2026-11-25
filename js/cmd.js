@@ -105,8 +105,8 @@ import { COLNO, ROWNO, xdir, ydir, zdir } from './const.js';
 import { PM_GRID_BUG, mons, PM_CAVE_SPIDER, PM_GIANT_SPIDER, PM_MIND_FLAYER,
          PM_MASTER_MIND_FLAYER, PM_GREMLIN, AT_BREA, AT_SPIT, AT_GAZE, S_NYMPH,
          S_UNICORN, M1_HIDE, M1_CONCEAL, M2_JEWELS, MS_SHRIEK } from './monsters.js';
-import { is_were, is_vampire, is_vampshifter, hides_under,
-         is_hider } from './mondata.js';
+import { is_were, is_vampire, is_vampshifter, hides_under, is_hider, webmaker,
+         can_breathe, is_mind_flayer, is_unicorn } from './mondata.js';
 import { show_menu_controls as show_menu_controls_cm } from './pager.js';
 export { domove };
 
@@ -858,17 +858,7 @@ async function here_cmd_menu() {
 
 /* C ref: mondata.h is_hider(), hides_under(), webmaker(), can_breathe(),
    attacktype(), is_mind_flayer(), likes_gems(), is_unicorn() */
-function webmaker(ptr) {
-    return ptr === mons[PM_CAVE_SPIDER] || ptr === mons[PM_GIANT_SPIDER];
-}
 function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
-function can_breathe(ptr) { return attacktype(ptr, AT_BREA); }
-function is_mind_flayer(ptr) {
-    return ptr === mons[PM_MIND_FLAYER] || ptr === mons[PM_MASTER_MIND_FLAYER];
-}
-function is_unicorn(ptr) {
-    return ptr.mlet === S_UNICORN && (ptr.mflags2 & M2_JEWELS) !== 0;
-}
 
 // C ref: cmd.c domonability() -- #monster command - use special monster
 // ability while polymorphed

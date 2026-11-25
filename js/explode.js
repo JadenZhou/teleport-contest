@@ -33,7 +33,7 @@ import { AD_PHYS, AD_MAGM, AD_FIRE, AD_COLD, AD_DISN, AD_ELEC, AD_DRST,
          PM_WIZARD, PM_HEALER, PM_KNIGHT } from './monsters.js';
 import { resists_magm, resists_fire, resists_cold, resists_disint,
          resists_elec, resists_poison, resists_acid, is_demon, is_vampshifter,
-         hides_under, bigmonst } from './mondata.js';
+         hides_under, bigmonst, digests } from './mondata.js';
 import { nonliving } from './makemon.js';
 import { Monnam, rndmonnam, pmname } from './do_name.js';
 import { s_suffix, lowc, strstri } from './hacklib.js';
@@ -78,9 +78,6 @@ import { SHOPBASE, LARGEST_INT, MAY_FRACTURE, MAY_DESTROY, MAY_HITMON,
 import { BOULDER, STATUE, GLASS, EGG, GOLD_PIECE } from './objects.js';
 
 /* C ref: mondata.h digests(), sticks() */
-function digests(ptr) {
-    return (ptr.mattk || []).some(a => a.aatyp === AT_ENGL && a.adtyp === AD_DGST);
-}
 /* C ref: monst.h monstseesu_ad(), monstunseesu_ad() */
 function monstseesu_ad(adtyp) { monstseesu(cvt_adtyp_to_mseenres(adtyp)); }
 function monstunseesu_ad(adtyp) { monstunseesu(cvt_adtyp_to_mseenres(adtyp)); }

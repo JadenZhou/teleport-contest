@@ -35,7 +35,10 @@ import { set_mon_data, is_vampire, resists_drli, dmgtype, dmgtype_fromattack,
          passes_walls, regenerates, haseyes, nohands, verysmall, bigmonst,
          humanoid, slithy, amorphous, unsolid, noncorporeal, hides_under,
          type_is_pname, likes_gems, is_whirly, has_head, is_hider, polyok,
-         strongmonst, is_giant } from './mondata.js';
+         strongmonst, is_giant, is_male, is_female, is_neuter, cantwield,
+         could_twoweap, flaming, webmaker, likes_lava, is_unicorn,
+         is_mind_flayer, is_placeholder, can_breathe,
+         emits_light } from './mondata.js';
 import * as M from './monsters.js';
 import * as O from './objects.js';
 import {
@@ -292,47 +295,8 @@ function polysense() {
 
 /* C ref: mondata.h predicates used below */
 export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
-function is_male(ptr) { return (ptr.mflags2 & M.M2_MALE) !== 0; }
-function is_female(ptr) { return (ptr.mflags2 & M.M2_FEMALE) !== 0; }
-function is_neuter(ptr) { return (ptr.mflags2 & M.M2_NEUTER) !== 0; }
-function cantwield(ptr) { return nohands(ptr) || verysmall(ptr); }
-function could_twoweap(ptr) {
-    return ((ptr.mattk[0].aatyp === M.AT_WEAP ? 1 : 0)
-            + (ptr.mattk[1].aatyp === M.AT_WEAP ? 1 : 0)
-            + (ptr.mattk[2].aatyp === M.AT_WEAP ? 1 : 0)) > 1;
-}
-function flaming(ptr) {
-    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-        || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
-function webmaker(ptr) {
-    return ptr === mons[M.PM_CAVE_SPIDER] || ptr === mons[M.PM_GIANT_SPIDER];
-}
-function likes_lava(ptr) {
-    return ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
-function is_unicorn(ptr) { return ptr.mlet === M.S_UNICORN && likes_gems(ptr); }
-function is_mind_flayer(ptr) {
-    return ptr === mons[M.PM_MIND_FLAYER]
-        || ptr === mons[M.PM_MASTER_MIND_FLAYER];
-}
-function is_placeholder(ptr) {
-    return ptr === mons[M.PM_ORC] || ptr === mons[M.PM_GIANT]
-        || ptr === mons[M.PM_ELF] || ptr === mons[M.PM_HUMAN];
-}
 function attacktype(ptr, atyp) {
     return ptr.mattk.some(a => a.aatyp === atyp);
-}
-function can_breathe(ptr) { return attacktype(ptr, M.AT_BREA); }
-// C ref: mondata.h emits_light()
-function emits_light(ptr) {
-    return (ptr.mlet === M.S_LIGHT || ptr === mons[M.PM_FLAMING_SPHERE]
-            || ptr === mons[M.PM_SHOCKING_SPHERE]
-            || ptr === mons[M.PM_BABY_GOLD_DRAGON]
-            || ptr === mons[M.PM_FIRE_VORTEX])
-        ? 1
-        : (ptr === mons[M.PM_FIRE_ELEMENTAL]
-           || ptr === mons[M.PM_GOLD_DRAGON]) ? 1 : 0;
 }
 // C ref: mondata.c sliparm()
 /* creature will slide out of armor */

@@ -28,7 +28,8 @@ import { pline } from './display.js';
 import { nomul } from './hack.js';
 import { AD_STCK, AD_WRAP, AT_ENGL, AT_HUGS, M1_HIDE, M1_CLING, S_MIMIC,
          MZ_HUGE } from './monsters.js';
-import { dmgtype, is_flyer, is_animal, is_whirly } from './mondata.js';
+import { dmgtype, is_flyer, is_animal, is_whirly,
+         cantwield } from './mondata.js';
 import { set_levltyp } from './mkmaze.js';
 import { sanitize_name } from './bones.js';
 import { exercise } from './attrib.js';
@@ -495,9 +496,6 @@ export function u_wipe_engr(cnt) {
 }
 
 /* C ref: mondata.h is_animal(), is_whirly(), cantwield() */
-function cantwield(ptr) {
-    return ((ptr.mflags1 & M1_NOHANDS) !== 0) || ptr.msize < MZ_SMALL;
-}
 /* C ref: obj.h is_blade(); objclass.h is_boots(); artifact.h is_art() */
 function is_blade(otmp) {
     return otmp.oclass === WEAPON_CLASS

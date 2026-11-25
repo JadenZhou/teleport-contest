@@ -38,6 +38,7 @@ import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
 import { strncmpi, lowc, strstri } from './hacklib.js';
 import { CapitalMon } from './rumors.js';
+import { cantwield, could_twoweap } from './mondata.js';
 export { shield_simple_name, shirt_simple_name };
 
 const IA_NONE = 0,
@@ -118,10 +119,6 @@ function hero_data() {
         ia_not_ported('youmonst.data');
     return d;
 }
-function cantwield(ptr) {
-    return ((ptr.mflags1 & M.M1_NOHANDS) !== 0) || ptr.msize < M.MZ_SMALL;
-}
-function could_twoweap(ptr) { return ptr.mattk?.[1]?.aatyp === M.AT_WEAP; }
 
 /* C ref: polyself.c body_part() -- unpolymorphed humanoid hero only */
 function body_part_hand() {

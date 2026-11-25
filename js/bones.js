@@ -35,7 +35,7 @@ import { obj_no_longer_held } from './do.js';
 import { can_carry } from './dogmove.js';
 import { m_at, makemon, mongets } from './makemon.js';
 import { is_undead, give_u_to_m_resistances, likes_gems, likes_gold,
-         likes_magic, unique_corpstat } from './mondata.js';
+         likes_magic, unique_corpstat, likes_objs } from './mondata.js';
 import { christen_monst, safe_oname } from './do_name.js';
 import { obj_attach_mid, mk_named_object } from './mkobj.js';
 import { end_burn } from './timeout.js';
@@ -66,7 +66,6 @@ import { tty_yn_function } from './wintty.js';
 function attacktype(ptr, atyp) {
     return ptr.mattk.some(a => a.aatyp === atyp);
 }
-function likes_objs(ptr) { return (ptr.mflags2 & M2_COLLECT) !== 0 || attacktype(ptr, AT_WEAP); }
 /* mondata.h is_Vlad() */
 function is_Vlad(mtmp) {
     return mtmp.data === mons[PM_VLAD_THE_IMPALER]

@@ -50,7 +50,7 @@ import { arti_light_description } from './light.js';
 import { begin_burn, end_burn } from './timeout.js';
 import { Tobjnam } from './objnam.js';
 import { Blind } from './youprop.js';
-import { nohands, verysmall } from './mondata.js';
+import { nohands, verysmall, could_twoweap, cantwield } from './mondata.js';
 
 // C ref: obj.h is_weptool()
 export function is_weptool(o) {
@@ -124,14 +124,6 @@ export function setuswapwep(obj) {
     setworn(obj, W_SWAPWEP);
 }
 
-/* C ref: mondata.h could_twoweap() */
-function could_twoweap(ptr) {
-    let n = 0;
-    for (let i = 0; i < 3; i++)
-        if (ptr.mattk[i] && ptr.mattk[i].aatyp === AT_WEAP)
-            n++;
-    return n > 1;
-}
 /* C ref: wield.c TWOWEAPOK() */
 function TWOWEAPOK(obj) {
     return (obj.oclass === WEAPON_CLASS)
@@ -241,11 +233,6 @@ export function uqwepgone() {
         setworn(null, W_QUIVER);
         /* update_inventory(): no perm_invent */
     }
-}
-
-/* C ref: mondata.h cantwield() */
-function cantwield(ptr) {
-    return (nohands(ptr) || verysmall(ptr));
 }
 
 // C ref: artifact.c retouch_object() (ported in artifact.js)

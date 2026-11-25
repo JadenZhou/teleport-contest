@@ -46,8 +46,8 @@ import { welded, bimanual } from './wield.js';
 import { can_carry } from './dogmove.js';
 import { subfrombill, shop_keeper, mbodypart, find_objowner } from './shk.js';
 import { encumber_msg } from './pickup.js';
-import { dmgtype, can_teleport, is_animal, slithy,
-         throws_rocks } from './mondata.js';
+import { dmgtype, can_teleport, is_animal, slithy, throws_rocks,
+         touch_petrifies } from './mondata.js';
 import { body_part } from './insight.js';
 import { urgent_pline } from './display.js';
 import { add_to_minv as add_to_minv_core } from './mkobj.js';
@@ -78,9 +78,6 @@ import { SHOPBASE } from './const.js';
 const LARGEST_INT = 32767;
 
 /* C ref: mondata.h is_animal(), slithy(), throws_rocks(), touch_petrifies() */
-function touch_petrifies(ptr) {
-    return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
-}
 /* C ref: hack.h distu() */
 function distu(x, y) {
     const dx = x - game.u.ux, dy = y - game.u.uy;

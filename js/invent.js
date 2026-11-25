@@ -90,7 +90,7 @@ import { not_fully_identified as not_fully_identified_iv } from './objnam.js';
 import { query_objlist as query_objlist_iv } from './pickup.js';
 import { sortloot as sortloot_pk } from './pickup.js';
 import { SORTLOOT_INUSE } from './const.js';
-import { little_to_big } from './mondata.js';
+import { little_to_big, touch_petrifies } from './mondata.js';
 import { MV_KNOWS_EGG, SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
          INVORDER_SORT, PICK_ANY, thats_enough_tries,
          MENU_TRADITIONAL as MENU_TRADITIONAL_IV, MENU_FULL as MENU_FULL_IV,
@@ -1606,11 +1606,6 @@ export function dfeature_at(x, y) {
     if (cmap)
         dfeature = dfeature_expl[cmap];
     return dfeature;
-}
-
-/* C ref: mondata.h touch_petrifies() */
-function touch_petrifies(ptr) {
-    return ptr === mons[PM_COCKATRICE] || ptr === mons[PM_CHICKATRICE];
 }
 
 // C ref: invent.c will_feel_cockatrice()

@@ -41,14 +41,14 @@ import {
 import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
 import { newsym, pline, glyph_is_invisible, unmap_object } from './display.js';
-import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible,
-         nonliving, is_golem, is_mplayer, closed_door, hideunder,
-         In_endgame, is_placeholder, mbirth_limit, newmonhp,
+import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible, nonliving,
+         is_golem, closed_door, hideunder, In_endgame, mbirth_limit, newmonhp,
          pm_to_cham } from './makemon.js';
 import { is_male, is_female, is_neuter, pm_invisible, humanoid, is_animal,
          throws_rocks, verysmall, bigmonst, slithy, amorphous, is_whirly,
          unique_corpstat, always_hostile, is_clinger, polyok, notake, has_head,
-         tunnels, needspick } from './mondata.js';
+         tunnels, needspick, is_unicorn, is_vampire, is_rider, flesh_petrifies,
+         is_mplayer, is_placeholder } from './mondata.js';
 import { set_mon_data, emits_light } from './mondata.js';
 import { new_light_source, del_light_source, any_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
@@ -911,9 +911,6 @@ export async function monkilled(mdef, fltxt, how) {
 }
 
 /* C ref: mondata.h always_hostile(), is_unicorn(); hack.h sgn() */
-function is_unicorn(ptr) {
-    return ptr.mlet === S_UNICORN && (ptr.mflags2 & M2_JEWELS) !== 0;
-}
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
 /* C ref: align.h ALIGNLIM */
 function ALIGNLIM() { return 10 + Math.trunc(game.moves / 200); }
@@ -1783,7 +1780,6 @@ function pick_animal() {
     return res;
 }
 function is_shapeshifter(ptr) { return (ptr.mflags2 & MM.M2_SHAPESHIFTER) !== 0; }
-function is_vampire(ptr) { return ptr.mlet === MM.S_VAMPIRE; }
 /* C ref: mondata.h ismnum() */
 function ismnum(mndx) { return mndx >= LOW_PM && mndx < NUMMONS; }
 /* C ref: ncflags for newcham() (monst.h) */
@@ -2511,11 +2507,6 @@ function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 
 /* mondata.h */
 
-function is_rider(ptr) {
-    const n = monsndx(ptr);
-    return n === PM_DEATH || n === PM_FAMINE || n === PM_PESTILENCE;
-}
-
 /* C ref: monmove.c m_can_break_boulder() */
 function m_can_break_boulder(mtmp) {
     return (is_rider(mtmp.data)
@@ -3140,10 +3131,6 @@ export function polyfood(obj) {
 }
 function mlevelgain(obj) { return ofood(obj) && obj.corpsenm === MM.PM_WRAITH; }
 function mhealup(obj) { return ofood(obj) && obj.corpsenm === MM.PM_NURSE; }
-function flesh_petrifies(pm) {
-    return pm === mons[MM.PM_COCKATRICE] || pm === mons[MM.PM_CHICKATRICE]
-           || pm === mons[MM.PM_MEDUSA];
-}
 export function mstoning(obj) {
     return (ofood(obj) && obj.corpsenm >= LOW_PM && obj.corpsenm < NUMMONS
             && flesh_petrifies(mons[obj.corpsenm]));

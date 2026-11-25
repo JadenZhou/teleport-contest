@@ -23,7 +23,8 @@ import { find_offensive, use_offensive } from './muse.js';
 import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer, perceives,
          is_orc, dmgtype, is_neuter, is_animal, unsolid, hides_under,
-         is_whirly, thick_skinned, nolimbs } from './mondata.js';
+         is_whirly, thick_skinned, nolimbs, touch_petrifies, digests, flaming,
+         resists_ston } from './mondata.js';
 import { midnight, night } from './calendar.js';
 import { new_were, were_summon } from './were.js';
 import { growl_sound } from './sounds.js';
@@ -150,9 +151,6 @@ const LARGEST_INT = 32767;
 let mon_currwep = null;
 
 /* mondata.h */
-function touch_petrifies(ptr) {
-    return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
-}
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
@@ -1331,9 +1329,6 @@ export function could_seduce(magr, mdef, mattk) {
 
 /* C ref: mondata.h digests(), enfolds(), is_whirly(), amorphous(),
    attacktype() */
-function digests(ptr) {
-    return dmgtype_fromattack(ptr, M.AD_DGST, AT_ENGL);
-}
 function enfolds(ptr) {
     return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL);
 }
@@ -1343,12 +1338,6 @@ function dmgtype_fromattack(ptr, dtyp, atyp) {
             return true;
     return false;
 }
-function flaming(ptr) {
-    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-           || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
-/* C ref: mondata.h resists_ston() */
-function resists_ston(mon) { return Resists_Elem(mon, STONE_RES); }
 // C ref: apply.c number_leashed()
 function number_leashed() {
     let i = 0;

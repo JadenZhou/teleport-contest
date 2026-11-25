@@ -18,8 +18,8 @@ import { nomul } from './hack.js';
 import { Monnam, mon_nam, pmname, bogusmon, pronoun_gender,
          PRONOUN_HALLU } from './do_name.js';
 import { an, makeplural, makesingular, vtense, the_unique_pm } from './objnam.js';
-import { perceives, is_demon, haseyes, cvt_adtyp_to_mseenres,
-         type_is_pname } from './mondata.js';
+import { perceives, is_demon, haseyes, cvt_adtyp_to_mseenres, type_is_pname,
+         eyecount } from './mondata.js';
 import { m_seenres } from './muse.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { mdamageu, mhe } from './mhitu.js';
@@ -137,12 +137,6 @@ function unconscious() {
 function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
 /* C ref: rm.h IS_WATERWALL(), is_waterwall() */
 function is_waterwall(x, y) { return game.level.at(x, y).typ === WATER; }
-/* C ref: mondata.h eyecount() */
-function eyecount(ptr) {
-    return !haseyes(ptr) ? 0
-           : (ptr === mons[M.PM_CYCLOPS] || ptr === mons[M.PM_FLOATING_EYE]) ? 1
-             : 2;
-}
 /* C ref: hacklib.c plur() */
 function plur(x) { return (x === 1) ? "" : "s"; }
 /* C ref: hacklib.c upstart() */

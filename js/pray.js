@@ -34,8 +34,8 @@ import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
 import { pline } from './display.js';
 import { In_hell } from './dungeon.js';
-import { is_demon, is_undead, is_vampshifter, nohands,
-         throws_rocks } from './mondata.js';
+import { is_demon, is_undead, is_vampshifter, nohands, throws_rocks,
+         eyecount } from './mondata.js';
 import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attrib.js';
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
@@ -775,12 +775,6 @@ async function angrygods(resp_god) {
     new_ublesscnt = rnz(300);
     if (new_ublesscnt > u.ublesscnt)
         u.ublesscnt = new_ublesscnt;
-}
-
-function eyecount(ptr) {
-    return !(ptr.mflags1 & M1_NOEYES) ? ((ptr === mons[PM_CYCLOPS]
-                                         || ptr === mons[PM_FLOATING_EYE]) ? 1 : 2)
-                                      : 0;
 }
 
 // C ref: pray.c fix_curse_trouble()

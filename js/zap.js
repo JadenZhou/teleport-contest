@@ -23,7 +23,8 @@ import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
 import { The, xname, Tobjnam, vtense } from './objnam.js';
 import { mon_nam } from './do_name.js';
-import { resists_blnd, resists_blnd_by_arti, nohands } from './mondata.js';
+import { resists_blnd, resists_blnd_by_arti, nohands,
+         is_mplayer } from './mondata.js';
 import { make_blinded } from './potion.js';
 import { body_part } from './insight.js';
 import { ARM, POLY_NOFLAGS } from './const.js';
@@ -68,7 +69,7 @@ import { STRANGE_OBJECT, WAN_POLYMORPH, SPE_POLYMORPH, POT_POLYMORPH,
          SPE_NOVEL, ROCK, MINERAL } from './objects.js';
 import { PM_CROCODILE } from './monsters.js';
 import { AC_VALUE } from './rng.js';
-import { m_at, closed_door, is_mplayer } from './makemon.js';
+import { m_at, closed_door } from './makemon.js';
 import { RING_CLASS } from './objects.js';
 import { You_feel } from './display.js';
 import { enlightenment } from './insight.js';

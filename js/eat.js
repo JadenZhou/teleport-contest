@@ -21,7 +21,8 @@ import { explode } from './explode.js';
 import { You_hear } from './sounds.js';
 import { fall_asleep } from './timeout.js';
 import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
-         herbivorous, metallivorous, is_giant, acidic } from './mondata.js';
+         herbivorous, metallivorous, is_giant, acidic, vegan, flesh_petrifies,
+         slimeproof } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
@@ -146,15 +147,6 @@ const TTSZ = tintxts.length;
 /* C ref: mondata.h is_rider(), vegan(), vegetarian() */
 function is_rider_pm(mnum) {
     return mnum === M.PM_DEATH || mnum === M.PM_FAMINE || mnum === M.PM_PESTILENCE;
-}
-function vegan(ptr) {
-    return (ptr.mlet === M.S_BLOB || ptr.mlet === M.S_JELLY
-            || ptr.mlet === M.S_FUNGUS || ptr.mlet === M.S_VORTEX
-            || ptr.mlet === M.S_LIGHT
-            || ((ptr.mlet === M.S_ELEMENTAL && ptr !== mons[M.PM_STALKER]))
-            || (ptr.mlet === M.S_GOLEM && ptr !== mons[M.PM_FLESH_GOLEM]
-                && ptr !== mons[M.PM_LEATHER_GOLEM])
-            || ptr.mlet === M.S_GHOST /* noncorporeal() */);
 }
 export function vegetarian(ptr) {
     return vegan(ptr)
@@ -649,18 +641,7 @@ function obj_here(obj, x, y) {
     return false;
 }
 /* C ref: mondata.h */
-function touch_petrifies(ptr) {
-    return ptr === mons[M.PM_COCKATRICE] || ptr === mons[M.PM_CHICKATRICE];
-}
-function flesh_petrifies(pm) { return touch_petrifies(pm) || pm === mons[M.PM_MEDUSA]; }
 export function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
-function flaming(ptr) {
-    return ptr === mons[M.PM_FIRE_VORTEX] || ptr === mons[M.PM_FLAMING_SPHERE]
-           || ptr === mons[M.PM_FIRE_ELEMENTAL] || ptr === mons[M.PM_SALAMANDER];
-}
-export function slimeproof(ptr) {
-    return ptr === mons[M.PM_GREEN_SLIME] || flaming(ptr) || noncorporeal(ptr);
-}
 function poly_when_stoned(ptr) {
     /* mondata.c: golems other than stone golem turn into stone golems */
     return ptr.mlet === M.S_GOLEM && ptr !== mons[M.PM_STONE_GOLEM]
