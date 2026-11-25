@@ -66,6 +66,8 @@ import { delete_contents } from './invent.js';
 import { Luck } from './const.js';
 import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';
 import { is_plural } from './wield.js';
+import { peek_timer, obj_to_any } from './timeout.js';
+import { BURN_OBJECT } from './const.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -3682,11 +3684,20 @@ function doname_base(obj, doname_flags) {
         } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
                    || obj.otyp === O.BRASS_LANTERN || Is_candle_x(obj)) {
             if (Is_candle_x(obj)) {
+                let timer;
                 const full_burn_time = 20 * objects[obj.otyp].oc_cost;
-                const turns_left = obj.age;
+                let turns_left = obj.age;
 
-                if (obj.lamplit)
-                    xn_not_ported('partly used lit candles (peek_timer(BURN_OBJECT))');
+                if (obj.lamplit) {
+                    timer = obj_to_any(obj);
+                    /* without this, wishing for "lit candle" yields
+                       "partly used candle (lit)" because the time it can
+                       burn gets adjusted when it becomes lit; matters for
+                       the message as it gets added to invent and also if it
+                       gets snuffed out immediately (where it will end up as
+                       not partly used after all) */
+                    turns_left += peek_timer(BURN_OBJECT, timer) - game.moves;
+                }
                 if (turns_left < full_burn_time)
                     prefix += "partly used ";
             }
