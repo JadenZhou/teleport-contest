@@ -95,7 +95,6 @@ import { AT_NONE as AT_NONE_AP, AT_SPIT as AT_SPIT_AP, AT_EXPL as AT_EXPL_AP,
 import { W_ARMG as W_ARMG_AP, W_ARMF as W_ARMF_AP, W_ARMH as W_ARMH_AP,
          W_ARMC as W_ARMC_AP } from './const.js';
 import { seemimic as seemimic_md } from './mon.js';
-import { finish_meating as finish_meating_md } from './dog.js';
 import { canspotmon as canspotmon_md, newsym as newsym_md,
          flush_screen as flush_screen_md } from './display.js';
 import { M_AP_MONSTER as M_AP_MONSTER_MD, STRAT_WAITMASK as STRAT_WAITMASK_MD,
@@ -119,6 +118,7 @@ import { erode_armor } from './uhitm.js';
 import { acid_damage } from './trap.js';
 import { drain_item } from './zap.js';
 import { hliquid } from './potion.js';
+import { finish_meating as finish_meating_md } from './dogmove.js';
 
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {

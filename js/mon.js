@@ -14,7 +14,7 @@ import { EXACT_NAME, Mgender } from './do_name.js';
 import { record_achievement } from './insight.js';
 import { shtypes } from './shknam.js';
 import { PM_MEDUSA, PM_HIGH_CLERIC } from './monsters.js';
-import { livelog_printf, verbalize } from './display.js';
+import { livelog_printf, verbalize, You_hear } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { remove_worm, wormgone, worm_known, worm_cross, count_wsegs, get_wormno,
          initworm, place_worm_tail_randomly } from './worm.js';
@@ -98,7 +98,7 @@ import { enexto, rloc_to_core } from './teleport.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
 import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE, WT_TOOMUCH_DIAGONAL } from './const.js';
-import { curr_mon_load } from './dogmove.js';
+import { curr_mon_load, finish_meating } from './dogmove.js';
 import { can_hide_under_obj, set_mimic_sym, hideunder_async } from './makemon.js';
 import { vobj_at } from './display.js';
 import { ceiling_hider } from './engrave.js';
@@ -140,7 +140,7 @@ import { flooreffects, deferred_goto } from './do.js';
 import { s_suffix } from './hacklib.js';
 import { change_luck, adjalign } from './attrib.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
-import { You_hear, growl, maybe_gasp } from './sounds.js';
+import { growl, maybe_gasp } from './sounds.js';
 import { PLNMSG_GROWL } from './const.js';
 import { little_to_big } from './mondata.js';
 import { quest_info } from './questpgr.js';
@@ -192,6 +192,7 @@ import { gd_move } from './vault.js';
 import { rloc_to as rloc_to_mn } from './teleport.js';
 import { place_wsegs as place_wsegs_rm } from './worm.js';
 import { set_ustuck as set_ustuck_rm } from './uhitm.js';
+import { m_carrying } from './mthrowu.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -1174,17 +1175,6 @@ export function seemimic(mtmp) {
         unblock_point(mtmp.mx, mtmp.my);
 
     newsym(mtmp.mx, mtmp.my);
-}
-
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== MM.S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = M_AP_NOTHING;
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
-    }
 }
 
 // C ref: mon.c peacefuls_respond()
@@ -2499,12 +2489,6 @@ export function monnear(mon, x, y) {
 
 /* mondata.h */
 
-/* C ref: mthrowu.c m_carrying() */
-function m_carrying(mtmp, type) {
-    for (const otmp of minv(mtmp))
-        if (otmp.otyp === type) return otmp;
-    return null;
-}
 /* C ref: mondata.c passes_bars() */
 export function passes_bars(mptr) {
     return (passes_walls(mptr) || amorphous(mptr)

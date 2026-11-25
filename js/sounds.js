@@ -10,7 +10,7 @@ import { g_at, vault_occupied, findgd } from './vault.js';
 import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, ROLL_FROM } from './rng.js';
-import { canseemon, verbalize } from './display.js';
+import { canseemon, verbalize, You_hear } from './display.js';
 import { vtense } from './objnam.js';
 import { wake_nearto } from './mon.js';
 import { tended_shop, noisy_shop } from './shk.js';
@@ -50,18 +50,6 @@ import { M1_HUMANOID as M1_HUMANOID_SN } from './monsters.js';
 
 /* C ref: mondata.h predicates */
 
-
-// C ref: pline.c You_hear()
-export async function You_hear(msg) {
-    if ((Deaf() && !Unaware()) || !game.flags.acoustics)
-        return;
-    if (game.u.uinwater) /* Underwater */
-        await pline(`You barely hear ${msg}`);
-    else if (Unaware())
-        await pline(`You dream that you hear ${msg}`);
-    else
-        await pline(`You hear ${msg}`); /* Deaf-aware */
-}
 
 // C ref: sounds.c mon_in_room()
 function mon_in_room(mon, rmtyp) {

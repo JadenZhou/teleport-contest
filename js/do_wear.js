@@ -29,8 +29,8 @@ import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
 import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
-import { pline, You, Your, There, pline_The, newsym,
-         see_monsters } from './display.js';
+import { pline, You, Your, There, pline_The, newsym, see_monsters,
+         You_feel } from './display.js';
 import { getobj, silly_thing } from './invent.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_INACCESS, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
@@ -77,7 +77,7 @@ import { the, thesimpleoname } from './iactions.js';
 import { change_luck } from './attrib.js';
 import { nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
-import { racial_exception, artifact_light } from './worn.js';
+import { racial_exception } from './worn.js';
 import { surface } from './iactions.js';
 import { discover_object, makeknown } from './o_init.js';
 import { find_ac } from './u_init.js';
@@ -130,6 +130,7 @@ import { has_ceiling as has_ceiling_bo } from './insight.js';
 import { spoteffects as spoteffects_bo } from './hack.js';
 import { float_down as float_down_bo } from './trap.js';
 import { FROMOUTSIDE as FROMOUTSIDE_BO } from './const.js';
+import { artifact_light } from './artifact.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -144,8 +145,6 @@ function WrappingAllowed(mptr) {
         && !noncorporeal(mptr) && mptr.mlet !== S_CENTAUR
         && mptr !== mons[PM_WINGED_GARGOYLE] && mptr !== mons[PM_MARILITH];
 }
-/* C ref: pline.c You_feel() */
-async function You_feel(line) { await pline(`You feel ${line}`); }
 
 // C ref: do_wear.c fingers_or_gloves() -- plural "fingers" or optionally
 // "gloves"

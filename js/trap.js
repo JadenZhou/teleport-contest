@@ -13,7 +13,7 @@ import { impossible } from './hack.js';
 import { is_hole, is_pit } from './const.js';
 import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
-import { thitu } from './mthrowu.js';
+import { thitu, m_carrying as m_carrying_tr } from './mthrowu.js';
 import { count_wsegs } from './worm.js';
 import { obfree } from './invent.js';
 import { get_obj_location } from './shk.js';
@@ -87,7 +87,7 @@ import { crawl_destination } from './hack.js';
 import { linedup } from './monmove.js';
 import { xdir, ydir, N_DIRS, ZAP_POS, is_xport } from './const.js';
 import { mongone, wake_nearto } from './mon.js';
-import { newsym, pline, urgent_pline } from './display.js';
+import { newsym, pline, urgent_pline, You_feel, You_hear } from './display.js';
 import { done } from './end.js';
 import { killer } from './topten.js';
 import { DIED } from './const.js';
@@ -95,7 +95,6 @@ import { cansee, couldsee } from './vision.js';
 import { m_in_air } from './monmove.js';
 import { canseemon } from './display.js';
 import { mon_nam, Monnam } from './do_name.js';
-import { You_hear } from './sounds.js';
 import { self_invis_message } from './potion.js';
 import { perceives, pm_invisible } from './mondata.js';
 import { INVIS, SEE_INVIS } from './const.js';
@@ -165,7 +164,6 @@ import { TRAP_NOT_IMMUNE, TRAP_CLEARLY_IMMUNE, TRAP_HIDDEN_IMMUNE,
          In_endgame, In_sokoban, Is_earthlevel, FIRE_RES } from './const.js';
 import { AMULET_OF_YENDOR, SCR_FIRE, SPE_FIREBALL } from './objects.js';
 import { carrying as carrying_tr } from './invent.js';
-import { m_carrying as m_carrying_tr } from './weapon.js';
 import { helm_simple_name as helm_simple_name_tr, aobjnam as aobjnam_tr } from './objnam.js';
 import { vtense, makeplural, yname, cxname } from './objnam.js';
 import { hliquid } from './potion.js';
@@ -286,7 +284,7 @@ import { teleds as teleds_dr, safe_teleds as safe_teleds_dr } from './teleport.j
 import { done as done_dr } from './end.js';
 import { burn_away_slime as burn_away_slime_dr } from './potion.js';
 import { useupall as useupall_dr } from './invent.js';
-import { obj_resists as obj_resists_dr } from './dogmove.js';
+import { obj_resists as obj_resists_dr, finish_meating } from './dogmove.js';
 import { setnotworn as setnotworn_fd } from './worn.js';
 import { otense as otense_fd, Yname2 as Yname2_fd } from './objnam.js';
 import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
@@ -331,6 +329,7 @@ import { has_oname, ONAME, OBJ_AT, M_AP_TYPE, Role_if, u_at, ismnum,
          NO_NC_FLAGS, SHOPBASE } from './const.js';
 import { MS_GUARDIAN, PM_DOPPELGANGER, PM_FLESH_GOLEM, PM_ARCHEOLOGIST,
          M1_CONCEAL } from './monsters.js';
+import { number_leashed } from './apply.js';
 export { is_hole, is_pit };
 
 
@@ -455,9 +454,6 @@ export function check_in_air(mtmp, trflags) {
 export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;
 }
-
-/* C ref: pline.c You_feel() -- Unaware dreaming isn't reached here */
-async function You_feel(line) { await pline(`You feel ${line}`); }
 
 // C ref: hack.c losehp() -- the not-polymorphed case
 export async function losehp(n, knam, k_format) {
@@ -1617,17 +1613,6 @@ export function sleep_monst(mon, amt, how) {
         return 1;
     }
     return 0;
-}
-
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if (mtmp.m_ap_type && mtmp.data.mlet !== S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = 0; /* M_AP_NOTHING */
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
-    }
 }
 
 // C ref: trap.c trapeffect_slp_gas_trap()
@@ -5059,16 +5044,6 @@ export async function set_uinwater(in_out) {
         game.u.uinwater = in_out ? 1 : 0;
         await switch_terrain_dr();
     }
-}
-
-// C ref: apply.c number_leashed()
-function number_leashed() {
-    let i = 0;
-
-    for (let obj = game.invent; obj; obj = obj.nobj)
-        if (obj.otyp === LEASH_DR && obj.leashmon !== 0 && obj.leashmon)
-            i++;
-    return i;
 }
 
 // C ref: apply.c unleash_all()

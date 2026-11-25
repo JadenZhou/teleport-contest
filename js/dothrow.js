@@ -19,7 +19,8 @@ import { explode } from './explode.js';
 import { d } from './rng.js';
 import { EXPL_FIERY, NO_TRAP_FLAGS } from './const.js';
 import { hits_bars } from './mthrowu.js';
-import { glyph_at, glyph_is_warning } from './display.js';
+import { glyph_at, glyph_is_warning, You_hear as
+         You_hear_br } from './display.js';
 import { noit_mhim } from './mhitu.js';
 import { shade_miss } from './uhitm.js';
 import { switch_terrain } from './hack.js';
@@ -183,7 +184,6 @@ import { cansee as cansee_br } from './vision.js';
 import { is_crackable } from './objects.js';
 import { erode_obj } from './trap.js';
 import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';
-import { You_hear as You_hear_br } from './sounds.js';
 import { costly_spot as costly_spot_br } from './shk.js';
 import { add_damage as add_damage_bh, pay_for_damage as pay_for_damage_bh } from './shk.js';
 import { doorlock as doorlock_bh } from './lock.js';

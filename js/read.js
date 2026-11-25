@@ -20,7 +20,7 @@ import { shk_your } from './shk.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { rn2, rnd, rn1, d } from './rng.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, You_hear } from './display.js';
 import { LL_CONDUCT, Luck } from './const.js';
 import { CANDY_BAR, Is_dragon_scales, is_shield, greatest_erosion,
          is_weptool } from './objects.js';
@@ -61,7 +61,6 @@ import {
     You, Your, You_feel, You_cant, pline_The, newsym, canspotmon, canseemon,
     sensemon, map_invisible, tmp_at, DISP_BEAM, DISP_END, cmap_to_glyph
 } from './display.js';
-import { You_hear } from './sounds.js';
 import { useup, useupall, prinv, identify_pack, stackobj, obfree,
          silly_thing } from './invent.js';
 import { strange_feeling, trycall, make_confused, make_stunned,

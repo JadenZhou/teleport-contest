@@ -7,7 +7,7 @@
 // figurine timer attachment.
 
 import { is_flyer, nolimbs, cantvomit } from './mondata.js';
-import { vobj_at, verbalize } from './display.js';
+import { vobj_at, verbalize, urgent_pline } from './display.js';
 import { inv_weight } from './hack.js';
 import { wake_nearby } from './mon.js';
 import { is_ice } from './dig.js';
@@ -28,7 +28,6 @@ import { TIMER_NONE, TIMER_LEVEL, TIMER_GLOBAL, TIMER_OBJECT, TIMER_MONSTER,
          NHF_BONESFILE } from './const.js';
 import { Sfo, Sfi } from './sfbase.js';
 import { new_light_source, del_light_source, candle_light_range } from './light.js';
-import { artifact_light } from './worn.js';
 import { get_obj_location } from './shk.js';
 import { Yname2 as Yname2_to, xname as xname_to, an as an_to } from './objnam.js';
 import { You_see as You_see_to, Your as Your_to } from './display.js';
@@ -90,7 +89,7 @@ import { Is_waterlevel } from './const.js';
 import { surface } from './iactions.js';
 import { region_danger } from './region.js';
 import { an } from './objnam.js';
-import { spec_ability, SPFX_LUCK } from './artifact.js';
+import { spec_ability, SPFX_LUCK, artifact_light } from './artifact.js';
 import { done as done_to } from './end.js';
 import { killer as killer_to } from './topten.js';
 import { find_delayed_killer as find_delayed_killer_to, dealloc_killer as dealloc_killer_to,
@@ -246,9 +245,6 @@ export function confers_luck(obj) {
 function up(p) { return game.u.uprops[p]; }
 /* C ref: color.h NH_BLUE, NH_GREEN (color names for hcolor()) */
 const NH_BLUE = "blue", NH_GREEN = "green";
-/* C ref: pline.c urgent_pline() -- pline() that overrides msgtype
-   suppression; no MSGTYPE patterns are set, so it's plain pline() */
-async function urgent_pline(line) { await pline(line); }
 
 // C ref: timeout.c stoned_texts[], stoned_dialogue()
 const stoned_texts = [

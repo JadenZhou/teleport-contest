@@ -14,7 +14,7 @@ import { mintrap, Trap_Effect_Finished, Trap_Caught_Mon, Trap_Killed_Mon,
 import { NO_TRAP_FLAGS, LL_CONDUCT } from './const.js';
 import { abuse_dog } from './dog.js';
 import { adjalign } from './attrib.js';
-import { livelog_printf, You_feel, verbalize } from './display.js';
+import { livelog_printf, You_feel, verbalize, You_hear } from './display.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
 import { monsndx, throws_rocks, amorphous, verysmall, bigmonst, hides_under,
          is_whirly, slithy, noncorporeal, is_clinger, strongmonst, tunnels,
@@ -124,7 +124,7 @@ import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
 import { M1_CLING, PM_SOLDIER, PM_SERGEANT, PM_LIEUTENANT, PM_CAPTAIN } from './monsters.js';
 import { midnight } from './calendar.js';
 import { Hello } from './role.js';
-import { search_special, You_hear } from './sounds.js';
+import { search_special } from './sounds.js';
 import { DEAF } from './const.js';
 import { wake_msg, seemimic, maybe_unhide_at, disturb_buried_zombies } from './mon.js';
 import { drag_ball, move_bc } from './ball.js';

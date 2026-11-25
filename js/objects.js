@@ -41,6 +41,7 @@ import {
     CLR_ORANGE, CLR_RED, CLR_WHITE, CLR_YELLOW,
 } from './terminal.js';
 import { ART_SNICKERSNEE } from './artilist.js';
+import { game } from './gstate.js';
 
 // ---------------------------------------------------------------------------
 // objclass.h: enum obj_material_types
@@ -2613,3 +2614,6 @@ export function is_flimsy(otmp) {
     return objects[otmp.otyp].oc_material <= LEATHER
         || otmp.otyp === RUBBER_HOSE;
 }
+
+// C ref: obj.h u_wield_art(art) -- is_art(uwep, art)
+export function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }

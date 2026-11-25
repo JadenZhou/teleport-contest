@@ -42,7 +42,6 @@ import { an } from './objnam.js';
 import { pmname, Mgender } from './do_name.js';
 import { has_ceiling } from './insight.js';
 import { wseg_mon_at } from './worm.js';
-import { finish_meating } from './dog.js';
 import {
     Stone_resistance, Stunned, Confusion, Blind, Glib, Hallucination, Fumbling, Wounded_legs,
     Blind_telepat, Stealth, Levitation, Flying, Half_physical_damage
@@ -56,6 +55,7 @@ import { hliquid } from './potion.js';
 import { killed, monkilled } from './mon.js';
 import { AD_PHYS } from './monsters.js';
 import { adjalign } from './attrib.js';
+import { finish_meating } from './dogmove.js';
 
 // C ref: cmd.c dirtocoord()
 function dirtocoord(cc, dd) {

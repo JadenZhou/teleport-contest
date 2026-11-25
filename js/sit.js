@@ -16,7 +16,7 @@ import { OBJ_AT, IS_SINK, IS_ALTAR, IS_GRAVE, IS_THRONE, Is_waterlevel,
          STAIRS, LADDER, FOUNTAIN, DRAWBRIDGE_DOWN, TT_LAVA, VIASITTING,
          LEVITATION, FLYING, COLD_RES, ECMD_OK, ECMD_TIME } from './const.js';
 import { objects, CLOTH, COIN_CLASS, LARGE_BOX, CHEST, TOWEL, CORPSE,
-         CREAM_PIE, Is_box } from './objects.js';
+         CREAM_PIE, Is_box, u_wield_art } from './objects.js';
 import { mons, S_DRAGON, S_EEL, M1_HIDE, M1_HUMANOID, M1_SLITHY, M1_AMORPHOUS,
          M1_OVIPAROUS, M1_SWIM, PM_TRAPPER, PM_GREMLIN } from './monsters.js';
 import { curse, unbless } from './mkobj.js';
@@ -189,8 +189,6 @@ async function in_water() {
     return ECMD_TIME;
 }
 
-/* C ref: artifact.h u_wield_art() */
-function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
 /* C ref: color.h NH_BLACK */
 const NH_BLACK = "black";
 

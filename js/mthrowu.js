@@ -4,11 +4,11 @@
 // ohitmon(), ucatchgem(), u_catch_thrown_obj(), m_throw(),
 // return_from_mtoss(), thrwmm(), spitmm(), breamm(), m_useupall(),
 // m_useup(), thrwmu(), spitmu(), breamu(), m_lined_up(), hit_bars() and
-// hits_bars().  linedup()/lined_up() live in monmove.js, m_carrying() and
+// hits_bars().  linedup()/lined_up() live in monmove.js,
 // m_has_launcher_and_ammo() in weapon.js.  Paths that aren't ported yet
 // throw a 'not ported yet' error instead of skipping their rolls.
 
-import { DEADMONSTER } from './mon.js';
+import { DEADMONSTER, minv } from './mon.js';
 import { ordin, sgn, upstart, plur, mdistu } from './hacklib.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, noncorporeal, amorphous, bigmonst, likes_gems,
@@ -20,10 +20,9 @@ import { game } from './gstate.js';
 import { rn2, rnd, rnl, rn2_on_display_rng, ROLL_FROM } from './rng.js';
 import { distmin, dist2, s_suffix, strncmpi } from './hacklib.js';
 import { cansee, couldsee } from './vision.js';
-import {
-    pline, You, Your, pline_The, newsym, canseemon, canspotmon, tmp_at,
-    obj_to_glyph, DISP_FLASH, DISP_TETHER, DISP_END
-} from './display.js';
+import { pline, You, Your, pline_The, newsym, canseemon, canspotmon, tmp_at,
+         obj_to_glyph, DISP_FLASH, DISP_TETHER, DISP_END,
+         You_hear } from './display.js';
 import { BOLT_LIM, MON_POLE_DIST, NEED_WEAPON, NEED_RANGED_WEAPON,
          PET_MISSILE_RANGE2, P_POLEARMS, P_LANCE, P_BOW, P_CROSSBOW, P_DART,
          P_SHURIKEN, P_SPEAR, P_KNIFE, M_ATTK_MISS, M_ATTK_HIT, M_SEEN_ACID,
@@ -45,7 +44,7 @@ import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { ART_SNICKERSNEE } from './artilist.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon, mwelded, dmgval,
-         setmnotwielded, m_carrying } from './weapon.js';
+         setmnotwielded } from './weapon.js';
 import { lined_up, linedup } from './monmove.js';
 import { m_at, closed_door, is_pool, is_lava, nonliving } from './makemon.js';
 import { monsndx, is_elf, is_orc, is_gnome, is_vampshifter, hates_silver,
@@ -74,7 +73,6 @@ import { losehp, Maybe_Half_Phys } from './trap.js';
 import { stop_occupation } from './allmain.js';
 import { nomul, calc_capacity } from './hack.js';
 import { make_blinded, potionhit, make_stoned, hliquid } from './potion.js';
-import { You_hear } from './sounds.js';
 import { monstseesu, monstunseesu, shade_miss, passive_obj } from './uhitm.js';
 import { mswings_verb, mhim } from './mhitu.js';
 import { hit, miss, exclam, dobuzz } from './zap.js';
@@ -1551,4 +1549,18 @@ export async function hits_bars(
     }
 
     return !!hits;
+}
+
+// C ref: mthrowu.c m_carrying()
+export function m_carrying(mtmp, type) {
+    if (mtmp === game.youmonst) {
+        for (let otmp = game.invent; otmp; otmp = otmp.nobj)
+            if (otmp.otyp === type)
+                return otmp;
+        return null;
+    }
+    for (const otmp of minv(mtmp))
+        if (otmp.otyp === type)
+            return otmp;
+    return null;
 }

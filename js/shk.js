@@ -20,7 +20,7 @@ import { IS_DOOR, SVALL, ROWNO, COLNO, RLOC_NOMSG, RLOC_MSG, NECK } from './cons
 import { ROLL_FROM } from './rng.js';
 import { mnexto } from './teleport.js';
 import { mnearto } from './mon.js';
-import { yelp, growl, You_hear } from './sounds.js';
+import { yelp, growl } from './sounds.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
 import { poly_gender } from './polyself.js';
@@ -31,7 +31,7 @@ import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
 import { PICK_AXE, DWARVISH_MATTOCK } from './objects.js';
 import { pline, You, Your, pline_The, canseemon, canspotmon, sensemon,
-         verbalize } from './display.js';
+         verbalize, You_hear } from './display.js';
 import { dist2, s_suffix } from './hacklib.js';
 import { in_rooms, check_special_room } from './hack.js';
 import { on_level, assign_level } from './dungeon.js';

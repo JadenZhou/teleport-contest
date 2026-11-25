@@ -16,8 +16,8 @@ import { impossible, is_door_mappear } from './hack.js';
 import { touch_artifact, is_magic_key } from './artifact.js';
 import { game } from './gstate.js';
 import { rn2, rnl } from './rng.js';
-import { pline, newsym, You, You_cant, pline_The, canseemon,
-         verbalize } from './display.js';
+import { pline, newsym, You, You_cant, pline_The, canseemon, verbalize,
+         You_hear } from './display.js';
 import { tty_yn_function } from './wintty.js';
 import { get_adjacent_loc } from './cmd.js';
 import { update_mapseen_for } from './dungeon.js';
@@ -58,7 +58,6 @@ import { s_suffix } from './hacklib.js';
 import { cansee, block_point, vision_recalc } from './vision.js';
 import { t_at, chest_trap } from './trap.js';
 import { FINGER } from './const.js';
-import { You_hear } from './sounds.js';
 import { wake_nearto } from './mon.js';
 import { in_rooms } from './hack.js';
 import { stop_occupation } from './allmain.js';

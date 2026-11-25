@@ -67,6 +67,7 @@ import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';
 import { is_plural } from './wield.js';
 import { peek_timer, obj_to_any } from './timeout.js';
 import { BURN_OBJECT } from './const.js';
+import { is_quest_artifact } from './questpgr.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -2568,11 +2569,6 @@ export function readobjnam(bp, no_wish) {
         d.otmp.owt += 160; /* WT_IRON_BALL_INCR */
 
     return d.otmp;
-}
-
-// C ref: artifact.c is_quest_artifact() — otmp->oartifact == urole.questarti
-function is_quest_artifact(otmp) {
-    return !!otmp.oartifact && otmp.oartifact === game.urole?.questarti;
 }
 
 // ---------------------------------------------------------------------

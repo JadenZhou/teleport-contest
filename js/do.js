@@ -11,7 +11,7 @@ import { sellobj_state } from './pickup.js';
 import { SELL_NORMAL, SELL_DELIBERATE } from './const.js';
 import { game } from './gstate.js';
 import { fix_shop_damage } from './shk.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, You_hear } from './display.js';
 import { LL_ACHIEVE, LL_DEBUG } from './const.js';
 import { describe_level } from './botl.js';
 import { container_impact_dmg, obj_delivery, drop_to } from './dokick.js';
@@ -35,7 +35,6 @@ import {
     pline, pline_The, docrt, flush_screen
 } from './display.js';
 import { bones_include_name } from './bones.js';
-import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
 import { stolen_value, costly_spot, picked_container } from './shk.js';
 import { in_rooms } from './hack.js';

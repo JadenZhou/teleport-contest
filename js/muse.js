@@ -5,7 +5,7 @@
 
 import { DEADMONSTER, minv } from './mon.js';
 import { helpless } from './monmove.js';
-import { stairway_at, verbalize } from './display.js';
+import { stairway_at, verbalize, You_hear } from './display.js';
 import { game } from './gstate.js';
 import { worm_move } from './worm.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -14,7 +14,6 @@ import { cansee, couldsee } from './vision.js';
 import {
     pline, urgent_pline, pline_The, canseemon, canspotmon, map_invisible
 } from './display.js';
-import { You_hear } from './sounds.js';
 import { Monnam } from './do_name.js';
 import { an, xname, doname, singular } from './objnam.js';
 import { simpleonames } from './iactions.js';
@@ -34,7 +33,7 @@ import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
 import { hit, miss, exclam, buzz, dobuzz, bhito,
          find_drawbridge, resist_async } from './zap.js';
 import { TELL } from './const.js';
-import { m_throw } from './mthrowu.js';
+import { m_throw, m_carrying } from './mthrowu.js';
 import { POTION_CLASS, WAND_CLASS, WAN_OPENING, WAN_LOCKING, WAN_CANCELLATION,
          SPE_CANCELLATION, Is_mbag, SchroedingersBox, Is_dragon_scales,
          Is_container, bimanual } from './objects.js';
@@ -210,13 +209,6 @@ const MUSE_CAMERA = 37;
 /* mondata.h */
 /* C ref: monst.h m_seenres() */
 export function m_seenres(mon, mask) { return (mon.seen_resistance || 0) & mask; }
-
-// C ref: mthrowu.c m_carrying()
-function m_carrying(mtmp, type) {
-    for (const otmp of minv(mtmp))
-        if (otmp.otyp === type) return otmp;
-    return null;
-}
 
 /* C ref: obj.h Has_contents() */
 function Has_contents(o) { return !!(o.cobj && o.cobj.length); }

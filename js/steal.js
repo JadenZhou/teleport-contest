@@ -16,7 +16,7 @@ import { Monnam } from './do_name.js';
 import { stackobj, carry_obj_effects } from './invent.js';
 import { flooreffects, obj_no_longer_held } from './do.js';
 import { droppables, obj_resists } from './dogmove.js';
-import { artifact_exists } from './artifact.js';
+import { artifact_exists, artifact_light } from './artifact.js';
 import { ONAME_NO_FLAGS, RLOC_MSG } from './const.js';
 import { LOST_NONE, LOST_THROWN, LOST_DROPPED, LOST_STOLEN, W_ARM, W_WEP,
          W_SADDLE } from './const.js';
@@ -68,7 +68,6 @@ import { AT_ENGL } from './monsters.js';
 import { skinback } from './polyself.js';
 import { openholdingtrap, unconscious } from './trap.js';
 import { impossible } from './hack.js';
-import { artifact_light } from './worn.js';
 import { end_burn } from './timeout.js';
 import { costly_spot } from './shk.js';
 import { in_rooms } from './hack.js';

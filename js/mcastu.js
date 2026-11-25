@@ -10,8 +10,7 @@ import { game } from './gstate.js';
 import { rn2, rnd, d } from './rng.js';
 import { couldsee, cansee } from './vision.js';
 import { pline, You, Your, pline_The, You_feel, Norep, canseemon, canspotmon,
-         tp_sensemon, map_invisible, verbalize } from './display.js';
-import { You_hear } from './sounds.js';
+         tp_sensemon, map_invisible, verbalize, You_hear } from './display.js';
 import { nomul } from './hack.js';
 import { Monnam, mon_nam, pmname, bogusmon, pronoun_gender,
          PRONOUN_HALLU } from './do_name.js';

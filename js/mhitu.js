@@ -6,7 +6,7 @@
 
 import { Ring_gone } from './do_wear.js';
 import { split_mon } from './potion.js';
-import { You, verbalize } from './display.js';
+import { You, verbalize, You_hear } from './display.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { poly_gender, rehumanize } from './polyself.js';
@@ -106,7 +106,6 @@ import { STONE_RES } from './const.js';
 import { LEASH } from './objects.js';
 import { reset_utrap, drain_en } from './trap.js';
 import { vision_recalc } from './vision.js';
-import { You_hear } from './sounds.js';
 import { can_blnd } from './mondata.js';
 import { burn_away_slime } from './potion.js';
 import {
@@ -144,6 +143,7 @@ import { mon_explodes } from './explode.js';
 import { unleash_all } from './trap.js';
 import { vtense } from './objnam.js';
 import { pline_The } from './display.js';
+import { number_leashed } from './apply.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -1316,16 +1316,6 @@ export function could_seduce(magr, mdef, mattk) {
 /* C ref: mondata.h enfolds() */
 function enfolds(ptr) {
     return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL) !== null; /* 't' */
-}
-// C ref: apply.c number_leashed()
-function number_leashed() {
-    let i = 0;
-    let obj;
-
-    for (obj = game.invent; obj; obj = obj.nobj)
-        if (obj.otyp === LEASH && obj.leashmon)
-            i++;
-    return i;
 }
 
 // C ref: mhitm.c failed_grab()

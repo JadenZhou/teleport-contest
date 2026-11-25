@@ -18,7 +18,6 @@ import { POLY_NOFLAGS, EXPL_FIERY } from './const.js';
 import { attrcurse } from './sit.js';
 import { yobjnam } from './objnam.js';
 import { explode } from './explode.js';
-import { You_hear } from './sounds.js';
 import { fall_asleep } from './timeout.js';
 import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
          herbivorous, metallivorous, is_giant, acidic, vegan, flesh_petrifies,
@@ -27,7 +26,7 @@ import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
-import { livelog_printf, verbalize } from './display.js';
+import { livelog_printf, verbalize, You_feel, You_hear } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { rn2 } from './rng.js';
 import { pline } from './display.js';
@@ -639,8 +638,6 @@ function CANNIBAL_ALLOWED() {
 function nonrotting_food(otyp) {
     return otyp === LEMBAS_WAFER || otyp === CRAM_RATION;
 }
-/* C ref: pline.c You_feel() */
-async function You_feel(line) { await pline(`You feel ${line}`); }
 /* C ref: mkobj.c peek_at_iced_corpse_age() */
 export function peek_at_iced_corpse_age(otmp) {
     let age, retval = otmp.age;

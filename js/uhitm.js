@@ -14,7 +14,7 @@
 
 import { DEADMONSTER } from './mon.js';
 import { helpless } from './monmove.js';
-import { is_art } from './artifact.js';
+import { is_art, artifact_light } from './artifact.js';
 import { passes_rocks, unconscious } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
@@ -22,7 +22,7 @@ import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          resists_ston, cantwield, is_watch, attacktype,
          noattacks } from './mondata.js';
 import { game } from './gstate.js';
-import { livelog_printf, verbalize } from './display.js';
+import { livelog_printf, verbalize, You_hear } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
 import { obj_is_pname } from './objnam.js';
 import { cutworm } from './worm.js';
@@ -41,9 +41,9 @@ import { M_ATTK_HIT, SHOCK_RES, M_SEEN_ELEC, A_STR, INVIS, W_ARMG, HALF_PHDAM,
 import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL, is_blade,
          is_axe, is_shield, is_flimsy, stone_missile, greatest_erosion,
          is_weptool, bimanual, is_launcher, is_missile, is_ammo, is_pole,
-         is_wet_towel, ammo_and_launcher } from './objects.js';
+         is_wet_towel, ammo_and_launcher, u_wield_art } from './objects.js';
 import { permapoisoned } from './mkobj.js';
-import { dmgval } from './weapon.js';
+import { dmgval, martial_bonus } from './weapon.js';
 import { which_armor } from './worn.js';
 import { rustm, mon_poly } from './mhitm.js';
 import { couldsee, cansee } from './vision.js';
@@ -84,8 +84,8 @@ import { WEAPON_CLASS, TOOL_CLASS, ARMOR_CLASS, GEM_CLASS, POTION_CLASS,
          GOLD_DRAGON_SCALES, SHIELD_OF_REFLECTION,
          AMULET_OF_REFLECTION } from './objects.js';
 import { abon, dbon, hitval, weapon_hit_bonus, weapon_dam_bonus, use_skill,
-         uwep_skill_type, special_dmgval, weapon_type, P_SKILL,
-         m_carrying } from './weapon.js';
+         uwep_skill_type, special_dmgval, weapon_type,
+         P_SKILL } from './weapon.js';
 import { find_mac } from './worn.js';
 import { check_capacity, overexertion, near_capacity, nomul,
          test_move } from './hack.js';
@@ -121,7 +121,6 @@ import { tele_restrict, rloc } from './teleport.js';
 import { locomotion } from './trap.js';
 import { Adjmonnam } from './do_name.js';
 import { doseduce } from './mhitu.js';
-import { You_hear } from './sounds.js';
 import { make_stoned } from './potion.js';
 import { poly_when_stoned } from './mondata.js';
 import { the } from './iactions.js';
@@ -208,7 +207,7 @@ import { ugolemeffects } from './mhitu.js';
 import { Yobjnam2 } from './objnam.js';
 import { split_mon } from './potion.js';
 import { hit as hit_uh } from './zap.js';
-import { mshot_xname as mshot_xname_uh } from './mthrowu.js';
+import { mshot_xname as mshot_xname_uh, m_carrying } from './mthrowu.js';
 import { tended_shop } from './shk.js';
 /* flash_hits_mon(), light_hits_gremlin() */
 import { canseemon as canseemon_fh, glyph_at as glyph_at_fh, pline as pline_fh,
@@ -2020,8 +2019,6 @@ export async function mhitm_knockback(
     return true;
 }
 
-/* C ref: obj.h u_wield_art() */
-function u_wield_art(art) { return !!(game.uwep && game.uwep.oartifact === art); }
 /* C ref: mondata.h is_longworm() */
 function is_longworm(ptr) {
     return ptr === mons[PM_LONG_WORM] || ptr === mons[PM_LONG_WORM_TAIL];
@@ -2171,7 +2168,6 @@ export async function do_attack(mtmp) {
 
 /* C ref: youprop.h and mondata.h/obj.h predicates used below */
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
-function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 function mon_hates_light(mon) { return mon.data === mons[M.PM_GREMLIN]; }
 function is_blunt_weapon(o) {
     return (o.oclass === WEAPON_CLASS || is_weptool(o))
@@ -2182,14 +2178,6 @@ function is_poisonable(otmp) {
             && objects[otmp.otyp].oc_skill >= -P_SHURIKEN
             && objects[otmp.otyp].oc_skill <= -P_BOW)
            || permapoisoned(otmp);
-}
-/* C ref: artifact.c artifact_light() */
-function artifact_light(obj) {
-    if (obj && (obj.otyp === GOLD_DRAGON_SCALE_MAIL
-                || obj.otyp === GOLD_DRAGON_SCALES)
-        && ((obj.owornmask || 0) & W_ARM) !== 0)
-        return true;
-    return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
 }
 /* C ref: monst.h troll_baned() */
 function troll_baned(m, o) {

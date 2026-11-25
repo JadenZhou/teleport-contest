@@ -13,14 +13,14 @@ import { polyself } from './polyself.js';
 import { POLY_NOFLAGS } from './const.js';
 import { game } from './gstate.js';
 import { monster_detect } from './detect.js';
-import { livelog_printf, verbalize } from './display.js';
+import { livelog_printf, verbalize, You_hear } from './display.js';
 import { LL_ARTIFACT } from './const.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import {
     pline, You, Your, You_feel, You_see, pline_The, newsym, canspotmon,
     glyph_at
 } from './display.js';
-import { You_hear, get_iter_mons } from './sounds.js';
+import { get_iter_mons } from './sounds.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { makemon } from './makemon.js';
 import { sobj_at, m_at } from './makemon.js';

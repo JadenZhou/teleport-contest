@@ -8,7 +8,7 @@
 // paygd() (end.js), vault_summon_gd(), vault_gd_watching().
 
 import { an } from './objnam.js';
-import { You_see, verbalize } from './display.js';
+import { You_see, verbalize, You_hear } from './display.js';
 import { simpleonames } from './iactions.js';
 import { fracture_rock } from './zap.js';
 import { DEADMONSTER } from './mon.js';
@@ -21,7 +21,6 @@ import {
     pline, You, pline_The, newsym, canspotmon, map_invisible, mon_visible,
     xy_set_wall_state, map_location
 } from './display.js';
-import { You_hear } from './sounds.js';
 import { cansee, couldsee, unblock_point, block_point,
          recalc_block_point } from './vision.js';
 import { isok, ROOM, CORR, STONE, SCORR, DOOR, HWALL, VWALL, TLCORNER,
@@ -52,13 +51,14 @@ import { Monnam, noit_Monnam, Some_Monnam, x_monnam, pmname, Mgender,
          noit_mon_nam, ARTICLE_A } from './do_name.js';
 import { sticks } from './engrave.js';
 import { makeplural } from './objnam.js';
-import { m_carrying, mon_wield_item } from './weapon.js';
+import { mon_wield_item } from './weapon.js';
 import { is_fainted } from './eat.js';
 import { mon_track_clear } from './monmove.js';
 import { on_level } from './dungeon.js';
 import { Deaf, Strangled, Blind } from './youprop.js';
 import { u_at } from './const.js';
 import { noit_mhis } from './mhitu.js';
+import { m_carrying } from './mthrowu.js';
 
 /* C ref: invent.c g_at() */
 export function g_at(x, y) {

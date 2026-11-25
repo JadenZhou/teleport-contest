@@ -91,7 +91,7 @@ import { find_ac } from './u_init.js';
 import { set_ustuck } from './uhitm.js';
 import { spoteffects, nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
-import { retouch_equipment } from './artifact.js';
+import { retouch_equipment, artifact_light } from './artifact.js';
 import { character_race } from './role.js';
 import { dropx, canletgo } from './do.js';
 import { donning, cancel_don, Armor_gone, Cloak_off, Helmet_off,
@@ -111,7 +111,6 @@ import { killer as killer_ps } from './topten.js';
 import { DIED as DIED_PS } from './const.js';
 import { arti_light_radius } from './light.js';
 import { maybe_adjust_light } from './mkobj.js';
-import { artifact_light } from './worn.js';
 import { is_flimsy, is_sword } from './objects.js';
 
 // C ref: mon.c valid_vampshiftform()

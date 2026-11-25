@@ -9,7 +9,7 @@
 
 import { MON_WEP } from './worn.js';
 import { impossible } from './hack.js';
-import { is_art } from './artifact.js';
+import { is_art, artifact_light } from './artifact.js';
 import { minv } from './mon.js';
 import { padr } from './pager.js';
 import { wizard } from './dungeon.js';
@@ -73,6 +73,7 @@ import { cansee } from './vision.js';
 import { arti_light_description } from './light.js';
 import { mbodypart } from './insight.js';
 import { HAND } from './const.js';
+import { m_carrying } from './mthrowu.js';
 
 function weapon_skills() {
     const u = game.u;
@@ -231,14 +232,6 @@ function erodeable_wep(optr) {
 }
 function will_weld(optr) {
     return !!optr.cursed && (erodeable_wep(optr) || optr.otyp === O.TIN_OPENER);
-}
-// C ref: artifact.c artifact_light()
-function artifact_light(obj) {
-    if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL
-                || obj.otyp === O.GOLD_DRAGON_SCALES)
-        && ((obj.owornmask || 0) & W_ARM) !== 0)
-        return true;
-    return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
 }
 
 /* targets that provide attacker with small to-hit bonus when using a spear */
@@ -554,20 +547,6 @@ function oselect(mtmp, type) {
 
         return otmp;
     }
-    return null;
-}
-
-// C ref: mthrowu.c m_carrying()
-export function m_carrying(mtmp, type) {
-    if (mtmp === game.youmonst) {
-        for (let otmp = game.invent; otmp; otmp = otmp.nobj)
-            if (otmp.otyp === type)
-                return otmp;
-        return null;
-    }
-    for (const otmp of minv(mtmp))
-        if (otmp.otyp === type)
-            return otmp;
     return null;
 }
 
@@ -1018,7 +997,8 @@ export function mwepgone(mon) {
     }
 }
 
-function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
+// C ref: skills.h martial_bonus()
+export function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 
 // C ref: weapon.c abon()
 /* attack bonus for strength & dexterity */

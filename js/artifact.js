@@ -1912,3 +1912,15 @@ export function arti_cost(otmp) {
 
 // C ref: artifact.c is_art()
 export function is_art(o, art) { return !!(o && o.oartifact === art); }
+
+// C ref: artifact.c artifact_light()
+export function artifact_light(obj) {
+    /* not artifacts but treat them as if they were because they emit
+       light without burning */
+    if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL
+                || obj.otyp === O.GOLD_DRAGON_SCALES)
+        && ((obj.owornmask || 0) & W_ARM) !== 0)
+        return true;
+
+    return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
+}

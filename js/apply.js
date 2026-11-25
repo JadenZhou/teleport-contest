@@ -7,7 +7,7 @@
 // check_jump(), is_valid_jump_pos(), get_valid_jump_position().
 
 import { game } from './gstate.js';
-import { You } from './display.js';
+import { You, You_hear } from './display.js';
 import { getobj } from './invent.js';
 import { check_capacity } from './hack.js';
 import { retouch_object } from './wield.js';
@@ -20,7 +20,6 @@ import { MAX_SPELL_STUDY, DEAF, HAND, SDOOR, SCORR, CORR, ARTICLE_A,
          SUPPRESS_IT, SUPPRESS_INVISIBLE, Is_stronghold } from './const.js';
 import { surface } from './iactions.js';
 import { can_reach_floor, cant_reach_floor } from './engrave.js';
-import { You_hear } from './sounds.js';
 import { getdir } from './cmd.js';
 import { confdir } from './hack.js';
 import { freehand } from './wield.js';
@@ -45,7 +44,7 @@ import { objects, TOOL_CLASS, WAND_CLASS, SPBOOK_CLASS, COIN_CLASS,
          WEAPON_CLASS, POTION_CLASS, BULLWHIP, POT_OIL, CREAM_PIE,
          EUCALYPTUS_LEAF, LUMP_OF_ROYAL_JELLY, BANANA, TOUCHSTONE, PICK_AXE,
          DWARVISH_MATTOCK, OIL_LAMP, MAGIC_LAMP, BRASS_LANTERN, is_pick,
-         is_axe, is_graystone, is_pole } from './objects.js';
+         is_axe, is_graystone, is_pole, u_wield_art } from './objects.js';
 import { M1_NOHANDS, M1_NOLIMBS, M1_SLITHY, M2_ROCKTHROW } from './monsters.js';
 import { pline, You_cant, There } from './display.js';
 import { near_capacity, nomul } from './hack.js';
@@ -1544,8 +1543,6 @@ function glyph_is_poleable(G) {
     return glyph_is_monster_pl(G) || glyph_is_invisible_ls(G)
            || glyph_is_statue_pl(G);
 }
-/* C ref: artifact.h u_wield_art() */
-function u_wield_art_pl(art) { return !!game.uwep && game.uwep.oartifact === art; }
 /* C ref: context.h svc.context.polearm (zeroed with the context) */
 function polearm_ctx() {
     if (!game.context.polearm)
@@ -1674,7 +1671,7 @@ export function could_pole_mon() {
 // C ref: apply.c snickersnee_used_dist_attk()
 /* was Snickersnee used to attack at distance this turn already? */
 function snickersnee_used_dist_attk(obj) {
-    if (obj && obj === game.uwep && u_wield_art_pl(ART_SNICKERSNEE)
+    if (obj && obj === game.uwep && u_wield_art(ART_SNICKERSNEE)
         && game.context.snickersnee_turn === game.moves)
         return true;
     return false;
@@ -1772,7 +1769,7 @@ export async function use_pole(obj, autohit) {
         g.notonhead = (g.bhitpos.x !== mtmp.mx || g.bhitpos.y !== mtmp.my);
 
         /* Snickersnee allows one free hit from a distance per turn */
-        if (obj === g.uwep && u_wield_art_pl(ART_SNICKERSNEE)) {
+        if (obj === g.uwep && u_wield_art(ART_SNICKERSNEE)) {
             freehit = (g.moves !== g.context.snickersnee_turn);
             g.context.snickersnee_turn = g.moves;
             if (freehit && !Deaf()) {
@@ -1869,7 +1866,7 @@ async function use_camera(obj) {
 }
 
 // C ref: apply.c number_leashed()
-function number_leashed() {
+export function number_leashed() {
     let i = 0;
 
     for (let obj = game.invent; obj; obj = obj.nobj)

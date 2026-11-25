@@ -8,7 +8,6 @@
 // yet).  For enlightenment: adtyp_to_prop(), u_adtyp_resistance_obj(),
 // item_what().
 
-import { You_hear } from './sounds.js';
 import { rndmonnam } from './do_name.js';
 import { adjalign } from './attrib.js';
 import { PM_ARCHEOLOGIST } from './monsters.js';
@@ -21,7 +20,8 @@ import { in_rooms } from './hack.js';
 import { billable, get_obj_location } from './shk.js';
 import { impossible } from './hack.js';
 import { game } from './gstate.js';
-import { livelog_printf, urgent_pline } from './display.js';
+import { livelog_printf, urgent_pline, You_hear as You_hear_zp,
+         You_hear } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { You, Your, pline, pline_The } from './display.js';
 import { getobj, useupall } from './invent.js';
@@ -215,7 +215,6 @@ import { W_NONDIGGABLE as W_NONDIGGABLE_ZP, D_NODOOR as D_NODOOR_ZP,
 import { cvt_sdoor_to_door as cvt_sdoor_to_door_zp } from './detect.js';
 import { recalc_block_point as recalc_block_point_zp } from './vision.js';
 import { in_rooms as in_rooms_zp } from './hack.js';
-import { You_hear as You_hear_zp } from './sounds.js';
 import { picking_at as picking_at_zp, reset_pick as reset_pick_zp,
          boxlock as boxlock_zy } from './lock.js';
 import { unpunish as unpunish_zy } from './read.js';

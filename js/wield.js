@@ -4,9 +4,9 @@
 // Ported so far: welded() with its will_weld()/erodeable_wep() macros,
 // obj.h is_weptool()/bimanual(), and engrave.c freehand().
 
-import { retouch_object, arti_speak, undiscovered_artifact } from './artifact.js';
+import { retouch_object, arti_speak, undiscovered_artifact,
+         artifact_light } from './artifact.js';
 import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
-import { artifact_light } from './worn.js';
 import { game } from './gstate.js';
 import { P_NONE, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, P_POLEARMS, P_LANCE,
          W_WEP, W_SWAPWEP, W_QUIVER } from './const.js';

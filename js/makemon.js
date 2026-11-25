@@ -110,6 +110,7 @@ import { enexto as enexto_cm } from './teleport.js';
 import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
 import { tamedog as tamedog_cm } from './dog.js';
 import { hard_helmet } from './do_wear.js';
+import { mon_aligntyp } from './priest.js';
 export {
     NO_MM_FLAGS, NO_MINVENT, MM_NOWAIT, MM_NOCOUNTBIRTH, MM_IGNOREWATER,
     MM_ADJACENTOK, MM_NONAME, MM_EDOG, MM_ASLEEP, MM_NOGRP, MM_MALE,
@@ -153,15 +154,7 @@ export function is_home_elemental(ptr) {
     }
     return false;
 }
-// C ref: mondata.h mon_aligntyp(); is_lminion()
-function mon_aligntyp(mon) {
-    const ptr = mon.data;
-    const algn = (mon.ispriest && mon.epri) ? mon.epri.shralign
-                 : (mon.isminion && mon.emin) ? mon.emin.min_align
-                 : ptr.maligntyp;
-    if (algn === A_NONE) return A_NONE;
-    return (algn > 0) ? A_LAWFUL : (algn < 0) ? -1 : A_NEUTRAL;
-}
+// C ref: monst.h is_lminion()
 function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
 }

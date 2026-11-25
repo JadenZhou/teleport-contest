@@ -13,7 +13,7 @@
 
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
-import { is_art } from './artifact.js';
+import { is_art, artifact_light } from './artifact.js';
 import { minv } from './mon.js';
 import { objchain_items } from './invent.js';
 import { game } from './gstate.js';
@@ -32,7 +32,7 @@ import { FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES, POISON_RES,
          W_AMUL, W_TOOL } from './const.js';
 import { ART_SUNSWORD, ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { set_artifact_intrinsic_sync } from './artifact.js';
-import { newsym, pline } from './display.js';
+import { newsym, pline, You_hear } from './display.js';
 import { cansee } from './vision.js';
 import { canseemon } from './display.js';
 import { Monnam, mon_nam } from './do_name.js';
@@ -300,18 +300,6 @@ export function recalc_telepat_range() {
         g.u.unblind_telepat_range = (BOLT_LIM * BOLT_LIM) * nobjs;
     else
         g.u.unblind_telepat_range = -1;
-}
-
-// C ref: artifact.c artifact_light()
-export function artifact_light(obj) {
-    /* not artifacts but treat them as if they were because they emit
-       light without burning */
-    if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL
-                || obj.otyp === O.GOLD_DRAGON_SCALES)
-        && ((obj.owornmask || 0) & W_ARM) !== 0)
-        return true;
-
-    return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
 }
 
 // C ref: worn.c mon_set_minvis()
@@ -874,29 +862,12 @@ function* m_dowear_type(
     }
 }
 
-/* C ref: pline.c You_hear() -- worn.c generators yield { you_hear: line }
-   where C calls You_hear() */
-async function You_hear_wn(line) {
-    const u = game.u;
-    const P = u.uprops[DEAF];
-    const Deaf = !!(P.intrinsic || P.extrinsic || u.uroleplay?.deaf);
-
-    if ((Deaf && !Unaware()) || !game.flags.acoustics)
-        return;
-    if (u.uinwater) /* Underwater */
-        await pline(`You barely hear ${line}`);
-    else if (Unaware())
-        await pline(`You dream that you hear ${line}`);
-    else
-        await pline(`You hear ${line}`); /* Deaf-aware */
-}
-
 // print one message yielded by a worn.c generator
 export async function worn_pline(msg) {
     if (msg?.newcham_async) /* an async callee (see run_msgs()) */
         await msg.newcham_async();
     else if (typeof msg === 'object' && msg.you_hear !== undefined)
-        await You_hear_wn(msg.you_hear);
+        await You_hear(msg.you_hear);
     else
         await pline(msg);
 }

@@ -7,10 +7,10 @@
 // 'not ported yet' error instead of skipping their rolls.
 
 import { fracture_rock } from './zap.js';
-import { pline_The, verbalize } from './display.js';
+import { pline_The, verbalize, You_see, You_hear } from './display.js';
 import { rn1 } from './rng.js';
 import { minv } from './mon.js';
-import { m_lined_up } from './mthrowu.js';
+import { m_lined_up, m_carrying } from './mthrowu.js';
 import { game } from './gstate.js';
 import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
 import { picking_lock } from './lock.js';
@@ -52,7 +52,6 @@ import { IS_TREE, IS_STWALL, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE,
 import { splitobj, obj_extract_self, bill_dummy_object } from './mkobj.js';
 import { distant_name, doname } from './objnam.js';
 import { mpickobj } from './steal.js';
-import { You_hear } from './sounds.js';
 import { find_defensive, find_offensive, find_misc, use_defensive,
          use_misc, cures_stoning, mcould_eat_tin } from './muse.js';
 import { mattacku, unstuck } from './mhitu.js';
@@ -60,9 +59,9 @@ import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
 import { mattackm } from './mhitm.js';
-import { obj_resists, dogfood } from './dogmove.js';
+import { obj_resists, dogfood, finish_meating } from './dogmove.js';
 import { MANFOOD, ACCFOOD } from './const.js';
-import { touch_artifact, has_magic_key } from './artifact.js';
+import { touch_artifact, has_magic_key, artifact_light } from './artifact.js';
 import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
          RIN_SLOW_DIGESTION, is_pick, is_pole, is_axe,
          Is_container } from './objects.js';
@@ -162,7 +161,6 @@ import { cursed_object_at as cursed_object_at_ud } from './dogmove.js';
 import { mdisplacem as mdisplacem_mm } from './mhitm.js';
 import { M_ATTK_HIT as M_ATTK_HIT_MM, M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MM,
          M_ATTK_AGR_DIED as M_ATTK_AGR_DIED_MM } from './const.js';
-import { artifact_light } from './worn.js';
 import { bare_artifactname } from './iactions.js';
 import { yname } from './objnam.js';
 
@@ -172,11 +170,6 @@ import { yname } from './objnam.js';
 function mon_offmap(mon) {
     return ((mon.mstate || 0)
             & (MON_DETACH | MON_MIGRATING | MON_LIMBO | MON_OFFMAP)) !== 0;
-}
-/* C ref: pline.c You_see() -- the dreaming (Unaware) and Blind variants
-   aren't ported yet */
-async function You_see(msg) {
-    await pline(`You see ${msg}`);
 }
 
 /* mondata.h */
@@ -255,12 +248,6 @@ function objects_at(x, y) {
 /* C ref: hack.c in_rooms(x, y, SHOPBASE) used as a boolean */
 function in_shop(x, y) {
     return !!in_rooms(x, y, SHOPBASE);
-}
-/* C ref: mthrowu.c m_carrying() */
-function m_carrying(mtmp, type) {
-    for (const otmp of minv(mtmp))
-        if (otmp.otyp === type) return otmp;
-    return null;
 }
 /* C ref: monmove.c monhaskey() */
 export function monhaskey(mon, for_unlocking) {
@@ -391,17 +378,6 @@ export function mon_regen(mon, digest_meal) {
             if (mon.meating <= 0)
                 finish_meating(mon);
         }
-    }
-}
-
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== M.S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = M_AP_NOTHING;
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
     }
 }
 

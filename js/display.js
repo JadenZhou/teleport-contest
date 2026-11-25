@@ -51,7 +51,7 @@ import { ENGRAVE, BURN, HEADSTONE } from './const.js';
 import { AM_MASK, AM_SANCTUM, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC } from './const.js';
 import {
     Blind, Hallucination, See_invisible, Unblind_telepat, Warning, Warn_of_mon, Infravision,
-    Detect_monsters, Invisible, Protection_from_shape_changers, Unaware
+    Detect_monsters, Invisible, Protection_from_shape_changers, Unaware, Deaf
 } from './youprop.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
@@ -3327,6 +3327,18 @@ export async function You_feel(line) {
         await pline(`You dream that you feel ${line}`);
     else
         await pline(`You feel ${line}`);
+}
+
+// C ref: pline.c You_hear()
+export async function You_hear(line) {
+    if ((Deaf() && !Unaware()) || !game.flags.acoustics)
+        return;
+    if (game.u.uinwater) /* Underwater */
+        await pline(`You barely hear ${line}`);
+    else if (Unaware())
+        await pline(`You dream that you hear ${line}`);
+    else
+        await pline(`You hear ${line}`); /* Deaf-aware */
 }
 
 // C ref: pline.c You_see()

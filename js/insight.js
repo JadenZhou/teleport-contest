@@ -67,7 +67,7 @@ import { objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS, COIN_CLASS,
          SPEAR, TRIDENT, LANCE, BOW, SLING, CROSSBOW, DART, SHURIKEN,
          BOOMERANG, UNICORN_HORN, RIN_ADORNMENT, RIN_PROTECTION,
          AMULET_OF_GUARDING, ROBE, is_metallic, is_ammo, is_wet_towel,
-         is_graystone } from './objects.js';
+         is_graystone, u_wield_art } from './objects.js';
 import * as M from './monsters.js';
 import { rank_of, rank_to_xlev } from './botl.js';
 import { an, just_an, makeplural, makesingular,
@@ -93,7 +93,7 @@ import {
 } from './const.js';
 import { ACURR, ABASE, AMAX, ATTRMAX, from_what } from './attrib.js';
 import { P_SKILL, P_MAX_SKILL, P_ADVANCE, P_RESTRICTED, weapon_type,
-         practice_needed_to_advance } from './weapon.js';
+         practice_needed_to_advance, martial_bonus } from './weapon.js';
 import { oc_to_str } from './options.js';
 import { is_pool, is_lava } from './makemon.js';
 import { ART_OGRESMASHER } from './artilist.js';
@@ -134,6 +134,7 @@ import {
     Lifesaved, Hate_silver, Half_gas_damage
 } from './youprop.js';
 import { Upolyd, Role_if, Luck } from './const.js';
+import { mon_aligntyp } from './priest.js';
 export { costly_spot, shop_keeper, inhishop, inside_shop } from './shk.js';
 import { costly_spot } from './shk.js';
 import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
@@ -173,9 +174,6 @@ function discover() { return !!game.flags?.explore; }
 function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, blocked: 0 }; }
 
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
-
-/* C ref: obj.h is_ammo(), is_wet_towel(), is_graystone(); u_wield_art() */
-function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
 
 /* C ref: youprop.h -- the rest of the property macros that
    attributes_enlightenment() checks */
@@ -512,8 +510,6 @@ const odd_skill_names = [
 const barehands_or_martial = [
     "bare handed combat", "martial arts"
 ];
-/* C ref: skills.h martial_bonus() */
-function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 export function P_NAME(type) {
     return (skill_names_indices[type] > 0)
            ? OBJ_NAME(objects[skill_names_indices[type]])
@@ -2740,22 +2736,11 @@ export function size_str(msize) {
     }
 }
 
-/* C ref: priest.c mon_aligntyp() */
-function mon_aligntyp_s(mon) {
-    const algn = mon.ispriest ? mon.epri?.shralign
-                 : mon.isminion ? mon.emin?.min_align
-                   : mon.data.maligntyp;
-
-    if (algn === A_NONE)
-        return A_NONE; /* negative but differs from chaotic */
-    return (algn > 0) ? A_LAWFUL : (algn < 0) ? A_CHAOTIC : A_NEUTRAL;
-}
-
 // C ref: insight.c mstatusline() -- stethoscope or probing applied to
 // monster -- one-line feedback
 export async function mstatusline(mtmp) {
     const u = game.u;
-    const alignment = mon_aligntyp_s(mtmp);
+    const alignment = mon_aligntyp(mtmp);
     let info = "";
 
     if (mtmp.mtame) {
