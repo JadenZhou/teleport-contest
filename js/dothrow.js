@@ -6,6 +6,7 @@
 // prompt.  Throwing itself (throwit()), autoquiver and doquiver_core()
 // are not ported yet.
 
+import { use_pole, could_pole_mon } from './apply.js';
 import { end_burn } from './timeout.js';
 import { get_obj_location } from './shk.js';
 import { Shk_Your } from './wield.js';
@@ -1789,7 +1790,7 @@ export async function dofire() {
         if (!game.flags?.autoquiver) {
             /* if we're wielding a polearm, apply it */
             if (uwep && is_pole(uwep)) {
-                throw new Error('dofire(): use_pole() not ported yet');
+                return await use_pole(uwep, true);
             /* if we're wielding a bullwhip, apply it */
             } else if (uwep && uwep.otyp === BULLWHIP) {
                 throw new Error('dofire(): use_whip() not ported yet');
@@ -1825,8 +1826,8 @@ export async function dofire() {
 
     if (game.uquiver && is_ammo(game.uquiver) && (game.iflags?.fireassist ?? true)
         && !skip_fireassist) {
-        if (uwep && is_pole(uwep))
-            throw new Error('dofire(): could_pole_mon() not ported yet');
+        if (uwep && is_pole(uwep) && could_pole_mon())
+            return await use_pole(uwep, true);
         /* Try to find a launcher */
         if (ammo_and_launcher(game.uquiver, uwep)) {
             obj = game.uquiver;
