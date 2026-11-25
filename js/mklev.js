@@ -30,7 +30,7 @@ import { create_des_coder, reset_xystart_size, fill_special_room, inside_room,
          SPLEV_LEFT, SPLEV_CENTER, SPLEV_RIGHT, TOP, BOTTOM } from './sp_lev.js';
 import { getbones } from './bones.js';
 import { u_on_rndspot } from './do.js';
-import { set_wall_state, see_nearby_objects } from './display.js';
+import { set_wall_state, see_nearby_objects, map_location } from './display.js';
 import {
     COLNO, ROWNO, STONE, ROOM, CORR, DOOR, STAIRS,
     HWALL, VWALL, TLCORNER, TRCORNER, BLCORNER, BRCORNER,
@@ -173,8 +173,9 @@ export function u_on_newpos(x, y) {
        stale values from previous level */
     if (u.uz0 && !on_level(u.uz, u.uz0)) {
         u.ux0 = u.ux, u.uy0 = u.uy;
-        /* map_location(u.ux, u.uy, FALSE): display only, the arrival
-           docrt() redraws the map */
+        /* sets lastseentyp[u.ux][u.uy]; needed for switch_terrain()
+           somewhere back up the call chain */
+        map_location(u.ux, u.uy, false);
         if (game.iflags) game.iflags.terrain_typ = MAX_TYPE; /* "none of the above" value */
     } else {
         /* still on same level; might have come close enough to

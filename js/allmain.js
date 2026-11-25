@@ -802,6 +802,9 @@ async function moveloop_core() {
     if (g.u.utotype)       /* change dungeon level */
         await deferred_goto(); /* after rhack() */
 
+    if (g.vision_full_recalc)
+        vision_recalc(0); /* vision! */
+
     if (g.luacore && nhcb_counts()[NHCB_END_TURN]) {
         /* lua_getglobal(gl.luacore, "nh_callback_run");
            nhl_pcall_handle(gl.luacore, 1, 0, "moveloop_core", NHLpa_panic) */
