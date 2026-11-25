@@ -15,6 +15,7 @@
 // and wield.c chwepon().  do_class_genocide()/do_genocide() and
 // wand_explode() are not ported yet.
 
+import { shk_your } from './shk.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -183,13 +184,6 @@ function upwords(s) {
 }
 /* C ref: hacklib.c upstart() */
 function upstart(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-/* C ref: objnam.c shk_your() -- shop and monster ownership aren't
-   ported yet */
-function shk_your(obj) {
-    if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
-        throw new Error('shk_your(): shk_owns()/mon_owns() not ported yet');
-    return (obj.where === 'OBJ_INVENT') ? "your " : "the ";
-}
 /* C ref: mkobj.c greatest_erosion() */
 function greatest_erosion(otmp) {
     return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);

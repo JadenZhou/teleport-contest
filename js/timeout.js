@@ -35,7 +35,7 @@ import { You_see as You_see_to, Your as Your_to } from './display.js';
 import { s_suffix as s_suffix_to } from './hacklib.js';
 import { Monnam as Monnam_to } from './do_name.js';
 import { cansee as cansee_to } from './vision.js';
-import { Shk_Your as Shk_Your_to } from './wield.js';
+import { Shk_Your as Shk_Your_to } from './shk.js';
 import { weight as weight_to, obj_extract_self as obj_extract_self_to } from './mkobj.js';
 import { m_at as m_at_to } from './makemon.js';
 import { obfree as obfree_to, useupall as useupall_to } from './invent.js';

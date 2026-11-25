@@ -3929,6 +3929,12 @@ export function shk_your(obj) {
     return buf + " ";
 }
 
+// C ref: shk.c Shk_Your()
+export function Shk_Your(obj) {
+    const buf = shk_your(obj);
+    return highc(buf.charAt(0)) + buf.slice(1);
+}
+
 // C ref: shk.c shk_owns()
 function shk_owns(obj) {
     let shkp;

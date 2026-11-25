@@ -13,7 +13,7 @@ import { shop_keeper, costly_spot, stolen_value, subfrombill, is_unpaid,
          contained_gold, donate_gold } from './shk.js';
 import { in_rooms } from './hack.js';
 import { SHOPBASE, Has_contents } from './const.js';
-import { Shk_Your } from './wield.js';
+import { Shk_Your } from './shk.js';
 import { container_impact_dmg } from './dokick.js';
 import { explode } from './explode.js';
 import { d } from './rng.js';
