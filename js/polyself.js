@@ -67,7 +67,7 @@ import { mungspaces, plur } from './hacklib.js';
 import { name_to_mon, your_race, is_vampshifter, is_were, is_orc, is_elf,
          is_dwarf, is_gnome, is_undead, poly_when_stoned,
          little_to_big } from './mondata.js';
-import { pmname, Some_Monnam, Monnam } from './do_name.js';
+import { pmname, Some_Monnam, Monnam, mon_nam, Mgender } from './do_name.js';
 import { an, the_unique_pm, vtense, yname, makeplural } from './objnam.js';
 import { the, simpleonames, surface, cloak_simple_name,
          helm_simple_name } from './iactions.js';

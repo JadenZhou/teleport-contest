@@ -8,6 +8,17 @@
 // yet).  For enlightenment: adtyp_to_prop(), u_adtyp_resistance_obj(),
 // item_what().
 
+import { You_hear } from './sounds.js';
+import { rndmonnam } from './do_name.js';
+import { adjalign } from './attrib.js';
+import { PM_ARCHEOLOGIST } from './monsters.js';
+import { obj_extract_self, place_object } from './mkobj.js';
+import { sokoban_guilt } from './trap.js';
+import { breakobj } from './dothrow.js';
+import { shkname } from './shknam.js';
+import { SHOPBASE, Role_if, CORPSTAT_HISTORIC } from './const.js';
+import { in_rooms } from './hack.js';
+import { billable, get_obj_location } from './shk.js';
 import { impossible } from './hack.js';
 import { game } from './gstate.js';
 import { livelog_printf, urgent_pline } from './display.js';
@@ -1177,9 +1188,22 @@ export async function bhito(obj, otmp) {
                (the sound could be implicit) */
             let maybelearnit = cansee(obj.ox, obj.oy) || !Deaf();
             if (obj.otyp === BOULDER) {
-                throw new Error('bhito(): striking a boulder (fracture_rock()) not ported yet');
+                /* Soundeffect(se_crumbling_sound, 75) */
+                if (cansee(obj.ox, obj.oy))
+                    await pline_The("boulder falls apart.");
+                else
+                    await You_hear("a crumbling sound.");
+                await fracture_rock(obj);
             } else if (obj.otyp === STATUE_ZB) {
-                throw new Error('bhito(): striking a statue (break_statue()) not ported yet');
+                if (await break_statue(obj)) {
+                    if (cansee(obj.ox, obj.oy)) {
+                        if (Hallucination())
+                            await pline_The(`${rndmonnam(null)} shatters.`);
+                        else
+                            await pline_The("statue shatters.");
+                    } else
+                        await You_hear("a crumbling sound.");
+                }
             } else {
                 const oox = obj.ox, ooy = obj.oy;
 
@@ -1393,6 +1417,77 @@ function replace_object(obj, otmp) {
     }
 }
 
+// C ref: zap.c fracture_rock()
+/* used by buzz(); also used by scatter() and by monster-on-boulder code */
+export async function fracture_rock(obj) { /* no texts here! */
+    const by_you = !game.context.mon_moving;
+    const loc = by_you ? get_obj_location(obj, 0) : null;
+
+    if (by_you && loc && costly_spot(loc[0], loc[1])) {
+        const [x, y] = loc;
+        const shkpp = { v: null };
+        const objroom = in_rooms(x, y, SHOPBASE).charCodeAt(0) || 0;
+
+        if (billable(shkpp, obj, objroom, false)) {
+            /* shop message says "you owe <shk> <$> for it!" so we need
+               to precede that with a message explaining what "it" is */
+            await You(`fracture ${s_suffix(shkname(shkpp.v))} ${xname(obj)}.`);
+            /* breakobj won't destroy fracturing statue or boulder but
+               will charge for shop goods */
+            await breakobj(obj, x, y, true, false);
+        }
+    }
+    if (by_you && obj.otyp === BOULDER)
+        sokoban_guilt();
+
+    obj.otyp = ROCK;
+    obj.oclass = GEM_CLASS;
+    obj.quan = rn1(60, 7);
+    obj.owt = weight(obj);
+    obj.dknown = obj.bknown = obj.rknown = 0;
+    obj.known = objects[obj.otyp].oc_uses_known ? 0 : 1;
+    delete obj.oextra; /* dealloc_oextra(obj) */
+
+    if (obj.where === 'OBJ_FLOOR') {
+        obj_extract_self(obj); /* move rocks back on top */
+        place_object(obj, obj.ox, obj.oy);
+        if (!does_block(obj.ox, obj.oy, game.level.at(obj.ox, obj.oy))) {
+            unblock_point(obj.ox, obj.oy);
+            /* need immediate update in case this is a striking/force bolt
+               zap that is about hit more things */
+            vision_recalc(0);
+        }
+        if (cansee(obj.ox, obj.oy))
+            newsym(obj.ox, obj.oy);
+    }
+}
+
+// C ref: zap.c break_statue()
+/* handle statue hit by striking/force bolt/pick-axe */
+export async function break_statue(obj) {
+    /* [obj is assumed to be on floor, so no get_obj_location() needed] */
+    const trap = t_at(obj.ox, obj.oy);
+    let item;
+    const by_you = !game.context.mon_moving;
+
+    if (trap && trap.ttyp === STATUE_TRAP
+        && await activate_statue_trap(trap, obj.ox, obj.oy, true))
+        return false;
+    /* drop any objects contained inside the statue */
+    while ((item = (obj.cobj && obj.cobj.length) ? obj.cobj[0] : null) !== null) {
+        obj_extract_self(item);
+        place_object(item, obj.ox, obj.oy);
+    }
+    if (by_you && Role_if(PM_ARCHEOLOGIST)
+        && (obj.spe & CORPSTAT_HISTORIC)) {
+        await You_feel("guilty about damaging such a historic statue.");
+        adjalign(-1);
+    }
+    obj.spe = 0;
+    await fracture_rock(obj);
+    return true;
+}
+
 // C ref: zap.c poly_obj()
 /*
  * Polymorph the object to the given object ID.  If the ID is STRANGE_OBJECT
@@ -1410,8 +1505,8 @@ export async function poly_obj(obj, id) {
     const can_merge = (id === STRANGE_OBJECT);
     const obj_location = obj.where;
 
-    if (obj.otyp === BOULDER && g.level.flags.sokoban_rules)
-        throw new Error('poly_obj(): sokoban_guilt() not ported yet');
+    if (obj.otyp === BOULDER)
+        sokoban_guilt();
     if (id === STRANGE_OBJECT) { /* preserve symbol */
         let try_limit = 3;
         let magic_obj = !!objects[obj.otyp].oc_magic;
@@ -1570,7 +1665,7 @@ export async function poly_obj(obj, id) {
         } else if (obj.otyp !== BOULDER && otmp.otyp === BOULDER) {
             /* leaving boulder in liquid would trigger sanity_check warning */
             if (is_pool(ox, oy) || is_lava(ox, oy)) /* is_pool_or_lava() */
-                throw new Error('poly_obj(): fracture_rock() not ported yet');
+                await fracture_rock(otmp);
             if (does_block(ox, oy, g.level.at(ox, oy)))
                 block_point(ox, oy);
         }

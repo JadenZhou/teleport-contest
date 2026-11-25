@@ -5,6 +5,11 @@
 // yet; splatter_burning_oil()/explode_oil() aren't ported yet), explosionmask(), engulfer_explosion_msg(),
 // adtyp_to_expltype(), mon_explodes().
 
+import { STATUE_TRAP } from './const.js';
+import { t_at, deltrap } from './trap.js';
+import { sobj_at } from './makemon.js';
+import { Tobjnam } from './objnam.js';
+import { fracture_rock, break_statue } from './zap.js';
 import { rehumanize } from './polyself.js';
 import { hideunder_async } from './makemon.js';
 import { DEADMONSTER } from './mon.js';
@@ -781,7 +786,36 @@ export async function scatter(sx, sy, /* location of objects to scatter */
         if ((scflags & MAY_FRACTURE) !== 0
             && (otmp.otyp === BOULDER || otmp.otyp === STATUE)
             && rn2(10)) {
-            throw new Error('scatter(): fracturing boulders/statues (fracture_rock()/break_statue()) not ported yet');
+            if (otmp.otyp === BOULDER) {
+                if (cansee(sx, sy)) {
+                    await pline(`${Tobjnam(otmp, "break")} apart.`);
+                } else {
+                    /* Soundeffect(se_stone_breaking, 100) */
+                    await You_hear("stone breaking.");
+                }
+                await fracture_rock(otmp);
+                place_object(otmp, sx, sy);
+                if ((otmp = sobj_at(BOULDER, sx, sy)) !== null) {
+                    /* another boulder here, restack it to the top */
+                    obj_extract_self(otmp);
+                    place_object(otmp, sx, sy);
+                }
+            } else {
+                let trap;
+
+                if ((trap = t_at(sx, sy)) && trap.ttyp === STATUE_TRAP)
+                    deltrap(trap);
+                if (cansee(sx, sy)) {
+                    await pline(`${Tobjnam(otmp, "crumble")}.`);
+                } else {
+                    /* Soundeffect(se_stone_crumbling, 100) */
+                    await You_hear("stone crumbling.");
+                }
+                await break_statue(otmp);
+                place_object(otmp, sx, sy); /* put fragments on floor */
+            }
+            newsym(sx, sy); /* in case it's beyond radius of 'farthest' */
+            used_up = true;
 
             /* 1 in 10 chance of destruction of obj; glass, egg destruction */
         } else if ((scflags & MAY_DESTROY) !== 0

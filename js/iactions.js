@@ -4,6 +4,7 @@
 //        item_reading_classification(), ia_addmenu(),
 //        itemactions_pushkeys(), itemactions()
 
+import { shk_your } from './shk.js';
 import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
 import { is_plural } from './wield.js';
 import { pmatch } from './pager.js';
@@ -286,24 +287,6 @@ function minimal_xname(obj) {
     if (bufp.startsWith("uncursed "))
         bufp = bufp.slice(9);
     return bufp;
-}
-
-/* C ref: shk.c shk_your() -- "your " or "the " (note the trailing
-   space); shop and monster ownership and unique corpses aren't ported */
-function shk_your(obj) {
-    let buf;
-    const chk_pm = obj.otyp === O.CORPSE && obj.corpsenm >= M.LOW_PM;
-
-    if (chk_pm)
-        ia_not_ported('shk_your() for corpses');
-    else if (obj.unpaid
-             || (obj.where === 'OBJ_FLOOR' && !obj.no_charge
-                 && game.level.flags?.has_shop)
-             || obj.where === 'OBJ_MINVENT')
-        ia_not_ported('shk_owns()/mon_owns()');
-    else
-        buf = (obj.where === 'OBJ_INVENT') ? "your" : "the"; /* the_your[carried(obj)] */
-    return buf + " ";
 }
 
 /* C ref: objnam.c ysimple_name() */

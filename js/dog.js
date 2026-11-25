@@ -421,22 +421,7 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
                 throw new Error('keepdogs(): leashed pet following not ported yet');
             const num_segs = mon_leave(mtmp);
             /* take off map and move mtmp from fmon list to mydogs */
-            /* relmon(mtmp, &gm.mydogs): remove_monster() + unlink from fmon */
-            const lst = g.level.monsters || [];
-            const i = lst.indexOf(mtmp);
-            if (i >= 0)
-                lst.splice(i, 1);
-            if (g.fmon === mtmp) {
-                g.fmon = mtmp.nmon;
-            } else {
-                let p;
-                for (p = g.fmon; p && p.nmon !== mtmp; p = p.nmon)
-                    ;
-                if (p) p.nmon = mtmp.nmon;
-            }
-            mtmp.nmon = g.mydogs || null;
-            g.mydogs = mtmp;
-            /* mtmp->mx,my retain current value */
+            relmon(mtmp, 'mydogs'); /* mtmp->mx,my retain current value */
             mtmp.mx = mtmp.my = 0; /* mx==0 implies migrating */
             mtmp.wormno = num_segs;
             mtmp.mlstmv = g.moves;

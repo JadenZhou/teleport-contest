@@ -15,6 +15,8 @@
 // and wield.c chwepon().  do_class_genocide()/do_genocide() and
 // wand_explode() are not ported yet.
 
+import { sokoban_guilt } from './trap.js';
+import { shk_your } from './shk.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -172,13 +174,6 @@ function upwords(s) {
         out += c;
     }
     return out;
-}
-/* C ref: objnam.c shk_your() -- shop and monster ownership aren't
-   ported yet */
-function shk_your(obj) {
-    if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
-        throw new Error('shk_your(): shk_owns()/mon_owns() not ported yet');
-    return (obj.where === 'OBJ_INVENT') ? "your " : "the ";
 }
 /* C ref: mkobj.c greatest_erosion() */
 function greatest_erosion(otmp) {
@@ -1695,9 +1690,7 @@ async function seffect_earth(sobjp) {
             }
         }
         g.known = true;
-        /* sokoban_guilt() */
-        if (In_sokoban_rd(u.uz))
-            throw new Error('seffect_earth(): sokoban_guilt() not ported yet');
+        sokoban_guilt();
 
         /* Loop through the surrounding squares */
         if (!scursed)

@@ -3258,7 +3258,6 @@ async function domove_core() {
         newsym(u.ux0, u.uy0);
         /* Since the hero has moved, adjust what can be seen/unseen. */
         vision_recalc(1); /* Do the work now in the recover time. */
-        newsym(u.ux, u.uy);
         /* invocation_message(): only on the vibrating square level */
     }
 

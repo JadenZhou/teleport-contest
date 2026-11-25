@@ -15,6 +15,7 @@
 // ported yet (wizard-mode terrain wishes, artifacts by name, fruit names,
 // tins of a monster, lit light sources, novels, ...) raise not_ported().
 
+import { shk_your } from './shk.js';
 import { letter } from './hacklib.js';
 import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
@@ -2999,20 +3000,16 @@ export function Tobjnam(otmp, verb) {
     return bp;
 }
 
-// C ref: objnam.c yname() -- xname, with "your"/"the" (shk_your())
-// prepended; shop and monster ownership aren't ported yet
+// C ref: objnam.c yname() -- xname, with "your"/"the"/"Foobar's"
+// (shk_your()) prepended
 export function yname(obj) {
     const s = cxname(obj);
 
     /* leave off "your" for most of your artifacts, but prepend
      * "your" for unique objects and "foo of bar" quest artifacts */
     if (obj.where !== 'OBJ_INVENT' || !obj_is_pname(obj)
-        || obj.oartifact >= ART_ORB_OF_DETECTION_ON) {
-        /* shk_your(): !shk_owns() && !mon_owns() */
-        if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
-            throw new Error('yname(): shk_owns()/mon_owns() not ported yet');
-        return `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
-    }
+        || obj.oartifact >= ART_ORB_OF_DETECTION_ON)
+        return shk_your(obj) + s;
 
     return s;
 }
@@ -3036,19 +3033,15 @@ export function aobjnam(otmp, verb) {
     return bp;
 }
 
-// C ref: objnam.c yobjnam() -- shk_your() for shop and monster ownership
-// isn't ported yet (see yname())
+// C ref: objnam.c yobjnam()
 export function yobjnam(obj, verb) {
     let s = aobjnam(obj, verb);
 
     /* leave off "your" for most of your artifacts, but prepend
      * "your" for unique objects and "foo of bar" quest artifacts */
     if (obj.where !== 'OBJ_INVENT' || !obj_is_pname(obj)
-        || obj.oartifact >= ART_ORB_OF_DETECTION_ID) {
-        if (obj.unpaid || obj.no_charge || obj.where === 'OBJ_MINVENT')
-            throw new Error('yobjnam(): shk_owns()/mon_owns() not ported yet');
-        s = `${(obj.where === 'OBJ_INVENT') ? "your" : "the"} ${s}`;
-    }
+        || obj.oartifact >= ART_ORB_OF_DETECTION_ON)
+        s = shk_your(obj) + s;
     return s;
 }
 
@@ -3059,8 +3052,6 @@ export function Yobjnam2(obj, verb) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* C ref: artilist.h ART_ORB_OF_DETECTION (first quest artifact) */
-const ART_ORB_OF_DETECTION_ID = 21;
 
 // C ref: objnam.c xname_flags()
 function xname_flags(obj, cxn_flags) {

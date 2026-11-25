@@ -5,6 +5,7 @@
 // kick_steed(), poly_steed() and the less common dismount cases stop
 // with "not ported yet".
 
+import { sokoban_guilt } from './trap.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { pline, You, You_cant } from './display.js';
@@ -586,7 +587,7 @@ export async function dismount_steed(
                 game.in_steed_dismounting = true;
                 await teleds(cc.x, cc.y, TELEDS_ALLOW_DRAG);
                 if (sobj_at(BOULDER, cc.x, cc.y))
-                    throw new Error('dismount_steed(): sokoban_guilt() not ported yet');
+                    sokoban_guilt();
                 game.in_steed_dismounting = false;
 
                 /* Put your steed in your trap */

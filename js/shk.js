@@ -1763,7 +1763,7 @@ async function special_stock(obj, shkp, quietly) {
 }
 
 // C ref: shk.c donate_gold()
-async function donate_gold(
+export async function donate_gold(
     gltmp,
     shkp,
     selling) { /* T: dropped in shop; F: kicked and landed in shop */
@@ -3908,6 +3908,12 @@ export function shk_your(obj) {
     else if ((buf = shk_owns(obj)) == null && (buf = mon_owns(obj)) == null)
         buf = the_your[obj.where === 'OBJ_INVENT' /* carried() */ ? 1 : 0];
     return buf + " ";
+}
+
+// C ref: shk.c Shk_Your()
+export function Shk_Your(obj) {
+    const buf = shk_your(obj);
+    return highc(buf.charAt(0)) + buf.slice(1);
 }
 
 // C ref: shk.c shk_owns()

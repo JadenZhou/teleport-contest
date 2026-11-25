@@ -24,11 +24,11 @@ import {
     BLINDED, INFRAVISION, TELEPAT, WARN_OF_MON, DETECT_MONSTERS, WARNING,
     NO_TRAP, BEAR_TRAP, PIT, SPIKED_PIT, WEB,
 } from './const.js';
-import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT,
+import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT, DB_FLOOR,
          M_AP_FURNITURE, WARNCOUNT, def_warnsyms, In_mines, In_sokoban,
          Is_knox_level, M_AP_NOTHING, M_AP_OBJECT, M_AP_MONSTER, M_AP_TYPE,
          PROT_FROM_SHAPE_CHANGERS, MCORPSENM, ACCESSIBLE } from './const.js';
-import { ROGUESET } from './const.js';
+import { ROGUESET, Is_rogue_level } from './const.js';
 import { visible_region_at, show_region } from './region.js';
 import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
@@ -817,7 +817,20 @@ function terrain_glyph_dec(loc, x, y) {
     case WATER:     return { ch: '`', color: CLR_BRIGHT_BLUE, dec: true, asc: '}', cmapidx: 48 };  /* S_water */
     case DBWALL:    return { ch: '#', color: CLR_BROWN, dec: false,
                              cmapidx: loc.horizontal ? 45 : 44 };
-    case DRAWBRIDGE_UP: return S_room;
+    case DRAWBRIDGE_UP:
+        switch (loc.drawbridgemask & DB_UNDER) {
+        case DB_MOAT:
+            return { ch: '`', color: CLR_BLUE, dec: true, asc: '}', cmapidx: 38 };  /* S_pool */
+        case DB_LAVA:
+            return { ch: '`', color: CLR_RED, dec: true, asc: '}', cmapidx: 40 };  /* S_lava */
+        case DB_ICE:
+            return { ch: '~', color: CLR_CYAN, dec: true, asc: '.', cmapidx: 39 };  /* S_ice */
+        case DB_FLOOR:
+            return S_room;
+        default:
+            /* impossible("Strange db-under: %d", ...) */
+            return S_room; /* something is better than nothing */
+        }
     case DRAWBRIDGE_DOWN: return { ch: '~', color: CLR_BROWN, dec: true, asc: '#',
                                    cmapidx: loc.horizontal ? 43 : 42 };
     default:        return S_room;
@@ -913,15 +926,26 @@ function glyph_gid(glyph) {
 // C ref: wintty.c tty_print_glyph() -- the video attribute a map cell is
 // printed with. MG_PET with hilite_pet gives iflags.wc2_petattr (worked
 // out by display_monster() into disp_attr); otherwise MG_OBJPILE with
-// hilite_pile is shown in inverse when use_inverse is on. Like the tty,
-// this is decided when the glyph is printed, from the current options.
+// hilite_pile is shown in inverse when use_inverse is on, and so is
+// MG_BW_ENGR. Like the tty, this is decided when the glyph is printed,
+// from the current options.
 function tty_glyph_attr(loc) {
     if (loc.disp_attr)
         return loc.disp_attr;
-    if (loc.disp_objpile && game.iflags?.hilite_pile
+    if (((loc.disp_objpile && game.iflags?.hilite_pile)
+         || glyph_bw_engr(loc))
         && game.iflags?.wc_inverse !== false)
         return ATR_INVERSE;
     return 0;
+}
+
+// C ref: display.c map_glyphinfo() -- MG_BW_ENGR: "likewise for corridor
+// and engraving-in-corridor": S_engrcorr gets it when its symbol is the
+// one S_corr or S_litcorr uses. Both are '#' in every symset this port
+// draws (default, DECgraphics, and the Rogue level's), while S_engroom
+// is '`'.
+function glyph_bw_engr(loc) {
+    return loc.disp_kind === 'engr' && loc.disp_ch === '#';
 }
 
 /* the glyph range of a remembered glyph (lev->glyph): map_object(),
@@ -2220,9 +2244,15 @@ export function feel_location(x, y) {
                 if (idx !== undefined && idx >= 0 && idx < 20 /* S_darkroom */)
                     do_room_glyph = true;
             }
-            if (do_room_glyph)
-                /* lev->glyph = S_darkroom/S_room/S_stone; show_glyph() */
-                throw new Error('feel_location(): levitation rules room glyph not ported yet');
+            if (do_room_glyph) {
+                lev.remembered_glyph = (game.flags.dark_room !== false
+                                        && game.iflags.wc_color !== false
+                                        && !Is_rogue_level(u.uz))
+                                           ? room_cmap_glyph(20) /* S_darkroom */
+                                           : (lev.waslit ? room_cmap_glyph(19) /* S_room */
+                                                         : room_cmap_glyph(0)); /* S_stone */
+                show_glyph(x, y, lev.remembered_glyph);
+            }
         } else {
             /* We feel it (I think hallways are the only things left). */
             map_background(x, y, 1);
@@ -2295,6 +2325,16 @@ export function feel_location(x, y) {
                         (tp_sensemon(mon) || MATCH_WARN_OF_MON(mon))
                             ? PHYSICALLY_SEEN : DETECTED,
                         is_worm_tail(mon, x, y));
+}
+
+// C ref: display.h cmap_to_glyph(S_stone / S_room / S_darkroom) -- in the
+// remembered-glyph form. S_darkroom is drawn like S_room (see newsym()).
+function room_cmap_glyph(idx) {
+    if (idx === 0) /* S_stone */
+        return { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'S_stone', cmapidx: 0 };
+    const dec = dec_symset();
+    return { ch: dec ? '~' : '.', color: NO_COLOR, decgfx: dec,
+             cmap: idx === 20 ? 'S_darkroom' : 'S_room', cmapidx: idx };
 }
 
 /* a terrain glyph in the remembered-glyph form (lev->glyph) */

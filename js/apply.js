@@ -139,7 +139,7 @@ import { rn1 as rn1_ap } from './rng.js';
 import { djinni_from_bottle as djinni_from_bottle_ap } from './potion.js';
 import { nothing_happens as nothing_happens_ap } from './const.js';
 import { nothing_seems_to_happen as nothing_seems_to_happen_lp, GLIB as GLIB_LP } from './const.js';
-import { Shk_Your as Shk_Your_lp } from './wield.js';
+import { Shk_Your as Shk_Your_lp } from './shk.js';
 import { yname as yname_lp, Tobjnam as Tobjnam_lp, otense as otense_lp } from './objnam.js';
 import { Your as Your_lp } from './display.js';
 import { begin_burn as begin_burn_lp, end_burn as end_burn_lp } from './timeout.js';
