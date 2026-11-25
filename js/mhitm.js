@@ -111,7 +111,7 @@ import { unstuck as unstuck_sm } from './mhitu.js';
 import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';
 import { mhitm_knockback, stagger } from './uhitm.js';
 import { mon_reflects } from './muse.js';
-import { golemeffects, healmon } from './mon.js';
+import { golemeffects, healmon, shieldeff_mon as shieldeff_mon_mp } from './mon.js';
 import { split_mon } from './potion.js';
 import { haseyes, perceives } from './mondata.js';
 import { erode_armor } from './uhitm.js';
@@ -1030,7 +1030,8 @@ export async function mon_poly(magr, mdef, dmg) {
 
         if (resists_magm_mp(mdef)) {
             /* Magic resistance */
-            /* if (gv.vis) shieldeff_mon(mdef): transient display only */
+            if (game.vis)
+                await shieldeff_mon_mp(mdef);
         } else if (await resist_async_mp(mdef, WAND_CLASS_MP, 0, TELL_MP)) {
             /* general resistance to magic... */
             ;

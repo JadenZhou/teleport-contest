@@ -741,7 +741,7 @@ export async function bhitm(mtmp, otmp) {
         } else if (resists_magm_zp(mtmp)) {
             /* magic resistance protects from polymorph traps, so make
                it guard against involuntary polymorph attacks too... */
-            /* shieldeff_mon(mtmp): transient display only */
+            await shieldeff_mon(mtmp);
         } else if (!resist(mtmp, otmp.oclass, 0, NOTELL_ZP)) {
             const polyspot = (otyp !== POT_POLYMORPH),
                 give_msg = (!Hallucination()
@@ -1003,7 +1003,7 @@ export async function bhitm(mtmp, otmp) {
         if (otyp === SPE_DRAIN_LIFE_BM)
             dmg = spell_damage_bonus(dmg);
         if (resists_drli_bm(mtmp)) {
-            /* shieldeff_mon(mtmp): transient display only */
+            await shieldeff_mon(mtmp);
         } else if (!(await resist_async(mtmp, otmp.oclass, dmg, NOTELL_ZP))
                    && !DEADMONSTER_BM(mtmp)) {
             mtmp.mhp -= dmg;

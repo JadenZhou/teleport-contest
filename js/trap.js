@@ -100,7 +100,7 @@ import { perceives, pm_invisible } from './mondata.js';
 import { INVIS, SEE_INVIS } from './const.js';
 import { IS_AIR, Is_knox_level } from './const.js';
 import { just_an } from './objnam.js';
-import { seemimic } from './mon.js';
+import { seemimic, shieldeff_mon as shieldeff_mon_tp } from './mon.js';
 import { resist } from './zap.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, NOTELL } from './const.js';
 import { dist2, sgn, upstart, mdistu } from './hacklib.js';
@@ -4266,7 +4266,7 @@ async function trapeffect_poly_trap(mtmp, trap, trflags) {
                poly_obj() of worn boots */
             throw new Error('trapeffect_poly_trap(): monster iron shoes warping not ported yet');
         } else if (resists_magm(mtmp)) {
-            /* shieldeff_mon(mtmp): transient display only */
+            await shieldeff_mon_tp(mtmp);
         } else if (!resist(mtmp, WAND_CLASS_TP, 0, NOTELL)) {
             await newcham_tp(mtmp, null, NC_SHOW_MSG_TP);
             if (in_sight)
