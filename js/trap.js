@@ -4738,7 +4738,7 @@ function number_leashed() {
 
 // C ref: apply.c unleash_all()
 /* Ensure no leashed monsters */
-function unleash_all() {
+export function unleash_all() {
     for (let otmp = game.invent; otmp; otmp = otmp.nobj)
         if (otmp.otyp === LEASH_DR)
             otmp.leashmon = 0;
@@ -4797,7 +4797,7 @@ async function emergency_disrobe(lostsome) {
 // C ref: trap.c rescued_from_terrain()
 /* life-saving or divine rescue has attempted to get the hero out of hostile
    terrain and put hero in an unexpected spot or failed due to overfull level */
-async function rescued_from_terrain(how) {
+export async function rescued_from_terrain(how) {
     const find_yourself = "find yourself";
     const u = game.u;
     const lev = game.level.at(u.ux, u.uy);

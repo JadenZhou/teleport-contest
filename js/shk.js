@@ -126,6 +126,12 @@ import { ansimpleoname } from './iactions.js';
 import { Norep as Norep_sk, You_feel as You_feel_sk } from './display.js';
 import { stop_occupation as stop_occupation_sk } from './allmain.js';
 import { SHOPBASE as SHOPBASE_FR } from './const.js';
+import { remove_worn_item } from './steal.js';
+import { unleash_all } from './trap.js';
+import { drop_upon_death } from './bones.js';
+import { impossible } from './hack.js';
+import { dealloc_obj } from './mkobj.js';
+import { BALL_CLASS } from './objects.js';
 
 // ── small helpers (C ref: youprop.h / monst.h / shk.c macros) ──
 
@@ -1345,7 +1351,7 @@ export async function pay_for_damage(dmgstr, cant_mollify) {
 
         cost_of_damage = await check_credit(cost_of_damage, shkp);
         if (cost_of_damage > 0) {
-            money2mon(shkp, cost_of_damage);
+            await money2mon(shkp, cost_of_damage);
             game.disp_botl = true;
         }
         await pline(`Mollified, ${shkname(shkp)} accepts your restitution.`);
@@ -1495,7 +1501,7 @@ function findgold(chain) {
  *  Returns the amount actually paid, so we can know
  *  if the monster kept the change.
  */
-export function money2mon(mon, amount) {
+export async function money2mon(mon, amount) {
     let ygold = findgold(game.invent);
 
     if (amount <= 0) {
@@ -1510,7 +1516,7 @@ export function money2mon(mon, amount) {
     if (ygold.quan > amount)
         ygold = splitobj(ygold, amount);
     else if (ygold.owornmask)
-        throw new Error('money2mon(): remove_worn_item() of quivered gold not ported yet');
+        await remove_worn_item(ygold, false); /* quiver */
     freeinv(ygold);
     add_to_minv(mon, ygold);
     game.disp_botl = true;
@@ -1575,7 +1581,7 @@ async function pay(tmp, shkp) {
     const balance = ((tmp <= 0) ? tmp : await check_credit(tmp, shkp));
 
     if (balance > 0)
-        money2mon(shkp, balance);
+        await money2mon(shkp, balance);
     else if (balance < 0)
         await money2u(shkp, -balance);
     game.disp_botl = true;
@@ -1908,14 +1914,14 @@ async function inherits(shkp, numsk, croaked, silently) {
                 if (eshkp.robbed < 0)
                     eshkp.robbed = 0;
                 if (umoney > 0) {
-                    money2mon(shkp, umoney);
+                    await money2mon(shkp, umoney);
                     g.disp_botl = true;
                 }
                 if (!silently)
                     await pline(`${Shknam(shkp)} ${takes} all your possessions.`);
                 taken = true;
             } else {
-                money2mon(shkp, loss);
+                await money2mon(shkp, loss);
                 g.disp_botl = true;
                 if (!silently)
                     await pline(`${Shknam(shkp)} ${takes} the ${loss} ${currency(loss)} ${
@@ -1994,7 +2000,37 @@ export function costly_adjacent(shkp, x, y) {
 /* called at game exit, after inventory disclosure but before making bones;
    shouldn't issue any messages */
 export async function finish_paybill() {
-    throw new Error('finish_paybill(): drop_upon_death() not ported yet');
+    const u = game.u;
+    const shkp = game.repo?.shopkeeper || null;
+    let ox = game.repo?.location.x || 0, oy = game.repo?.location.y || 0;
+
+    /*
+     * If set_repo_loc() didn't get called for some reason (good luck
+     * untangling inherits() to figure out why...), ox,oy will be 0,0
+     * and shkp will be Null.  Fix coordinates if that happens.
+     */
+
+    if (!isok(ox, oy)) {
+        /* this used to be suppressed as "don't bother" (too late to matter)
+           but that led to "place_object: \"<item>\" off map <0,0>" warning */
+        if (shkp)
+            impossible(`finish_paybill: bad location <${ox},${oy}>.`);
+        /* force a valid location */
+        ox = u.ux ? u.ux : u.ux0;
+        oy = u.ux ? u.uy : u.uy0; /* [note: testing u.ux when setting oy
+                                   *  is correct here]*/
+    }
+    /* normally done by savebones(), but that's too late in this case */
+    unleash_all();
+    /* if hero has any gold left, take it into shopkeeper's possession */
+    if (shkp) {
+        const umoney = money_cnt(game.invent);
+
+        if (umoney)
+            await money2mon(shkp, umoney);
+    }
+    /* transfer rest of the character's inventory to the shop floor */
+    drop_upon_death(null, null, ox, oy);
 }
 
 // C ref: shk.c clear_no_charge_obj()
@@ -2031,8 +2067,14 @@ export async function make_angry_shk(shkp, ox, oy) {
     void ox, void oy;
 
     /* all pending shop transactions are now "past due" */
-    if (eshkp.billct || eshkp.debit || eshkp.loan || eshkp.credit)
-        throw new Error('make_angry_shk(): setpaid() of pending transactions not ported yet');
+    if (eshkp.billct || eshkp.debit || eshkp.loan || eshkp.credit) {
+        eshkp.robbed += (addupbill(shkp) + eshkp.debit + eshkp.loan);
+        eshkp.robbed -= eshkp.credit;
+        if (eshkp.robbed < 0)
+            eshkp.robbed = 0;
+        /* billct, debit, loan, and credit will be cleared by setpaid */
+        setpaid(shkp);
+    }
 
     await pline(`${Shknam(shkp)} ${!ANGRY(shkp) ? "gets angry" : "is furious"}!`);
     hot_pursuit(shkp);
@@ -2248,7 +2290,7 @@ export async function dopay() {
     if (shkp !== resident) {
         /* impossible("dopay: not to shopkeeper?") */
         if (resident)
-            throw new Error('dopay(): setpaid() not ported yet');
+            setpaid(resident);
         return ECMD_OK;
     }
     /* pay debt, if any, first */
@@ -2279,7 +2321,7 @@ export async function dopay() {
                 eshkp.loan = 0;
                 await Your("debt is covered by your credit.");
             } else if (!eshkp.credit) {
-                money2mon(shkp, dtmp);
+                await money2mon(shkp, dtmp);
                 eshkp.debit = 0;
                 eshkp.loan = 0;
                 await You("pay that debt.");
@@ -2287,7 +2329,7 @@ export async function dopay() {
             } else {
                 dtmp -= eshkp.credit;
                 eshkp.credit = 0;
-                money2mon(shkp, dtmp);
+                await money2mon(shkp, dtmp);
                 eshkp.debit = 0;
                 eshkp.loan = 0;
                 await pline("That debt is partially offset by your credit.");
@@ -3289,7 +3331,12 @@ export function contained_cost(obj, shkp, price, usell, unpaid_only) {
             continue;
 
         if (usell) {
-            throw new Error('contained_cost(): selling contents (saleable()) not ported yet');
+            if (saleable(shkp, otmp) && !otmp.unpaid
+                && otmp.oclass !== BALL_CLASS
+                && !(otmp.oclass === FOOD_CLASS && otmp.oeaten)
+                && !(Is_candle(otmp)
+                     && otmp.age < 20 * objects[otmp.otyp].oc_cost))
+                price += set_cost(otmp, shkp);
         } else {
             /* no_charge is only set for floor items (including
                contents of floor containers) inside shop proper;
@@ -3440,7 +3487,7 @@ function add_one_tobill(obj, dummy, shkp) {
        a new OBJ_FREE object), don't leave unmanaged object hanging around */
     if (unbilled) {
         if (obj.where === 'OBJ_FREE')
-            throw new Error('add_one_tobill(): dealloc_obj() of an unbilled dummy not ported yet');
+            dealloc_obj(obj); /* change to obj->where==OBJ_DELETED */
         return;
     }
 

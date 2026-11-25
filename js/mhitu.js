@@ -2174,7 +2174,7 @@ export async function doseduce(mon) {
         } else {
             await pline(`${noit_Monnam(mon)} takes ${cost} ${
                 currency(cost)} for services rendered!`); /* pline_mon() */
-            money2mon(mon, cost);
+            await money2mon(mon, cost);
             game.disp_botl = true;
         }
     }

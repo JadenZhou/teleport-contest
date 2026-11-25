@@ -57,6 +57,8 @@ import { is_ice } from './dig.js';
 import { obj_sheds_light, obj_split_light_source, del_light_source } from './light.js';
 import { nartifact_exist, mk_artifact } from './artifact.js';
 import { A_NONE } from './const.js';
+import { splitbill, get_obj_location } from './shk.js';
+import { CONTAINED_TOO } from './const.js';
 
 const NON_PM = -1;
 
@@ -787,7 +789,7 @@ export function splitobj(obj, num) {
     if (otmp.where === 'OBJ_LUAFREE')
         otmp.where = 'OBJ_FREE';
     if (obj.unpaid)
-        throw new Error('splitobj(): splitbill() not ported yet');
+        splitbill(obj, otmp);
     copy_oextra(otmp, obj);
     if (otmp.omid)
         delete otmp.omid; /* free_omid(): only one association with m_id */
@@ -1362,10 +1364,11 @@ export function costly_alteration(obj, alter_type) {
     } else {
         /* this get_obj_location shouldn't fail, but if it does,
            use hero's location */
-        if (obj.where === 'OBJ_FLOOR')
-            ox = obj.ox, oy = obj.oy;
+        const loc = get_obj_location(obj, CONTAINED_TOO);
+        if (!loc)
+            ox = game.u.ux, oy = game.u.uy;
         else
-            throw new Error('costly_alteration(): get_obj_location() of a contained/carried object not ported yet');
+            [ox, oy] = loc;
         if (!costly_spot(ox, oy))
             return;
     }
