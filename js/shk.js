@@ -285,7 +285,8 @@ export async function credit_report(shkp, idx, silent) {
     if (!game.credit_snap)
         game.credit_snap = [[0, 0, 0], [0, 0, 0]];
     const credit_snap = game.credit_snap;
-    const BEFORE = 0, NOW = 1;
+    const BEFORE = 0; /* botl.h */
+    const NOW = 1;
 
     if (!idx) {
         credit_snap[BEFORE][0] = credit_snap[NOW][0] = 0;
