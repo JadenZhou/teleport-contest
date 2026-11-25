@@ -40,11 +40,11 @@ import { dryup } from './fountain.js';
 import { water_damage } from './trap.js';
 import { WATER_WALKING_BOOTS } from './objects.js';
 import { Deaf } from './youprop.js';
-import { humanoid, slithy, amorphous, is_hider } from './mondata.js';
+import { humanoid, slithy, amorphous, is_hider,
+         is_swimmer } from './mondata.js';
 
 /* C ref: mondata.h macros used here */
 const lays_eggs = (ptr) => (ptr.mflags1 & M1_OVIPAROUS) !== 0;
-const is_swimmer = (ptr) => (ptr.mflags1 & M1_SWIM) !== 0;
 const eggs_in_water = (ptr) => (lays_eggs(ptr) && ptr.mlet === S_EEL && is_swimmer(ptr));
 /* C ref: obj.h Is_box() */
 const Is_box = (o) => (o.otyp === LARGE_BOX || o.otyp === CHEST);

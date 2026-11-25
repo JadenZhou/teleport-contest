@@ -24,7 +24,8 @@ import { mhitm_adtyping, mhitm_knockback } from './uhitm.js';
 import { is_undead, is_vampshifter, is_demon, is_were, is_swimmer, perceives,
          is_orc, dmgtype, is_neuter, is_animal, unsolid, hides_under,
          is_whirly, thick_skinned, nolimbs, touch_petrifies, digests, flaming,
-         resists_ston } from './mondata.js';
+         resists_ston, dmgtype_fromattack, attacktype,
+         passes_walls } from './mondata.js';
 import { midnight, night } from './calendar.js';
 import { new_were, were_summon } from './were.js';
 import { growl_sound } from './sounds.js';
@@ -1330,13 +1331,7 @@ export function could_seduce(magr, mdef, mattk) {
 /* C ref: mondata.h digests(), enfolds(), is_whirly(), amorphous(),
    attacktype() */
 function enfolds(ptr) {
-    return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL);
-}
-function dmgtype_fromattack(ptr, dtyp, atyp) {
-    for (const a of ptr.mattk || [])
-        if (a && a.adtyp === dtyp && (atyp === M.AT_ANY || a.aatyp === atyp))
-            return true;
-    return false;
+    return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL) !== null; /* 't' */
 }
 // C ref: apply.c number_leashed()
 function number_leashed() {
@@ -1347,9 +1342,6 @@ function number_leashed() {
         if (obj.otyp === LEASH && obj.leashmon)
             i++;
     return i;
-}
-function attacktype(ptr, atyp) {
-    return (ptr.mattk || []).some(a => a && a.aatyp === atyp);
 }
 
 // C ref: mhitm.c failed_grab()
@@ -1395,7 +1387,6 @@ export function engulf_target(magr, mdef) {
     let ax, ay, dx, dy;
     const uatk = (magr === game.youmonst),
           udef = (mdef === game.youmonst);
-    const passes_walls = (ptr) => (ptr.mflags1 & M.M1_WALLWALK) !== 0;
 
     /* can't swallow something that's too big */
     if (mdef.data.msize >= M.MZ_HUGE

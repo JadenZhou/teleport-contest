@@ -20,7 +20,8 @@ import { mkobj, curse, uncurse, SPBOOK_no_NOVEL } from './mkobj.js';
 import { mpickobj } from './steal.js';
 import { which_armor } from './worn.js';
 import { rloc_mklev } from './teleport.js';
-import { mon_learns_traps, is_minion, is_rider } from './mondata.js';
+import { mon_learns_traps, is_minion, is_rider,
+         resist_conflict } from './mondata.js';
 import { pm_good_location } from './sp_lev.js';
 import { mfndpos } from './mon.js';
 import { mon_allowflags } from './mon.js';
@@ -156,14 +157,6 @@ export function p_coaligned(priest) {
     return (game.u.ualign.type === mon_aligntyp(priest));
 }
 
-/* C ref: mondata.c resist_conflict() */
-function resist_conflict(mtmp) {
-    /* always a small chance at 19 */
-    const resist_chance = Math.min(19, (ACURR(A_CHA) - mtmp.m_lev
-                                        + game.u.ulevel));
-
-    return (rnd(20) > resist_chance);
-}
 /* C ref: hacklib.c online2(); hack.h onlineu() */
 function onlineu(xx, yy) {
     const dx = xx - game.u.ux, dy = yy - game.u.uy;

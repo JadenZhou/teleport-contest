@@ -16,7 +16,6 @@ import { game } from './gstate.js';
 import { eaten_stat, peek_at_iced_corpse_age } from './eat.js';
 import { mon_wield_item } from './weapon.js';
 import { rn2, rnd } from './rng.js';
-import { resist_conflict } from './mhitm.js';
 import { mattacku } from './mhitu.js';
 import { dist2, distmin } from './hacklib.js';
 import { cansee, couldsee, clear_path, do_clear_area } from './vision.js';
@@ -34,7 +33,8 @@ import { monsndx, is_swimmer, passes_walls, haseyes, perceives, is_undead,
          is_elf, is_vampshifter, mon_hates_silver, is_flyer, is_floater,
          same_race, is_animal, mindless, throws_rocks, humanoid, carnivorous,
          herbivorous, tunnels, metallivorous, acidic, strongmonst, likes_lava,
-         likes_fire, is_rider, vegan } from './mondata.js';
+         likes_fire, is_rider, vegan, attacktype,
+         resist_conflict } from './mondata.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import * as O from './objects.js';
@@ -70,10 +70,6 @@ const DOG_WEAK = 500;
 const DOG_STARVE = 750;
 
 /* mondata.h */
-// C ref: mondata.c attacktype()
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some((a) => a.aatyp === atyp);
-}
 /* C ref: mondata.h resists_poison()/resists_ston()/resists_acid() */
 function mresists(mon, mr) {
     return (((mon.data.mresists | (mon.mextrinsics ?? 0)) & mr) !== 0);

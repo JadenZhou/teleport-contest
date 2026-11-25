@@ -24,7 +24,7 @@ import { yelp, growl, You_hear } from './sounds.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
 import { poly_gender } from './polyself.js';
-import { is_demon, type_is_pname } from './mondata.js';
+import { is_demon, type_is_pname, resist_conflict } from './mondata.js';
 import { search_special } from './sounds.js';
 import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
@@ -176,14 +176,6 @@ async function verbalize(line) {
     if (Deaf())
         return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
     await pline(`"${line}"`);
-}
-/* C ref: mondata.c resist_conflict() */
-function resist_conflict(mtmp) {
-    /* always a small chance at 19 */
-    const resist_chance = Math.min(19, (ACURR(A_CHA) - mtmp.m_lev
-                                        + game.u.ulevel));
-
-    return (rnd(20) > resist_chance);
 }
 /* C ref: hack.h makeknown() */
 function makeknown(x) { discover_object(x, true, true, true); }

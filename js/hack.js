@@ -18,7 +18,7 @@ import { livelog_printf, You_feel } from './display.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
 import { monsndx, throws_rocks, amorphous, verysmall, bigmonst, hides_under,
          is_whirly, slithy, noncorporeal, is_clinger, strongmonst, tunnels,
-         needspick, is_hider } from './mondata.js';
+         needspick, is_hider, noattacks } from './mondata.js';
 import { breaktest } from './dothrow.js';
 import { splitobj } from './mkobj.js';
 import { setuwep } from './wield.js';
@@ -531,20 +531,6 @@ export async function overexert_hp() {
         exercise(A_CON, false);
         await fall_asleep(-10, false);
     }
-}
-
-// C ref: mondata.c noattacks()
-export function noattacks(ptr) {
-    for (const mattk of ptr.mattk || []) {
-        /* AT_BOOM "passive attack" (gas spore's explosion upon death)
-           isn't an attack as far as our callers are concerned */
-        if (mattk.aatyp === AT_BOOM)
-            continue;
-
-        if (mattk.aatyp)
-            return false;
-    }
-    return true;
 }
 
 // C ref: hack.c monster_nearby()

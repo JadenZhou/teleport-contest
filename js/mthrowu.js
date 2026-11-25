@@ -13,8 +13,8 @@ import { ordin } from './hacklib.js';
 import { passes_rocks } from './trap.js';
 import { resists_poison, noncorporeal, amorphous, bigmonst, likes_gems,
          throws_rocks, nohands, is_unicorn, touch_petrifies, resists_acid,
-         resists_ston, eyecount, is_prince, is_lord,
-         is_mplayer } from './mondata.js';
+         resists_ston, eyecount, is_prince, is_lord, is_mplayer,
+         poly_when_stoned } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rnl, rn2_on_display_rng, ROLL_FROM } from './rng.js';
@@ -99,10 +99,6 @@ function verbose() { return game.flags.verbose ?? true; }
 
 /* C ref: mondata.c poly_when_stoned() -- golems other than stone golem
    turn into stone golems */
-function poly_when_stoned(ptr) {
-    return ptr.mlet === M.S_GOLEM && ptr !== mons[M.PM_STONE_GOLEM]
-           && !(game.mvitals[M.PM_STONE_GOLEM].mvflags & G_GENOD);
-}
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;

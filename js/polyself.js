@@ -37,8 +37,8 @@ import { set_mon_data, is_vampire, resists_drli, dmgtype, dmgtype_fromattack,
          type_is_pname, likes_gems, is_whirly, has_head, is_hider, polyok,
          strongmonst, is_giant, is_male, is_female, is_neuter, cantwield,
          could_twoweap, flaming, webmaker, likes_lava, is_unicorn,
-         is_mind_flayer, is_placeholder, can_breathe,
-         emits_light } from './mondata.js';
+         is_mind_flayer, is_placeholder, can_breathe, emits_light, attacktype,
+         sliparm, breakarm, num_horns } from './mondata.js';
 import * as M from './monsters.js';
 import * as O from './objects.js';
 import {
@@ -295,45 +295,10 @@ function polysense() {
 
 /* C ref: mondata.h predicates used below */
 export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some(a => a.aatyp === atyp);
-}
 // C ref: mondata.c sliparm()
 /* creature will slide out of armor */
-function sliparm(ptr) {
-    return (is_whirly(ptr) || ptr.msize <= M.MZ_SMALL
-            || noncorporeal(ptr));
-}
 // C ref: mondata.c breakarm()
 /* creature will break out of armor */
-function breakarm(ptr) {
-    if (sliparm(ptr))
-        return false;
-
-    return (bigmonst(ptr)
-            || (ptr.msize > M.MZ_SMALL && !humanoid(ptr))
-            /* special cases of humanoids that cannot wear suits */
-            || ptr === mons[M.PM_MARILITH]
-            || ptr === mons[M.PM_WINGED_GARGOYLE]);
-}
-// C ref: mondata.c num_horns()
-function num_horns(ptr) {
-    switch (mons.indexOf(ptr)) { /* monsndx(ptr) */
-    case M.PM_HORNED_DEVIL: /* ? "more than one" */
-    case M.PM_MINOTAUR:
-    case M.PM_ASMODEUS:
-    case M.PM_BALROG:
-        return 2;
-    case M.PM_WHITE_UNICORN:
-    case M.PM_GRAY_UNICORN:
-    case M.PM_BLACK_UNICORN:
-    case M.PM_KI_RIN:
-        return 1;
-    default:
-        break;
-    }
-    return 0;
-}
 export function has_horns(ptr) { return num_horns(ptr) > 0; }
 /* C ref: obj.h is_flimsy(), is_sword(), WrappingAllowed(),
    Is_dragon_armor() */

@@ -70,7 +70,8 @@ import { monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
          noncorporeal, is_whirly, is_mercenary, strongmonst, extra_nasty,
          is_giant, likes_gold, always_hostile, is_minion, unique_corpstat,
          is_armed, is_lord, is_prince, is_rider, is_dlord, is_dprince,
-         is_unicorn, is_mplayer, is_placeholder } from './mondata.js';
+         is_unicorn, is_mplayer, is_placeholder,
+         attacktype } from './mondata.js';
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
@@ -127,12 +128,6 @@ const W_ARMH = 0x00000004;
 const W_SADDLE = 0x00100000;
 
 // ---- mondata.h predicates used on this path ----
-// C ref: mondata.c attacktype()
-function attacktype(ptr, atyp) {
-    for (let i = 0; i < ptr.mattk.length; i++)
-        if (ptr.mattk[i].aatyp === atyp) return true;
-    return false;
-}
 export function is_domestic(ptr) { return (ptr.mflags2 & M.M2_DOMESTIC) !== 0; }
 function always_peaceful(ptr) { return (ptr.mflags2 & M.M2_PEACEFUL) !== 0; }
 function race_peaceful(ptr) { return (ptr.mflags2 & game.urace.lovemask) !== 0; }
@@ -2543,7 +2538,7 @@ function montooweak(monindx, lev) { return mons[monindx].difficulty < lev; }
 // C ref: hacklib.c sgn()
 function sgn(n) { return (n < 0) ? -1 : (n > 0) ? 1 : 0; }
 
-// C ref: mondata.h pm_resistance(), is_placeholder()
+// C ref: mondata.h pm_resistance()
 export function pm_resistance(ptr, typ) { return (ptr.mresists & typ) !== 0; }
 
 // C ref: dungeon.h Is_rogue_level(); In_endgame()

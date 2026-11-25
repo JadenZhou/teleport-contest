@@ -22,7 +22,8 @@ import { add_to_minv, mksobj } from './mkobj.js';
 import { FAKE_AMULET_OF_YENDOR } from './objects.js';
 import { newsym } from './display.js';
 import { monster_census } from './minion.js';
-import { big_to_little, is_minion, is_covetous } from './mondata.js';
+import { big_to_little, is_minion, is_covetous,
+         attacktype } from './mondata.js';
 import { def_monsyms } from './drawing.js';
 import { pline } from './display.js';
 import { Monnam } from './do_name.js';
@@ -125,7 +126,6 @@ export function pick_nasty(
 }
 
 /* C ref: monst.h DEADMONSTER(), helpless(); mondata.c attacktype() */
-function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 /* C ref: hack.h sgn() */
 function sgn(x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }
 

@@ -24,8 +24,8 @@ import { cantweararm } from './worn.js';
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
 import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
-         noncorporeal, is_whirly, mindless, has_head,
-         breathless } from './mondata.js';
+         noncorporeal, is_whirly, mindless, has_head, breathless,
+         num_horns } from './mondata.js';
 import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
@@ -136,39 +136,6 @@ const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
     c_sword = "sword", c_axe = "axe", c_that_ = "that";
 void c_helmet;
 
-// C ref: mondata.c sliparm()
-function sliparm(ptr) {
-    return is_whirly(ptr) || ptr.msize <= MZ_SMALL || noncorporeal(ptr);
-}
-// C ref: mondata.c breakarm()
-function breakarm(ptr) {
-    if (sliparm(ptr))
-        return false;
-
-    return (bigmonst(ptr)
-            || (ptr.msize > MZ_SMALL && !humanoid(ptr))
-            /* special cases of humanoids that cannot wear suits */
-            || ptr === mons[PM_MARILITH]
-            || ptr === mons[PM_WINGED_GARGOYLE]);
-}
-// C ref: mondata.c num_horns()
-function num_horns(ptr) {
-    switch (monsndx(ptr)) {
-    case PM_HORNED_DEVIL: /* ? "more than one" */
-    case PM_MINOTAUR:
-    case PM_ASMODEUS:
-    case PM_BALROG:
-        return 2;
-    case PM_WHITE_UNICORN:
-    case PM_GRAY_UNICORN:
-    case PM_BLACK_UNICORN:
-    case PM_KI_RIN:
-        return 1;
-    default:
-        break;
-    }
-    return 0;
-}
 /* C ref: obj.h WrappingAllowed() */
 function WrappingAllowed(mptr) {
     return humanoid(mptr) && mptr.msize >= MZ_SMALL && mptr.msize <= MZ_HUGE

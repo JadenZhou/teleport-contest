@@ -48,7 +48,8 @@ import { is_male, is_female, is_neuter, pm_invisible, humanoid, is_animal,
          throws_rocks, verysmall, bigmonst, slithy, amorphous, is_whirly,
          unique_corpstat, always_hostile, is_clinger, polyok, notake, has_head,
          tunnels, needspick, is_unicorn, is_vampire, is_rider, flesh_petrifies,
-         is_mplayer, is_placeholder } from './mondata.js';
+         is_mplayer, is_placeholder, resist_conflict, is_watch,
+         breathless } from './mondata.js';
 import { set_mon_data, emits_light } from './mondata.js';
 import { new_light_source, del_light_source, any_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
@@ -153,7 +154,7 @@ import { surface } from './iactions.js';
 import { sengr_at } from './makemon.js';
 import { del_engr_at } from './engrave.js';
 import { m_canseeu } from './monmove.js';
-import { fightm, resist_conflict } from './mhitm.js';
+import { fightm } from './mhitm.js';
 import { BOLT_LIM as BOLT_LIM_mn } from './const.js';
 import { in_rooms, spoteffects } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
@@ -1204,8 +1205,6 @@ async function peacefuls_respond(mtmp) {
             && mon.mcansee && m_canseeu(mon)) {
             let buf = '';
             let exclaimed = false, needpunct = false, alreadyfleeing;
-            const is_watch = ptr => ptr === MM.mons[MM.PM_WATCHMAN]
-                                    || ptr === MM.mons[MM.PM_WATCH_CAPTAIN];
             const Deaf = () => !!(game.u.uprops[DEAF]?.intrinsic
                                   || game.u.uprops[DEAF]?.extrinsic);
 
@@ -3298,7 +3297,6 @@ export function m_poisongas_ok(mtmp) {
     const is_you = (mtmp === game.youmonst);
     const u = game.u;
     const uhas = (p) => !!(u.uprops[p]?.intrinsic || u.uprops[p]?.extrinsic);
-    const breathless = (ptr) => (ptr.mflags1 & MM.M1_BREATHLESS) !== 0;
 
     /* Non living, non breathing, immune monsters are not concerned */
     if (nonliving(mtmp.data) || is_vampshifter(mtmp)
@@ -3502,8 +3500,6 @@ export function maybe_unhide_at(x, y) {
 
 // C ref: mon.c angry_guards() -- the town watch turns hostile
 export async function angry_guards(silent) {
-    const is_watch = ptr => ptr === MM.mons[MM.PM_WATCHMAN]
-                            || ptr === MM.mons[MM.PM_WATCH_CAPTAIN];
     /* C ref: hack.h m_next2u() */
     const m_next2u = m => dist2(m.mx, m.my, game.u.ux, game.u.uy) < 3;
     const plur = n => (n === 1 ? "" : "s");

@@ -26,7 +26,8 @@ import { dmgtype as dmgtype_mm, is_animal, mindless, nohands, verysmall,
          unique_corpstat, is_rider, likes_objs, is_unicorn, likes_lava,
          is_watch, is_mind_flayer, webmaker,
          slimeproof as
-         slimeproof_mo, is_armed } from './mondata.js';
+         slimeproof_mo, is_armed, attacktype, noattacks,
+         resist_conflict, can_blow } from './mondata.js';
 import { Norep as Norep_mm } from './display.js';
 import { makeplural as makeplural_mm } from './objnam.js';
 import { locomotion as locomotion_mm } from './trap.js';
@@ -76,7 +77,6 @@ import { tty_display_nhwindow } from './wintty.js';
 import { mon_learns_traps } from './mondata.js';
 import { TRAPPED_DOOR } from './const.js';
 import { has_ceiling } from './insight.js';
-import { resist_conflict } from './mhitm.js';
 import { cuss, tactics } from './wizard.js';
 import { mon_wield_item, select_rwep, autoreturn_weapon,
          m_has_launcher_and_ammo } from './weapon.js';
@@ -158,7 +158,6 @@ import { cursed_object_at as cursed_object_at_ud } from './dogmove.js';
 import { mdisplacem as mdisplacem_mm } from './mhitm.js';
 import { M_ATTK_HIT as M_ATTK_HIT_MM, M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MM,
          M_ATTK_AGR_DIED as M_ATTK_AGR_DIED_MM } from './const.js';
-import { can_blow } from './music.js';
 import { artifact_light } from './worn.js';
 import { bare_artifactname } from './iactions.js';
 import { yname } from './objnam.js';
@@ -193,22 +192,6 @@ function corpse_eater(ptr) {
     const n = monsndx(ptr);
     return n === M.PM_PURPLE_WORM || n === M.PM_BABY_PURPLE_WORM
         || n === M.PM_GHOUL || n === M.PM_PIRANHA;
-}
-/* C ref: mondata.c attacktype() */
-function attacktype(ptr, atyp) {
-    for (const a of ptr.mattk)
-        if (a.aatyp === atyp) return true;
-    return false;
-}
-/* C ref: mondata.h noattacks() -- via mondata.c noattacks() */
-function noattacks(ptr) {
-    for (const a of ptr.mattk) {
-        /* AT_BOOM "passive attack" (gas spore's explosion upon death)
-           isn't an attack as far as our callers are concerned */
-        if (a.aatyp === M.AT_BOOM) continue;
-        if (a.aatyp) return false;
-    }
-    return true;
 }
 /* C ref: mondata.c can_track() */
 function can_track(ptr) {

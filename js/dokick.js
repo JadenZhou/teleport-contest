@@ -96,7 +96,7 @@ import { m_in_out_region } from './region.js';
 import { mintrap, Trap_Killed_Mon } from './trap.js';
 import { is_flyer, is_floater, haseyes, can_teleport, slithy, verysmall,
          bigmonst, nohands, nolimbs, is_giant, likes_gold, is_mercenary,
-         thick_skinned } from './mondata.js';
+         thick_skinned, attacktype } from './mondata.js';
 import { map_invisible, There, glyph_at, show_glyph,
          glyph_is_invisible } from './display.js';
 import { a_monnam } from './do_name.js';
@@ -125,9 +125,6 @@ import { uprop } from './youprop.js';
 import { Is_stronghold, In_endgame, Is_botlevel } from './const.js';
 import { stairway_at } from './display.js';
 import { down_gate } from './do.js';
-
-/* C ref: mondata.h attacktype() */
-function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 /* C ref: mondata.h nolimbs(), slithy(), verysmall(), is_giant() */
 /* C ref: skills.h martial_bonus(); dokick.c is_bigfoot(), martial() */

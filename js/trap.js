@@ -44,8 +44,8 @@ import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          resists_magm, mon_knows_traps, mon_learns_traps, mons_see_trap,
          likes_gems, mindless, hides_under, amorphous, unsolid, is_whirly,
          metallivorous, breathless, acidic, extra_nasty, unique_corpstat,
-         is_clinger, resists_ston, is_unicorn, flaming,
-         webmaker } from './mondata.js';
+         is_clinger, resists_ston, is_unicorn, flaming, webmaker,
+         attacktype } from './mondata.js';
 import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
          GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
 import { rnd, d } from './rng.js';
@@ -1198,7 +1198,6 @@ function stone_missile(o) {
              || objects[o.otyp].oc_material === MINERAL)
             && o.oclass !== RING_CLASS);
 }
-function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 // C ref: trap.c wearing_iron_shoes()
 function wearing_iron_shoes(mtmp) {

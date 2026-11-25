@@ -28,8 +28,8 @@ import { losehp } from './trap.js';
 import { find_mac } from './worn.js';
 import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
          likes_gems, noncorporeal, amorphous, unsolid, is_mercenary, acidic,
-         is_unicorn, touch_petrifies, resists_ston, resists_acid,
-         slimeproof } from './mondata.js';
+         is_unicorn, touch_petrifies, resists_ston, resists_acid, slimeproof,
+         attacktype, can_blow } from './mondata.js';
 import { hit, miss, exclam, buzz, dobuzz, bhito,
          find_drawbridge, resist_async } from './zap.js';
 import { TELL } from './const.js';
@@ -209,10 +209,6 @@ const MUSE_CAMERA = 37;
 /* mondata.h */
 /* C ref: mondata.h NODIAG() */
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
-/* C ref: mondata.c attacktype() */
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some(a => a.aatyp === atyp);
-}
 /* C ref: monst.h m_seenres() */
 export function m_seenres(mon, mask) { return (mon.seen_resistance || 0) & mask; }
 
@@ -1322,19 +1318,6 @@ function mon_likes_objpile_at(mtmp, x, y) {
         return true;
 
     return false;
-}
-
-/* C ref: mondata.c can_blow() */
-function can_blow(mtmp) {
-    const ptr = mtmp.data;
-    const is_silent = ptr.msound === M.MS_SILENT;
-    const breathless = (ptr.mflags1 & M.M1_BREATHLESS) !== 0;
-    const has_head = (ptr.mflags1 & M.M1_NOHEAD) === 0;
-    if ((is_silent || ptr.msound === M.MS_BUZZ)
-        && (breathless || verysmall(ptr) || !has_head || ptr.mlet === M.S_EEL))
-        return false;
-    /* (mtmp == &youmonst) && Strangled: only monsters get here */
-    return true;
 }
 
 /* C ref: do_wear.c hard_helmet() */

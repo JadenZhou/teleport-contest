@@ -26,7 +26,8 @@ import { monkilled, zombie_maker, monnear, seemimic } from './mon.js';
 import { thrwmm, spitmm, breamm } from './mthrowu.js';
 import { canspotmon, newsym, pline, map_invisible } from './display.js';
 import { Monnam, mon_nam, mon_nam_too } from './do_name.js';
-import { is_elf, is_orc, unsolid, touch_petrifies } from './mondata.js';
+import { is_elf, is_orc, unsolid, touch_petrifies, mon_hates_silver,
+         resist_conflict } from './mondata.js';
 import { M_AP_TYPE, IS_DOOR, M_ATTK_MISS, M_ATTK_HIT, M_ATTK_DEF_DIED,
          M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK, HALLUC, W_SADDLE, W_ARMG,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, ERODE_BURN,
@@ -127,13 +128,6 @@ function is_pole(otmp) {
                || otmp.oartifact === ART_SNICKERSNEE);
 }
 // C ref: mondata.c mon_hates_silver(), hates_silver()
-function mon_hates_silver(mon) {
-    const ptr = mon.data;
-    return is_vampshifter(mon)
-        || (is_were(ptr) || ptr.mlet === M.S_VAMPIRE || is_demon(ptr)
-            || ptr === mons[M.PM_SHADE]
-            || (ptr.mlet === M.S_IMP && ptr !== mons[M.PM_TENGU]));
-}
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
@@ -143,10 +137,6 @@ function mdistu(mon) {
     return dx * dx + dy * dy;
 }
 function sgn(n) { return n < 0 ? -1 : n > 0 ? 1 : 0; }
-// C ref: mondata.c attacktype()
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some((a) => a.aatyp === atyp);
-}
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
 
@@ -262,15 +252,6 @@ async function missmm(magr, mdef, mattk) {
     } else {
         await noises(magr, mattk);
     }
-}
-
-// C ref: mondata.c resist_conflict()
-export function resist_conflict(mtmp) {
-    /* always a small chance at 19 */
-    const resist_chance = Math.min(19, (ACURR_mm(A_CHA_mm) - mtmp.m_lev
-                                        + game.u.ulevel));
-
-    return (rnd(20) > resist_chance);
 }
 
 // C ref: mhitm.c fightm()

@@ -19,7 +19,8 @@ import { passes_rocks } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
          is_whirly, has_head, thick_skinned, flaming, touch_petrifies,
-         resists_ston, cantwield, is_watch } from './mondata.js';
+         resists_ston, cantwield, is_watch, attacktype,
+         noattacks } from './mondata.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
@@ -84,8 +85,8 @@ import { abon, dbon, hitval, weapon_hit_bonus, weapon_dam_bonus, use_skill,
          uwep_skill_type, special_dmgval, weapon_type, P_SKILL,
          m_carrying } from './weapon.js';
 import { find_mac } from './worn.js';
-import { noattacks, check_capacity, overexertion, near_capacity,
-         nomul, test_move } from './hack.js';
+import { check_capacity, overexertion, near_capacity, nomul,
+         test_move } from './hack.js';
 import { can_twoweapon, untwoweapon, bimanual, is_launcher, is_missile,
          is_ammo, is_pole, is_wet_towel, ammo_and_launcher } from './wield.js';
 import { yname, makeplural, an, doname, xname, vtense, The } from './objnam.js';
@@ -249,10 +250,6 @@ async function not_artifact_hit(magr, mdef, otmp, mhm) {
     const r = await artifact_hit(magr, mdef, otmp, dmgp, game.mhitu_dieroll);
     mhm.damage = dmgp.val;
     return !r;
-}
-/* C ref: mondata.c attacktype() */
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some((a) => a.aatyp === atyp);
 }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 

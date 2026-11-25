@@ -22,7 +22,8 @@ import { You_hear } from './sounds.js';
 import { fall_asleep } from './timeout.js';
 import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
          herbivorous, metallivorous, is_giant, acidic, vegan, flesh_petrifies,
-         slimeproof } from './mondata.js';
+         slimeproof, poly_when_stoned, attacktype,
+         cantvomit } from './mondata.js';
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
@@ -642,17 +643,6 @@ function obj_here(obj, x, y) {
 }
 /* C ref: mondata.h */
 export function poisonous(ptr) { return (ptr.mflags1 & M.M1_POIS) !== 0; }
-function poly_when_stoned(ptr) {
-    /* mondata.c: golems other than stone golem turn into stone golems */
-    return ptr.mlet === M.S_GOLEM && ptr !== mons[M.PM_STONE_GOLEM]
-           && !(mvitals_gone(M.PM_STONE_GOLEM));
-}
-function mvitals_gone(pm) {
-    return ((game.mvitals?.[pm]?.mvflags || 0) & G_GENOD) !== 0;
-}
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some(a => a.aatyp === atyp);
-}
 /* C ref: obj.h stale_egg() */
 export function stale_egg(egg) {
     return (game.moves - egg.age) > (2 * MAX_EGG_HATCH_TIME);
@@ -704,19 +694,6 @@ function food_xname(food, the_pfx) {
     if (the_pfx)
         result = the(result);
     return result;
-}
-
-// C ref: mondata.c cantvomit()
-function cantvomit(ptr) {
-    /* rats and mice are incapable of vomiting; likewise with horses;
-       which other creatures have the same limitation? */
-    if (ptr.mlet === M.S_RODENT && ptr !== M.mons[M.PM_ROCK_MOLE]
-        && ptr !== M.mons[M.PM_WOODCHUCK])
-        return true;
-    if (ptr === M.mons[M.PM_WARHORSE] || ptr === M.mons[M.PM_HORSE]
-        || ptr === M.mons[M.PM_PONY])
-        return true;
-    return false;
 }
 
 // C ref: eat.c vomit() -- A good idea from David Neves

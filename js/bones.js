@@ -63,9 +63,6 @@ import { m_carrying } from './weapon.js';
 import { tty_yn_function } from './wintty.js';
 
 /* mondata.h */
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some(a => a.aatyp === atyp);
-}
 /* mondata.h is_Vlad() */
 function is_Vlad(mtmp) {
     return mtmp.data === mons[PM_VLAD_THE_IMPALER]

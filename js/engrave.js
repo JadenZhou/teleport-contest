@@ -28,8 +28,8 @@ import { pline } from './display.js';
 import { nomul } from './hack.js';
 import { AD_STCK, AD_WRAP, AT_ENGL, AT_HUGS, M1_HIDE, M1_CLING, S_MIMIC,
          MZ_HUGE } from './monsters.js';
-import { dmgtype, is_flyer, is_animal, is_whirly,
-         cantwield } from './mondata.js';
+import { dmgtype, is_flyer, is_animal, is_whirly, cantwield,
+         attacktype } from './mondata.js';
 import { set_levltyp } from './mkmaze.js';
 import { sanitize_name } from './bones.js';
 import { exercise } from './attrib.js';
@@ -424,11 +424,6 @@ export function make_grave(x, y, str) {
 
 /* C ref: mondata.c attacktype(); mondata.h sticks(), is_hider(),
    is_clinger(), ceiling_hider() */
-function attacktype(ptr, atyp) {
-    for (let i = 0; i < ptr.mattk.length; i++)
-        if (ptr.mattk[i].aatyp === atyp) return true;
-    return false;
-}
 export function sticks(ptr) {
     return dmgtype(ptr, AD_STCK)
            || (dmgtype(ptr, AD_WRAP) && !attacktype(ptr, AT_ENGL))

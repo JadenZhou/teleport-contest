@@ -23,7 +23,7 @@ import { the } from './iactions.js';
 import { xname, Tobjnam } from './objnam.js';
 import { place_object } from './mkobj.js';
 import { make_happy_shk } from './shk.js';
-import { is_human, is_demon, emits_light } from './mondata.js';
+import { is_human, is_demon, emits_light, attacktype } from './mondata.js';
 import { mon_wield_item } from './weapon.js';
 import { wake_nearto } from './mon.js';
 import { rnd } from './rng.js';
@@ -80,9 +80,6 @@ import { deliver_obj_to_mon } from './dokick.js';
 import { haseyes as haseyes_wd } from './mondata.js';
 import { body_part as body_part_wd } from './insight.js';
 import { EYE as EYE_WD } from './const.js';
-
-/* C ref: mondata.h attacktype() */
-function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 
 const DF_ALL = 0x04; /* hack.h */
 

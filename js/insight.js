@@ -97,7 +97,8 @@ import { oc_to_str } from './options.js';
 import { is_pool, is_lava } from './makemon.js';
 import { ART_OGRESMASHER } from './artilist.js';
 import { hates_silver, defended, is_male, is_female, is_neuter, humanoid,
-         type_is_pname, is_clinger, haseyes, is_rider } from './mondata.js';
+         type_is_pname, is_clinger, haseyes, is_rider, attacktype,
+         slithy } from './mondata.js';
 import { pmname } from './do_name.js';
 import { magic_negation } from './mhitu.js';
 import { stone_luck } from './attrib.js';
@@ -335,9 +336,6 @@ const BP_ARM = 0, BP_EYE = 1, BP_FINGER = 3, BP_FINGERTIP = 4, BP_FOOT = 5,
 // C ref: polyself.c mbodypart()
 export function mbodypart(mon, part) {
     const mptr = mon.data;
-    /* mondata.h attacktype(), slithy() */
-    const attacktype = (ptr, atyp) => ptr.mattk.some(a => a.aatyp === atyp);
-    const slithy = (ptr) => (ptr.mflags1 & M.M1_SLITHY) !== 0;
 
     if (part <= BP_NO_PART) {
         /* impossible("mbodypart: bad part %d", part) */

@@ -36,8 +36,8 @@ import { is_pool } from './makemon.js';
 import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
          is_vampshifter, Resists_Elem, throws_rocks, likes_gems, mindless,
          is_animal, bigmonst, strongmonst, is_giant, thick_skinned,
-         is_covetous, is_rider, touch_petrifies,
-         resists_ston } from './mondata.js';
+         is_covetous, is_rider, touch_petrifies, resists_ston,
+         attacktype } from './mondata.js';
 import { dist2 } from './hacklib.js';
 import { couldsee } from './vision.js';
 import { pline } from './display.js';
@@ -229,10 +229,6 @@ function set_propellor(p) { game.propellor = p; }
 /* mondata.h */
 function is_wooden(ptr) { return ptr === M.mons[M.PM_WOOD_GOLEM]; }
 function hates_light(ptr) { return ptr === M.mons[M.PM_GREMLIN]; }
-// C ref: mondata.c attacktype()
-function attacktype(ptr, atyp) {
-    return ptr.mattk.some((a) => a.aatyp === atyp);
-}
 
 /* obj.h */
 function is_spear(otmp) {
