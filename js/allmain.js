@@ -6,6 +6,7 @@
 // once-per-hero-took-time blocks are real.
 
 import { game } from './gstate.js';
+import { you_were } from './were.js';
 import { fix_shop_damage } from './shk.js';
 import { livelog_printf } from './display.js';
 import { LL_ACHIEVE } from './const.js';
@@ -629,7 +630,7 @@ async function moveloop_core() {
                             if (mvl_change === 1)
                                 await polyself(POLY_NOFLAGS);
                             else
-                                throw new Error('moveloop_core(): you_were() not ported yet');
+                                await you_were();
                             mvl_change = 0;
                         }
                     }

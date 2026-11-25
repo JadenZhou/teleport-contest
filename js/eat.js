@@ -12,7 +12,7 @@
 import { selftouch } from './trap.js';
 import { Levitation, Deaf } from './youprop.js';
 import { melt_ice } from './zap.js';
-import { were_beastie } from './were.js';
+import { were_beastie, you_unwere, set_ulycn } from './were.js';
 import { polyself } from './polyself.js';
 import { POLY_NOFLAGS, EXPL_FIERY } from './const.js';
 import { attrcurse } from './sit.js';
@@ -103,7 +103,7 @@ import { paranoid_query, donull } from './cmd.js';
 import { tty_yn_function } from './wintty.js';
 import { safe_qbuf, encumber_msg, sellobj_state } from './pickup.js';
 import { SELL_NORMAL, SELL_DONTSELL } from './const.js';
-import { touch_artifact } from './artifact.js';
+import { touch_artifact, retouch_equipment } from './artifact.js';
 import { retouch_object } from './wield.js';
 
 import { COST_OPEN, GLIB, A_DEX } from './const.js';
@@ -1394,8 +1394,10 @@ async function cpostfx(pm) {
             await givit(tmp, ptr);
     } /* check_intrinsics */
 
-    if (catch_lycanthropy >= M.LOW_PM)
-        throw new Error('cpostfx(): set_ulycn() not ported yet');
+    if (catch_lycanthropy >= M.LOW_PM) { /* ismnum() */
+        set_ulycn(catch_lycanthropy);
+        await retouch_equipment(2);
+    }
 }
 
 // C ref: eat.c violated_vegetarian()
@@ -2135,7 +2137,7 @@ async function fpostfx(otmp) {
     switch (otmp.otyp) {
     case SPRIG_OF_WOLFSBANE:
         if (u.ulycn >= M.LOW_PM || is_were(game.youmonst.data))
-            throw new Error('fpostfx(): you_unwere() not ported yet');
+            await you_unwere(true);
         break;
     case CARROT:
         if (!u.uswallow

@@ -15,6 +15,7 @@ import { zombie_form } from './mon.js';
 import { DEADMONSTER } from './mon.js';
 import { helpless } from './monmove.js';
 import { game } from './gstate.js';
+import { you_were, you_unwere } from './were.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { ACURR as ACURR_mm } from './attrib.js';
 import { A_CHA as A_CHA_mm, NORMAL_SPEED as NORMAL_SPEED_mm } from './const.js';
@@ -1055,10 +1056,10 @@ export async function mon_poly(magr, mdef, dmg) {
                 await polyself_mp(POLY_NOFLAGS_MP);
             } else if (u.umonnum !== u.ulycn) {
                 await You_feel_mp("an unnatural urge coming on.");
-                throw new Error('mon_poly(): you_were() not ported yet');
+                await you_were();
             } else {
                 await You_feel_mp("a natural urge coming on.");
-                throw new Error('mon_poly(): you_unwere() not ported yet');
+                await you_unwere(false);
             }
             dmg = 0;
         }

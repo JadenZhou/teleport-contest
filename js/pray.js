@@ -7,6 +7,7 @@
 
 import { Inhell } from './mklev.js';
 import { game } from './gstate.js';
+import { you_unwere } from './were.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { rn2, rn1, rnl, rnz, ROLL_FROM, rn2_on_display_rng } from './rng.js';
@@ -931,7 +932,8 @@ async function fix_worst_trouble(trouble) {
         await fix_curse_trouble(otmp, what);
         break;
     case TROUBLE_LYCANTHROPE:
-        throw new Error('fix_worst_trouble(): you_unwere() not ported yet');
+        await you_unwere(true);
+        break;
     case TROUBLE_PUNISHED:
         await Your("chain disappears.");
         if (u.utrap && u.utraptype === TT_BURIEDBALL)

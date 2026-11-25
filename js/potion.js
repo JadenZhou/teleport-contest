@@ -108,12 +108,13 @@ import {
 import { Upolyd, Role_if } from './const.js';
 import { uprop } from './youprop.js';
 import { yname } from './objnam.js';
-import { new_were } from './were.js';
+import { new_were, you_were, you_unwere, set_ulycn } from './were.js';
 import { clone_mon as clone_mon_sm } from './makemon.js';
 import { a_monnam as a_monnam_dj } from './do_name.js';
 import { tamedog as tamedog_dj } from './dog.js';
 import { set_malign as set_malign_dj } from './makemon.js';
 import { DEAF as DEAF_DJ } from './const.js';
+import { NEUTRAL } from './const.js';
 
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
@@ -845,15 +846,20 @@ async function peffect_water(otmp) {
         if (otmp.blessed) {
             await pline(`This burns like ${hliquid("acid")}!`);
             exercise(A_CON, false);
-            if (ismnum(u.ulycn))
-                throw new Error('peffect_water(): curing lycanthropy (you_unwere()) not ported yet');
+            if (ismnum(u.ulycn)) {
+                await Your(`affinity to ${
+                    makeplural(mons[u.ulycn].pmnames[NEUTRAL])} disappears!`);
+                if (game.youmonst.data === mons[u.ulycn])
+                    await you_unwere(false);
+                set_ulycn(NON_PM); /* cure lycanthropy */
+            }
             await losehp(Maybe_Half_Phys(d(2, 6)), "potion of holy water",
                          KILLED_BY_AN);
         } else if (otmp.cursed) {
             await You_feel("quite proud of yourself.");
             await healup(d(2, 6), 0, 0, 0);
             if (ismnum(u.ulycn) && !Upolyd())
-                throw new Error('peffect_water(): you_were() not ported yet');
+                await you_were();
             exercise(A_CON, true);
         }
     } else {
@@ -863,7 +869,7 @@ async function peffect_water(otmp) {
             exercise(A_WIS, true);
             exercise(A_CON, true);
             if (ismnum(u.ulycn))
-                throw new Error('peffect_water(): you_unwere() not ported yet');
+                await you_unwere(true); /* "Purified" */
             /* make_confused(0L, TRUE); */
         } else {
             if (u.ualign.type === A_LAWFUL) {
@@ -873,7 +879,7 @@ async function peffect_water(otmp) {
             } else
                 await You_feel("full of dread.");
             if (ismnum(u.ulycn) && !Upolyd())
-                throw new Error('peffect_water(): you_were() not ported yet');
+                await you_were();
             exercise(A_CON, false);
         }
     }
@@ -1972,9 +1978,9 @@ export async function potionbreathe(obj) {
             /* vapor from [un]holy water will trigger
                transformation but won't cure lycanthropy */
             if (obj.blessed && game.youmonst.data === mons[u.ulycn])
-                throw new Error('potionbreathe(): you_unwere() not ported yet');
+                await you_unwere(false);
             else if (obj.cursed && !Upolyd())
-                throw new Error('potionbreathe(): you_were() not ported yet');
+                await you_were();
         }
         break;
     case O.POT_ACID:

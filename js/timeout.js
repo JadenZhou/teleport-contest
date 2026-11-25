@@ -17,6 +17,7 @@ import { FROMOUTSIDE, WT_NOISY_INV, FOOT } from './const.js';
 import { CORPSE, ROCK } from './objects.js';
 import { PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { game } from './gstate.js';
+import { you_unwere } from './were.js';
 import * as P from './const.js';
 import { rnd } from './rng.js';
 import { MAX_EGG_HATCH_TIME } from './const.js';
@@ -680,8 +681,7 @@ export async function nh_timeout() {
         if (P[UNCHANGING].intrinsic || P[UNCHANGING].extrinsic) /* Unchanging */
             u.mtimedone = rnd(100 * game.youmonst.data.mlevel + 1);
         else if (is_were(game.youmonst.data))
-            /* if polycontrl, asks whether to rehumanize */
-            throw new Error('nh_timeout(): you_unwere() not ported yet');
+            await you_unwere(false); /* if polycontrl, asks whether to rehumanize */
         else
             await rehumanize();
     }
