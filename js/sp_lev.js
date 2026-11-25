@@ -117,7 +117,7 @@ import { deltrap, maketrap, is_pit, is_hole, trap_explanations } from './trap.js
 import { defsyms_explanation } from './pager.js';
 import { mk_mplayer } from './mplayer.js';
 import { obj_extract_self } from './mkobj.js';
-import { stackobj } from './invent.js';
+import { stackobj, delete_contents } from './invent.js';
 import { del_engr } from './engrave.js';
 import { vision_reset } from './vision.js';
 import { load_lua, get_table_int } from './nhlua.js';
@@ -134,6 +134,7 @@ import { mkmap } from './mkmap.js';
 import { Protection_from_shape_changers } from './youprop.js';
 import { A_NONE as A_NONE_SP, A_LAWFUL as A_LAWFUL_SP } from './const.js';
 import { makeroguerooms } from './extralev.js';
+import { begin_burn } from './timeout.js';
 
 // C ref: dungeon.h In_mines()
 function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
@@ -2946,7 +2947,7 @@ function create_object(o, croom) {
     }
     /* container */
     if (o.containment & SP_OBJ_CONTAINER) {
-        otmp.cobj = null; /* delete_contents() */
+        delete_contents(otmp);
         if (container_idx < MAX_CONTAINMENT) {
             container_obj[container_idx] = otmp;
             container_idx++;
@@ -3032,7 +3033,7 @@ function create_object(o, croom) {
         stackobj(otmp);
 
         if (o.lit)
-            nhl_error(null, 'create_object: begin_burn() is not ported yet');
+            begin_burn(otmp, false);
 
         if (o.buried) {
             const dealloced = { v: false };
