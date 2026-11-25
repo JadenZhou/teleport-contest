@@ -131,6 +131,11 @@ import { spoteffects as spoteffects_bo } from './hack.js';
 import { float_down as float_down_bo } from './trap.js';
 import { FROMOUTSIDE as FROMOUTSIDE_BO } from './const.js';
 import { artifact_light } from './artifact.js';
+import { obj_resists as obj_resists_dw } from './dogmove.js';
+import { urgent_pline as urgent_pline_dw } from './display.js';
+import { vtense as vtense_dw } from './objnam.js';
+import { useup as useup_dw } from './invent.js';
+import { selftouch as selftouch_dw } from './trap.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -2555,15 +2560,121 @@ export function some_armor(victim) {
     return otmph || null;
 }
 
-// C ref: do_wear.c disintegrate_arm() -- destroying the armor
-// (maybe_destroy_armor(), wornarm_destroyed()) is not ported yet
+// C ref: do_wear.c wornarm_destroyed()
+/* take off the specific worn object and if it still exists after that,
+   destroy it (taking off the item might already destroy it by dunking
+   hero into lava) */
+async function wornarm_destroyed(wornarm) {
+    const g = game;
+    let invobj, nextobj;
+    const wornoid = wornarm.o_id;
+
+    /* cancel_don() resets 'afternmv' when appropriate but doesn't reset
+       uarmc/uarm/&c so doing this now won't interfere with the tests in
+       'if (wornarm==uarmc) ... else if (wornarm==uarm) ... else ...' */
+    if (donning(wornarm))
+        cancel_don();
+
+    if (wornarm === g.uarmc)
+        await Cloak_off();
+    else if (wornarm === g.uarm)
+        await Armor_off();
+    else if (wornarm === g.uarmu)
+        await Shirt_off();
+    else if (wornarm === g.uarmh)
+        await Helmet_off();
+    else if (wornarm === g.uarmg)
+        await Gloves_off();
+    else if (wornarm === g.uarmf)
+        await Boots_off();
+    else if (wornarm === g.uarms)
+        await Shield_off();
+
+    /* 'wornarm' might be destroyed as a side-effect of xxx_off() so
+       using carried() to check wornarm->where==OBJ_INVENT is not viable;
+       scan invent instead; if already freed it shouldn't be possible to
+       have re-used the stale memory for a new item yet but verify o_id
+       just in case */
+    for (invobj = g.invent; invobj; invobj = nextobj) {
+        nextobj = invobj.nobj;
+        if (invobj === wornarm && invobj.o_id === wornoid) {
+            useup_dw(wornarm);
+            break;
+        }
+    }
+}
+
+// C ref: do_wear.c maybe_destroy_armor()
+/*
+ * returns impacted armor with its in_use bit set,
+ * or Null. resisted.v is updated to reflect whether
+ * it resisted or not */
+function maybe_destroy_armor(armor, atmp, resisted) {
+    if (armor && (!atmp || atmp === armor)
+        && ((resisted.v = obj_resists_dw(armor, 0, 90)) === false)) {
+        armor.in_use = 1;
+        return armor;
+    }
+    return null;
+}
+
+// C ref: do_wear.c disintegrate_arm()
+/* hit by destroy armor scroll/black dragon breath */
 export async function disintegrate_arm(atmp) {
     const g = game;
-    if (g.uarmc || g.uarm || g.uarmu || g.uarmh || g.uarmg || g.uarmf
-        || g.uarms)
-        throw new Error('disintegrate_arm(): maybe_destroy_armor()/wornarm_destroyed() not ported yet');
-    void atmp;
-    return 0; /* could not destroy anything */
+    let otmp = null;
+    let losing_gloves = false;
+    const resisted = { v: false }, resistedc = { v: false },
+        resistedsuit = { v: false };
+    /*
+     * Note: if the cloak resisted, then the suit or shirt underneath
+     * wouldn't be impacted either. Likewise, if the suit resisted, the
+     * shirt underneath wouldn't be impacted. Since there are no artifact
+     * cloaks or suits right now, this is unlikely to come into effect,
+     * but it should behave appropriately if/when the situation changes.
+     */
+
+    if ((otmp = maybe_destroy_armor(g.uarmc, atmp, resistedc)) !== null) {
+        await urgent_pline_dw(`Your ${
+            /* cloak/robe/apron/smock (ID'd apron)/wrapping */
+            cloak_simple_name(otmp)} crumbles and turns to dust!`);
+    } else if (!resistedc.v
+               && (otmp = maybe_destroy_armor(g.uarm, atmp, resistedsuit)) !== null) {
+        const suit = suit_simple_name(otmp);
+
+        /* for gold DSM, we don't want Armor_gone() to report that it
+           stops shining _after_ we've been told that it is destroyed */
+        if (otmp.lamplit)
+            end_burn(otmp, false);
+        /* suit might be "dragon scales" so vtense() is needed */
+        await urgent_pline_dw(`Your ${suit} ${vtense_dw(suit, "turn")} to dust and ${
+            vtense_dw(suit, "fall")} to the ${surface(g.u.ux, g.u.uy)}!`);
+    } else if (!resistedc.v && !resistedsuit.v
+               && (otmp = maybe_destroy_armor(g.uarmu, atmp, resisted)) !== null) {
+        await urgent_pline_dw(`Your ${
+            shirt_simple_name(otmp)} crumbles into tiny threads and falls apart!`); /* always "shirt" */
+    } else if ((otmp = maybe_destroy_armor(g.uarmh, atmp, resisted)) !== null) {
+        await urgent_pline_dw(`Your ${
+            helm_simple_name(otmp)} turns to dust and is blown away!`); /* "helm" or "hat" */
+    } else if ((otmp = maybe_destroy_armor(g.uarmg, atmp, resisted)) !== null) {
+        await urgent_pline_dw(`Your ${gloves_simple_name(otmp)} vanish!`);
+        losing_gloves = true;
+    } else if ((otmp = maybe_destroy_armor(g.uarmf, atmp, resisted)) !== null) {
+        await urgent_pline_dw(`Your ${boots_simple_name(otmp)} disintegrate!`);
+    } else if ((otmp = maybe_destroy_armor(g.uarms, atmp, resisted)) !== null) {
+        await urgent_pline_dw(`Your ${shield_simple_name(otmp)} crumbles away!`);
+    } else {
+        return 0; /* could not destroy anything */
+    }
+
+    /* cancel_don() if applicable, Cloak_off()/Armor_off()/&c, and useup() */
+    await wornarm_destroyed(otmp);
+    /* glove loss means wielded weapon will be touched */
+    if (losing_gloves)
+        await selftouch_dw("You");
+
+    await stop_occupation_dw();
+    return 1;
 }
 
 // C ref: do_wear.c obj_erode_type()
