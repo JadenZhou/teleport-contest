@@ -6,6 +6,9 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
+import { fracture_rock } from './zap.js';
+import { pline_The } from './display.js';
+import { rn1 } from './rng.js';
 import { is_armed } from './makemon.js';
 import { minv } from './mon.js';
 import { m_lined_up } from './mthrowu.js';
@@ -2414,7 +2417,7 @@ export async function m_move(mtmp, after) {
             return MMOVE_DONE;
 
         if ((mfp.info[chi] & ALLOW_ROCK) && m_can_break_boulder(mtmp))
-            throw new Error('m_move(): m_break_boulder() not ported yet');
+            await m_break_boulder(mtmp, nix, niy);
 
         await m_postmove_effect(mtmp);
 
@@ -2445,6 +2448,38 @@ export async function m_move(mtmp, after) {
     }
     return await postmov(mtmp, ptr, omx, omy, mmoved,
                    seenflgs, can_tunnel, can_unlock, can_open);
+}
+
+// C ref: monmove.c m_break_boulder()
+/* monster mtmp breaks boulder at x,y */
+async function m_break_boulder(mtmp, x, y) {
+    let otmp;
+
+    if (m_can_break_boulder(mtmp) && ((otmp = sobj_at(BOULDER, x, y)) !== null)) {
+        if (!is_rider(mtmp.data)) {
+            if (!Deaf() && (mdistu(mtmp) < 4 * 4)) {
+                /* if (canspotmon(mtmp)) set_msg_xy(mtmp->mx, mtmp->my):
+                   accessibility only */
+                await pline(`${Monnam(mtmp)} mutters ${
+                    mtmp.ispriest ? "a prayer" : "an incantation"}.`);
+            }
+            mtmp.mspec_used = (mtmp.mspec_used || 0) + rn1(20, 10);
+        }
+        if (cansee(x, y)) {
+            /* set_msg_xy(x, y): accessibility only */
+            await pline_The("boulder falls apart.");
+        }
+
+        /* boulders pushed onto shop's boundary or free spot are cases where
+           an item not in hero's inventory can have its unpaid flag set;
+           if the boulder isn't already on the bill, don't charge for it */
+        if (otmp.unpaid) {
+            /* remove original from bill + add cloned copy to used-up bill */
+            throw new Error('m_break_boulder(): bill_dummy_object() not ported yet');
+        }
+        /* fracturing keeps otmp, changing its otyp from BOULDER to ROCK */
+        await fracture_rock(otmp);
+    }
 }
 
 // C ref: monmove.c m_can_break_boulder()
