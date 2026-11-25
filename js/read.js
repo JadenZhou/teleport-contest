@@ -134,6 +134,9 @@ import { mkclass, rndmonst, set_malign, put_saddle_on_mon, can_saddle } from './
 import { NO_NC_FLAGS } from './const.js';
 import { newcham } from './mon.js';
 import { light_hits_gremlin } from './uhitm.js';
+import { name_to_monclass as name_to_monclass_rd } from './mondata.js';
+import { S_invisible as S_invisible_rd, S_WORM_TAIL as S_WORM_TAIL_RD,
+         PM_STALKER as PM_STALKER_RD } from './monsters.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -2589,9 +2592,27 @@ function create_particular_parse(str, d) {
     }
     if (ismnum(d.which))
         return true; /* got one */
-    if (!bufp)
-        return false; /* name_to_monclass() of empty input returns 0 */
-    throw new Error('create_particular_parse(): name_to_monclass() not ported yet');
+    {
+        const which_p = { v: d.which };
+        d.monclass = name_to_monclass_rd(bufp, which_p);
+        d.which = which_p.v;
+    }
+    if (ismnum(d.which)) {
+        d.monclass = MAXMCLASSES; /* matters below */
+        return true;
+    } else if (d.monclass === S_invisible_rd) { /* not an actual monster class */
+        d.which = PM_STALKER_RD;
+        d.monclass = MAXMCLASSES;
+        return true;
+    } else if (d.monclass === S_WORM_TAIL_RD) { /* empty monster class */
+        d.which = PM_LONG_WORM;
+        d.monclass = MAXMCLASSES;
+        return true;
+    } else if (d.monclass > 0) {
+        d.which = game.urole.mnum; /* reset from NON_PM */
+        return true;
+    }
+    return false;
 }
 
 // C ref: read.c create_particular_creation()
