@@ -330,6 +330,9 @@ import { has_oname, ONAME, OBJ_AT, M_AP_TYPE, Role_if, u_at, ismnum,
 import { MS_GUARDIAN, PM_DOPPELGANGER, PM_FLESH_GOLEM, PM_ARCHEOLOGIST,
          M1_CONCEAL } from './monsters.js';
 import { number_leashed } from './apply.js';
+import { buried_ball as buried_ball_tr } from './dig.js';
+import { is_animal as is_animal_tr } from './mondata.js';
+import { Lev_at_will as Lev_at_will_tr } from './youprop.js';
 export { is_hole, is_pit };
 
 
@@ -610,10 +613,76 @@ export async function reset_utrap(msg) {
 
     if (msg) {
         if (!was_Lev && Levitation())
-            throw new Error('reset_utrap(): float_up() not ported yet');
+            await float_up();
         if (!was_Fly && Flying())
             await You("can fly.");
     }
+}
+
+// C ref: trap.c float_up()
+export async function float_up() {
+    const u = game.u;
+
+    game.disp_botl = true;
+    if (u.utrap) {
+        if (u.utraptype === TT_PIT) {
+            await reset_utrap(false);
+            await You(`float up, out of the ${trapname(PIT, false)}!`);
+            game.vision_full_recalc = 1; /* vision limits change */
+            await fill_pit(u.ux, u.uy);
+        } else if (u.utraptype === TT_LAVA_HT /* molten lava */
+                   || u.utraptype === TT_INFLOOR_HT) { /* solidified lava */
+            await Your(`body pulls upward, but your ${
+                makeplural(body_part(LEG))} are still stuck.`);
+        } else if (u.utraptype === TT_BURIEDBALL) { /* tethered */
+            const cc = { x: u.ux, y: u.uy };
+
+            /* caveat: this finds the first buried iron ball within
+               one step of the specified location, not necessarily the
+               buried [former] uball at the original anchor point */
+            buried_ball_tr(cc);
+            /* being chained to the floor blocks levitation from floating
+               above that floor but not from enhancing carrying capacity */
+            await You(`feel lighter, but your ${body_part(LEG)} is still chained to the ${
+                IS_ROOM(game.level.at(cc.x, cc.y).typ) ? "floor" : "ground"}.`);
+        } else if (u.utraptype === WEB) {
+            await You(`float up slightly, but you are still stuck in the ${
+                trapname(WEB, false)}.`);
+        } else { /* bear trap */
+            await You(`float up slightly, but your ${body_part(LEG)} is still stuck.`);
+        }
+        /* when still trapped, float_vs_flight() below will block levitation */
+    } else if (u.uinwater) {
+        await spoteffects_dr(true);
+    } else if (u.uswallow) {
+        /* FIXME: this isn't correct for trapper/lurker above */
+        if (is_animal_tr(u.ustuck.data))
+            await You(`float away from the ${surface_tr(u.ux, u.uy)}.`);
+        else
+            await You(`spiral up into ${mon_nam(u.ustuck)}.`);
+    } else if (Hallucination()) {
+        await pline("Up, up, and awaaaay!  You're walking on air!");
+    } else if (Is_airlevel_l(u.uz)) {
+        await You("gain control over your movements.");
+    } else {
+        await You("start to float in the air!");
+    }
+    if (u.usteed && !is_floater(u.usteed.data)
+        && !is_flyer(u.usteed.data)) {
+        if (Lev_at_will_tr()) {
+            await pline(`${Monnam(u.usteed)} magically floats up!`);
+        } else {
+            await You(`cannot stay on ${mon_nam(u.usteed)}.`);
+            await dismount_steed(DISMOUNT_GENERIC);
+        }
+    }
+    if (Flying())
+        await You("are no longer able to control your flight.");
+    float_vs_flight(); /* set BFlying, also BLevitation if still trapped */
+    /* levitation gives maximum carrying capacity, so encumbrance
+       state might be reduced */
+    await encumber_msg();
+    return;
 }
 
 // C ref: trap.c float_down()

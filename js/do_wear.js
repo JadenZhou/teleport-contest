@@ -136,6 +136,7 @@ import { urgent_pline as urgent_pline_dw } from './display.js';
 import { vtense as vtense_dw } from './objnam.js';
 import { useup as useup_dw } from './invent.js';
 import { selftouch as selftouch_dw } from './trap.js';
+import { float_up as float_up_dw } from './trap.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -401,7 +402,21 @@ async function Boots_on() {
             incr_itimeout(FUMBLING, rnd(20));
         break;
     case O.LEVITATION_BOOTS:
-        throw new Error('Boots_on(): levitation boots (float_up()) not ported yet');
+        if (!oldprop && !uprop(LEVITATION).intrinsic
+            && !((uprop(LEVITATION).blocked || 0) & FROMOUTSIDE_BO)) {
+            g.uarmf.known = 1; /* might come off if putting on over a sink,
+                                * so uarmf could be Null below; status line
+                                * gets updated during brief interval they're
+                                * worn so hero and player learn enchantment */
+            g.disp_botl = true; /* status hilites might mark AC changed */
+            makeknown(g.uarmf.otyp);
+            await float_up_dw();
+            if (Levitation())
+                await spoteffects_bo(false); /* for sink effect */
+        } else {
+            float_vs_flight(); /* maybe toggle BFlying's I_SPECIAL */
+        }
+        break;
     default:
         impossible(`Unknown type of boots (${g.uarmf.otyp})`);
     }

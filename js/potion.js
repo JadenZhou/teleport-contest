@@ -115,6 +115,15 @@ import { a_monnam as a_monnam_dj } from './do_name.js';
 import { tamedog as tamedog_dj } from './dog.js';
 import { set_malign as set_malign_dj } from './makemon.js';
 import { NEUTRAL } from './const.js';
+import { BLevitation as BLevitation_po } from './youprop.js';
+import { float_up as float_up_po } from './trap.js';
+import { I_SPECIAL as I_SPECIAL_PO } from './const.js';
+import { stairway_at as stairway_at_po } from './display.js';
+import { doup as doup_po } from './do.js';
+import { has_ceiling as has_ceiling_po } from './insight.js';
+import { ceiling as ceiling_po } from './dungeon.js';
+import { hard_helmet as hard_helmet_po } from './do_wear.js';
+import { spoteffects as spoteffects_po } from './hack.js';
 
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
@@ -1211,9 +1220,61 @@ async function peffect_full_healing(otmp) {
 
 // C ref: potion.c peffect_levitation()
 async function peffect_levitation(otmp) {
-    void otmp;
-    /* float_up(), doup(), float_down() and the ceiling collision */
-    throw new Error('peffect_levitation(): float_up() not ported yet');
+    const u = game.u;
+    const HLev = uprop(LEVITATION);
+    /*
+     * BLevitation will be set if levitation is blocked due to being
+     * inside rock (currently or formerly in phazing xorn form, perhaps)
+     * but it doesn't prevent setting or incrementing Levitation timeout
+     * (which will take effect after escaping from the rock if it hasn't
+     * expired by then).
+     */
+    if (!Levitation() && !BLevitation_po()) {
+        /* kludge to ensure proper operation of float_up() */
+        set_itimeout(LEVITATION, 1);
+        await float_up_po();
+        /* This used to set timeout back to 0, then increment it below
+           for blessed and uncursed effects.  But now we leave it so
+           that cursed effect yields "you float down" on next turn.
+           Blessed and uncursed get one extra turn duration. */
+    } else /* already levitating, or can't levitate */
+        game.potion_nothing++;
+
+    if (otmp.cursed) {
+        let stway;
+
+        /* 'already levitating' used to block the cursed effect(s)
+           aside from ~I_SPECIAL; it was not clear whether that was
+           intentional; either way, it no longer does (as of 3.6.1) */
+        HLev.intrinsic &= ~I_SPECIAL_PO; /* can't descend upon demand */
+        if (BLevitation_po()) {
+            ; /* rising via levitation is blocked */
+        } else if ((stway = stairway_at_po(u.ux, u.uy)) && stway.up) {
+            await doup_po();
+            /* in case we're already Levitating, which would have
+               resulted in incrementing 'nothing' */
+            game.potion_nothing = 0; /* not nothing after all */
+        } else if (has_ceiling_po(u.uz)) {
+            const dmg = rnd(!game.uarmh ? 10 : !hard_helmet_po(game.uarmh) ? 6 : 3);
+
+            await You(`hit your ${body_part(HEAD)} on the ${ceiling_po(u.ux, u.uy)}.`);
+            await losehp(Maybe_Half_Phys(dmg), "colliding with the ceiling",
+                         KILLED_BY);
+            game.potion_nothing = 0; /* not nothing after all */
+        }
+    } else if (otmp.blessed) {
+        /* at this point, timeout is already at least 1 */
+        incr_itimeout(LEVITATION, rn1(50, 250));
+        /* can descend at will (stop levitating via '>') provided timeout
+           is the only factor (ie, not also wearing Lev ring or boots) */
+        HLev.intrinsic |= I_SPECIAL_PO;
+    } else /* timeout is already at least 1 */
+        incr_itimeout(LEVITATION, rn1(140, 10));
+
+    if (Levitation() && IS_SINK(game.level.at(u.ux, u.uy).typ))
+        await spoteffects_po(false);
+    /* levitating blocks flying */
+    float_vs_flight();
 }
 
 // C ref: potion.c peffect_gain_energy()

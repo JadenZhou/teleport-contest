@@ -149,6 +149,7 @@ import { objdescr_is as objdescr_is_sf } from './o_init.js';
 import { resists_cold as resists_cold_sf } from './mondata.js';
 import { COLD_RES as COLD_RES_SF } from './const.js';
 import { hideunder } from './makemon.js';
+import { float_up as float_up_ht } from './trap.js';
 
 // C's impossible() (pline.c) is not ported yet.
 export function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -1366,7 +1367,7 @@ export async function switch_terrain() {
         /* we're probably levitating now; if not, we must be chained
            to a buried iron ball so get float_up() feedback for that */
         if (sp_Levitation() || BLev.blocked)
-            throw new Error('switch_terrain(): float_up() not ported yet');
+            await float_up_ht();
     }
     /* the same terrain that blocks levitation also blocks flight */
     if (blocklev) {
