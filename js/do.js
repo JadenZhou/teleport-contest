@@ -174,6 +174,10 @@ import { BLevitation as BLevitation_do } from './youprop.js';
 import { float_down as float_down_do } from './trap.js';
 import { surface as surface_do } from './iactions.js';
 import { floating_above as floating_above_do } from './fountain.js';
+import { s_suffix } from './hacklib.js';
+import { mbodypart } from './insight.js';
+import { yobjnam } from './objnam.js';
+import { STOMACH as STOMACH_do } from './const.js';
 
 /* C ref: cmd.c DIR_DOWN, DIR_UP (after the 8 compass directions) */
 const DIR_DOWN = 8, DIR_UP = 9;
@@ -1530,7 +1534,19 @@ async function drop(obj) {
     }
 
     if (game.u.uswallow) {
-        throw new Error('drop(): dropping while engulfed not ported yet');
+        /* barrier between you and the floor */
+        if (game.flags?.verbose ?? true) {
+            let onam_p, mnam_p;
+
+            mnam_p = mon_nam(game.u.ustuck);
+            /* doname can call s_suffix, reusing its buffer */
+            if (digests(game.u.ustuck.data)) {
+                mnam_p = `${s_suffix(mnam_p)} ${mbodypart(game.u.ustuck, STOMACH_do)}`;
+            }
+            onam_p = is_unpaid(obj) ? yobjnam(obj, null) : doname(obj);
+
+            await You(`drop ${onam_p} into ${mnam_p}.`);
+        }
     } else {
         if ((obj.oclass === O.RING_CLASS || obj.otyp === O.MEAT_RING)
             && IS_SINK(game.level.at(game.u.ux, game.u.uy).typ))
