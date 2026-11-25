@@ -44,7 +44,8 @@ import { vision_recalc, couldsee } from './vision.js';
 import { glyph_at, Norep, feel_location, glyph_is_warning } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
-import { u_at, Is_rogue_level } from './const.js';
+import { u_at, Is_rogue_level, Upolyd } from './const.js';
+import { fall_asleep } from './timeout.js';
 import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap } from './trap.js';
 import { TT_BEARTRAP, TT_PIT, TT_WEB, TT_LAVA, TT_INFLOOR, TT_BURIEDBALL, TT_NONE } from './const.js';
 import { ART_STING } from './artilist.js';
@@ -491,9 +492,24 @@ export async function overexertion() {
        execute if you decline to attack a peaceful monster */
     await gethungry();
     if ((game.moves % 3) !== 0 && near_capacity() >= HVY_ENCUMBER) {
-        throw new Error('overexertion(): overexert_hp() not ported yet');
+        await overexert_hp();
     }
     return (game.multi < 0); /* might have fainted (forced to sleep) */
+}
+
+// C ref: hack.c overexert_hp()
+/* HP loss or passing out from overexerting yourself */
+export async function overexert_hp() {
+    const u = game.u;
+
+    if (!Upolyd() ? (u.uhp > 1) : (u.mh > 1)) {
+        if (!Upolyd()) u.uhp -= 1; else u.mh -= 1;
+        game.disp_botl = true;
+    } else {
+        await You("pass out from exertion!");
+        exercise(A_CON, false);
+        await fall_asleep(-10, false);
+    }
 }
 
 // C ref: mondata.c noattacks()

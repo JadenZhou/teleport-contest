@@ -46,7 +46,7 @@ import { mpickobj } from './steal.js';
 import { You_hear } from './sounds.js';
 import { find_defensive, find_offensive, find_misc, use_defensive,
          use_misc, cures_stoning, mcould_eat_tin } from './muse.js';
-import { mattacku } from './mhitu.js';
+import { mattacku, unstuck } from './mhitu.js';
 import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
@@ -124,7 +124,7 @@ import {
     Hallucination, Deaf, Invis, Displaced, Stealth, Aggravate_monster, Conflict, Underwater,
     Protection_from_shape_changers, Unaware
 } from './youprop.js';
-import { Upolyd, u_at } from './const.js';
+import { Upolyd, u_at, m_next2u } from './const.js';
 import { DOOR as DOOR_MM, ROOM as ROOM_MM, CORR as CORR_MM } from './const.js';
 import { Is_special as Is_special_mm } from './dungeon.js';
 import { switch_terrain as switch_terrain_mm } from './hack.js';
@@ -1118,8 +1118,8 @@ export async function dochug(mtmp) {
             break;
         case MMOVE_MOVED: /* monster moved */
             /* if confused grabber has wandered off, let go */
-            if (mtmp === u.ustuck)
-                throw new Error('dochug(): unstuck() not ported yet');
+            if (mtmp === u.ustuck && !m_next2u(mtmp))
+                await unstuck(mtmp);
             if (!is_flyer(mdat) && !is_floater(mdat) /* grounded(mdat) */
                 && ((mdat.mflags1 & M.M1_CLING) === 0 || !has_ceiling(game.u.uz)))
                 disturb_buried_zombies(mtmp.mx, mtmp.my);

@@ -436,7 +436,7 @@ async function savelife(how) {
     if (Upolyd()) /* Unchanging, or death which bypasses losing hit points */
         u.mh = Math.min(u.mhmax, givehp);
     if (u.uhunger < 500 || how === CHOKING) {
-        init_uhunger();
+        await init_uhunger();
     }
     /* cure impending doom of sickness hero won't have time to fix
        [shouldn't this also be applied to other fatal timeouts?] */

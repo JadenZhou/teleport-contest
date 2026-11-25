@@ -31,7 +31,7 @@ import {
 import { In_endgame, Is_waterlevel, Is_airlevel, IS_ALTAR, ROOM, CORR, MAGIC_PORTAL, Is_qstart } from './const.js';
 import * as O from './objects.js';
 import { is_pool, is_lava } from './makemon.js';
-import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage } from './trap.js';
+import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
 import { cansee } from './vision.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
@@ -245,7 +245,8 @@ export async function doup() {
 
     /* "up" to get out of a pit... */
     if (u.utrap && u.utraptype === TT_PIT) {
-        throw new Error('doup(): climb_pit() not ported yet');
+        await climb_pit();
+        return ECMD_TIME;
     }
 
     if (!stway || (stway && !stway.up)) {

@@ -90,7 +90,7 @@ import { fingers_or_gloves } from './do_wear.js';
 import { SICK_VOMITABLE, SICK_ALL } from './const.js';
 import { paranoid_query, donull } from './cmd.js';
 import { tty_yn_function } from './wintty.js';
-import { safe_qbuf } from './pickup.js';
+import { safe_qbuf, encumber_msg } from './pickup.js';
 import { touch_artifact } from './artifact.js';
 import { retouch_object } from './wield.js';
 
@@ -214,7 +214,7 @@ function herbivorous(ptr) { return (ptr.mflags1 & M1_HERBIVORE) !== 0; }
 function metallivorous(ptr) { return (ptr.mflags1 & M1_METALLIVORE) !== 0; }
 
 // C ref: eat.c init_uhunger()
-export function init_uhunger() {
+export async function init_uhunger() {
     const g = game;
     const u = g.u;
 
@@ -224,7 +224,7 @@ export function init_uhunger() {
     u.uhs = NOT_HUNGRY;
     if (u.atemp.a[A_STR] < 0) {
         u.atemp.a[A_STR] = 0;
-        throw new Error('init_uhunger(): encumber_msg() not ported yet');
+        await encumber_msg();
     }
 }
 

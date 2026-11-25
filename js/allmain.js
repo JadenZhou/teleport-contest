@@ -81,7 +81,7 @@ import { Blind, Hallucination } from './youprop.js';
 import { Upolyd } from './const.js';
 import { invault } from './vault.js';
 import { sink_into_lava as sink_into_lava_am } from './trap.js';
-import { pooleffects as pooleffects_am } from './hack.js';
+import { pooleffects as pooleffects_am, overexert_hp } from './hack.js';
 
 const MON_AT = (x, y) => !!m_at(x, y); /* C ref: display.h MON_AT() */
 
@@ -118,7 +118,7 @@ export async function newgame() {
                        * in hero's initial inventory */
     init_artifacts(); /* before u_init() in case $WIZKIT specifies
                        * any artifacts */
-    u_init_misc();
+    await u_init_misc();
 
     l_nhcore_init();  /* create a Lua state that lasts until end of game */
     // reset_glyphmap(gm_newgame); -- not ported yet (display.c)
@@ -480,20 +480,6 @@ async function regen_hp(wtcap) {
         await interrupt_multi("You are in full health.");
 }
 
-// C ref: allmain.c overexert_hp()
-function overexert_hp() {
-    const u = game.u;
-
-    if (!Upolyd() ? (u.uhp > 1) : (u.mh > 1)) {
-        if (!Upolyd()) u.uhp -= 1; else u.mh -= 1;
-        game.disp_botl = true;
-    } else {
-        /* You("pass out from exertion!"); exercise(A_CON, FALSE);
-           fall_asleep(-10, FALSE): not ported yet */
-        throw new Error('overexert_hp(): fall_asleep() not ported yet');
-    }
-}
-
 // The game loop's entry point for the browser page and the judge's
 // playability check: both call moveloop_core() once per key and stop when
 // program_state.gameover is set. In C, nh_terminate() (death, quit, save)
@@ -614,7 +600,7 @@ async function moveloop_core() {
                 if (mvl_wtcap > MOD_ENCUMBER && u.umoved) {
                     if (!(mvl_wtcap < EXT_ENCUMBER ? g.moves % 30
                           : g.moves % 10)) {
-                        overexert_hp();
+                        await overexert_hp();
                     }
                 }
 
