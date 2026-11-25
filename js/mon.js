@@ -5,8 +5,8 @@
 // monnear(), mon_allowflags().
 
 import { may_dig } from './dig.js';
-import { monhaskey } from './monmove.js';
-import { online2, sgn, plur } from './hacklib.js';
+import { monhaskey, m_can_break_boulder } from './monmove.js';
+import { online2, sgn, plur, NODIAG } from './hacklib.js';
 import { game } from './gstate.js';
 import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
          has_mgivenname, MGIVENNAME } from './const.js';
@@ -14,7 +14,7 @@ import { EXACT_NAME, Mgender } from './do_name.js';
 import { record_achievement } from './insight.js';
 import { shtypes } from './shknam.js';
 import { PM_MEDUSA, PM_HIGH_CLERIC } from './monsters.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize, You_hear } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { remove_worm, wormgone, worm_known, worm_cross, count_wsegs, get_wormno,
          initworm, place_worm_tail_randomly } from './worm.js';
@@ -80,11 +80,11 @@ import {
     PM_AIR_ELEMENTAL, M1_ANIMAL, M1_MINDLESS, S_MUMMY,
     PM_FLESH_GOLEM, G_UNIQ,
 } from './monsters.js';
-import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
-         LOCK_PICK, EGG, CORPSE, AMULET_OF_LIFE_SAVING, GRAY_DRAGON_SCALES,
+import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY, LOCK_PICK, EGG,
+         CORPSE, AMULET_OF_LIFE_SAVING, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
          YELLOW_DRAGON_SCALE_MAIL, TIN, GLOB_OF_GREEN_SLIME, CARROT, ICE_BOX,
-         objects } from './objects.js';
+         objects, is_pick, is_axe } from './objects.js';
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES, M_POISONGAS_OK, M_POISONGAS_MINOR, M_POISONGAS_BAD,
          MAGICAL_BREATHING, Is_waterlevel } from './const.js';
@@ -98,7 +98,7 @@ import { enexto, rloc_to_core } from './teleport.js';
 import { PICK_AXE, DWARVISH_MATTOCK, AXE, BATTLE_AXE, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
 import { NO_WEAPON_WANTED, W_ARMS, SHOPBASE, P_AXE, P_PICK_AXE, WT_TOOMUCH_DIAGONAL } from './const.js';
-import { curr_mon_load } from './dogmove.js';
+import { curr_mon_load, finish_meating } from './dogmove.js';
 import { can_hide_under_obj, set_mimic_sym, hideunder_async } from './makemon.js';
 import { vobj_at } from './display.js';
 import { ceiling_hider } from './engrave.js';
@@ -140,8 +140,8 @@ import { flooreffects, deferred_goto } from './do.js';
 import { s_suffix } from './hacklib.js';
 import { change_luck, adjalign } from './attrib.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
-import { You_hear, growl, maybe_gasp } from './sounds.js';
-import { PLNMSG_GROWL, DEAF } from './const.js';
+import { growl, maybe_gasp } from './sounds.js';
+import { PLNMSG_GROWL } from './const.js';
 import { little_to_big } from './mondata.js';
 import { quest_info } from './questpgr.js';
 import { is_lightblocker_mappear, does_block, unblock_point,
@@ -160,7 +160,7 @@ import { in_rooms, spoteffects } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
 import { stinky_nemesis } from './questpgr.js';
-import { Hallucination, Conflict } from './youprop.js';
+import { Hallucination, Conflict, Deaf } from './youprop.js';
 import { m_next2u } from './const.js';
 import { uhis, unstuck } from './mhitu.js';
 import { obj_extract_self } from './mkobj.js';
@@ -192,6 +192,7 @@ import { gd_move } from './vault.js';
 import { rloc_to as rloc_to_mn } from './teleport.js';
 import { place_wsegs as place_wsegs_rm } from './worm.js';
 import { set_ustuck as set_ustuck_rm } from './uhitm.js';
+import { m_carrying } from './mthrowu.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -1176,17 +1177,6 @@ export function seemimic(mtmp) {
     newsym(mtmp.mx, mtmp.my);
 }
 
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== MM.S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = M_AP_NOTHING;
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
-    }
-}
-
 // C ref: mon.c peacefuls_respond()
 /* make other peaceful monsters react */
 async function peacefuls_respond(mtmp) {
@@ -1203,15 +1193,12 @@ async function peacefuls_respond(mtmp) {
             && mon.mcansee && m_canseeu(mon)) {
             let buf = '';
             let exclaimed = false, needpunct = false, alreadyfleeing;
-            const Deaf = () => !!(game.u.uprops[DEAF]?.intrinsic
-                                  || game.u.uprops[DEAF]?.extrinsic);
 
             if (humanoid(mon.data) || mon.isshk || mon.ispriest) {
                 if (is_watch(mon.data)) {
-                    /* SetVoice(mon, 0, 80, 0); verbalize() */
-                    if (!Deaf())
-                        await pline('"Halt!  You\'re under arrest!"');
-                    await angry_guards(Deaf());
+                    /* SetVoice(mon, 0, 80, 0) */
+                    await verbalize("Halt!  You're under arrest!");
+                    await angry_guards(!!Deaf());
                 } else {
                     if (!Deaf() && !rn2(5)) {
                         const gasp = maybe_gasp(mon);
@@ -2499,24 +2486,9 @@ export function monnear(mon, x, y) {
         return false;
     return (distance < 3);
 }
-/* C ref: mondata.h NODIAG() */
-function NODIAG(monnum) { return monnum === PM_GRID_BUG; }
 
 /* mondata.h */
 
-/* C ref: monmove.c m_can_break_boulder() */
-function m_can_break_boulder(mtmp) {
-    return (is_rider(mtmp.data)
-            || (!mtmp.mspec_used
-                && (mtmp.isshk || mtmp.ispriest
-                    || (mtmp.data.msound === MS_LEADER))));
-}
-/* C ref: mthrowu.c m_carrying() */
-function m_carrying(mtmp, type) {
-    for (const otmp of minv(mtmp))
-        if (otmp.otyp === type) return otmp;
-    return null;
-}
 /* C ref: mondata.c passes_bars() */
 export function passes_bars(mptr) {
     return (passes_walls(mptr) || amorphous(mptr)
@@ -2603,16 +2575,6 @@ function monlineu(mon, nx, ny) {
     return online2(nx, ny, mon.mux, mon.muy);
 }
 
-/* C ref: obj.h is_pick() */
-function is_pick(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_PICK_AXE);
-}
-/* C ref: obj.h is_axe() */
-function is_axe(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_AXE);
-}
 /* C ref: hack.c bad_rock() */
 export function bad_rock(mdat, x, y) {
     return ((game.level.flags.sokoban_rules && sobj_at(BOULDER, x, y))

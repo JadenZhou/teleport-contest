@@ -68,9 +68,9 @@ import { name_to_mon, your_race, is_vampshifter, is_were, is_orc, is_elf,
          is_dwarf, is_gnome, is_undead, poly_when_stoned,
          little_to_big } from './mondata.js';
 import { pmname, Some_Monnam, Monnam, mon_nam, Mgender } from './do_name.js';
-import { an, the_unique_pm, vtense, yname, makeplural } from './objnam.js';
-import { the, simpleonames, surface, cloak_simple_name,
-         helm_simple_name } from './iactions.js';
+import { an, the_unique_pm, vtense, yname, makeplural, cloak_simple_name,
+         helm_simple_name } from './objnam.js';
+import { the, simpleonames, surface } from './iactions.js';
 import { unmul } from './allmain.js';
 import { make_glib, set_mimic_blocking, set_itimeout, make_blinded,
          make_sick, make_stoned, make_slimed } from './potion.js';
@@ -91,7 +91,7 @@ import { find_ac } from './u_init.js';
 import { set_ustuck } from './uhitm.js';
 import { spoteffects, nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
-import { retouch_equipment } from './artifact.js';
+import { retouch_equipment, artifact_light } from './artifact.js';
 import { character_race } from './role.js';
 import { dropx, canletgo } from './do.js';
 import { donning, cancel_don, Armor_gone, Cloak_off, Helmet_off,
@@ -111,7 +111,7 @@ import { killer as killer_ps } from './topten.js';
 import { DIED as DIED_PS } from './const.js';
 import { arti_light_radius } from './light.js';
 import { maybe_adjust_light } from './mkobj.js';
-import { artifact_light } from './worn.js';
+import { is_flimsy, is_sword } from './objects.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -298,17 +298,7 @@ export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
 /* creature will slide out of armor */
 /* creature will break out of armor */
 export function has_horns(ptr) { return num_horns(ptr) > 0; }
-/* C ref: obj.h is_flimsy(), is_sword(), WrappingAllowed(),
-   Is_dragon_armor() */
-function is_flimsy(otmp) {
-    return O.objects[otmp.otyp].oc_material <= O.LEATHER
-        || otmp.otyp === O.RUBBER_HOSE;
-}
-function is_sword(otmp) {
-    return otmp.oclass === O.WEAPON_CLASS
-        && O.objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-        && O.objects[otmp.otyp].oc_skill <= P_SABER;
-}
+/* C ref: obj.h WrappingAllowed(), Is_dragon_armor() */
 function WrappingAllowed(mptr) {
     return humanoid(mptr) && mptr.msize >= M.MZ_SMALL
         && mptr.msize <= M.MZ_HUGE

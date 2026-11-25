@@ -19,7 +19,8 @@ import { explode } from './explode.js';
 import { d } from './rng.js';
 import { EXPL_FIERY, NO_TRAP_FLAGS } from './const.js';
 import { hits_bars } from './mthrowu.js';
-import { glyph_at, glyph_is_warning } from './display.js';
+import { glyph_at, glyph_is_warning, You_hear as
+         You_hear_br } from './display.js';
 import { noit_mhim } from './mhitu.js';
 import { shade_miss } from './uhitm.js';
 import { switch_terrain } from './hack.js';
@@ -32,10 +33,12 @@ import { drag_ball, move_bc, drop_ball } from './ball.js';
 import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
-import { is_ammo, is_pole, ammo_and_launcher, doquiver_core } from './wield.js';
+import { doquiver_core } from './wield.js';
 import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP, Race_if } from './const.js';
 import { BULLWHIP, BOOMERANG, AKLYS, WAN_PROBING, WAN_OPENING, WAN_LOCKING,
-         WAN_STRIKING } from './objects.js';
+         WAN_STRIKING, is_pick, is_spear, is_blade, is_sword, greatest_erosion,
+         is_axe, is_weptool, matching_launcher, is_missile, is_wet_towel,
+         is_ammo, is_pole, ammo_and_launcher } from './objects.js';
 import { zap_map, bhitpile } from './zap.js';
 import { M1_NOHANDS, M1_NOTAKE, S_COCKATRICE, PM_CHICKATRICE, PM_COCKATRICE,
          PM_MEDUSA, MZ_MEDIUM, mons } from './monsters.js';
@@ -71,7 +74,7 @@ import { PM_CAVE_DWELLER, PM_MONK, PM_RANGER, PM_ROGUE, PM_NINJA, PM_SAMURAI,
          PM_ORC, PM_GNOME, PM_HUMAN, PM_DWARF, PM_SHADE,
          M2_ROCKTHROW } from './monsters.js';
 import { ART_MJOLLNIR } from './artilist.js';
-import { welded, matching_launcher, is_missile, is_wet_towel } from './wield.js';
+import { welded } from './wield.js';
 import { getobj, freeinv, stackobj } from './invent.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
 import { calc_capacity } from './hack.js';
@@ -82,7 +85,6 @@ import { splitobj, place_object, is_flammable, weight, unsplitobj } from './mkob
 import { encumber_msg } from './pickup.js';
 import { remove_worn_item } from './steal.js';
 import { weapon_type, P_SKILL, hitval } from './weapon.js';
-import { is_weptool } from './mkobj.js';
 import { add_to_minv } from './mkobj.js';
 import { mon_nam } from './do_name.js';
 import { s_suffix } from './hacklib.js';
@@ -182,7 +184,6 @@ import { cansee as cansee_br } from './vision.js';
 import { is_crackable } from './objects.js';
 import { erode_obj } from './trap.js';
 import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';
-import { You_hear as You_hear_br } from './sounds.js';
 import { costly_spot as costly_spot_br } from './shk.js';
 import { add_damage as add_damage_bh, pay_for_damage as pay_for_damage_bh } from './shk.js';
 import { doorlock as doorlock_bh } from './lock.js';
@@ -234,11 +235,6 @@ async function ok_to_throw() {
     if (await check_capacity(null))
         return { ok: false, shotlimit };
     return { ok: true, shotlimit };
-}
-
-/* C ref: obj.h is_art(), is_pick(); mondata.h throws_rocks() */
-function is_pick(otmp) {
-    return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
 }
 
 // C ref: dothrow.c multishot_class_bonus()
@@ -566,21 +562,6 @@ function throwing_weapon(obj) {
               /* special cases [might want to add AXE] */
               || obj.otyp === WAR_HAMMER || obj.otyp === AKLYS);
 }
-/* C ref: obj.h is_spear(), is_blade(), is_sword() */
-function is_spear(otmp) {
-    return otmp.oclass === WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill === P_SPEAR;
-}
-function is_blade(otmp) {
-    return otmp.oclass === WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill >= P_DAGGER
-        && objects[otmp.otyp].oc_skill <= P_SABER;
-}
-function is_sword(otmp) {
-    return otmp.oclass === WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-        && objects[otmp.otyp].oc_skill <= P_SABER;
-}
 
 // C ref: dothrow.c throwit_return()
 function throwit_return(clear_thrownobj) {
@@ -789,7 +770,7 @@ export async function thitmonst(mon,
                 tmp -= 4;
             } else {
                 const uwep = g.uwep;
-                tmp += (uwep.spe || 0) - greatest_erosion_dt(uwep);
+                tmp += (uwep.spe || 0) - greatest_erosion(uwep);
                 tmp += weapon_hit_bonus_dt(uwep);
                 if (uwep.oartifact)
                     tmp += spec_abon_dt(uwep, mon);
@@ -822,7 +803,7 @@ export async function thitmonst(mon,
         if (tmp >= dieroll) {
             const wasthrown = !!g.thrownobj,
                 /* remember weapon attribute; hmon() might destroy obj */
-                chopper = is_axe_dt(obj);
+                chopper = is_axe(obj);
 
             /* attack hits mon */
             if (hmode === HMON_APPLIED_DT) { /* ranged hit with wielded polearm */
@@ -2332,14 +2313,3 @@ export async function mhurtle(mon, dx, dy, range) {
     return;
 }
 
-
-/* C ref: obj.h greatest_erosion() */
-function greatest_erosion_dt(otmp) {
-    const e1 = otmp.oeroded || 0, e2 = otmp.oeroded2 || 0;
-    return e1 > e2 ? e1 : e2;
-}
-/* C ref: objclass.h is_axe() */
-function is_axe_dt(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS_DT)
-            && objects[otmp.otyp].oc_skill === P_AXE_DT);
-}

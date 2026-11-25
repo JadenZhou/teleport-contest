@@ -8,7 +8,7 @@
 import { helpless } from './monmove.js';
 import { impossible } from './hack.js';
 import { game } from './gstate.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_ACHIEVE } from './const.js';
 import { noit_mon_nam } from './do_name.js';
 import { rn2 } from './rng.js';
@@ -49,12 +49,6 @@ function topo() { return game.dungeon_topology; }
 function Is_qstart(x) { return on_level(x, topo().d_qstart_level); }
 function Is_qlocate(x) { return on_level(x, topo().d_qlocate_level); }
 function Is_nemesis(x) { return on_level(x, topo().d_nemesis_level); }
-
-// C ref: pline.c verbalize()
-async function verbalize(line) {
-    /* gp.pline_flags |= PLINE_VERBALIZE: only used by the voice hooks */
-    await pline(`"${line}"`);
-}
 
 // C ref: quest.c on_start()
 async function on_start() {

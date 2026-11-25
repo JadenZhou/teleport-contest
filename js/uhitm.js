@@ -14,7 +14,7 @@
 
 import { DEADMONSTER } from './mon.js';
 import { helpless } from './monmove.js';
-import { is_art } from './artifact.js';
+import { is_art, artifact_light } from './artifact.js';
 import { passes_rocks, unconscious } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
@@ -22,7 +22,7 @@ import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          resists_ston, cantwield, is_watch, attacktype,
          noattacks } from './mondata.js';
 import { game } from './gstate.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize, You_hear } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
 import { obj_is_pname } from './objnam.js';
 import { cutworm } from './worm.js';
@@ -38,9 +38,12 @@ import { mons, AT_CLAW, AT_KICK, AT_BUTT, AT_WEAP, AT_HUGS, AT_ENGL, AT_TUCH,
          AD_PHYS, AD_ELEC, AD_STCK } from './monsters.js';
 import { M_ATTK_HIT, SHOCK_RES, M_SEEN_ELEC, A_STR, INVIS, W_ARMG, HALF_PHDAM,
          NON_PM, LOW_PM } from './const.js';
-import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL } from './objects.js';
+import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL, is_blade,
+         is_axe, is_shield, is_flimsy, stone_missile, greatest_erosion,
+         is_weptool, bimanual, is_launcher, is_missile, is_ammo, is_pole,
+         is_wet_towel, ammo_and_launcher, u_wield_art } from './objects.js';
 import { permapoisoned } from './mkobj.js';
-import { dmgval } from './weapon.js';
+import { dmgval, martial_bonus } from './weapon.js';
 import { which_armor } from './worn.js';
 import { rustm, mon_poly } from './mhitm.js';
 import { couldsee, cansee } from './vision.js';
@@ -49,7 +52,7 @@ import { IS_OBSTRUCTED, SHOPBASE, ROOMOFFSET } from './const.js';
 import { PM_LONG_WORM, PM_LONG_WORM_TAIL } from './monsters.js';
 import { passes_walls } from './mondata.js';
 import { ART_STORMBRINGER } from './artilist.js';
-import { highc, sgn, plur } from './hacklib.js';
+import { highc, sgn, plur, NODIAG } from './hacklib.js';
 import { monflee } from './monmove.js';
 import { is_safemon, end_running, in_rooms } from './hack.js';
 import { rnl, d } from './rng.js';
@@ -80,15 +83,13 @@ import { WEAPON_CLASS, TOOL_CLASS, ARMOR_CLASS, GEM_CLASS, POTION_CLASS,
          CLOVE_OF_GARLIC, LOADSTONE, GOLD_DRAGON_SCALE_MAIL,
          GOLD_DRAGON_SCALES, SHIELD_OF_REFLECTION,
          AMULET_OF_REFLECTION } from './objects.js';
-import { is_weptool } from './mkobj.js';
 import { abon, dbon, hitval, weapon_hit_bonus, weapon_dam_bonus, use_skill,
-         uwep_skill_type, special_dmgval, weapon_type, P_SKILL,
-         m_carrying } from './weapon.js';
+         uwep_skill_type, special_dmgval, weapon_type,
+         P_SKILL } from './weapon.js';
 import { find_mac } from './worn.js';
 import { check_capacity, overexertion, near_capacity, nomul,
          test_move } from './hack.js';
-import { can_twoweapon, untwoweapon, bimanual, is_launcher, is_missile,
-         is_ammo, is_pole, is_wet_towel, ammo_and_launcher } from './wield.js';
+import { can_twoweapon, untwoweapon } from './wield.js';
 import { yname, makeplural, an, doname, xname, vtense, The } from './objnam.js';
 import { ing_suffix, s_suffix } from './hacklib.js';
 import { body_part } from './insight.js';
@@ -120,7 +121,6 @@ import { tele_restrict, rloc } from './teleport.js';
 import { locomotion } from './trap.js';
 import { Adjmonnam } from './do_name.js';
 import { doseduce } from './mhitu.js';
-import { You_hear } from './sounds.js';
 import { make_stoned } from './potion.js';
 import { poly_when_stoned } from './mondata.js';
 import { the } from './iactions.js';
@@ -207,7 +207,7 @@ import { ugolemeffects } from './mhitu.js';
 import { Yobjnam2 } from './objnam.js';
 import { split_mon } from './potion.js';
 import { hit as hit_uh } from './zap.js';
-import { mshot_xname as mshot_xname_uh } from './mthrowu.js';
+import { mshot_xname as mshot_xname_uh, m_carrying } from './mthrowu.js';
 import { tended_shop } from './shk.js';
 /* flash_hits_mon(), light_hits_gremlin() */
 import { canseemon as canseemon_fh, glyph_at as glyph_at_fh, pline as pline_fh,
@@ -1711,7 +1711,7 @@ async function mhitm_ad_heal(magr, mattk, mdef, mhm) {
             if (Role_if(M.PM_HEALER)) {
                 if (!Deaf() && !(game.moves % 5)) {
                     /* SetVoice(magr, 0, 80, 0); */
-                    await pline("\"Doc, I can't help you unless you cooperate.\""); /* verbalize() */
+                    await verbalize("Doc, I can't help you unless you cooperate.");
                 }
                 mhm.damage = 0;
             } else
@@ -2019,8 +2019,6 @@ export async function mhitm_knockback(
     return true;
 }
 
-/* C ref: obj.h u_wield_art() */
-function u_wield_art(art) { return !!(game.uwep && game.uwep.oartifact === art); }
 /* C ref: mondata.h is_longworm() */
 function is_longworm(ptr) {
     return ptr === mons[PM_LONG_WORM] || ptr === mons[PM_LONG_WORM_TAIL];
@@ -2170,26 +2168,7 @@ export async function do_attack(mtmp) {
 
 /* C ref: youprop.h and mondata.h/obj.h predicates used below */
 function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
-function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
-function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 function mon_hates_light(mon) { return mon.data === mons[M.PM_GREMLIN]; }
-function is_blade(otmp) {
-    return otmp.oclass === WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill >= P_DAGGER
-        && objects[otmp.otyp].oc_skill <= P_SABER;
-}
-function is_axe(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_AXE;
-}
-function is_shield(otmp) {
-    return otmp.oclass === ARMOR_CLASS
-           && objects[otmp.otyp].oc_armcat === ARM_SHIELD;
-}
-function is_flimsy(otmp) {
-    return objects[otmp.otyp].oc_material <= LEATHER
-           || otmp.otyp === RUBBER_HOSE;
-}
 function is_blunt_weapon(o) {
     return (o.oclass === WEAPON_CLASS || is_weptool(o))
            && (objects[o.otyp].oc_dir & WHACK) !== 0;
@@ -2199,23 +2178,6 @@ function is_poisonable(otmp) {
             && objects[otmp.otyp].oc_skill >= -P_SHURIKEN
             && objects[otmp.otyp].oc_skill <= -P_BOW)
            || permapoisoned(otmp);
-}
-function stone_missile(o) {
-    return (objects[o.otyp].oc_material === GEMSTONE
-            || objects[o.otyp].oc_material === MINERAL)
-           && o.oclass !== RING_CLASS;
-}
-function greatest_erosion(otmp) {
-    const e1 = otmp.oeroded || 0, e2 = otmp.oeroded2 || 0;
-    return e1 > e2 ? e1 : e2;
-}
-/* C ref: artifact.c artifact_light() */
-function artifact_light(obj) {
-    if (obj && (obj.otyp === GOLD_DRAGON_SCALE_MAIL
-                || obj.otyp === GOLD_DRAGON_SCALES)
-        && ((obj.owornmask || 0) & W_ARM) !== 0)
-        return true;
-    return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
 }
 /* C ref: monst.h troll_baned() */
 function troll_baned(m, o) {

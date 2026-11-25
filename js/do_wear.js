@@ -29,14 +29,16 @@ import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
 import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
-import { pline, You, Your, There, pline_The, newsym,
-         see_monsters } from './display.js';
+import { pline, You, Your, There, pline_The, newsym, see_monsters,
+         You_feel } from './display.js';
 import { getobj, silly_thing } from './invent.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_INACCESS, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
          ECMD_TIME, W_ARMOR, W_ACCESSORY } from './const.js';
 import { ARMOR_CLASS, RING_CLASS, AMULET_CLASS, MEAT_RING, BLINDFOLD, TOWEL,
-         LENSES } from './objects.js';
+         LENSES, is_helmet, is_shield, is_cloak, is_shirt, is_suit, is_sword,
+         is_flimsy, is_boots, is_gloves, bimanual, is_metallic, is_crackable,
+         is_rustprone, is_corrodeable } from './objects.js';
 import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, MZ_HUGE, M1_NOLIMBS, M1_HUMANOID,
          M1_NOHEAD, M1_SLITHY, M1_FLY, M1_MINDLESS, M1_BREATHLESS, S_CENTAUR,
          S_GHOST, S_VORTEX, mons, PM_AIR_ELEMENTAL, PM_MARILITH,
@@ -50,7 +52,7 @@ import * as O from './objects.js';
 import { prinv } from './invent.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
-import { setworn, setuwep, setuswapwep, setuqwep, bimanual, welded,
+import { setworn, setuwep, setuswapwep, setuqwep, welded,
          retouch_object } from './wield.js';
 import { W_RING, W_AMUL, W_TOOL, W_SADDLE, W_WEAPONS, LEFT_RING, RIGHT_RING,
          FINGER, GLIB } from './const.js';
@@ -75,7 +77,7 @@ import { the, thesimpleoname } from './iactions.js';
 import { change_luck } from './attrib.js';
 import { nomul } from './hack.js';
 import { encumber_msg } from './pickup.js';
-import { racial_exception, artifact_light } from './worn.js';
+import { racial_exception } from './worn.js';
 import { surface } from './iactions.js';
 import { discover_object, makeknown } from './o_init.js';
 import { find_ac } from './u_init.js';
@@ -95,8 +97,8 @@ import { rn2 as rn2_dw } from './rng.js';
 import { which_armor as which_armor_dw } from './worn.js';
 import { erode_obj } from './trap.js';
 import { stop_occupation as stop_occupation_dw } from './allmain.js';
-import { is_flammable, is_rustprone, is_crackable, is_rottable,
-         is_corrodeable, erosion_matters, is_damageable } from './mkobj.js';
+import { is_flammable, is_rottable, erosion_matters,
+         is_damageable } from './mkobj.js';
 import { ERODE_BURN, ERODE_RUST, ERODE_CRACK, ERODE_ROT, ERODE_CORRODE,
          ERODE_NONE, ER_NOTHING, ER_DESTROYED, EF_PAY,
          EF_DESTROY } from './const.js';
@@ -128,6 +130,7 @@ import { has_ceiling as has_ceiling_bo } from './insight.js';
 import { spoteffects as spoteffects_bo } from './hack.js';
 import { float_down as float_down_bo } from './trap.js';
 import { FROMOUTSIDE as FROMOUTSIDE_BO } from './const.js';
+import { artifact_light } from './artifact.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -142,26 +145,6 @@ function WrappingAllowed(mptr) {
         && !noncorporeal(mptr) && mptr.mlet !== S_CENTAUR
         && mptr !== mons[PM_WINGED_GARGOYLE] && mptr !== mons[PM_MARILITH];
 }
-/* C ref: obj.h is_helmet() ... is_suit(), is_sword(), is_flimsy() */
-function is_armcat(otmp, cat) {
-    return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === cat;
-}
-function is_helmet(otmp) { return is_armcat(otmp, ARM_HELM); }
-function is_shield(otmp) { return is_armcat(otmp, ARM_SHIELD); }
-function is_cloak(otmp) { return is_armcat(otmp, ARM_CLOAK); }
-function is_shirt(otmp) { return is_armcat(otmp, ARM_SHIRT); }
-function is_suit(otmp) { return is_armcat(otmp, ARM_SUIT); }
-function is_sword(otmp) {
-    return otmp.oclass === O.WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-        && objects[otmp.otyp].oc_skill <= P_SABER;
-}
-function is_flimsy(otmp) {
-    return objects[otmp.otyp].oc_material <= O.LEATHER
-           || otmp.otyp === O.RUBBER_HOSE;
-}
-/* C ref: pline.c You_feel() */
-async function You_feel(line) { await pline(`You feel ${line}`); }
 
 // C ref: do_wear.c fingers_or_gloves() -- plural "fingers" or optionally
 // "gloves"
@@ -537,6 +520,13 @@ async function Helmet_on() {
         /* update_inventory(): no perm_invent */
     }
     return 0;
+}
+
+// C ref: do_wear.c hard_helmet() -- headgear that protects against bonks
+export function hard_helmet(obj) {
+    if (!obj || !is_helmet(obj))
+        return false;
+    return (is_metallic(obj) || is_crackable(obj)) ? true : false;
 }
 
 // C ref: do_wear.c Gloves_on()
@@ -1530,14 +1520,6 @@ function takeoff_ctx() {
         g.context.takeoff = { mask: 0, what: 0, delay: 0,
                               cancelled_don: false, disrobing: '' };
     return g.context.takeoff;
-}
-
-/* C ref: obj.h is_boots(), is_gloves() */
-function is_boots(otmp) {
-    return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_BOOTS;
-}
-function is_gloves(otmp) {
-    return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_GLOVES;
 }
 
 // C ref: do_wear.c off_msg()

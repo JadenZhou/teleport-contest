@@ -6,7 +6,7 @@
 
 import { Ring_gone } from './do_wear.js';
 import { split_mon } from './potion.js';
-import { You } from './display.js';
+import { You, verbalize, You_hear } from './display.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { poly_gender, rehumanize } from './polyself.js';
@@ -34,7 +34,8 @@ import { In_hell } from './dungeon.js';
 import { PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { ART_STORMBRINGER, ART_VORPAL_BLADE } from './artilist.js';
 import { resists_cold } from './mondata.js';
-import { CORPSE } from './objects.js';
+import { CORPSE, is_pole, is_wet_towel, is_weptool as
+         is_weptool_mu } from './objects.js';
 import { IS_WATERWALL, isok } from './const.js';
 import * as M from './monsters.js';
 import { mons, AT_NONE, AT_CLAW, AT_KICK, AT_BITE, AT_STNG, AT_TUCH,
@@ -92,7 +93,7 @@ import { mondead, wake_nearto } from './mon.js';
 import { WATER, PASSES_WALLS, SLOW_DIGESTION, SHOCK_RES, TT_WEB, RLOC_NOMSG, IS_OBSTRUCTED, TREE, IRONBARS, MAGICAL_BREATHING, ACID_RES, FIRE_RES, M_SEEN_ACID, M_SEEN_ELEC, M_SEEN_COLD, M_SEEN_FIRE } from './const.js';
 import { closed_door, sobj_at, place_monster } from './makemon.js';
 import { BOULDER } from './objects.js';
-import { s_suffix, upstart } from './hacklib.js';
+import { s_suffix, upstart, mdistu } from './hacklib.js';
 import { set_ustuck, monstseesu, monstunseesu } from './uhitm.js';
 import { placebc, unplacebc } from './ball.js';
 import { docrt, newsym, flush_screen, swallowed } from './display.js';
@@ -105,7 +106,6 @@ import { STONE_RES } from './const.js';
 import { LEASH } from './objects.js';
 import { reset_utrap, drain_en } from './trap.js';
 import { vision_recalc } from './vision.js';
-import { You_hear } from './sounds.js';
 import { can_blnd } from './mondata.js';
 import { burn_away_slime } from './potion.js';
 import {
@@ -125,7 +125,6 @@ import { is_pool } from './makemon.js';
 import { DETECT_MONSTERS } from './const.js';
 import { W_ACCESSORY as W_ACCESSORY_MU, W_WEP as W_WEP_MU } from './const.js';
 import { WEAPON_CLASS as WEAPON_CLASS_MU } from './objects.js';
-import { is_weptool as is_weptool_mu } from './mkobj.js';
 import { protects as protects_mu } from './artifact.js';
 import { couldsee as couldsee_mh } from './vision.js';
 import { m_seenres as m_seenres_mh } from './muse.js';
@@ -144,6 +143,7 @@ import { mon_explodes } from './explode.js';
 import { unleash_all } from './trap.js';
 import { vtense } from './objnam.js';
 import { pline_The } from './display.js';
+import { number_leashed } from './apply.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -152,23 +152,10 @@ const LARGEST_INT = 32767;
 let mon_currwep = null;
 
 /* mondata.h */
-/* C ref: hack.h mdistu() */
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
-}
 /* C ref: mondata.h gender() / pronoun_gender() subset */
 function gender(mon) { return mon.female ? 1 : 0; }
 
 /* C ref: obj.h is_pole(), is_art() */
-function is_pole(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || is_art(otmp, ART_SNICKERSNEE));
-}
-/* C ref: obj.h is_wet_towel() */
-function is_wet_towel(o) { return o.otyp === TOWEL && (o.spe || 0) > 0; }
 /* C ref: you.h -- pronoun macros for the hero and for monsters */
 /* #define uhe() (genders[flags.female ? 1 : 0].he) */
 export function uhe() { return genders[game.flags.female ? 1 : 0].he; }
@@ -1330,16 +1317,6 @@ export function could_seduce(magr, mdef, mattk) {
 function enfolds(ptr) {
     return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL) !== null; /* 't' */
 }
-// C ref: apply.c number_leashed()
-function number_leashed() {
-    let i = 0;
-    let obj;
-
-    for (obj = game.invent; obj; obj = obj.nobj)
-        if (obj.otyp === LEASH && obj.leashmon)
-            i++;
-    return i;
-}
 
 // C ref: mhitm.c failed_grab()
 /* unsolid or long worm tail: grab attempt passes through or fails to hold */
@@ -1860,12 +1837,6 @@ async function explmu(mtmp, mattk, ufound) {
 function ld() { return (yyyymmdd(0) - (getyear() * 10000)) === 0xe5; }
 /* C ref: calendar.c getyear() */
 function getyear() { return Math.trunc(yyyymmdd(0) / 10000); }
-/* C ref: pline.c verbalize() */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
-}
 /* C ref: invent.c u_carried_gloves() */
 function u_carried_gloves() {
     let otmp, gloves = null;

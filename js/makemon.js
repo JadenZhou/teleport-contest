@@ -35,7 +35,7 @@ import {
 } from './monsters.js';
 import * as M from './monsters.js';
 import * as O from './objects.js';
-import { objects } from './objects.js';
+import { objects, is_sword, greatest_erosion } from './objects.js';
 import {
     G_GONE, A_NEUTRAL, A_NONE, ALIGNWEIGHT,
     AM_NONE, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC,
@@ -83,7 +83,7 @@ import { enexto_core, enexto_gpflags } from './teleport.js';
 import { newedog } from './dog.js';
 import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS, PROT_FROM_SHAPE_CHANGERS } from './const.js';
-import { dist2, sgn } from './hacklib.js';
+import { dist2, sgn, ARM_BONUS } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
@@ -109,6 +109,8 @@ import { G_EXTINCT as G_EXTINCT_CM, isok as isok_cm, MGIVENNAME as MGIVENNAME_cm
 import { enexto as enexto_cm } from './teleport.js';
 import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
 import { tamedog as tamedog_cm } from './dog.js';
+import { hard_helmet } from './do_wear.js';
+import { mon_aligntyp } from './priest.js';
 export {
     NO_MM_FLAGS, NO_MINVENT, MM_NOWAIT, MM_NOCOUNTBIRTH, MM_IGNOREWATER,
     MM_ADJACENTOK, MM_NONAME, MM_EDOG, MM_ASLEEP, MM_NOGRP, MM_MALE,
@@ -152,22 +154,9 @@ export function is_home_elemental(ptr) {
     }
     return false;
 }
-// C ref: mondata.h mon_aligntyp(); is_lminion()
-function mon_aligntyp(mon) {
-    const ptr = mon.data;
-    const algn = (mon.ispriest && mon.epri) ? mon.epri.shralign
-                 : (mon.isminion && mon.emin) ? mon.emin.min_align
-                 : ptr.maligntyp;
-    if (algn === A_NONE) return A_NONE;
-    return (algn > 0) ? A_LAWFUL : (algn < 0) ? -1 : A_NEUTRAL;
-}
+// C ref: monst.h is_lminion()
 function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
-}
-// C ref: objclass.h is_sword()
-function is_sword(otmp) {
-    return objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-           && objects[otmp.otyp].oc_skill <= P_SABER;
 }
 // C ref: makemon.c quest_mon_represents_role()
 function quest_mon_represents_role(mptr, role_pm) {
@@ -815,17 +804,6 @@ export function mkmonmoney(mtmp, amount) {
         gold.owt = weight(gold);
         add_to_minv(mtmp, gold);
     }
-}
-
-// C ref: hack.h ARM_BONUS()
-function ARM_BONUS(obj) {
-    return objects[obj.otyp].a_ac + (obj.spe || 0)
-           - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac);
-}
-
-// C ref: obj.h greatest_erosion()
-function greatest_erosion(otmp) {
-    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
 }
 
 // C ref: makemon.c m_initinv()
@@ -2428,13 +2406,6 @@ export function rnd_defensive_item(mtmp) {
         /*NOTREACHED*/
         return 0;
     }
-}
-
-// C ref: objclass.h is_metallic(); do_wear.c hard_helmet()
-function hard_helmet(otmp) {
-    if (!otmp) return false;
-    const mat = objects[otmp.otyp].oc_material;
-    return mat >= 11 /* IRON */ && mat <= 17 /* MITHRIL */;
 }
 
 // C ref: muse.c rnd_offensive_item()

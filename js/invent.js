@@ -40,7 +40,7 @@ import {
     GETOBJ_PROMPT, Never_mind, FINGERTIP, HAND, W_ARMOR, W_ACCESSORY,
     W_SADDLE, W_WEAPONS, W_TOOL,
 } from './const.js';
-import { objects } from './objects.js';
+import { objects, Is_container, is_missile, is_ammo } from './objects.js';
 import * as M from './monsters.js';
 import { mons, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
@@ -58,7 +58,7 @@ import { record_achievement } from './insight.js';
 import { ACH_AMUL, ACH_CNDL, ACH_BELL, ACH_BOOK, ACH_MINE_PRIZE, ACH_SOKO_PRIZE,
          W_ART } from './const.js';
 import { ART_MJOLLNIR } from './artilist.js';
-import { is_missile, is_ammo, setuqwep } from './wield.js';
+import { setuqwep } from './wield.js';
 import { confers_luck, stop_timer, obj_stop_timers, obj_to_any, attach_fig_transform_timeout } from './timeout.js';
 import { FIG_TRANSFORM } from './const.js';
 import { obj_merge_light_sources } from './light.js';
@@ -2557,7 +2557,7 @@ export async function useupf(obj, numused) {
 // C ref: invent.c set_cknown_lknown()
 /* set obj->{cknown,lknown} if applicable */
 export function set_cknown_lknown(obj) {
-    if (Is_container_iv(obj) || obj.otyp === O.STATUE)
+    if (Is_container(obj) || obj.otyp === O.STATUE)
         obj.cknown = obj.lknown = 1;
     else if (obj.otyp === O.TIN)
         obj.cknown = 1;
@@ -2677,10 +2677,6 @@ export async function identify_pack(id_limit,
 function wait_synch_iv() {
     if (game.ttyDisplay?.rawprint)
         throw new Error('wait_synch(): getret() not ported yet');
-}
-/* C ref: obj.h Is_container() */
-function Is_container_iv(otmp) {
-    return otmp.otyp >= O.LARGE_BOX && otmp.otyp <= O.BAG_OF_TRICKS;
 }
 
 

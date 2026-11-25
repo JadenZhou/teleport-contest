@@ -8,7 +8,6 @@
 // yet).  For enlightenment: adtyp_to_prop(), u_adtyp_resistance_obj(),
 // item_what().
 
-import { You_hear } from './sounds.js';
 import { rndmonnam } from './do_name.js';
 import { adjalign } from './attrib.js';
 import { PM_ARCHEOLOGIST } from './monsters.js';
@@ -21,7 +20,8 @@ import { in_rooms } from './hack.js';
 import { billable, get_obj_location } from './shk.js';
 import { impossible } from './hack.js';
 import { game } from './gstate.js';
-import { livelog_printf, urgent_pline } from './display.js';
+import { livelog_printf, urgent_pline, You_hear as You_hear_zp,
+         You_hear } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { You, Your, pline, pline_The } from './display.js';
 import { getobj, useupall } from './invent.js';
@@ -32,7 +32,9 @@ import { exercise } from './attrib.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
-import { The, xname, Tobjnam, vtense } from './objnam.js';
+import { The, xname, Tobjnam, vtense, cloak_simple_name, suit_simple_name,
+         helm_simple_name, gloves_simple_name, boots_simple_name,
+         shirt_simple_name, shield_simple_name } from './objnam.js';
 import { mon_nam } from './do_name.js';
 import { resists_blnd, resists_blnd_by_arti, nohands, is_mplayer, is_whirly,
          mindless, digests, is_rider, eyecount,
@@ -55,7 +57,10 @@ import { objects, WAND_CLASS, SPBOOK_CLASS, DWARVISH_CLOAK, NODIR, IMMEDIATE,
          WAN_MAGIC_MISSILE, WAN_LIGHTNING, SPE_MAGIC_MISSILE,
          SPE_FINGER_OF_DEATH, SPE_FORCE_BOLT, WAN_STRIKING, BOULDER,
          WAN_CANCELLATION, SPE_CANCELLATION, SPE_KNOCK, SPE_WIZARD_LOCK,
-         WAN_PROBING } from './objects.js';
+         WAN_PROBING, SchroedingersBox, Is_box,
+         Is_container as Is_container_bm, is_weptool as is_weptool_ci,
+         is_weptool as is_weptool_di, is_rustprone, is_crackable,
+         is_corrodeable } from './objects.js';
 import { PIT, SPIKED_PIT, STATUE_TRAP, HEADSTONE, DOOR, DBWALL,
          DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST, DB_WEST, IS_DRAWBRIDGE,
          isok } from './const.js';
@@ -63,8 +68,7 @@ import { t_at, activate_statue_trap } from './trap.js';
 import { sobj_at, is_pool, is_lava } from './makemon.js';
 import { delobj } from './invent.js';
 import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
-         is_rustprone, is_crackable, is_corrodeable, is_rottable,
-         is_damageable, is_poisonable } from './mkobj.js';
+         is_rottable, is_damageable, is_poisonable } from './mkobj.js';
 import { obj_resists } from './dogmove.js';
 import { cansee, does_block, block_point, unblock_point } from './vision.js';
 import { newsym, shieldeff } from './display.js';
@@ -109,10 +113,7 @@ import {
     W_WEP, W_ART, W_ARMC, W_ARM, W_ARMU, W_ARMH, W_ARMG, W_ARMF, W_ARMS,
     W_AMUL, W_TOOL, W_RING, W_RINGL,
 } from './const.js';
-import {
-    cloak_simple_name, suit_simple_name, shirt_simple_name, helm_simple_name,
-    gloves_simple_name, boots_simple_name, shield_simple_name, simpleonames,
-} from './iactions.js';
+import { simpleonames } from './iactions.js';
 import { Sleep_resistance, Antimagic, Blind, Hallucination, Deaf, Reflecting } from './youprop.js';
 import { Luck } from './const.js';
 import { breaks as breaks_zb, hero_breaks as hero_breaks_zb } from './dothrow.js';
@@ -214,7 +215,6 @@ import { W_NONDIGGABLE as W_NONDIGGABLE_ZP, D_NODOOR as D_NODOOR_ZP,
 import { cvt_sdoor_to_door as cvt_sdoor_to_door_zp } from './detect.js';
 import { recalc_block_point as recalc_block_point_zp } from './vision.js';
 import { in_rooms as in_rooms_zp } from './hack.js';
-import { You_hear as You_hear_zp } from './sounds.js';
 import { picking_at as picking_at_zp, reset_pick as reset_pick_zp,
          boxlock as boxlock_zy } from './lock.js';
 import { unpunish as unpunish_zy } from './read.js';
@@ -297,8 +297,7 @@ import { AD_SEDU as AD_SEDU_RV, AD_SSEX as AD_SSEX_RV } from './monsters.js';
 import { MM_NOTAIL as MM_NOTAIL_RV, MM_ADJACENTOK as MM_ADJACENTOK_RV } from './const.js';
 import { defends as defends_di, defends_when_carried as defends_when_carried_di }
        from './artifact.js';
-import { is_weptool as is_weptool_di, costly_alteration as costly_alteration_di }
-       from './mkobj.js';
+import { costly_alteration as costly_alteration_di } from './mkobj.js';
 import { bot as bot_di } from './display.js';
 import { COST_DRAIN as COST_DRAIN_DI, A_CON as A_CON_DI, A_CHA as A_CHA_DI,
          A_INT as A_INT_DI, A_DEX as A_DEX_DI } from './const.js';
@@ -320,8 +319,8 @@ import { W_RING as W_RING_CI, W_ARMG as W_ARMG_CI, W_ARMH as W_ARMH_CI,
          COST_UNBLSS as COST_UNBLSS_CI, ANTIMAGIC as ANTIMAGIC_CI,
          NOTELL as NOTELL_CI, BLINDED as BLINDED_CI } from './const.js';
 import { PM_CLAY_GOLEM as PM_CLAY_GOLEM_CI } from './monsters.js';
-import { is_weptool as is_weptool_ci, costly_alteration as costly_alteration_ci,
-         unbless as unbless_ci, uncurse as uncurse_ci } from './mkobj.js';
+import { costly_alteration as costly_alteration_ci, unbless as unbless_ci,
+         uncurse as uncurse_ci } from './mkobj.js';
 import { obj_to_any as obj_to_any_ci, peek_timer as peek_timer_ci,
          stop_timer as stop_timer_ci } from './timeout.js';
 import { find_ac as find_ac_ci } from './u_init.js';
@@ -358,7 +357,6 @@ import { noit_Monnam as noit_Monnam_bm } from './do_name.js';
 import { mstatusline as mstatusline_bm } from './insight.js';
 import { sticks as sticks_bm } from './engrave.js';
 import { obj_typename as obj_typename_bm } from './objnam.js';
-import { Is_container as Is_container_bm } from './mkobj.js';
 import { u_teleport_mon } from './teleport.js';
 import { closeholdingtrap as closeholdingtrap_bm, openholdingtrap as openholdingtrap_bm,
          openfallingtrap as openfallingtrap_bm } from './trap.js';
@@ -1077,16 +1075,13 @@ export async function release_hold() {
     }
 }
 
-/* C ref: obj.h SchroedingersBox() */
-function SchroedingersBox_bm(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
-
 // C ref: zap.c probe_objchain()
 function probe_objchain(chain) {
     for (const otmp of chain) {
         observe_object(otmp, Hallucination()); /* treat as "seen" */
         if (Is_container_bm(otmp) || otmp.otyp === STATUE_ZB) {
             otmp.lknown = 1;
-            if (!SchroedingersBox_bm(otmp))
+            if (!SchroedingersBox(otmp))
                 otmp.cknown = 1;
         } else if (otmp.otyp === TIN_BM)
             otmp.known = 1;
@@ -1239,9 +1234,6 @@ export async function bhito(obj, otmp) {
     return res;
 }
 
-
-/* C ref: obj.h Is_box() */
-function Is_box(otmp) { return otmp.otyp === LARGE_BOX || otmp.otyp === CHEST; }
 
 /* C ref: obj.h unpolyable() */
 function unpolyable(o) {

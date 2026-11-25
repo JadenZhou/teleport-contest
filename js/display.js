@@ -51,7 +51,7 @@ import { ENGRAVE, BURN, HEADSTONE } from './const.js';
 import { AM_MASK, AM_SANCTUM, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC } from './const.js';
 import {
     Blind, Hallucination, See_invisible, Unblind_telepat, Warning, Warn_of_mon, Infravision,
-    Detect_monsters, Invisible, Protection_from_shape_changers, Unaware
+    Detect_monsters, Invisible, Protection_from_shape_changers, Unaware, Deaf
 } from './youprop.js';
 import { NO_COLOR, CLR_GRAY, CLR_BROWN, CLR_WHITE, CLR_YELLOW, CLR_GREEN, CLR_CYAN,
          CLR_BLUE, CLR_BRIGHT_BLUE, CLR_RED, CLR_ORANGE, CLR_BLACK, CLR_MAGENTA,
@@ -3373,12 +3373,32 @@ export async function You_cant(line) { await pline(`You can't ${line}`); }
 export async function pline_The(line) { await pline(`The ${line}`); }
 export async function There(line) { await pline(`There ${line}`); }
 
+// C ref: pline.c verbalize() -- vpline() of the line in double quotes;
+// PLINE_VERBALIZE only matters to the voice hooks (SetVoice() isn't
+// ported).  There is no Deaf check here: C callers test !Deaf themselves
+// where they need to.  verbalize1(line) is the same call.
+export async function verbalize(line) {
+    await pline(`"${line}"`);
+}
+
 // C ref: pline.c You_feel()
 export async function You_feel(line) {
     if (Unaware())
         await pline(`You dream that you feel ${line}`);
     else
         await pline(`You feel ${line}`);
+}
+
+// C ref: pline.c You_hear()
+export async function You_hear(line) {
+    if ((Deaf() && !Unaware()) || !game.flags.acoustics)
+        return;
+    if (game.u.uinwater) /* Underwater */
+        await pline(`You barely hear ${line}`);
+    else if (Unaware())
+        await pline(`You dream that you hear ${line}`);
+    else
+        await pline(`You hear ${line}`); /* Deaf-aware */
 }
 
 // C ref: pline.c You_see()

@@ -7,16 +7,16 @@
 // 'not ported yet' error instead of skipping their rolls.
 
 import { fracture_rock } from './zap.js';
-import { pline_The } from './display.js';
+import { pline_The, verbalize, You_see, You_hear } from './display.js';
 import { rn1 } from './rng.js';
 import { minv } from './mon.js';
-import { m_lined_up } from './mthrowu.js';
+import { m_lined_up, m_carrying } from './mthrowu.js';
 import { game } from './gstate.js';
 import { worm_move, worm_nomove, wormhitu, see_wsegs } from './worm.js';
 import { picking_lock } from './lock.js';
 import { is_digging, watch_dig } from './dig.js';
 import { rn2, rnd, d } from './rng.js';
-import { dist2, distmin } from './hacklib.js';
+import { dist2, distmin, mdistu } from './hacklib.js';
 import { cansee, couldsee, clear_path, vision_recalc,
          recalc_block_point } from './vision.js';
 import { newsym, pline, canseemon, canspotmon, vobj_at } from './display.js';
@@ -45,14 +45,13 @@ import { y_monnam } from './do_name.js';
 import { stairway_at } from './display.js';
 import { stairway_find_dir } from './mklev.js';
 import { hideunder_async } from './makemon.js';
-import { Is_candle, Is_container } from './mkobj.js';
+import { Is_candle } from './mkobj.js';
 import { STAIRS, LADDER, WEB, IS_WATERWALL, LAVAWALL } from './const.js';
 import { IS_TREE, IS_STWALL, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE,
          P_AXE } from './const.js';
 import { splitobj, obj_extract_self, bill_dummy_object } from './mkobj.js';
 import { distant_name, doname } from './objnam.js';
 import { mpickobj } from './steal.js';
-import { You_hear } from './sounds.js';
 import { find_defensive, find_offensive, find_misc, use_defensive,
          use_misc, cures_stoning, mcould_eat_tin } from './muse.js';
 import { mattacku, unstuck } from './mhitu.js';
@@ -60,11 +59,12 @@ import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
 import { mattackm } from './mhitm.js';
-import { obj_resists, dogfood } from './dogmove.js';
+import { obj_resists, dogfood, finish_meating } from './dogmove.js';
 import { MANFOOD, ACCFOOD } from './const.js';
-import { touch_artifact, has_magic_key } from './artifact.js';
+import { touch_artifact, has_magic_key, artifact_light } from './artifact.js';
 import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
-         RIN_SLOW_DIGESTION } from './objects.js';
+         RIN_SLOW_DIGESTION, is_pick, is_pole, is_axe,
+         Is_container } from './objects.js';
 import { resists_poison } from './mondata.js';
 import { mksobj_at } from './mkobj.js';
 import { an, xname } from './objnam.js';
@@ -161,7 +161,6 @@ import { cursed_object_at as cursed_object_at_ud } from './dogmove.js';
 import { mdisplacem as mdisplacem_mm } from './mhitm.js';
 import { M_ATTK_HIT as M_ATTK_HIT_MM, M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MM,
          M_ATTK_AGR_DIED as M_ATTK_AGR_DIED_MM } from './const.js';
-import { artifact_light } from './worn.js';
 import { bare_artifactname } from './iactions.js';
 import { yname } from './objnam.js';
 
@@ -172,25 +171,9 @@ function mon_offmap(mon) {
     return ((mon.mstate || 0)
             & (MON_DETACH | MON_MIGRATING | MON_LIMBO | MON_OFFMAP)) !== 0;
 }
-/* C ref: pline.c You_see() -- the dreaming (Unaware) and Blind variants
-   aren't ported yet */
-async function You_see(msg) {
-    await pline(`You see ${msg}`);
-}
 
 /* mondata.h */
 function is_wanderer(ptr) { return (ptr.mflags2 & M.M2_WANDER) !== 0; }
-/* C ref: obj.h is_pick(), is_pole() */
-function is_pick(otmp) {
-    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_PICK_AXE;
-}
-function is_pole(otmp) {
-    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || otmp.oartifact === ART_SNICKERSNEE);
-}
 function corpse_eater(ptr) {
     const n = monsndx(ptr);
     return n === M.PM_PURPLE_WORM || n === M.PM_BABY_PURPLE_WORM
@@ -222,8 +205,6 @@ export function m_canseeu(m) {
             && !(Underwater() || game.u.uburied || m.mburied))
         ? couldsee(m.mx, m.my) : false;
 }
-/* C ref: hack.h mdistu() */
-function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: monmove.c mb_trapped()
 /* monster has triggered trapped door lock or was present when it got
@@ -267,12 +248,6 @@ function objects_at(x, y) {
 /* C ref: hack.c in_rooms(x, y, SHOPBASE) used as a boolean */
 function in_shop(x, y) {
     return !!in_rooms(x, y, SHOPBASE);
-}
-/* C ref: mthrowu.c m_carrying() */
-function m_carrying(mtmp, type) {
-    for (const otmp of minv(mtmp))
-        if (otmp.otyp === type) return otmp;
-    return null;
 }
 /* C ref: monmove.c monhaskey() */
 export function monhaskey(mon, for_unlocking) {
@@ -406,17 +381,6 @@ export function mon_regen(mon, digest_meal) {
     }
 }
 
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== M.S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = M_AP_NOTHING;
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
-    }
-}
-
 // ── C ref: monmove.c disturb() ──
 async function disturb(mtmp) {
     /*
@@ -487,8 +451,8 @@ export async function monflee(mtmp, fleetime, first, fleemsg) {
 
                     await pline(`${Monnam(mtmp)} flees from the painful light of ${lsrc}.`); /* pline_mon() */
                 } else {
-                    /* SetVoice(mtmp, 0, 80, 0); verbalize(): Deaf is false here */
-                    await pline('"Bright light!"');
+                    /* SetVoice(mtmp, 0, 80, 0) */
+                    await verbalize("Bright light!");
                 }
             } else {
                 await pline(`${Monnam(mtmp)} turns to flee.`); /* pline_mon() */
@@ -2052,12 +2016,6 @@ export async function m_digweapon_check(mtmp, nix, niy) {
     return false;
 }
 
-/* C ref: obj.h is_axe() */
-function is_axe(otmp) {
-    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_AXE;
-}
-
 // ── C ref: monmove.c m_move() ──
 export async function m_move(mtmp, after) {
     const u = game.u;
@@ -2436,7 +2394,7 @@ async function m_break_boulder(mtmp, x, y) {
 }
 
 // C ref: monmove.c m_can_break_boulder()
-function m_can_break_boulder(mtmp) {
+export function m_can_break_boulder(mtmp) {
     return (is_rider(mtmp.data)
             || (!mtmp.mspec_used
                 && (mtmp.isshk || mtmp.ispriest

@@ -10,7 +10,7 @@ import { exercise } from './attrib.js';
 import { incr_itimeout } from './potion.js';
 import { resist } from './zap.js';
 import { onscary, monflee } from './monmove.js';
-import { dist2 } from './hacklib.js';
+import { dist2, mdistu } from './hacklib.js';
 import { tty_yn_function } from './wintty.js';
 import { ACURR } from './attrib.js';
 import * as O from './objects.js';
@@ -29,9 +29,6 @@ import { tamedog as tamedog_mu } from './dog.js';
 import { d as d_mu } from './rng.js';
 import { NOTELL as NOTELL_MU } from './const.js';
 import { mindless, unique_corpstat, can_blow } from './mondata.js';
-
-/* C ref: hack.h mdistu() */
-function mdistu(mtmp) { return dist2(mtmp.mx, mtmp.my, game.u.ux, game.u.uy); }
 
 // C ref: music.c awaken_scare()
 /* wake up monster, possibly scare it */

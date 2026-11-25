@@ -19,7 +19,7 @@ import { you_were, you_unwere } from './were.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { ACURR as ACURR_mm } from './attrib.js';
 import { A_CHA as A_CHA_mm, NORMAL_SPEED as NORMAL_SPEED_mm } from './const.js';
-import { distmin, isok } from './hacklib.js';
+import { distmin, isok, mdistu } from './hacklib.js';
 import { cansee } from './vision.js';
 import { m_at, grow_up } from './makemon.js';
 import { monkilled, zombie_maker, monnear, seemimic } from './mon.js';
@@ -43,7 +43,7 @@ import { find_mac, which_armor } from './worn.js';
 import { mon_wield_item, possibly_unwield, hitval, dmgval } from './weapon.js';
 import { mswings_verb, mhis, could_seduce, mtrapped_in_pit } from './mhitu.js';
 import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL,
-         WEAPON_CLASS, TOOL_CLASS } from './objects.js';
+         WEAPON_CLASS, TOOL_CLASS, is_pole } from './objects.js';
 import { permapoisoned } from './mkobj.js';
 import { xname } from './objnam.js';
 import { ART_SNICKERSNEE } from './artilist.js';
@@ -95,7 +95,6 @@ import { AT_NONE as AT_NONE_AP, AT_SPIT as AT_SPIT_AP, AT_EXPL as AT_EXPL_AP,
 import { W_ARMG as W_ARMG_AP, W_ARMF as W_ARMF_AP, W_ARMH as W_ARMH_AP,
          W_ARMC as W_ARMC_AP } from './const.js';
 import { seemimic as seemimic_md } from './mon.js';
-import { finish_meating as finish_meating_md } from './dog.js';
 import { canspotmon as canspotmon_md, newsym as newsym_md,
          flush_screen as flush_screen_md } from './display.js';
 import { M_AP_MONSTER as M_AP_MONSTER_MD, STRAT_WAITMASK as STRAT_WAITMASK_MD,
@@ -119,21 +118,11 @@ import { erode_armor } from './uhitm.js';
 import { acid_damage } from './trap.js';
 import { drain_item } from './zap.js';
 import { hliquid } from './potion.js';
+import { finish_meating as finish_meating_md } from './dogmove.js';
 
-/* C ref: obj.h is_pole() */
-function is_pole(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || otmp.oartifact === ART_SNICKERSNEE);
-}
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
-}
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
 }
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 

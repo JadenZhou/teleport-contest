@@ -11,7 +11,7 @@ import { sellobj_state } from './pickup.js';
 import { SELL_NORMAL, SELL_DELIBERATE } from './const.js';
 import { game } from './gstate.js';
 import { fix_shop_damage } from './shk.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, You_hear } from './display.js';
 import { LL_ACHIEVE, LL_DEBUG } from './const.js';
 import { describe_level } from './botl.js';
 import { container_impact_dmg, obj_delivery, drop_to } from './dokick.js';
@@ -35,7 +35,6 @@ import {
     pline, pline_The, docrt, flush_screen
 } from './display.js';
 import { bones_include_name } from './bones.js';
-import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
 import { stolen_value, costly_spot, picked_container } from './shk.js';
 import { in_rooms } from './hack.js';
@@ -91,7 +90,7 @@ import { MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION, UNPAID_TYPES,
          USE_INVLET, INVORDER_SORT } from './const.js';
 import { GETOBJ_PROMPT, GETOBJ_ALLOWCNT, ECMD_FAIL, ECMD_TIME, W_ARMOR,
          W_ACCESSORY, W_SADDLE, IS_SINK, LOST_DROPPED } from './const.js';
-import { welded, setuwep, setuqwep, setuswapwep, bimanual } from './wield.js';
+import { welded, setuwep, setuqwep, setuswapwep } from './wield.js';
 import { Norep } from './display.js';
 import { makeplural } from './objnam.js';
 import { HAND } from './const.js';
@@ -157,11 +156,7 @@ import { Fire_resistance } from './youprop.js';
 import { useupf } from './invent.js';
 import { dist2 } from './hacklib.js';
 import { tty_yn_function } from './wintty.js';
-
-/* C ref: obj.h is_pick() */
-function is_pick(otmp) {
-    return otmp.otyp === O.PICK_AXE || otmp.otyp === O.DWARVISH_MATTOCK;
-}
+import { is_pick, bimanual } from './objects.js';
 
 /* C ref: cmd.c DIR_DOWN, DIR_UP (after the 8 compass directions) */
 const DIR_DOWN = 8, DIR_UP = 9;

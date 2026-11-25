@@ -17,7 +17,7 @@ import { game } from './gstate.js';
 import { in_town } from './hack.js';
 import { rn2, rnd, rn1, rnl } from './rng.js';
 import { pline, You, You_cant, newsym, unmap_invisible, feel_location,
-         feel_newsym } from './display.js';
+         feel_newsym, You_hear } from './display.js';
 import { is_drawbridge_wall } from './dbridge.js';
 import { getdir } from './cmd.js';
 import { tty_display_nhwindow } from './wintty.js';
@@ -31,7 +31,7 @@ import { isok, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, IS_THRONE,
          RIGHT_SIDE, LEFT_SIDE, BOTH_SIDES, Is_airlevel, Is_waterlevel } from './const.js';
 import { mons, MZ_SMALL, S_LIZARD, PM_SAMURAI, PM_MONK, PM_SASQUATCH, M1_NOLIMBS, M1_SLITHY,
          M2_GIANT } from './monsters.js';
-import { BOULDER, KICKING_BOOTS } from './objects.js';
+import { BOULDER, KICKING_BOOTS, Is_container } from './objects.js';
 import { m_at, sobj_at, is_pool } from './makemon.js';
 import { near_capacity, in_rooms } from './hack.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
@@ -42,7 +42,7 @@ import { body_part } from './insight.js';
 import { makeplural } from './objnam.js';
 import { recalc_block_point, unblock_point } from './vision.js';
 import { cvt_sdoor_to_door } from './detect.js';
-import { Is_container, weight, obj_extract_self } from './mkobj.js';
+import { weight, obj_extract_self } from './mkobj.js';
 import { Has_contents, WEB, STATUE_TRAP, is_pit, STONE_RES, FUMBLING, ZAP_POS, LOW_PM } from './const.js';
 import { BAG_OF_HOLDING, BAG_OF_TRICKS, objects, GLASS, GEM_CLASS, EGG, MIRROR, CORPSE, COIN_CLASS, LARGE_BOX, CHEST } from './objects.js';
 import { shop_keeper, costly_spot, onshopbill, costly_adjacent,
@@ -53,9 +53,8 @@ import { currency } from './insight.js';
 import { Shknam, shkname } from './shknam.js';
 import { angry_guards } from './mon.js';
 import { PL_NSIZ } from './const.js';
-import { obj_resists } from './dogmove.js';
+import { obj_resists, finish_meating } from './dogmove.js';
 import { change_luck } from './attrib.js';
-import { You_hear } from './sounds.js';
 import { useup, obfree } from './invent.js';
 import { killer_xname } from './mthrowu.js';
 import { breaktest, hero_breaks } from './dothrow.js';
@@ -86,7 +85,7 @@ import { M1_THICK_HIDE, MZ_LARGE, M1_NOHANDS, PM_SHADE, AT_KICK,
          S_EEL } from './monsters.js';
 import { M_AP_TYPMASK, M_AP_MONSTER, W_ARMF, P_NONE, P_MARTIAL_ARTS,
          NO_TRAP_FLAGS, engulfing_u } from './const.js';
-import { special_dmgval, use_skill } from './weapon.js';
+import { special_dmgval, use_skill, martial_bonus } from './weapon.js';
 import { seemimic, killed } from './mon.js';
 import { check_caitiff, passive } from './uhitm.js';
 import { abuse_dog } from './dog.js';
@@ -126,8 +125,7 @@ import { Is_stronghold, In_endgame, Is_botlevel } from './const.js';
 import { stairway_at } from './display.js';
 import { down_gate } from './do.js';
 
-/* C ref: skills.h martial_bonus(); dokick.c is_bigfoot(), martial() */
-function martial_bonus() { return Role_if(PM_SAMURAI) || Role_if(PM_MONK); }
+/* C ref: dokick.c is_bigfoot(), martial() */
 function is_bigfoot(x) { return x === mons[PM_SASQUATCH]; }
 function martial() {
     return martial_bonus() || is_bigfoot(game.youmonst.data)
@@ -416,17 +414,6 @@ export async function ghitm(mtmp, gold) {
     if (!msg_given)
         await miss(xname(gold), mtmp);
     return false;
-}
-
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if ((mtmp.m_ap_type || 0) !== M_AP_NOTHING && mtmp.data.mlet !== S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = M_AP_NOTHING;
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
-    }
 }
 
 const kick_passes_thru = "kick passes harmlessly through";

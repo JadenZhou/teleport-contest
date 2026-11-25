@@ -9,7 +9,7 @@
 
 import { On_stairs } from './dogmove.js';
 import { game } from './gstate.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_ARTIFACT, NO_ROOM } from './const.js';
 import { inside_shop } from './shk.js';
 import { bare_artifactname } from './iactions.js';
@@ -35,7 +35,7 @@ import { P_MAX_SKILL } from './weapon.js';
 import { P_SKILLED, P_BASIC, ONAME_NO_FLAGS, GETOBJ_EXCLUDE, GETOBJ_SUGGEST,
          GETOBJ_PROMPT, ECMD_CANCEL } from './const.js';
 import { getobj, nxtobj } from './invent.js';
-import { mksobj, permapoisoned, Is_container } from './mkobj.js';
+import { mksobj, permapoisoned } from './mkobj.js';
 import { oname } from './do_name.js';
 import { obj_shuffle_range } from './o_init.js';
 import { ART_SUNSWORD, ART_MASTER_KEY_OF_THIEVERY } from './artilist.js';
@@ -82,7 +82,7 @@ import { surface } from './iactions.js';
 import { Levitation } from './youprop.js';
 import { IS_ALTAR } from './const.js';
 import { Antimagic, Hate_silver, Blind as Blind_art } from './youprop.js';
-import { objects as objects_ac } from './objects.js';
+import { objects as objects_ac, Is_container } from './objects.js';
 
 // C ref: artifact.h SPFX_*
 export const SPFX_NONE = 0x00000000;
@@ -1721,7 +1721,7 @@ export async function arti_speak(obj) {
         line = "NetHack rumors file closed for renovation.";
     await pline(`${Tobjnam(obj, "whisper")}:`);
     /* SetVoice(): no voice interface */
-    await pline(`"${line}"`); /* verbalize1() */
+    await verbalize(line); /* verbalize1() */
     return ECMD_TIME;
 }
 
@@ -1912,3 +1912,15 @@ export function arti_cost(otmp) {
 
 // C ref: artifact.c is_art()
 export function is_art(o, art) { return !!(o && o.oartifact === art); }
+
+// C ref: artifact.c artifact_light()
+export function artifact_light(obj) {
+    /* not artifacts but treat them as if they were because they emit
+       light without burning */
+    if (obj && (obj.otyp === O.GOLD_DRAGON_SCALE_MAIL
+                || obj.otyp === O.GOLD_DRAGON_SCALES)
+        && ((obj.owornmask || 0) & W_ARM) !== 0)
+        return true;
+
+    return !!(obj && obj.oartifact) && is_art(obj, ART_SUNSWORD);
+}

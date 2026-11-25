@@ -8,7 +8,7 @@
 import { Inhell } from './mklev.js';
 import { game } from './gstate.js';
 import { you_unwere } from './were.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { rn2, rn1, rnl, rnz, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { roles, randrole } from './role.js';
@@ -31,7 +31,7 @@ import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT, S_LICH, S_GHOS
 import { known_spell, spelleffects, can_chant } from './spell.js';
 import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          RIN_LEVITATION, GAUNTLETS_OF_FUMBLING, FUMBLE_BOOTS, SADDLE,
-         POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
+         POT_WATER, SPE_TURN_UNDEAD, bimanual } from './objects.js';
 import { pline } from './display.js';
 import { In_hell } from './dungeon.js';
 import { is_demon, is_undead, is_vampshifter, nohands, throws_rocks,
@@ -40,7 +40,7 @@ import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attri
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
 import { paranoid_query } from './cmd.js';
-import { welded, bimanual } from './wield.js';
+import { welded } from './wield.js';
 import { which_armor, sobj_at, is_pool, is_lava, m_at, set_malign } from './makemon.js';
 import { confers_luck } from './timeout.js';
 import { region_danger } from './region.js';
@@ -92,14 +92,10 @@ import { AMULET_OF_UNCHANGING } from './objects.js';
 import { gloves_simple_name } from './objnam.js';
 import { rehumanize } from './polyself.js';
 import { make_glib } from './potion.js';
+import { mdistu } from './hacklib.js';
 /* C ref: defsym.h S_altar (cmap index) */
 const S_altar = 33;
 const NH_BLACK = "black"; /* color.h */
-/* C ref: hack.h mdistu() */
-function mdistu(mon) {
-    const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
-    return dx * dx + dy * dy;
-}
 
 // C ref: pray.c Moloch
 const Moloch = "Moloch";
@@ -1245,11 +1241,6 @@ async function prayer_done() {
     return 1;
 }
 
-
-// C ref: pline.c verbalize()
-async function verbalize(line) {
-    await pline(`"${line}"`);
-}
 
 // C ref: pray.c dosacrifice() -- the #offer command (M-o), sacrifice
 // something to the gods; offering an object (floorfood() and the rest)

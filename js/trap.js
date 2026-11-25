@@ -13,7 +13,7 @@ import { impossible } from './hack.js';
 import { is_hole, is_pit } from './const.js';
 import { rehumanize } from './polyself.js';
 import { game } from './gstate.js';
-import { thitu } from './mthrowu.js';
+import { thitu, m_carrying as m_carrying_tr } from './mthrowu.js';
 import { count_wsegs } from './worm.js';
 import { obfree } from './invent.js';
 import { get_obj_location } from './shk.js';
@@ -21,7 +21,8 @@ import { tty_display_nhwindow } from './wintty.js';
 import { create_gas_cloud } from './region.js';
 import { A_STR, FREE_ACTION } from './const.js';
 import { the } from './iactions.js';
-import { xname } from './objnam.js';
+import { xname, suit_simple_name, cloak_simple_name, gloves_simple_name,
+         helm_simple_name } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { poisoned } from './attrib.js';
 import { A_CON, UNCHANGING } from './const.js';
@@ -48,8 +49,10 @@ import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          metallivorous, breathless, acidic, extra_nasty, unique_corpstat,
          is_clinger, resists_ston, is_unicorn, flaming, webmaker, attacktype,
          throws_rocks, nohands, likes_lava } from './mondata.js';
-import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
-         GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
+import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL, GEMSTONE,
+         MINERAL, RING_CLASS, IRON, stone_missile, Is_container,
+         bimanual as bimanual_tr, bimanual, is_corrodeable,
+         is_crackable } from './objects.js';
 import { rnd, d } from './rng.js';
 import { FAILEDUNTRAP, W_ARMF, W_ARMH, W_ARMS, W_ARMG, W_ARMC, W_ARM, W_ARMU,
          W_WEP, W_SWAPWEP, WT_ELF, STONE_RES } from './const.js';
@@ -70,7 +73,6 @@ import { monkilled, maybe_unhide_at } from './mon.js';
 import { find_mac, which_armor } from './worn.js';
 import { mtele_trap, mlevel_tele_trap, tele_trap, level_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
-import { bimanual } from './wield.js';
 import {
     Fire_resistance, Sleep_resistance, Antimagic, Punished, Blind, Hallucination, Deaf,
     Fumbling, Wounded_legs, Teleportation, Teleport_control, Levitation, Flying, Wwalking,
@@ -85,7 +87,7 @@ import { crawl_destination } from './hack.js';
 import { linedup } from './monmove.js';
 import { xdir, ydir, N_DIRS, ZAP_POS, is_xport } from './const.js';
 import { mongone, wake_nearto } from './mon.js';
-import { newsym, pline, urgent_pline } from './display.js';
+import { newsym, pline, urgent_pline, You_feel, You_hear } from './display.js';
 import { done } from './end.js';
 import { killer } from './topten.js';
 import { DIED } from './const.js';
@@ -93,7 +95,6 @@ import { cansee, couldsee } from './vision.js';
 import { m_in_air } from './monmove.js';
 import { canseemon } from './display.js';
 import { mon_nam, Monnam } from './do_name.js';
-import { You_hear } from './sounds.js';
 import { self_invis_message } from './potion.js';
 import { perceives, pm_invisible } from './mondata.js';
 import { INVIS, SEE_INVIS } from './const.js';
@@ -102,7 +103,7 @@ import { just_an } from './objnam.js';
 import { seemimic } from './mon.js';
 import { resist } from './zap.js';
 import { M_AP_FURNITURE, M_AP_OBJECT, NOTELL } from './const.js';
-import { dist2, sgn, upstart } from './hacklib.js';
+import { dist2, sgn, upstart, mdistu } from './hacklib.js';
 import { rn1 } from './rng.js';
 import { nomul, end_running } from './hack.js';
 import { exercise, ATEMP } from './attrib.js';
@@ -112,8 +113,7 @@ import { You, Your, pline_The, Norep } from './display.js';
 import { fill_pit } from './muse.js';
 import { YMonnam } from './do_name.js';
 import { tty_clear_nhwindow } from './wintty.js';
-import { is_rottable, is_corrodeable, is_crackable,
-         costly_alteration } from './mkobj.js';
+import { is_rottable, costly_alteration } from './mkobj.js';
 import { remove_worn_item, extract_from_minvent } from './steal.js';
 import { delobj } from './invent.js';
 import { Yobjnam2 } from './objnam.js';
@@ -159,12 +159,11 @@ import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
          GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, ROBE, MUMMY_WRAPPING, ALCHEMY_SMOCK,
          is_metallic, is_rustprone, OBJ_NAME, OBJ_DESCR } from './objects.js';
-import { Is_container, erosion_matters, is_flammable } from './mkobj.js';
+import { erosion_matters, is_flammable } from './mkobj.js';
 import { TRAP_NOT_IMMUNE, TRAP_CLEARLY_IMMUNE, TRAP_HIDDEN_IMMUNE,
          In_endgame, In_sokoban, Is_earthlevel, FIRE_RES } from './const.js';
 import { AMULET_OF_YENDOR, SCR_FIRE, SPE_FIREBALL } from './objects.js';
 import { carrying as carrying_tr } from './invent.js';
-import { m_carrying as m_carrying_tr } from './weapon.js';
 import { helm_simple_name as helm_simple_name_tr, aobjnam as aobjnam_tr } from './objnam.js';
 import { vtense, makeplural, yname, cxname } from './objnam.js';
 import { hliquid } from './potion.js';
@@ -197,7 +196,7 @@ import { begin_burn } from './timeout.js';
 import { dismount_steed } from './steed.js';
 import { DISMOUNT_POLY, DISMOUNT_GENERIC } from './const.js';
 import { setmangry, mlifesaver } from './mon.js';
-import { Boots_off } from './do_wear.js';
+import { Boots_off, hard_helmet as hard_helmet_tr } from './do_wear.js';
 import { discover_object } from './o_init.js';
 import { costly_spot } from './shk.js';
 import { noit_Monnam as noit_Monnam_ht, y_monnam as y_monnam_ht } from './do_name.js';
@@ -241,7 +240,7 @@ import { ECMD_OK as ECMD_OK_TR, ECMD_TIME as ECMD_TIME_TR,
 import { near_capacity as near_capacity_tr } from './hack.js';
 import { getdir as getdir_tr } from './cmd.js';
 import { sticks as sticks_tr, can_reach_floor as can_reach_floor_tr } from './engrave.js';
-import { welded as welded_tr, bimanual as bimanual_tr } from './wield.js';
+import { welded as welded_tr } from './wield.js';
 import { makeplural as makeplural_tr } from './objnam.js';
 import { body_part as body_part_tr } from './insight.js';
 import { mon_nam as mon_nam_tr } from './do_name.js';
@@ -285,14 +284,13 @@ import { teleds as teleds_dr, safe_teleds as safe_teleds_dr } from './teleport.j
 import { done as done_dr } from './end.js';
 import { burn_away_slime as burn_away_slime_dr } from './potion.js';
 import { useupall as useupall_dr } from './invent.js';
-import { obj_resists as obj_resists_dr } from './dogmove.js';
+import { obj_resists as obj_resists_dr, finish_meating } from './dogmove.js';
 import { setnotworn as setnotworn_fd } from './worn.js';
 import { otense as otense_fd, Yname2 as Yname2_fd } from './objnam.js';
 import { DRAGON_HIDE as DRAGON_HIDE_FD, WAN_FIRE as WAN_FIRE_FD,
          FIRE_HORN as FIRE_HORN_FD } from './objects.js';
 import { liquid_flow as liquid_flow_l } from './dig.js';
 import { ceiling as ceiling_tr } from './dungeon.js';
-import { hard_helmet as hard_helmet_tr } from './objnam.js';
 import { mbodypart as mbodypart_tr } from './insight.js';
 import { schedule_goto, UTOTYPE_FALLING, UTOTYPE_NONE } from './do.js';
 import { impact_drop } from './dokick.js';
@@ -331,11 +329,9 @@ import { has_oname, ONAME, OBJ_AT, M_AP_TYPE, Role_if, u_at, ismnum,
          NO_NC_FLAGS, SHOPBASE } from './const.js';
 import { MS_GUARDIAN, PM_DOPPELGANGER, PM_FLESH_GOLEM, PM_ARCHEOLOGIST,
          M1_CONCEAL } from './monsters.js';
+import { number_leashed } from './apply.js';
 export { is_hole, is_pit };
 
-
-/* C ref: hack.h mdistu() */
-function mdistu(mon) { return dist2(mon.mx, mon.my, game.u.ux, game.u.uy); }
 
 // C ref: trap.c mk_trap_statue()
 /* create a "living" statue at x,y */
@@ -458,9 +454,6 @@ export function check_in_air(mtmp, trflags) {
 export function Maybe_Half_Phys(dmg) {
     return Half_physical_damage() ? Math.trunc((dmg + 1) / 2) : dmg;
 }
-
-/* C ref: pline.c You_feel() -- Unaware dreaming isn't reached here */
-async function You_feel(line) { await pline(`You feel ${line}`); }
 
 // C ref: hack.c losehp() -- the not-polymorphed case
 export async function losehp(n, knam, k_format) {
@@ -1189,11 +1182,6 @@ function grounded(ptr) {
     /* has_ceiling(&u.uz): no air or water levels are generated yet */
     return !is_flyer(ptr) && !is_floater(ptr) && !is_clinger(ptr);
 }
-function stone_missile(o) {
-    return ((objects[o.otyp].oc_material === GEMSTONE
-             || objects[o.otyp].oc_material === MINERAL)
-            && o.oclass !== RING_CLASS);
-}
 
 // C ref: trap.c wearing_iron_shoes()
 function wearing_iron_shoes(mtmp) {
@@ -1625,17 +1613,6 @@ export function sleep_monst(mon, amt, how) {
         return 1;
     }
     return 0;
-}
-
-// C ref: dogmove.c finish_meating()
-function finish_meating(mtmp) {
-    mtmp.meating = 0;
-    if (mtmp.m_ap_type && mtmp.data.mlet !== S_MIMIC) {
-        /* was eating a mimic and now appearance needs resetting */
-        mtmp.m_ap_type = 0; /* M_AP_NOTHING */
-        mtmp.mappearance = 0;
-        newsym(mtmp.mx, mtmp.my);
-    }
 }
 
 // C ref: trap.c trapeffect_slp_gas_trap()
@@ -2091,58 +2068,6 @@ export async function grease_protect(otmp, ostr, victim) {
         return true;
     }
     return false;
-}
-
-/* C ref: objnam.c suit_simple_name(), cloak_simple_name(),
-   helm_simple_name() */
-function suit_simple_name(suit) {
-    if (suit) {
-        if (suit.otyp >= GRAY_DRAGON_SCALE_MAIL && suit.otyp <= YELLOW_DRAGON_SCALE_MAIL)
-            return "dragon mail"; /* <color> dragon scale mail */
-        else if (suit.otyp >= GRAY_DRAGON_SCALES && suit.otyp <= YELLOW_DRAGON_SCALES)
-            return "dragon scales";
-        const suitnm = OBJ_NAME(objects[suit.otyp]);
-        if (suitnm.length > 5 && suitnm.endsWith(" mail"))
-            return "mail"; /* most suits fall into this category */
-        else if (suitnm.length > 7 && suitnm.endsWith(" jacket"))
-            return "jacket"; /* leather jacket */
-    }
-    /* "suit" is lame but "armor" is ambiguous and "body armor" is absurd */
-    return "suit";
-}
-function cloak_simple_name(cloak) {
-    if (cloak) {
-        switch (cloak.otyp) {
-        case ROBE:
-            return "robe";
-        case MUMMY_WRAPPING:
-            return "wrapping";
-        case ALCHEMY_SMOCK:
-            return (objects[cloak.otyp].oc_name_known && cloak.dknown)
-                       ? "smock" : "apron";
-        default:
-            break;
-        }
-    }
-    return "cloak";
-}
-function gloves_simple_name(gloves) {
-    const gauntlets = "gauntlets";
-
-    if (gloves && gloves.dknown) {
-        const ocl = objects[gloves.otyp];
-        const actualn = OBJ_NAME(ocl), descrpn = OBJ_DESCR(ocl);
-
-        if ((ocl.oc_name_known ? actualn : descrpn || '').toLowerCase()
-                .includes(gauntlets))
-            return gauntlets;
-    }
-    return "gloves";
-}
-function helm_simple_name(helmet) {
-    /* hard_helmet(): metallic helmets other than the elven leather helm */
-    const hard = helmet && is_metallic(helmet);
-    return !hard ? "hat" : "helm";
 }
 
 // C ref: trap.c trapeffect_rust_trap()
@@ -5119,16 +5044,6 @@ export async function set_uinwater(in_out) {
         game.u.uinwater = in_out ? 1 : 0;
         await switch_terrain_dr();
     }
-}
-
-// C ref: apply.c number_leashed()
-function number_leashed() {
-    let i = 0;
-
-    for (let obj = game.invent; obj; obj = obj.nobj)
-        if (obj.otyp === LEASH_DR && obj.leashmon !== 0 && obj.leashmon)
-            i++;
-    return i;
 }
 
 // C ref: apply.c unleash_all()

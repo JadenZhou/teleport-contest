@@ -20,10 +20,9 @@ import { NON_PM, MALE, FEMALE, NEUTRAL, NUM_MGENDERS,
 import { objects, ALCHEMY_SMOCK, WEAPON_CLASS, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
          YELLOW_DRAGON_SCALE_MAIL, LENSES, CREAM_PIE, BLINDING_VENOM,
-         POT_BLINDNESS, ARMOR_CLASS } from "./objects.js";
+         POT_BLINDNESS, ARMOR_CLASS, is_weptool } from './objects.js';
 import { objdescr_is } from './o_init.js';
 import { defends, defends_when_carried } from './artifact.js';
-import { is_weptool } from './mkobj.js';
 import { which_armor } from './worn.js';
 import { title_to_mon } from './botl.js';
 import { clear_path } from './vision.js';
