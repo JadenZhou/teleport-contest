@@ -3060,6 +3060,22 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
          INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
 import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
 
+// C ref: invent.c invdisp_nothing()
+/* used by display_minventory() and display_cinventory() */
+async function invdisp_nothing(hdr, txt) {
+    let win;
+
+    win = tty_create_nhwindow(NHW_MENU);
+    tty_start_menu(win, MENU_BEHAVE_STANDARD);
+    add_menu_heading(win, hdr);
+    add_menu_str(win, "");
+    add_menu_str(win, txt);
+    tty_end_menu(win, null);
+    await tty_select_menu(win, PICK_NONE); /* free(selected): nothing kept */
+    tty_destroy_nhwindow(win);
+    return;
+}
+
 // C ref: invent.c worn_wield_only()
 /* query_objlist callback: return things that are worn or wielded */
 function worn_wield_only(obj) {
@@ -3119,8 +3135,8 @@ export async function display_minventory(
         /* was 'set_uasmon();' but that potentially has side-effects */
         g.youmonst.data = mons_iv[g.u.umonnum]; /* basic part of set_uasmon() */
     } else {
-        /* invdisp_nothing(title ? title : tmp, "(none)") */
-        throw new Error('display_minventory(): invdisp_nothing() not ported yet');
+        await invdisp_nothing(title ? title : tmp, "(none)");
+        n = 0;
     }
 
     if (n > 0) {
