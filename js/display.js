@@ -2813,8 +2813,6 @@ function _statusLine2() {
        hunger text's trailing blanks suppressed), then BL_CONDITION */
     const hunger = (u.uhs !== undefined && u.uhs !== NOT_HUNGRY)
         ? ` ${STAT_HU[u.uhs].replace(/ +$/, '')}` : '';
-    const cap = near_capacity();
-    const capstr = (cap > UNENCUMBERED) ? ` ${STAT_ENC[cap]}` : '';
     /* BL_LEVELDESC: describe_level(buf, 1), with wintty.c's
        tty_status_update() suppressing its trailing blanks */
     const leveldesc = describe_level(1)[1].replace(/ +$/, '');
@@ -2825,29 +2823,129 @@ function _statusLine2() {
     /* encglyph(objnum_to_glyph(GOLD_PIECE)): the gold symbol of the current
        symset */
     const goldsym = (game.currentgraphics === ROGUESET) ? '*' : '$';
-    const line = `${leveldesc} ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${hpmax}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}${capstr}${status_conditions()}`;
-    /* make_things_fit(): shrinking or truncating an overlong line */
-    if (line.length > 79)
-        throw new Error('_statusLine2(): make_things_fit() shrinking not ported yet');
-    return line;
+    /* BL_GOLD .. BL_HUNGER: the fields between BL_LEVELDESC and BL_CAP */
+    const mid = ` ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${hpmax}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}`;
+    /* BL_CAP: botl.c sends it to the window port only when its value
+       changed since the previous bot(); tty_status_update() then stores
+       " %s" (a lone blank suppressed), resets enc_shrinklvl and takes
+       enclev = stat_cap_indx() */
+    const cap = near_capacity();
+    if (game.tty_enclev !== cap) {
+        game.tty_enclev = cap;
+        game.tty_capval = (cap > UNENCUMBERED) ? ` ${STAT_ENC[cap]}` : '';
+        game.tty_enc_shrinklvl = 0;
+    }
+    return make_things_fit(leveldesc, mid, status_conditions());
+}
+
+/* C ref: wintty.c encvals[][] -- BL_CAP text for enc_shrinklvl 0..2 */
+const ENCVALS = [
+    ["", "Burdened", "Stressed", "Strained", "Overtaxed", "Overloaded"],
+    ["", "Burden", "Stress", "Strain", "Overtax", "Overload"],
+    ["", "Brd", "Strs", "Strn", "Ovtx", "Ovld"],
+];
+
+// C ref: wintty.c make_things_fit() for the two-line status (the
+// conditions are on the last row, with BL_CAP), with check_fields()'s
+// row width, set_condition_length(), shrink_enc() and shrink_dlvl(); the
+// status window is the 80-column tty, so a row fits in cols - 1 columns.
+// Returns the rendered row (render_status(): tty_putstatusfield() stores
+// nothing at or past column cols - 1, so a truncated row is cut there).
+function make_things_fit(leveldescval, mid, conds) {
+    const cols = 80; /* wins[WIN_STATUS]->cols */
+    let leveldesc = leveldescval; /* status_vals[BL_LEVELDESC] */
+    let cond_shrinklvl = 0;
+    let condlth = 0;
+
+    /* C ref: wintty.c set_condition_length() */
+    const set_condition_length = () => {
+        condlth = 0;
+        for (const ci of conds)
+            condlth += 1 + STAT_CONDITIONS[ci][1][cond_shrinklvl].length;
+    };
+    /* C ref: wintty.c shrink_enc() -- shrink or restore the encumbrance
+       word; for enclev 0 this leaves a lone blank (not suppressed) */
+    const shrink_enc = (lvl) => {
+        if (lvl <= 2) {
+            game.tty_enc_shrinklvl = lvl;
+            game.tty_capval = ` ${ENCVALS[lvl][game.tty_enclev]}`;
+        }
+    };
+    /* C ref: wintty.c shrink_dlvl() -- try changing Dlvl: to Dl: */
+    const shrink_dlvl = (lvl) => {
+        const c = leveldesc.indexOf(':');
+        if (c >= 0)
+            leveldesc = ((lvl === 0) ? "Dlvl" : "Dl") + leveldesc.slice(c);
+    };
+
+    let otheroptions = 0;
+    if (game.tty_enc_shrinklvl > 0) /* && num_rows == 2 */
+        shrink_enc(0);
+    /* dlvl_shrinklvl > 0: shrink_dlvl(0) restores what BL_LEVELDESC
+       holds, the full "Dlvl:" text passed in */
+    set_condition_length();
+    for (let trycnt = 0; trycnt < 6; ++trycnt) {
+        /* check_fields(): sz[condrow] = 1 + the row's field lengths */
+        const requirement = leveldesc.length + mid.length
+                            + game.tty_capval.length + condlth;
+        if (requirement <= cols - 1)
+            break; /* we're good */
+        if (trycnt < 2) {
+            if (cond_shrinklvl < trycnt + 1) {
+                cond_shrinklvl = trycnt + 1;
+                set_condition_length();
+            }
+            continue;
+        }
+        if (cond_shrinklvl >= 2) {
+            /* We've exhausted the condition identifiers shrinkage,
+             * so let's try shrinking other things...
+             */
+            if (otheroptions < 2) {
+                /* try shrinking the encumbrance word, but
+                   only when it's on the same line as conditions */
+                shrink_enc(otheroptions + 1);
+            } else if (otheroptions === 2) {
+                shrink_dlvl(1);
+            } else {
+                /* Last resort - turn on truncation */
+                break;
+            }
+            ++otheroptions;
+        }
+    }
+    /* render_status(): BL_CONDITION draws " " + conditions[ci].text[
+       cond_shrinklvl] for each set condition, in cond_idx order */
+    let condtext = '';
+    for (const ci of conds)
+        condtext += ` ${STAT_CONDITIONS[ci][1][cond_shrinklvl]}`;
+    return `${leveldesc}${mid}${game.tty_capval}${condtext}`.slice(0, cols - 1);
 }
 
 /* C ref: eat.c hu_stat[], botl.c enc_stat[] */
 const STAT_HU = ["Satiated", "        ", "Hungry  ", "Weak    ",
                  "Fainting", "Fainted ", "Starved "];
-const STAT_ENC = ["", "Burdened", "Stressed", "Strained", "Overtaxed",
-                  "Overloaded"];
+const STAT_ENC = ENCVALS[0];
 
-/* C ref: botl.c conditions[] -- ranking and full text (txt1), in bl_*
-   order; condtests[] (botl.js) holds the matching enabled flags */
+/* C ref: botl.c conditions[] -- ranking and txt1, txt2, txt3 (the texts
+   for cond_shrinklvl 0..2), in bl_* order; condtests[] (botl.js) holds
+   the matching enabled flags */
 const STAT_CONDITIONS = [
-    [20, "Bare"], [10, "Blind"], [20, "Busy"], [10, "Conf"], [10, "Deaf"],
-    [15, "Iron"], [10, "Fly"], [6, "FoodPois"], [20, "Glow"], [2, "Grab"],
-    [10, "Hallu"], [20, "Held"], [20, "Icy"], [8, "InLava"], [10, "Lev"],
-    [20, "Parlyz"], [10, "Ride"], [20, "Zzz"], [6, "Slime"], [20, "Slip"],
-    [6, "Stone"], [4, "Strngl"], [10, "Stun"], [15, "Submrg"],
-    [6, "TermIll"], [20, "Teth"], [20, "Trap"], [20, "Out"], [20, "WLegs"],
-    [20, "UHold"],
+    [20, ["Bare", "Bar", "Bh"]], [10, ["Blind", "Blnd", "Bl"]],
+    [20, ["Busy", "Bsy", "By"]], [10, ["Conf", "Cnf", "Cf"]],
+    [10, ["Deaf", "Def", "Df"]], [15, ["Iron", "Irn", "Fe"]],
+    [10, ["Fly", "Fly", "Fl"]], [6, ["FoodPois", "Fpois", "Poi"]],
+    [20, ["Glow", "Glo", "Gl"]], [2, ["Grab", "Grb", "Gr"]],
+    [10, ["Hallu", "Hal", "Hl"]], [20, ["Held", "Hld", "Hd"]],
+    [20, ["Icy", "Icy", "Ic"]], [8, ["InLava", "Lav", "La"]],
+    [10, ["Lev", "Lev", "Lv"]], [20, ["Parlyz", "Para", "Par"]],
+    [10, ["Ride", "Rid", "Rd"]], [20, ["Zzz", "Zzz", "Zz"]],
+    [6, ["Slime", "Slim", "Slm"]], [20, ["Slip", "Slp", "Sl"]],
+    [6, ["Stone", "Ston", "Sto"]], [4, ["Strngl", "Stngl", "Str"]],
+    [10, ["Stun", "Stun", "St"]], [15, ["Submrg", "Subm", "Sm"]],
+    [6, ["TermIll", "Ill", "Ill"]], [20, ["Teth", "Tth", "Te"]],
+    [20, ["Trap", "Trp", "Tr"]], [20, ["Out", "Out", "KO"]],
+    [20, ["WLegs", "Leg", "Lg"]], [20, ["UHold", "UHld", "UHd"]],
 ];
 const bl_bareh = 0, bl_blind = 1, bl_busy = 2, bl_conf = 3, bl_deaf = 4,
     bl_elf_iron = 5, bl_fly = 6, bl_foodpois = 7, bl_glowhands = 8,
@@ -2862,13 +2960,13 @@ const COND_IDX = STAT_CONDITIONS.map((_, i) => i).sort((a, b) => {
     const c1 = STAT_CONDITIONS[a][0], c2 = STAT_CONDITIONS[b][0];
     if (c1 !== c2)
         return c1 - c2;
-    const t1 = STAT_CONDITIONS[a][1].toLowerCase(), t2 = STAT_CONDITIONS[b][1].toLowerCase();
+    const t1 = STAT_CONDITIONS[a][1][0].toLowerCase(), t2 = STAT_CONDITIONS[b][1][0].toLowerCase();
     return t1 < t2 ? -1 : t1 > t2 ? 1 : 0;
 });
 
-// C ref: botl.c bot_via_windowport() condition tests, and wintty.c
-// render_status() BL_CONDITION -- " Cond" for each condition in cond_idx
-// order (cond_shrinklvl 0)
+// C ref: botl.c bot_via_windowport() condition tests -- the set
+// conditions (BL_CONDITION's mask bits) as indices in wintty.c
+// render_status()'s cond_idx order; make_things_fit() renders them
 function status_conditions() {
     const u = game.u;
     const g = game;
@@ -2923,10 +3021,11 @@ function status_conditions() {
                         || enabled(bl_sleeping) || enabled(bl_busy)))
         throw new Error('status_conditions(): unconscious/paralyzed conditions not ported yet');
 
-    let out = '';
+    /* the set conditions (tty_condition_bits), in cond_idx order */
+    const out = [];
     for (const ci of COND_IDX)
         if (enabled(ci) && test[ci])
-            out += ` ${STAT_CONDITIONS[ci][1]}`;
+            out.push(ci);
     return out;
 }
 
