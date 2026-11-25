@@ -28,6 +28,7 @@ import { genders } from './role.js';
 import { mons, M2_PNAME, MS_LEADER, MS_NEMESIS, MS_GUARDIAN } from './monsters.js';
 import { highc, lowc, s_suffix, strncmpi, strcmpi, strstri } from './hacklib.js';
 import { type_is_pname } from './mondata.js';
+import { Blind } from './youprop.js';
 
 const QTEXT_FILE = 'quest.lua';
 const BUFSZ = 256;
@@ -292,7 +293,7 @@ function convert_arg(c) {
         str = "lawful";
         break;
     case 'x':
-        str = g.Blind ? "sense" : "see";
+        str = Blind() ? "sense" : "see";
         break;
     case 'Z':
         str = g.dungeons[0].dname;
