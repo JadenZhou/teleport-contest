@@ -25,7 +25,7 @@ import { exercise } from './attrib.js';
 import { map_background, map_object, map_trap } from './display.js';
 import { sobj_at } from './makemon.js';
 import { STONE, W_NONDIGGABLE, W_NONPASSWALL } from './const.js';
-import { BOULDER } from './objects.js';
+import { BOULDER, SchroedingersBox, Is_box } from './objects.js';
 import { m_at } from './makemon.js';
 import {
     canspotmon, sensemon, warning_of, map_invisible, glyph_is_invisible,
@@ -561,7 +561,6 @@ export function premap_detect() {
 
 /* C ref: obj.h Has_contents(), SchroedingersBox() */
 function Has_contents(o) { return !!o.cobj; }
-function SchroedingersBox(o) { return o.otyp === LARGE_BOX_DT && o.spe === 1; }
 
 // C ref: detect.c o_in()
 /* Recursively search obj for an object in class oclass and return 1st found */
@@ -1128,9 +1127,6 @@ const OTRAP_NONE = 0;  /* nothing found */
 const OTRAP_HERE = 1;  /* found at hero's location */
 const OTRAP_THERE = 2; /* found at any other location */
 
-/* C ref: obj.h Is_box() */
-function Is_box_dt(o) { return o.otyp === LARGE_BOX_DT || o.otyp === CHEST_DT; }
-
 // C ref: detect.c detect_obj_traps()
 /* check a list of objects for chest traps; return 1 if found at <ux,uy>,
    2 if found at some other spot, 3 if both, 0 otherwise; optionally
@@ -1149,7 +1145,7 @@ async function detect_obj_traps(objlist, show_them,
     const trapglyph = ft ? trap_to_glyph(dummytrap) : null; /* GLYPH_NOTHING */
     for (const otmp of objchain_dt(objlist)) {
         x = y = 0; /* lint suppression */
-        if ((Is_box_dt(otmp) && otmp.otrapped) || Has_contents(otmp)) {
+        if ((Is_box(otmp) && otmp.otrapped) || Has_contents(otmp)) {
             /* !get_obj_location and !isok should both be impossible here */
             const loc = get_obj_location_dt(otmp, BURIED_TOO_DT | CONTAINED_TOO_DT);
             if (loc)
@@ -1158,7 +1154,7 @@ async function detect_obj_traps(objlist, show_them,
                 || (ft && (x !== ft.ft_cc.x || y !== ft.ft_cc.y)))
                 continue;
         }
-        if (Is_box_dt(otmp) && otmp.otrapped) {
+        if (Is_box(otmp) && otmp.otrapped) {
             otmp.tknown = 1;
             observe_object_dt(otmp, Hallucination_dt());
             result |= (x === game.u.ux && y === game.u.uy) ? OTRAP_HERE : OTRAP_THERE;
@@ -1499,7 +1495,7 @@ async function openone(zx, zy, num_p) {
 
     if (objects_at_dt(zx, zy).length) { /* OBJ_AT(zx, zy) */
         for (const otmp of objects_at_dt(zx, zy)) {
-            if (Is_box_dt(otmp) && otmp.olocked) {
+            if (Is_box(otmp) && otmp.olocked) {
                 otmp.olocked = 0;
                 num_p.v++;
             }

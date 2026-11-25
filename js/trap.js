@@ -48,8 +48,9 @@ import { is_flyer, is_floater, defended, resists_sleep, resists_fire,
          metallivorous, breathless, acidic, extra_nasty, unique_corpstat,
          is_clinger, resists_ston, is_unicorn, flaming, webmaker, attacktype,
          throws_rocks, nohands, likes_lava } from './mondata.js';
-import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL,
-         GEMSTONE, MINERAL, RING_CLASS, IRON } from './objects.js';
+import { STATUE, BOULDER, objects, ARROW, DART, ROCK, CORPSE, TOWEL, GEMSTONE,
+         MINERAL, RING_CLASS, IRON, stone_missile, Is_container,
+         bimanual as bimanual_tr, bimanual } from './objects.js';
 import { rnd, d } from './rng.js';
 import { FAILEDUNTRAP, W_ARMF, W_ARMH, W_ARMS, W_ARMG, W_ARMC, W_ARM, W_ARMU,
          W_WEP, W_SWAPWEP, WT_ELF, STONE_RES } from './const.js';
@@ -70,7 +71,6 @@ import { monkilled, maybe_unhide_at } from './mon.js';
 import { find_mac, which_armor } from './worn.js';
 import { mtele_trap, mlevel_tele_trap, tele_trap, level_tele_trap } from './teleport.js';
 import { Can_fall_thru } from './mklev.js';
-import { bimanual } from './wield.js';
 import {
     Fire_resistance, Sleep_resistance, Antimagic, Punished, Blind, Hallucination, Deaf,
     Fumbling, Wounded_legs, Teleportation, Teleport_control, Levitation, Flying, Wwalking,
@@ -159,7 +159,7 @@ import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
          GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, ROBE, MUMMY_WRAPPING, ALCHEMY_SMOCK,
          is_metallic, is_rustprone, OBJ_NAME, OBJ_DESCR } from './objects.js';
-import { Is_container, erosion_matters, is_flammable } from './mkobj.js';
+import { erosion_matters, is_flammable } from './mkobj.js';
 import { TRAP_NOT_IMMUNE, TRAP_CLEARLY_IMMUNE, TRAP_HIDDEN_IMMUNE,
          In_endgame, In_sokoban, Is_earthlevel, FIRE_RES } from './const.js';
 import { AMULET_OF_YENDOR, SCR_FIRE, SPE_FIREBALL } from './objects.js';
@@ -241,7 +241,7 @@ import { ECMD_OK as ECMD_OK_TR, ECMD_TIME as ECMD_TIME_TR,
 import { near_capacity as near_capacity_tr } from './hack.js';
 import { getdir as getdir_tr } from './cmd.js';
 import { sticks as sticks_tr, can_reach_floor as can_reach_floor_tr } from './engrave.js';
-import { welded as welded_tr, bimanual as bimanual_tr } from './wield.js';
+import { welded as welded_tr } from './wield.js';
 import { makeplural as makeplural_tr } from './objnam.js';
 import { body_part as body_part_tr } from './insight.js';
 import { mon_nam as mon_nam_tr } from './do_name.js';
@@ -1188,11 +1188,6 @@ export function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
 function grounded(ptr) {
     /* has_ceiling(&u.uz): no air or water levels are generated yet */
     return !is_flyer(ptr) && !is_floater(ptr) && !is_clinger(ptr);
-}
-function stone_missile(o) {
-    return ((objects[o.otyp].oc_material === GEMSTONE
-             || objects[o.otyp].oc_material === MINERAL)
-            && o.oclass !== RING_CLASS);
 }
 
 // C ref: trap.c wearing_iron_shoes()

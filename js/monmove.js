@@ -45,7 +45,7 @@ import { y_monnam } from './do_name.js';
 import { stairway_at } from './display.js';
 import { stairway_find_dir } from './mklev.js';
 import { hideunder_async } from './makemon.js';
-import { Is_candle, Is_container } from './mkobj.js';
+import { Is_candle } from './mkobj.js';
 import { STAIRS, LADDER, WEB, IS_WATERWALL, LAVAWALL } from './const.js';
 import { IS_TREE, IS_STWALL, NEED_PICK_AXE, NEED_AXE, NEED_PICK_OR_AXE,
          P_AXE } from './const.js';
@@ -64,7 +64,8 @@ import { obj_resists, dogfood } from './dogmove.js';
 import { MANFOOD, ACCFOOD } from './const.js';
 import { touch_artifact, has_magic_key } from './artifact.js';
 import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
-         RIN_SLOW_DIGESTION } from './objects.js';
+         RIN_SLOW_DIGESTION, is_pick, is_pole, is_axe,
+         Is_container } from './objects.js';
 import { resists_poison } from './mondata.js';
 import { mksobj_at } from './mkobj.js';
 import { an, xname } from './objnam.js';
@@ -180,17 +181,6 @@ async function You_see(msg) {
 
 /* mondata.h */
 function is_wanderer(ptr) { return (ptr.mflags2 & M.M2_WANDER) !== 0; }
-/* C ref: obj.h is_pick(), is_pole() */
-function is_pick(otmp) {
-    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_PICK_AXE;
-}
-function is_pole(otmp) {
-    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || otmp.oartifact === ART_SNICKERSNEE);
-}
 function corpse_eater(ptr) {
     const n = monsndx(ptr);
     return n === M.PM_PURPLE_WORM || n === M.PM_BABY_PURPLE_WORM
@@ -2050,12 +2040,6 @@ export async function m_digweapon_check(mtmp, nix, niy) {
             return true;
     }
     return false;
-}
-
-/* C ref: obj.h is_axe() */
-function is_axe(otmp) {
-    return (otmp.oclass === OBJ.WEAPON_CLASS || otmp.oclass === OBJ.TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_AXE;
 }
 
 // ── C ref: monmove.c m_move() ──

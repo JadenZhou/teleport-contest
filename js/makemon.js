@@ -35,7 +35,7 @@ import {
 } from './monsters.js';
 import * as M from './monsters.js';
 import * as O from './objects.js';
-import { objects } from './objects.js';
+import { objects, is_sword, greatest_erosion } from './objects.js';
 import {
     G_GONE, A_NEUTRAL, A_NONE, ALIGNWEIGHT,
     AM_NONE, AM_LAWFUL, AM_NEUTRAL, AM_CHAOTIC,
@@ -163,11 +163,6 @@ function mon_aligntyp(mon) {
 }
 function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
-}
-// C ref: objclass.h is_sword()
-function is_sword(otmp) {
-    return objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-           && objects[otmp.otyp].oc_skill <= P_SABER;
 }
 // C ref: makemon.c quest_mon_represents_role()
 function quest_mon_represents_role(mptr, role_pm) {
@@ -821,11 +816,6 @@ export function mkmonmoney(mtmp, amount) {
 function ARM_BONUS(obj) {
     return objects[obj.otyp].a_ac + (obj.spe || 0)
            - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac);
-}
-
-// C ref: obj.h greatest_erosion()
-function greatest_erosion(otmp) {
-    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
 }
 
 // C ref: makemon.c m_initinv()

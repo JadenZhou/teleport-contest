@@ -34,7 +34,8 @@ import { In_hell } from './dungeon.js';
 import { PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { ART_STORMBRINGER, ART_VORPAL_BLADE } from './artilist.js';
 import { resists_cold } from './mondata.js';
-import { CORPSE } from './objects.js';
+import { CORPSE, is_pole, is_wet_towel, is_weptool as
+         is_weptool_mu } from './objects.js';
 import { IS_WATERWALL, isok } from './const.js';
 import * as M from './monsters.js';
 import { mons, AT_NONE, AT_CLAW, AT_KICK, AT_BITE, AT_STNG, AT_TUCH,
@@ -125,7 +126,6 @@ import { is_pool } from './makemon.js';
 import { DETECT_MONSTERS } from './const.js';
 import { W_ACCESSORY as W_ACCESSORY_MU, W_WEP as W_WEP_MU } from './const.js';
 import { WEAPON_CLASS as WEAPON_CLASS_MU } from './objects.js';
-import { is_weptool as is_weptool_mu } from './mkobj.js';
 import { protects as protects_mu } from './artifact.js';
 import { couldsee as couldsee_mh } from './vision.js';
 import { m_seenres as m_seenres_mh } from './muse.js';
@@ -161,14 +161,6 @@ function mdistu(mon) {
 function gender(mon) { return mon.female ? 1 : 0; }
 
 /* C ref: obj.h is_pole(), is_art() */
-function is_pole(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || is_art(otmp, ART_SNICKERSNEE));
-}
-/* C ref: obj.h is_wet_towel() */
-function is_wet_towel(o) { return o.otyp === TOWEL && (o.spe || 0) > 0; }
 /* C ref: you.h -- pronoun macros for the hero and for monsters */
 /* #define uhe() (genders[flags.female ? 1 : 0].he) */
 export function uhe() { return genders[game.flags.female ? 1 : 0].he; }

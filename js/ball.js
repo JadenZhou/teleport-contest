@@ -37,6 +37,7 @@ import { fill_pit } from './muse.js';
 import { exercise } from './attrib.js';
 import { Blind, Levitation } from './youprop.js';
 import { Luck } from './const.js';
+import { carried } from './objects.js';
 
 /* C ref: you.h bc_order values, bc_felt bits */
 export const BCPOS_DIFFER = 0, BCPOS_CHAIN = 1, BCPOS_BALL = 2;
@@ -45,8 +46,6 @@ export const BC_BALL = 0x01, BC_CHAIN = 0x02;
 /* C ref: ball.c static int bcrestriction */
 function bcrestriction() { return game.bcrestriction || 0; }
 
-/* C ref: obj.h carried() */
-function carried(o) { return o.where === 'OBJ_INVENT'; }
 /* C ref: mkobj.c remove_object() -- a floor object leaves the floor */
 function remove_object(otmp) {
     if (otmp.where !== 'OBJ_FLOOR')

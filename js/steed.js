@@ -32,11 +32,10 @@ import { DISMOUNT_BYCHOICE, DISMOUNT_THROWN, DISMOUNT_KNOCKED, DISMOUNT_FELL,
          VIBRATING_SQUARE, KILLED_BY_AN, BOTH_SIDES, TT_BEARTRAP, TT_PIT,
          TT_WEB, NO_TRAP_FLAGS, P_RIDING, STEALTH, FLYING,
          has_mgivenname } from './const.js';
-import { BOULDER } from './objects.js';
+import { BOULDER, is_pole } from './objects.js';
 import { PM_GRID_BUG, M1_CLING, M2_ROCKTHROW } from './monsters.js';
 import { teleds, enexto, rloc_to } from './teleport.js';
 import { steed_vs_stealth } from './polyself.js';
-import { is_pole } from './wield.js';
 import { use_skill } from './weapon.js';
 import { encumber_msg } from './pickup.js';
 import { an } from './objnam.js';

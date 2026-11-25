@@ -36,7 +36,8 @@ import { mons, PM_HIGH_CLERIC, PM_GHOST, PM_WRAITH, PM_VAMPIRE, PM_GHOUL,
          PM_HUMAN, PM_GREEN_SLIME, PM_TOURIST, S_WRAITH, S_MUMMY, S_VAMPIRE,
          G_UNIQ, G_NOCORPSE, M2_PNAME } from './monsters.js';
 import { AMULET_OF_LIFE_SAVING, LARGE_BOX, STATUE, TIN, CORPSE,
-         FAKE_AMULET_OF_YENDOR } from './objects.js';
+         FAKE_AMULET_OF_YENDOR, SchroedingersBox,
+         Is_container } from './objects.js';
 import { pmname, Mgender, m_monnam } from './do_name.js';
 import { shkname, shkname_is_pname } from './shknam.js';
 import { an, the_unique_pm } from './objnam.js';
@@ -53,7 +54,7 @@ import { the, thesimpleoname } from './iactions.js';
 import { xname, doname_with_price } from './objnam.js';
 import { NHW_MENU, SORTLOOT_LOOT, SORTLOOT_PACK } from './const.js';
 import { BAG_OF_TRICKS } from './objects.js';
-import { Is_container, place_object, mk_named_object } from './mkobj.js';
+import { place_object, mk_named_object } from './mkobj.js';
 import { make_grave } from './engrave.js';
 import { deepest_lev_reached, depth, dunlev, on_level } from './dungeon.js';
 import { money_cnt } from './u_init.js';
@@ -130,8 +131,6 @@ function inc_done_stopprint() {
     game.program_state.stopprint = (game.program_state.stopprint || 0) + 1;
 }
 
-/* C ref: obj.h SchroedingersBox() */
-function SchroedingersBox(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
 /* C ref: integer.h nowrap_add() */
 function nowrap_add(a, b) {
     return (a <= Number.MAX_SAFE_INTEGER - b) ? a + b : Number.MAX_SAFE_INTEGER;

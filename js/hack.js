@@ -66,7 +66,7 @@ import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
 import { vision_recalc, couldsee } from './vision.js';
 import { glyph_at, Norep, feel_location, glyph_is_warning } from './display.js';
 import { carrying } from './invent.js';
-import { WAN_DIGGING } from './objects.js';
+import { WAN_DIGGING, is_pick } from './objects.js';
 import { u_at, Is_rogue_level, Upolyd } from './const.js';
 import { fall_asleep } from './timeout.js';
 import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap, sokoban_guilt } from './trap.js';
@@ -152,16 +152,6 @@ import { hideunder } from './makemon.js';
 
 // C's impossible() (pline.c) is not ported yet.
 export function impossible(msg) { console.error(`impossible: ${msg}`); }
-
-/* C ref: obj.h is_pick() */
-function is_pick(otmp) {
-    return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
-}
-/* C ref: obj.h is_axe() */
-function is_axe(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_AXE);
-}
 
 // C ref: hack.c weight_cap()
 export function weight_cap() {

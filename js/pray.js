@@ -31,7 +31,7 @@ import { M1_NOHANDS, M2_ROCKTHROW, S_HUMAN, PM_CLERIC, PM_KNIGHT, S_LICH, S_GHOS
 import { known_spell, spelleffects, can_chant } from './spell.js';
 import { BOULDER, LOADSTONE, HELM_OF_OPPOSITE_ALIGNMENT, LEVITATION_BOOTS,
          RIN_LEVITATION, GAUNTLETS_OF_FUMBLING, FUMBLE_BOOTS, SADDLE,
-         POT_WATER, SPE_TURN_UNDEAD } from './objects.js';
+         POT_WATER, SPE_TURN_UNDEAD, bimanual } from './objects.js';
 import { pline } from './display.js';
 import { In_hell } from './dungeon.js';
 import { is_demon, is_undead, is_vampshifter, nohands, throws_rocks,
@@ -40,7 +40,7 @@ import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attri
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
 import { paranoid_query } from './cmd.js';
-import { welded, bimanual } from './wield.js';
+import { welded } from './wield.js';
 import { which_armor, sobj_at, is_pool, is_lava, m_at, set_malign } from './makemon.js';
 import { confers_luck } from './timeout.js';
 import { region_danger } from './region.js';

@@ -58,16 +58,16 @@ import {
 import { VANQ_MLVL_MNDX, VANQ_MSTR_MNDX, VANQ_ALPHA_SEP, VANQ_ALPHA_MIX,
          VANQ_MCLS_HTOL, VANQ_MCLS_LTOH, VANQ_COUNT_H_L,
          VANQ_COUNT_L_H } from './const.js';
-import {
-    objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS, COIN_CLASS,
-    GAUNTLETS_OF_POWER, DUNCE_CAP, SHIELD_OF_REFLECTION, TOWEL, CORPSE, TIN,
-    EGG, STATUE, BOULDER, TIN_OPENER, ROCK, GRAPPLING_HOOK, DWARVISH_MATTOCK,
-    LUCKSTONE, LOADSTONE, FLINT, TOUCHSTONE, DAGGER, KNIFE, AXE, PICK_AXE,
-    SHORT_SWORD, BROADSWORD, LONG_SWORD, TWO_HANDED_SWORD, CLUB, MACE,
-    MORNING_STAR, FLAIL, QUARTERSTAFF, SPEAR, TRIDENT, LANCE, BOW, SLING,
-    CROSSBOW, DART, SHURIKEN, BOOMERANG, UNICORN_HORN, RIN_ADORNMENT,
-    RIN_PROTECTION, AMULET_OF_GUARDING, ROBE, is_metallic,
-} from './objects.js';
+import { objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS, COIN_CLASS,
+         GAUNTLETS_OF_POWER, DUNCE_CAP, SHIELD_OF_REFLECTION, TOWEL, CORPSE,
+         TIN, EGG, STATUE, BOULDER, TIN_OPENER, ROCK, GRAPPLING_HOOK,
+         DWARVISH_MATTOCK, LUCKSTONE, LOADSTONE, FLINT, TOUCHSTONE, DAGGER,
+         KNIFE, AXE, PICK_AXE, SHORT_SWORD, BROADSWORD, LONG_SWORD,
+         TWO_HANDED_SWORD, CLUB, MACE, MORNING_STAR, FLAIL, QUARTERSTAFF,
+         SPEAR, TRIDENT, LANCE, BOW, SLING, CROSSBOW, DART, SHURIKEN,
+         BOOMERANG, UNICORN_HORN, RIN_ADORNMENT, RIN_PROTECTION,
+         AMULET_OF_GUARDING, ROBE, is_metallic, is_ammo, is_wet_towel,
+         is_graystone } from './objects.js';
 import * as M from './monsters.js';
 import { rank_of, rank_to_xlev } from './botl.js';
 import { an, just_an, makeplural, makesingular } from './objnam.js';
@@ -174,16 +174,6 @@ function prop(p) { return game.u.uprops[p] || { intrinsic: 0, extrinsic: 0, bloc
 function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
 
 /* C ref: obj.h is_ammo(), is_wet_towel(), is_graystone(); u_wield_art() */
-function is_ammo(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === GEM_CLASS)
-            && objects[otmp.otyp].oc_skill >= -P_CROSSBOW
-            && objects[otmp.otyp].oc_skill <= -P_BOW);
-}
-function is_wet_towel(o) { return o.otyp === TOWEL && o.spe > 0; }
-function is_graystone(obj) {
-    return (obj.otyp === LUCKSTONE || obj.otyp === LOADSTONE
-            || obj.otyp === FLINT || obj.otyp === TOUCHSTONE);
-}
 function u_wield_art(art) { return !!game.uwep && game.uwep.oartifact === art; }
 
 /* C ref: youprop.h -- the rest of the property macros that

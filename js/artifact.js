@@ -35,7 +35,7 @@ import { P_MAX_SKILL } from './weapon.js';
 import { P_SKILLED, P_BASIC, ONAME_NO_FLAGS, GETOBJ_EXCLUDE, GETOBJ_SUGGEST,
          GETOBJ_PROMPT, ECMD_CANCEL } from './const.js';
 import { getobj, nxtobj } from './invent.js';
-import { mksobj, permapoisoned, Is_container } from './mkobj.js';
+import { mksobj, permapoisoned } from './mkobj.js';
 import { oname } from './do_name.js';
 import { obj_shuffle_range } from './o_init.js';
 import { ART_SUNSWORD, ART_MASTER_KEY_OF_THIEVERY } from './artilist.js';
@@ -82,7 +82,7 @@ import { surface } from './iactions.js';
 import { Levitation } from './youprop.js';
 import { IS_ALTAR } from './const.js';
 import { Antimagic, Hate_silver, Blind as Blind_art } from './youprop.js';
-import { objects as objects_ac } from './objects.js';
+import { objects as objects_ac, Is_container } from './objects.js';
 
 // C ref: artifact.h SPFX_*
 export const SPFX_NONE = 0x00000000;

@@ -31,7 +31,7 @@ import { isok, IS_DOOR, IS_OBSTRUCTED, IS_STWALL, IS_TREE, IS_THRONE,
          RIGHT_SIDE, LEFT_SIDE, BOTH_SIDES, Is_airlevel, Is_waterlevel } from './const.js';
 import { mons, MZ_SMALL, S_LIZARD, PM_SAMURAI, PM_MONK, PM_SASQUATCH, M1_NOLIMBS, M1_SLITHY,
          M2_GIANT } from './monsters.js';
-import { BOULDER, KICKING_BOOTS } from './objects.js';
+import { BOULDER, KICKING_BOOTS, Is_container } from './objects.js';
 import { m_at, sobj_at, is_pool } from './makemon.js';
 import { near_capacity, in_rooms } from './hack.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
@@ -42,7 +42,7 @@ import { body_part } from './insight.js';
 import { makeplural } from './objnam.js';
 import { recalc_block_point, unblock_point } from './vision.js';
 import { cvt_sdoor_to_door } from './detect.js';
-import { Is_container, weight, obj_extract_self } from './mkobj.js';
+import { weight, obj_extract_self } from './mkobj.js';
 import { Has_contents, WEB, STATUE_TRAP, is_pit, STONE_RES, FUMBLING, ZAP_POS, LOW_PM } from './const.js';
 import { BAG_OF_HOLDING, BAG_OF_TRICKS, objects, GLASS, GEM_CLASS, EGG, MIRROR, CORPSE, COIN_CLASS, LARGE_BOX, CHEST } from './objects.js';
 import { shop_keeper, costly_spot, onshopbill, costly_adjacent,

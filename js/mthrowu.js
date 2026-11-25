@@ -37,8 +37,10 @@ import { BOLT_LIM, MON_POLE_DIST, NEED_WEAPON, NEED_RANGED_WEAPON,
 import * as O from './objects.js';
 import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, POTION_CLASS,
          VENOM_CLASS, COIN_CLASS, ARMOR_CLASS, ROCK_CLASS, FOOD_CLASS,
-         SPBOOK_CLASS, WAND_CLASS, BALL_CLASS, CHAIN_CLASS, RING_CLASS,
-         SILVER, GOLD, GEMSTONE, MINERAL, STRANGE_OBJECT } from './objects.js';
+         SPBOOK_CLASS, WAND_CLASS, BALL_CLASS, CHAIN_CLASS, RING_CLASS, SILVER,
+         GOLD, GEMSTONE, MINERAL, STRANGE_OBJECT, is_pole, stone_missile,
+         is_flimsy, greatest_erosion, is_ammo, matching_launcher,
+         ammo_and_launcher, is_missile } from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { ART_SNICKERSNEE } from './artilist.js';
@@ -49,8 +51,7 @@ import { m_at, closed_door, is_pool, is_lava, nonliving } from './makemon.js';
 import { monsndx, is_elf, is_orc, is_gnome, is_vampshifter, hates_silver,
          mon_hates_silver, Resists_Elem, get_atkdam_type,
          cvt_adtyp_to_mseenres, can_blnd, haseyes } from './mondata.js';
-import { is_ammo, matching_launcher, ammo_and_launcher, is_missile,
-         freehand } from './wield.js';
+import { freehand } from './wield.js';
 import { multishot_class_bonus, omon_adj, breaktest } from './dothrow.js';
 import { splitobj, obj_extract_self, clear_dknown, place_object,
          add_to_minv, mksobj, is_poisonable, is_flammable,
@@ -101,24 +102,6 @@ function verbose() { return game.flags.verbose ?? true; }
 function mdistu(mon) {
     const dx = mon.mx - game.u.ux, dy = mon.my - game.u.uy;
     return dx * dx + dy * dy;
-}
-/* C ref: obj.h is_pole() */
-function is_pole(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || otmp.oartifact === ART_SNICKERSNEE);
-}
-/* C ref: obj.h stone_missile() */
-function stone_missile(o) {
-    return (objects[o.otyp].oc_material === GEMSTONE
-            || objects[o.otyp].oc_material === MINERAL)
-           && o.oclass !== RING_CLASS;
-}
-/* C ref: obj.h is_flimsy() */
-function is_flimsy(otmp) {
-    return objects[otmp.otyp].oc_material <= O.LEATHER
-           || otmp.otyp === O.RUBBER_HOSE;
 }
 /* C ref: mondata.h */
 
@@ -308,10 +291,6 @@ export function should_mulch_missile(obj) {
         broken = false;
 
     return !!broken;
-}
-/* C ref: obj.h greatest_erosion() */
-function greatest_erosion(otmp) {
-    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
 }
 
 // C ref: mthrowu.c drop_throw()

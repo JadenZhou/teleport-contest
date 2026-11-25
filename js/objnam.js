@@ -26,7 +26,8 @@ import {
 } from './hacklib.js';
 import { cansee } from './vision.js';
 import * as O from './objects.js';
-import { objects, OBJ_NAME, OBJ_DESCR } from './objects.js';
+import { objects, OBJ_NAME, OBJ_DESCR, Is_box, is_missile, is_ammo, is_weptool,
+         Is_container } from './objects.js';
 import {
     NON_PM, MALE, FEMALE, NEUTRAL, P_BOW, P_CROSSBOW, P_DART, P_BOOMERANG, BLINDED, HALLUC,
     Has_contents, has_oname, ONAME, W_ARMOR, W_AMUL, W_WEP, W_SWAPWEP, W_QUIVER, W_RINGL,
@@ -56,12 +57,10 @@ import { is_unpaid, unpaid_cost, get_cost_of_shop_item,
          record_price_quote, append_price_quote } from './shk.js';
 import { currency } from './insight.js';
 import { candy_wrapper_text } from './read.js';
-import {
-    mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
-    is_rustprone, is_crackable, is_corrodeable, is_rottable, is_damageable,
-    is_poisonable, permapoisoned, Is_candle, is_weptool, rnd_class,
-    Is_container,
-} from './mkobj.js';
+import { mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
+         is_rustprone, is_crackable, is_corrodeable, is_rottable,
+         is_damageable, is_poisonable, permapoisoned, Is_candle,
+         rnd_class } from './mkobj.js';
 import { delete_contents } from './invent.js';
 import { Luck } from './const.js';
 import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';
@@ -2579,22 +2578,6 @@ export function readobjnam(bp, no_wish) {
     return d.otmp;
 }
 
-// C ref: obj.h Is_box()
-function Is_box(otmp) {
-    return otmp.otyp === O.LARGE_BOX || otmp.otyp === O.CHEST;
-}
-
-// C ref: obj.h is_missile(), is_ammo()
-function is_missile(otmp) {
-    return ((otmp.oclass === O.WEAPON_CLASS || otmp.oclass === O.TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill >= -P_BOOMERANG
-            && objects[otmp.otyp].oc_skill <= -P_DART);
-}
-function is_ammo(otmp) {
-    return ((otmp.oclass === O.WEAPON_CLASS || otmp.oclass === O.GEM_CLASS)
-            && objects[otmp.otyp].oc_skill >= -P_CROSSBOW
-            && objects[otmp.otyp].oc_skill <= -P_BOW);
-}
 
 // C ref: artifact.c is_quest_artifact() — otmp->oartifact == urole.questarti
 function is_quest_artifact(otmp) {

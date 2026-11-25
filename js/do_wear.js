@@ -36,7 +36,8 @@ import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_INACCESS, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
          ECMD_TIME, W_ARMOR, W_ACCESSORY } from './const.js';
 import { ARMOR_CLASS, RING_CLASS, AMULET_CLASS, MEAT_RING, BLINDFOLD, TOWEL,
-         LENSES } from './objects.js';
+         LENSES, is_helmet, is_shield, is_cloak, is_shirt, is_suit, is_sword,
+         is_flimsy, is_boots, is_gloves, bimanual } from './objects.js';
 import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, MZ_HUGE, M1_NOLIMBS, M1_HUMANOID,
          M1_NOHEAD, M1_SLITHY, M1_FLY, M1_MINDLESS, M1_BREATHLESS, S_CENTAUR,
          S_GHOST, S_VORTEX, mons, PM_AIR_ELEMENTAL, PM_MARILITH,
@@ -50,7 +51,7 @@ import * as O from './objects.js';
 import { prinv } from './invent.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
-import { setworn, setuwep, setuswapwep, setuqwep, bimanual, welded,
+import { setworn, setuwep, setuswapwep, setuqwep, welded,
          retouch_object } from './wield.js';
 import { W_RING, W_AMUL, W_TOOL, W_SADDLE, W_WEAPONS, LEFT_RING, RIGHT_RING,
          FINGER, GLIB } from './const.js';
@@ -141,24 +142,6 @@ function WrappingAllowed(mptr) {
     return humanoid(mptr) && mptr.msize >= MZ_SMALL && mptr.msize <= MZ_HUGE
         && !noncorporeal(mptr) && mptr.mlet !== S_CENTAUR
         && mptr !== mons[PM_WINGED_GARGOYLE] && mptr !== mons[PM_MARILITH];
-}
-/* C ref: obj.h is_helmet() ... is_suit(), is_sword(), is_flimsy() */
-function is_armcat(otmp, cat) {
-    return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === cat;
-}
-function is_helmet(otmp) { return is_armcat(otmp, ARM_HELM); }
-function is_shield(otmp) { return is_armcat(otmp, ARM_SHIELD); }
-function is_cloak(otmp) { return is_armcat(otmp, ARM_CLOAK); }
-function is_shirt(otmp) { return is_armcat(otmp, ARM_SHIRT); }
-function is_suit(otmp) { return is_armcat(otmp, ARM_SUIT); }
-function is_sword(otmp) {
-    return otmp.oclass === O.WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-        && objects[otmp.otyp].oc_skill <= P_SABER;
-}
-function is_flimsy(otmp) {
-    return objects[otmp.otyp].oc_material <= O.LEATHER
-           || otmp.otyp === O.RUBBER_HOSE;
 }
 /* C ref: pline.c You_feel() */
 async function You_feel(line) { await pline(`You feel ${line}`); }
@@ -1530,14 +1513,6 @@ function takeoff_ctx() {
         g.context.takeoff = { mask: 0, what: 0, delay: 0,
                               cancelled_don: false, disrobing: '' };
     return g.context.takeoff;
-}
-
-/* C ref: obj.h is_boots(), is_gloves() */
-function is_boots(otmp) {
-    return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_BOOTS;
-}
-function is_gloves(otmp) {
-    return otmp.oclass === ARMOR_CLASS && objects[otmp.otyp].oc_armcat === ARM_GLOVES;
 }
 
 // C ref: do_wear.c off_msg()

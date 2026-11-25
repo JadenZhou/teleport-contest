@@ -38,7 +38,10 @@ import { mons, AT_CLAW, AT_KICK, AT_BUTT, AT_WEAP, AT_HUGS, AT_ENGL, AT_TUCH,
          AD_PHYS, AD_ELEC, AD_STCK } from './monsters.js';
 import { M_ATTK_HIT, SHOCK_RES, M_SEEN_ELEC, A_STR, INVIS, W_ARMG, HALF_PHDAM,
          NON_PM, LOW_PM } from './const.js';
-import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL } from './objects.js';
+import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL, is_blade,
+         is_axe, is_shield, is_flimsy, stone_missile, greatest_erosion,
+         is_weptool, bimanual, is_launcher, is_missile, is_ammo, is_pole,
+         is_wet_towel, ammo_and_launcher } from './objects.js';
 import { permapoisoned } from './mkobj.js';
 import { dmgval } from './weapon.js';
 import { which_armor } from './worn.js';
@@ -80,15 +83,13 @@ import { WEAPON_CLASS, TOOL_CLASS, ARMOR_CLASS, GEM_CLASS, POTION_CLASS,
          CLOVE_OF_GARLIC, LOADSTONE, GOLD_DRAGON_SCALE_MAIL,
          GOLD_DRAGON_SCALES, SHIELD_OF_REFLECTION,
          AMULET_OF_REFLECTION } from './objects.js';
-import { is_weptool } from './mkobj.js';
 import { abon, dbon, hitval, weapon_hit_bonus, weapon_dam_bonus, use_skill,
          uwep_skill_type, special_dmgval, weapon_type, P_SKILL,
          m_carrying } from './weapon.js';
 import { find_mac } from './worn.js';
 import { check_capacity, overexertion, near_capacity, nomul,
          test_move } from './hack.js';
-import { can_twoweapon, untwoweapon, bimanual, is_launcher, is_missile,
-         is_ammo, is_pole, is_wet_towel, ammo_and_launcher } from './wield.js';
+import { can_twoweapon, untwoweapon } from './wield.js';
 import { yname, makeplural, an, doname, xname, vtense, The } from './objnam.js';
 import { ing_suffix, s_suffix } from './hacklib.js';
 import { body_part } from './insight.js';
@@ -2173,23 +2174,6 @@ function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function NODIAG(monnum) { return monnum === M.PM_GRID_BUG; }
 function martial_bonus() { return Role_if(M.PM_SAMURAI) || Role_if(M.PM_MONK); }
 function mon_hates_light(mon) { return mon.data === mons[M.PM_GREMLIN]; }
-function is_blade(otmp) {
-    return otmp.oclass === WEAPON_CLASS
-        && objects[otmp.otyp].oc_skill >= P_DAGGER
-        && objects[otmp.otyp].oc_skill <= P_SABER;
-}
-function is_axe(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_AXE;
-}
-function is_shield(otmp) {
-    return otmp.oclass === ARMOR_CLASS
-           && objects[otmp.otyp].oc_armcat === ARM_SHIELD;
-}
-function is_flimsy(otmp) {
-    return objects[otmp.otyp].oc_material <= LEATHER
-           || otmp.otyp === RUBBER_HOSE;
-}
 function is_blunt_weapon(o) {
     return (o.oclass === WEAPON_CLASS || is_weptool(o))
            && (objects[o.otyp].oc_dir & WHACK) !== 0;
@@ -2199,15 +2183,6 @@ function is_poisonable(otmp) {
             && objects[otmp.otyp].oc_skill >= -P_SHURIKEN
             && objects[otmp.otyp].oc_skill <= -P_BOW)
            || permapoisoned(otmp);
-}
-function stone_missile(o) {
-    return (objects[o.otyp].oc_material === GEMSTONE
-            || objects[o.otyp].oc_material === MINERAL)
-           && o.oclass !== RING_CLASS;
-}
-function greatest_erosion(otmp) {
-    const e1 = otmp.oeroded || 0, e2 = otmp.oeroded2 || 0;
-    return e1 > e2 ? e1 : e2;
 }
 /* C ref: artifact.c artifact_light() */
 function artifact_light(obj) {

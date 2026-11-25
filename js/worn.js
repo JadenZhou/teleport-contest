@@ -17,7 +17,9 @@ import { is_art } from './artifact.js';
 import { minv } from './mon.js';
 import { objchain_items } from './invent.js';
 import { game } from './gstate.js';
-import { objects } from './objects.js';
+import { objects, greatest_erosion, is_shield, is_helmet, is_boots, is_gloves,
+         is_cloak, is_shirt, is_suit, bimanual, is_flimsy, Is_dragon_scales,
+         is_weptool } from './objects.js';
 import * as O from './objects.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
@@ -48,7 +50,6 @@ import { monstunseesu } from './uhitm.js';
 import { mhim, mhis } from './mhitu.js';
 import { learnwand } from './zap.js';
 import { cancel_doff } from './do_wear.js';
-import { is_weptool } from './wield.js';
 import { DEAF, W_SADDLE } from './const.js';
 import { extract_from_minvent_g } from './steal.js';
 import { place_object } from './mkobj.js';
@@ -92,34 +93,10 @@ function run_msgs_sync(gen) {
 /* C ref: monst.h MON_WEP() */
 export function MON_WEP(mon) { return mon.mw || null; }
 
-/* C ref: obj.h greatest_erosion() */
-function greatest_erosion(otmp) {
-    const e1 = otmp.oeroded || 0, e2 = otmp.oeroded2 || 0;
-    return e1 > e2 ? e1 : e2;
-}
 /* C ref: hack.h ARM_BONUS() */
 function ARM_BONUS(obj) {
     return objects[obj.otyp].a_ac + (obj.spe || 0)
            - Math.min(greatest_erosion(obj), objects[obj.otyp].a_ac);
-}
-/* C ref: obj.h is_shirt() ... is_suit(), bimanual(), is_flimsy() */
-function is_armcat(otmp, cat) {
-    return otmp.oclass === O.ARMOR_CLASS && objects[otmp.otyp].oc_armcat === cat;
-}
-function is_shield(otmp) { return is_armcat(otmp, O.ARM_SHIELD); }
-function is_helmet(otmp) { return is_armcat(otmp, O.ARM_HELM); }
-function is_boots(otmp) { return is_armcat(otmp, O.ARM_BOOTS); }
-function is_gloves(otmp) { return is_armcat(otmp, O.ARM_GLOVES); }
-function is_cloak(otmp) { return is_armcat(otmp, O.ARM_CLOAK); }
-function is_shirt(otmp) { return is_armcat(otmp, O.ARM_SHIRT); }
-function is_suit(otmp) { return is_armcat(otmp, O.ARM_SUIT); }
-function bimanual(otmp) {
-    return (otmp.oclass === O.WEAPON_CLASS || otmp.oclass === O.TOOL_CLASS)
-           && !!objects[otmp.otyp].oc_bimanual;
-}
-function is_flimsy(otmp) {
-    return objects[otmp.otyp].oc_material <= O.LEATHER
-           || otmp.otyp === O.RUBBER_HOSE;
 }
 /* C ref: obj.h is_elven_armor() */
 function is_elven_armor(otmp) {
@@ -940,9 +917,6 @@ function* m_lose_armor_g(mon, obj, polyspot) {
 }
 
 /* C ref: obj.h Is_dragon_scales() ... Dragon_mail_to_pm() */
-function Is_dragon_scales(o) {
-    return o.otyp >= O.GRAY_DRAGON_SCALES && o.otyp <= O.YELLOW_DRAGON_SCALES;
-}
 function Is_dragon_mail(o) {
     return o.otyp >= O.GRAY_DRAGON_SCALE_MAIL
            && o.otyp <= O.YELLOW_DRAGON_SCALE_MAIL;

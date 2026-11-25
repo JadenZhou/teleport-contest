@@ -22,7 +22,8 @@ import { is_art } from './artifact.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { livelog_printf } from './display.js';
 import { LL_CONDUCT, Luck } from './const.js';
-import { CANDY_BAR } from './objects.js';
+import { CANDY_BAR, Is_dragon_scales, is_shield, greatest_erosion,
+         is_weptool } from './objects.js';
 import { game } from './gstate.js';
 import {
     NEUTRAL, MALE, FEMALE, MM_FEMALE, MM_MALE, MM_MINVIS, MM_NOEXCLAM,
@@ -70,7 +71,7 @@ import { discover_object, makeknown } from './o_init.js';
 import { study_book, can_chant, losespells } from './spell.js';
 import { outrumor } from './rumors.js';
 import { bcsign, curse, bless, uncurse, blessorcurse, costly_alteration,
-         weight, mksobj, mkobj, erosion_matters, is_weptool } from './mkobj.js';
+         weight, mksobj, mkobj, erosion_matters } from './mkobj.js';
 import { some_armor, adj_abon, destroy_arm, disintegrate_arm,
          count_worn_armor, any_worn_armor_ok } from './do_wear.js';
 import { remove_worn_item } from './steal.js';
@@ -139,18 +140,11 @@ const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
       NH_SILVER = "silver", NH_PURPLE = "purple", NH_RED = "red",
       NH_BLUE = "blue";
 
-/* C ref: obj.h is_art(), is_elven_armor(), Is_dragon_scales(),
-   is_shield() */
+/* C ref: obj.h is_elven_armor() */
 function is_elven_armor(o) {
     return o.otyp === O.ELVEN_LEATHER_HELM || o.otyp === O.ELVEN_MITHRIL_COAT
            || o.otyp === O.ELVEN_CLOAK || o.otyp === O.ELVEN_SHIELD
            || o.otyp === O.ELVEN_BOOTS;
-}
-function Is_dragon_scales(o) {
-    return o.otyp >= O.GRAY_DRAGON_SCALES && o.otyp <= O.YELLOW_DRAGON_SCALES;
-}
-function is_shield(o) {
-    return o.oclass === ARMOR_CLASS && objects[o.otyp].oc_armcat === O.ARM_SHIELD;
 }
 /* C ref: hack.h distu() */
 function distu(x, y) {
@@ -174,10 +168,6 @@ function upwords(s) {
         out += c;
     }
     return out;
-}
-/* C ref: mkobj.c greatest_erosion() */
-function greatest_erosion(otmp) {
-    return Math.max(otmp.oeroded || 0, otmp.oeroded2 || 0);
 }
 const MAX_ERODE = 3;
 

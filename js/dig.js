@@ -24,9 +24,8 @@ import { Hallucination, Levitation, Unaware, Blind as Blind_dg } from './youprop
 import { D_TRAPPED, D_BROKEN, SCORR, A_STR, A_INT, A_WIS, A_DEX, A_CON,
          A_CHA } from './const.js';
 import { ICE, DRAWBRIDGE_UP, DB_UNDER, DB_ICE, isok } from './const.js';
-import {
-    ROCK, BOULDER, CORPSE, LEASH, POT_OIL, POTION_CLASS, is_organic,
-} from './objects.js';
+import { ROCK, BOULDER, CORPSE, LEASH, POT_OIL, POTION_CLASS, is_organic,
+         is_pick, is_axe, bimanual } from './objects.js';
 import { obj_resists } from './dogmove.js';
 import { DIGTYP_UNDIGGABLE, DIGTYP_ROCK, DIGTYP_STATUE, DIGTYP_BOULDER,
          DIGTYP_DOOR, DIGTYP_TREE, IS_OBSTRUCTED, IS_WALL, TREE, TT_PIT,
@@ -35,7 +34,6 @@ import { objects, STATUE, PICK_AXE, DWARVISH_MATTOCK, WEAPON_CLASS,
          TOOL_CLASS } from './objects.js';
 import { closed_door, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
-import { bimanual } from './wield.js';
 import { rn1 } from './rng.js';
 import { SDOOR, DOOR, CORR, ROOM, FOUNTAIN, SHOPBASE, W_NONDIGGABLE, D_NODOOR,
          IS_STWALL, IS_TREE, Is_earthlevel } from './const.js';
@@ -109,15 +107,6 @@ import { hides_under, is_whirly, digests } from './mondata.js';
 
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
-
-/* C ref: obj.h is_pick(), is_axe() */
-function is_pick(otmp) {
-    return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
-}
-function is_axe(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_AXE);
-}
 
 // C ref: dig.c pick_can_reach()
 function pick_can_reach(pick, x, y) {

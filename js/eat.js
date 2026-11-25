@@ -40,7 +40,7 @@ import {
 import { M1_CARNIVORE, M1_HERBIVORE, M1_METALLIVORE, PM_WIZARD, PM_VALKYRIE,
          PM_ELF } from './monsters.js';
 import { objects, RIN_SLOW_DIGESTION, MEAT_RING, RIN_PROTECTION,
-         FAKE_AMULET_OF_YENDOR } from './objects.js';
+         FAKE_AMULET_OF_YENDOR, carried } from './objects.js';
 import { near_capacity, end_running } from './hack.js';
 import { ACURR } from './attrib.js';
 import * as M from './monsters.js';
@@ -612,7 +612,6 @@ function tin_ctx() {
 }
 
 /* C ref: obj.h carried(); invent.c obj_here() */
-function carried(obj) { return obj.where === 'OBJ_INVENT'; }
 function obj_here(obj, x, y) {
     for (const otmp of game.level.objects || [])
         if (otmp === obj)

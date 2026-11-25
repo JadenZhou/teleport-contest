@@ -25,13 +25,14 @@ import {
     W_ARMC, W_ARMU, W_RINGL, W_RINGR, P_SKILLED, P_LAST_WEAPON, P_LAST_SPELL,
     P_TWO_WEAPON_COMBAT, A_STR, A_DEX, STR18, TIP_ENHANCE,
 } from './const.js';
-import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS } from './objects.js';
+import { objects, WEAPON_CLASS, TOOL_CLASS, GEM_CLASS, is_ammo, is_spear,
+         is_axe, is_pick, greatest_erosion, is_launcher, ammo_and_launcher,
+         is_weptool, bimanual as bimanual_wp } from './objects.js';
 import * as O from './objects.js';
 import * as M from './monsters.js';
 import { spell_skilltype, skill_based_spellbook_id } from './spell.js';
 import { ART_SUNSWORD, ART_SNICKERSNEE } from './artilist.js';
 import { touch_artifact_mon, spec_abon, spec_dbon, shade_glare } from './artifact.js';
-import { is_weptool } from './mkobj.js';
 import { is_pool } from './makemon.js';
 import { is_swimmer, passes_walls, is_undead, is_demon, is_were,
          is_vampshifter, Resists_Elem, throws_rocks, likes_gems, mindless,
@@ -66,7 +67,6 @@ import { makeplural as makeplural_wp, otense as otense_wp, xname as xname_wp,
 import { mhis as mhis_wp } from './mhitu.js';
 import { s_suffix as s_suffix_wp } from './hacklib.js';
 import { mon_nam as mon_nam_wp } from './do_name.js';
-import { bimanual as bimanual_wp } from './wield.js';
 import { the as the_wp } from './iactions.js';
 import { begin_burn, end_burn } from './timeout.js';
 import { cansee } from './vision.js';
@@ -98,13 +98,6 @@ function set_P_ADVANCE(type, v) { weapon_skills()[type].advance = v; }
 
 /* C ref: skills.h practice_needed_to_advance() */
 export function practice_needed_to_advance(level) { return level * level * 20; }
-
-/* C ref: obj.h is_ammo() */
-function is_ammo(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === GEM_CLASS)
-            && objects[otmp.otyp].oc_skill >= -P_CROSSBOW
-            && objects[otmp.otyp].oc_skill <= -P_BOW);
-}
 
 // C ref: weapon.c unrestrict_weapon_skill()
 export function unrestrict_weapon_skill(skill) {
@@ -231,21 +224,6 @@ function is_wooden(ptr) { return ptr === M.mons[M.PM_WOOD_GOLEM]; }
 function hates_light(ptr) { return ptr === M.mons[M.PM_GREMLIN]; }
 
 /* obj.h */
-function is_spear(otmp) {
-    return otmp.oclass === WEAPON_CLASS && objects[otmp.otyp].oc_skill === P_SPEAR;
-}
-function is_axe(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_AXE;
-}
-function is_pick(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && objects[otmp.otyp].oc_skill === P_PICK_AXE;
-}
-function greatest_erosion(otmp) {
-    const e1 = otmp.oeroded || 0, e2 = otmp.oeroded2 || 0;
-    return e1 > e2 ? e1 : e2;
-}
 /* C ref: wield.c erodeable_wep(), will_weld() */
 function erodeable_wep(optr) {
     return optr.oclass === WEAPON_CLASS || is_weptool(optr)
@@ -592,17 +570,6 @@ export function m_carrying(mtmp, type) {
             return otmp;
     return null;
 }
-
-/* C ref: obj.h is_launcher(), is_ammo(), matching_launcher(),
-   ammo_and_launcher() */
-function is_launcher(otmp) {
-    return otmp.oclass === WEAPON_CLASS && objects[otmp.otyp].oc_skill >= P_BOW
-           && objects[otmp.otyp].oc_skill <= P_CROSSBOW;
-}
-function matching_launcher(a, l) {
-    return !!l && objects[a.otyp].oc_skill === -objects[l.otyp].oc_skill;
-}
-function ammo_and_launcher(a, l) { return is_ammo(a) && matching_launcher(a, l); }
 
 // C ref: mthrowu.c m_has_launcher_and_ammo()
 /* TRUE iff mtmp is wielding a launcher and carrying matching ammo */

@@ -80,11 +80,11 @@ import {
     PM_AIR_ELEMENTAL, M1_ANIMAL, M1_MINDLESS, S_MUMMY,
     PM_FLESH_GOLEM, G_UNIQ,
 } from './monsters.js';
-import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY,
-         LOCK_PICK, EGG, CORPSE, AMULET_OF_LIFE_SAVING, GRAY_DRAGON_SCALES,
+import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY, LOCK_PICK, EGG,
+         CORPSE, AMULET_OF_LIFE_SAVING, GRAY_DRAGON_SCALES,
          YELLOW_DRAGON_SCALES, GRAY_DRAGON_SCALE_MAIL,
          YELLOW_DRAGON_SCALE_MAIL, TIN, GLOB_OF_GREEN_SLIME, CARROT, ICE_BOX,
-         objects } from './objects.js';
+         objects, is_pick, is_axe } from './objects.js';
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES, M_POISONGAS_OK, M_POISONGAS_MINOR, M_POISONGAS_BAD,
          MAGICAL_BREATHING, Is_waterlevel } from './const.js';
@@ -2600,16 +2600,6 @@ function monlineu(mon, nx, ny) {
     return online2(nx, ny, mon.mux, mon.muy);
 }
 
-/* C ref: obj.h is_pick() */
-function is_pick(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_PICK_AXE);
-}
-/* C ref: obj.h is_axe() */
-function is_axe(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_AXE);
-}
 /* C ref: hack.c bad_rock() */
 export function bad_rock(mdat, x, y) {
     return ((game.level.flags.sokoban_rules && sobj_at(BOULDER, x, y))

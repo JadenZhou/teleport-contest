@@ -11,7 +11,9 @@ import { pmatch } from './pager.js';
 import { shield_simple_name, shirt_simple_name } from './objnam.js';
 import { game } from './gstate.js';
 import * as O from './objects.js';
-import { objects, OBJ_NAME, OBJ_DESCR, obj_descr } from './objects.js';
+import { objects, OBJ_NAME, OBJ_DESCR, obj_descr, is_ammo, is_missile,
+         is_launcher, ammo_and_launcher, bimanual, is_blade, is_wet_towel,
+         is_graystone, is_weptool, Is_container } from './objects.js';
 import {
     NHW_MENU, PICK_ONE, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE,
     W_ARMOR, W_ACCESSORY, W_AMUL, W_RING, W_TOOL, W_ARM, W_ARMC, W_ARMH,
@@ -33,7 +35,7 @@ import {
 import { xname, makeplural, makesingular, fruit_from_name, an,
          armor_simple_name, the_unique_obj, cxname } from './objnam.js';
 import { data_base } from './data_base.js';
-import { is_weptool, Is_container, is_flammable } from './mkobj.js';
+import { is_flammable } from './mkobj.js';
 import * as M from './monsters.js';
 import { ART_EYES_OF_THE_OVERWORLD } from './artilist.js';
 import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
@@ -75,42 +77,6 @@ function ia_not_ported(what) {
     throw new Error(`itemactions: ${what} is not ported yet`);
 }
 
-/* C ref: obj.h is_ammo(), is_missile(), is_launcher(), matching_launcher(),
-   ammo_and_launcher(), bimanual(), is_blade(), is_wet_towel(),
-   is_graystone() */
-function is_ammo(otmp) {
-    return ((otmp.oclass === O.WEAPON_CLASS || otmp.oclass === O.GEM_CLASS)
-            && objects[otmp.otyp].oc_skill >= -P_CROSSBOW
-            && objects[otmp.otyp].oc_skill <= -P_BOW);
-}
-function is_missile(otmp) {
-    return ((otmp.oclass === O.WEAPON_CLASS || otmp.oclass === O.TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill >= -24 /* -P_BOOMERANG */
-            && objects[otmp.otyp].oc_skill <= -23 /* -P_DART */);
-}
-function is_launcher(otmp) {
-    return (otmp.oclass === O.WEAPON_CLASS
-            && objects[otmp.otyp].oc_skill >= P_BOW
-            && objects[otmp.otyp].oc_skill <= P_CROSSBOW);
-}
-function matching_launcher(a, l) {
-    return (l && objects[a.otyp].oc_skill === -objects[l.otyp].oc_skill);
-}
-function ammo_and_launcher(a, l) { return is_ammo(a) && !!matching_launcher(a, l); }
-function bimanual(otmp) {
-    return ((otmp.oclass === O.WEAPON_CLASS || otmp.oclass === O.TOOL_CLASS)
-            && objects[otmp.otyp].oc_bimanual);
-}
-function is_blade(otmp) {
-    return (otmp.oclass === O.WEAPON_CLASS
-            && objects[otmp.otyp].oc_skill >= P_DAGGER
-            && objects[otmp.otyp].oc_skill <= P_SABER);
-}
-function is_wet_towel(o) { return o.otyp === O.TOWEL && o.spe > 0; }
-export function is_graystone(obj) {
-    return (obj.otyp === O.LUCKSTONE || obj.otyp === O.LOADSTONE
-            || obj.otyp === O.FLINT || obj.otyp === O.TOUCHSTONE);
-}
 /* C ref: you.h Blind etc. are not needed here */
 
 function hero_data() {

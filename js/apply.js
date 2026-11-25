@@ -10,10 +10,10 @@ import { game } from './gstate.js';
 import { You } from './display.js';
 import { getobj } from './invent.js';
 import { check_capacity } from './hack.js';
-import { is_pole, retouch_object } from './wield.js';
+import { retouch_object } from './wield.js';
 import { pick_lock } from './lock.js';
 import * as O from './objects.js';
-import { is_graystone, thesimpleoname } from './iactions.js';
+import { thesimpleoname } from './iactions.js';
 import { feel_newsym } from './display.js';
 import { discover_object } from './o_init.js';
 import { MAX_SPELL_STUDY, DEAF, HAND, SDOOR, SCORR, CORR, ARTICLE_A,
@@ -44,7 +44,8 @@ import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
 import { objects, TOOL_CLASS, WAND_CLASS, SPBOOK_CLASS, COIN_CLASS,
          WEAPON_CLASS, POTION_CLASS, BULLWHIP, POT_OIL, CREAM_PIE,
          EUCALYPTUS_LEAF, LUMP_OF_ROYAL_JELLY, BANANA, TOUCHSTONE, PICK_AXE,
-         DWARVISH_MATTOCK, OIL_LAMP, MAGIC_LAMP, BRASS_LANTERN } from './objects.js';
+         DWARVISH_MATTOCK, OIL_LAMP, MAGIC_LAMP, BRASS_LANTERN, is_pick,
+         is_axe, is_graystone, is_pole } from './objects.js';
 import { M1_NOHANDS, M1_NOLIMBS, M1_SLITHY, M2_ROCKTHROW } from './monsters.js';
 import { pline, You_cant, There } from './display.js';
 import { near_capacity, nomul } from './hack.js';
@@ -172,15 +173,6 @@ import { use_pick_axe } from './dig.js';
 import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
 import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
          M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
-
-/* C ref: obj.h is_pick(), is_axe() */
-function is_pick(otmp) {
-    return otmp.otyp === PICK_AXE || otmp.otyp === DWARVISH_MATTOCK;
-}
-function is_axe(otmp) {
-    return ((otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-            && objects[otmp.otyp].oc_skill === P_AXE);
-}
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message

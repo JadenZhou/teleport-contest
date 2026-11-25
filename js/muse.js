@@ -35,8 +35,9 @@ import { hit, miss, exclam, buzz, dobuzz, bhito,
          find_drawbridge, resist_async } from './zap.js';
 import { TELL } from './const.js';
 import { m_throw } from './mthrowu.js';
-import { POTION_CLASS, WAND_CLASS, WAN_OPENING, WAN_LOCKING,
-         WAN_CANCELLATION, SPE_CANCELLATION } from './objects.js';
+import { POTION_CLASS, WAND_CLASS, WAN_OPENING, WAN_LOCKING, WAN_CANCELLATION,
+         SPE_CANCELLATION, Is_mbag, SchroedingersBox, Is_dragon_scales,
+         Is_container, bimanual } from './objects.js';
 import { BOLT_LIM, G_GONE, ANTIMAGIC, HALF_SPDAM, KILLED_BY_AN,
          DRAWBRIDGE_UP, SDOOR, D_LOCKED, D_CLOSED, IS_DOOR,
          ZAP_POS } from './const.js';
@@ -84,7 +85,7 @@ import { is_ice } from './dig.js';
 import { unblock_point, recalc_block_point } from './vision.js';
 import { dog_nutrition, can_carry } from './dogmove.js';
 import { canletgo, dropy } from './do.js';
-import { welded, bimanual } from './wield.js';
+import { welded } from './wield.js';
 import { body_part } from './insight.js';
 import { learnwand } from './zap.js';
 import { migrate_to_level, mon_has_amulet } from './dog.js';
@@ -149,7 +150,6 @@ import { BOULDER, BUGLE, UNICORN_HORN, CORPSE, TIN, POT_FULL_HEALING,
 import { TIN_OPENER, WEAPON_CLASS, objects } from './objects.js';
 import { P_DAGGER, P_KNIFE } from './const.js';
 import { mwelded } from './weapon.js';
-import { Is_container } from './mkobj.js';
 import { STAIRS, LADDER, TELEP_TRAP, WEB, BEAR_TRAP, is_hole, is_pit,
          M_SEEN_REFL, M_SEEN_MAGR, M_SEEN_SLEEP, M_SEEN_FIRE, M_SEEN_COLD,
          M_SEEN_ELEC, M_SEEN_ACID, POLY_TRAP, MFAST, NON_PM,
@@ -224,15 +224,9 @@ function strsubst(bp, orig, replacement) {
     const i = bp.indexOf(orig);
     return (i < 0) ? bp : bp.slice(0, i) + replacement + bp.slice(i + orig.length);
 }
-/* C ref: obj.h Has_contents(), Is_mbag(), SchroedingersBox() */
+/* C ref: obj.h Has_contents() */
 function Has_contents(o) { return !!(o.cobj && o.cobj.length); }
-function Is_mbag(o) { return o.otyp === BAG_OF_HOLDING || o.otyp === BAG_OF_TRICKS; }
-function SchroedingersBox(o) { return o.otyp === LARGE_BOX && o.spe === 1; }
-/* C ref: obj.h Is_dragon_scales(), Is_dragon_mail(), Dragon_scales_to_pm(),
-   Dragon_mail_to_pm() */
-function Is_dragon_scales(o) {
-    return o.otyp >= GRAY_DRAGON_SCALES && o.otyp <= YELLOW_DRAGON_SCALES;
-}
+/* C ref: obj.h Is_dragon_mail(), Dragon_scales_to_pm(), Dragon_mail_to_pm() */
 function Is_dragon_mail(o) {
     return o.otyp >= GRAY_DRAGON_SCALE_MAIL && o.otyp <= YELLOW_DRAGON_SCALE_MAIL;
 }

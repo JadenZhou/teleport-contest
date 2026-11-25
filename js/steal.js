@@ -42,7 +42,7 @@ import { armor_simple_name, yname, makeplural } from './objnam.js';
 import { s_suffix } from './hacklib.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { monflee } from './monmove.js';
-import { welded, bimanual } from './wield.js';
+import { welded } from './wield.js';
 import { can_carry } from './dogmove.js';
 import { subfrombill, shop_keeper, mbodypart, find_objowner } from './shk.js';
 import { encumber_msg } from './pickup.js';
@@ -73,6 +73,7 @@ import { end_burn } from './timeout.js';
 import { costly_spot } from './shk.js';
 import { in_rooms } from './hack.js';
 import { SHOPBASE } from './const.js';
+import { bimanual } from './objects.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;

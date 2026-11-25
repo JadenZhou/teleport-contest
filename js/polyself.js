@@ -112,6 +112,7 @@ import { DIED as DIED_PS } from './const.js';
 import { arti_light_radius } from './light.js';
 import { maybe_adjust_light } from './mkobj.js';
 import { artifact_light } from './worn.js';
+import { is_flimsy, is_sword } from './objects.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -298,17 +299,7 @@ export function lays_eggs(ptr) { return (ptr.mflags1 & M.M1_OVIPAROUS) !== 0; }
 /* creature will slide out of armor */
 /* creature will break out of armor */
 export function has_horns(ptr) { return num_horns(ptr) > 0; }
-/* C ref: obj.h is_flimsy(), is_sword(), WrappingAllowed(),
-   Is_dragon_armor() */
-function is_flimsy(otmp) {
-    return O.objects[otmp.otyp].oc_material <= O.LEATHER
-        || otmp.otyp === O.RUBBER_HOSE;
-}
-function is_sword(otmp) {
-    return otmp.oclass === O.WEAPON_CLASS
-        && O.objects[otmp.otyp].oc_skill >= P_SHORT_SWORD
-        && O.objects[otmp.otyp].oc_skill <= P_SABER;
-}
+/* C ref: obj.h WrappingAllowed(), Is_dragon_armor() */
 function WrappingAllowed(mptr) {
     return humanoid(mptr) && mptr.msize >= M.MZ_SMALL
         && mptr.msize <= M.MZ_HUGE

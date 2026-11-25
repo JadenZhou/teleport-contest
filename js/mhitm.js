@@ -43,7 +43,7 @@ import { find_mac, which_armor } from './worn.js';
 import { mon_wield_item, possibly_unwield, hitval, dmgval } from './weapon.js';
 import { mswings_verb, mhis, could_seduce, mtrapped_in_pit } from './mhitu.js';
 import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL,
-         WEAPON_CLASS, TOOL_CLASS } from './objects.js';
+         WEAPON_CLASS, TOOL_CLASS, is_pole } from './objects.js';
 import { permapoisoned } from './mkobj.js';
 import { xname } from './objnam.js';
 import { ART_SNICKERSNEE } from './artilist.js';
@@ -120,13 +120,6 @@ import { acid_damage } from './trap.js';
 import { drain_item } from './zap.js';
 import { hliquid } from './potion.js';
 
-/* C ref: obj.h is_pole() */
-function is_pole(otmp) {
-    return (otmp.oclass === WEAPON_CLASS || otmp.oclass === TOOL_CLASS)
-           && (objects[otmp.otyp].oc_skill === P_POLEARMS
-               || objects[otmp.otyp].oc_skill === P_LANCE
-               || otmp.oartifact === ART_SNICKERSNEE);
-}
 // C ref: monst.h mon_offmap()
 function mon_offmap(mon) {
     return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
