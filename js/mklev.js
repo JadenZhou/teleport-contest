@@ -53,8 +53,9 @@ import {
 import {
     SPBOOK_no_NOVEL, next_ident, blessorcurse, curse, mksobj, mksobj_at,
     mkobj, mkobj_at, mkgold, mkcorpstat, rndmonnum, set_corpsenm,
-    CORPSTAT_INIT, weight, add_to_container, mk_tt_object,
+    CORPSTAT_INIT, weight, add_to_container, mk_tt_object, dealloc_obj,
 } from './mkobj.js';
+import { breaktest } from './dothrow.js';
 import { mkclass, makemon, m_at, sobj_at, set_malign, mongets, ndemon, is_pool,
          is_lava, set_mimic_sym } from './makemon.js';
 import { in_rooms } from './hack.js';
@@ -379,8 +380,6 @@ function place_object(otmp, x, y) {
     if (!game.level.objects) game.level.objects = [];
     game.level.objects.unshift(otmp);
 }
-// C ref: mkobj.c dealloc_obj() -- nothing to free in JS
-function dealloc_obj(otmp) { /* garbage collected */ }
 /* weight(), add_to_container(): mkobj.js; sobj_at(): makemon.js;
    add_to_buried(): dig.js */
 /* mazexy(): mkmaze.js */
@@ -2732,9 +2731,15 @@ function mktrap_victim(ttmp) {
            (less useful to use, and encourage pets to avoid the trap) */
         otmp = mkobj(poss_class, false);
         curse(otmp);
-        /* for mktrap_victim(), PIT is actually an exploded LANDMINE;
-           breaktest() is not ported, and landmines need difficulty 6 */
-        place_object(otmp, x, y);
+        /* for mktrap_victim(), PIT is actually an exploded LANDMINE */
+        if (ttmp.ttyp === PIT && breaktest(otmp)) {
+            /* landmine: if fragile object has been created, destroy it;
+               don't worry about non-empty containers--they aren't
+               breakable--nor about breakable contents of such */
+            dealloc_obj(otmp);
+        } else {
+            place_object(otmp, x, y);
+        }
 
         /* 20% chance of placing an additional item, recursively */
     } while (!rn2(5));
