@@ -25,6 +25,11 @@ import { breaktest } from './dothrow.js';
 import { change_luck } from './attrib.js';
 import { obj_extract_self, add_to_migration } from './mkobj.js';
 import { obfree } from './invent.js';
+import { discard_minvent } from './steal.js';
+import { emits_light } from './mondata.js';
+import { del_light_source } from './light.js';
+import { monst_to_any } from './timeout.js';
+import { LS_MONSTER } from './const.js';
 import { LOW_PM as LOW_PM_do, NUMMONS as NUMMONS_do } from './monsters.js';
 import {
     pline, pline_The, docrt, flush_screen
@@ -32,6 +37,9 @@ import {
 import { bones_include_name } from './bones.js';
 import { You_hear } from './sounds.js';
 import { sellobj } from './shk.js';
+import { stolen_value, costly_spot, picked_container } from './shk.js';
+import { in_rooms } from './hack.js';
+import { SHOPBASE } from './const.js';
 import { olfaction } from './mondata.js';
 import { ACH_HELL, ACH_MINE, ACH_SOKO, ACH_BGRM } from './const.js';
 import { Is_rogue_level, ROGUESET, PRIMARYSET } from './const.js';
@@ -499,28 +507,66 @@ function free_luathemes(theme_group) {
 
 // C ref: dog.c discard_migrations()
 function discard_migrations() {
-    let mtmp;
+    let mtmp, mprev;
+    let otmp, oprev;
     const dest = { dnum: 0, dlevel: 0 };
 
-    for (mtmp = game.migrating_mons; mtmp; mtmp = mtmp.nmon) {
+    /* mprev is null for &gm.migrating_mons, else the monster whose nmon
+       links to the current one */
+    for (mprev = null; (mtmp = (mprev ? mprev.nmon : game.migrating_mons)) != null; ) {
         dest.dnum = mtmp.mux;
         dest.dlevel = mtmp.muy;
         /* the Wizard is kept regardless of location so that he is
            ready to be brought back; nothing should be scheduled to
            migrate to the endgame but if we find such, we'll keep it */
         if (mtmp.iswiz || In_endgame(dest)) {
-            continue; /* keep mtmp on migrating_mons */
+            mprev = mtmp; /* keep mtmp on migrating_mons */
         } else {
-            /* remove mtmp from migrating_mons; discard_minvent(mtmp, FALSE),
-               del_light_source(), dealloc_monst() */
-            throw new Error('discard_migrations(): discarding a migrating monster not ported yet');
+            /* remove mtmp from migrating_mons */
+            if (mprev)
+                mprev.nmon = mtmp.nmon || null;
+            else
+                game.migrating_mons = mtmp.nmon || null;
+            mtmp.nmon = null;
+            discard_minvent(mtmp, false);
+            /* bypass mongone() and its call to m_detach() plus dmonsfree() */
+            if (emits_light(mtmp.data))
+                del_light_source(LS_MONSTER, monst_to_any(mtmp));
+            /* dealloc_monst(mtmp): garbage collected */
         }
     }
 
-    /* objects get similar treatment (JS has no migrating objects yet:
-       obj_delivery() stops explicitly on them) */
-    if (game.migrating_objs)
-        throw new Error('discard_migrations(): migrating objects not ported yet');
+    /* objects get similar treatment */
+    for (oprev = null; (otmp = (oprev ? oprev.nobj : game.migrating_objs)) != null; ) {
+        dest.dnum = otmp.ox;
+        dest.dlevel = otmp.oy;
+        /* there is no special case like the Wizard (certainly not the
+           Amulet; the hero has to be carrying it to enter the endgame
+           which triggers the call to this routine); again we don't
+           expect any objects to be migrating to the endgame but will
+           keep any we find so that they could be delivered */
+        if (In_endgame(dest)) {
+            oprev = otmp; /* keep otmp on migrating_objs */
+        } else {
+            /* bypass obj_extract_self() */
+            /* remove otmp from migrating_objs */
+            if (oprev)
+                oprev.nobj = otmp.nobj || null;
+            else
+                game.migrating_objs = otmp.nobj || null;
+            otmp.nobj = null;
+            otmp.where = 'OBJ_FREE';
+            otmp.owornmask = 0; /* overloaded for destination usage;
+                                 * obfree() will complain if nonzero */
+            /*
+             * obfree(otmp,)
+             *  -> dealloc_obj(otmp)
+             *      -> obj_stop_timers(otmp)
+             *      -> del_light_source(LS_OBJECT, obj_to_any(otmp))
+             */
+            obfree(otmp, null); /* releases any contents too */
+        }
+    }
 }
 
 // C ref: do.c goto_level()
@@ -1509,10 +1555,25 @@ export async function ship_object(otmp, x, y, shop_floor_obj) {
     }
 
     if (unpaid || shop_floor_obj) {
-        /* stolen_value(); then picked_container() for a container and
-           otmp->no_charge = 0 */
-        void container;
-        throw new Error('ship_object(): stolen_value() not ported yet');
+        const u = game.u;
+        if (unpaid) {
+            await stolen_value(otmp, u.ux, u.uy, true, false);
+        } else {
+            const ox = otmp.ox;
+            const oy = otmp.oy;
+            /* strchr(u.urooms, *in_rooms(...)) also matches the terminator */
+            const r0 = in_rooms(ox, oy, SHOPBASE).charAt(0);
+            await stolen_value(
+                otmp, ox, oy,
+                (costly_spot(u.ux, u.uy)
+                 && (r0 === '' || (u.urooms || '').includes(r0))),
+                false);
+        }
+        /* set otmp->no_charge to 0 */
+        if (container)
+            picked_container(otmp); /* happens to do the right thing */
+        if (otmp.oclass !== O.COIN_CLASS)
+            otmp.no_charge = 0;
     }
 
     if (otmp.owornmask)

@@ -61,6 +61,7 @@ import {
 } from './const.js';
 import { M1_NOHEAD } from './monsters.js';
 import { mongone } from './mon.js';
+import { angry_guards } from './mon.js';
 import { S_KOP, PM_WATCHMAN, PM_WATCH_CAPTAIN, PM_TOURIST, PM_ELF,
          G_UNIQ } from './monsters.js';
 import {
@@ -3901,6 +3902,158 @@ export function billable(shkpp, obj, roomno, reset_nocharge) {
         }
     }
     return shkp ? true : false;
+}
+
+// C ref: shk.c stolen_container()
+async function stolen_container(obj, shkp, price, ininv) {
+    let bp;
+    let billamt;
+
+    /* the price of contained objects; caller handles top container */
+    for (const otmp of (obj.cobj || []).slice()) {
+        if (otmp.oclass === COIN_CLASS)
+            continue;
+        billamt = 0;
+        const shkpp = { v: shkp };
+        const ok = billable(shkpp, otmp, shkp.mextra.eshk.shoproom, true);
+        shkp = shkpp.v;
+        if (!ok) {
+            /* billable() returns false for objects already on bill */
+            if ((bp = onbill(otmp, shkp, false)) == null)
+                continue;
+            /* this assumes that we're being called by stolen_value()
+               (or by a recursive call to self on behalf of it) where
+               the cost of this object is about to be added to shop
+               debt in place of having it remain on the current bill */
+            billamt = bp.bquan * bp.price;
+            sub_one_frombill(otmp, shkp); /* avoid double billing */
+        }
+
+        if (billamt)
+            price += billamt;
+        else if (ininv ? otmp.unpaid : !otmp.no_charge)
+            price += get_pricing_units(otmp) * get_cost(otmp, shkp);
+
+        if (otmp.cobj && otmp.cobj.length) /* Has_contents(otmp) */
+            price = await stolen_container(otmp, shkp, price, ininv);
+    }
+
+    return price;
+}
+
+// C ref: shk.c stolen_value()
+export async function stolen_value(obj, x, y, peaceful, silent) {
+    let value = 0, gvalue = 0, billamt = 0;
+    let roomno;
+    let bp = null;
+    let shkp;
+    let was_unpaid;
+    let c_count = 0, u_count = 0;
+
+    if ((shkp = find_objowner(obj, x, y)) != null) {
+        roomno = shkp.mextra.eshk.shoproom;
+    } else {
+        roomno = in_rooms(x, y, SHOPBASE).charCodeAt(0) || 0;
+    }
+
+    /* gather information for message(s) prior to manipulating bill */
+    was_unpaid = obj.unpaid ? true : false;
+    if (obj.cobj && obj.cobj.length) { /* Has_contents(obj) */
+        c_count = count_contents(obj, true, false, true, false);
+        u_count = count_contents(obj, true, false, false, false);
+    }
+
+    shkp = null;
+    const shkpp = { v: shkp };
+    const ok = billable(shkpp, obj, roomno, true);
+    shkp = shkpp.v;
+    if (!ok) {
+        /* things already on the bill yield a not-billable result, so
+           we need to check bill before deciding that shk doesn't care */
+        if ((bp = onbill(obj, shkp, false)) != null) {
+            /* shk does care; take obj off bill to avoid double billing */
+            billamt = bp.bquan * bp.price;
+            sub_one_frombill(obj, shkp);
+        }
+        if (!bp && !u_count)
+            return 0;
+    }
+
+    if (obj.oclass === COIN_CLASS) {
+        gvalue += obj.quan;
+    } else {
+        if (billamt)
+            value += billamt;
+        else if (!obj.no_charge)
+            value += get_pricing_units(obj) * get_cost(obj, shkp);
+
+        if (obj.cobj && obj.cobj.length) { /* Has_contents(obj) */
+            const ininv =
+                (obj.where === 'OBJ_INVENT' || obj.where === 'OBJ_FREE');
+
+            value += await stolen_container(obj, shkp, 0, ininv);
+            if (!ininv)
+                gvalue += contained_gold(obj, true);
+        }
+    }
+
+    if (gvalue + value === 0)
+        return 0;
+
+    value += gvalue;
+
+    const eshkp = shkp.mextra.eshk;
+    if (peaceful) {
+        const credit_use = !!eshkp.credit;
+
+        value = await check_credit(value, shkp);
+        /* 'peaceful' affects general treatment, but doesn't affect
+         * the fact that other code expects that all charges after the
+         * shopkeeper is angry are included in robbed, not debit */
+        if (ANGRY(shkp))
+            eshkp.robbed += value;
+        else
+            eshkp.debit += value;
+
+        if (!silent) {
+            let buf;
+            let still = "";
+
+            if (credit_use) {
+                if (eshkp.credit) {
+                    await You(`have ${eshkp.credit} ${
+                        currency(eshkp.credit)} credit remaining.`);
+                    return value;
+                } else if (!value) {
+                    await You("have no credit remaining.");
+                    return 0;
+                }
+                still = "still ";
+            }
+            buf = `${still}owe ${shkname(shkp)} ${value} ${currency(value)}`;
+            if (u_count) /* u_count > 0 implies Has_contents(obj) */
+                buf += ` for ${was_unpaid ? "it and " : ""}${
+                    (c_count > u_count) ? "some of " : ""}its contents`;
+            else if (obj.oclass !== COIN_CLASS)
+                buf += ` for ${(obj.quan > 1) ? "them" : "it"}`;
+
+            await You(`${buf}!`); /* "You owe <shk> N zorkmids for it!" */
+        }
+    } else {
+        eshkp.robbed += value;
+
+        if (!silent) {
+            if (canseemon(shkp)) {
+                await Norep_sk(`${Shknam(shkp)} booms: "${
+                    game.plname}, you are a thief!"`);
+            } else if (!Deaf()) {
+                await Norep_sk('You hear a scream, "Thief!"'); /* Deaf-aware */
+            }
+        }
+        hot_pursuit(shkp);
+        await angry_guards(false);
+    }
+    return value;
 }
 
 const and_its_contents = " and its contents";

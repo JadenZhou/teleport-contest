@@ -3,7 +3,7 @@
 //        xprname()
 
 import { fingers_or_gloves } from './do_wear.js';
-import { addtobill } from './shk.js';
+import { addtobill, stolen_value } from './shk.js';
 import { in_rooms } from './hack.js';
 import { hideunder_async } from './makemon.js';
 import { get_count, GC_SAVEHIST } from './cmd.js';
@@ -2551,7 +2551,7 @@ export async function useupf(obj, numused) {
         if (r0 === '' || (game.u.urooms || '').includes(r0))
             await addtobill(otmp, false, false, false);
         else
-            throw new Error('useupf(): stolen_value() not ported yet');
+            await stolen_value(otmp, otmp.ox, otmp.oy, false, false);
     }
     delobj(otmp);
     if (at_u && game.u.uundetected

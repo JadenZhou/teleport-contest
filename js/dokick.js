@@ -47,6 +47,11 @@ import { Has_contents, WEB, STATUE_TRAP, is_pit, STONE_RES, FUMBLING, ZAP_POS, L
 import { BAG_OF_HOLDING, BAG_OF_TRICKS, objects, GLASS, GEM_CLASS, EGG, MIRROR, CORPSE, COIN_CLASS, LARGE_BOX, CHEST } from './objects.js';
 import { shop_keeper, costly_spot, onshopbill, costly_adjacent,
          find_objowner } from './shk.js';
+import { stolen_value, picked_container, hot_pursuit } from './shk.js';
+import { currency } from './insight.js';
+import { Shknam, shkname } from './shknam.js';
+import { angry_guards } from './mon.js';
+import { PL_NSIZ } from './const.js';
 import { obj_resists } from './dogmove.js';
 import { change_luck } from './attrib.js';
 import { You_hear } from './sounds.js';
@@ -1208,8 +1213,18 @@ export async function impact_drop(
         obj_extract_self(obj);
 
         if (costly) {
-            /* price += stolen_value(...); picked_container(); no_charge */
-            throw new Error('impact_drop(): stolen_value() not ported yet');
+            const u = game.u;
+            /* strchr(u.urooms, *in_rooms(...)) also matches the terminator */
+            const r0 = in_rooms(x, y, SHOPBASE).charAt(0);
+            price += await stolen_value(obj, x, y,
+                                        (costly_spot(u.ux, u.uy)
+                                         && (r0 === '' || (u.urooms || '').includes(r0))),
+                                        true);
+            /* set obj->no_charge to 0 */
+            if (obj.cobj && obj.cobj.length) /* Has_contents(obj) */
+                picked_container(obj); /* does the right thing */
+            if (obj.oclass !== COIN_CLASS)
+                obj.no_charge = 0;
         }
 
         add_to_migration(obj);
@@ -1236,8 +1251,27 @@ export async function impact_drop(
     }
 
     if (costly && shkp && price) {
-        /* (unreachable until stolen_value() is ported) */
-        void debit; void robbed; void angry;
+        const eshkp = shkp.mextra.eshk;
+        if (eshkp.robbed > robbed) {
+            await You(`removed ${price} ${currency(price)} worth of goods!`);
+            if (cansee(shkp.mx, shkp.my)) {
+                if (!eshkp.customer)
+                    eshkp.customer = (game.plname || '').slice(0, PL_NSIZ);
+                if (angry)
+                    await pline(`${Shknam(shkp)} is infuriated!`);
+                else
+                    await pline(`"${game.plname}, you are a thief!"`);
+            } else
+                await You_hear('a scream, "Thief!"');
+            hot_pursuit(shkp);
+            await angry_guards(false);
+            return;
+        }
+        if (eshkp.debit > debit) {
+            const amt = (eshkp.debit - debit);
+            await You(`owe ${shkname(shkp)} ${amt} ${
+                currency(amt)} for goods lost.`);
+        }
     }
 }
 
