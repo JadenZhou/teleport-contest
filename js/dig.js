@@ -62,6 +62,12 @@ import { HEAVY_IRON_BALL } from './objects.js';
 import { dist2 } from './hacklib.js';
 import { reset_utrap } from './trap.js';
 import { del_engr_at } from './engrave.js';
+import { shop_keeper, costly_spot, stolen_value } from './shk.js';
+import { shkname } from './shknam.js';
+import { currency } from './insight.js';
+import { maybe_unhide_at } from './mon.js';
+import { You } from './display.js';
+import { COIN_CLASS } from './objects.js';
 import { punish } from './read.js';
 import { obj_extract_self as mkobj_obj_extract_self } from './mkobj.js';
 import { ROWNO as ROWNO_DG, LAVAPOOL as LAVAPOOL_DG, MOAT as MOAT_DG,
@@ -237,6 +243,37 @@ export function bury_an_obj(otmp, dealloced) {
     }
     add_to_buried(otmp);
     return otmp2;
+}
+
+// C ref: dig.c bury_objs()
+export async function bury_objs(x, y) {
+    let otmp, otmp2, shkp;
+    let loss = 0;
+    let costly;
+
+    costly = !!((shkp = shop_keeper(in_rooms(x, y, SHOPBASE).charCodeAt(0) || 0))
+                && costly_spot(x, y));
+
+    /* for (otmp = svl.level.objects[x][y]; otmp; otmp = otmp2) */
+    for (otmp = (game.level.objects || []).find(
+             o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR') || null;
+         otmp; otmp = otmp2) {
+        if (costly && !game.context.mon_moving) {
+            loss += await stolen_value(otmp, x, y, !!shkp.mpeaceful, true);
+            if (otmp.oclass !== COIN_CLASS)
+                otmp.no_charge = 1;
+        }
+        otmp2 = bury_an_obj(otmp, null);
+    }
+
+    /* don't expect any engravings here, but just in case */
+    del_engr_at(x, y);
+    newsym(x, y);
+    maybe_unhide_at(x, y);
+
+    if (costly && loss) {
+        await You(`owe ${shkname(shkp)} ${loss} ${currency(loss)} for burying merchandise.`);
+    }
 }
 
 // C ref: dig.c rot_organic()

@@ -140,6 +140,23 @@ import { use_pick_axe2 } from './dig.js';
 import { WT_SPLASH_THRESHOLD as WT_SPLASH_THRESHOLD_DO, ER_DESTROYED as ER_DESTROYED_DO,
          DEAF as DEAF_DO } from './const.js';
 import { upstart } from './hacklib.js';
+import { is_pool_or_lava, impossible } from './hack.js';
+import { waterbody_name } from './pager.js';
+import { IS_WATERWALL, DRAWBRIDGE_UP, DB_UNDER, DB_FLOOR, next2u } from './const.js';
+import { recalc_block_point } from './vision.js';
+import { DEADMONSTER, mondied, wake_nearto } from './mon.js';
+import { m_in_air } from './monmove.js';
+import { delfloortrap, set_uinwater } from './trap.js';
+import { bury_objs } from './dig.js';
+import { y_monnam } from './do_name.js';
+import { vtense, xname } from './objnam.js';
+import { the } from './iactions.js';
+import { There } from './display.js';
+import { hliquid, burn_away_slime } from './potion.js';
+import { Fire_resistance } from './youprop.js';
+import { useupf } from './invent.js';
+import { dist2 } from './hacklib.js';
+import { tty_yn_function } from './wintty.js';
 
 /* C ref: obj.h is_pick() */
 function is_pick(otmp) {
@@ -286,7 +303,9 @@ export async function doup() {
     }
     if (ledger_no(u.uz) === 1) {
         /* iflags.debug_fuzzer isn't ported */
-        throw new Error('doup(): climbing out of the dungeon (y_n prompt) not ported yet');
+        if (await tty_yn_function("Beware, there will be no return!  Still climb?",
+                                  "yn", 'n') !== 'y') /* y_n() */
+            return ECMD_OK;
     }
     if (!await next_to_u()) {
         await You("are held back by your pet!");
@@ -1067,6 +1086,114 @@ async function temperature_change_msg(prev_temperature) {
 // C ref: insight.c record_achievement() (ported in insight.js)
 export { record_achievement };
 
+// C ref: do.c boulder_hits_pool()
+/* Called when a boulder is dropped, thrown, or pushed.  If it ends up
+ * in a pool, it either fills the pool up or sinks away.  In either case,
+ * it's gone for good...  If the destination is not a pool, returns FALSE.
+ */
+export async function boulder_hits_pool(
+    otmp, /* the object falling into a pool or water or lava */
+    rx, ry, /* coordinates of the pool */
+    pushing) { /* for a boulder, whether or not it is being pushed */
+    const u = game.u;
+
+    if (!otmp || otmp.otyp !== O.BOULDER) {
+        impossible("Not a boulder?");
+    } else if (is_pool_or_lava(rx, ry)) {
+        const lava = is_lava(rx, ry);
+        let fills_up;
+        const what = waterbody_name(rx, ry);
+        const lev = game.level.at(rx, ry);
+        const ltyp = lev.typ;
+        const chance = rn2(10); /* water: 90%; lava: 10% */
+        let mtmp;
+
+        /* chance for boulder to fill pool:  Plane of Water==0%,
+           lava 10%, wall of water==50%, other water==90% */
+        fills_up = Is_waterlevel(u.uz) ? false
+                   : IS_WATERWALL(ltyp) ? (chance < 5)
+                     : lava ? (chance === 0) : (chance !== 0);
+
+        if (fills_up) {
+            const ttmp = t_at(rx, ry);
+
+            if (ltyp === DRAWBRIDGE_UP) {
+                lev.drawbridgemask &= ~DB_UNDER; /* clear lava */
+                lev.drawbridgemask |= DB_FLOOR;
+            } else {
+                lev.typ = ROOM, lev.flags = 0;
+                recalc_block_point(rx, ry);
+            }
+            /* 5.0: normally DEADMONSTER() is used when traversing the fmon
+               list--dead monsters usually aren't still at specific map
+               locations; however, if ice melts causing a giant to drown,
+               that giant would still be on the map when it drops inventory;
+               if it was carrying a boulder which now fills the pool, 'mtmp'
+               will be dead here; killing it again would yield impossible
+               "dmonsfree: N removed doesn't match N+1 pending" when other
+               monsters have finished their current turn */
+            if ((mtmp = m_at(rx, ry)) && !DEADMONSTER(mtmp)
+                && !m_in_air(mtmp))
+                await mondied(mtmp);
+
+            if (ttmp)
+                await delfloortrap(ttmp);
+            await bury_objs(rx, ry);
+
+            newsym(rx, ry);
+            if (pushing) {
+                let whobuf = "you";
+                if (u.usteed)
+                    whobuf = y_monnam(u.usteed);
+                await pline(`${upstart(whobuf)} ${vtense(whobuf, "push")}`
+                            + ` ${the(xname(otmp))} into the ${what}.`);
+                if (game.flags.verbose && !Blind())
+                    await pline("Now you can cross it!");
+                /* no splashing in this case */
+            }
+        }
+        if (!fills_up || !pushing) { /* splashing occurs */
+            if (!u.uinwater) {
+                if (pushing ? !Blind() : cansee(rx, ry)) {
+                    await There(`is a large splash as ${the(xname(otmp))}`
+                                + ` ${fills_up ? "fills" : "falls into"} the ${what}.`);
+                } else if (!Deaf()) {
+                    /* Soundeffect(lava ? se_sizzling : se_splash, 100) */
+                    await You_hear(`a${lava ? " sizzling" : ""} splash.`);
+                }
+                await wake_nearto(rx, ry, 40);
+            }
+
+            if (fills_up && u.uinwater && dist2(rx, ry, u.ux, u.uy) === 0) {
+                /* distu(rx, ry) == 0 */
+                await set_uinwater(0); /* u.uinwater = 0 */
+                await docrt();
+                game.vision_full_recalc = 1;
+                await You("find yourself on dry land again!");
+            } else if (lava && next2u(rx, ry)) {
+                let dmg;
+
+                await You(`are hit by molten ${hliquid("lava")}${Fire_resistance() ? '.' : '!'}`);
+                await burn_away_slime();
+                dmg = d((Fire_resistance() ? 1 : 3), 6);
+                await losehp(Maybe_Half_Phys(dmg), /* lava damage */
+                             "molten lava", KILLED_BY);
+            } else if (!fills_up && game.flags.verbose
+                       && (pushing ? !Blind() : cansee(rx, ry))) {
+                await pline("It sinks without a trace!");
+            }
+        }
+
+        /* boulder is now gone */
+        if (pushing)
+            await useupf(otmp, otmp.quan);
+        else
+            obfree(otmp, null);
+        return true;
+    }
+    return false;
+}
+
 // C ref: do.c flooreffects() -- only the plain case, where nothing
 // happens to the object, is ported; boulders filling pits or pools, lava
 // and water damage, objects tumbling into the hero's pit, globs, altars
@@ -1092,8 +1219,8 @@ export async function flooreffects(obj, /* the object landing on the floor */
     const save_bhitpos = g.bhitpos;
     g.bhitpos = { x, y };
 
-    if (obj.otyp === O.BOULDER && (is_pool(x, y) || is_lava(x, y))) {
-        throw new Error('flooreffects(): boulder_hits_pool() not ported yet');
+    if (obj.otyp === O.BOULDER && await boulder_hits_pool(obj, x, y, false)) {
+        res = true;
     } else if (obj.otyp === O.BOULDER && (t = t_at(x, y)) !== null && t
                && (is_pit(t.ttyp) || is_hole(t.ttyp))) {
         throw new Error('flooreffects(): boulder filling a pit not ported yet');

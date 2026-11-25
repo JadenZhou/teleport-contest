@@ -69,7 +69,7 @@ import { carrying } from './invent.js';
 import { WAN_DIGGING } from './objects.js';
 import { u_at, Is_rogue_level, Upolyd } from './const.js';
 import { fall_asleep } from './timeout.js';
-import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap } from './trap.js';
+import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap, sokoban_guilt } from './trap.js';
 import { TT_BEARTRAP, TT_PIT, TT_WEB, TT_LAVA, TT_INFLOOR, TT_BURIEDBALL, TT_NONE } from './const.js';
 import { ART_STING } from './artilist.js';
 import { buried_ball, buried_ball_to_punishment } from './dig.js';
@@ -85,7 +85,7 @@ import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { u_on_newpos } from './mklev.js';
 import { room_discovered } from './dungeon.js';
 import { inside_room } from './sp_lev.js';
-import { record_achievement } from './do.js';
+import { record_achievement, boulder_hits_pool } from './do.js';
 import { ACH_TOWN } from './const.js';
 import { RUN_TPORT, RUN_LEAP } from './const.js';
 import { flush_screen as flush_screen_hk } from './display.js';
@@ -2236,23 +2236,36 @@ async function cannot_push(otmp, sx, sy) {
     void otmp;
     if (throws_rocks(game.youmonst.data))
         throw new Error('cannot_push(): giant stepping over a boulder not ported yet');
-    if (could_move_onto_boulder(sx, sy))
-        throw new Error('cannot_push(): squeezing onto a boulder not ported yet');
-    return -1;
+
+    if (could_move_onto_boulder(sx, sy)) {
+        await pline(
+           "However, you can squeeze yourself into a small opening.");
+        sokoban_guilt();
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
-// C ref: hack.c could_move_onto_boulder() -- the cases a starting hero
-// can reach
+// C ref: hack.c could_move_onto_boulder()
+/* can hero move onto a spot containing one or more boulders?
+   used for m<dir> and travel and during boulder push failure */
 function could_move_onto_boulder(sx, sy) {
-    void sx, sy;
     /* can if able to phaze through rock (must be poly'd, so not riding) */
     if (Passes_walls())
         return true;
     /* can't when riding */
     if (game.u.usteed)
         return false;
-    if (throws_rocks(game.youmonst.data) || verysmall(game.youmonst.data))
-        throw new Error('could_move_onto_boulder(): giant/tiny hero not ported yet');
+    /* can if a giant, unless doing so allows hero to pass into a
+       diagonal squeeze at the same time */
+    if (throws_rocks(game.youmonst.data))
+        return (!game.u.dx || !game.u.dy
+                || !(IS_OBSTRUCTED(game.level.at(game.u.ux, sy).typ)
+                     && IS_OBSTRUCTED(game.level.at(sx, game.u.uy).typ)));
+    /* can if tiny (implies carrying very little else couldn't move at all) */
+    if (verysmall(game.youmonst.data))
+        return true;
     /* can squeeze to spot if carrying extremely little, otherwise can't */
     /* squeezeablylightinvent() */
     return (!game.invent || inv_weight() <= (WT_SQUEEZABLE_INV * -1));
@@ -2421,9 +2434,8 @@ async function moverock_core(sx, sy) {
                 }
             }
 
-            /* boulder_hits_pool(otmp, rx, ry, TRUE) */
-            if (is_pool(rx, ry) || is_lava(rx, ry))
-                throw new Error('moverock_core(): boulder_hits_pool() not ported yet');
+            if (await boulder_hits_pool(otmp, rx, ry, true))
+                continue;
 
             /*
              * Re-link at top of fobj chain so that pile order is preserved
