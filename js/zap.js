@@ -202,7 +202,12 @@ import { cvt_sdoor_to_door as cvt_sdoor_to_door_zp } from './detect.js';
 import { recalc_block_point as recalc_block_point_zp } from './vision.js';
 import { in_rooms as in_rooms_zp } from './hack.js';
 import { You_hear as You_hear_zp } from './sounds.js';
-import { picking_at as picking_at_zp, reset_pick as reset_pick_zp } from './lock.js';
+import { picking_at as picking_at_zp, reset_pick as reset_pick_zp,
+         boxlock as boxlock_zy } from './lock.js';
+import { unpunish as unpunish_zy } from './read.js';
+import { display_minventory as display_minventory_bm } from './invent.js';
+import { PICK_NONE as PICK_NONE_BM } from './const.js';
+import { Punished as Punished_zy } from './youprop.js';
 import { catch_lit as catch_lit_zp } from './trap.js';
 import { useupf as useupf_zp } from './invent.js';
 import { An as An_zp } from './objnam.js';
@@ -324,7 +329,7 @@ import { ismnum as ismnum_bm, NC_SHOW_MSG as NC_SHOW_MSG_BM,
          BOLT_LIM as BOLT_LIM_BM, Role_if as Role_if_bm,
          MINV_ALL as MINV_ALL_BM, MINV_NOLET as MINV_NOLET_BM } from './const.js';
 import { that_is_a_mimic as that_is_a_mimic_bm, m_is_steadfast as m_is_steadfast_bm,
-         set_ustuck as set_ustuck_bm } from './uhitm.js';
+         set_ustuck as set_ustuck_bm, flash_hits_mon as flash_hits_mon_bm } from './uhitm.js';
 import { mhurtle as mhurtle_bm } from './dothrow.js';
 import { abuse_dog as abuse_dog_bm } from './dog.js';
 import { surface as surface_bm } from './iactions.js';
@@ -919,7 +924,11 @@ export async function bhitm(mtmp, otmp) {
         break;
     }
     case WAN_LIGHT: /* (broken wand) */
-        throw new Error('bhitm(): flash_hits_mon() not ported yet');
+        if (await flash_hits_mon_bm(mtmp, otmp)) {
+            learn_it = true;
+            reveal_invis = true;
+        }
+        break;
     case WAN_SLEEP: /* (broken wand) */
         /* [wakeup() doesn't rouse victims of temporary sleep,
            so it's okay to leave `wake' set to TRUE here;
@@ -1074,8 +1083,8 @@ export async function probe_monster(mtmp) {
 
     if (mtmp.minvent && mtmp.minvent.length) {
         probe_objchain(mtmp.minvent.slice().reverse()); /* C chain order */
-        void MINV_ALL_BM; void MINV_NOLET_BM;
-        throw new Error('probe_monster(): display_minventory() not ported yet');
+        await display_minventory_bm(mtmp, MINV_ALL_BM | MINV_NOLET_BM | PICK_NONE_BM,
+                                    null);
     } else {
         await pline(`${noit_Monnam_bm(mtmp)} is not carrying anything${
             engulfing_u_zp(mtmp) ? " besides you" : ""}.`);
@@ -1881,6 +1890,25 @@ export function check_unpaid(otmp) {
     throw new Error('check_unpaid(): usage fee for unpaid item not ported yet');
 }
 
+// C ref: zap.c boxlock_invent()
+/* Lock or unlock all boxes in inventory */
+async function boxlock_invent(obj) {
+    let otmp, nextobj;
+    let boxing = false;
+
+    /* (un)lock carried boxes */
+    for (otmp = game.invent; otmp; otmp = nextobj) {
+        nextobj = otmp.nobj;
+        if (Is_box(otmp)) {
+            await boxlock_zy(otmp, obj);
+            boxing = true;
+        }
+    }
+    if (boxing) {
+        /* update_inventory(): no perm_invent; in case any box->lknown
+           has changed */
+    }
+}
 
 // C ref: zap.c zapyourself()
 /* you've zapped yourself with a wand or spell (or broken a wand) */
@@ -2114,11 +2142,44 @@ export async function zapyourself(obj, ordinary) {
         damage = 0; /* reset */
         break;
     case WAN_OPENING:
-    case SPE_KNOCK:
-        throw new Error('zapyourself(): release_hold()/boxlock_invent() not ported yet');
+    case SPE_KNOCK: {
+        if (u.ustuck) {
+            /* zapping either self or holder/holdee [bhitm()] will release
+               holder's grasp from the hero or hero's grasp from holdee */
+            await release_hold();
+            learn_it = true;
+        }
+        if (Punished_zy()) {
+            learn_it = true;
+            await unpunish_zy();
+        }
+        /* invent is hit iff hero doesn't escape from a trap */
+        const noticed = { v: learn_it }; /* &learn_it */
+        let hit_invent = !u.utrap;
+        if (!hit_invent) {
+            hit_invent = !(await openholdingtrap_bm(game.youmonst, noticed));
+            learn_it = noticed.v;
+        }
+        if (hit_invent) {
+            await boxlock_invent(obj);
+            /* trigger previously escaped trapdoor */
+            noticed.v = learn_it;
+            await openfallingtrap_bm(game.youmonst, true, noticed);
+            learn_it = noticed.v;
+        }
+        break;
+    }
     case WAN_LOCKING:
-    case SPE_WIZARD_LOCK:
-        throw new Error('zapyourself(): closeholdingtrap()/boxlock_invent() not ported yet');
+    case SPE_WIZARD_LOCK: {
+        /* similar logic to opening; invent is hit iff no trap triggered */
+        const noticed = { v: learn_it }; /* &learn_it */
+        if (u.utrap || !(await closeholdingtrap_bm(game.youmonst, noticed))) {
+            learn_it = noticed.v;
+            await boxlock_invent(obj);
+        } else
+            learn_it = noticed.v;
+        break;
+    }
     case O_zy.WAN_DIGGING:
     case O_zy.SPE_DIG:
     case O_zy.SPE_DETECT_UNSEEN:

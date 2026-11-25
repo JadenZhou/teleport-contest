@@ -205,6 +205,28 @@ import { split_mon } from './potion.js';
 import { hit as hit_uh } from './zap.js';
 import { mshot_xname as mshot_xname_uh } from './mthrowu.js';
 import { tended_shop } from './shk.js';
+/* flash_hits_mon(), light_hits_gremlin() */
+import { canseemon as canseemon_fh, glyph_at as glyph_at_fh, pline as pline_fh,
+         canspotmon as canspotmon_fh, map_invisible as map_invisible_fh } from './display.js';
+import { M_AP_TYPE as M_AP_TYPE_FH, M_AP_NOTHING as M_AP_NOTHING_FH,
+         MHID_ALTMON as MHID_ALTMON_FH, ARTICLE_YOUR as ARTICLE_YOUR_FH,
+         ARTICLE_A as ARTICLE_A_FH } from './const.js';
+import { mhidden_description as mhidden_description_fh } from './pager.js';
+import { wakeup as wakeup_fh, setmangry as setmangry_fh, DEADMONSTER as DEADMONSTER_fh,
+         wake_nearto as wake_nearto_fh, monkilled as monkilled_fh,
+         killed as killed_fh } from './mon.js';
+import { x_monnam as x_monnam_fh, mon_nam as mon_nam_fh, Monnam as Monnam_fh } from './do_name.js';
+import { haseyes as haseyes_fh, resists_blnd as resists_blnd_fh,
+         resists_blnd_by_arti as resists_blnd_by_arti_fh } from './mondata.js';
+import { mons as mons_fh, S_LIGHT as S_LIGHT_FH, PM_GREMLIN as PM_GREMLIN_FH,
+         AD_BLND as AD_BLND_FH } from './monsters.js';
+import { WAN_LIGHT as WAN_LIGHT_FH } from './objects.js';
+import { dist2 as dist2_fh } from './hacklib.js';
+import { d as d_fh, rnd as rnd_fh, rn2 as rn2_fh } from './rng.js';
+import { monflee as monflee_fh } from './monmove.js';
+import { Deaf as Deaf_fh } from './youprop.js';
+import { cansee as cansee_fh } from './vision.js';
+import { tty_display_nhwindow as tty_display_nhwindow_fh } from './wintty.js';
 /* C ref: mondata.h slithy(), flaming(), has_head() */
 function slithy(ptr) { return (ptr.mflags1 & M.M1_SLITHY) !== 0; }
 function flaming(ptr) {
@@ -4174,4 +4196,112 @@ function dynamic_multi_reason(mon, verb, by_gaze) {
     game.multireasonbuf = `${mon.m_id}:${p}`;
     /* C: gm.multi_reason = p, which points past the "m_id:" prefix */
     game.multi_reason = p;
+}
+
+// C ref: uhitm.c flash_hits_mon()
+/* returns 1 if light flash has noticeable effect on 'mtmp', 0 otherwise */
+export async function flash_hits_mon(
+    mtmp,
+    otmp) { /* source of flash */
+    const g = game;
+    let lev;
+    const mx = mtmp.mx, my = mtmp.my;
+    let tmp, amt, useeit, res = 0;
+
+    if (g.notonhead)
+        return 0;
+    lev = g.level.at(mx, my);
+    useeit = canseemon_fh(mtmp);
+
+    if (M_AP_TYPE_FH(mtmp) !== M_AP_NOTHING_FH) {
+        let whatbuf;
+        const oldglyph = glyph_at_fh(mx, my);
+
+        /* 'altmon' probably doesn't matter here because 'whatbuf' will
+           only be shown if the glyph changes and wakeup() doesn't call
+           seemimic() for M_AP_MONSTER */
+        whatbuf = mhidden_description_fh(mtmp, MHID_ALTMON_FH);
+
+        await wakeup_fh(mtmp, false); /* -> seemimic() -> newsym(); also calls
+                                       * finish_meating() to end quickmimic */
+
+        /* if glyph has changed then hero saw something happen */
+        if (glyph_at_fh(mx, my) !== oldglyph) {
+            await pline_fh(`That ${whatbuf} is really ${
+                /* y_monnam()+a_monnam() */
+                x_monnam_fh(mtmp, mtmp.mtame ? ARTICLE_YOUR_FH : ARTICLE_A_FH,
+                            null, 0, false)}${mtmp.mtame ? '.' : '!'}`);
+            res = 1;
+        }
+    }
+
+    if (mtmp.msleeping && haseyes_fh(mtmp.data)) {
+        mtmp.msleeping = 0;
+        if (useeit) {
+            await pline_fh(`The flash awakens ${mon_nam_fh(mtmp)}.`);
+            res = 1;
+        }
+    } else if (mtmp.data.mlet !== S_LIGHT_FH) {
+        if (!resists_blnd_fh(mtmp)) {
+            tmp = dist2_fh(otmp.ox, otmp.oy, mx, my);
+            if (useeit) {
+                await pline_fh(`${Monnam_fh(mtmp)} is blinded by the flash!`);
+                res = 1;
+            }
+            if (mtmp.data === mons_fh[PM_GREMLIN_FH]) {
+                /* Rule #1: Keep them out of the light. */
+                amt = (otmp.otyp === WAN_LIGHT_FH) ? d_fh(1 + otmp.spe, 4)
+                                                   : rnd_fh(Math.min(mtmp.mhp, 4));
+                await light_hits_gremlin(mtmp, amt);
+            }
+            if (!DEADMONSTER_fh(mtmp)) {
+                if (!g.context.mon_moving)
+                    await setmangry_fh(mtmp, true);
+                if (tmp < 9 && !mtmp.isshk && rn2_fh(4))
+                    await monflee_fh(mtmp, rn2_fh(4) ? rnd_fh(100) : 0, false, true);
+                mtmp.mcansee = 0;
+                mtmp.mblinded = (tmp < 3) ? 0 : rnd_fh(1 + Math.trunc(50 / tmp));
+            }
+        } else if (useeit) {
+            if (resists_blnd_by_arti_fh(mtmp)) {
+                /* shieldeff(mx, my): transient display only */
+            }
+            if (g.flags.verbose ?? true) {
+                if (lev.lit)
+                    await pline_fh(`The flash of light shines on ${mon_nam_fh(mtmp)}.`);
+                else
+                    await pline_fh(`${Monnam_fh(mtmp)} is illuminated.`);
+                res = 2; /* 'message has been given' temporary value */
+            }
+        }
+    }
+    if (res) {
+        if (!lev.lit)
+            await tty_display_nhwindow_fh(g.WIN_MESSAGE, true);
+        res &= 1; /* change temporary 2 back to 0 */
+    }
+    return res;
+}
+
+// C ref: uhitm.c light_hits_gremlin()
+export async function light_hits_gremlin(mon, dmg) {
+    const u = game.u;
+
+    if (!Deaf_fh() && dist2_fh(mon.mx, mon.my, u.ux, u.uy) <= 90) { /* mdistu() */
+        /* cry of pain can be heard somewhat farther than the waking radius */
+        await pline_fh(`${Monnam_fh(mon)} ${(dmg > Math.trunc(mon.mhp / 2))
+            ? "wails in agony" : "cries out in pain"}!`); /* pline_mon() */
+    } else if (canseemon_fh(mon)) {
+        await pline_fh(`${Monnam_fh(mon)} recoils from the light!`); /* pline_mon() */
+    }
+    mon.mhp -= dmg;
+    await wake_nearto_fh(mon.mx, mon.my, 30);
+    if (DEADMONSTER_fh(mon)) {
+        if (game.context.mon_moving)
+            await monkilled_fh(mon, null, AD_BLND_FH);
+        else
+            await killed_fh(mon);
+    } else if (cansee_fh(mon.mx, mon.my) && !canspotmon_fh(mon)) {
+        map_invisible_fh(mon.mx, mon.my);
+    }
 }

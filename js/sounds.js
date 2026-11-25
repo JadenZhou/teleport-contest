@@ -562,6 +562,47 @@ export async function yelp(mtmp) {
     }
 }
 
+// C ref: sounds.c cry_sound()
+/* hatchling's cry; used by hatch_egg() */
+export function cry_sound(mtmp) {
+    let ret = null;
+    const ptr = mtmp.data;
+
+    /* a relatively small subset of MS_ sound values are used by oviparous
+       species so we don't try to supply something for every MS_ type */
+    switch (ptr.msound) {
+    default:
+    case MS_SILENT: /* insects, arthropods, worms, sea creatures */
+        /* "chitter": have silent critters make some noise
+           or the mommy/daddy gag when hatching doesn't work */
+        ret = (ptr.mlet === MM.S_EEL) ? "gurgle" : "chitter";
+        break;
+    case MM.MS_HISS: /* chickatrice, pyrolisk, snakes */
+        ret = "hiss";
+        break;
+    case MM.MS_ROAR: /* baby dragons; have them growl instead of roar */
+    case MM.MS_GROWL: /* (none) */
+        ret = "growl";
+        break;
+    case MM.MS_CHIRP: /* adult crocodiles bellow, babies chirp */
+        ret = "chirp";
+        break;
+    case MM.MS_BUZZ: /* killer bees */
+        ret = "buzz";
+        break;
+    case MM.MS_SQAWK: /* ravens */
+        ret = "screech";
+        break;
+    case MM.MS_GRUNT: /* gargoyles */
+        ret = "grunt";
+        break;
+    case MM.MS_MUMBLE: /* naga hatchlingss */
+        ret = "mumble";
+        break;
+    }
+    return ret;
+}
+
 // C ref: sounds.c domonnoise()
 async function domonnoise(mtmp) {
     let pline_msg = null, /* Monnam(mtmp) will be prepended */
