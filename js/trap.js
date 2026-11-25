@@ -86,7 +86,7 @@ import { makemon, sobj_at, is_pool, is_lava, closed_door, goodpos } from './make
 import { crawl_destination } from './hack.js';
 import { linedup } from './monmove.js';
 import { xdir, ydir, N_DIRS, ZAP_POS, is_xport } from './const.js';
-import { mongone, wake_nearto } from './mon.js';
+import { mongone, wake_nearto, wake_nearby } from './mon.js';
 import { newsym, pline, urgent_pline, You_feel, You_hear } from './display.js';
 import { done } from './end.js';
 import { killer } from './topten.js';
@@ -1139,8 +1139,27 @@ export const Trap_Moved_Mon = 3; /* new location, or new level */
 // C ref: trap.c trapeffect_sqky_board()
 async function trapeffect_sqky_board(mtmp, trap, trflags) {
     /* tsnds[] / Soundeffect(): sound effects aren't ported */
+    const forcetrap = ((trflags & FORCETRAP) !== 0
+                       || (trflags & FAILEDUNTRAP) !== 0
+                       || (Flying() && (trflags & VIASITTING) !== 0));
+
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_sqky_board(): hero branch not ported yet');
+        if ((Levitation() || Flying()) && !forcetrap) {
+            if (!Blind()) {
+                seetrap(trap);
+                if (Hallucination())
+                    await You("notice a crease in the linoleum.");
+                else
+                    await You("notice a loose board below you.");
+            }
+        } else {
+            seetrap(trap);
+            await pline(`A board beneath you ${
+                Deaf() ? "vibrates" : "squeaks "}${
+                Deaf() ? "" : trapnote(trap, false)}${
+                Deaf() ? "" : " loudly"}.`);
+            await wake_nearby(false);
+        }
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
 
