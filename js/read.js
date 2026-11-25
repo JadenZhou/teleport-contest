@@ -15,6 +15,7 @@
 // and wield.c chwepon().  do_class_genocide()/do_genocide() and
 // wand_explode() are not ported yet.
 
+import { sokoban_guilt } from './trap.js';
 import { shk_your } from './shk.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
@@ -1699,9 +1700,7 @@ async function seffect_earth(sobjp) {
             }
         }
         g.known = true;
-        /* sokoban_guilt() */
-        if (In_sokoban_rd(u.uz))
-            throw new Error('seffect_earth(): sokoban_guilt() not ported yet');
+        sokoban_guilt();
 
         /* Loop through the surrounding squares */
         if (!scursed)

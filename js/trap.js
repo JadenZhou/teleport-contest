@@ -6,6 +6,8 @@
 // Not ported yet: shop damage,
 // set_levltyp()'s object/timer side effects, Sokoban bookkeeping.
 
+import { fracture_rock } from './zap.js';
+import { change_luck } from './attrib.js';
 import { helpless } from './monmove.js';
 import { impossible } from './hack.js';
 import { is_hole, is_pit } from './const.js';
@@ -1215,6 +1217,25 @@ function attacktype(ptr, atyp) { return ptr.mattk.some(a => a.aatyp === atyp); }
 function wearing_iron_shoes(mtmp) {
     const armf = which_armor(mtmp, W_ARMF);
     return !!armf && objects[armf.otyp].oc_material === IRON;
+}
+
+// C ref: trap.c sokoban_guilt()
+/* used for various things which cause Sokoban rule violations */
+export function sokoban_guilt() {
+    if (game.level.flags.sokoban_rules) { /* Sokoban */
+        game.u.uconduct.sokocheat++;
+        change_luck(-1);
+        /*
+         * TODO:
+         *  Issue some feedback so that player can learn that whatever
+         *  he/she just did is a naughty thing to do in sokoban and
+         *  should probably be avoided in future....
+         *
+         *  Caveat:  doing this might introduce message sequencing
+         *  issues, depending upon feedback during the various actions
+         *  which trigger Sokoban luck penalties.
+         */
+    }
 }
 
 // C ref: trap.c feeltrap()
@@ -4189,8 +4210,25 @@ export async function launch_obj(otyp, x1, y1, x2, y2, style) {
                 && otyp === BOULDER) {
                 switch (t.ttyp) {
                 case LANDMINE:
-                    if (rn2(10) > 2)
-                        throw new Error('launch_obj(): rolling boulder triggering a land mine (fracture_rock()/scatter()) not ported yet');
+                    if (rn2(10) > 2) {
+                        /* if (cansee(x, y)) set_msg_xy(x, y): accessibility only */
+                        await pline(`KAABLAMM!!!${cansee(x, y)
+                            ? "  The rolling boulder triggers a land mine."
+                            : ""}`);
+                        deltrap(t);
+                        del_engr_at_l(x, y);
+                        place_object(singleobj, x, y);
+                        singleobj.otrapped = 0;
+                        await fracture_rock(singleobj);
+                        await scatter_l(x, y, 4,
+                                        MAY_DESTROY_L | MAY_HIT_L | MAY_FRACTURE_L
+                                            | VIS_EFFECTS_L,
+                                        null);
+                        if (cansee(x, y))
+                            newsym(x, y);
+                        used_up = true;
+                        launch_drop_spot(null, 0, 0);
+                    }
                     break;
                 case LEVEL_TELEP:
                 case TELEP_TRAP:
