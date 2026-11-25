@@ -140,7 +140,7 @@ import { hmon as hmon_dt, passive_obj as passive_obj_dt } from './uhitm.js';
 import { spec_abon as spec_abon_dt } from './artifact.js';
 import { find_mac as find_mac_dt } from './worn.js';
 import { weapon_hit_bonus as weapon_hit_bonus_dt } from './weapon.js';
-import { cutworm as cutworm_dt } from './worm.js';
+import { cutworm as cutworm_dt, remove_monster_at } from './worm.js';
 import { miss as miss_dt } from './zap.js';
 import { mshot_xname as mshot_xname_dt,
          should_mulch_missile as should_mulch_missile_dt } from './mthrowu.js';
@@ -2180,7 +2180,7 @@ async function mhurtle_step(mon, x, y) {
         let res;
 
         if (mon !== u.usteed) {
-            /* remove_monster(mon->mx, mon->my) */
+            remove_monster_at(mon.mx, mon.my); /* remove_monster() */
             newsym_hu(mon.mx, mon.my);
             place_monster_hu(mon, x, y);
             newsym_hu(mon.mx, mon.my);

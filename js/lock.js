@@ -45,7 +45,7 @@ import { A_STR, A_DEX, A_CON, IS_DOOR, D_CLOSED, D_BROKEN, D_NODOOR,
          TT_PIT, CONFUSION, STUNNED, PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { SKELETON_KEY, LOCK_PICK, CREDIT_CARD } from './objects.js';
 import { M1_NOHANDS, MZ_SMALL } from './monsters.js';
-import { canspotmon, map_invisible, feel_location } from './display.js';
+import { canspotmon, map_invisible, feel_location, feel_newsym } from './display.js';
 import { obj_typename } from './objnam.js';
 import { ansimpleoname } from './iactions.js';
 import { hliquid } from './potion.js';
@@ -791,7 +791,7 @@ export async function doopen_indir(x, y) {
             throw new Error('doopen_indir(): b_trapped() not ported yet');
         } else
             door.doormask = D_ISOPEN;
-        newsym(cc.x, cc.y); /* feel_newsym(): the hero knows she opened it */
+        feel_newsym(cc.x, cc.y); /* the hero knows she opened it */
         recalc_block_point(cc.x, cc.y); /* vision: new see through there */
     } else {
         exercise(A_STR, true);
@@ -1338,7 +1338,7 @@ export async function doclose() {
             || rn2(25) < Math.trunc((acurrstr() + ACURR(A_DEX) + ACURR(A_CON)) / 3)) {
             await pline_The("door closes.");
             door.doormask = D_CLOSED;
-            newsym(x, y); /* feel_newsym(): the hero knows she closed it */
+            feel_newsym(x, y); /* the hero knows she closed it */
             block_point(x, y); /* vision:  no longer see there */
         } else {
             exercise(A_STR, true);

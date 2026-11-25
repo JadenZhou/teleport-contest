@@ -67,7 +67,7 @@ import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
          is_damageable, is_poisonable } from './mkobj.js';
 import { obj_resists } from './dogmove.js';
 import { cansee, does_block, block_point, unblock_point } from './vision.js';
-import { newsym } from './display.js';
+import { newsym, shieldeff } from './display.js';
 import { costly_spot } from './shk.js';
 import { add_damage as add_damage_zp, pay_for_damage as pay_for_damage_zp } from './shk.js';
 import { SHOP_DOOR_COST as SHOP_DOOR_COST_ZP, SHOP_BARS_COST as SHOP_BARS_COST_ZP } from './const.js';
@@ -2940,8 +2940,8 @@ async function zhitm(
             await erode_armor_zp(mon, ERODE_CORRODE_ZP);
         break;
     }
-    /* if (sho_shieldeff) shieldeff(mon->mx, mon->my): transient display */
-    void sho_shieldeff;
+    if (sho_shieldeff)
+        await shieldeff(mon.mx, mon.my);
     if (is_hero_spell(type)
         && (game.urole.mnum === PM_KNIGHT_ZP && game.u.uhave?.questart))
         tmp *= 2;
@@ -2964,12 +2964,11 @@ async function zhitu(
     let dam = 0;
     const abstyp = zaptype(type);
     let orig_dam = 0;
-    void sx; void sy;
 
     switch (abstyp % 10) {
     case ZT_MAGIC_MISSILE:
         if (Antimagic()) {
-            /* shieldeff(sx, sy): transient display only */
+            await shieldeff(sx, sy);
             await pline_The("missiles bounce off!");
             monstseesu(M_SEEN_MAGR_ZY);
         } else {
@@ -2981,7 +2980,7 @@ async function zhitu(
     case ZT_FIRE:
         orig_dam = d(nd, 6);
         if (uhave_zp(FIRE_RES)) { /* Fire_resistance */
-            /* shieldeff(sx, sy) */
+            await shieldeff(sx, sy);
             await You("don't feel hot!");
             monstseesu(M_SEEN_FIRE_ZP);
             await ugolemeffects_zp(AD_FIRE, orig_dam);
@@ -3000,7 +2999,7 @@ async function zhitu(
     case ZT_COLD:
         orig_dam = d(nd, 6);
         if (uhave_zp(COLD_RES)) { /* Cold_resistance */
-            /* shieldeff(sx, sy) */
+            await shieldeff(sx, sy);
             await You("don't feel cold.");
             monstseesu(M_SEEN_COLD_ZP);
             await ugolemeffects_zp(AD_COLD, orig_dam);
@@ -3013,7 +3012,7 @@ async function zhitu(
         break;
     case ZT_SLEEP:
         if (Sleep_resistance()) {
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(u.ux, u.uy);
             await You("don't feel sleepy.");
             monstseesu(M_SEEN_SLEEP);
         } else {
@@ -3051,11 +3050,11 @@ async function zhitu(
             if (g.uarmu)
                 await disintegrate_arm_zp(g.uarmu);
         } else if (nonliving_zy(g.youmonst.data) || is_demon_zp(g.youmonst.data)) {
-            /* shieldeff(sx, sy) */
+            await shieldeff(sx, sy);
             await You("seem unaffected.");
             break;
         } else if (Antimagic()) {
-            /* shieldeff(sx, sy) */
+            await shieldeff(sx, sy);
             monstseesu(M_SEEN_MAGR_ZY);
             await You("aren't affected.");
             break;
@@ -3070,7 +3069,7 @@ async function zhitu(
     case ZT_LIGHTNING:
         orig_dam = d(nd, 6);
         if (uhave_zp(SHOCK_RES)) { /* Shock_resistance */
-            /* shieldeff(sx, sy) */
+            await shieldeff(sx, sy);
             await You("aren't affected.");
             monstseesu(M_SEEN_ELEC_ZP);
             await ugolemeffects_zp(AD_ELEC, orig_dam);
@@ -3680,7 +3679,7 @@ export async function dobuzz(
                             monstseesu(M_SEEN_REFL);
                             dx = -dx;
                             dy = -dy;
-                            /* shieldeff(sx, sy): transient display only */
+                            await shieldeff(sx, sy);
                             gas_hit = false;
                         } else {
                             /* flash_str here only used for killer; suppress
@@ -3706,7 +3705,7 @@ export async function dobuzz(
                     if (await mon_reflects(mon, null)) {
                         if (cansee(mon.mx, mon.my)) {
                             await hit(flash_str(fltyp, false), mon, exclam(0));
-                            /* shieldeff(mon->mx, mon->my): transient display */
+                            await shieldeff(mon.mx, mon.my);
                             await mon_reflects(mon, "But it reflects from %s %s!");
                             gas_hit = false;
                         }

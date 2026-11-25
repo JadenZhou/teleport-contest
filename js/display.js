@@ -1718,6 +1718,37 @@ export function mon_to_glyph(mon, rng) {
              decgfx: false, kind: 'mon', mndx };
 }
 
+// C ref: decl.c shield_static[SHIELD_COUNT] -- S_ss1 .. S_ss4 (defsym.h
+// cmap 82 .. 85: '0', '#', '@', '*', all HI_ZAP)
+const SHIELD_SYMS = { 82: '0', 83: '#', 84: '@', 85: '*' };
+const S_ss1 = 82, S_ss2 = 83, S_ss3 = 84, S_ss4 = 85;
+const shield_static = [
+    S_ss1, S_ss2, S_ss3, S_ss2, S_ss1, S_ss2, S_ss4, /* 7 per row */
+    S_ss1, S_ss2, S_ss3, S_ss2, S_ss1, S_ss2, S_ss4,
+    S_ss1, S_ss2, S_ss3, S_ss2, S_ss1, S_ss2, S_ss4,
+];
+
+// C ref: display.c shieldeff()
+/*
+ * Display the shield effect at the given location, then restore the
+ * location with newsym().
+ */
+export async function shieldeff(x, y) {
+    if (!game.flags.sparkle)
+        return;
+    if (cansee(x, y)) { /* Don't see anything if can't see the location */
+        for (let i = 0; i < shield_static.length; i++) { /* SHIELD_COUNT */
+            const cmap = shield_static[i];
+            /* show_glyph(x, y, cmap_to_glyph(shield_static[i])) */
+            show_glyph(x, y, { ch: SHIELD_SYMS[cmap], color: CLR_BRIGHT_BLUE,
+                               decgfx: false, kind: 'cmap', cmapidx: cmap });
+            await flush_screen(1); /* make sure the glyph shows up */
+            /* nh_delay_output(): display timing only */
+        }
+        newsym(x, y); /* restore the old information */
+    }
+}
+
 // C ref: display.c flash_glyph_at()
 /*
  * flash_glyph_at(x, y, glyph, repeatcount)
@@ -1752,6 +1783,9 @@ export function glyph_at_to_remembered(glyph) {
         rg.obj = true;
         rg.piletop = glyph.piletop;
         rg.otyp = glyph.otyp;
+        /* glyph_is_generic_object(): a generic glyph's objects[] index is
+           its class, 1 .. FIRST_OBJECT - 2 (see obj_to_glyph()) */
+        rg.generic = glyph.otyp > 0 && glyph.otyp < FIRST_OBJECT - 1;
         if (glyph.corpsenm !== undefined)
             rg.corpsenm = glyph.corpsenm;
         break;
