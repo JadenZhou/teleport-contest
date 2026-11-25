@@ -50,7 +50,11 @@ import { mon_visible } from './display.js';
 import { dmgtype, is_were, is_demon, is_vampshifter } from './mondata.js';
 import { completelyburns, completelyrots, completelyrusts } from './mon.js';
 import { resists_acid, resists_cold, resists_fire, resists_elec } from './mondata.js';
-import { x_monnam, ARTICLE_THE } from './do_name.js';
+import { x_monnam, ARTICLE_THE, ARTICLE_NONE, noname_monnam, a_monnam } from './do_name.js';
+import { sensemon } from './display.js';
+import { Unaware } from './youprop.js';
+import { makeplural } from './objnam.js';
+import { PLNMSG_HIDE_UNDER } from './const.js';
 import { extract_from_minvent } from './steal.js';
 import { add_to_minv } from './mkobj.js';
 import { doname } from './objnam.js';
@@ -362,8 +366,30 @@ export async function mattackm(magr, mdef) {
     }
 
     /* mundetected monsters become un-hidden if they are attacked */
-    if (mdef.mundetected)
-        throw new Error('mattackm(): unhiding defender not ported yet');
+    if (mdef.mundetected) {
+        mdef.mundetected = 0;
+        newsym(mdef.mx, mdef.my);
+        if (canseemon(mdef) && !sensemon(mdef)) {
+            if (Unaware()) {
+                const justone = (mdef.data.geno & G_UNIQ) !== 0;
+                let montype;
+
+                montype = noname_monnam(mdef, justone ? ARTICLE_THE
+                                                      : ARTICLE_NONE);
+                if (!justone)
+                    montype = makeplural(montype);
+                await You_mp(`dream of ${montype}.`);
+            } else {
+                if (game.iflags.last_msg === PLNMSG_HIDE_UNDER
+                    && mdef.m_id === game.last_hider)
+                    await pline(`${Monnam(mdef)} emerges from hiding.`); /* pline_mon() */
+                else if (mdef.m_id === game.last_hider)
+                    await You_mp(`notice ${mon_nam(mdef)}.`);
+                else
+                    await pline(`Suddenly, you notice ${a_monnam(mdef)}.`);
+            }
+        }
+    }
 
     /* Elves hate orcs. */
     if (is_elf(pa) && is_orc(pd))
