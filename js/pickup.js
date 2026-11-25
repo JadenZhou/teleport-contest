@@ -53,7 +53,7 @@ import { the } from './iactions.js';
 import { xname } from './objnam.js';
 import { autokey, AUTOUNLOCK_APPLY_KEY, AUTOUNLOCK_UNTRAP,
          AUTOUNLOCK_FORCE } from './lock.js';
-import { costly_spot, addtobill } from './shk.js';
+import { costly_spot, addtobill, stolen_value } from './shk.js';
 import { in_rooms } from './hack.js';
 import { SHOPBASE } from './const.js';
 import { money_cnt } from './u_init.js';
@@ -2404,7 +2404,8 @@ async function boh_loss(container, held) {
 // C ref: pickup.c mbag_item_gone()
 /* an object inside a cursed bag of holding is being destroyed */
 async function mbag_item_gone(held, item, silent) {
-    const loss = 0;
+    let shkp;
+    let loss = 0;
 
     if (!silent) {
         if (item.dknown)
@@ -2414,8 +2415,11 @@ async function mbag_item_gone(held, item, silent) {
     }
 
     if (game.u.ushops && game.u.ushops.length
-        && shop_keeper(game.u.ushops.charCodeAt(0)))
-        throw new Error('mbag_item_gone(): stolen_value() not ported yet');
+        && (shkp = shop_keeper(game.u.ushops.charCodeAt(0))) != null) {
+        if (held ? !!item.unpaid : costly_spot(game.u.ux, game.u.uy))
+            loss = await stolen_value(item, game.u.ux, game.u.uy,
+                                      !!shkp.mpeaceful, true);
+    }
     obfree(item, null);
     return loss;
 }

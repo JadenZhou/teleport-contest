@@ -47,7 +47,8 @@ import { Has_contents, WEB, STATUE_TRAP, is_pit, STONE_RES, FUMBLING, ZAP_POS, L
 import { BAG_OF_HOLDING, BAG_OF_TRICKS, objects, GLASS, GEM_CLASS, EGG, MIRROR, CORPSE, COIN_CLASS, LARGE_BOX, CHEST } from './objects.js';
 import { shop_keeper, costly_spot, onshopbill, costly_adjacent,
          find_objowner } from './shk.js';
-import { stolen_value, picked_container, hot_pursuit } from './shk.js';
+import { stolen_value, picked_container, hot_pursuit, inside_shop,
+         make_angry_shk } from './shk.js';
 import { currency } from './insight.js';
 import { Shknam, shkname } from './shknam.js';
 import { angry_guards } from './mon.js';
@@ -843,8 +844,8 @@ export async function container_impact_dmg(obj,
                                            y) { /* before the impact, not after */
     const u = game.u;
     let shkp;
-    const loss = 0;
-    let costly, wchange = false;
+    let loss = 0;
+    let costly, insider, frominv, wchange = false;
 
     /* only consider normal containers */
     if (!Is_container(obj) || !Has_contents(obj)
@@ -854,8 +855,10 @@ export async function container_impact_dmg(obj,
     const rooms = in_rooms(x, y, SHOPBASE);
     costly = !!((shkp = shop_keeper(rooms.length ? rooms.charCodeAt(0) : 0))
                 && costly_spot(x, y));
+    insider = !!((u.ushops || '').length && inside_shop(u.ux, u.uy)
+                 && rooms.charAt(0) === (u.ushops || '').charAt(0));
     /* if dropped or thrown, shop ownership flags are set on this obj */
-    void u;
+    frominv = (obj !== game.kickedobj);
 
     for (const otmp of obj.cobj.slice()) {
         let result = null;
@@ -875,8 +878,12 @@ export async function container_impact_dmg(obj,
             if (otmp.otyp === EGG && otmp.spe && otmp.corpsenm >= LOW_PM)
                 change_luck(-1);
             await You_hear(`a muffled ${result}.`);
-            if (costly)
-                throw new Error('container_impact_dmg(): stolen_value() not ported yet');
+            if (costly) {
+                if (frominv && !otmp.unpaid)
+                    otmp.no_charge = 1;
+                loss +=
+                    await stolen_value(otmp, x, y, !!shkp.mpeaceful, true);
+            }
             if (otmp.quan > 1) {
                 useup(otmp);
             } else {
@@ -890,7 +897,15 @@ export async function container_impact_dmg(obj,
     }
     if (wchange)
         obj.owt = weight(obj);
-    void loss;
+    if (costly && loss) {
+        if (!insider) {
+            await You(`caused ${loss} ${currency(loss)} worth of damage!`);
+            await make_angry_shk(shkp, x, y);
+        } else {
+            await You(`owe ${shkname(shkp)} ${loss} ${
+                currency(loss)} for objects destroyed.`);
+        }
+    }
 }
 
 // C ref: dokick.c kick_object() -- jacket around really_kick_object;

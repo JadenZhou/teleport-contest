@@ -97,7 +97,7 @@ import { buried_ball_to_punishment } from './dig.js';
 import { M_AP_NOTHING } from './const.js';
 import { spelleffects } from './spell.js';
 import { A_WIS } from './const.js';
-import { u_left_shop } from './shk.js';
+import { u_left_shop, stolen_value } from './shk.js';
 import { exercise } from './attrib.js';
 import { revive_corpse } from './zap.js';
 
@@ -1409,13 +1409,12 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
         const shkp = find_objowner(mtmp.minvent[0], oldx, oldy);
         const peaceful = !shkp || shkp.mpeaceful;
 
-        for (const otmp of mtmp.minvent) {
+        for (const otmp of mtmp.minvent.slice()) {
             if (otmp.no_charge)
                 otmp.no_charge = 0;
             else if (shkp && onshopbill(otmp, shkp, true))
-                throw new Error('rloc_to_core(): stolen_value() not ported yet');
+                await stolen_value(otmp, oldx, oldy, peaceful, false);
         }
-        void peaceful;
     }
 
     /* if hero is busy, maybe stop occupation */

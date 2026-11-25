@@ -80,7 +80,7 @@ import { which_armor, mon_set_minvis, mon_adjust_speed } from './worn.js';
 import { bhitm, resist, do_enlightenment_effect } from './zap.js';
 import { mcureblindness } from './muse.js';
 import { paralyze_monst, slept_monst } from './mhitm.js';
-import { shop_keeper, subfrombill } from './shk.js';
+import { shop_keeper, subfrombill, stolen_value } from './shk.js';
 import { tty_getlin } from './wintty.js';
 import { safe_qbuf } from './pickup.js';
 import { surface } from './iactions.js';
@@ -1795,7 +1795,7 @@ export async function potionhit(mon, obj, how) {
         else if (game.context.mon_moving) /* obj thrown by monster */
             subfrombill(obj, shkp);
         else /* obj thrown by hero */
-            throw new Error('potionhit(): stolen_value() not ported yet');
+            await stolen_value(obj, u.ux, u.uy, !!shkp.mpeaceful, false);
     }
     obfree(obj, null);
 }
