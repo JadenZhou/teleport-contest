@@ -3145,3 +3145,29 @@ export async function display_minventory(
         ret = null;
     return ret;
 }
+
+// C ref: invent.c count_contents()
+/* count the objects inside a container */
+export function count_contents(
+    container,
+    nested,     /* include contents of any nested containers */
+    quantity,   /* count all vs count separate stacks        */
+    everything, /* all objects vs only unpaid objects        */
+    newdrop) {  /* on floor, but hero-owned items haven't
+                 * been marked no_charge yet and shop-owned
+                 * items are still marked unpaid -- used
+                 * when asking the player whether to sell    */
+    let shoppy = false;
+    let count = 0;
+
+    if (!everything && !newdrop)
+        throw new Error('count_contents(): costly_spot() of the top container not ported yet');
+    for (const otmp of container.cobj || []) {
+        if (nested && otmp.cobj && otmp.cobj.length) /* Has_contents() */
+            count += count_contents(otmp, nested, quantity, everything,
+                                    newdrop);
+        if (everything || otmp.unpaid || (shoppy && !otmp.no_charge))
+            count += quantity ? otmp.quan : 1;
+    }
+    return count;
+}

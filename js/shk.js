@@ -101,6 +101,11 @@ import { SCROLL_CLASS, SPBOOK_CLASS, MIRROR } from './objects.js';
 import { saleable } from './shknam.js';
 import { paydoname } from './objnam.js';
 import { simpleonames, thesimpleoname } from './iactions.js';
+import { safe_qbuf } from './pickup.js';
+import { count_contents } from './invent.js';
+import { doname as doname_sk } from './objnam.js';
+import { SELL_NORMAL, SELL_DONTSELL, CANDLESHOP } from './const.js';
+import { BALL_CLASS, CHAIN_CLASS, CANDELABRUM_OF_INVOCATION } from './objects.js';
 import {
     Punished, Blind, Hallucination, Deaf, Blind_telepat, Detect_monsters, Invis, Displaced,
     Conflict, Passes_walls, Fast
@@ -1456,11 +1461,17 @@ export function costly_spot(x, y) {
 }
 
 // C ref: shk.c sellobj()
-// The exclusion tests are ported: dropping something outside a shop, or in
-// a shop without its shopkeeper there, or on the shop's door/entry spot,
-// sells nothing. Selling to the shopkeeper isn't ported yet.
 export async function sellobj(obj, x, y) {
     let shkp;
+    let eshkp;
+    let ltmp = 0, cltmp = 0, gltmp = 0, offer, shkmoney;
+    let saleitem, cgold = false;
+    const container = Has_contents(obj);
+    const isgold = (obj.oclass === COIN_CLASS);
+    let only_partially_your_contents = false;
+    /* gs.sell_response: sellobj_state() stores '\0' for C's 0 */
+    const sell_response = () => ((game.sell_response && game.sell_response !== '\0')
+                                 ? game.sell_response : 0);
 
     if (!(game.u.ushops && game.u.ushops.length)) /* do cheapest exclusion test first */
         return;
@@ -1470,8 +1481,282 @@ export async function sellobj(obj, x, y) {
         return;
     if (!costly_spot(x, y))
         return;
-    void obj;
-    throw new Error('sellobj(): selling to a shopkeeper not ported yet');
+
+    if (obj.unpaid && !container && !isgold) {
+        sub_one_frombill(obj, shkp);
+        return;
+    }
+    if (container) {
+        /* find the price of content before subfrombill */
+        cltmp = contained_cost(obj, shkp, cltmp, true, false);
+        /* find the value of contained gold */
+        gltmp += contained_gold(obj, true);
+        cgold = (gltmp > 0);
+    }
+
+    saleitem = saleable(shkp, obj);
+    if (!isgold && !obj.unpaid && saleitem)
+        ltmp = set_cost(obj, shkp);
+
+    offer = ltmp + cltmp;
+
+    /* you dropped something of your own - probably want to sell it */
+    await rouse_shk(shkp, true); /* wake up sleeping or paralyzed shk */
+    eshkp = shkp.mextra.eshk;
+
+    if (ANGRY(shkp)) { /* they become shop-objects, no pay */
+        if (!Deaf() && !muteshk(shkp)) {
+            /* SetVoice(shkp, 0, 80, 0) */
+            await verbalize("Thank you, scum!");
+        } else {
+            await pline(`${Shknam(shkp)} smirks with satisfaction.`);
+        }
+        subfrombill(obj, shkp);
+        return;
+    }
+
+    /* get one case out of the way: nothing to sell, and no gold */
+    if (!(isgold || cgold)
+        && ((offer + gltmp) === 0 || game.sell_how === SELL_DONTSELL)) {
+        const unpaid = is_unpaid(obj);
+
+        if (container) {
+            dropped_container(obj, shkp, false);
+            if (!obj.unpaid)
+                obj.no_charge = 1;
+            if (unpaid)
+                subfrombill(obj, shkp);
+        } else
+            obj.no_charge = 1;
+
+        if (!unpaid && (game.sell_how !== SELL_DONTSELL)
+            && !await special_stock(obj, shkp, false))
+            await pline(`${Shknam(shkp)} seems uninterested.`);
+        return;
+    }
+
+    if (eshkp.robbed) { /* bones; shop robbed by previous customer */
+        if (isgold)
+            offer = obj.quan;
+        else if (cgold)
+            offer += cgold ? 1 : 0;
+        /* C: if ((eshkp->robbed -= offer < 0L)) -- '<' binds first */
+        if ((eshkp.robbed -= (offer < 0 ? 1 : 0)))
+            eshkp.robbed = 0;
+        if (offer && !Deaf() && !muteshk(shkp)) {
+            /* SetVoice(shkp, 0, 80, 0) */
+            await verbalize(
+  "Thank you for your contribution to restock this recently plundered shop.");
+        }
+        subfrombill(obj, shkp);
+        return;
+    }
+
+    if (isgold || cgold) {
+        if (!cgold)
+            gltmp = obj.quan;
+
+        await donate_gold(gltmp, shkp, true);
+
+        if (!offer || game.sell_how === SELL_DONTSELL) {
+            if (!isgold) {
+                if (container)
+                    dropped_container(obj, shkp, false);
+                if (!obj.unpaid)
+                    obj.no_charge = 1;
+                subfrombill(obj, shkp);
+            }
+            return;
+        }
+    }
+
+    if ((!saleitem && !(container && cltmp > 0)) || eshkp.billct === BILLSZ
+        || obj.oclass === BALL_CLASS || obj.oclass === CHAIN_CLASS
+        || offer === 0 || (obj.oclass === FOOD_CLASS && obj.oeaten)
+        || (Is_candle(obj)
+            && obj.age < 20 * objects[obj.otyp].oc_cost)) {
+        await pline(`${Shknam(shkp)} seems uninterested${
+            cgold ? " in the rest" : ""}.`);
+        if (container)
+            dropped_container(obj, shkp, false);
+        obj.no_charge = 1;
+        return;
+    }
+
+    const shkgold = findgold(shkp.minvent); /* money_cnt(shkp->minvent) */
+    shkmoney = shkgold ? shkgold.quan : 0;
+    if (!shkmoney) {
+        let c;
+        const tmpcr = Math.trunc((offer * 9) / 10) + ((offer <= 1) ? 1 : 0);
+
+        if (game.sell_how === SELL_NORMAL || game.auto_credit) {
+            c = game.sell_response = 'y';
+        } else if (sell_response() !== 'n') {
+            await pline(`${Shknam(shkp)} cannot pay you at present.`);
+            const qbuf = `Will you accept ${tmpcr} ${currency(tmpcr)} in credit for `;
+            record_price_quote(obj.otyp, Math.trunc(tmpcr / obj.quan), false);
+            c = await tty_yn_function(safe_qbuf(qbuf, "?", obj, doname_sk,
+                                                (obj.quan === 1) ? "that" : "those"),
+                                      "ynaq", 'y'); /* ynaq() */
+            if (c === 'a') {
+                c = 'y';
+                game.auto_credit = true;
+            }
+        } else /* previously specified "quit" */
+            c = 'n';
+
+        if (c === 'y') {
+            await shk_names_obj(shkp, obj,
+                                ((game.sell_how !== SELL_NORMAL)
+                                 ? "traded %s for %ld zorkmid%s in %scredit."
+                    : "relinquish %s and acquire %ld zorkmid%s in %scredit."),
+                                tmpcr, (eshkp.credit > 0) ? "additional " : "");
+            eshkp.credit += tmpcr;
+            if (container)
+                dropped_container(obj, shkp, true);
+            subfrombill(obj, shkp);
+        } else {
+            if (c === 'q')
+                game.sell_response = 'n';
+            if (container)
+                dropped_container(obj, shkp, false);
+            if (!obj.unpaid)
+                obj.no_charge = 1;
+            subfrombill(obj, shkp);
+        }
+    } else {
+        let qbuf = '';
+        const short_funds = (offer > shkmoney);
+        let one;
+
+        if (short_funds)
+            offer = shkmoney;
+        if (!sell_response()) {
+            let yourc = 0, shksc;
+
+            if (container) {
+                /* number of items owned by shk */
+                shksc = count_contents(obj, true, true, false, true);
+                /* number of items owned by you (total - shksc) */
+                yourc = count_contents(obj, true, true, true, true) - shksc;
+                only_partially_your_contents = !!(shksc && yourc);
+            }
+            /* "<shk> offers * for ..." query formatting; see shk.c */
+            qbuf = `${Shknam(shkp)} offers${short_funds ? " only" : ""} ${offer} gold piece${
+                (offer === 1) ? "" : "s"} for ${
+                (cltmp && !ltmp)
+                    ? ((yourc === 1) ? "your item in " : "your items in ")
+                    : ""}${obj.unpaid ? "the" : "your"} `;
+            one = !ltmp ? (yourc === 1) : (obj.quan === 1 && !cltmp);
+            const qsfx = `${(cltmp && ltmp)
+                ? (only_partially_your_contents
+                       ? ((yourc === 1) ? " and item inside"
+                                        : " and items inside")
+                       : and_its_contents)
+                : ""}.  Sell ${one ? "it" : "them"}?`;
+            record_price_quote(obj.otyp, Math.trunc(offer / obj.quan), false);
+            qbuf = safe_qbuf(qbuf, qsfx, obj, xname, one ? "that" : "those");
+        }
+
+        switch (sell_response() ? sell_response()
+                : await tty_yn_function(qbuf, "ynaq", 'n')) { /* nyaq() */
+        case 'q':
+            game.sell_response = 'n';
+            /* FALLTHRU */
+        case 'n':
+            if (container)
+                dropped_container(obj, shkp, false);
+            if (!obj.unpaid)
+                obj.no_charge = 1;
+            subfrombill(obj, shkp);
+            break;
+        case 'a':
+            game.sell_response = 'y';
+            /* FALLTHRU */
+        case 'y':
+            if (container)
+                dropped_container(obj, shkp, true);
+            if (!obj.unpaid && !saleitem)
+                obj.no_charge = 1;
+            subfrombill(obj, shkp);
+            await pay(-offer, shkp);
+            await shk_names_obj(shkp, obj,
+                                (game.sell_how !== SELL_NORMAL)
+                                 ? ((!ltmp && cltmp && only_partially_your_contents)
+                         ? "sold some items inside %s for %ld gold piece%s.%s"
+                         : "sold %s for %ld gold piece%s.%s")
+            : "relinquish %s and receive %ld gold piece%s in compensation.%s",
+                                offer, "");
+            break;
+        default:
+            /* impossible("invalid sell response") */
+            break;
+        }
+    }
+}
+
+// C ref: shk.c dropped_container()
+/* called in sellobj() and in bhit() (for kicked objects) */
+function dropped_container(obj, shkp, sale) {
+    /* the "top" container is treated in the calling fn */
+    for (const otmp of obj.cobj || []) {
+        if (otmp.oclass === COIN_CLASS)
+            continue;
+
+        if (!otmp.unpaid && !(sale && saleable(shkp, otmp)))
+            otmp.no_charge = 1;
+
+        if (Has_contents(otmp))
+            dropped_container(otmp, shkp, sale);
+    }
+}
+
+// C ref: shk.c special_stock()
+/* shopkeeper refuses to buy certain items */
+async function special_stock(obj, shkp, quietly) {
+    /* for unique situations */
+    if (shkp.mextra.eshk.shoptype === CANDLESHOP
+        && obj.otyp === CANDELABRUM_OF_INVOCATION) {
+        if (!quietly)
+            throw new Error('special_stock(): refusing the Candelabrum not ported yet');
+        return true;
+    }
+    return false;
+}
+
+// C ref: shk.c donate_gold()
+async function donate_gold(
+    gltmp,
+    shkp,
+    selling) { /* T: dropped in shop; F: kicked and landed in shop */
+    const eshkp = shkp.mextra.eshk;
+
+    if (eshkp.debit >= gltmp) {
+        if (eshkp.loan) { /* you carry shop's gold */
+            if (eshkp.loan > gltmp)
+                eshkp.loan -= gltmp;
+            else
+                eshkp.loan = 0;
+        }
+        eshkp.debit -= gltmp;
+        await Your(`debt is ${eshkp.debit ? "partially " : ""}paid off.`);
+    } else {
+        const delta = gltmp - eshkp.debit;
+
+        eshkp.credit += delta;
+        if (eshkp.debit) {
+            eshkp.debit = 0;
+            eshkp.loan = 0;
+            await Your("debt is paid off.");
+        }
+        if (eshkp.credit === delta)
+            await You(`have ${!selling ? "re-" : ""}established ${delta} ${
+                currency(delta)} credit.`);
+        else
+            await pline(`${delta} ${currency(delta)} added${
+                !selling ? " back" : ""} to your credit; total is now ${
+                eshkp.credit} ${currency(eshkp.credit)}.`);
+    }
 }
 
 // ── money transfer, paying ──
