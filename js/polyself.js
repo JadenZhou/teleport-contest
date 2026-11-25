@@ -112,6 +112,8 @@ import { DIED as DIED_PS } from './const.js';
 import { arti_light_radius } from './light.js';
 import { maybe_adjust_light } from './mkobj.js';
 import { is_flimsy, is_sword } from './objects.js';
+import { name_to_monclass as name_to_monclass_ps } from './mondata.js';
+import { mkclass_poly as mkclass_poly_ps } from './makemon.js';
 
 // C ref: mon.c valid_vampshiftform()
 function valid_vampshiftform(base, form) {
@@ -463,9 +465,24 @@ export async function polyself(psflags) {
             }
             klass = 0;
             mntmp = name_to_mon(buf, gvariant);
-            if (mntmp < LOW_PM) {
+            let by_class = (mntmp < LOW_PM);
+            let done = false;
+            /* C's 'goto by_class' retry (from the !polyok() case below)
+               is this loop's 'continue' */
+            for (;;) {
+            if (by_class) {
                 /* by_class: */
-                throw new Error('polyself(): name_to_monclass()/mkclass_poly() not ported yet');
+                const mndx = { v: NON_PM };
+                klass = name_to_monclass_ps(buf, mndx);
+                mntmp = mndx.v;
+                if (klass && mntmp === NON_PM)
+                    mntmp = (draconian && klass === M.S_DRAGON)
+                            ? armor_to_dragon(game.uarm.otyp)
+                            : mkclass_poly_ps(klass);
+
+            /* placeholder monsters are for corpses and all flagged
+               M2_NOPOLY but they are reasonable polymorph targets;
+               pick a suitable substitute (which might be geno'd) */
             } else if (is_placeholder(mons[mntmp])
                        /* when your own race, fall to !polyok() case */
                        && !your_race(mons[mntmp])
@@ -518,6 +535,16 @@ export async function polyself(psflags) {
 
                 /* mkclass_poly() can pick a !polyok()
                    candidate; if so, usually try again */
+                if (klass) {
+                    if (rn2(3) || --tryct > 0) {
+                        by_class = true;
+                        continue; /* goto by_class */
+                    }
+                    /* no retries left; put one back on counter
+                       so that end of loop decrement will yield
+                       0 and trigger thats_enough_tries message */
+                    ++tryct;
+                }
                 pm_name = pmname(mons[mntmp], game.flags.female ? FEMALE : MALE);
                 if (the_unique_pm(mons[mntmp]))
                     pm_name = the(pm_name);
@@ -525,6 +552,10 @@ export async function polyself(psflags) {
                     pm_name = an(pm_name);
                 await You_cant(`polymorph into ${pm_name}.`);
             } else
+                done = true; /* break out of the do-while */
+            break;
+            } /* for (;;) by_class retry */
+            if (done)
                 break;
         } while (--tryct > 0);
 
