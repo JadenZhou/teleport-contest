@@ -87,6 +87,8 @@ import { Resists_Elem } from './mondata.js';
 import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
          SEE_INVIS } from './const.js';
 import { set_apparxy, dochugw } from './monmove.js';
+import { is_exclusion_zone } from './mklev.js';
+import { LR_MONGEN } from './const.js';
 import { noteleport_level } from './teleport.js';
 import { newcham_sync } from './mon.js';
 import { mpickobj } from './steal.js';
@@ -313,10 +315,6 @@ export function sengr_at(s, x, y, strict) {
     return null;
 }
 const HEADSTONE = 6; /* C ref: engrave.h */
-// C ref: region.c is_exclusion_zone() -- no exclusion zones are set up on
-// the levels generated so far
-function is_exclusion_zone(type, x, y) { return false; }
-const LR_MONGEN = 2;
 
 // C ref: teleport.c goodpos_onscary()
 function goodpos_onscary(x, y, mptr) {

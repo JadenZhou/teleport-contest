@@ -186,7 +186,7 @@ export function u_on_newpos(x, y) {
 }
 
 // C ref: mkmaze.c is_exclusion_zone()
-function is_exclusion_zone(type, x, y) {
+export function is_exclusion_zone(type, x, y) {
     let ez = game.exclusion_zones;
 
     while (ez) {
