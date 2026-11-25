@@ -154,7 +154,7 @@ async function do_improvisation(instr) {
             same_old_song.val ? ", familiar" : ""} music.`);
         /* Hero_playnotes(obj_to_instr(&itmp), improvisation, 50): sound only */
         await put_monsters_to_sleep(u.ulevel * 5);
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
         break;
     case O.WOODEN_FLUTE: /* May charm snakes */
         do_spec &= (rn2(ACURR(A_DEX)) + u.ulevel > 25) ? 1 : 0;
@@ -165,7 +165,7 @@ async function do_improvisation(instr) {
             await You_feel(`${yname(instr)} ${do_spec ? "trill" : "toot"}.`);
         if (do_spec)
             throw new Error('do_improvisation(): charm_snakes() not ported yet');
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
         break;
     case O.FIRE_HORN:  /* Idem wand of fire */
     case O.FROST_HORN: /* Idem wand of cold */
@@ -177,7 +177,7 @@ async function do_improvisation(instr) {
         else
             await You("blow into the horn.");
         await awaken_monsters(u.ulevel * 30);
-        exercise(A_WIS, false);
+        await exercise(A_WIS, false);
         break;
     case O.BUGLE: /* Awaken & attract soldiers */
         throw new Error('do_improvisation(): awaken_soldiers() not ported yet');
@@ -191,7 +191,7 @@ async function do_improvisation(instr) {
             await You_feel("very soothing vibrations.");
         /* Hero_playnotes(obj_to_instr(&itmp), improvisation, 50): sound only */
         await charm_monsters(Math.trunc((u.ulevel - 1) / 3) + 1);
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
         break;
     case O.WOODEN_HARP: /* May calm Nymph */
         do_spec &= (rn2(ACURR(A_DEX)) + u.ulevel > 25) ? 1 : 0;
@@ -206,7 +206,7 @@ async function do_improvisation(instr) {
             await You_feel("soothing vibrations.");
         if (do_spec)
             throw new Error('do_improvisation(): calm_nymphs() not ported yet');
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
         break;
     case O.DRUM_OF_EARTHQUAKE: /* create several pits */
         throw new Error('do_improvisation(): drum of earthquake (do_earthquake()) not ported yet');
@@ -218,7 +218,7 @@ async function do_improvisation(instr) {
             } else {
                 await You("pound on the drum.");
             }
-            exercise(A_WIS, false);
+            await exercise(A_WIS, false);
         } else {
             /* TODO maybe: sound effects for these riffs */
             const verb = rn2(2) ? "butcher" : rn2(2) ? "manage" : "pull off";

@@ -115,6 +115,15 @@ import { a_monnam as a_monnam_dj } from './do_name.js';
 import { tamedog as tamedog_dj } from './dog.js';
 import { set_malign as set_malign_dj } from './makemon.js';
 import { NEUTRAL } from './const.js';
+import { BLevitation as BLevitation_po } from './youprop.js';
+import { float_up as float_up_po } from './trap.js';
+import { I_SPECIAL as I_SPECIAL_PO } from './const.js';
+import { stairway_at as stairway_at_po } from './display.js';
+import { doup as doup_po } from './do.js';
+import { has_ceiling as has_ceiling_po } from './insight.js';
+import { ceiling as ceiling_po } from './dungeon.js';
+import { hard_helmet as hard_helmet_po } from './do_wear.js';
+import { spoteffects as spoteffects_po } from './hack.js';
 
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
    like aren't modeled here: only the polymorphed form's own defenses */
@@ -287,7 +296,7 @@ export async function make_sick(xtime,
 
     const kptr = find_delayed_killer(SICK);
     if (Sick()) {
-        exercise(A_CON, false);
+        await exercise(A_CON, false);
         /* setting delayed_killer used to be unconditional, but that's
            not right when make_sick(0) is called to cure food poisoning
            if hero was also fatally ill; this is only approximate */
@@ -795,7 +804,7 @@ async function peffect_hallucination(otmp) {
         await tty_display_nhwindow(game.WIN_MESSAGE, false);
         await enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
         await Your("awareness re-normalizes.");
-        exercise(A_WIS, true);
+        await exercise(A_WIS, true);
     }
 }
 
@@ -813,7 +822,7 @@ async function peffect_water(otmp) {
         || u.ualign.type === A_CHAOTIC) {
         if (otmp.blessed) {
             await pline(`This burns like ${hliquid("acid")}!`);
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             if (ismnum(u.ulycn)) {
                 await Your(`affinity to ${
                     makeplural(mons[u.ulycn].pmnames[NEUTRAL])} disappears!`);
@@ -828,14 +837,14 @@ async function peffect_water(otmp) {
             await healup(d(2, 6), 0, 0, 0);
             if (ismnum(u.ulycn) && !Upolyd())
                 await you_were();
-            exercise(A_CON, true);
+            await exercise(A_CON, true);
         }
     } else {
         if (otmp.blessed) {
             await You_feel("full of awe.");
             await make_sick(0, null, true, SICK_ALL);
-            exercise(A_WIS, true);
-            exercise(A_CON, true);
+            await exercise(A_WIS, true);
+            await exercise(A_CON, true);
             if (ismnum(u.ulycn))
                 await you_unwere(true); /* "Purified" */
             /* make_confused(0L, TRUE); */
@@ -848,7 +857,7 @@ async function peffect_water(otmp) {
                 await You_feel("full of dread.");
             if (ismnum(u.ulycn) && !Upolyd())
                 await you_were();
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
         }
     }
 }
@@ -868,7 +877,7 @@ async function peffect_booze(otmp) {
         await healup(1, 0, false, false);
     u.uhunger += 10 * (2 + bcsign(otmp));
     await newuhs(false);
-    exercise(A_WIS, false);
+    await exercise(A_WIS, false);
     if (otmp.cursed) {
         await You("pass out.");
         game.multi = -rnd(15);
@@ -881,7 +890,7 @@ async function peffect_enlightenment(otmp) {
     if (otmp.cursed) {
         game.potion_unkn++;
         await You("have an uneasy feeling...");
-        exercise(A_WIS, false);
+        await exercise(A_WIS, false);
     } else {
         if (otmp.blessed) {
             await adjattrib(A_INT, 1, 0);
@@ -977,7 +986,7 @@ async function peffect_paralysis(otmp) {
         nomul(-(rn1(10, 25 - 12 * bcsign(otmp))));
         game.multi_reason = "frozen by a potion";
         game.nomovemsg = You_can_move_again;
-        exercise(A_DEX, false);
+        await exercise(A_DEX, false);
     }
 }
 
@@ -1030,7 +1039,7 @@ async function peffect_monster_detection(otmp) {
     }
     if (await monster_detect(otmp, 0))
         return 1; /* nothing detected */
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
     return 0;
 }
 
@@ -1076,7 +1085,7 @@ async function peffect_sickness(otmp) {
                 await losehp(1 + rn2(2), contaminant,
                              otmp.fromsink ? KILLED_BY : KILLED_BY_AN);
             }
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
         }
     }
     if (Hallucination()) {
@@ -1170,7 +1179,7 @@ async function peffect_healing(otmp) {
     await You_feel("better.");
     await healup(8 + d(4 + 2 * bcsign(otmp), 4), !otmp.cursed ? 1 : 0,
                  !!otmp.blessed, !otmp.cursed);
-    exercise(A_CON, true);
+    await exercise(A_CON, true);
 }
 
 // C ref: potion.c peffect_extra_healing()
@@ -1180,8 +1189,8 @@ async function peffect_extra_healing(otmp) {
                  otmp.blessed ? 5 : !otmp.cursed ? 2 : 0, !otmp.cursed,
                  true);
     await make_hallucinated(0, true, 0);
-    exercise(A_CON, true);
-    exercise(A_STR, true);
+    await exercise(A_CON, true);
+    await exercise(A_STR, true);
     /* blessed potion also heals wounded legs unless riding (where leg
        wounds apply to the steed rather than to the hero) */
     if (Wounded_legs() && (otmp.blessed && !game.u.usteed))
@@ -1201,8 +1210,8 @@ async function peffect_full_healing(otmp) {
         await pluslvl(false);
     }
     await make_hallucinated(0, true, 0);
-    exercise(A_STR, true);
-    exercise(A_CON, true);
+    await exercise(A_STR, true);
+    await exercise(A_CON, true);
     /* blessed potion heals wounded legs even when riding (so heals steed's
        legs--it's magic); uncursed potion heals hero's legs unless riding */
     if (Wounded_legs() && (otmp.blessed || (!otmp.cursed && !u.usteed)))
@@ -1211,9 +1220,61 @@ async function peffect_full_healing(otmp) {
 
 // C ref: potion.c peffect_levitation()
 async function peffect_levitation(otmp) {
-    void otmp;
-    /* float_up(), doup(), float_down() and the ceiling collision */
-    throw new Error('peffect_levitation(): float_up() not ported yet');
+    const u = game.u;
+    const HLev = uprop(LEVITATION);
+    /*
+     * BLevitation will be set if levitation is blocked due to being
+     * inside rock (currently or formerly in phazing xorn form, perhaps)
+     * but it doesn't prevent setting or incrementing Levitation timeout
+     * (which will take effect after escaping from the rock if it hasn't
+     * expired by then).
+     */
+    if (!Levitation() && !BLevitation_po()) {
+        /* kludge to ensure proper operation of float_up() */
+        set_itimeout(LEVITATION, 1);
+        await float_up_po();
+        /* This used to set timeout back to 0, then increment it below
+           for blessed and uncursed effects.  But now we leave it so
+           that cursed effect yields "you float down" on next turn.
+           Blessed and uncursed get one extra turn duration. */
+    } else /* already levitating, or can't levitate */
+        game.potion_nothing++;
+
+    if (otmp.cursed) {
+        let stway;
+
+        /* 'already levitating' used to block the cursed effect(s)
+           aside from ~I_SPECIAL; it was not clear whether that was
+           intentional; either way, it no longer does (as of 3.6.1) */
+        HLev.intrinsic &= ~I_SPECIAL_PO; /* can't descend upon demand */
+        if (BLevitation_po()) {
+            ; /* rising via levitation is blocked */
+        } else if ((stway = stairway_at_po(u.ux, u.uy)) && stway.up) {
+            await doup_po();
+            /* in case we're already Levitating, which would have
+               resulted in incrementing 'nothing' */
+            game.potion_nothing = 0; /* not nothing after all */
+        } else if (has_ceiling_po(u.uz)) {
+            const dmg = rnd(!game.uarmh ? 10 : !hard_helmet_po(game.uarmh) ? 6 : 3);
+
+            await You(`hit your ${body_part(HEAD)} on the ${ceiling_po(u.ux, u.uy)}.`);
+            await losehp(Maybe_Half_Phys(dmg), "colliding with the ceiling",
+                         KILLED_BY);
+            game.potion_nothing = 0; /* not nothing after all */
+        }
+    } else if (otmp.blessed) {
+        /* at this point, timeout is already at least 1 */
+        incr_itimeout(LEVITATION, rn1(50, 250));
+        /* can descend at will (stop levitating via '>') provided timeout
+           is the only factor (ie, not also wearing Lev ring or boots) */
+        HLev.intrinsic |= I_SPECIAL_PO;
+    } else /* timeout is already at least 1 */
+        incr_itimeout(LEVITATION, rn1(140, 10));
+
+    if (Levitation() && IS_SINK(game.level.at(u.ux, u.uy).typ))
+        await spoteffects_po(false);
+    /* levitating blocks flying */
+    float_vs_flight();
 }
 
 // C ref: potion.c peffect_gain_energy()
@@ -1240,7 +1301,7 @@ async function peffect_gain_energy(otmp) {
     else if (u.uen <= 0)
         u.uen = 0;
     game.disp_botl = true;
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
 }
 
 // C ref: potion.c peffect_oil()
@@ -1271,7 +1332,7 @@ async function peffect_oil(otmp) {
     } else {
         await pline("That was smooth!");
     }
-    exercise(A_WIS, good_for_you);
+    await exercise(A_WIS, good_for_you);
 }
 
 // C ref: timeout.c burn_away_slime()
@@ -1291,7 +1352,7 @@ async function peffect_acid(otmp) {
                                 : otmp.cursed ? " a lot" : " like acid"}!`);
         const dmg = d(otmp.cursed ? 2 : 1, otmp.blessed ? 4 : 8);
         await losehp(Maybe_Half_Phys(dmg), "potion of acid", KILLED_BY_AN);
-        exercise(A_CON, false);
+        await exercise(A_CON, false);
     }
     if (Stoned())
         throw new Error('peffect_acid(): fix_petrification() not ported yet');
@@ -1864,7 +1925,7 @@ export async function potionbreathe(obj) {
             await make_blinded(0, !u.ucreamed);
             await make_deaf(0, true);
         }
-        exercise(A_CON, true);
+        await exercise(A_CON, true);
         break;
     case O.POT_SICKNESS:
         if (!Role_if(PM_HEALER)) {
@@ -1880,7 +1941,7 @@ export async function potionbreathe(obj) {
                     u.uhp -= 5;
             }
             game.disp_botl = true;
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
         }
         break;
     case O.POT_HALLUCINATION:
@@ -1907,7 +1968,7 @@ export async function potionbreathe(obj) {
             nomul(-rnd(5));
             game.multi_reason = "frozen by a potion";
             game.nomovemsg = You_can_move_again;
-            exercise(A_DEX, false);
+            await exercise(A_DEX, false);
         } else
             await You("stiffen momentarily.");
         break;
@@ -1918,7 +1979,7 @@ export async function potionbreathe(obj) {
             nomul(-rnd(5));
             game.multi_reason = "sleeping off a magical draught";
             game.nomovemsg = You_can_move_again;
-            exercise(A_DEX, false);
+            await exercise(A_DEX, false);
         } else {
             await You("yawn.");
             monstseesu(M_SEEN_SLEEP);
@@ -1928,7 +1989,7 @@ export async function potionbreathe(obj) {
         if (!Fast())
             await Your("knees seem more flexible now.");
         incr_itimeout(FAST, rnd(5));
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
         break;
     case O.POT_BLINDNESS:
         if (!Blind() && !Unaware()) {
@@ -1953,7 +2014,7 @@ export async function potionbreathe(obj) {
         break;
     case O.POT_ACID:
     case O.POT_POLYMORPH:
-        exercise(A_CON, false);
+        await exercise(A_CON, false);
         break;
     /*
     case POT_GAIN_LEVEL:
@@ -2093,7 +2154,7 @@ export async function speed_up(duration) {
     else
         await Your(`${makeplural(body_part(LEG))} get new energy.`);
 
-    exercise(A_DEX, true);
+    await exercise(A_DEX, true);
     incr_itimeout(FAST, duration);
 }
 

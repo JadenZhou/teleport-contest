@@ -735,7 +735,7 @@ async function choke(food) {
         await You_feel("like a glutton!");
     }
 
-    exercise(A_CON, false);
+    await exercise(A_CON, false);
 
     if (Breathless() || Hunger() || (!Strangled() && !rn2(20))) {
         /* choking by eating AoS doesn't involve stuffing yourself */
@@ -1027,7 +1027,7 @@ async function cprefx(pm) {
         killer().format = NO_KILLER_PREFIX;
         await done(DIED);
         /* life-saving needed to reach here */
-        exercise(A_WIS, false);
+        await exercise(A_WIS, false);
         /* revive an actual corpse; can't do that if it was a tin;
            5.0: this used to assume that such tins were impossible but
            they can be wished for in wizard mode; they can't make it

@@ -166,6 +166,11 @@ import { useupf } from './invent.js';
 import { dist2 } from './hacklib.js';
 import { tty_yn_function } from './wintty.js';
 import { is_pick, bimanual } from './objects.js';
+import { I_SPECIAL as I_SPECIAL_DO, W_ARTI as W_ARTI_DO } from './const.js';
+import { BLevitation as BLevitation_do } from './youprop.js';
+import { float_down as float_down_do } from './trap.js';
+import { surface as surface_do } from './iactions.js';
+import { floating_above as floating_above_do } from './fountain.js';
 
 /* C ref: cmd.c DIR_DOWN, DIR_UP (after the 8 compass directions) */
 const DIR_DOWN = 8, DIR_UP = 9;
@@ -216,9 +221,45 @@ export async function dodown() {
     /* Levitation might be blocked, but player can still use '>' to
        turn off controlled levitation */
     if (HLevitation() || ELevitation()) {
-        /* ending controlled levitation (float_down()) and the
-           floating_above() messages */
-        throw new Error('dodown(): levitation not ported yet');
+        if ((HLevitation() & I_SPECIAL_DO) || (ELevitation() & W_ARTI_DO)) {
+            /* end controlled levitation */
+            if (ELevitation() & W_ARTI_DO)
+                /* the age of each artifact with invoked levitation
+                   (artifact_has_invprop()) gets rnz(100) */
+                throw new Error('dodown(): ending artifact levitation not ported yet');
+            if (await float_down_do(I_SPECIAL_DO | TIMEOUT, W_ARTI_DO)) {
+                return ECMD_TIME; /* came down, so moved */
+            } else if (!HLevitation() && !ELevitation()) {
+                await Your("latent levitation ceases.");
+                return ECMD_TIME; /* did something, effectively moved */
+            }
+        }
+        if (BLevitation_do()) {
+            ; /* weren't actually floating after all */
+        } else if (Blind()) {
+            /* glyph_to_cmap() is a macro which expands its argument many
+               times; use this to do part of its work just once */
+            const glyph_at_uxuy = g.level.at(u.ux, u.uy).remembered_glyph;
+
+            /* Avoid alerting player to an unknown stair or ladder.
+             * Changes the message for a covered, known staircase
+             * too; staircase knowledge is not stored anywhere.
+             */
+            if (stairs_down)
+                stairs_down = (glyph_at_uxuy?.cmapidx === 26 /* S_dnstair */);
+            else if (ladder_down)
+                ladder_down = (glyph_at_uxuy?.cmapidx === 28 /* S_dnladder */);
+        }
+        if (Is_airlevel(u.uz))
+            await You(`are floating in the ${surface_do(u.ux, u.uy)}.`);
+        else if (Is_waterlevel(u.uz))
+            await You(`are floating in ${
+                is_pool(u.ux, u.uy) ? "the water" : "a bubble of air"}.`);
+        else
+            await floating_above_do(stairs_down ? "stairs"
+                                    : ladder_down ? "ladder"
+                                      : surface_do(u.ux, u.uy));
+        return ECMD_OK; /* didn't move */
     }
 
     if (Upolyd() && ceiling_hider(g.youmonst.data) && u.uundetected) {

@@ -194,14 +194,14 @@ function kickstr(kickobjnam) {
 
 // C ref: dokick.c kick_dumb()
 async function kick_dumb(x, y) {
-    exercise(A_DEX, false);
+    await exercise(A_DEX, false);
     if (martial() || ACURR(A_DEX) >= 16 || rn2(3)) {
         await You("kick at empty space.");
         if (Blind())
             feel_location(x, y);
     } else {
         await pline("Dumb move!  You strain a muscle.");
-        exercise(A_STR, false);
+        await exercise(A_STR, false);
         await set_wounded_legs(RIGHT_SIDE, 5 + rnd(5));
     }
     if ((Is_airlevel(game.u.uz) || Levitation()) && rn2(2))
@@ -214,8 +214,8 @@ async function kick_ouch(x, y, kickobjnam) {
     let dmg;
 
     await pline("Ouch!  That hurts!");
-    exercise(A_DEX, false);
-    exercise(A_STR, false);
+    await exercise(A_DEX, false);
+    await exercise(A_STR, false);
     if (isok(x, y)) {
         if (Blind())
             feel_location(x, y); /* we know we hit it */
@@ -257,7 +257,7 @@ async function kick_door(x, y, avrg_attrib) {
         return;
     }
 
-    exercise(A_DEX, true);
+    await exercise(A_DEX, true);
     doorbuster = Upolyd() && is_giant(game.youmonst.data);
     /* door is known to be CLOSED or LOCKED */
     if (doorbuster
@@ -270,12 +270,12 @@ async function kick_door(x, y, avrg_attrib) {
         } else if (ACURR(A_STR) > 18 && !rn2(5) && !shopdoor) {
             /* Soundeffect(se_kick_door_it_shatters, 50) */
             await pline("As you kick the door, it shatters to pieces!");
-            exercise(A_STR, true);
+            await exercise(A_STR, true);
             maploc.doormask = D_NODOOR;
         } else {
             /* Soundeffect(se_kick_door_it_crashes_open, 50) */
             await pline("As you kick the door, it crashes open!");
-            exercise(A_STR, true);
+            await exercise(A_STR, true);
             maploc.doormask = D_BROKEN;
         }
         feel_newsym(x, y); /* we know we broke it */
@@ -289,7 +289,7 @@ async function kick_door(x, y, avrg_attrib) {
     } else {
         if (Blind())
             feel_location(x, y); /* we know we hit it */
-        exercise(A_STR, true);
+        await exercise(A_STR, true);
         /* note: this used to be unconditional "WHAMMM!!!" but that has a
            fairly strong connotation of noise that a deaf hero shouldn't
            hear; we've kept the extra 'm's and one of the extra '!'s */
@@ -314,7 +314,7 @@ async function kick_nondoor(x, y, avrg_attrib) {
                    unless it also happens to be trapped */
                 ((maploc.doormask & (D_LOCKED | D_TRAPPED)) === D_LOCKED)
                     ? "Your kick uncovers" : "You kick open"} a secret door!`);
-            exercise(A_DEX, true);
+            await exercise(A_DEX, true);
             if (maploc.doormask & D_TRAPPED) {
                 throw new Error('kick_nondoor(): b_trapped() not ported yet');
             } else if (maploc.doormask !== D_NODOOR
@@ -334,7 +334,7 @@ async function kick_nondoor(x, y, avrg_attrib) {
         if (!Levitation() && rn2(30) < avrg_attrib) {
             /* Soundeffect(se_crash_door, 40) */
             await pline("Crash!  You kick open a secret passage!");
-            exercise(A_DEX, true);
+            await exercise(A_DEX, true);
             maploc.typ = CORR;
             feel_newsym(x, y); /* we know it's gone */
             unblock_point(x, y); /* vision */
@@ -476,7 +476,7 @@ async function kickdmg(mon, clumsy) {
             dmg += rn2(Math.trunc(ACURR(A_DEX) / 2) + 1);
         }
         /* a good kick exercises your dex */
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
     }
     dmg += specialdmg; /* for blessed (or hypothetically, silver) boots */
     if (game.uarmf)
@@ -524,7 +524,7 @@ async function kick_monster(mon, x, y) {
     if (Levitation() && !rn2(3) && verysmall(mon.data)
         && !is_flyer(mon.data)) {
         await pline("Floating in the air, you miss wildly!");
-        exercise(A_DEX, false);
+        await exercise(A_DEX, false);
         await passive(mon, game.uarmf, false, 1, AT_KICK, false);
         return;
     }

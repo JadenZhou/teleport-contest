@@ -161,7 +161,7 @@ async function mfind0(mtmp, via_warning) {
                         * 'I' in it.  Logically, this should still take time
                         * and lead to `return 1', but if we did that the hero
                         * would keep finding the same monster every turn. */
-        exercise(A_WIS, true);
+        await exercise(A_WIS, true);
         if (!canspotmon(mtmp)) {
             map_invisible(x, y);
             /* set_msg_xy(x, y) */
@@ -207,7 +207,7 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
                         continue;
                     cvt_sdoor_to_door(lev); /* .typ = DOOR */
                     recalc_block_point(x, y);
-                    exercise(A_WIS, true);
+                    await exercise(A_WIS, true);
                     nomul0();
                     feel_location(x, y); /* make sure it shows up */
                     await pline("You find a hidden door.");
@@ -216,7 +216,7 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
                         continue;
                     lev.typ = CORR;
                     recalc_block_point(x, y); /* unblock_point(): vision */
-                    exercise(A_WIS, true);
+                    await exercise(A_WIS, true);
                     nomul0();
                     feel_newsym(x, y); /* make sure it shows up */
                     await pline("You find a hidden passage.");
@@ -241,7 +241,7 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
                         nomul0();
                         if (trap.ttyp === STATUE_TRAP) {
                             if (await activate_statue_trap(trap, x, y, false))
-                                exercise(A_WIS, true);
+                                await exercise(A_WIS, true);
                             return 1;
                         } else {
                             await find_trap(trap);
@@ -258,7 +258,7 @@ async function find_trap(trap) {
     let cleared = false;
 
     trap.tseen = 1;
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
     feel_newsym(trap.tx, trap.ty);
 
     /* The "Hallucination ||" is to preserve 3.6.1 behavior, but this
@@ -844,7 +844,7 @@ export async function gold_detect(sobj) {
         ter_typ |= TER_MON; /* so autodescribe will recognize hero */
     }
     await You_feel_dt("very greedy, and sense gold!");
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
 
     await browse_map(ter_typ, "gold");
 
@@ -988,7 +988,7 @@ export async function food_detect(sobj) {
                 await pline(`Your ${body_part_dt(NOSE_DT)} tingles and you smell ${what}.`);
         } else
             await pline(`You sense ${what}.`);
-        exercise(A_WIS_DT, true);
+        await exercise(A_WIS_DT, true);
 
         await browse_map(ter_typ, "food");
 
@@ -1379,7 +1379,7 @@ export async function do_mapping() {
            will be a no-op; call it anyway */
         reconstrain_map();
     }
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
 }
 
 /* C ref: detect.c FOUND_FLASH_COUNT */

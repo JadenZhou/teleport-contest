@@ -1511,6 +1511,6 @@ export async function disturb_grave(x, y) {
         await You("disturb the undead!");
         lev.disturbed = 1;
         makemon(mons[PM_GHOUL], x, y, NO_MM_FLAGS);
-        exercise(A_WIS, false);
+        await exercise(A_WIS, false);
     }
 }

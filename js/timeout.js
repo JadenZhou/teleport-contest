@@ -302,7 +302,7 @@ async function stoned_dialogue() {
     default:
         break;
     }
-    exercise(A_DEX, false);
+    await exercise(A_DEX, false);
 }
 
 // C ref: timeout.c vomiting_texts[], vomiting_dialogue()
@@ -377,7 +377,7 @@ async function vomiting_dialogue() {
     }
     if (txt)
         await You(txt); /* You1(txt) */
-    exercise(A_CON, false);
+    await exercise(A_CON, false);
 }
 
 // C ref: timeout.c sleep_dialogue()
@@ -422,7 +422,7 @@ async function choke_dialogue() {
             await stop_occupation();
         }
     }
-    exercise(A_STR, false);
+    await exercise(A_STR, false);
 }
 
 // C ref: timeout.c sickness_texts[], sickness_dialogue()
@@ -447,7 +447,7 @@ async function sickness_dialogue() {
         }
         await urgent_pline(buf);
     }
-    exercise(A_CON, false);
+    await exercise(A_CON, false);
 }
 
 // C ref: timeout.c levi_texts[], levitation_dialogue()
@@ -546,7 +546,7 @@ async function slime_dialogue() {
             await make_stoned(0, null, KILLED_BY_AN, null);
         break;
     }
-    exercise(A_DEX, false);
+    await exercise(A_DEX, false);
 }
 
 // C ref: timeout.c phaze_texts[], phaze_dialogue()
@@ -846,7 +846,7 @@ export async function nh_timeout() {
                     && rn2(100) < ACURR_to(A_CON_TO)) {
                     await pline("You have recovered from your illness.");
                     await make_sick_to(0, null, false, SICK_ALL_TO);
-                    exercise(A_CON_TO, false);
+                    await exercise(A_CON_TO, false);
                     await adjattrib_to(A_CON_TO, -1, 1);
                     break;
                 }

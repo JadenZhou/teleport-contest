@@ -38,6 +38,9 @@ import {
 } from './monsters.js';
 import { Blind, Unaware, Strangled } from './youprop.js';
 import { ACURR } from './attrib.js';
+import { def_char_to_monclass as def_char_to_monclass_md,
+         def_monsyms_explain as def_monsyms_explain_md } from './drawing.js';
+import { makesingular as makesingular_md } from './objnam.js';
 
 // C ref: mondata.h monsndx(ptr) -- ((ptr)->pmidx)
 export function monsndx(ptr) { return ptr.pmidx; }
@@ -1139,6 +1142,95 @@ export function name_to_monplus(in_str, remainder_p, gender_name_var) {
             gender_name_var.v = matchgend;
     }
     return mntmp;
+}
+
+// C ref: mondata.c name_to_monclass() falsematch[], truematch[]
+/* multiple-letter input which matches any of these gets rejected */
+const ntmc_falsematch = ["an", "the", "or", "other", "or other"];
+/* positive pm_val => specific monster; negative => class */
+const ntmc_truematch = [
+    /* "long worm" won't match "worm" class but would accidentally match
+       "long worm tail" class before the comparison with monster types */
+    ["long worm", M.PM_LONG_WORM],
+    /* matches wrong--or at least suboptimal--class */
+    ["demon", -M.S_DEMON], /* hits "imp or minor demon" */
+    /* matches specific monster (overly restrictive) */
+    ["devil", -M.S_DEMON], /* always "horned devil" */
+    /* some plausible guesses which need help */
+    ["bug", -M.S_XAN],  /* would match bugbear... */
+    ["fish", -M.S_EEL], /* wouldn't match anything */
+];
+
+// C ref: mondata.c name_to_monclass()
+/* monster class from user input; used for genocide and controlled polymorph;
+   returns 0 rather than MAXMCLASSES if no match is found; mndx_p.v (C:
+   *mndx_p) gets a specific monster type when one is matched */
+export function name_to_monclass(in_str, mndx_p) {
+    /* Single letters are matched against def_monsyms[].sym; words
+       or phrases are first matched against def_monsyms[].explain
+       to check class description; if not found there, then against
+       mons[].pmnames[] to test individual monster types.  Input can be a
+       substring of the full description or pmname, but to be accepted,
+       such partial matches must start at beginning of a word.  Some
+       class descriptions include "foo or bar" and "foo or other foo"
+       so we don't want to accept "or", "other", "or other" there. */
+    let i, len;
+
+    if (mndx_p)
+        mndx_p.v = NON_PM; /* haven't [yet] matched a specific type */
+
+    if (!in_str || !in_str[0]) {
+        /* empty input */
+        return 0;
+    } else if (in_str.length === 1) {
+        /* single character */
+        i = def_char_to_monclass_md(in_str);
+        if (i === M.S_MIMIC_DEF) { /* ']' -> 'm' */
+            i = M.S_MIMIC;
+        } else if (i === M.S_WORM_TAIL) { /* '~' -> 'w' */
+            i = M.S_WORM;
+            if (mndx_p)
+                mndx_p.v = M.PM_LONG_WORM;
+        } else if (i === M.MAXMCLASSES) /* maybe 'I' */
+            i = (in_str === M.DEF_INVISIBLE) ? M.S_invisible : 0;
+        return i;
+    } else {
+        /* multiple characters */
+        if (!strcmpi(in_str, "long")) /* not enough to match "long worm" */
+            return 0; /* avoid false whole-word match with "long worm tail" */
+        in_str = makesingular_md(in_str);
+        /* check for special cases */
+        for (i = 0; i < ntmc_falsematch.length; i++)
+            if (!strcmpi(in_str, ntmc_falsematch[i]))
+                return 0;
+        for (i = 0; i < ntmc_truematch.length; i++)
+            if (!strcmpi(in_str, ntmc_truematch[i][0])) {
+                i = ntmc_truematch[i][1];
+                if (i < 0)
+                    return -i; /* class */
+                if (mndx_p)
+                    mndx_p.v = i; /* monster */
+                return M.mons[i].mlet;
+            }
+        /* check monster class descriptions */
+        len = in_str.length;
+        for (i = 1; i < M.MAXMCLASSES; i++) {
+            const x = def_monsyms_explain_md[i];
+            const p = strstri(x, in_str); /* index into x, or -1 */
+            if (p >= 0 && (p === 0 || x[p - 1] === ' ')
+                && (x.length - p >= len
+                    && (p + len === x.length || x[p + len] === ' ')))
+                return i;
+        }
+        /* check individual species names */
+        i = name_to_mon(in_str, null);
+        if (i !== NON_PM) {
+            if (mndx_p)
+                mndx_p.v = i;
+            return M.mons[i].mlet;
+        }
+    }
+    return 0;
 }
 
 // C ref: mondata.c cvt_adtyp_to_mseenres()

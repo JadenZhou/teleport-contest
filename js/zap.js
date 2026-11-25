@@ -516,7 +516,7 @@ export async function do_enlightenment_effect() {
     await tty_display_nhwindow(game.WIN_MESSAGE, false);
     await enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
     await pline_The("feeling subsides.");
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
 }
 
 /* C ref: mextra.h has_mcorpsenm() (newmextra() sets mcorpsenm to NON_PM) */
@@ -2038,7 +2038,7 @@ export async function dozap() {
         await pline("Nothing happens."); /* pline1(nothing_happens) */
     } else if (obj.cursed && !rn2(WAND_BACKFIRE_CHANCE)) {
         await backfire(obj); /* the wand blows up in your face! */
-        exercise(A_STR, false);
+        await exercise(A_STR, false);
         /* 'obj' is gone; skip update_inventory() because
            backfire() -> useupall() -> freeinv() did it */
         return ECMD_TIME;
@@ -2121,7 +2121,7 @@ export async function zapyourself(obj, ordinary) {
                 damage = d(2, 12);
             } else
                 damage = d(1 + obj.spe, 6);
-            exercise(A_STR_ZY, false);
+            await exercise(A_STR_ZY, false);
             monstunseesu(M_SEEN_MAGR_ZY);
         }
         break;
@@ -2132,7 +2132,7 @@ export async function zapyourself(obj, ordinary) {
         if (!uhave_zp(SHOCK_RES)) { /* !Shock_resistance */
             await You("shock yourself!");
             damage = orig_dmg;
-            exercise(A_CON_ZP, false);
+            await exercise(A_CON_ZP, false);
             monstunseesu(M_SEEN_ELEC_ZP);
         } else {
             /* shieldeff(u.ux, u.uy) */
@@ -2424,7 +2424,7 @@ export async function weffects(obj) {
     let disclose = false;
     const was_unkn = !objects[otyp].oc_name_known;
 
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
     if (u.usteed && (objects[otyp].oc_dir !== NODIR) && !u.dx && !u.dy
         && (u.dz > 0)) {
         throw new Error('weffects(): zap_steed() not ported yet');
@@ -2973,7 +2973,7 @@ async function zhitu(
             monstseesu(M_SEEN_MAGR_ZY);
         } else {
             dam = d(nd, 6);
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             monstunseesu(M_SEEN_MAGR_ZY);
         }
         break;
@@ -3075,7 +3075,7 @@ async function zhitu(
             await ugolemeffects_zp(AD_ELEC, orig_dam);
         } else {
             dam = orig_dam;
-            exercise(A_CON_ZP, false);
+            await exercise(A_CON_ZP, false);
             monstunseesu(M_SEEN_ELEC_ZP);
         }
         if (!rn2(3))
@@ -3092,7 +3092,7 @@ async function zhitu(
         } else {
             await pline_The(`${hliquid_zp("acid")} burns!`);
             dam = d(nd, 6);
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             monstunseesu(M_SEEN_ACID_ZP);
         }
         /* using two weapons at once makes both of them more vulnerable */
@@ -3383,7 +3383,7 @@ async function maybe_destroy_item(
                     how = "exploding glob of slime";
                 await losehp(dmg, one ? how : makeplural(how),
                              one ? KILLED_BY_AN : KILLED_BY_ZP);
-                exercise(A_STR, false);
+                await exercise(A_STR, false);
             }
         }
     }
@@ -4379,7 +4379,7 @@ async function u_slow_down_zp() {
         await You("slow down.");
     else /* speed boots */
         await Your("quickness feels less natural.");
-    exercise(A_DEX_ZP, false);
+    await exercise(A_DEX_ZP, false);
 }
 
 /* C ref: hack.h ERODE_CORRODE */

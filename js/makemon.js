@@ -2847,6 +2847,41 @@ export function mkclass_aligned(class_, spc, atyp) {
     return nums[MONSi(first)] ? mons[MONSi(first)] : null;
 }
 
+// C ref: makemon.c mkclass_poly()
+/* like mkclass(), but excludes difficulty considerations; used when
+   player with polycontrol picks a class instead of a specific type;
+   genocided types are avoided but extinct ones are acceptable; we don't
+   check polyok() here--caller accepts some choices !polyok() would reject */
+export function mkclass_poly(class_) {
+    let first, last, num = 0;
+    let gmask;
+
+    for (first = LOW_PM; first < SPECIAL_PM; first++)
+        if (mons[first].mlet === class_)
+            break;
+    if (first === SPECIAL_PM)
+        return NON_PM;
+
+    gmask = (G_NOGEN | G_UNIQ);
+    /* mkclass() does this on a per monster type basis, but doing that here
+       would make the two loops inconsistent with each other for non L */
+    if (rn2(9) || class_ === S_LICH)
+        gmask |= (In_hell(game.u.uz) ? G_NOHELL : G_HELL);
+
+    for (last = first; last < SPECIAL_PM && mons[last].mlet === class_; last++)
+        if (mk_gen_ok(last, G_GENOD, gmask))
+            num += mons[last].geno & G_FREQ;
+    if (!num)
+        return NON_PM;
+
+    for (num = rnd(num); num > 0; first++)
+        if (mk_gen_ok(first, G_GENOD, gmask))
+            num -= mons[first].geno & G_FREQ;
+    first--; /* correct an off-by-one error */
+
+    return first;
+}
+
 // C ref: makemon.c adj_lev()
 /* adjust strength of monsters based on u.uz and u.ulevel */
 export function adj_lev(ptr) {

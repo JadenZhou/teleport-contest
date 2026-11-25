@@ -871,14 +871,14 @@ export async function drag_down() {
             await pline_The("iron ball smacks into you!");
             await losehp(Maybe_Half_Phys(rnd(20)), "iron ball collision",
                          KILLED_BY_AN);
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             dragchance -= 2;
         }
         if (dragchance >= rnd(6)) {
             await pline_The("iron ball drags you downstairs!");
             await losehp(Maybe_Half_Phys(rnd(3)),
                          "dragged downstairs by an iron ball", NO_KILLER_PREFIX);
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
             await litter();
         }
     }
