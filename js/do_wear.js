@@ -1630,7 +1630,6 @@ export async function Cloak_off() {
     const otmp = g.uarmc;
     const otyp = otmp.otyp;
     const oldprop = uprop(objects[otyp].oc_oprop).extrinsic & ~W_ARMC;
-    void oldprop;
 
     takeoff_ctx().mask &= ~W_ARMC;
     /* For mummy wrapping, taking it off first resets `Invisible'. */
@@ -1645,9 +1644,11 @@ export async function Cloak_off() {
     case O.LEATHER_CLOAK:
         break;
     case O.ELVEN_CLOAK:
-        throw new Error('Cloak_off(): toggle_stealth() not ported yet');
+        await toggle_stealth(otmp, oldprop, false);
+        break;
     case O.CLOAK_OF_DISPLACEMENT:
-        throw new Error('Cloak_off(): toggle_displacement() not ported yet');
+        await toggle_displacement(otmp, oldprop, false);
+        break;
     case O.MUMMY_WRAPPING:
     case O.CLOAK_OF_INVISIBILITY:
         throw new Error('Cloak_off(): invisibility cloaks not ported yet');

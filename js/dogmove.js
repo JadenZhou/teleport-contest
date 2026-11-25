@@ -5,6 +5,8 @@
 // Branches that need code no session reaches yet throw a
 // 'not ported yet' error instead of skipping their rolls.
 
+import { polyfood } from './mon.js';
+import { is_organic, is_metallic, is_rustprone } from './objects.js';
 import { helpless } from './monmove.js';
 import { may_dig } from './dig.js';
 import { minv } from './mon.js';
@@ -201,9 +203,10 @@ export function dogfood(mon, obj) {
                 || (acidic(fp) && !mresists(mon, M.MR_ACID))
                 || (poisonous(fp) && !mresists(mon, M.MR_POISON)))
                 return POISON;
-            /* avoid polymorph unless starving or abused */
-            else if ((fp.mflags2 & M.M2_SHAPESHIFTER) /* polyfood() */)
-                throw new Error('dogfood(): polyfood() not ported yet');
+            /* avoid polymorph unless starving or abused (in which case the
+               pet will consider it for a chance to become more powerful) */
+            else if (polyfood(obj) && mon.mtame > 1 && !starving)
+                return MANFOOD;
             else if (vegan(fp))
                 return herbi ? CADAVER : MANFOOD;
             /* most humanoids will avoid cannibalism unless starving;
@@ -243,10 +246,14 @@ export function dogfood(mon, obj) {
             return TABU;
         if (mon_hates_silver(mon) && objects[obj.otyp].oc_material === O.SILVER)
             return TABU;
-        if (mptr === mons[M.PM_GELATINOUS_CUBE])
-            throw new Error('dogfood(): is_organic() not ported yet');
-        if (metallivorous(mptr))
-            throw new Error('dogfood(): is_metallic() not ported yet');
+        if (mptr === mons[M.PM_GELATINOUS_CUBE] && is_organic(obj))
+            return ACCFOOD;
+        if (metallivorous(mptr) && is_metallic(obj)
+            && (is_rustprone(obj) || mptr !== mons[M.PM_RUST_MONSTER])) {
+            /* Non-rustproofed ferrous-based metals are preferred. */
+            return (is_rustprone(obj) && !obj.oerodeproof) ? DOGFOOD
+                                                            : ACCFOOD;
+        }
         if (!obj.cursed
             && obj.oclass !== O.BALL_CLASS
             && obj.oclass !== O.CHAIN_CLASS)

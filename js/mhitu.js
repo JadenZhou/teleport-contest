@@ -4,6 +4,7 @@
 // C ref: mhitu.c.  Paths that aren't ported yet throw a 'not ported yet'
 // error instead of skipping their rolls.
 
+import { Ring_gone } from './do_wear.js';
 import { split_mon } from './potion.js';
 import { You } from './display.js';
 import { DEADMONSTER } from './mon.js';
@@ -1522,7 +1523,7 @@ async function gulpmu(mtmp, mattk) {
         if (u.utrap) {
             await pline(`You are released from the ${
                 (u.utraptype === TT_WEB) ? "web" : "trap"}!`); /* You() */
-            reset_utrap(false);
+            await reset_utrap(false);
         }
 
         i = number_leashed();
@@ -1973,11 +1974,19 @@ export async function doseduce(mon) {
                    but trying to figure that out in advance in order to use
                    alternate wording is not worth the effort */
                 await pline(`${Who} replaces ${yname(game.uright)} with ${yname(ring)}.`);
-                throw new Error('doseduce(): Ring_gone() not ported yet');
+                await Ring_gone(game.uright);
+                /* ring removal might cause loss of levitation which could
+                   drop hero onto trap that transports hero somewhere else */
+                if (u.utotype || !m_next2u(mon))
+                    return 1;
+                setworn(ring, RIGHT_RING);
             } else if (game.uleft && game.uleft.otyp !== RIN_ADORNMENT) {
                 /* see "replaces" note above */
                 await pline(`${Who} replaces ${yname(game.uleft)} with ${yname(ring)}.`);
-                throw new Error('doseduce(): Ring_gone() not ported yet');
+                await Ring_gone(game.uleft);
+                if (u.utotype || !m_next2u(mon))
+                    return 1;
+                setworn(ring, LEFT_RING);
             } else {
                 /* impossible("ring replacement") */
             }

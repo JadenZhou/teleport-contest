@@ -69,7 +69,8 @@ import { gethungry, reset_eat, maybe_finished_meal } from './eat.js';
 import { age_spells } from './spell.js';
 import { u_wipe_engr } from './engrave.js';
 import { dosearch0, warnreveal } from './detect.js';
-import { set_uasmon, rehumanize } from './polyself.js';
+import { set_uasmon, rehumanize, polyself } from './polyself.js';
+import { POLY_NOFLAGS } from './const.js';
 import { is_pool } from './makemon.js';
 import { HALF_PHDAM } from './const.js';
 import { M1_BREATHLESS } from './monsters.js';
@@ -624,9 +625,12 @@ async function moveloop_core() {
                         mvl_change = 2;
                     if (mvl_change && !(P[UNCHANGING].intrinsic || P[UNCHANGING].extrinsic)) {
                         if (g.multi >= 0) {
-                            /* stop_occupation(); polyself(POLY_NOFLAGS) /
-                               you_were(): polymorphing isn't ported yet */
-                            throw new Error('moveloop_core(): polyself() not ported yet');
+                            await stop_occupation();
+                            if (mvl_change === 1)
+                                await polyself(POLY_NOFLAGS);
+                            else
+                                throw new Error('moveloop_core(): you_were() not ported yet');
+                            mvl_change = 0;
                         }
                     }
                 }

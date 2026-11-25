@@ -7,6 +7,8 @@
 // messages.  Portal/falling arrival and returning to a saved level are not
 // ported yet.
 
+import { sellobj_state } from './pickup.js';
+import { SELL_NORMAL, SELL_DELIBERATE } from './const.js';
 import { game } from './gstate.js';
 import { fix_shop_damage } from './shk.js';
 import { livelog_printf } from './display.js';
@@ -1082,9 +1084,11 @@ export async function dodrop() {
     let result;
 
     if (game.u.ushops)
-        throw new Error('dodrop(): sellobj_state() not ported yet');
+        sellobj_state(SELL_DELIBERATE);
     result = await drop(await getobj("drop", any_obj_ok,
                                      GETOBJ_PROMPT | GETOBJ_ALLOWCNT));
+    if (game.u.ushops)
+        sellobj_state(SELL_NORMAL);
     if (result)
         reset_occupations();
 
@@ -1101,11 +1105,13 @@ export async function doddrop() {
     }
     add_valid_menu_class(0); /* clear any classes already there */
     if (game.u.ushops)
-        throw new Error('doddrop(): sellobj_state() not ported yet');
+        sellobj_state(SELL_DELIBERATE);
     if ((game.flags.menu_style ?? MENU_FULL) !== MENU_TRADITIONAL)
         result = await menu_drop(result);
     else
         throw new Error('doddrop(): ggetobj() (menustyle:traditional) not ported yet');
+    if (game.u.ushops)
+        sellobj_state(SELL_NORMAL);
     if (result)
         reset_occupations();
 

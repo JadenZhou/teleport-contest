@@ -2,6 +2,7 @@
 // C ref: invent.c assigninvlet(), reorder_invent(), obj_to_let(), prinv(),
 //        xprname()
 
+import { fingers_or_gloves } from './do_wear.js';
 import { addtobill } from './shk.js';
 import { in_rooms } from './hack.js';
 import { hideunder_async } from './makemon.js';
@@ -1080,7 +1081,7 @@ export function any_obj_ok(obj) {
 // hands based on action
 function getobj_hands_txt(action) {
     if (action === "grease") {
-        throw new Error('getobj_hands_txt(): fingers_or_gloves() not ported yet');
+        return `your ${fingers_or_gloves(false)}`;
     } else if (action === "write with") {
         return `your ${body_part(FINGERTIP)}`;
     } else if (action === "wield") {

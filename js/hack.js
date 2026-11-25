@@ -7,6 +7,8 @@
 // check_special_room() (its shop and special room messages aren't ported
 // yet).
 
+import { feeltrap } from './trap.js';
+import { just_an } from './objnam.js';
 import { mintrap, Trap_Effect_Finished, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon } from './trap.js';
 import { NO_TRAP_FLAGS, LL_CONDUCT } from './const.js';
@@ -2978,7 +2980,16 @@ async function domove_swap_with_pet(mtmp, x, y) {
         didnt_move = true;
     } else if (mtmp.mpeaceful && mtmp.mtrapped) {
         /* all mtame are also mpeaceful, so this affects pets too */
-        throw new Error('domove_swap_with_pet(): trapname()/feeltrap() not ported yet');
+        const what = trapname(trap.ttyp, false);
+        let which = "that ";
+
+        if (!trap.tseen) {
+            feeltrap(trap); /* show on map once mtmp is out of the way */
+            which = just_an(what); /* "a " or "an " */
+        }
+        await You(`stop.  ${YMonnam(mtmp)} can't move out of ${which}${what}.`);
+        await handle_tip(TIP_UNTRAP_MON);
+        didnt_move = true;
     } else if (mtmp.mpeaceful
                && (!goodpos(u.ux0, u.uy0, mtmp, 0)
                    || t_at(u.ux0, u.uy0) != null

@@ -101,7 +101,8 @@ import { fingers_or_gloves } from './do_wear.js';
 import { SICK_VOMITABLE, SICK_ALL } from './const.js';
 import { paranoid_query, donull } from './cmd.js';
 import { tty_yn_function } from './wintty.js';
-import { safe_qbuf, encumber_msg } from './pickup.js';
+import { safe_qbuf, encumber_msg, sellobj_state } from './pickup.js';
+import { SELL_NORMAL, SELL_DONTSELL } from './const.js';
 import { touch_artifact } from './artifact.js';
 import { retouch_object } from './wield.js';
 
@@ -919,11 +920,9 @@ async function touchfood(otmp) {
     if (carried(otmp)) {
         freeinv(otmp);
         if (inv_cnt(false) >= invlet_basic) {
-            /* sellobj_state(SELL_DONTSELL) */
-            if (game.u.ushops)
-                throw new Error('touchfood(): sellobj_state() in a shop not ported yet');
+            sellobj_state(SELL_DONTSELL);
             await dropy(otmp);
-            /* sellobj_state(SELL_NORMAL) */
+            sellobj_state(SELL_NORMAL);
             if (otmp.where === 'OBJ_DELETED')
                 otmp = null;
         } else {
