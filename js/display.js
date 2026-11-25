@@ -28,7 +28,8 @@ import { HALLUC, Is_waterlevel, isok, IS_STWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_M
          M_AP_FURNITURE, WARNCOUNT, def_warnsyms, In_mines, In_sokoban,
          Is_knox_level, M_AP_NOTHING, M_AP_OBJECT, M_AP_MONSTER, M_AP_TYPE,
          PROT_FROM_SHAPE_CHANGERS, MCORPSENM, ACCESSIBLE } from './const.js';
-import { ROGUESET, Is_rogue_level } from './const.js';
+import { ROGUESET, Is_rogue_level, SYM_BOULDER, SYM_UNEXPLORED } from './const.js';
+import { SYM_OFF_P, SYM_OFF_O, SYM_OFF_M, SYM_OFF_X } from './symbols.js';
 import { visible_region_at, show_region } from './region.js';
 import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
@@ -865,6 +866,12 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
         ch = rogue_cell_ch(ch, decgfx, kind, gid);
         decgfx = false;
         color = NO_COLOR;
+    } else {
+        const sym = ov_showsym(kind, gid);
+        if (sym) {
+            ch = sym_char(sym);
+            decgfx = sym_decgfx(sym);
+        }
     }
     /* C ref: display.c show_glyph() -- the spot needs flushing (gnew,
        inside the row's changed-glyph bounding box) only if the glyph or
@@ -883,6 +890,54 @@ export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr
     loc.disp_kind = kind;
     loc.disp_objpile = !!objpile;
     loc.disp_gid = gid;
+}
+
+// C ref: display.c reset_glyphmap() -- glyphmap[glyph].sym.symidx, the
+// gs.showsyms[] index a glyph is drawn with, from what show_glyph_cell()
+// gets of the glyph: a cmap glyph's glyph_to_cmap() (cmapidx), an object
+// glyph's objects[] index (the boulder uses SYM_BOULDER, a statue its
+// monster's class), a monster glyph's monster, the unexplored glyph.
+// -1 when the glyph's identity isn't passed along (the hero, warnings,
+// traps, engravings, the invisible-monster marker).
+function glyph_symidx(kind, gid) {
+    if (!gid)
+        return -1;
+    if (gid.unexplored)
+        return SYM_UNEXPLORED + SYM_OFF_X;
+    if (gid.cmapidx !== undefined && gid.cmapidx !== null)
+        return gid.cmapidx + SYM_OFF_P;
+    if (gid.otyp !== undefined && gid.otyp !== null) {
+        if (gid.otyp === STATUE && gid.corpsenm !== undefined)
+            return mons[gid.corpsenm].mlet + SYM_OFF_M;
+        if (gid.otyp === BOULDER)
+            return SYM_BOULDER + SYM_OFF_X;
+        return objects[gid.otyp].oc_class + SYM_OFF_O;
+    }
+    if (gid.mndx !== undefined && gid.mndx !== null)
+        return mons[gid.mndx].mlet + SYM_OFF_M;
+    return -1;
+}
+
+// C ref: symbols.c switch_symbols(TRUE) / assign_graphics(PRIMARYSET) --
+// gs.showsyms[i] = go.ov_primary_syms[i] ? go.ov_primary_syms[i]
+// : gp.primary_syms[i]; this is the SYMBOLS= override of the glyph's
+// symbol (an nhsym), or 0 when it has none
+function ov_showsym(kind, gid) {
+    const ov = game.ov_primary_syms;
+    if (!ov)
+        return 0;
+    const i = glyph_symidx(kind, gid);
+    return (i >= 0) ? ov[i] : 0;
+}
+
+// C ref: wintty.c tty_print_glyph()/g_putch() -- with the DECgraphics
+// symset's H_DEC handling a symbol with the high bit set is drawn from the
+// DEC line-drawing set (as its low 7 bits); any other symbol as itself
+function sym_decgfx(sym) {
+    return !!(sym & 0x80) && dec_symset();
+}
+function sym_char(sym) {
+    return String.fromCharCode(sym_decgfx(sym) ? (sym & 0x7f) : sym);
 }
 
 /* the glyph identity of two shown glyphs (show_glyph_cell() 'gid') */
@@ -2511,6 +2566,11 @@ export function dec_cell_char(ch) {
 // (high bit set) form of its alternate-charset letter, as dat/symbols
 // gives it (S_room: \xfe for '~')
 export function glyph_ttychar(glyph) {
+    if (game.currentgraphics !== ROGUESET) {
+        const sym = ov_showsym(glyph.kind ?? glyph_kind(glyph), glyph_gid(glyph));
+        if (sym)
+            return sym;
+    }
     const c = (glyph.ch || ' ').charCodeAt(0);
     return glyph.decgfx ? (0x80 | c) : c;
 }
