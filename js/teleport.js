@@ -43,7 +43,7 @@ import { mintrap, seetrap, t_at, is_hole, is_pit, HOLE, TRAPDOOR, TELEP_TRAP,
          LEVEL_TELEP, MAGIC_PORTAL, NO_TRAP, Trap_Effect_Finished,
          Trap_Moved_Mon, clamp_hole_destination } from './trap.js';
 import { migrate_to_level } from './dog.js';
-import { MIGR_RANDOM, MIGR_PORTAL } from './const.js';
+import { MIGR_RANDOM, MIGR_PORTAL, is_xport } from './const.js';
 import { within_bounded_area } from './rect.js';
 import { obj_extract_self, place_object } from './mkobj.js';
 import { mksobj } from './mkobj.js';
@@ -1599,7 +1599,16 @@ export function random_teleport_level() {
         return cur_depth;
 
     if (In_quest(u.uz)) {
-        throw new Error('random_teleport_level(): quest dungeon not ported yet');
+        let bottom = dunlevs_in_dungeon(u.uz);
+        const qlocate_depth = game.dungeon_topology.d_qlocate_level.dlevel;
+
+        /* if hero hasn't reached the middle locate level yet,
+           no one can randomly teleport past it */
+        /* dunlev_reached(&u.uz): svd.dungeons[u.uz.dnum].dunlev_ureached */
+        if (game.dungeons[u.uz.dnum].dunlev_ureached < qlocate_depth)
+            bottom = qlocate_depth;
+        min_depth = game.dungeons[u.uz.dnum].depth_start;
+        max_depth = bottom + (game.dungeons[u.uz.dnum].depth_start - 1);
     } else {
         min_depth = 1;
         max_depth = dunlevs_in_dungeon(u.uz)
@@ -1717,9 +1726,7 @@ export async function mlevel_tele_trap(mtmp, trap, force_it, in_sight) {
             if (trap)
                 seetrap(trap);
         }
-        /* is_xport(tt) */
-        if ((tt === TELEP_TRAP || tt === LEVEL_TELEP)
-            && !control_teleport(mtmp.data))
+        if (is_xport(tt) && !control_teleport(mtmp.data))
             mtmp.mconf = 1;
         migrate_to_level(mtmp, ledger_no(tolevel), migrate_typ, null);
         return Trap_Moved_Mon; /* no longer on this level */
