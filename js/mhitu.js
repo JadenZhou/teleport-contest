@@ -6,7 +6,7 @@
 
 import { Ring_gone } from './do_wear.js';
 import { split_mon } from './potion.js';
-import { You } from './display.js';
+import { You, verbalize } from './display.js';
 import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { poly_gender, rehumanize } from './polyself.js';
@@ -1860,12 +1860,6 @@ async function explmu(mtmp, mattk, ufound) {
 function ld() { return (yyyymmdd(0) - (getyear() * 10000)) === 0xe5; }
 /* C ref: calendar.c getyear() */
 function getyear() { return Math.trunc(yyyymmdd(0) / 10000); }
-/* C ref: pline.c verbalize() */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
-}
 /* C ref: invent.c u_carried_gloves() */
 function u_carried_gloves() {
     let otmp, gloves = null;

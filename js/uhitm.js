@@ -22,7 +22,7 @@ import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          resists_ston, cantwield, is_watch, attacktype,
          noattacks } from './mondata.js';
 import { game } from './gstate.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_CONDUCT, ONAME } from './const.js';
 import { obj_is_pname } from './objnam.js';
 import { cutworm } from './worm.js';
@@ -1711,7 +1711,7 @@ async function mhitm_ad_heal(magr, mattk, mdef, mhm) {
             if (Role_if(M.PM_HEALER)) {
                 if (!Deaf() && !(game.moves % 5)) {
                     /* SetVoice(magr, 0, 80, 0); */
-                    await pline("\"Doc, I can't help you unless you cooperate.\""); /* verbalize() */
+                    await verbalize("Doc, I can't help you unless you cooperate.");
                 }
                 mhm.damage = 0;
             } else

@@ -8,7 +8,7 @@
 // paygd() (end.js), vault_summon_gd(), vault_gd_watching().
 
 import { an } from './objnam.js';
-import { You_see } from './display.js';
+import { You_see, verbalize } from './display.js';
 import { simpleonames } from './iactions.js';
 import { fracture_rock } from './zap.js';
 import { DEADMONSTER } from './mon.js';
@@ -72,12 +72,6 @@ export function g_at(x, y) {
 }
 /* C ref: you.h mhe(), noit_mhis() for a guard (always male or female,
    never "it") */
-/* C ref: pline.c verbalize() -- SetVoice() only matters for speech */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
-}
 /* C ref: rm.h levl[x][y].flags -- the fields that share C's 'flags' bits */
 function lev_flags(lev) {
     return { doormask: lev.doormask, wall_info: lev.wall_info };

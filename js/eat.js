@@ -27,7 +27,7 @@ import { olfaction, type_is_pname, humanoid, noncorporeal, carnivorous,
 import { rounddiv } from './hack.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { rn2 } from './rng.js';
 import { pline } from './display.js';
@@ -209,13 +209,6 @@ export function tin_details(obj, mnum, buf) {
             buf += `${mons[mnum].pmnames[NEUTRAL]} meat`;
     }
     return buf;
-}
-
-/* C ref: pline.c verbalize() */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
 }
 
 // C ref: eat.c init_uhunger()

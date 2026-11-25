@@ -7,7 +7,7 @@
 // figurine timer attachment.
 
 import { is_flyer, nolimbs, cantvomit } from './mondata.js';
-import { vobj_at } from './display.js';
+import { vobj_at, verbalize } from './display.js';
 import { inv_weight } from './hack.js';
 import { wake_nearby } from './mon.js';
 import { is_ice } from './dig.js';
@@ -1669,7 +1669,7 @@ async function hatch_egg(arg, timeout) {
                     flags.female ? "mommy" : "daddy"}${egg.spe ? "." : "?"}"`);
             } else if (mon.data.mlet === S_DRAGON_HE && !Deaf()) {
                 /* SetVoice(mon, 0, 80, 0): no voice interface */
-                await pline(`"Gleep!"`); /* verbalize(): Mything eggs :-) */
+                await verbalize("Gleep!"); /* Mything eggs :-) */
             }
             break;
 

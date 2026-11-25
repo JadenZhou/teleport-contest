@@ -3313,6 +3313,14 @@ export async function You_cant(line) { await pline(`You can't ${line}`); }
 export async function pline_The(line) { await pline(`The ${line}`); }
 export async function There(line) { await pline(`There ${line}`); }
 
+// C ref: pline.c verbalize() -- vpline() of the line in double quotes;
+// PLINE_VERBALIZE only matters to the voice hooks (SetVoice() isn't
+// ported).  There is no Deaf check here: C callers test !Deaf themselves
+// where they need to.  verbalize1(line) is the same call.
+export async function verbalize(line) {
+    await pline(`"${line}"`);
+}
+
 // C ref: pline.c You_feel()
 export async function You_feel(line) {
     if (Unaware())

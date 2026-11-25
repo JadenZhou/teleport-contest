@@ -30,8 +30,8 @@ import { search_special } from './sounds.js';
 import { mons, PM_GRID_BUG, PM_ROGUE, MS_ANIMAL, M1_HUMANOID, S_DOG,
          S_FELINE, S_RODENT, S_YETI } from './monsters.js';
 import { PICK_AXE, DWARVISH_MATTOCK } from './objects.js';
-import { pline, You, Your, pline_The, canseemon, canspotmon,
-         sensemon } from './display.js';
+import { pline, You, Your, pline_The, canseemon, canspotmon, sensemon,
+         verbalize } from './display.js';
 import { dist2, s_suffix } from './hacklib.js';
 import { in_rooms, check_special_room } from './hack.js';
 import { on_level, assign_level } from './dungeon.js';
@@ -169,13 +169,6 @@ function strncmpi(s1, s2, n) {
 }
 /* C ref: polyself.c mbodypart() -- ported in insight.js beside body_part() */
 export { mbodypart };
-/* C ref: pline.c verbalize() -- SetVoice() only matters for speech
-   output, which the tty doesn't do */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
-}
 
 const angrytexts = [ "quite upset", "ticked off", "furious" ];
 

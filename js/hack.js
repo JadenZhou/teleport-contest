@@ -14,7 +14,7 @@ import { mintrap, Trap_Effect_Finished, Trap_Caught_Mon, Trap_Killed_Mon,
 import { NO_TRAP_FLAGS, LL_CONDUCT } from './const.js';
 import { abuse_dog } from './dog.js';
 import { adjalign } from './attrib.js';
-import { livelog_printf, You_feel } from './display.js';
+import { livelog_printf, You_feel, verbalize } from './display.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
 import { monsndx, throws_rocks, amorphous, verysmall, bigmonst, hides_under,
          is_whirly, slithy, noncorporeal, is_clinger, strongmonst, tunnels,
@@ -1251,9 +1251,9 @@ export async function check_special_room(newlev) {
             if (oracle) {
                 /* SetVoice(oracle, 0, 80, 0): no voices */
                 if (!oracle.mpeaceful)
-                    await pline(`"You're in Delphi, ${game.plname}."`); /* verbalize() */
+                    await verbalize(`You're in Delphi, ${game.plname}.`);
                 else
-                    await pline(`"${Hello(null)}, ${game.plname}, welcome to Delphi!"`); /* verbalize() */
+                    await verbalize(`${Hello(null)}, ${game.plname}, welcome to Delphi!`);
             } else
                 msg_given = false;
             break;

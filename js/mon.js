@@ -14,7 +14,7 @@ import { EXACT_NAME, Mgender } from './do_name.js';
 import { record_achievement } from './insight.js';
 import { shtypes } from './shknam.js';
 import { PM_MEDUSA, PM_HIGH_CLERIC } from './monsters.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { remove_worm, wormgone, worm_known, worm_cross, count_wsegs, get_wormno,
          initworm, place_worm_tail_randomly } from './worm.js';
@@ -141,7 +141,7 @@ import { s_suffix } from './hacklib.js';
 import { change_luck, adjalign } from './attrib.js';
 import { experience, more_experienced, newexplevel } from './exper.js';
 import { You_hear, growl, maybe_gasp } from './sounds.js';
-import { PLNMSG_GROWL, DEAF } from './const.js';
+import { PLNMSG_GROWL } from './const.js';
 import { little_to_big } from './mondata.js';
 import { quest_info } from './questpgr.js';
 import { is_lightblocker_mappear, does_block, unblock_point,
@@ -160,7 +160,7 @@ import { in_rooms, spoteffects } from './hack.js';
 import { in_your_sanctuary } from './priest.js';
 import { nemdead, leaddead, nemesis_stinks } from './quest.js';
 import { stinky_nemesis } from './questpgr.js';
-import { Hallucination, Conflict } from './youprop.js';
+import { Hallucination, Conflict, Deaf } from './youprop.js';
 import { m_next2u } from './const.js';
 import { uhis, unstuck } from './mhitu.js';
 import { obj_extract_self } from './mkobj.js';
@@ -1203,15 +1203,12 @@ async function peacefuls_respond(mtmp) {
             && mon.mcansee && m_canseeu(mon)) {
             let buf = '';
             let exclaimed = false, needpunct = false, alreadyfleeing;
-            const Deaf = () => !!(game.u.uprops[DEAF]?.intrinsic
-                                  || game.u.uprops[DEAF]?.extrinsic);
 
             if (humanoid(mon.data) || mon.isshk || mon.ispriest) {
                 if (is_watch(mon.data)) {
-                    /* SetVoice(mon, 0, 80, 0); verbalize() */
-                    if (!Deaf())
-                        await pline('"Halt!  You\'re under arrest!"');
-                    await angry_guards(Deaf());
+                    /* SetVoice(mon, 0, 80, 0) */
+                    await verbalize("Halt!  You're under arrest!");
+                    await angry_guards(!!Deaf());
                 } else {
                     if (!Deaf() && !rn2(5)) {
                         const gasp = maybe_gasp(mon);

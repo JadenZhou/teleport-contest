@@ -9,7 +9,7 @@
 
 import { On_stairs } from './dogmove.js';
 import { game } from './gstate.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_ARTIFACT, NO_ROOM } from './const.js';
 import { inside_shop } from './shk.js';
 import { bare_artifactname } from './iactions.js';
@@ -1721,7 +1721,7 @@ export async function arti_speak(obj) {
         line = "NetHack rumors file closed for renovation.";
     await pline(`${Tobjnam(obj, "whisper")}:`);
     /* SetVoice(): no voice interface */
-    await pline(`"${line}"`); /* verbalize1() */
+    await verbalize(line); /* verbalize1() */
     return ECMD_TIME;
 }
 

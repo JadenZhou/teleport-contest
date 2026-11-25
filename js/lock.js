@@ -16,7 +16,8 @@ import { impossible, is_door_mappear } from './hack.js';
 import { touch_artifact, is_magic_key } from './artifact.js';
 import { game } from './gstate.js';
 import { rn2, rnl } from './rng.js';
-import { pline, newsym, You, You_cant, pline_The, canseemon } from './display.js';
+import { pline, newsym, You, You_cant, pline_The, canseemon,
+         verbalize } from './display.js';
 import { tty_yn_function } from './wintty.js';
 import { get_adjacent_loc } from './cmd.js';
 import { update_mapseen_for } from './dungeon.js';
@@ -92,15 +93,6 @@ import { WAN_POLYMORPH as WAN_POLYMORPH_LK, SPE_POLYMORPH as SPE_POLYMORPH_LK } 
 import {
     Stunned, Confusion, Blind, Deaf, Passes_walls, Protection_from_shape_changers, Unaware
 } from './youprop.js';
-
-
-/* C ref: pline.c verbalize() -- SetVoice() only matters for speech
-   output, which the tty doesn't do */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
-}
 
 /* C ref: flag.h AUTOUNLOCK_* */
 export const AUTOUNLOCK_UNTRAP = 1;

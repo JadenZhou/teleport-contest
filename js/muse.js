@@ -5,7 +5,7 @@
 
 import { DEADMONSTER, minv } from './mon.js';
 import { helpless } from './monmove.js';
-import { stairway_at } from './display.js';
+import { stairway_at, verbalize } from './display.js';
 import { game } from './gstate.js';
 import { worm_move } from './worm.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -2125,13 +2125,6 @@ async function precheck(mon, obj) {
     return 0;
 }
 
-/* C ref: pline.c verbalize() -- SetVoice() only matters for speech
-   output, which the tty doesn't do */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
-}
 
 /* C ref: hack.h mdistu() */
 function mdistu(mon) {

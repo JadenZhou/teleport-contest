@@ -22,7 +22,7 @@ import { resists_poison, breathless, is_silent, has_head, is_human, likes_fire,
          resists_acid, eyecount } from './mondata.js';
 import { game } from './gstate.js';
 import { rn2, rnd, rn1, rnl, d, ROLL_FROM, rn2_on_display_rng } from './rng.js';
-import { swallowed } from './display.js';
+import { swallowed, verbalize } from './display.js';
 import { pline, You, Your, You_feel, pline_The, newsym, see_monsters,
          canseemon, canspotmon, map_invisible, flush_screen, vobj_at,
          glyph_at, glyph_is_invisible, unmap_object, tmp_at, DISP_ALWAYS,
@@ -114,7 +114,6 @@ import { clone_mon as clone_mon_sm } from './makemon.js';
 import { a_monnam as a_monnam_dj } from './do_name.js';
 import { tamedog as tamedog_dj } from './dog.js';
 import { set_malign as set_malign_dj } from './makemon.js';
-import { DEAF as DEAF_DJ } from './const.js';
 import { NEUTRAL } from './const.js';
 
 /* C ref: mondata.c defended() for &youmonst -- worn Grayswandir and the
@@ -2028,7 +2027,7 @@ export async function djinni_from_bottle(obj) {
     /* SetVoice(mtmp, 0, 80, 0): no voice interface */
     switch (chance) {
     case 0: {
-        await verbalize_dj("I am in your debt.  I will grant one wish!");
+        await verbalize("I am in your debt.  I will grant one wish!");
         /* give a wish and discard the monster (mtmp set to null) */
         const monp = { mon: mtmp };
         await mongrantswish(monp);
@@ -2036,33 +2035,26 @@ export async function djinni_from_bottle(obj) {
         break;
     }
     case 1:
-        await verbalize_dj("Thank you for freeing me!");
+        await verbalize("Thank you for freeing me!");
         await tamedog_dj(mtmp, null, false);
         break;
     case 2:
-        await verbalize_dj("You freed me!");
+        await verbalize("You freed me!");
         mtmp.mpeaceful = 1;
         set_malign_dj(mtmp);
         break;
     case 3:
-        await verbalize_dj("It is about time!");
+        await verbalize("It is about time!");
         if (canspotmon(mtmp))
             await pline(`${Monnam(mtmp)} vanishes.`);
         mongone(mtmp);
         break;
     default:
-        await verbalize_dj("You disturbed me, fool!");
+        await verbalize("You disturbed me, fool!");
         mtmp.mpeaceful = 0;
         set_malign_dj(mtmp);
         break;
     }
-}
-/* C ref: pline.c verbalize() */
-async function verbalize_dj(line) {
-    if (game.u.uprops?.[DEAF_DJ]?.intrinsic || game.u.uprops?.[DEAF_DJ]?.extrinsic
-        || game.u.uroleplay?.deaf)
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
 }
 
 // C ref: potion.c split_mon() -- clone a gremlin or mold

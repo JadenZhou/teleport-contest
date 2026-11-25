@@ -7,7 +7,7 @@
 // 'not ported yet' error instead of skipping their rolls.
 
 import { fracture_rock } from './zap.js';
-import { pline_The } from './display.js';
+import { pline_The, verbalize } from './display.js';
 import { rn1 } from './rng.js';
 import { minv } from './mon.js';
 import { m_lined_up } from './mthrowu.js';
@@ -487,8 +487,8 @@ export async function monflee(mtmp, fleetime, first, fleemsg) {
 
                     await pline(`${Monnam(mtmp)} flees from the painful light of ${lsrc}.`); /* pline_mon() */
                 } else {
-                    /* SetVoice(mtmp, 0, 80, 0); verbalize(): Deaf is false here */
-                    await pline('"Bright light!"');
+                    /* SetVoice(mtmp, 0, 80, 0) */
+                    await verbalize("Bright light!");
                 }
             } else {
                 await pline(`${Monnam(mtmp)} turns to flee.`); /* pline_mon() */

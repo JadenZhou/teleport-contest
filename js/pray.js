@@ -8,7 +8,7 @@
 import { Inhell } from './mklev.js';
 import { game } from './gstate.js';
 import { you_unwere } from './were.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { rn2, rn1, rnl, rnz, ROLL_FROM, rn2_on_display_rng } from './rng.js';
 import { roles, randrole } from './role.js';
@@ -1245,11 +1245,6 @@ async function prayer_done() {
     return 1;
 }
 
-
-// C ref: pline.c verbalize()
-async function verbalize(line) {
-    await pline(`"${line}"`);
-}
 
 // C ref: pray.c dosacrifice() -- the #offer command (M-o), sacrifice
 // something to the gods; offering an object (floorfood() and the rest)

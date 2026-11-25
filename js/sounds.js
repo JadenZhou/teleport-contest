@@ -10,7 +10,7 @@ import { g_at, vault_occupied } from './vault.js';
 import { helpless } from './monmove.js';
 import { game } from './gstate.js';
 import { rn2, ROLL_FROM } from './rng.js';
-import { canseemon } from './display.js';
+import { canseemon, verbalize } from './display.js';
 import { vtense } from './objnam.js';
 import { wake_nearto } from './mon.js';
 import { tended_shop, noisy_shop } from './shk.js';
@@ -788,11 +788,11 @@ async function domonnoise(mtmp) {
     if (pline_msg) {
         await pline(`${Monnam(mtmp)} ${pline_msg}`);
     } else if (mtmp.mcan && verbl_msg_mcan) {
-        await pline(`"${verbl_msg_mcan}"`); /* verbalize1() */
+        await verbalize(verbl_msg_mcan); /* verbalize1() */
     } else if (verbl_msg) {
         if (ptr === mons[PM_DEATH])
             throw new Error('domonnoise(): Death speech not ported yet');
-        await pline(`"${verbl_msg}"`); /* verbalize1() */
+        await verbalize(verbl_msg); /* verbalize1() */
     }
     return ECMD_TIME;
 }

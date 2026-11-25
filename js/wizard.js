@@ -20,7 +20,7 @@ import { makemon, set_malign, m_at } from './makemon.js';
 import { enexto } from './teleport.js';
 import { add_to_minv, mksobj } from './mkobj.js';
 import { FAKE_AMULET_OF_YENDOR } from './objects.js';
-import { newsym } from './display.js';
+import { newsym, verbalize } from './display.js';
 import { monster_census } from './minion.js';
 import { big_to_little, is_minion, is_covetous,
          attacktype } from './mondata.js';
@@ -30,7 +30,7 @@ import { Monnam } from './do_name.js';
 import { com_pager } from './questpgr.js';
 import { wake_nearto } from './mon.js';
 import { mon_aligntyp } from './priest.js';
-import { DEAF, A_LAWFUL } from './const.js';
+import { A_LAWFUL } from './const.js';
 import { STRAT_NONE, STRAT_HEAL, STRAT_GROUND, STRAT_MONSTR, STRAT_PLAYER,
          STRAT_WAITMASK, STRAT_APPEARMSG, STRAT_STRATMASK, STRAT_GOAL,
          RLOC_MSG, BOLT_LIM, u_at } from './const.js';
@@ -319,12 +319,6 @@ const random_malediction = [
 /* C ref: mondata.h is_lminion() */
 function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
-}
-/* C ref: pline.c verbalize() -- SetVoice() only matters for speech */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
 }
 
 // C ref: wizard.c cuss()
@@ -796,10 +790,10 @@ export async function resurrect() {
 
         mtmp.mtame = 0, mtmp.mpeaceful = 0; /* paranoia */
         set_malign(mtmp);
-        if (!(g.u.uprops[DEAF]?.intrinsic || g.u.uprops[DEAF]?.extrinsic)) { /* !Deaf */
+        if (!Deaf()) {
             await pline("A voice booms out...");
             /* SetVoice(mtmp, 0, 80, 0): speech output only */
-            await pline(`"So thou thought thou couldst ${verb} me, fool."`); /* verbalize() */
+            await verbalize(`So thou thought thou couldst ${verb} me, fool.`);
         }
     }
 }

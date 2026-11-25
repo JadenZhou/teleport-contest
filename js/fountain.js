@@ -13,7 +13,7 @@ import { polyself } from './polyself.js';
 import { POLY_NOFLAGS } from './const.js';
 import { game } from './gstate.js';
 import { monster_detect } from './detect.js';
-import { livelog_printf } from './display.js';
+import { livelog_printf, verbalize } from './display.js';
 import { LL_ARTIFACT } from './const.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import {
@@ -275,14 +275,6 @@ async function watchman_warn_fountain(mtmp) {
         return true;
     }
     return false;
-}
-
-/* C ref: pline.c verbalize() -- SetVoice() only matters for speech
-   output, which the tty doesn't do */
-async function verbalize(line) {
-    if (Deaf())
-        return; /* vpline(): PLINE_VERBALIZE is dropped when Deaf */
-    await pline(`"${line}"`);
 }
 
 // C ref: fountain.c dryup()
