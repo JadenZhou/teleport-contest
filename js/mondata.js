@@ -36,7 +36,9 @@ import {
     PM_VAMPIRE, PM_VAMPIRE_LEADER, PM_VLAD_THE_IMPALER, PM_GRAY_DRAGON,
     PM_YELLOW_DRAGON, LOW_PM, AD_MAGM, AD_RBRE,
 } from './monsters.js';
-import { Blind, Unaware, Strangled } from './youprop.js';
+import { Blind, Unaware, Strangled, Breathless } from './youprop.js';
+import { W_AMUL } from './const.js';
+import { AMULET_OF_MAGICAL_BREATHING } from './objects.js';
 import { ACURR } from './attrib.js';
 
 // C ref: mondata.h monsndx(ptr) -- ((ptr)->pmidx)
@@ -543,6 +545,37 @@ export function resist_conflict(mtmp) {
 export function is_vampshifter(mon) {
     return mon.cham === PM_VAMPIRE || mon.cham === PM_VAMPIRE_LEADER
         || mon.cham === PM_VLAD_THE_IMPALER;
+}
+
+// C ref: mondata.c can_be_strangled()
+/* True if mon is vulnerable to strangulation */
+export function can_be_strangled(mon) {
+    let mamul;
+    let nonbreathing, nobrainer;
+
+    /* For amulet of strangulation support:  here we're considering
+       strangulation to be loss of blood flow to the brain due to
+       constriction of the arteries in the neck, so all headless
+       creatures are immune (no neck) as are mindless creatures
+       who don't need to breathe (brain, if any, doesn't care).
+       Mindless creatures who do need to breath are vulnerable, as
+       are non-breathing creatures which have higher brain function. */
+    if (!has_head(mon.data))
+        return false;
+    if (mon === game.youmonst) {
+        /* hero can't be mindless but poly'ing into mindless form can
+           confer strangulation protection */
+        nobrainer = mindless(game.youmonst.data);
+        nonbreathing = Breathless();
+    } else {
+        nobrainer = mindless(mon.data);
+        /* monsters don't wear amulets of magical breathing,
+           so second part doesn't achieve anything useful... */
+        nonbreathing = (breathless(mon.data)
+                        || ((mamul = which_armor(mon, W_AMUL)) != null
+                            && (mamul.otyp === AMULET_OF_MAGICAL_BREATHING)));
+    }
+    return (!nobrainer || !nonbreathing);
 }
 
 // C ref: mondata.c mon_hates_silver()

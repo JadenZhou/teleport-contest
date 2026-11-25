@@ -68,6 +68,9 @@ import { mhis as mhis_wp } from './mhitu.js';
 import { s_suffix as s_suffix_wp } from './hacklib.js';
 import { mon_nam as mon_nam_wp } from './do_name.js';
 import { the as the_wp } from './iactions.js';
+import { Your } from './display.js';
+import { vtense } from './objnam.js';
+import { mon_nam } from './do_name.js';
 import { begin_burn, end_burn } from './timeout.js';
 import { cansee } from './vision.js';
 import { arti_light_description } from './light.js';
@@ -510,6 +513,37 @@ export function special_dmgval(
     if (silverhit_p)
         silverhit_p.val = silverhit;
     return bonus;
+}
+
+// C ref: weapon.c silver_sears()
+/* give a "silver <item> sears <target>" message;
+   not used for weapon hit, so we only handle rings */
+export async function silver_sears(magr, mdef, silverhit) {
+    void magr; /* UNUSED */
+    const uleft = game.uleft, uright = game.uright;
+    const ltyp = ((uleft && (silverhit & W_RINGL) !== 0)
+                  ? uleft.otyp : O.STRANGE_OBJECT),
+        rtyp = ((uright && (silverhit & W_RINGR) !== 0)
+                ? uright.otyp : O.STRANGE_OBJECT);
+    const l_dknown = !!(uleft && uleft.dknown),
+        r_dknown = !!(uright && uright.dknown),
+        l_ag = (objects[ltyp].oc_material === O.SILVER && l_dknown),
+        r_ag = (objects[rtyp].oc_material === O.SILVER && r_dknown);
+
+    if ((silverhit & (W_RINGL | W_RINGR)) !== 0) {
+        /* plural if both the same type (so not multi_claw and both rings
+           are non-Null) and either both known or neither known, or both
+           silver (in case there is ever more than one type of silver ring)
+           and both known; singular if multi_claw (where one of ltyp or
+           rtyp will always be STRANGE_OBJECT) even if both rings are known
+           silver [see hmonas(uhitm.c) for explanation of 'multi_claw'] */
+        const both = ((ltyp === rtyp && l_dknown === r_dknown) || (l_ag && r_ag));
+        const rings = `ring${both ? "s" : ""}`;
+        await Your(`${(l_ag || r_ag) ? "silver "
+            : both ? ""
+              : ((silverhit & W_RINGL) !== 0) ? "left "
+                : "right "}${rings} ${vtense(rings, "sear")} ${mon_nam(mdef)}!`);
+    }
 }
 
 // C ref: mon.c can_touch_safely()

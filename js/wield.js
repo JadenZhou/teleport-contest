@@ -49,6 +49,9 @@ import { Yname2, Yobjnam2 } from './objnam.js';
 import { arti_light_description } from './light.js';
 import { begin_burn, end_burn } from './timeout.js';
 import { Tobjnam } from './objnam.js';
+import { yobjnam } from './objnam.js';
+import { Your } from './display.js';
+import { dropx } from './do.js';
 import { Blind } from './youprop.js';
 import { nohands, verysmall, could_twoweap, cantwield } from './mondata.js';
 
@@ -440,6 +443,31 @@ async function wielding(wep) {
     await untwoweapon();
 
     return result;
+}
+
+// C ref: wield.c drop_uswapwep()
+/* uswapwep has become cursed while in two-weapon combat mode or hero is
+   attempting to dual-wield when it is already cursed or hands are slippery */
+export async function drop_uswapwep() {
+    const obj = game.uswapwep;
+
+    /* this used to use makeplural(body_part(HAND)) but in order to be
+       dual-wielded, or to get this far attempting to achieve that,
+       uswapwep must be one-handed; since it's secondary, the hand must
+       be the left one */
+    const left_hand = `left ${body_part(HAND)}`;
+    if (!obj.cursed)
+        /* attempting to two-weapon while Glib */
+        await pline(`${Yobjnam2(obj, "slip")} from your ${left_hand}!`);
+    else if (!game.u.twoweap)
+        /* attempting to two-weapon when uswapwep is cursed */
+        await pline(`${Yobjnam2(obj, "evade")} your grasp and ${
+            otense(obj, "drop")} from your ${left_hand}!`);
+    else
+        /* already two-weaponing but can't anymore because uswapwep has
+           become cursed */
+        await Your(`${left_hand} spasms and drops ${yobjnam(obj, null)}!`);
+    await dropx(obj);
 }
 
 // C ref: wield.c untwoweapon()
