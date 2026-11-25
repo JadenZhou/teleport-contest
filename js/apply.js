@@ -86,6 +86,12 @@ import { accessible } from './makemon.js';
 import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
 import { Confusion, Stunned } from './youprop.js';
 import { ART_SNICKERSNEE } from './artilist.js';
+import { simpleonames as simpleonames_ap } from './iactions.js';
+import { NON_PM as NON_PM_AP } from './const.js';
+import { arti_speak } from './artifact.js';
+import { stucksteed } from './steed.js';
+import { legs_in_no_shape } from './dokick.js';
+import { reset_utrap, fire_damage } from './trap.js';
 import * as MM_bl from './monsters.js';
 import { openit as openit_bl, findit as findit_bl } from './detect.js';
 import { unpunish as unpunish_bl } from './read.js';
@@ -306,7 +312,16 @@ async function use_stethoscope(obj) {
                    we want the same thing '//' or ';' shows: "slime mold"
                    or "grape" or "slice of pizza" */
                 if (otyp === O.SLIME_MOLD && has_mcorpsenm_ap(mtmp)) {
-                    throw new Error('use_stethoscope(): mimic shown as a named fruit (simpleonames()) not ported yet');
+                    /* odummy = init_dummyobj(&dummyobj, mappearance, 1L);
+                       odummy->spe = MCORPSENM(mtmp); */
+                    const odummy = {
+                        otyp, oclass: objects[otyp].oc_class, dknown: 0,
+                        /* default is "on" for types which don't use it */
+                        known: !objects[otyp].oc_uses_known ? 1 : 0,
+                        quan: 1, corpsenm: NON_PM_AP,
+                        spe: mtmp.mextra.mcorpsenm,
+                    };
+                    what = simpleonames_ap(odummy);
                 } else {
                     what = simple_typename_ap(otyp);
                 }
@@ -531,7 +546,7 @@ export async function dorub() {
             uwep.spe = 0; /* for safety */
             uwep.age = rn1_ap(500, 1000);
             if (uwep.lamplit)
-                throw new Error('dorub(): begin_burn() of a lit lamp not ported yet');
+                begin_burn_lp(uwep, true);
             await djinni_from_bottle_ap(uwep);
             discover_object(MAGIC_LAMP, true, true, true); /* makeknown() */
             /* update_inventory(): no perm_invent */
@@ -789,8 +804,9 @@ export async function doapply() {
     }
     /* This assumes that anything that potentially destroyed obj has kept
      * track of it and set obj to null before this point. */
-    if (obj && obj.oartifact)
-        throw new Error('doapply(): arti_speak() not ported yet');
+    if (obj && obj.oartifact) {
+        res |= await arti_speak(obj); /* sets ECMD_TIME bit if artifact speaks */
+    }
     return res;
 }
 
@@ -908,9 +924,23 @@ async function get_valid_jump_position(x, y) {
 }
 
 // C ref: apply.c display_jump_positions()
-function display_jump_positions(on_off) {
-    /* tmp_at(DISP_BEAM, cmap_to_glyph(S_goodpos)) ... */
-    throw new Error('display_jump_positions(): tmp_at() not ported yet');
+async function display_jump_positions(on_off) {
+    let x, y, dx, dy;
+
+    if (on_off) {
+        /* on */
+        tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
+        for (dx = -4; dx <= 4; dx++)
+            for (dy = -4; dy <= 4; dy++) {
+                x = dx + game.u.ux;
+                y = dy + game.u.uy;
+                if (await get_valid_jump_position(x, y) && !u_at(x, y))
+                    tmp_at(x, y);
+            }
+    } else {
+        /* off */
+        tmp_at(DISP_END, 0);
+    }
 }
 
 // C ref: apply.c jump()
@@ -934,8 +964,9 @@ export async function jump(magic) {
         await You_cant("jump very far.");
         return ECMD_OK;
     /* if steed is immobile, can't do physical jump but can do spell one */
-    } else if (!magic && u.usteed) {
-        throw new Error('jump(): stucksteed() not ported yet');
+    } else if (!magic && u.usteed && await stucksteed(false)) {
+        /* stucksteed gave "<steed> won't move" message */
+        return ECMD_OK;
     } else if (u.uswallow) {
         if (magic) {
             await You("bounce around a little.");
@@ -966,7 +997,8 @@ export async function jump(magic) {
         await You("lack the strength to jump!");
         return ECMD_OK;
     } else if (!magic && Wounded_legs()) {
-        throw new Error('jump(): legs_in_no_shape() not ported yet');
+        await legs_in_no_shape("jumping", !!u.usteed);
+        return ECMD_OK;
     } else if (u.usteed && u.utrap) {
         throw new Error('jump(): steed in a trap not ported yet');
     }
@@ -995,14 +1027,16 @@ export async function jump(magic) {
                 throw new Error(`jump(): jumping out of trap type ${u.utraptype} not ported yet`);
             }
             /* if we reach here, hero is no longer trapped */
-            throw new Error('jump(): reset_utrap() not ported yet');
+            await reset_utrap(true);
         }
         /* jumping on hero's same spot doesn't use walk_path() and isn't
            allowed when riding (handled above) */
         if (u_at(cc.x, cc.y)) {
             /* escaping from a trap takes precedence over jumping in place */
-            if (wastrapped)
-                throw new Error('jump(): morehungry() after escaping a trap not ported yet');
+            if (wastrapped) {
+                await morehungry(rnd(10));
+                return ECMD_TIME;
+            }
             /* jumping in place on a trap will trigger it */
             if (t_at(cc.x, cc.y))
                 throw new Error('jump(): jumping in place on a trap not ported yet');
@@ -1182,7 +1216,7 @@ async function use_whip(obj) {
     } else if (!u.dz && (IS_WATERWALL(loc.typ) || loc.typ === LAVAWALL)) {
         await You("cause a small splash.");
         if (loc.typ === LAVAWALL)
-            throw new Error('use_whip(): fire_damage() of a lava wall not ported yet');
+            await fire_damage(g.uwep, false, rx, ry);
         return ECMD_TIME;
     } else if ((!u.dx && !u.dy) || (u.dz > 0)) {
         let dam;
@@ -1194,7 +1228,7 @@ async function use_whip(obj) {
             || IS_WATERWALL(loc.typ) || loc.typ === LAVAWALL) {
             await You("cause a small splash.");
             if (is_lava_wh(u.ux, u.uy))
-                throw new Error('use_whip(): fire_damage() of lava not ported yet');
+                await fire_damage(g.uwep, false, u.ux, u.uy);
             return ECMD_TIME;
         }
         if (Levitation || u.usteed || Flying) {

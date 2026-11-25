@@ -107,6 +107,8 @@ import { pline, livelog_printf } from './display.js';
 import { NHW_TEXT, LL_WISH, LL_ACHIEVE, LL_UMONST, LL_DIVINEGIFT, LL_LIFESAVE,
          LL_ARTIFACT, LL_GENOCIDE, LL_DUMP, LL_SPOILER, LL_MINORAC } from './const.js';
 import { visible_region_at, reg_damg } from './region.js';
+import { mhidden_description } from './pager.js';
+import { MHID_PREFIX, MHID_ARTICLE, MHID_ALTMON, MHID_REGION } from './const.js';
 import { find_mac } from './worn.js';
 import { x_monnam, ARTICLE_YOUR, ARTICLE_THE, SUPPRESS_IT, SUPPRESS_INVISIBLE,
          SUPPRESS_SADDLE, SUPPRESS_HALLUCINATION } from './do_name.js';
@@ -2811,7 +2813,8 @@ export async function mstatusline(mtmp) {
        won't be relevant for it, but wand of probing doesn't */
     if (mtmp.mundetected || mtmp.m_ap_type
         || visible_region_at(game.bhitpos?.x, game.bhitpos?.y))
-        throw new Error('mstatusline(): mhidden_description() not ported yet');
+        info += mhidden_description(mtmp,
+                       MHID_PREFIX | MHID_ARTICLE | MHID_ALTMON | MHID_REGION);
     if (mtmp.mcan)
         info += ", cancelled";
     if (mtmp.mconf)
