@@ -1368,7 +1368,7 @@ export async function doturn() {
         || u.ugangr > 6) { /* "Die, mortal!" */
         await pline(`For some reason, ${Gname} seems to ignore you.`);
         aggravate();
-        exercise(A_WIS, false);
+        await exercise(A_WIS, false);
         return ECMD_TIME;
     }
     if (Inhell()) {
@@ -1380,7 +1380,7 @@ export async function doturn() {
         return ECMD_TIME;
     }
     await pline(`Calling upon ${Gname}, you chant an arcane formula.`);
-    exercise(A_WIS, true);
+    await exercise(A_WIS, true);
 
     /* note: does not perform unturn_dead() on victims' inventories */
     turn_undead_range = BOLT_LIM + Math.trunc(u.ulevel / 5); /* 8 to 14 */

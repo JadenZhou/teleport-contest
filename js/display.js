@@ -2194,7 +2194,14 @@ export function newsym(x, y) {
            remembered as both dark (waslit is false) and lit (glyph is a
            lit corridor) was seen by night vision (or lit_corridor), so
            correct the hero's memory to match waslit */
-        if ((!loc.waslit || (game.flags.dark_room !== false
+        if (Is_rogue_level(game.u.uz)) {
+            if (loc.remembered_glyph.cmap === 'S_litcorr' && loc.typ === CORR)
+                loc.remembered_glyph = rememb_glyph(S_corr_g);
+            else if (loc.remembered_glyph.cmap === 'S_room' && loc.typ === ROOM
+                     && !loc.waslit)
+                loc.remembered_glyph = room_cmap_glyph(0); /* S_stone */
+            /* else goto show_mem */
+        } else if ((!loc.waslit || (game.flags.dark_room !== false
                              && game.iflags.wc_color !== false))
             && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
             loc.remembered_glyph = rememb_glyph(S_corr_g);
@@ -2325,7 +2332,7 @@ export function feel_location(x, y) {
             } else {
                 /* lev->glyph >= cmap_to_glyph(S_stone)
                    && lev->glyph < cmap_to_glyph(S_darkroom) */
-                const idx = !rg ? 0 /* never seen: S_stone */
+                const idx = !rg ? -1 /* never seen: GLYPH_UNEXPLORED, not a cmap glyph */
                     : (rg.cmapidx !== undefined) ? rg.cmapidx
                       : (rg.cmap === 'S_stone') ? 0 : undefined;
                 if (idx === undefined && !rg.obj && !rg.kind)

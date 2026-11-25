@@ -244,14 +244,14 @@ export async function thitu(
                 && Hate_silver()) {
                 /* extra damage already applied by dmgval() */
                 await pline_The("silver sears your flesh!");
-                exercise(A_CON, false);
+                await exercise(A_CON, false);
             }
             if (is_acid) {
                 await pline("It burns!");
                 monstunseesu(M_SEEN_ACID);
             }
             await losehp(dam, knm, kprefix); /* acid damage */
-            exercise(A_STR, false);
+            await exercise(A_STR, false);
         }
         return 1;
     }

@@ -374,7 +374,7 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                     mhm.hitflags |= M_ATTK_HIT;
                 }
             } else if (u.ustuck === magr) {
-                exercise(A_STR, false);
+                await exercise(A_STR, false);
                 await pline(`You are being ${(pa === mons[M.PM_ROPE_GOLEM]) ? 'choked' : 'crushed'}.`);
             }
         } else { /* hand to hand weapon */
@@ -1139,7 +1139,7 @@ async function mhitm_ad_acid(magr, mattk, mdef, mhm) {
                 mhm.damage = 0;
             } else {
                 await pline(`You're covered in ${hliquid("acid")}!  It burns!`);
-                exercise(A_STR, false);
+                await exercise(A_STR, false);
                 monstunseesu(M_SEEN_ACID);
             }
         else
@@ -1356,7 +1356,7 @@ async function mhitm_ad_plys(magr, mattk, mdef, mhm) {
                 /* set gm.multi_reason;
                    3.6.x used "paralyzed by a monster"; be more specific */
                 dynamic_multi_reason(magr, "paralyzed", false);
-                exercise(A_DEX, false);
+                await exercise(A_DEX, false);
             }
         }
     } else {
@@ -1565,7 +1565,7 @@ async function mhitm_ad_famn(magr, mattk, mdef, mhm) {
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await pline(`${Monnam(magr)} reaches out, and your body shrivels.`); /* pline_mon() */
-        exercise(A_CON, false);
+        await exercise(A_CON, false);
         if (!is_fainted())
             await morehungry(rn1(40, 40));
         /* plus the normal damage */
@@ -1669,7 +1669,7 @@ async function mhitm_ad_were(magr, mattk, mdef, mhm) {
             && !Protection_from_shape_changers() && !defends(M.AD_WERE, game.uwep)
             && !await mgc_atk_negated(magr, mdef, true)) {
             await urgent_pline("You feel feverish.");
-            exercise(A_CON, false);
+            await exercise(A_CON, false);
             /* set_ulycn(monsndx(pa)) */
             u.ulycn = monsndx(pa);
             set_uasmon();
@@ -1731,9 +1731,9 @@ async function mhitm_ad_heal(magr, mattk, mdef, mhm) {
                     u.uhp = u.uhpmax;
             }
             if (!rn2(3))
-                exercise(A_STR, true);
+                await exercise(A_STR, true);
             if (!rn2(3))
-                exercise(A_CON, true);
+                await exercise(A_CON, true);
             if (u.uprops[SICK].intrinsic) /* Sick */
                 await make_sick(0, null, false, SICK_ALL);
             game.disp_botl = true;
@@ -1821,8 +1821,8 @@ async function mhitm_ad_legs(magr, mattk, mdef, mhm) {
             } else
                 await pline(`${Monst_name} pricks your ${sidestr} ${leg}!`);
             await set_wounded_legs(side, rnd(60 - ACURR(A_DEX)));
-            exercise(A_STR, false);
-            exercise(A_DEX, false);
+            await exercise(A_STR, false);
+            await exercise(A_DEX, false);
         }
     } else {
         throw new Error('mhitm_ad_legs(): mhitm branch not ported yet');
@@ -2175,7 +2175,7 @@ export async function do_attack(mtmp) {
                               makeplural(body_part(HAND))}.`);
             }
         }
-        exercise(A_STR, true); /* you're exercising muscles */
+        await exercise(A_STR, true); /* you're exercising muscles */
         /* andrew@orca: prevent unlimited pick-axe attacks */
         u_wipe_engr(3);
 
@@ -2684,7 +2684,7 @@ async function hitum(mon, uattk) {
     dieroll = rnd(20);
     mhit.val = (tmp > dieroll || u.uswallow) ? 1 : 0;
     if (tmp > dieroll)
-        exercise(A_DEX, true);
+        await exercise(A_DEX, true);
 
     /* gb.bhitpos is set up by caller */
     malive = await known_hitum(mon, game.uwep, mhit, tmp, armorpenalty.val,
@@ -3077,7 +3077,7 @@ async function hmon_hitmon_misc_obj(hmd, mon, obj) /* obj is not NULL */ {
                 await pline("Splat!");
                 useup_eggs(obj);
                 obj = null;
-                exercise(A_WIS, false);
+                await exercise(A_WIS, false);
             }
         }
         break;
@@ -4518,7 +4518,7 @@ export async function passive(
                        || aatyp === AT_MAGC || aatyp === AT_TUCH)
                 await passive_obj(mon, weapon, ptr.mattk[i]);
         }
-        exercise(A_STR, false);
+        await exercise(A_STR, false);
         break;
     case AD_STON:
         if (mhitb) { /* successful attack */
@@ -4649,7 +4649,7 @@ export async function passive(
                 /* set gm.multi_reason;
                    3.6.x used "frozen by a monster"; be more specific */
                 dynamic_multi_reason(mon, "frozen", false);
-                exercise(A_DEX, false);
+                await exercise(A_DEX, false);
             }
             break;
         case AD_COLD: /* brown mold or blue jelly */
