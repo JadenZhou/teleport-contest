@@ -21,7 +21,10 @@ import { Tobjnam, otense, corpse_xname } from './objnam.js';
 import { is_unpaid } from './shk.js';
 import { maybe_unhide_at } from './mon.js';
 import { remove_worn_item } from './steal.js';
-import { breaktest } from './dothrow.js';
+import { breaktest, hitfloor } from './dothrow.js';
+import { finesse_ahriman } from './artifact.js';
+import { float_down } from './trap.js';
+import { W_ART, W_ARTI, I_SPECIAL } from './const.js';
 import { change_luck } from './attrib.js';
 import { obj_extract_self, add_to_migration } from './mkobj.js';
 import { obfree } from './invent.js';
@@ -1482,8 +1485,22 @@ async function drop(obj) {
         if ((obj.oclass === O.RING_CLASS || obj.otyp === O.MEAT_RING)
             && IS_SINK(game.level.at(game.u.ux, game.u.uy).typ))
             throw new Error('drop(): dosinkring() not ported yet');
-        if (!can_reach_floor(true))
-            throw new Error('drop(): dropping while unable to reach the floor not ported yet');
+        if (!can_reach_floor(true)) {
+            /* we might be levitating due to #invoke Heart of Ahriman;
+               if so, levitation would end during call to freeinv()
+               and we want hitfloor() to happen before float_down() */
+            const levhack = finesse_ahriman(obj);
+
+            if (levhack)
+                game.u.uprops[LEVITATION].extrinsic = W_ART; /* other than W_ARTI */
+            if (game.flags?.verbose ?? true)
+                await You(`drop ${doname(obj)}.`);
+            freeinv(obj);
+            await hitfloor(obj, true);
+            if (levhack)
+                await float_down(I_SPECIAL | TIMEOUT, W_ARTI | W_ART);
+            return ECMD_TIME;
+        }
         if (!IS_ALTAR(game.level.at(game.u.ux, game.u.uy).typ)
             && (game.flags?.verbose ?? true))
             await You(`drop ${doname(obj)}.`);

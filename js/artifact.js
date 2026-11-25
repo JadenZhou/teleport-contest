@@ -80,6 +80,7 @@ import { hitfloor } from './dothrow.js';
 import { dropx } from './do.js';
 import { surface } from './iactions.js';
 import { Levitation } from './youprop.js';
+import { I_SPECIAL, TIMEOUT } from './const.js';
 import { IS_ALTAR } from './const.js';
 import { Antimagic, Hate_silver, Blind as Blind_art } from './youprop.js';
 import { objects as objects_ac, Is_container } from './objects.js';
@@ -1912,6 +1913,33 @@ export function arti_cost(otmp) {
 
 // C ref: artifact.c is_art()
 export function is_art(o, art) { return !!(o && o.oartifact === art); }
+
+// C ref: artifact.c finesse_ahriman()
+/* will freeing this object from inventory cause levitation to end? */
+export function finesse_ahriman(obj) {
+    const u = game.u;
+    let oart;
+
+    /* if we aren't levitating or this isn't an artifact which confers
+       levitation via #invoke then freeinv() won't toggle levitation */
+    if (!Levitation()
+        || (oart = get_artifact(obj)) === artilist()[ART_NONARTIFACT]
+        || oart.inv_prop !== LEVITATION
+        || !(u.uprops[LEVITATION].extrinsic & W_ARTI))
+        return false;
+
+    /* arti_invoke(off) -> float_down() clears I_SPECIAL|TIMEOUT & W_ARTI;
+       probe ahead to see whether that actually results in floating down;
+       (this assumes that there aren't two simultaneously invoked artifacts
+       both conferring levitation--safe, since if there were two of them,
+       invoking the 2nd would negate the 1st rather than stack with it) */
+    const save_Lev = { ...u.uprops[LEVITATION] };
+    u.uprops[LEVITATION].intrinsic &= ~(I_SPECIAL | TIMEOUT);
+    u.uprops[LEVITATION].extrinsic &= ~W_ARTI;
+    const result = !Levitation();
+    Object.assign(u.uprops[LEVITATION], save_Lev);
+    return result;
+}
 
 // C ref: artifact.c artifact_light()
 export function artifact_light(obj) {
