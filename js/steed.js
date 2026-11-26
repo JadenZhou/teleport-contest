@@ -39,6 +39,7 @@ import { steed_vs_stealth } from './polyself.js';
 import { use_skill } from './weapon.js';
 import { encumber_msg } from './pickup.js';
 import { an } from './objnam.js';
+import { instapetrify } from './trap.js';
 import { pmname, Mgender } from './do_name.js';
 import { has_ceiling } from './insight.js';
 import { wseg_mon_at } from './worm.js';
@@ -182,8 +183,12 @@ async function mount_steed(mtmp, force) {
     const ptr = mtmp.data;
     /* touch_petrifies(ptr) && !Stone_resistance */
     if ((ptr === mons[PM_COCKATRICE] || ptr === mons[PM_CHICKATRICE])
-        && !Stone_resistance())
-        throw new Error('mount_steed(): instapetrify() not ported yet');
+        && !Stone_resistance()) {
+        await You(`touch ${mon_nam(mtmp)}.`);
+        const kbuf = `attempting to ride ${
+            an(pmname(mtmp.data, Mgender(mtmp)))}`;
+        await instapetrify(kbuf);
+    }
     if (!mtmp.mtame || mtmp.isminion) {
         await pline(`I think ${mon_nam(mtmp)} would mind.`);
         return false;

@@ -137,6 +137,7 @@ import { vtense as vtense_dw } from './objnam.js';
 import { useup as useup_dw } from './invent.js';
 import { selftouch as selftouch_dw } from './trap.js';
 import { float_up as float_up_dw } from './trap.js';
+import { gulp_blnd_check } from './mhitu.js';
 
 /* C ref: decl.c c_armor ... c_that_ */
 const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
@@ -928,14 +929,6 @@ async function learn_unseen_invent() {
     /* update_inventory(): no perm_invent */
 }
 
-// C ref: mhitu.c gulp_blnd_check()
-function gulp_blnd_check() {
-    const u = game.u;
-    if (!uprop(BLINDED).intrinsic && u.uswallow)
-        throw new Error('gulp_blnd_check(): engulfer blinding (gulpmu()) not ported yet');
-    return false;
-}
-
 // C ref: do_wear.c Blindf_on()
 export async function Blindf_on(otmp) {
     const already_blind = Blind();
@@ -1003,7 +996,7 @@ export async function Blindf_off(otmp) {
                 set_bc(0);
         }
     } else if (was_blind) {
-        if (!gulp_blnd_check()) {
+        if (!(await gulp_blnd_check())) {
             changed = true; /* !Blind */
             await You("can see again.");
         }
