@@ -154,6 +154,15 @@ path. The 8 screens per wizard-quaff-zap-read session that differ only on that l
 The other two owner decisions stand: don't model `u.ubirthday`/shopkeeper names, or runs of 5+
 blanks inside inverse video in menu headings.
 
+**F. compress_str() is ported as C has it (2026-11-26).** The owner approved A95's faithful
+port of wintty.c `compress_str()` (c7419f2, reverted by 943f514, re-applied in 9b48aa2).
+`tty_putstr()` squeezes runs of spaces out of every line of `CO` or more characters in a
+non-message window, so long `#chronicle` and discoveries lines wrap as C wraps them. Each
+wizard-quaff-zap-read session loses 2 screens (222→220) that matched only by coincidence: C's
+option_help() shows the recorder's temp config path (decision E, not modelled), and JS's
+uncompressed `glyph` line used to wrap and offset it. Those screens stay lost; don't add code
+to win them back.
+
 **Gate: browser playability (2026-11-24).** The leaderboard's "Playable" column runs
 `bash frozen/play.sh`: every public session in one Node process, one `moveloop_core()` per key.
 It fails if any session throws (a "not ported yet" stop included), not only when it is slower
