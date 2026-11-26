@@ -3306,7 +3306,8 @@ function swallow_to_glyph(mnum, loc) {
  *  top/bottom centers and the sides are the line-drawing characters
  *  (dat/symbols "DECgraphics": S_sw_tc 'o', S_sw_ml/S_sw_mr 'x', S_sw_bc 's').
  */
-let swallow_lastx = 0, swallow_lasty = 0; /* last swallowed position */
+/* C's static lastx, lasty (last swallowed position) are per-game state,
+   kept in game.swallow_lastx and game.swallow_lasty (see gstate.js) */
 export async function swallowed(first) {
     const u = game.u;
     let left_ok, rght_ok;
@@ -3316,8 +3317,8 @@ export async function swallowed(first) {
         bot();
     } else {
         /* Clear old location */
-        for (let y = swallow_lasty - 1; y <= swallow_lasty + 1; y++)
-            for (let x = swallow_lastx - 1; x <= swallow_lastx + 1; x++)
+        for (let y = game.swallow_lasty - 1; y <= game.swallow_lasty + 1; y++)
+            for (let x = game.swallow_lastx - 1; x <= game.swallow_lastx + 1; x++)
                 if (isok(x, y))
                     show_glyph_cell(x, y, ' ', NO_COLOR, false); /* GLYPH_UNEXPLORED */
     }
@@ -3367,8 +3368,8 @@ export async function swallowed(first) {
     }
 
     /* Update the swallowed position. */
-    swallow_lastx = u.ux;
-    swallow_lasty = u.uy;
+    game.swallow_lastx = u.ux;
+    game.swallow_lasty = u.uy;
 }
 
 // ── bot ──
