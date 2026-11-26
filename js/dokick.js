@@ -1,12 +1,11 @@
 // dokick.js -- the #kick command.
 // C ref: dokick.c
 //
-// Ported so far: dokick() for kicking empty space, walls, doors, secret
-// doors/corridors and stairs (kick_dumb(), kick_ouch(), kick_door(),
-// kick_nondoor() up to the furniture cases, kickstr()).  Kicking monsters
-// (maybe_kick_monster()/kick_monster()), objects (kick_object()) and
-// furniture (thrones, altars, fountains, graves, trees, sinks) are not
-// ported yet.
+// Ported: dokick() (empty space, walls, doors, secret doors/corridors,
+// stairs, furniture, monsters, objects, your steed), kick_dumb(),
+// kick_ouch(), kick_door(), kick_nondoor(), kickstr(), kick_monster(),
+// ghitm(), kick_object()/really_kick_object(), the watchman helpers and the
+// object-delivery code.  Remaining stops are in callees elsewhere.
 
 import { find_drawbridge } from './zap.js';
 import { scatter } from './explode.js';
@@ -172,6 +171,15 @@ import { polymon } from './polyself.js';
 import { PM_STONE_GOLEM } from './monsters.js';
 import { killer } from './topten.js';
 import { instapetrify } from './trap.js';
+import { tty_yn_function } from './wintty.js';
+import { kick_steed } from './steed.js';
+import { splitobj } from './mkobj.js';
+import { upstart } from './hacklib.js';
+import { surface } from './iactions.js';
+import { snuff_candle } from './apply.js';
+import { bhit, thitmonst } from './dothrow.js';
+import { KICKED_WEAPON } from './const.js';
+import { costly_gold, subfrombill, contained_gold, donate_gold } from './shk.js';
 
 /* C ref: dokick.c is_bigfoot(), martial() */
 function is_bigfoot(x) { return x === mons[PM_SASQUATCH]; }
@@ -1073,7 +1081,13 @@ export async function dokick() {
         await You("are too small to do any kicking.");
         no_kick = true;
     } else if (u.usteed) {
-        throw new Error('dokick(): kicking your steed not ported yet');
+        if (await tty_yn_function("Kick your steed?", "yn", 'y') === 'y') { /* yn_function(.., ynchars, 'y', TRUE) */
+            await You(`kick ${mon_nam(u.usteed)}.`);
+            await kick_steed();
+            return ECMD_TIME;
+        } else {
+            return ECMD_OK;
+        }
     } else if (Wounded_legs()) {
         await legs_in_no_shape("kicking", false);
         no_kick = true;
@@ -1150,7 +1164,18 @@ export async function dokick() {
         return ECMD_TIME;
     }
     if (Levitation()) {
-        throw new Error('dokick(): bracing while levitating not ported yet');
+        const xx = u.ux - u.dx;
+        const yy = u.uy - u.dy;
+        /* doors can be opened while levitating, so they must be
+         * reachable for bracing purposes
+         * Possible extension: allow bracing against stuff on the side?
+         */
+        if (isok(xx, yy) && !IS_OBSTRUCTED(g.level.at(xx, yy).typ)
+            && !IS_DOOR(g.level.at(xx, yy).typ)
+            && (!Is_airlevel(u.uz) || !OBJ_AT(xx, yy))) {
+            await You("have nothing to brace yourself against.");
+            return ECMD_OK;
+        }
     }
 
     mtmp = isok(x, y) ? m_at(x, y) : null;
@@ -1349,7 +1374,7 @@ async function really_kick_object(x, y) {
     let shkp = null;
     let trap;
     let costly, isgold, slide = false;
-    const kobj = game.kickedobj;
+    let kobj = game.kickedobj; /* gk.kickedobj */
 
     /* gk.kickedobj should always be set due to conditions of call */
     if (!kobj || kobj.otyp === BOULDER
@@ -1525,28 +1550,93 @@ async function really_kick_object(x, y) {
         return (!rn2(3) || martial()) ? 1 : 0;
     }
 
-    if (kobj.quan > 1 && isgold) {
-        if (rn2(20)) {
-            const flyingcoinmsg = [
-                "scatter the coins", "knock coins all over the place",
-                "send coins flying in all directions",
-            ];
+    if (kobj.quan > 1) {
+        if (!isgold) {
+            kobj = game.kickedobj = splitobj(kobj, 1);
+        } else {
+            if (rn2(20)) {
+                const flyingcoinmsg = [
+                    "scatter the coins", "knock coins all over the place",
+                    "send coins flying in all directions",
+                ];
 
-            if (!Deaf())
-                await pline("Thwwpingg!"); /* pline1() */
-            await You(`${ROLL_FROM(flyingcoinmsg)}!`);
-            await scatter(x, y, rnd(3), VIS_EFFECTS | MAY_HIT, kobj);
-            newsym(x, y);
-            return 1;
-        }
-        if (kobj.quan > 300) {
-            await pline("Thump!");
-            return (!rn2(3) || martial()) ? 1 : 0;
+                if (!Deaf())
+                    await pline("Thwwpingg!"); /* pline1() */
+                await You(`${ROLL_FROM(flyingcoinmsg)}!`);
+                /* (void) */ await scatter(x, y, rnd(3), VIS_EFFECTS | MAY_HIT, kobj);
+                newsym(x, y);
+                return 1;
+            }
+            if (kobj.quan > 300) {
+                await pline("Thump!");
+                return (!rn2(3) || martial()) ? 1 : 0;
+            }
         }
     }
-    /* kobj->quan > 1L && !isgold: splitobj(kobj, 1L) -- with the flight below */
-    void slide; void costly;
-    throw new Error('really_kick_object(): kicked object flight (bhit(KICKED_WEAPON)) not ported yet');
+
+    if (slide && !Blind())
+        await pline(`Whee!  ${upstart(doname(kobj)) /* Doname2() */} ${
+            otense(kobj, "slide")} across the ${surface(x, y)}.`);
+
+    /* (#if 0'd in C: addtobill() for a costly non-gold object) */
+    obj_extract_self(kobj);
+    /* (void) */ await snuff_candle(kobj);
+    newsym(x, y);
+    const pobj = { obj: kobj }; /* &gk.kickedobj */
+    const mon = await bhit(u.dx, u.dy, range, KICKED_WEAPON,
+                           null, null, pobj);
+    kobj = game.kickedobj = pobj.obj;
+    if (!kobj)
+        return 1; /* object broken */
+
+    if (mon) {
+        if (mon.isshk && kobj.where === 'OBJ_MINVENT'
+            && kobj.ocarry === mon)
+            return 1; /* alert shk caught it */
+        game.notonhead = (mon.mx !== game.bhitpos.x || mon.my !== game.bhitpos.y);
+        if (isgold ? await ghitm(mon, kobj)      /* caught? */
+                   : await thitmonst(mon, kobj)) /* hit && used up? */
+            return 1;
+    }
+
+    /* the object might have fallen down a hole;
+       ship_object() will have taken care of shop billing */
+    if (kobj.where === 'OBJ_MIGRATING')
+        return 1;
+
+    const bhitroom = in_rooms(game.bhitpos.x, game.bhitpos.y, SHOPBASE).charAt(0);
+    /* if obj is marked no_charge, stolen_value() won't blame hero for
+       theft but will clear that flag */
+    if (costly && (!costly_spot(game.bhitpos.x, game.bhitpos.y)
+                   || in_rooms(x, y, SHOPBASE).charAt(0) !== bhitroom)) {
+        /* kicked from inside shop to somewhere outside shop */
+        if (isgold)
+            await costly_gold(x, y, kobj.quan, false);
+        else
+            /* (void) */ await stolen_value(kobj, x, y, !!shkp.mpeaceful,
+                                            false);
+        costly = false; /* already billed */
+    }
+
+    if (await flooreffects(kobj, game.bhitpos.x, game.bhitpos.y, "fall"))
+        return 1;
+    if (costly) {
+        let gtg = 0;
+
+        /* costly + landed outside shop handled above; must be inside shop */
+        if (kobj.unpaid)
+            subfrombill(kobj, shkp);
+
+        /* if billed for contained gold during kick, get a refund now */
+        if (Has_contents(kobj)
+            && (gtg = contained_gold(kobj, true)) > 0)
+            await donate_gold(gtg, shkp, false);
+    }
+    place_object(kobj, game.bhitpos.x, game.bhitpos.y);
+    impact_disturbs_zombies(kobj, true);
+    stackobj(kobj);
+    newsym(kobj.ox, kobj.oy);
+    return 1;
 }
 
 // C ref: dokick.c drop_to() -- where objects dropped at <x,y> go
