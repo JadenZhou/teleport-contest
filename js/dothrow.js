@@ -77,6 +77,7 @@ import { ART_MJOLLNIR } from './artilist.js';
 import { welded, weldmsg } from './wield.js';
 import { getobj, freeinv, stackobj } from './invent.js';
 import { addinv_before } from './invent.js';
+import { dry_a_towel } from './weapon.js';
 import { setuwep, setuqwep, set_twoweap } from './wield.js';
 import { artifact_hit } from './artifact.js';
 import { killer_xname } from './mthrowu.js';
@@ -352,7 +353,7 @@ async function throw_obj(obj, shotlimit) {
             break unsplit;
         }
         if (is_wet_towel(obj))
-            throw new Error('throw_obj(): dry_a_towel() not ported yet');
+            await dry_a_towel(obj, -1, false);
 
         /* Multishot calculations
          * (potential volley of up to N missiles; default for N is 1)

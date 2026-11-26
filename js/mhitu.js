@@ -1480,6 +1480,25 @@ export async function expels(
 
 // C ref: mhitu.c gulpmu()
 /* monster swallows you, or damage if already swallowed (u.uswallow != 0) */
+// C ref: mhitu.c gulp_blnd_check()
+/* An interface for use when taking a blindfold off, for example,
+ * to see if an engulfing attack should immediately take affect, like
+ * a passive attack. TRUE if engulfing blindness occurred */
+export async function gulp_blnd_check() {
+    const u = game.u;
+    let mattk;
+
+    if (!u.uprops[BLINDED].intrinsic /* !Blinded */ && u.uswallow
+        && (mattk = attacktype_fordmg(u.ustuck.data, AT_ENGL, M.AD_BLND))
+        && can_blnd(u.ustuck, game.youmonst, mattk.aatyp, null)) {
+        ++u.uswldtim; /* compensate for gulpmu change */
+        /* (void) */ await gulpmu(u.ustuck, mattk);
+        return true;
+    }
+    return false;
+}
+
+// C ref: mhitu.c gulpmu()
 async function gulpmu(mtmp, mattk) {
     const u = game.u;
     const t = t_at(u.ux, u.uy);
