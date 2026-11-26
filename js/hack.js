@@ -973,7 +973,7 @@ export function nomul(nval) {
     if (nval === 0)
         g.multi_reason = null;
     end_running(true);
-    /* cmdq_clear(CQ_CANNED): the command queue isn't ported yet */
+    g.cmdq = []; /* cmdq_clear(CQ_CANNED) */
 }
 
 /* ── C ref: hack.c domove() and the parts of domove_core() reached so far ── */
