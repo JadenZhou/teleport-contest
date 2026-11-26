@@ -6,8 +6,8 @@
 // lose_guardian_angel(), gain_guardian_angel()).
 
 import { game } from './gstate.js';
-import { canspotmon, pline, You_feel, verbalize } from './display.js';
-import { ROLL_FROM } from './rng.js';
+import { canspotmon, canseemon, pline, You_feel, verbalize } from './display.js';
+import { ROLL_FROM, rn2, rn1 } from './rng.js';
 import { makemon, mkclass, ndemon } from './makemon.js';
 import { monsndx, is_lord } from './mondata.js';
 import { mons, S_ANGEL, PM_ANGEL, PM_SHOPKEEPER, PM_GUARD,
@@ -16,19 +16,15 @@ import { mons, S_ANGEL, PM_ANGEL, PM_SHOPKEEPER, PM_GUARD,
          PM_WATER_ELEMENTAL } from './monsters.js';
 import { A_NONE, A_LAWFUL, A_NEUTRAL, A_CHAOTIC, NON_PM, MM_EMIN, MM_NOMSG,
          STRAT_APPEARMSG, DEAF } from './const.js';
-import { Amonnam } from './do_name.js';
-import { s_suffix } from './hacklib.js';
+import { Amonnam, Monnam } from './do_name.js';
+import { s_suffix, sgn } from './hacklib.js';
 import { align_gname } from './pray.js';
-import { rn2, rn1 } from './rng.js';
-import { canseemon } from './display.js';
 import { is_ndemon, is_lminion } from './makemon.js';
 import { is_demon, is_dprince, is_dlord, msummon_environ } from './mondata.js';
 import { PM_WIZARD_OF_YENDOR, PM_BONE_DEVIL, PM_SKELETON, PM_ORCUS,
          PM_DEMOGORGON, PM_JUIBLEX, PM_YEENOGHU, PM_ARCHON,
          G_UNIQ } from './monsters.js';
 import { G_GONE, In_endgame } from './const.js';
-import { Monnam } from './do_name.js';
-import { sgn } from './hacklib.js';
 import { u_wield_art } from './objects.js';
 import { ART_DEMONBANE } from './artilist.js';
 import { Blind } from './youprop.js';
