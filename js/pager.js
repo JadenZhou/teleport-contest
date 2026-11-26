@@ -1501,7 +1501,7 @@ export function do_screen_description(cc, looked, sym) {
             if (pm)
                 for_supplement = pm;
             if (look_buf === "ice")
-                throw new Error('do_screen_description(): ice_descr() not ported yet');
+                look_buf = ice_descr(cc.x, cc.y); /* (void) ice_descr(cc.x, cc.y, look_buf) */
             if (look_buf === "staircase down"
                 && Is_qstart(u.uz) /* on_level(&u.uz, &qstart_level) */ && !ok_to_quest())
                 look_buf = "blocked staircase down";
