@@ -168,7 +168,7 @@ import { STOMACH as STOMACH_CAM } from './const.js';
 import { noit_mon_nam as noit_mon_nam_ls, Monnam as Monnam_ls,
          l_monnam as l_monnam_ls } from './do_name.js';
 import { get_adjacent_loc as get_adjacent_loc_ls } from './cmd.js';
-import { use_pick_axe } from './dig.js';
+import { use_pick_axe, buried_ball_to_freedom } from './dig.js';
 import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
 import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
          M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
@@ -252,7 +252,8 @@ async function use_bell(obj) {
                 await unpunish_bl();
                 res = 1;
             } else if (u.utrap && u.utraptype === TT_BURIEDBALL_bl) {
-                throw new Error('use_bell(): buried_ball_to_freedom() not ported yet');
+                await buried_ball_to_freedom();
+                res = 1;
             }
             res += await openit_bl();
             switch (res) {

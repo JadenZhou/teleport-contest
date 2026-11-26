@@ -826,6 +826,23 @@ export async function buried_ball_to_punishment() {
     }
 }
 
+// C ref: dig.c buried_ball_to_freedom()
+export async function buried_ball_to_freedom() {
+    const u = game.u;
+    const cc = { x: u.ux, y: u.uy };
+    const ball = buried_ball(cc);
+
+    if (ball) {
+        mkobj_obj_extract_self(ball);
+        /* rusting buried metallic objects is not implemented yet (#if 0) */
+        place_object(ball, cc.x, cc.y);
+        stackobj(ball);
+        await reset_utrap(true);
+        del_engr_at(cc.x, cc.y);
+        newsym(cc.x, cc.y);
+    }
+}
+
 
 /* C ref: context.h struct dig_info (svc.context.digging); C's context
    starts zeroed */

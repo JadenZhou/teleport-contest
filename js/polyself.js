@@ -58,7 +58,8 @@ import { pline, You, Your, You_cant, You_feel, pline_The, newsym,
          see_monsters, canspotmon } from './display.js';
 import { ACURR, exercise, ATTRMAX, ATTRMIN, adjabil, newhp,
          setuhpmax } from './attrib.js';
-import { rndexp } from './potion.js';
+import { rndexp, hliquid } from './potion.js';
+import { buried_ball_to_freedom } from './dig.js';
 import { newpw } from './exper.js';
 import { newuhs } from './eat.js';
 import { max_rank_sz } from './botl.js';
@@ -1038,10 +1039,17 @@ export async function polymon(mntmp) {
     }
     if (uprop_on(PASSES_WALLS) && u.utrap
         && (u.utraptype === TT_INFLOOR || u.utraptype === TT_BURIEDBALL)) {
-        throw new Error('polymon(): freeing hero from floor/buried ball not ported yet');
+        if (u.utraptype === TT_INFLOOR) {
+            await pline_The("rock seems to no longer trap you.");
+        } else {
+            await pline_The("buried ball is no longer bound to you.");
+            await buried_ball_to_freedom();
+        }
+        await reset_utrap(true);
     } else if (likes_lava(youmonst.data) && u.utrap
                && u.utraptype === TT_LAVA) {
-        throw new Error('polymon(): "lava now feels soothing" not ported yet');
+        await pline_The(`${hliquid("lava")} now feels soothing.`);
+        await reset_utrap(true);
     }
     if (amorphous(youmonst.data) || is_whirly(youmonst.data)
         || unsolid(youmonst.data)) {
@@ -1049,9 +1057,8 @@ export async function polymon(mntmp) {
             await You("slip out of the iron chain.");
             await unpunish();
         } else if (u.utrap && u.utraptype === TT_BURIEDBALL) {
-            /* You("slip free of the buried ball and chain.");
-               buried_ball_to_freedom(); */
-            throw new Error('polymon(): buried_ball_to_freedom() not ported yet');
+            await You("slip free of the buried ball and chain.");
+            await buried_ball_to_freedom();
         }
     }
     if (u.utrap && (u.utraptype === TT_WEB || u.utraptype === TT_BEARTRAP)
