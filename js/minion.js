@@ -28,6 +28,7 @@ import { G_GONE, In_endgame } from './const.js';
 import { u_wield_art } from './objects.js';
 import { ART_DEMONBANE } from './artilist.js';
 import { Blind } from './youprop.js';
+import { show_transient_light, transient_light_cleanup } from './light.js';
 
 /* used to pick among the four basic elementals without worrying whether
    they've been reordered (difficulty reassessment?) or any new ones have
@@ -146,10 +147,8 @@ export async function msummon(mon) {
                 /* for any 'A', 'cloud of smoke' will be 'flash of light';
                    if more than one monster is being created, that message
                    might be skipped for this monster but show 'mtmp' anyway */
-                /* show_transient_light((struct obj *) 0, mtmp->mx, mtmp->my);
-                   xlight = TRUE; -- camera-flash light sources aren't
-                   ported (light.js) */
-                throw new Error('msummon(): show_transient_light() not ported yet');
+                await show_transient_light(null, mtmp.mx, mtmp.my);
+                xlight = true;
                 /* we don't do this for 'burst of flame' (fire elemental)
                    because those monsters become their own light source */
             }
@@ -163,8 +162,12 @@ export async function msummon(mon) {
         cnt--;
     }
 
-    /* if (xlight) transient_light_cleanup(); -- unreachable until
-       show_transient_light() is ported (see above) */
+    if (xlight) {
+        /* Note: if we forced --More-- here, the 'A's would be visible for
+           long enough to be seen, but like with clairvoyance, some players
+           would be annoyed at the disruption of having to acknowledge it */
+        await transient_light_cleanup();
+    }
 
     /* how many monsters exist now compared to before? */
     if (result)
