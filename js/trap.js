@@ -343,6 +343,15 @@ import { poly_obj } from './zap.js';
 import { update_mon_extrinsics } from './worn.js';
 import { mpickobj } from './steal.js';
 import { IRON_SHOES, KICKING_BOOTS } from './objects.js';
+import { level_difficulty } from './dungeon.js';
+import { The } from './objnam.js';
+import { make_stunned } from './potion.js';
+import { HStun } from './youprop.js';
+import { NO_PART } from './const.js';
+import { STONING } from './const.js';
+import { Stone_resistance } from './youprop.js';
+import { PM_STONE_GOLEM } from './monsters.js';
+import { polymon } from './polyself.js';
 export { is_hole, is_pit };
 
 
@@ -2683,6 +2692,20 @@ async function dofiretrap(
         await You("smell paper burning.");
     if (is_ice_tr(u.ux, u.uy))
         await melt_ice_tr(u.ux, u.uy, null);
+}
+
+// C ref: trap.c instapetrify()
+/* Combine cockatrice checks into single functions to avoid repeating code. */
+export async function instapetrify(str) {
+    if (Stone_resistance())
+        return;
+    if (poly_when_stoned(game.youmonst.data) && await polymon(PM_STONE_GOLEM))
+        return;
+    await urgent_pline("You turn to stone...");
+    killer().format = KILLED_BY;
+    if (str !== killer().name)
+        killer().name = str ? str : "";
+    await done(STONING);
 }
 
 // C ref: trap.c minstapetrify()
@@ -5107,6 +5130,22 @@ export async function chest_trap(obj, bodypart, disarm) {
 
     obj.tknown = 1; /* hero knows chest is no longer trapped */
     return false;
+}
+
+// C ref: trap.c b_trapped()
+/* used for doors (also tins).  can be used for anything else that opens. */
+export async function b_trapped(item, bodypart) {
+    const lvl = level_difficulty(),
+        dmg = rnd(5 + (lvl < 5 ? lvl : 2 + Math.trunc(lvl / 2)));
+
+    /* Soundeffect(se_kaboom, 80) */
+    await pline(`KABOOM!!  ${The(item)} was booby-trapped!`);
+    await wake_nearby(false);
+    await losehp(Maybe_Half_Phys(dmg), "explosion", KILLED_BY_AN);
+    await exercise(A_STR, false);
+    if (bodypart !== NO_PART)
+        await exercise(A_CON, false);
+    await make_stunned((HStun() & TIMEOUT) + dmg, true);
 }
 
 // C ref: trap.c dountrap() -- the #untrap command

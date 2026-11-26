@@ -2004,3 +2004,25 @@ export async function doturn() {
     g.nomovemsg = "You can move again."; /* You_can_move_again */
     return ECMD_TIME;
 }
+
+// C ref: pray.c altar_wrath()
+export async function altar_wrath(x, y) {
+    const u = game.u;
+    const altaralign = a_align(x, y);
+
+    if (u.ualign.type === altaralign && u.ualign.record > -rn2(4)) {
+        await godvoice(altaralign, "How darest thou desecrate my altar!");
+        /* (void) */ await adjattrib(A_WIS, -1, 0 /* FALSE */);
+        u.ualign.record--;
+    } else {
+        await pline(`${!Deaf() ? "A voice (could it be"
+                               : "Despite your deafness, you seem to hear"} ${
+            align_gname(altaralign)}${!Deaf() ? "?) whispers" : " say"}:`);
+        /* SetVoice((struct monst *) 0, 0, 80, voice_deity) */
+        await verbalize("Thou shalt pay, infidel!");
+        /* higher luck is more likely to be reduced; as it approaches -5
+           the chance to lose another point drops down, eventually to 0 */
+        if (Luck() > -5 && rn2(Luck() + 6))
+            change_luck(rn2(20) ? -1 : -2);
+    }
+}
