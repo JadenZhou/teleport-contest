@@ -31,6 +31,7 @@ import { ACURR } from './attrib.js';
 import { prinv, getobj, hands_obj, splittable, freeinv } from './invent.js';
 import { addinv } from './u_init.js';
 import { splitobj, unsplitobj } from './mkobj.js';
+import { reset_remarm } from './do_wear.js';
 import { simpleonames } from './iactions.js';
 import { vtense, otense } from './objnam.js';
 import { inv_cnt } from './hack.js';
@@ -294,8 +295,10 @@ export async function doswapweapon() {
         await pline("Don't be ridiculous!");
         return ECMD_FAIL;
     }
-    if (welded(game.uwep))
-        throw new Error('doswapweapon(): weldmsg() not ported yet');
+    if (welded(game.uwep)) {
+        await weldmsg(game.uwep);
+        return ECMD_FAIL;
+    }
 
     /* Unwield your current secondary weapon */
     const oldwep = game.uwep;
@@ -365,7 +368,13 @@ export async function dowield() {
     } else if (wep === game.uwep) {
         return await already_wielded(wep);
     } else if (welded(game.uwep)) {
-        throw new Error('dowield(): weldmsg() not ported yet');
+        await weldmsg(game.uwep);
+        /* previously interrupted armor removal mustn't be resumed */
+        reset_remarm();
+        /* if player chose a partial stack but can't wield it, undo split */
+        if (wep.o_id && wep.o_id === game.context?.objsplit?.child_oid)
+            unsplitobj(wep);
+        return ECMD_FAIL;
     } else if (wep.o_id && wep.o_id === game.context?.objsplit?.child_oid) {
         /* if wep is the result of supplying a count to getobj()
            we don't want to split something already wielded; for
@@ -546,6 +555,9 @@ export async function dowieldquiver() {
 // #fire when refilling empty quiver; readying the chosen object is not
 // ported yet
 export async function doquiver_core(verb) { /* "ready" or "fire" */
+    let was_uwep = false;
+    const was_twoweap = game.u.twoweap;
+
     /* Since the quiver isn't in your hands, don't check cantwield(),
        will_weld(), touch_petrifies(), etc. */
     game.multi = 0;
@@ -588,7 +600,46 @@ export async function doquiver_core(verb) { /* "ready" or "fire" */
         await You(`cannot ${verb} that!`);
         return ECMD_OK;
     } else if (newquiver === game.uwep) {
-        throw new Error('doquiver_core(): readying the wielded weapon not ported yet');
+        let qbuf;
+        const uwep = game.uwep;
+        const weld_res = !uwep.bknown;
+
+        if (welded(uwep)) {
+            await weldmsg(uwep);
+            reset_remarm(); /* same as dowield() */
+            return weld_res ? ECMD_TIME : ECMD_OK;
+        }
+        /* offer to split stack if wielding more than 1 */
+        if (uwep.quan > 1 && inv_cnt(false) < invlet_basic
+            && splittable(uwep)) {
+            qbuf = `You are wielding ${uwep.quan} ${simpleonames(uwep)}.  Ready ${uwep.quan - 1} of them?`;
+            switch (await ynq(qbuf)) {
+            case 'q':
+                return ECMD_OK;
+            case 'y':
+                /* leave 1 wielded, split rest off and put into quiver */
+                newquiver = splitobj(uwep, uwep.quan - 1);
+                await finish_splitting(newquiver);
+                return await quivering(verb, newquiver, was_uwep, was_twoweap);
+            default:
+                break;
+            }
+            qbuf = "Ready all of them instead?";
+        } else {
+            const use_plural = (is_plural(uwep) || pair_of(uwep));
+
+            qbuf = `You are wielding ${!use_plural ? "that" : "those"}.  Ready ${!use_plural ? "it" : "them"} instead?`;
+        }
+        /* require confirmation to ready the main weapon */
+        if ((await ynq(qbuf)) !== 'y') {
+            qbuf = Shk_Your(uwep); /* replace qbuf[] contents */
+            await pline(`${qbuf}${simpleonames(uwep)} ${otense(uwep, "remain")} wielded.`);
+            return ECMD_OK;
+        }
+        /* quivering main weapon, so no longer wielding it */
+        setuwep(null);
+        await untwoweapon();
+        was_uwep = true;
     } else if (newquiver === game.uswapwep) {
         let qbuf;
         const uswapwep = game.uswapwep;
@@ -603,7 +654,7 @@ export async function doquiver_core(verb) { /* "ready" or "fire" */
                 /* leave 1 alt-wielded, split rest off and put into quiver */
                 newquiver = splitobj(uswapwep, uswapwep.quan - 1);
                 await finish_splitting(newquiver);
-                return await quivering(verb, newquiver);
+                return await quivering(verb, newquiver, was_uwep, was_twoweap);
             default:
                 break;
             }
@@ -624,11 +675,11 @@ export async function doquiver_core(verb) { /* "ready" or "fire" */
         await untwoweapon();
     }
 
-    return await quivering(verb, newquiver);
+    return await quivering(verb, newquiver, was_uwep, was_twoweap);
 }
 
 /* C ref: wield.c doquiver_core() -- its quivering: label */
-async function quivering(verb, newquiver) {
+async function quivering(verb, newquiver, was_uwep, was_twoweap) {
     if (verb === "ready") {
         /* place item in quiver before printing so that inventory feedback
            includes "(at the ready)" */
@@ -643,8 +694,18 @@ async function quivering(verb, newquiver) {
 
     /* quiver is a convenience slot and manipulating it ordinarily
        consumes no time, but unwielding primary or secondary weapon
-       should take time; was_uwep and was_twoweap can't be set yet */
-    return ECMD_OK;
+       should take time (perhaps we're adjacent to a rust monster
+       or disenchanter and want to hit it immediately, but not with
+       something we're wielding that's vulnerable to its damage) */
+    let res = 0;
+    if (was_uwep) {
+        await You(`are now ${empty_handed_wl()}.`);
+        res = 1;
+    } else if (was_twoweap && !game.u.twoweap) {
+        await You("are no longer using two weapons at once."); /* are_no_longer_twoweap */
+        res = 1;
+    }
+    return res ? ECMD_TIME : ECMD_OK;
 }
 
 // C ref: wield.c erodeable_wep() -- used by will_weld()
@@ -665,6 +726,22 @@ export function welded(obj) {
         return 1;
     }
     return 0;
+}
+
+// C ref: wield.c weldmsg()
+/* give a message saying that obj is welded to your hand(s) */
+export async function weldmsg(obj) {
+    let savewornmask;
+    let hand = body_part(HAND);
+
+    if (bimanual(obj))
+        hand = makeplural(hand);
+    savewornmask = obj.owornmask;
+    obj.owornmask = 0; /* suppress doname()'s "(weapon in hand)";
+                        * Yobjnam2() doesn't actually need this because
+                        * it is based on xname() rather than doname() */
+    await pline(`${Yobjnam2(obj, "are")} welded to your ${hand}!`);
+    obj.owornmask = savewornmask;
 }
 
 // C ref: engrave.c freehand()

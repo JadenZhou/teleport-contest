@@ -116,7 +116,7 @@ import { WAN_CANCELLATION, LARGE_BOX, CHEST, ICE_BOX, AMULET_OF_YENDOR, CANDELAB
 import { obfree, freeinv, getobj, objchain_items } from './invent.js';
 import { shop_keeper, sellobj, get_obj_location } from './shk.js';
 import { Norep, pline_The, bot, canspotmon } from './display.js';
-import { welded, setuwep, setuswapwep, setuqwep } from './wield.js';
+import { welded, setuwep, setuswapwep, setuqwep, weldmsg } from './wield.js';
 import { MZ_LARGE, PM_ICE_TROLL, PM_HOUSECAT } from './monsters.js';
 import { add_to_container, start_corpse_timeout, set_corpsenm, start_glob_timeout } from './mkobj.js';
 import { stop_timer, obj_to_any } from './timeout.js';
@@ -2492,8 +2492,10 @@ async function in_container(obj) {
         await pline(`${Tobjnam(obj, "are")} attached to your pet.`);
         return 0;
     } else if (obj === game.uwep) {
-        if (welded(obj))
-            throw new Error('in_container(): weldmsg() not ported yet');
+        if (welded(obj)) {
+            await weldmsg(obj);
+            return 0;
+        }
         setuwep(null);
         /* This uwep check is obsolete.  It dates to 3.0 and earlier when
          * unwielding Firebrand would be fatal in hell if hero had no other

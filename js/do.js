@@ -103,7 +103,7 @@ import { MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION, UNPAID_TYPES,
          USE_INVLET, INVORDER_SORT } from './const.js';
 import { GETOBJ_PROMPT, GETOBJ_ALLOWCNT, ECMD_FAIL, ECMD_TIME, W_ARMOR,
          W_ACCESSORY, W_SADDLE, IS_SINK, LOST_DROPPED } from './const.js';
-import { welded, setuwep, setuqwep, setuswapwep } from './wield.js';
+import { welded, setuwep, setuqwep, setuswapwep, weldmsg } from './wield.js';
 import { Norep } from './display.js';
 import { makeplural } from './objnam.js';
 import { HAND } from './const.js';
@@ -1556,8 +1556,10 @@ async function drop(obj) {
     if (obj.otyp === O.CORPSE)
         throw new Error('drop(): better_not_try_to_drop_that() not ported yet');
     if (obj === game.uwep) {
-        if (welded(game.uwep))
-            throw new Error('drop(): weldmsg() not ported yet');
+        if (welded(game.uwep)) {
+            await weldmsg(obj);
+            return ECMD_FAIL;
+        }
         setuwep(null);
     }
     if (obj === game.uquiver) {

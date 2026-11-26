@@ -84,6 +84,7 @@ import { unchanger, stuck_ring } from './do_wear.js';
 import { RIN_SUSTAIN_ABILITY, CORPSE, STATUE } from './objects.js';
 import { OMONST, ANIMATE_SPELL } from './const.js';
 import { revive } from './zap.js';
+import { buried_ball_to_freedom } from './dig.js';
 import { animate_statue } from './trap.js';
 import { done as done_pr } from './end.js';
 import { killer as killer_pr } from './topten.js';
@@ -977,7 +978,7 @@ async function fix_worst_trouble(trouble) {
     case TROUBLE_PUNISHED:
         await Your("chain disappears.");
         if (u.utrap && u.utraptype === TT_BURIEDBALL)
-            throw new Error('fix_worst_trouble(): buried_ball_to_freedom() not ported yet');
+            await buried_ball_to_freedom();
         else
             await unpunish();
         break;
