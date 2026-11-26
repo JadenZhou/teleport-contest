@@ -326,9 +326,8 @@ export async function gethungry() {
     await newuhs(true);
 }
 
-/* C ref: eat.c newuhs() static save_hs / saved_hs */
-let save_hs = 0;
-let saved_hs = false;
+/* C ref: eat.c newuhs() static save_hs / saved_hs -- per-game state, kept
+   in game.save_hs and game.saved_hs (see gstate.js) */
 
 // C ref: eat.c morehungry()
 /* called when eating a corpse, jumping, casting a spell &c */
@@ -363,16 +362,16 @@ export async function newuhs(incr) {
      * sets the occupation.
      */
     if (g.occupation === eatfood || g.force_save_hs) {
-        if (!saved_hs) {
-            save_hs = u.uhs;
-            saved_hs = true;
+        if (!g.saved_hs) {
+            g.save_hs = u.uhs;
+            g.saved_hs = true;
         }
         u.uhs = newhs;
         return;
     } else {
-        if (saved_hs) {
-            u.uhs = save_hs;
-            saved_hs = false;
+        if (g.saved_hs) {
+            u.uhs = g.save_hs;
+            g.saved_hs = false;
         }
     }
 
@@ -1107,7 +1106,8 @@ export async function eat_brains(magr, mdef, visflag,
 
 // C ref: eat.c maybe_cannibal()
 /* eating a corpse or egg of one's own species is usually naughty */
-let ate_brains = 0;
+/* C's static long ate_brains is per-game state, kept in game.ate_brains
+   (see gstate.js) */
 async function maybe_cannibal(pm, allowmsg) {
     const fptr = mons[pm]; /* food type */
     const u = game.u;
@@ -1115,9 +1115,9 @@ async function maybe_cannibal(pm, allowmsg) {
     /* when poly'd into a mind flayer, multiple tentacle hits in one
        turn cause multiple digestion checks to occur; avoid giving
        multiple luck penalties for the same attack */
-    if (game.moves === ate_brains)
+    if (game.moves === game.ate_brains)
         return false;
-    ate_brains = game.moves; /* ate_anything, not just brains... */
+    game.ate_brains = game.moves; /* ate_anything, not just brains... */
 
     if (!CANNIBAL_ALLOWED()
         /* non-cannibalistic heroes shouldn't eat own species ever
