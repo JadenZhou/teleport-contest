@@ -53,6 +53,7 @@ import {
 import { rn2, rnd, rn1, d, rnl } from './rng.js';
 import { MZ_HUGE } from './monsters.js';
 import { touch_petrifies } from './mondata.js';
+import { unpunish } from './read.js';
 import { pline, You, Your, You_cant, You_feel, pline_The, newsym,
          see_monsters, canspotmon } from './display.js';
 import { ACURR, exercise, ATTRMAX, ATTRMIN, adjabil, newhp,
@@ -1044,8 +1045,14 @@ export async function polymon(mntmp) {
     }
     if (amorphous(youmonst.data) || is_whirly(youmonst.data)
         || unsolid(youmonst.data)) {
-        if (Punished() || (u.utrap && u.utraptype === TT_BURIEDBALL))
-            throw new Error('polymon(): slipping out of the chain not ported yet');
+        if (Punished()) {
+            await You("slip out of the iron chain.");
+            await unpunish();
+        } else if (u.utrap && u.utraptype === TT_BURIEDBALL) {
+            /* You("slip free of the buried ball and chain.");
+               buried_ball_to_freedom(); */
+            throw new Error('polymon(): buried_ball_to_freedom() not ported yet');
+        }
     }
     if (u.utrap && (u.utraptype === TT_WEB || u.utraptype === TT_BEARTRAP)
         && (amorphous(youmonst.data) || is_whirly(youmonst.data)
