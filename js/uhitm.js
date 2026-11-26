@@ -99,7 +99,7 @@ import { otense } from './objnam.js';
 import { a_monnam, EXACT_NAME } from './do_name.js';
 import { M_AP_OBJECT, M_AP_FURNITURE, M_AP_MONSTER, MIM_REVEAL, MIM_OMIT_WAIT,
          TELEPAT, SEE_INVIS } from './const.js';
-import { STRANGE_OBJECT } from './objects.js';
+import { STRANGE_OBJECT, AMULET_OF_LIFE_SAVING } from './objects.js';
 import { u_wipe_engr, sticks } from './engrave.js';
 import { m_move } from './monmove.js';
 import { wakeup, seemimic, xkilled, killed } from './mon.js';
@@ -112,7 +112,7 @@ import { ART_CLEAVER, ART_TROLLSBANE, ART_OGRESMASHER, ART_GIANTSLAYER,
 import { obj_resists } from './dogmove.js';
 import { bare_artifactname } from './iactions.js';
 import { exclam } from './zap.js';
-import { could_seduce } from './mhitu.js';
+import { could_seduce, mhis } from './mhitu.js';
 import { carrying } from './invent.js';
 import { abuse_dog } from './dog.js';
 import { discover_object, makeknown } from './o_init.js';
@@ -172,7 +172,7 @@ import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
 import { corpse_xname, An, singular, cxname } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { munstone } from './muse.js';
-import { stale_egg } from './eat.js';
+import { stale_egg, eat_brains } from './eat.js';
 import { explode } from './explode.js';
 import { is_vampshifter, haseyes, resists_acid,
          mon_hates_blessings } from './mondata.js';
@@ -1281,8 +1281,21 @@ async function mhitm_ad_drin(magr, mattk, mdef, mhm) {
         await mdamageu(magr, mhm.damage);
         mhm.damage = 0; /* don't inflict a second dose below */
 
-        if (!game.uarmh || game.uarmh.otyp !== DUNCE_CAP)
-            throw new Error('mhitm_ad_drin(): eat_brains() not ported yet');
+        if (!game.uarmh || game.uarmh.otyp !== DUNCE_CAP) {
+            const oldmort = game.u.umortality || 0,
+                mhitu = await eat_brains(magr, mdef, true, null);
+
+            /* skip further AD_DRIN if hero's number of deaths went up */
+            if ((game.u.umortality || 0) > oldmort)
+                game.skipdrin = true;
+            /* eat_brains() will miss if target is mindless (won't
+               happen here--hero is considered to retain his mind
+               regardless of current shape) or is noncorporeal
+               (can't happen here--no one can poly into a ghost
+               or shade) so this check for missing is academic */
+            if (mhitu === M_ATTK_MISS)
+                return;
+        }
         /* adjattrib gives dunce cap message when appropriate */
         await adjattrib(A_INT, -rnd(2), false);
         if (!rn2(5)) {
@@ -1294,7 +1307,33 @@ async function mhitm_ad_drin(magr, mattk, mdef, mhm) {
             game.skipdrin = true;
         }
     } else {
-        throw new Error('mhitm_ad_drin(): mhitm branch not ported yet');
+        /* mhitm */
+        if (game.notonhead || !has_head(pd)) {
+            if (game.mhitm_vis && canspotmon(mdef))
+                await pline(`${Monnam(mdef)} doesn't seem harmed.`); /* pline_mon() */
+            /* Not clear what to do for green slimes */
+            mhm.damage = 0;
+            /* don't bother with additional DRIN attacks since they wouldn't
+               be able to hit target on head either */
+            game.skipdrin = true; /* affects mattackm()'s attack loop */
+            return;
+        }
+        if ((mdef.misc_worn_check & W_ARMH) && rn2(8)) {
+            if (game.mhitm_vis && canspotmon(magr) && canseemon(mdef)) {
+                const buf = s_suffix(Monnam(mdef));
+                await pline(`${buf} helmet blocks ${s_suffix(mon_nam(magr))
+                               } attack to ${mhis(mdef)} head.`);
+            }
+            return;
+        }
+        const amu = which_armor(mdef, W_AMUL);
+        const lifsav = !!(amu && amu.otyp === AMULET_OF_LIFE_SAVING);
+
+        mhm.hitflags = await eat_brains(magr, mdef, game.mhitm_vis, mhm);
+
+        /* skip further AD_DRIN if amulet of life-saving got used up */
+        if (lifsav && !which_armor(mdef, W_AMUL))
+            game.skipdrin = true;
     }
 }
 
