@@ -59,7 +59,7 @@ import { SLT_ENCUMBER, TELEDS_ALLOW_DRAG } from './const.js';
 import { CORPSE, AMULET_OF_YENDOR, BOULDER } from './objects.js';
 import { STRAT_APPEARMSG, RLOC_MSG, RLOC_NONE, NO_TRAP_FLAGS, BLINDED,
          BOLT_LIM } from './const.js';
-import { ROOMOFFSET, VAULT, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL,
+import { VAULT, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL,
          TT_BURIEDBALL, LEVITATION, FLYING, TELEDS_TELEPORT } from './const.js';
 import { ECMD_OK, ECMD_TIME, TELEPORT, A_STR } from './const.js';
 import { You } from './display.js';
