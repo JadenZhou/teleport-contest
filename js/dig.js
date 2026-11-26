@@ -160,6 +160,11 @@ import { mk_tt_object } from './mkobj.js';
 import { get_iter_mons } from './sounds.js';
 import { m_canseeu } from './monmove.js';
 import { angry_guards } from './mon.js';
+import { o_unleash } from './apply.js';
+import { end_burn } from './timeout.js';
+import { rnd_treefruit_at } from './mkobj.js';
+import { b_trapped } from './trap.js';
+import { NO_PART } from './const.js';
 
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
@@ -259,10 +264,10 @@ export function bury_an_obj(otmp, dealloced) {
         return otmp2;
 
     if (otmp.otyp === LEASH && otmp.leashmon)
-        throw new Error('bury_an_obj: o_unleash() is not ported yet');
+        o_unleash(otmp);
 
     if (otmp.lamplit && otmp.otyp !== POT_OIL)
-        throw new Error('bury_an_obj: end_burn() is not ported yet');
+        end_burn(otmp, true);
 
     mkobj_obj_extract_self(otmp);
 
@@ -489,7 +494,7 @@ export async function liquid_flow(x, y, typ, ttmp, fillmsg) {
 // C ref: dig.c is_digging()
 /* the hero's occupation is the dig() occupation */
 export function is_digging() {
-    if (game.occupation && game.occupation.name === 'dig') {
+    if (game.occupation === dig) {
         return true;
     }
     return false;
@@ -616,7 +621,7 @@ export async function mdig_tunnel(mtmp) {
     } else if (IS_TREE(here.typ)) {
         here.typ = ROOM; here.flags = 0;
         if (pile && pile < 5)
-            throw new Error('mdig_tunnel(): rnd_treefruit_at() not ported yet');
+            rnd_treefruit_at(mtmp.mx, mtmp.my);
     } else {
         here.typ = CORR; here.flags = 0;
         if (pile && pile < 5)
@@ -1400,7 +1405,7 @@ async function dig() {
                     digtxt = "You cut down the tree.";
                     lev.typ = ROOM, lev.flags = 0;
                     if (!rn2(5))
-                        throw new Error('dig(): rnd_treefruit_at() not ported yet');
+                        rnd_treefruit_at(dpx, dpy);
                     if (Race_if(PM_ELF) || Role_if(PM_RANGER))
                         adjalign(-1);
                 } else {
@@ -1455,7 +1460,9 @@ async function dig() {
             }
             if (IS_DOOR(lev.typ) && (lev.doormask & D_TRAPPED)) {
                 lev.doormask = D_NODOOR;
-                throw new Error('dig(): b_trapped() not ported yet');
+                await b_trapped("door", NO_PART);
+                recalc_block_point(dpx, dpy);
+                newsym(dpx, dpy);
             }
         }
         /* cleanup: */
