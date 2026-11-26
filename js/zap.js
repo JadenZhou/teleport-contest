@@ -396,6 +396,9 @@ import { set_uinwater } from './trap.js';
 import { docrt } from './display.js';
 import { ustatusline } from './insight.js';
 import { unearth_objs as unearth_objs_dg } from './dig.js';
+import { mksobj, set_corpsenm } from './mkobj.js';
+import { STATUE, FIGURINE } from './objects.js';
+import { W_ARTI, BURIED_TOO, CONTAINED_TOO } from './const.js';
 
 // C ref: zap.c learnwand()
 export function learnwand(obj) {
@@ -1412,6 +1415,16 @@ function replace_object(obj, otmp) {
         fobj.splice(fobj.indexOf(obj), 1, otmp);
         break;
     }
+    case 'OBJ_MINVENT': {
+        /* otmp takes obj's place in the carrier's minvent; extract_nobj()
+           leaves obj free */
+        const minvent = obj.ocarry.minvent;
+        otmp.ocarry = obj.ocarry;
+        minvent.splice(minvent.indexOf(obj), 1, otmp);
+        obj.where = 'OBJ_FREE';
+        obj.ocarry = null;
+        break;
+    }
     default:
         throw new Error(`replace_object(): where=${obj.where} not ported yet`);
     }
@@ -1523,7 +1536,14 @@ export async function poly_obj(obj, id) {
         } while (--try_limit > 0
                  && !!objects[otmp.otyp].oc_magic !== magic_obj);
     } else {
-        throw new Error('poly_obj(): polymorph into a specific object not ported yet');
+        /* literally replace obj with this new thing */
+        otmp = mksobj(id, false, false);
+        /* Actually more things use corpsenm but they polymorph differently */
+        const USES_CORPSENM = (typ) =>
+            (typ === CORPSE || typ === STATUE || typ === FIGURINE);
+
+        if (USES_CORPSENM(obj.otyp) && USES_CORPSENM(id))
+            set_corpsenm(otmp, obj.corpsenm);
     }
 
     /* preserve quantity */
@@ -1650,12 +1670,14 @@ export async function poly_obj(obj, id) {
      * ** we are now done adjusting the object (except possibly wearing it) **
      */
 
-    /* get_obj_location(obj, &ox, &oy, BURIED_TOO | CONTAINED_TOO) */
-    if (obj_location === 'OBJ_FLOOR') {
-        ox = obj.ox, oy = obj.oy;
-    } else {
-        throw new Error(`poly_obj(): object at where=${obj_location} not ported yet`);
-    }
+    const oloc = get_obj_location(obj, BURIED_TOO | CONTAINED_TOO);
+    if (oloc)
+        [ox, oy] = oloc;
+    const old_wornmask = (obj.owornmask || 0) & ~(W_ART | W_ARTI);
+    if (obj_location !== 'OBJ_FLOOR' && obj_location !== 'OBJ_MINVENT')
+        /* OBJ_INVENT: freeinv_core(), addinv_core1/2() and the worn-item
+           handling (old_wornmask); OBJ_CONTAINED, OBJ_BURIED */
+        throw new Error(`poly_obj(): object at where=${obj_location} (worn ${old_wornmask}) not ported yet`);
     /* swap otmp for obj */
     replace_object(obj, otmp);
     if (obj_location === 'OBJ_FLOOR') {
