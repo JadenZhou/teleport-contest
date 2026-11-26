@@ -157,7 +157,6 @@ import { AD_DRIN as AD_DRIN_MB } from './monsters.js';
 import { vegan as vegan_mm, is_rider as is_rider_mm, flesh_petrifies as flesh_petrifies_mm,
          resists_ston as resists_ston_mm } from './mondata.js';
 import { touch_petrifies as touch_petrifies_mo } from './mondata.js';
-import { Amonnam } from './do_name.js';
 import { nolimbs } from './mondata.js';
 import { mhis } from './mhitu.js';
 import { mbodypart } from './insight.js';

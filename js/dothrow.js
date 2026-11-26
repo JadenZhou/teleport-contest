@@ -1828,7 +1828,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     /* bhit_done: */
     /* note: for FLASHED_LIGHT, _caller_ must call transient_light_cleanup()
        after possibly calling flash_hits_mon() */
-    if (weapon === THROWN_WEAPON /* || weapon == KICKED_WEAPON */)
+    if (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
         await transient_light_cleanup();
 
     return result;
