@@ -3833,7 +3833,7 @@ function add_one_tobill(obj, dummy, shkp) {
 }
 
 // C ref: shk.c add_to_billobjs()
-function add_to_billobjs(obj) {
+export function add_to_billobjs(obj) {
     if (obj.where !== 'OBJ_FREE' && obj.where)
         throw new Error('add_to_billobjs: obj not free');
     if (obj.timed)
