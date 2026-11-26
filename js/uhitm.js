@@ -99,7 +99,7 @@ import { otense } from './objnam.js';
 import { a_monnam, EXACT_NAME } from './do_name.js';
 import { M_AP_OBJECT, M_AP_FURNITURE, M_AP_MONSTER, MIM_REVEAL, MIM_OMIT_WAIT,
          TELEPAT, SEE_INVIS } from './const.js';
-import { STRANGE_OBJECT, AMULET_OF_LIFE_SAVING } from './objects.js';
+import { STRANGE_OBJECT, AMULET_OF_LIFE_SAVING, OILSKIN_CLOAK } from './objects.js';
 import { u_wipe_engr, sticks } from './engrave.js';
 import { m_move } from './monmove.js';
 import { wakeup, seemimic, xkilled, killed } from './mon.js';
@@ -151,7 +151,7 @@ import { mdamageu, u_slip_free, u_slow_down, diseasemu } from './mhitu.js';
 import { adjattrib } from './attrib.js';
 import { losespells } from './spell.js';
 import { drain_weapon_skill } from './weapon.js';
-import { helm_simple_name } from './objnam.js';
+import { helm_simple_name, cloak_simple_name } from './objnam.js';
 import { urgent_pline, You_feel } from './display.js';
 import { Some_Monnam } from './do_name.js';
 import { fall_asleep, obj_stop_timers } from './timeout.js';
@@ -1252,12 +1252,87 @@ async function mhitm_ad_curs(magr, mattk, mdef, mhm) {
     void mhm;
 }
 
+// C ref: uhitm.c m_slips_free()
+/* check whether slippery clothing protects from hug or wrap attack */
+/* [currently assumes that you are the attacker] */
+async function m_slips_free(mdef, mattk) {
+    let obj;
+
+    if (mattk.adtyp === M.AD_DRIN) {
+        /* intelligence drain attacks the head */
+        obj = which_armor(mdef, W_ARMH);
+    } else {
+        /* grabbing attacks the body */
+        obj = which_armor(mdef, W_ARMC); /* cloak */
+        if (!obj)
+            obj = which_armor(mdef, W_ARM); /* suit */
+        if (!obj)
+            obj = which_armor(mdef, W_ARMU); /* shirt */
+    }
+
+    /* if monster's cloak/armor is greased, your grab slips off; this
+       protection might fail (33% chance) when the armor is cursed */
+    if (obj && (obj.greased || obj.otyp === OILSKIN_CLOAK)
+        && (!obj.cursed || rn2(3))) {
+        await You(`${(mattk.adtyp === M.AD_WRAP) ? "slip off of"
+                                                 : "grab, but cannot hold onto"
+                   } ${s_suffix(mon_nam(mdef))} ${obj.greased ? "greased" : "slippery"
+                   } ${
+                   /* avoid "slippery slippery cloak"
+                      for undiscovered oilskin cloak */
+                   (obj.greased || objects[obj.otyp].oc_name_known)
+                       ? xname(obj)
+                       : cloak_simple_name(obj)}!`);
+
+        if (obj.greased && !rn2(2)) {
+            await pline_The("grease wears off.");
+            obj.greased = 0;
+        }
+        return true;
+    }
+    return false;
+}
+
 // C ref: uhitm.c mhitm_ad_drin()
 async function mhitm_ad_drin(magr, mattk, mdef, mhm) {
     const pd = mdef.data;
 
     if (magr === game.youmonst) {
-        throw new Error('mhitm_ad_drin(): uhitm branch not ported yet');
+        /* uhitm */
+        let helmet;
+
+        if (game.notonhead || !has_head(pd)) {
+            await pline(`${Monnam(mdef)} doesn't seem harmed.`);
+            /* hero should skip remaining AT_TENT+AD_DRIN attacks
+               because they'll be just as harmless as this one (and also
+               to reduce verbosity) */
+            game.skipdrin = true;
+            mhm.damage = 0;
+            if (!Unchanging() && pd === mons[M.PM_GREEN_SLIME]) {
+                if (!Slimed()) {
+                    await You("suck in some slime and don't feel very well.");
+                    await make_slimed(10, null);
+                }
+            }
+            return;
+        }
+        if (await m_slips_free(mdef, mattk))
+            return;
+
+        if ((helmet = which_armor(mdef, W_ARMH)) && rn2(8)) {
+            await pline(`${s_suffix(Monnam(mdef))} ${helm_simple_name(helmet)
+                           } blocks your attack to ${mhis(mdef)} head.`);
+            return;
+        }
+        const amu = which_armor(mdef, W_AMUL);
+        const lifsav = !!(amu && amu.otyp === AMULET_OF_LIFE_SAVING);
+
+        await eat_brains(game.youmonst, mdef, true, mhm);
+
+        /* skip further AD_DRIN if amulet of life-saving got used up */
+        if (lifsav && !which_armor(mdef, W_AMUL))
+            game.skipdrin = true;
+
     } else if (mdef === game.youmonst) {
         /* mhitu */
         await hitmsg(magr, mattk);
