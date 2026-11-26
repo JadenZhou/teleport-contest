@@ -118,7 +118,12 @@ import { discover_object, makeknown } from './o_init.js';
 import { steal, stealgold, stealamulet } from './steal.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { locomotion } from './trap.js';
-import { minstapetrify } from './trap.js';
+import { minstapetrify, instapetrify } from './trap.js';
+import { eating_conducts, Finish_digestion, newuhs } from './eat.js';
+import { snuff_lit } from './apply.js';
+import { done } from './end.js';
+import { killer } from './topten.js';
+import { NO_KILLER_PREFIX, DIED, STOMACH, XKILL_GIVEMSG } from './const.js';
 import { Adjmonnam } from './do_name.js';
 import { doseduce } from './mhitu.js';
 import { make_stoned } from './potion.js';
@@ -734,7 +739,9 @@ async function theft_petrifies(otmp) {
     /* (#if 0: poly_when_stoned() critter with theft capability) */
 
     /* stealing this corpse is fatal... */
-    throw new Error('theft_petrifies(): instapetrify() not ported yet');
+    await instapetrify(corpse_xname(otmp, "stolen", CXN_ARTICLE));
+    /* apparently wasn't fatal after all... */
+    return true;
 }
 
 /* C ref: uhitm.c steal_it() -- C's mdef->minvent chain starts with the
@@ -4973,8 +4980,7 @@ async function gulpum(mdef, mattk) {
     if (!(u_digest && u.uhunger >= 1500) && !u.uswallow) {
         if (!flaming(game.youmonst.data)) {
             for (const otmp of (mdef.minvent || []).slice().reverse())
-                if (otmp.lamplit) /* (void) snuff_lit(otmp) */
-                    throw new Error('gulpum(): snuff_lit() not ported yet');
+                /* (void) */ await snuff_lit(otmp);
         }
 
         /* force vampire in bat, cloud, or wolf form to revert back to
@@ -4997,19 +5003,108 @@ async function gulpum(mdef, mattk) {
             return M_ATTK_HIT;
         }
 
-        /* the AD_DGST parts (eating_conducts(), digesting a Rider or
-           Medusa, the "You digest" turns and Finish_digestion()) */
-        if (mattk.adtyp === M.AD_DGST)
-            throw new Error('gulpum(): digesting a monster (AD_DGST) not ported yet');
-
         /* engulfing a cockatrice or digesting a Rider or Medusa */
-        const fatal_gulp = (touch_petrifies(pd) && !Stone_resistance());
+        const fatal_gulp = (touch_petrifies(pd) && !Stone_resistance())
+                           || (mattk.adtyp === M.AD_DGST
+                               && (is_rider(pd) || (pd === mons[M.PM_MEDUSA]
+                                                    && !Stone_resistance())));
+
+        if (mattk.adtyp === M.AD_DGST && (!Slow_digestion() || fatal_gulp))
+            await eating_conducts(pd);
 
         if (fatal_gulp && !is_rider(pd)) { /* petrification */
-            throw new Error('gulpum(): instapetrify() not ported yet');
+            let mnam = pmname(pd, Mgender(mdef));
+
+            if (!type_is_pname(pd))
+                mnam = an(mnam);
+            await You(`${u_digest ? "englut" : "engulf"} ${mon_nam(mdef)}.`);
+            const kbuf = `${u_digest ? "swallowing"
+                            : u_enfold ? "enclosing"
+                              : "engulfing"} ${mnam}${u_digest ? " whole" : ""}`;
+            await instapetrify(kbuf);
         } else {
             await start_engulf(mdef);
             switch (mattk.adtyp) {
+            case M.AD_DGST: {
+                /* eating a Rider or its corpse is fatal */
+                if (is_rider(pd)) {
+                    await pline("Unfortunately, digesting any of it is fatal.");
+                    await end_engulf();
+                    killer().name = `unwisely tried to eat ${
+                        pmname(pd, Mgender(mdef))}`;
+                    killer().format = NO_KILLER_PREFIX;
+                    await done(DIED);
+                    return M_ATTK_MISS; /* lifesaved */
+                }
+
+                if (Slow_digestion()) {
+                    dam = 0;
+                    break;
+                }
+
+                /* Use up amulet of life saving */
+                let otmp;
+                if ((otmp = mlifesaver(mdef)) != null)
+                    m_useup(mdef, otmp);
+
+                await newuhs(false);
+                /* start_engulf() issues "you engulf <mdef>" above; this
+                   used to specify XKILL_NOMSG but we need "you kill <mdef>"
+                   in case we're also going to get "welcome to level N+1";
+                   "you totally digest <mdef>" will be coming soon (after
+                   several turns) but the level-gain message seems out of
+                   order if the kill message is left implicit */
+                game.mswallower = game.youmonst;
+                await xkilled(mdef, XKILL_GIVEMSG | XKILL_NOCORPSE);
+                if (!DEADMONSTER(mdef)) { /* monster lifesaved */
+                    await You(`hurriedly regurgitate the sizzling in your ${
+                        body_part(STOMACH)}.`);
+                } else {
+                    /* C's static char msgbuf[] for gn.nomovemsg */
+                    let msgbuf;
+                    let nomovemsg_is_msgbuf = false;
+                    let tmp = 1 + (pd.cwt >> 8);
+                    if (await corpse_chance(mdef, game.youmonst, true)
+                        && !(game.mvitals[monsndx(pd)].mvflags & G_NOCORPSE)) {
+                        /* nutrition only if there can be a corpse */
+                        u.uhunger += Math.trunc((pd.cnutrit + 1) / 2);
+                    } else {
+                        tmp = 0;
+                    }
+                    msgbuf = `You totally digest ${mon_nam(mdef)}.`;
+                    if (tmp !== 0) {
+                        /* setting afternmv = end_engulf is tempting,
+                         * but will cause problems if the player is
+                         * attacked (which uses his real location) or
+                         * if his See_invisible wears off
+                         */
+                        await You(`digest ${mon_nam(mdef)}.`);
+                        if (Slow_digestion())
+                            tmp *= 2;
+                        nomul(-tmp);
+                        game.multi_reason = "digesting something";
+                        game.nomovemsg = msgbuf;
+                        nomovemsg_is_msgbuf = true;
+                        /* possible intrinsic once totally digested */
+                        game.corpsenm_digested = monsndx(pd);
+                        game.afternmv = Finish_digestion;
+                    } else
+                        await pline(msgbuf); /* pline1() */
+                    if (pd === mons[M.PM_GREEN_SLIME]) {
+                        /* rewrites msgbuf[], which gn.nomovemsg may point at */
+                        msgbuf = `${The(pmname(pd, Mgender(mdef)))} isn't sitting well with you.`;
+                        if (nomovemsg_is_msgbuf)
+                            game.nomovemsg = msgbuf;
+                        if (!Unchanging()) {
+                            await make_slimed(5, null);
+                        }
+                    } else
+                        await exercise(A_CON, true);
+                }
+                game.mswallower = null;
+                await end_engulf();
+                return M_ATTK_DEF_DIED;
+            }
             case AD_PHYS:
                 if (game.youmonst.data === mons[M.PM_FOG_CLOUD]) {
                     await pline(`${Monnam(mdef)} is laden with your moisture.`);

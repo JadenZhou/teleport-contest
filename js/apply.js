@@ -184,6 +184,8 @@ import { Glib, Fumbling, Underwater } from './youprop.js';
 import { A_DEX } from './const.js';
 import { splitobj } from './mkobj.js';
 import { fingers_or_gloves } from './do_wear.js';
+import { Yname2, otense } from './objnam.js';
+import { end_burn } from './timeout.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
@@ -1355,6 +1357,26 @@ export async function snuff_candle(otmp) {
                 many ? "s'" : "'s"} flame${many ? "s are" : " is"} extinguished.`);
         end_burn_lp(otmp, true);
         return true;
+    }
+    return false;
+}
+
+// C ref: apply.c snuff_lit()
+/* called when lit lamp is hit by water or put into a container or
+   you've been swallowed by a monster; obj might be in transit while
+   being thrown or dropped so don't assume that its location is valid */
+export async function snuff_lit(obj) {
+    if (obj.lamplit) {
+        if (obj.otyp === OIL_LAMP || obj.otyp === MAGIC_LAMP
+            || obj.otyp === BRASS_LANTERN || obj.otyp === POT_OIL) {
+            const [x, y] = get_obj_location(obj, 0) || [0, 0];
+            if (obj.where === 'OBJ_MINVENT' ? cansee(x, y) : !Blind())
+                await pline(`${Yname2(obj)} ${otense(obj, "go")} out!`);
+            end_burn(obj, true);
+            return true;
+        }
+        if (await snuff_candle(obj))
+            return true;
     }
     return false;
 }

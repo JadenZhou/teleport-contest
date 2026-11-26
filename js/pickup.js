@@ -133,6 +133,14 @@ import { exercise } from './attrib.js';
 import { A_WIS } from './const.js';
 import { uteetering_at_seen_pit, uescaped_shaft } from './engrave.js';
 import { hides_under, notake, touch_petrifies, is_rider } from './mondata.js';
+import { snuff_lit } from './apply.js';
+import { instapetrify } from './trap.js';
+import { poly_when_stoned } from './mondata.js';
+import { polymon } from './polyself.js';
+import { PM_STONE_GOLEM } from './monsters.js';
+import { corpse_xname, CXN_SINGULAR, CXN_ARTICLE } from './objnam.js';
+import { killer_xname } from './mthrowu.js';
+import { obj_is_burning } from './light.js';
 
 /* C ref: invent.c invlet_basic */
 const invlet_basic = 52;
@@ -1764,7 +1772,7 @@ export async function pickup_object(obj,
     } else if (obj.oartifact && !(await touch_artifact(obj, game.youmonst))) {
         return 0;
     } else if (obj.otyp === CORPSE) {
-        if (fatal_corpse_mistake(obj, telekinesis)
+        if (await fatal_corpse_mistake(obj, telekinesis)
             || await rider_corpse_revival(obj, telekinesis))
             return -1;
     } else if (obj.otyp === SCR_SCARE_MONSTER) {
@@ -1893,10 +1901,19 @@ export function u_safe_from_fatal_corpse(obj, tests) {
 
 // C ref: pickup.c fatal_corpse_mistake()
 /* check whether hero is bare-handedly touching a cockatrice corpse */
-function fatal_corpse_mistake(obj, remotely) {
+async function fatal_corpse_mistake(obj, remotely) {
     if (u_safe_from_fatal_corpse(obj, st_all) || remotely)
         return false;
-    throw new Error('fatal_corpse_mistake(): touching a cockatrice corpse (instapetrify) not ported yet');
+
+    if (poly_when_stoned(game.youmonst.data) && await polymon(PM_STONE_GOLEM)) {
+        await tty_display_nhwindow(game.WIN_MESSAGE, false); /* --More-- */
+        return false;
+    }
+
+    await pline(`Touching ${corpse_xname(obj, null, CXN_SINGULAR | CXN_ARTICLE)
+        } is a fatal mistake.`);
+    await instapetrify(killer_xname(obj));
+    return true;
 }
 
 // C ref: pickup.c rider_corpse_revival()
@@ -2532,7 +2549,7 @@ async function in_container(obj) {
         setuqwep(null);
     }
 
-    if (fatal_corpse_mistake(obj, false))
+    if (await fatal_corpse_mistake(obj, false))
         return -1;
 
     /* boxes, boulders, and big statues can't fit into any container */
@@ -2546,8 +2563,8 @@ async function in_container(obj) {
 
     freeinv(obj);
 
-    if (obj.lamplit) /* obj_is_burning(obj): this used to be part of freeinv() */
-        throw new Error('in_container(): snuff_lit() not ported yet');
+    if (obj_is_burning(obj)) /* this used to be part of freeinv() */
+        /* (void) */ await snuff_lit(obj);
 
     if (floor_container && costly_spot(u.ux, u.uy)) {
         /* defer gold until after put-in message */
@@ -2629,7 +2646,7 @@ async function out_container(obj) {
     if (obj.oartifact && !(await touch_artifact(obj, game.youmonst)))
         return 0;
 
-    if (fatal_corpse_mistake(obj, false))
+    if (await fatal_corpse_mistake(obj, false))
         return -1;
 
     count = obj.quan;

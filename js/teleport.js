@@ -807,9 +807,6 @@ export async function next_to_u() {
     return true;
 }
 
-/* C ref: teleport.c tele_trap() 'static boolean in_tele_trap' */
-let in_tele_trap = false;
-
 // C ref: teleport.c tele_trap()
 export async function tele_trap(trap) {
     const u = game.u;
@@ -817,10 +814,12 @@ export async function tele_trap(trap) {
     /* a fixed-destination teleport trap could theoretically place hero onto
      * a second teleport trap; prevent the recursive call from spoteffects()
      * from triggering the trap at the destination */
-    if (in_tele_trap)
+    /* C's static boolean in_tele_trap is per-game state, kept in
+       game.in_tele_trap (see gstate.js) */
+    if (game.in_tele_trap)
         return;
 
-    in_tele_trap = true;
+    game.in_tele_trap = true;
     try {
         const Antimagic = !!(tp_prop(ANTIMAGIC).intrinsic || tp_prop(ANTIMAGIC).extrinsic
                              || (game.u.umonnum !== game.u.umonster
@@ -855,7 +854,7 @@ export async function tele_trap(trap) {
         } else
             await tele();
     } finally {
-        in_tele_trap = false;
+        game.in_tele_trap = false;
     }
 }
 

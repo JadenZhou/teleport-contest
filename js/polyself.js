@@ -64,6 +64,7 @@ import { newpw } from './exper.js';
 import { newuhs } from './eat.js';
 import { max_rank_sz } from './botl.js';
 import { losehp, selftouch, set_utrap, reset_utrap } from './trap.js';
+import { instapetrify } from './trap.js';
 import { tty_getlin } from './wintty.js';
 import { mungspaces, plur } from './hacklib.js';
 import { name_to_mon, your_race, is_vampshifter, is_were, is_orc, is_elf,
@@ -1126,7 +1127,7 @@ export async function polymon(mntmp) {
         if (touch_petrifies(u.usteed.data) && !uprop_on(STONE_RES) && rnl(3)) {
             await pline(`${no_longer_petrify_resistant} touch ${mon_nam(u.usteed)}.`);
             buf = `riding ${an(pmname(u.usteed.data, Mgender(u.usteed)))}`;
-            throw new Error('polymon(): instapetrify() of a hero riding a petrifier not ported yet');
+            await instapetrify(buf);
         }
         if (!can_ride(u.usteed))
             await dismount_steed(DISMOUNT_POLY);
