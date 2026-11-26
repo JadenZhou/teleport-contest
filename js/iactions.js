@@ -292,6 +292,17 @@ export function ansimpleoname(obj) {
     return simpleoname;
 }
 
+/* C ref: objnam.c actualoname() */
+/* actual name of an object, without regard to whether hero knows it */
+export function actualoname(obj) {
+    let res;
+
+    game.iflags.override_ID = true;
+    res = minimal_xname(obj);
+    game.iflags.override_ID = false;
+    return res;
+}
+
 /* C ref: objnam.c thesimpleoname() */
 /* "the scroll" or "the scrolls" */
 export function thesimpleoname(obj) {

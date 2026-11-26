@@ -2787,6 +2787,40 @@ const takeoff_order = [
     WORN_SHIRT_DW, WORN_BOOTS_DW, W_SWAPWEP_DW, W_QUIVER_DW, 0
 ];
 
+// C ref: do_wear.c stuck_ring()
+/* used for praying to check and fix levitation trouble */
+export function stuck_ring(ring, otyp) {
+    const g = game;
+
+    if (ring !== g.uleft && ring !== g.uright) {
+        impossible("stuck_ring: neither left nor right?");
+        return null;
+    }
+
+    if (ring && ring.otyp === otyp) {
+        /* reasons ring can't be removed match those checked by select_off();
+           limbless case has extra checks because ordinarily it's temporary */
+        if ((g.youmonst.data.mflags1 & M1_NOLIMBS) === M1_NOLIMBS /* nolimbs() */
+            && g.uamul
+            && g.uamul.otyp === O.AMULET_OF_UNCHANGING && g.uamul.cursed)
+            return g.uamul;
+        if (welded(g.uwep)
+            && ((ring === (g.u.uhandedness ? g.uleft : g.uright)) /* RING_ON_PRIMARY */
+                || bimanual(g.uwep)))
+            return g.uwep;
+        if (g.uarmg && g.uarmg.cursed)
+            return g.uarmg;
+        if (ring.cursed)
+            return ring;
+        /* normally outermost layer is processed first, but slippery gloves
+           wears off quickly so uncurse ring itself before handling those */
+        if (g.uarmg && Glib())
+            return g.uarmg;
+    }
+    /* either no ring or not right type or nothing prevents its removal */
+    return null;
+}
+
 // C ref: do_wear.c unchanger()
 /* also for praying; find worn item that confers "Unchanging" attribute */
 export function unchanger() {
