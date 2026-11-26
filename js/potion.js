@@ -2050,12 +2050,12 @@ export async function mongrantswish(monp) {
     mongone(mon);
     monp.mon = null; /* inform caller that monster is gone */
     /* hide that removal from player--map is visible during wish prompt */
-    tmp_at(DISP_ALWAYS, glyph);
-    tmp_at(mx, my);
+    await tmp_at(DISP_ALWAYS, glyph);
+    await tmp_at(mx, my);
     /* grant the wish */
     await makewish();
     /* clean up */
-    tmp_at(DISP_END, 0);
+    await tmp_at(DISP_END, 0);
 }
 
 // C ref: potion.c djinni_from_bottle()

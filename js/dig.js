@@ -663,12 +663,12 @@ export async function zap_dig() {
     if (u.utrap && u.utraptype === TT_PIT && t_at(u.ux, u.uy))
         throw new Error('zap_dig(): digging sideways from a pit not ported yet');
     digdepth = rn1(18, 8);
-    tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_digbeam) */
+    await tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_digbeam) */
     while (--digdepth >= 0) {
         if (!isok(zx, zy))
             break;
         room = g.level.at(zx, zy);
-        tmp_at(zx, zy);
+        await tmp_at(zx, zy);
         /* nh_delay_output(): wait a little bit */
 
         if (closed_door(zx, zy) || room.typ === SDOOR) {
@@ -740,7 +740,7 @@ export async function zap_dig() {
         zx += u.dx;
         zy += u.dy;
     } /* while */
-    tmp_at(DISP_END, 0); /* closing call */
+    await tmp_at(DISP_END, 0); /* closing call */
 
     /* pitflow is only set by the (unported) pit case above */
 

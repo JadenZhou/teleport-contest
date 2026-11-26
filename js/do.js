@@ -12,12 +12,12 @@ import { SELL_NORMAL, SELL_DELIBERATE } from './const.js';
 import { game } from './gstate.js';
 import { fix_shop_damage } from './shk.js';
 import { livelog_printf, You_hear } from './display.js';
-import { LL_ACHIEVE, LL_DEBUG } from './const.js';
+import { LL_ACHIEVE, LL_DEBUG, LL_CONDUCT } from './const.js';
 import { describe_level } from './botl.js';
 import { container_impact_dmg, obj_delivery, drop_to } from './dokick.js';
 import { MIGR_NOWHERE, MIGR_RANDOM, MIGR_STAIRS_UP, MIGR_LADDER_UP, MIGR_SSTAIRS,
          TRAPDOOR, CXN_PFX_THE, OBJ_AT } from './const.js';
-import { Tobjnam, otense, corpse_xname } from './objnam.js';
+import { Tobjnam, otense, corpse_xname, an } from './objnam.js';
 import { is_unpaid } from './shk.js';
 import { maybe_unhide_at } from './mon.js';
 import { remove_worn_item } from './steal.js';
@@ -132,7 +132,7 @@ import { Can_fall_thru, u_on_newpos, stairway_find_from, u_on_sstairs,
          u_on_upstairs, u_on_dnstairs } from './mklev.js';
 import { uteetering_at_seen_pit, uescaped_shaft, sticks,
          ceiling_hider } from './engrave.js';
-import { mon_nam } from './do_name.js';
+import { mon_nam, hcolor } from './do_name.js';
 import { set_ustuck } from './uhitm.js';
 import { AT_ENGL, AD_DGST } from './monsters.js';
 import { STAIRS } from './const.js';
@@ -1305,7 +1305,7 @@ export async function flooreffects(obj, /* the object landing on the floor */
         throw new Error('flooreffects(): obj_meld() not ported yet');
     } else if (g.context?.mon_moving && IS_ALTAR(g.level.at(x, y).typ)
                && cansee(x, y)) {
-        throw new Error('flooreffects(): doaltarobj() not ported yet');
+        await doaltarobj(obj);
     } else if (obj.oclass === O.POTION_CLASS && (g.level.flags?.temperature || 0) > 0
                && (g.level.at(x, y).typ === ROOM || g.level.at(x, y).typ === CORR)) {
         /* Potions are sometimes destroyed when landing on very hot
@@ -1610,6 +1610,40 @@ async function drop(obj) {
     return ECMD_TIME;
 }
 
+/* C ref: color.h NH_AMBER, NH_BLACK */
+const NH_AMBER = "amber", NH_BLACK = "black";
+
+// C ref: do.c doaltarobj()
+/* obj is an object dropped on an altar */
+export async function doaltarobj(obj) {
+    const u = game.u;
+
+    if (Blind())
+        return;
+
+    if (obj.oclass !== O.COIN_CLASS) {
+        /* KMH, conduct */
+        if (!game.context.mon_moving && !u.uconduct.gnostic++)
+            livelog_printf(LL_CONDUCT,
+                           `eschewed atheism, by dropping ${doname(obj)} on an altar`);
+    } else {
+        /* coins don't have bless/curse status */
+        obj.blessed = obj.cursed = 0;
+    }
+
+    if (obj.blessed || obj.cursed) {
+        await There(`is ${an(hcolor(obj.blessed ? NH_AMBER : NH_BLACK))} flash as ${
+            doname(obj)} ${otense(obj, "hit")} the altar.`);
+        if (!Hallucination())
+            obj.bknown = 1; /* ok to bypass set_bknown() */
+    } else {
+        await pline(`${upstart(doname(obj)) /* Doname2() */} ${
+            otense(obj, "land")} on the altar.`);
+        if (obj.oclass !== O.COIN_CLASS)
+            obj.bknown = 1; /* ok to bypass set_bknown() */
+    }
+}
+
 // C ref: do.c dropx() -- take dropped item out of inventory; called in
 // several places - may produce output
 export async function dropx(obj) {
@@ -1618,7 +1652,7 @@ export async function dropx(obj) {
         if (await ship_object(obj, game.u.ux, game.u.uy, false))
             return;
         if (IS_ALTAR(game.level.at(game.u.ux, game.u.uy).typ))
-            throw new Error('dropx(): doaltarobj() not ported yet');
+            await doaltarobj(obj); /* set bknown */
     }
     await dropy(obj);
 }

@@ -2013,16 +2013,17 @@ export function explosion_to_glyph(expltype, idx) {
 // (a --More-- during a zap shows them) and the spots the beam covered are
 // remembered and newsym()'d by DISP_END, which also redraws terrain the
 // beam changed (e.g. a wall dug by a zap).  A flashed glyph
-// (a missile in flight) is drawn at its one spot; the next pline()'s
-// flush_screen(1) shows it, as C's flush_screen(0) here would.
-export function tmp_at(x, y) {
+// (a missile in flight) is drawn at its one spot.  Each shown glyph is
+// flushed to the screen as in C, so it stays there (e.g. a missile's last
+// spot) until a later flush redraws that spot.  async: flush_screen()
+export async function tmp_at(x, y) {
     switch (x) {
     case DISP_BEAM:
     case DISP_ALL:
     case DISP_FLASH:
     case DISP_ALWAYS:
         tmp_at_glyph = { prev: tmp_at_glyph, saved: [], style: x, glyph: y };
-        /* flush_screen(0): buffered glyphs are flushed at the next input */
+        await flush_screen(0); /* flush buffered glyphs */
         return;
     case DISP_TETHER:
         throw new Error('tmp_at(): tether style not ported yet');
@@ -2065,6 +2066,7 @@ export function tmp_at(x, y) {
                isn't ported yet pass 0 and nothing is drawn */
             if (tglyph.glyph)
                 show_glyph(x, y, tglyph.glyph); /* show it */
+            await flush_screen(0); /* make sure it shows up */
         } else { /* DISP_FLASH/ALWAYS */
             if (tglyph.saved.length) { /* not first call, so reset previous pos */
                 newsym(tglyph.saved[0].x, tglyph.saved[0].y);
@@ -2074,7 +2076,7 @@ export function tmp_at(x, y) {
                 break;
             tglyph.saved = [{ x, y }];
             show_glyph(x, y, tglyph.glyph); /* show it */
-            /* flush_screen(0): shown by the next flush */
+            await flush_screen(0); /* make sure it shows up */
         }
         break;
     }
