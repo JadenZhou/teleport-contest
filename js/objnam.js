@@ -82,7 +82,9 @@ import {
 import { trapname, maketrap, t_at, deltrap, water_damage_chain, fire_damage_chain,
          set_uinwater, reset_utrap } from './trap.js';
 import { Can_fall_thru, fix_wall_spines, count_level_features } from './mklev.js';
-import { waterbody_name } from './pager.js';
+import { waterbody_name, ice_descr } from './pager.js';
+import { start_melt_ice_timeout } from './zap.js';
+import { ICED_POOL, ICED_MOAT, DB_ICE } from './const.js';
 import { del_engr_at, make_grave } from './engrave.js';
 import { pooleffects, is_pool_or_lava, switch_terrain } from './hack.js';
 import { align_str } from './insight.js';
@@ -1483,8 +1485,28 @@ function* wizterrainwish(d) {
         yield () => fire_damage_chain(chain, true, true, x, y);
         madeterrain = true;
     } else if (!BSTRCMPI(bp, p - 3, "ice")) {
-        /* ICE: start_melt_ice_timeout() and the ice_descr() feedback */
-        throw new Error('wizterrainwish(): ice terrain (ice_descr()) not ported yet');
+        if (!is_dbridge) {
+            lev.typ = ICE;
+            /* icedpool overloads flags; specifies what ice will melt into */
+            lev.icedpool = (oldtyp === ROOM) ? ICED_POOL : ICED_MOAT;
+            lev.flags = lev.icedpool;
+        } else {
+            /* drawbridgemask overloads flags */
+            lev.drawbridgemask &= ~DB_UNDER;
+            lev.drawbridgemask |= DB_ICE;
+        }
+        del_engr_at(x, y);
+
+        if (!strncmpi(bp, "melting ", 8))
+            start_melt_ice_timeout(x, y, 0);
+
+        if (!is_dbridge) {
+            const msg = `${upstart(ice_descr(x, y))}.`;
+            yield () => pline(msg);
+        } else {
+            yield* dbterrainmesg("Ice", x, y);
+        }
+        madeterrain = true;
     } else if (!BSTRCMPI(bp, p - 5, "altar")) {
         let al;
 

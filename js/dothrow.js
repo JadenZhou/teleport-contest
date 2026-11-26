@@ -74,7 +74,7 @@ import { PM_CAVE_DWELLER, PM_MONK, PM_RANGER, PM_ROGUE, PM_NINJA, PM_SAMURAI,
          PM_ORC, PM_GNOME, PM_HUMAN, PM_DWARF, PM_SHADE,
          M2_ROCKTHROW } from './monsters.js';
 import { ART_MJOLLNIR } from './artilist.js';
-import { welded } from './wield.js';
+import { welded, weldmsg } from './wield.js';
 import { getobj, freeinv, stackobj } from './invent.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
 import { calc_capacity } from './hack.js';
@@ -104,8 +104,9 @@ import { BRK_FROM_INV, BRK_KNOWN2BREAK, BRK_KNOWN2NOTBREAK, BRK_KNOWN_OUTCOME } 
 import { cansee } from './vision.js';
 import { obj_resists } from './dogmove.js';
 import { map_invisible, unmap_object, glyph_is_invisible, tmp_at, obj_to_glyph,
-         DISP_FLASH, DISP_END } from './display.js';
+         DISP_FLASH, DISP_TETHER, DISP_END } from './display.js';
 import { in_out_region } from './region.js';
+import { show_transient_light, transient_light_cleanup } from './light.js';
 import {
     Stone_resistance, Stunned, Confusion, Blind, Hallucination, Deaf, Fumbling, Levitation,
     Underwater, Blind as Blind_br
@@ -340,8 +341,11 @@ async function throw_obj(obj, shotlimit) {
         if (!g.uarmg && obj.otyp === CORPSE
             && touch_petrifies(mons[obj.corpsenm]) && !Stone_resistance())
             throw new Error('throw_obj(): instapetrify() from a bare-handed corpse not ported yet');
-        if (welded(obj))
-            throw new Error('throw_obj(): weldmsg() not ported yet');
+        if (welded(obj)) {
+            await weldmsg(obj);
+            res = ECMD_TIME;
+            break unsplit;
+        }
         if (is_wet_towel(obj))
             throw new Error('throw_obj(): dry_a_towel() not ported yet');
 
@@ -990,8 +994,8 @@ async function throwit(obj,
         mon = u.ustuck;
         g.bhitpos.x = mon.mx;
         g.bhitpos.y = mon.my;
-        if (tethered_weapon) /* tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng)) */
-            throw new Error('throwit(): tethered weapon while engulfed not ported yet');
+        if (tethered_weapon)
+            await tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng));
     } else if (u.dz) {
         /* toss_up(), hitfloor(), potionhit() on the steed */
         throw new Error('throwit(): throwing up or down not ported yet');
@@ -1075,7 +1079,8 @@ async function throwit(obj,
             /* bhit display cleanup was left with this caller
                for tethered_weapon, but clean it up now since
                we're about to return */
-            /* if (tethered_weapon) tmp_at(DISP_END, 0): display only */
+            if (tethered_weapon)
+                await tmp_at(DISP_END, 0);
             throwit_return(false);
             return;
         }
@@ -1088,7 +1093,8 @@ async function throwit(obj,
 
     if (!g.thrownobj) {
         /* missile has already been handled */
-        /* if (tethered_weapon) tmp_at(DISP_END, 0): display only */
+        if (tethered_weapon)
+            await tmp_at(DISP_END, 0);
     } else if (u.uswallow && !g.iflags.returning_missile) {
         swallowit(obj);
         return;
@@ -1128,9 +1134,7 @@ async function throwit(obj,
         obj_no_longer_held(obj);
         if (mon && mon.isshk && is_pick(obj))
             throw new Error('throwit(): shopkeeper snatching a pick not ported yet');
-        /* (void) snuff_candle(obj) */
-        if (obj.lamplit)
-            throw new Error('throwit(): snuff_candle() not ported yet');
+        /* (void) */ await snuff_candle_dt(obj);
         if (!mon && await ship_object(obj, bx, by, false)) {
             throwit_return(true);
             return;
@@ -1541,8 +1545,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     if (weapon === THROWN_TETHERED_WEAPON && obj) {
         tethered_weapon = true;
         weapon = THROWN_WEAPON; /* simplify 'if's that follow below */
-        /* tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng)):
-           tmp_at()'s tether style isn't ported yet */
+        await tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng));
     } else if (weapon !== ZAPPED_WAND) /* && weapon != INVIS_BEAM */
         await tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
 
@@ -1571,7 +1574,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         /* iron bars will block anything big enough and break some things */
         if (weapon === THROWN_WEAPON) {
             if (obj.lamplit && !Blind())
-                throw new Error('bhit(): show_transient_light() not ported yet');
+                await show_transient_light(obj, x, y);
             if (typ === IRONBARS
                 && await hits_bars(pobj, x - ddx, y - ddy, x, y,
                                    point_blank ? 0 : (!rn2(5) ? 1 : 0), 1)) {
@@ -1689,8 +1692,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
                 unmap_object(x, y);
                 newsym(x, y);
             }
-            if (!tethered_weapon) /* tmp_at()'s tether style isn't ported yet */
-                await tmp_at(x, y);
+            await tmp_at(x, y);
             /* nh_delay_output() */
             if (IS_SINK(typ))
                 break; /* physical objects fall onto sink */
@@ -1704,18 +1706,21 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         point_blank = false; /* affects passing through iron bars */
     }
 
-    /* (was_returning && was_returning != iflags.returning_missile) would
-       end the tether display, whose tmp_at() style isn't ported yet */
-    if (!bhit_done && weapon !== ZAPPED_WAND /* && weapon != INVIS_BEAM */
-        && !tethered_weapon)
+    if (!bhit_done
+        && ((weapon !== ZAPPED_WAND /* && weapon != INVIS_BEAM */
+             && !tethered_weapon)
+            || (was_returning && was_returning !== g.iflags.returning_missile)))
         await tmp_at(DISP_END, 0);
-    void was_returning;
 
     if (!bhit_done && shopdoor)
         await pay_for_damage_bh("destroy", false);
 
     /* bhit_done: */
-    /* transient_light_cleanup(): lit objects are refused above */
+    /* note: for FLASHED_LIGHT, _caller_ must call transient_light_cleanup()
+       after possibly calling flash_hits_mon() */
+    if (weapon === THROWN_WEAPON /* || weapon == KICKED_WEAPON */)
+        await transient_light_cleanup();
+
     return result;
 }
 
