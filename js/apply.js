@@ -1400,7 +1400,7 @@ export async function fig_transform(arg, timeout) {
 }
 
 // C ref: apply.c use_whip()
-async function use_whip(obj) {
+export async function use_whip(obj) {
     const g = game;
     const u = g.u;
     let mtmp;

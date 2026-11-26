@@ -6,7 +6,7 @@
 // prompt.  Throwing itself (throwit()), autoquiver and doquiver_core()
 // are not ported yet.
 
-import { use_pole, could_pole_mon } from './apply.js';
+import { use_pole, could_pole_mon, use_whip } from './apply.js';
 import { end_burn } from './timeout.js';
 import { get_obj_location } from './shk.js';
 import { shop_keeper, costly_spot, stolen_value, subfrombill, is_unpaid,
@@ -1840,7 +1840,7 @@ export async function dofire() {
                 return await use_pole(uwep, true);
             /* if we're wielding a bullwhip, apply it */
             } else if (uwep && uwep.otyp === BULLWHIP) {
-                throw new Error('dofire(): use_whip() not ported yet');
+                return await use_whip(uwep);
             } else if ((game.iflags?.fireassist ?? true)
                        && game.uswapwep && is_pole(game.uswapwep)
                        && !(game.uswapwep.cursed && game.uswapwep.bknown)) {
