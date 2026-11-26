@@ -85,7 +85,7 @@ import { M_AP_NOTHING, M_AP_MONSTER, HALLUC, TELEPAT,
          DETECT_MONSTERS, PROT_FROM_SHAPE_CHANGERS } from './const.js';
 import { dist2, sgn, ARM_BONUS } from './hacklib.js';
 import { an, vtense } from './objnam.js';
-import { newsym, pline, canseemon, You_see, vobj_at } from './display.js';
+import { newsym, pline, Norep, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
 import { Resists_Elem } from './mondata.js';
 import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
@@ -1711,7 +1711,7 @@ export async function makemon_flush_msg() {
     const msg = game.makemon_msg;
     game.makemon_msg = null;
     if (msg)
-        await pline(msg);
+        await Norep(msg); /* C: Norep("%s%s %s%s%c", ...) */
     /* and makemon()'s dochugw(mtmp, FALSE) for an occupied hero */
     const mtmp = game.makemon_dochugw;
     game.makemon_dochugw = null;

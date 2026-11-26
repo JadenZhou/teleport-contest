@@ -165,7 +165,7 @@ async function mfind0(mtmp, via_warning) {
         if (!canspotmon(mtmp)) {
             map_invisible(x, y);
             /* set_msg_xy(x, y) */
-            await pline("You feel an unseen monster!");
+            await You_feel_dt("an unseen monster!");
         } else if (!sensemon(mtmp)) {
             /* set_msg_xy(x, y) */
             await pline(`You find ${mtmp.mtame ? y_monnam(mtmp) : a_monnam(mtmp)}.`);

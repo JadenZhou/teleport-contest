@@ -20,7 +20,7 @@ import { d } from './rng.js';
 import { EXPL_FIERY, NO_TRAP_FLAGS } from './const.js';
 import { hits_bars } from './mthrowu.js';
 import { glyph_at, glyph_is_warning, You_hear as
-         You_hear_br } from './display.js';
+         You_hear_br, You_feel } from './display.js';
 import { noit_mhim } from './mhitu.js';
 import { shade_miss } from './uhitm.js';
 import { switch_terrain } from './hack.js';
@@ -2003,7 +2003,7 @@ export async function hurtle_step(arg, x, y) {
     let ttmp;
 
     if (!isok(x, y)) {
-        await pline("You feel the spirits holding you back."); /* You_feel() */
+        await You_feel("the spirits holding you back."); /* You_feel() */
         return false;
     } else if (!(await in_out_region(x, y))) {
         return false;
@@ -2273,7 +2273,7 @@ export async function hurtle(dx, dy, range, verbose) {
      * very far diagonally.  [...] give the player a message and return.
      */
     if (g.uball && g.uball.where !== 'OBJ_INVENT') { /* Punished && !carried(uball) */
-        await pline("You feel a tug from the iron ball."); /* You_feel() */
+        await You_feel("a tug from the iron ball."); /* You_feel() */
         nomul_hu(0);
         return;
     } else if (u.utrap) {
