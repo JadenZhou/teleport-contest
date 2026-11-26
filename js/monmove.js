@@ -274,7 +274,7 @@ async function watch_on_duty(mtmp) {
                 throw new Error('watch_on_duty(): mon_yells()/angry_guards() not ported yet');
         } else if (is_digging()) {
             /* chewing, wand/spell of digging are checked elsewhere */
-            watch_dig(mtmp, game.context.digging.pos.x,
+            await watch_dig(mtmp, game.context.digging.pos.x,
                       game.context.digging.pos.y, false);
         }
     }
