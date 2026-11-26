@@ -1678,7 +1678,7 @@ export async function sellobj(obj, x, y) {
         if (isgold)
             offer = obj.quan;
         else if (cgold)
-            offer += cgold ? 1 : 0;
+            offer += cgold ? 1 : 0; /* C: offer += cgold; (boolean, so +1) */
         /* C: if ((eshkp->robbed -= offer < 0L)) -- '<' binds first */
         if ((eshkp.robbed -= (offer < 0 ? 1 : 0)))
             eshkp.robbed = 0;

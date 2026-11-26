@@ -135,7 +135,7 @@ function always_peaceful(ptr) { return (ptr.mflags2 & M.M2_PEACEFUL) !== 0; }
 function race_peaceful(ptr) { return (ptr.mflags2 & game.urace.lovemask) !== 0; }
 function race_hostile(ptr) { return (ptr.mflags2 & game.urace.hatemask) !== 0; }
 export function is_golem(ptr) { return ptr.mlet === M.S_GOLEM; }
-function is_ndemon(ptr) {
+export function is_ndemon(ptr) {
     return is_demon(ptr) && !is_dlord(ptr) && !is_dprince(ptr);
 }
 export function weirdnonliving(ptr) { return is_golem(ptr) || ptr.mlet === M.S_VORTEX; }
@@ -155,7 +155,7 @@ export function is_home_elemental(ptr) {
     return false;
 }
 // C ref: monst.h is_lminion()
-function is_lminion(mon) {
+export function is_lminion(mon) {
     return is_minion(mon.data) && mon_aligntyp(mon) === A_LAWFUL;
 }
 // C ref: makemon.c quest_mon_represents_role()

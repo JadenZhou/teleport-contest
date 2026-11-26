@@ -80,6 +80,7 @@ import { xkilled as xkilled_pr } from './mon.js';
 import { ureflects as ureflects_pr } from './mcastu.js';
 import { monstseesu as monstseesu_pr, monstunseesu as monstunseesu_pr } from './uhitm.js';
 import { disintegrate_arm as disintegrate_arm_pr } from './do_wear.js';
+import { unchanger } from './do_wear.js';
 import { done as done_pr } from './end.js';
 import { killer as killer_pr } from './topten.js';
 import { REFLECTING, SHOCK_RES, DISINT_RES, W_ARM, W_ARMC, W_ARMS, M_SEEN_REFL,
@@ -88,7 +89,6 @@ import { REFLECTING, SHOCK_RES, DISINT_RES, W_ARM, W_ARMC, W_ARMS, M_SEEN_REFL,
          Is_sanctum as Is_sanctum_pr } from './const.js';
 import { rescued_from_terrain } from './trap.js';
 import { DISSOLVED } from './const.js';
-import { AMULET_OF_UNCHANGING } from './objects.js';
 import { gloves_simple_name } from './objnam.js';
 import { rehumanize } from './polyself.js';
 import { make_glib } from './potion.js';
@@ -525,8 +525,10 @@ function in_trouble() {
            otherwise "fix all troubles" would get stuck in a loop */
         if (welded(g.uwep))
             return TROUBLE_UNUSEABLE_HANDS;
-        if (Upolyd() && nohands(g.youmonst.data))
-            throw new Error('in_trouble(): unchanger() not ported yet');
+        let otmp;
+        if (Upolyd() && nohands(g.youmonst.data)
+            && (!Unchanging() || ((otmp = unchanger()) !== null && otmp.cursed)))
+            return TROUBLE_UNUSEABLE_HANDS;
     }
     if (g.ublindf && g.ublindf.cursed && EProp(BLINDED)) /* Blindfolded */
         return TROUBLE_CURSED_BLINDFOLD;
@@ -904,9 +906,7 @@ async function fix_worst_trouble(trouble) {
             if (!Unchanging()) {
                 await Your("shape becomes uncertain.");
                 await rehumanize(); /* "You return to {normal} form." */
-            } else if ((otmp = (g.uamul && g.uamul.otyp === AMULET_OF_UNCHANGING)
-                                ? g.uamul : null) /* unchanger() */
-                       && otmp.cursed) {
+            } else if ((otmp = unchanger()) !== null && otmp.cursed) {
                 /* otmp is an amulet of unchanging */
                 await fix_curse_trouble(otmp, what);
                 break;

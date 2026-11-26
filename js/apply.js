@@ -172,6 +172,11 @@ import { use_pick_axe } from './dig.js';
 import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
 import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
          M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
+import { an, singular, xname } from './objnam.js';
+import { Glib, Fumbling, Underwater } from './youprop.js';
+import { A_DEX } from './const.js';
+import { splitobj } from './mkobj.js';
+import { fingers_or_gloves } from './do_wear.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
@@ -917,7 +922,7 @@ export async function doapply() {
         return await flip_through_book(obj);
 
     if (obj.oclass === COIN_CLASS)
-        throw new Error('doapply(): flip_coin() not ported yet');
+        return await flip_coin(obj);
 
     switch (obj.otyp) {
     case O.BLINDFOLD:
@@ -1968,4 +1973,35 @@ async function use_leash_core(obj, mtmp, cc, spotmon) {
         /* applying a leash which is currently in use */
         throw new Error('use_leash_core(): removing a leash not ported yet');
     }
+}
+
+// C ref: apply.c flip_coin()
+async function flip_coin(obj) {
+    let otmp = obj;
+    let lose_coin = false;
+
+    await You(`flip ${an(singular(obj, xname))}.`);
+    if (Underwater()) {
+        await pline("It tumbles away.");
+        lose_coin = true;
+    } else if (Glib() || Fumbling()
+               || (ACURR(A_DEX) < 10 && !rn2(ACURR(A_DEX)))) {
+        await pline(`It slips between your ${fingers_or_gloves(false)}.`);
+        lose_coin = true;
+    }
+
+    if (lose_coin) {
+        if (otmp.quan > 1)
+            otmp = splitobj(otmp, 1);
+        await dropx(otmp);
+        return ECMD_TIME;
+    }
+    if (Hallucination()) {
+        await pline(rn2(100) ? "Wow, a double header!"
+                        /* edge case */
+                             : "The coin miraculously lands on its edge!");
+    } else {
+        await pline(`It comes up ${rn2(2) ? "heads" : "tails"}.`);
+    }
+    return ECMD_TIME;
 }
