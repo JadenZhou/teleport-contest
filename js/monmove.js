@@ -157,6 +157,10 @@ import { AD_DRIN as AD_DRIN_MB } from './monsters.js';
 import { vegan as vegan_mm, is_rider as is_rider_mm, flesh_petrifies as flesh_petrifies_mm,
          resists_ston as resists_ston_mm } from './mondata.js';
 import { touch_petrifies as touch_petrifies_mo } from './mondata.js';
+import { nolimbs } from './mondata.js';
+import { mhis } from './mhitu.js';
+import { mbodypart } from './insight.js';
+import { HEAD, ARM } from './const.js';
 import { mstoning as mstoning_mo } from './mon.js';
 import { revive_corpse as revive_corpse_mo } from './zap.js';
 import { objdescr_is } from './o_init.js';
@@ -259,6 +263,29 @@ export function monhaskey(mon, for_unlocking) {
     if (for_unlocking && m_carrying(mon, CREDIT_CARD))
         return true;
     return !!(m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK));
+}
+
+// C ref: monmove.c mon_yells()
+export async function mon_yells(mon, shout) {
+    if (Deaf()) {
+        if (canspotmon(mon))
+            /* Sidenote on "A watchman angrily waves her arms!"
+             * Female being called watchman is correct (career name).
+             */
+            await pline(`${Amonnam(mon)} angrily ${
+                nolimbs(mon.data) ? "shakes" : "waves"} ${mhis(mon)} ${
+                nolimbs(mon.data) ? mbodypart(mon, HEAD)
+                                  : makeplural_mm(mbodypart(mon, ARM))}!`); /* pline_mon() */
+    } else {
+        if (canspotmon(mon)) {
+            await pline(`${Amonnam(mon)} yells:`); /* pline_mon() */
+        } else {
+            /* Soundeffect(se_someone_yells, 75); */
+            await You_hear("someone yell:");
+        }
+        /* SetVoice(mon, 0, 80, 0) */
+        await verbalize(shout); /* verbalize1() */
+    }
 }
 
 // C ref: monmove.c watch_on_duty()

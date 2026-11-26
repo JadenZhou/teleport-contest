@@ -253,7 +253,7 @@ export async function dosearch0(aflag) /* intrinsic autosearch vs explicit searc
 }
 
 // C ref: detect.c find_trap()
-async function find_trap(trap) {
+export async function find_trap(trap) {
     let cleared = false;
 
     trap.tseen = 1;

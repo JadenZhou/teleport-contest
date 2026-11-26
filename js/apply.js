@@ -143,6 +143,8 @@ import { Shk_Your as Shk_Your_lp } from './shk.js';
 import { yname as yname_lp, Tobjnam as Tobjnam_lp, otense as otense_lp } from './objnam.js';
 import { Your as Your_lp } from './display.js';
 import { begin_burn as begin_burn_lp, end_burn as end_burn_lp } from './timeout.js';
+import { Is_candle } from './mkobj.js';
+import { get_obj_location } from './shk.js';
 import { make_glib as make_glib_lp } from './potion.js';
 import { fingers_or_gloves as fingers_or_gloves_lp } from './do_wear.js';
 import { Blindf_on as Blindf_on_dw, Blindf_off as Blindf_off_dw,
@@ -1336,6 +1338,25 @@ export async function jump(magic) {
         await morehungry(rnd(25));
         return ECMD_TIME;
     }
+}
+
+// C ref: apply.c snuff_candle()
+/* call in drop, throw, and put in box, etc. */
+export async function snuff_candle(otmp) {
+    const candle = Is_candle(otmp);
+
+    if ((candle || otmp.otyp === O.CANDELABRUM_OF_INVOCATION)
+        && otmp.lamplit) {
+        const many = candle ? (otmp.quan > 1) : (otmp.spe > 1);
+        const [x, y] = get_obj_location(otmp, 0) || [0, 0];
+
+        if (otmp.where === 'OBJ_MINVENT' ? cansee(x, y) : !Blind())
+            await pline(`${Shk_Your_lp(otmp)}${candle ? "" : "candelabrum's "}candle${
+                many ? "s'" : "'s"} flame${many ? "s are" : " is"} extinguished.`);
+        end_burn_lp(otmp, true);
+        return true;
+    }
+    return false;
 }
 
 // C ref: apply.c use_lamp()
