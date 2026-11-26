@@ -841,6 +841,13 @@ export async function addinv(obj) {
     return await addinv_core0(obj, null, true);
 }
 
+// C ref: invent.c addinv_before()
+/* add obj to the hero's inventory by inserting in front of a specific item */
+export async function addinv_before(obj, other_obj) {
+    /* if 'other_obj' is present this will implicitly be 'nomerge' */
+    return await addinv_core0(obj, other_obj, true);
+}
+
 // C ref: invent.c addinv_nomerge()
 /* add obj to the hero's inventory by inserting in alphabetical order */
 export async function addinv_nomerge(obj) {

@@ -76,6 +76,11 @@ import { PM_CAVE_DWELLER, PM_MONK, PM_RANGER, PM_ROGUE, PM_NINJA, PM_SAMURAI,
 import { ART_MJOLLNIR } from './artilist.js';
 import { welded, weldmsg } from './wield.js';
 import { getobj, freeinv, stackobj } from './invent.js';
+import { addinv_before } from './invent.js';
+import { setuwep, setuqwep, set_twoweap } from './wield.js';
+import { artifact_hit } from './artifact.js';
+import { killer_xname } from './mthrowu.js';
+import { BACKTRACK, W_QUIVER, ARM, FOOT } from './const.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
 import { calc_capacity } from './hack.js';
 import { canletgo, flooreffects, obj_no_longer_held, ship_object,
@@ -575,6 +580,25 @@ function throwit_return(clear_thrownobj) {
         game.thrownobj = null;
 }
 
+// C ref: dothrow.c sho_obj_return_to_u()
+async function sho_obj_return_to_u(obj) {
+    const u = game.u;
+
+    /* might already be our location (bounced off a wall) */
+    if ((u.dx || u.dy) && (game.bhitpos.x !== u.ux || game.bhitpos.y !== u.uy)) {
+        let x = game.bhitpos.x - u.dx, y = game.bhitpos.y - u.dy;
+
+        await tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
+        while (isok(x, y) && (x !== u.ux || y !== u.uy)) {
+            await tmp_at(x, y);
+            /* nh_delay_output() */
+            x -= u.dx;
+            y -= u.dy;
+        }
+        await tmp_at(DISP_END, 0);
+    }
+}
+
 // C ref: dothrow.c swallowit()
 /* engulfer gets the thrown object */
 function swallowit(obj) {
@@ -942,7 +966,6 @@ async function throwit(obj,
                     || Hallucination() || Fumbling());
     /* autoreturn_weapon(obj): only the aklys is a tethered weapon */
     const tethered_weapon = (obj.otyp === AKLYS && (wep_mask & W_WEP) !== 0);
-    void twoweap; void oldslot;
 
     g.notonhead = false; /* reset potentially stale value */
     if ((obj.cursed || obj.greased) && (u.dx || u.dy) && !rn2(7)) {
@@ -1101,8 +1124,74 @@ async function throwit(obj,
     } else {
         /* Mjollnir must be wielded to be thrown--caller verifies this;
            aklys must be wielded as primary to return when thrown */
-        if (g.iflags.returning_missile) /* Mjollnir or aklys */
-            throw new Error('throwit(): returning missile not ported yet');
+        if (g.iflags.returning_missile) { /* Mjollnir or aklys */
+            if (rn2(100)) {
+                if (tethered_weapon)
+                    await tmp_at(DISP_END, BACKTRACK);
+                else
+                    await sho_obj_return_to_u(obj); /* display its flight */
+
+                if (!impaired && rn2(100)) {
+                    await pline(`${Tobjnam(obj, "return")} to your hand!`);
+                    obj = await addinv_before(obj, oldslot);
+                    await encumber_msg();
+                    /* addinv autoquivers an aklys if quiver is empty;
+                       if obj is quivered, remove it before wielding */
+                    if (obj.owornmask & W_QUIVER)
+                        setuqwep(null);
+                    setuwep(obj);
+                    set_twoweap(twoweap); /* u.twoweap = twoweap */
+                    if (cansee(g.bhitpos.x, g.bhitpos.y))
+                        newsym(g.bhitpos.x, g.bhitpos.y);
+                } else {
+                    let dmg = rn2(2);
+
+                    if (!dmg) {
+                        await pline(Blind()
+                            ? `Something lands ${Levitation() ? "beneath" : "at"} your ${makeplural(body_part(FOOT))}.`
+                            : `${Tobjnam(obj, "return")} back to you, landing ${Levitation() ? "beneath" : "at"} your ${makeplural(body_part(FOOT))}.`);
+                    } else {
+                        dmg += rnd(3);
+                        await pline(Blind()
+                            ? `${Tobjnam(obj, "hit")} your ${body_part(ARM)}!`
+                            : `${Tobjnam(obj, "fly")} back toward you, hitting your ${body_part(ARM)}!`);
+                        if (obj.oartifact) {
+                            const pdmg = { val: dmg };
+                            /* (void) */ await artifact_hit(null, g.youmonst, obj, pdmg, 0);
+                            dmg = pdmg.val;
+                        }
+                        await losehp(Maybe_Half_Phys(dmg), killer_xname(obj),
+                                     KILLED_BY);
+                    }
+
+                    if (u.uswallow) {
+                        swallowit(obj);
+                        return;
+                    }
+                    if (!(await ship_object(obj, u.ux, u.uy, false)))
+                        await dropy(obj);
+                }
+                throwit_return(true);
+                return;
+            } else {
+                if (tethered_weapon)
+                    await tmp_at(DISP_END, 0);
+                /* when this location is stepped on, the weapon will be
+                   auto-picked up due to 'obj->how_lost' of LOST_THROWN;
+                   addinv() prevents thrown Mjollnir from being placed
+                   into the quiver slot, but an aklys will end up there if
+                   that slot is empty at the time; since hero will need to
+                   explicitly rewield the weapon to get throw-and-return
+                   capability back anyway, quivered or not shouldn't matter */
+                await pline(`${Tobjnam(obj, "fail")} to return!`);
+
+                if (u.uswallow) {
+                    swallowit(obj);
+                    return;
+                }
+                /* continue below with placing 'obj' at target location */
+            }
+        }
 
         const bx = g.bhitpos.x, by = g.bhitpos.y;
         if ((!IS_SOFT(g.level.at(bx, by).typ) && breaktest(obj))
