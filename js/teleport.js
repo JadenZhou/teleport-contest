@@ -92,6 +92,7 @@ import { inhishop, make_angry_shk, costly_spot, find_objowner,
          onshopbill } from './shk.js';
 import { inhistemple } from './priest.js';
 import { in_rooms as in_rooms_utm } from './hack.js';
+import { vault_occupied, findgd, uleftvault } from './vault.js';
 import { unstuck as unstuck_utm } from './mhitu.js';
 import { TEMPLE as TEMPLE_UTM, engulfing_u as engulfing_u_utm } from './const.js';
 import { hideunder } from './makemon.js';
@@ -334,9 +335,7 @@ export async function teleds(nux, nuy, teleds_flags) {
         allow_drag = (teleds_flags & TELEDS_ALLOW_DRAG) !== 0;
     const is_teleport = (teleds_flags & TELEDS_TELEPORT) !== 0;
 
-    /* vault_occupied(u.urooms) ? findgd() : 0 */
-    if (u.urooms && in_rooms_vault(u.urooms))
-        throw new Error('teleds(): vault guard not ported yet');
+    const vault_guard = vault_occupied(u.urooms) ? findgd() : null;
 
     if (u.utraptype === TT_BURIEDBALL) {
         /* unearth it */
@@ -435,7 +434,19 @@ export async function teleds(nux, nuy, teleds_flags) {
        been updated for new location instead of right after u_on_newpos() */
     if (game.level.at(u.ux, u.uy).typ !== game.level.at(u.ux0, u.uy0).typ)
         await switch_terrain();
-    /* (vault guard: stopped above) */
+    /* sequencing issue:  we want guard's alarm, if any, to occur before
+       room entry message, if any, so need to check for vault exit prior
+       to spoteffects; but spoteffects() sets up new value for u.urooms
+       and vault code depends upon that value, so we need to fake it */
+    if (vault_guard) {
+        const save_urooms = u.urooms; /* [sizeof u.urooms] */
+
+        u.urooms = in_rooms_utm(u.ux, u.uy, VAULT);
+        /* if hero has left vault, make guard notice */
+        if (!vault_occupied(u.urooms))
+            await uleftvault(vault_guard);
+        u.urooms = save_urooms; /* reset prior to spoteffects() */
+    }
     /* possible shop entry message comes after guard's shrill whistle */
     await spoteffects(true);
     /* invocation_message(): only on the vibrating square level */
@@ -846,17 +857,6 @@ export async function tele_trap(trap) {
     } finally {
         in_tele_trap = false;
     }
-}
-
-function in_rooms_vault(urooms) {
-    /* C ref: vault.c vault_occupied() */
-    for (const r of urooms) {
-        const rno = (typeof r === 'number') ? r : r.charCodeAt(0);
-        const room = game.level.rooms?.[rno - ROOMOFFSET];
-        if (room && room.rtype === VAULT)
-            return true;
-    }
-    return false;
 }
 
 function is_pool_or_lava_at(x, y) {

@@ -1059,7 +1059,7 @@ export function update_lastseentyp(x, y) {
 }
 
 /* svl.lastseentyp[][], made (zeroed) on first use for the level */
-function lastseentyp_array() {
+export function lastseentyp_array() {
     const L = game.level;
     if (!L.lastseentyp) {
         L.lastseentyp = [];
