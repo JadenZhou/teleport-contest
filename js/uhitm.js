@@ -172,7 +172,7 @@ import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
 import { corpse_xname, An, singular, cxname } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { munstone } from './muse.js';
-import { stale_egg } from './eat.js';
+import { stale_egg, eat_brains } from './eat.js';
 import { explode } from './explode.js';
 import { is_vampshifter, haseyes, resists_acid,
          mon_hates_blessings } from './mondata.js';
@@ -1281,8 +1281,21 @@ async function mhitm_ad_drin(magr, mattk, mdef, mhm) {
         await mdamageu(magr, mhm.damage);
         mhm.damage = 0; /* don't inflict a second dose below */
 
-        if (!game.uarmh || game.uarmh.otyp !== DUNCE_CAP)
-            throw new Error('mhitm_ad_drin(): eat_brains() not ported yet');
+        if (!game.uarmh || game.uarmh.otyp !== DUNCE_CAP) {
+            const oldmort = game.u.umortality || 0,
+                mhitu = await eat_brains(magr, mdef, true, null);
+
+            /* skip further AD_DRIN if hero's number of deaths went up */
+            if ((game.u.umortality || 0) > oldmort)
+                game.skipdrin = true;
+            /* eat_brains() will miss if target is mindless (won't
+               happen here--hero is considered to retain his mind
+               regardless of current shape) or is noncorporeal
+               (can't happen here--no one can poly into a ghost
+               or shade) so this check for missing is academic */
+            if (mhitu === M_ATTK_MISS)
+                return;
+        }
         /* adjattrib gives dunce cap message when appropriate */
         await adjattrib(A_INT, -rnd(2), false);
         if (!rn2(5)) {
