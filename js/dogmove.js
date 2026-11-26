@@ -680,6 +680,8 @@ async function dog_invent(mtmp, edog, udist) {
         if (obj
             && !(obj.oclass === O.BALL_CLASS || obj.oclass === O.CHAIN_CLASS
                  || obj.oclass === O.ROCK_CLASS) /* nofetch[] */
+            /* MAIL_STRUCTURES is defined (global.h) */
+            && obj.otyp !== O.SCR_MAIL
             /* avoid special items; once hero picks them up, they'll cease
                being special and become eligible for normal monst activity */
             && !(is_mines_prize(obj) || is_soko_prize(obj))) {

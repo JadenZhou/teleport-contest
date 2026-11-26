@@ -55,6 +55,9 @@ import { is_quest_artifact } from './questpgr.js';
 import { artitouch } from './quest.js';
 import { set_artifact_intrinsic, set_artifact_intrinsic_sync } from './artifact.js';
 import { record_achievement } from './insight.js';
+import { align_str } from './insight.js';
+import { a_gname } from './pray.js';
+import { AM_SANCTUM, AM_SHRINE, Amask2align } from './const.js';
 import { ACH_AMUL, ACH_CNDL, ACH_BELL, ACH_BOOK, ACH_MINE_PRIZE, ACH_SOKO_PRIZE,
          W_ART } from './const.js';
 import { ART_MJOLLNIR } from './artilist.js';
@@ -1655,8 +1658,10 @@ export function dfeature_at(x, y) {
         dfeature = "pool of water";
     else if (IS_SINK(ltyp))
         cmap = 'S_sink'; /* "sink" */
-    else if (IS_ALTAR(ltyp))
-        throw new Error('dfeature_at(): altar description (a_gname()) not ported yet');
+    else if (IS_ALTAR(ltyp)) {
+        dfeature = `${(lev.altarmask & AM_SANCTUM) ? "high " : ""}altar to ${
+            a_gname()} (${align_str(Amask2align(lev.altarmask & ~AM_SHRINE))})`;
+    }
     else if (stway)
         dfeature = stairs_description(stway, true);
     else if (ltyp === DRAWBRIDGE_DOWN)

@@ -38,6 +38,11 @@ import { Monnam, mon_nam, rndmonnam } from './do_name.js';
 import { night } from './calendar.js';
 import * as MM from './monsters.js';
 import { p_coaligned } from './priest.js';
+import { inhistemple, temple_occupied } from './priest.js';
+import { halu_gname } from './pray.js';
+import { letter } from './hacklib.js';
+import { cansee as cansee_tp } from './vision.js';
+import { EPRI } from './const.js';
 import { getdir } from './cmd.js';
 import { is_flyer, is_undead, is_vampshifter, same_race, is_animal,
          is_mercenary, is_silent, is_lord, is_prince,
@@ -47,6 +52,19 @@ import { S_NYMPH as S_NYMPH_SN } from './monsters.js';
 import { could_seduce as could_seduce_sn, doseduce as doseduce_sn } from './mhitu.js';
 import { is_neuter as is_neuter_sn } from './mondata.js';
 import { M1_HUMANOID as M1_HUMANOID_SN } from './monsters.js';
+import { mhis as mhis_sn } from './mhitu.js';
+import { In_endgame as In_endgame_sn, Role_if as Role_if_sn } from './const.js';
+import { is_mplayer as is_mplayer_sn, is_elf as is_elf_sn, is_dwarf as is_dwarf_sn,
+         likes_magic as likes_magic_sn, is_gnome as is_gnome_sn,
+         monsndx as monsndx_sn } from './mondata.js';
+import { t_at as t_at_sn } from './trap.js';
+import { demon_talk as demon_talk_sn } from './minion.js';
+import { cuss as cuss_sn } from './wizard.js';
+import { is_lminion as is_lminion_sn } from './makemon.js';
+import { WEAPON_CLASS as WEAPON_CLASS_SN, is_weptool as is_weptool_sn } from './objects.js';
+import { money_cnt as money_cnt_sn } from './u_init.js';
+import { aggravate as aggravate_sn } from './potion.js';
+import { You as You_sn } from './display.js';
 
 /* C ref: mondata.h predicates */
 
@@ -144,11 +162,50 @@ async function zoo_mon_sound(mtmp) {
 }
 
 // C ref: sounds.c temple_priest_sound()
-/* not ported yet: temple priests (EPRI, inhistemple(), canseemon()) are
-   not created by the JS port yet, so no monster passes the first test */
 async function temple_priest_sound(mtmp) {
-    if (mtmp.ispriest && mtmp.epri)
-        throw new Error('temple_priest_sound(): not ported yet');
+    if (mtmp.ispriest && inhistemple(mtmp)
+        /* priest must be active */
+        && !helpless(mtmp)
+        /* hero must be outside this temple */
+        && temple_occupied(game.u.urooms || '')
+           !== String.fromCharCode(EPRI(mtmp).shroom)) {
+        /* Generic temple messages; no attempt to match topic or tone
+           to the pantheon involved, let alone to the specific deity.
+           These are assumed to be coming from the attending priest;
+           asterisk means that the priest must be capable of speech;
+           pound sign (octathorpe,&c--don't go there) means that the
+           priest and the altar must not be directly visible (we don't
+           care if telepathy or extended detection reveals that the
+           priest is not currently standing on the altar; he's mobile). */
+        const temple_msg = [
+            "*someone praising %s.", "*someone beseeching %s.",
+            "#an animal carcass being offered in sacrifice.",
+            "*a strident plea for donations.",
+        ];
+        let msg;
+        const hallu = Hallucination() ? 1 : 0;
+        let trycount = 0;
+        const ax = EPRI(mtmp).shrpos.x,
+            ay = EPRI(mtmp).shrpos.y;
+        const speechless = (mtmp.data.msound <= MS_ANIMAL),
+            in_sight = canseemon(mtmp) || cansee_tp(ax, ay);
+
+        do {
+            msg = temple_msg[rn2(temple_msg.length - 1 + hallu)];
+            if (msg.includes('*') && speechless)
+                continue;
+            if (msg.includes('#') && in_sight)
+                continue;
+            break; /* msg is acceptable */
+        } while (++trycount < 50);
+        while (!letter(msg[0]))
+            msg = msg.slice(1); /* skip control flags */
+        if (msg.includes('%')) {
+            await You_hear(msg.replace('%s', halu_gname(EPRI(mtmp).shralign)));
+        } else
+            await You_hear(msg); /* You_hear1() */
+        return true;
+    }
     return false;
 }
 
@@ -751,8 +808,26 @@ async function domonnoise(mtmp) {
     case MS_BURBLE:
         pline_msg = "burbles.";
         break;
+    case MM.MS_TRUMPET:
+        /* Soundeffect(se_elephant_trumpet, 60) */
+        pline_msg = "trumpets!";
+        await wake_nearto(mtmp.mx, mtmp.my, 11 * 11);
+        break;
+    case MM.MS_SHRIEK:
+        /* Soundeffect(se_shriek, 60) */
+        pline_msg = "shrieks.";
+        aggravate_sn();
+        break;
     case MS_IMITATE:
         pline_msg = "imitates you.";
+        break;
+    case MM.MS_BONES:
+        /* Soundeffect(se_bone_rattle, 60) */
+        await pline(`${Monnam(mtmp)} rattles noisily.`);
+        await You_sn("freeze for a moment.");
+        nomul(-2);
+        game.multi_reason = "scared by rattling";
+        game.nomovemsg = null;
         break;
     case MS_LAUGH: {
         const laugh_msg = [
@@ -764,6 +839,181 @@ async function domonnoise(mtmp) {
     case MS_MUMBLE:
         pline_msg = "mumbles incomprehensibly.";
         break;
+    case MS_ORC: /* this used to be an alias for grunt, now it is distinct */
+        /* Soundeffect(se_orc_grunt, 60) */
+        pline_msg = "grunts.";
+        break;
+    case MM.MS_DJINNI:
+        if (mtmp.mtame) {
+            verbl_msg = "Sorry, I'm all out of wishes.";
+        } else if (mtmp.mpeaceful) {
+            if (ptr === mons[MM.PM_WATER_DEMON])
+                pline_msg = "gurgles.";
+            else
+                verbl_msg = "I'm free!";
+        } else {
+            if (ptr !== mons[MM.PM_PRISONER])
+                verbl_msg = "This will teach you not to disturb me!";
+            else /* vague because prisoner might already be out of cell */
+                verbl_msg = "Get me out of here.";
+        }
+        break;
+    case MM.MS_BOAST: /* giants */
+    case MM.MS_HUMANOID:
+        if (msound === MM.MS_BOAST && !mtmp.mpeaceful) {
+            switch (rn2(4)) {
+            case 0:
+                await pline(`${Monnam(mtmp)} boasts about ${mhis_sn(mtmp)} gem collection.`);
+                break;
+            case 1:
+                pline_msg = "complains about a diet of mutton.";
+                break;
+            default:
+                pline_msg = "shouts \"Fee Fie Foe Foo!\" and guffaws.";
+                await wake_nearto(mtmp.mx, mtmp.my, 7 * 7);
+                break;
+            }
+            break;
+        }
+        /* FALLTHRU (MS_BOAST, peaceful) */
+        if (!mtmp.mpeaceful) {
+            if (In_endgame_sn(game.u.uz) && is_mplayer_sn(ptr))
+                throw new Error('domonnoise(): mplayer_talk() not ported yet');
+            else
+                pline_msg = "threatens you.";
+            break;
+        }
+        /* Generic peaceful humanoid behavior. */
+        if (mtmp.mflee)
+            pline_msg = "wants nothing to do with you.";
+        else if (mtmp.mhp < Math.trunc(mtmp.mhpmax / 4))
+            pline_msg = "moans.";
+        else if (mtmp.mconf || mtmp.mstun)
+            verbl_msg = !rn2(3) ? "Huh?" : rn2(2) ? "What?" : "Eh?";
+        else if (!mtmp.mcansee)
+            verbl_msg = "I can't see!";
+        else if (mtmp.mtrapped) {
+            const t = t_at_sn(mtmp.mx, mtmp.my);
+
+            if (t)
+                t.tseen = 1;
+            verbl_msg = "I'm trapped!";
+        } else if (mtmp.mhp < Math.trunc(mtmp.mhpmax / 2))
+            pline_msg = "asks for a potion of healing.";
+        else if (mtmp.mtame && !mtmp.isminion
+                 && game.moves > mtmp.edog.hungrytime)
+            verbl_msg = "I'm hungry.";
+        /* Specific monsters' interests */
+        else if (is_elf_sn(ptr))
+            pline_msg = "curses orcs.";
+        else if (is_dwarf_sn(ptr))
+            pline_msg = "talks about mining.";
+        else if (likes_magic_sn(ptr))
+            pline_msg = "talks about spellcraft.";
+        else if (ptr.mlet === MM.S_CENTAUR)
+            pline_msg = "discusses hunting.";
+        else if (is_gnome_sn(ptr)) {
+            let gnomeplan;
+            if (Hallucination() && (gnomeplan = rn2(4)) % 2) {
+                /* skipped for rn2(4) result of 0 or 2; the South Park
+                   "Gnomes" three-step business plan */
+                verbl_msg = (gnomeplan === 1)
+                            ? "Phase one, collect underpants."
+                            : "Phase three, profit!";
+            } else {
+                verbl_msg = "Many enter the dungeon,"
+                            + " and few return to the sunlit lands.";
+            }
+        } else
+            switch (monsndx_sn(ptr)) {
+            case MM.PM_HOBBIT:
+                /* 5.0: the 'complains' message used to be given if the
+                   hobbit's current hit points were at 10 below max or
+                   less, but their max is normally less than 10 so it
+                   would almost never occur */
+                pline_msg = (mtmp.mhp < mtmp.mhpmax
+                             && (mtmp.mhpmax <= 10
+                                 || mtmp.mhp <= mtmp.mhpmax - 10))
+                            ? "complains about unpleasant dungeon conditions."
+                            : "asks you about the One Ring.";
+                break;
+            case MM.PM_ARCHEOLOGIST:
+                pline_msg =
+                "describes a recent article in \"Spelunker Today\" magazine.";
+                break;
+            case MM.PM_TOURIST:
+                verbl_msg = "Aloha.";
+                break;
+            default:
+                pline_msg = "discusses dungeon exploration.";
+                break;
+            }
+        break;
+    case MM.MS_ARREST:
+        if (mtmp.mpeaceful) {
+            /* SetVoice(mtmp, 0, 80, 0) */
+            await verbalize(`Just the facts, ${game.flags.female ? "Ma'am" : "Sir"}.`);
+        } else {
+            const arrest_msg = [
+                "Anything you say can be used against you.",
+                "You're under arrest!", "Stop in the name of the Law!",
+            ];
+            verbl_msg = arrest_msg[rn2(3)];
+        }
+        break;
+    case MM.MS_BRIBE:
+    case MM.MS_CUSS:
+        if (msound === MM.MS_BRIBE && mtmp.mpeaceful && !mtmp.mtame) {
+            await demon_talk_sn(mtmp);
+            break;
+        }
+        /* FALLTHRU (MS_BRIBE) */
+        if (!mtmp.mpeaceful)
+            await cuss_sn(mtmp);
+        else if (is_lminion_sn(mtmp))
+            verbl_msg = "It's not too late.";
+        else
+            verbl_msg = "We're all doomed.";
+        break;
+    case MM.MS_SPELL:
+        /* deliberately vague, since it's not actually casting any spell */
+        pline_msg = "seems to mutter a cantrip.";
+        break;
+    case MM.MS_NURSE: {
+        const uwep = game.uwep;
+        verbl_msg_mcan = "I hate this job!";
+        if (uwep && (uwep.oclass === WEAPON_CLASS_SN || is_weptool_sn(uwep)))
+            verbl_msg = "Put that weapon away before you hurt someone!";
+        else if (game.uarmc || game.uarm || game.uarmh || game.uarms
+                 || game.uarmg || game.uarmf)
+            verbl_msg = Role_if_sn(MM.PM_HEALER)
+                            ? "Doc, I can't help you unless you cooperate."
+                            : "Please undress so I can examine you.";
+        else if (game.uarmu)
+            verbl_msg = "Take off your shirt, please.";
+        else
+            verbl_msg = "Relax, this won't hurt a bit.";
+        break;
+    }
+    case MM.MS_GUARD:
+        if (money_cnt_sn(game.invent))
+            verbl_msg = "Please drop that gold and follow me.";
+        else
+            verbl_msg = "Please follow me.";
+        break;
+    case MM.MS_SOLDIER: {
+        const soldier_foe_msg = [
+                "Resistance is useless!", "You're dog meat!", "Surrender!",
+            ],
+            soldier_pax_msg = [
+                "What lousy pay we're getting here!",
+                "The food's not fit for Orcs!",
+                "My feet hurt, I've been on them all day!",
+            ];
+        verbl_msg = mtmp.mpeaceful ? soldier_pax_msg[rn2(3)]
+                                   : soldier_foe_msg[rn2(3)];
+        break;
+    }
     case 31 /* MS_SEDUCE */: {
         let swval;
 
@@ -789,9 +1039,8 @@ async function domonnoise(mtmp) {
         break;
     }
     default:
-        /* the talking monsters (MS_TRUMPET's wake_nearto(), MS_SHRIEK's
-           aggravate(), MS_BONES, MS_HUMANOID, shopkeepers, priests, the
-           quest, ...) aren't ported yet */
+        /* MS_ORACLE, MS_PRIEST, MS_SELL (shopkeepers), MS_VAMPIRE,
+           MS_WERE and MS_RIDER aren't ported yet */
         throw new Error(`domonnoise(): msound ${msound} not ported yet`);
     }
 
