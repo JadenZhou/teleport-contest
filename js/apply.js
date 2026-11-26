@@ -35,7 +35,7 @@ import { mons, PM_HEALER, PM_AIR_ELEMENTAL, S_VORTEX } from './monsters.js';
 import {
     Blind, Hallucination, Deaf, Wounded_legs, Jumping, Levitation, Passes_walls
 } from './youprop.js';
-import { uhim, uhis } from './mhitu.js';
+import { uhim, uhis, mhis } from './mhitu.js';
 import { uprop } from './youprop.js';
 import { GETOBJ_SUGGEST, GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE,
          GETOBJ_EXCLUDE_SELECTABLE, GETOBJ_NOFLAGS, ECMD_OK, ECMD_CANCEL,
@@ -46,10 +46,10 @@ import { objects, TOOL_CLASS, WAND_CLASS, SPBOOK_CLASS, COIN_CLASS,
          DWARVISH_MATTOCK, OIL_LAMP, MAGIC_LAMP, BRASS_LANTERN, is_pick,
          is_axe, is_graystone, is_pole, u_wield_art } from './objects.js';
 import { M1_NOHANDS, M1_NOLIMBS, M1_SLITHY, M2_ROCKTHROW } from './monsters.js';
-import { pline, You_cant, There } from './display.js';
+import { pline, You_cant, There, canseemon } from './display.js';
 import { near_capacity, nomul } from './hack.js';
 import { teleds } from './teleport.js';
-import { morehungry } from './eat.js';
+import { morehungry, use_tin_opener } from './eat.js';
 import { rnd } from './rng.js';
 import { TELEDS_NO_FLAGS } from './const.js';
 import { getpos, getpos_sethilite } from './getpos.js';
@@ -172,6 +172,7 @@ import { s_suffix as s_suffix_cam } from './hacklib.js';
 import { mon_nam as mon_nam_cam } from './do_name.js';
 import { mbodypart as mbodypart_cam } from './insight.js';
 import { STOMACH as STOMACH_CAM } from './const.js';
+import { Monnam } from './do_name.js';
 import { noit_mon_nam as noit_mon_nam_ls, Monnam as Monnam_ls,
          l_monnam as l_monnam_ls } from './do_name.js';
 import { get_adjacent_loc as get_adjacent_loc_ls } from './cmd.js';
@@ -1083,7 +1084,8 @@ export async function doapply() {
         res = await dowrite(obj);
         break;
     case O.TIN_OPENER:
-        throw new Error('doapply(): use_tin_opener() not ported yet');
+        res = await use_tin_opener(obj);
+        break;
     case O.FIGURINE:
         throw new Error('doapply(): use_figurine() not ported yet');
     case O.UNICORN_HORN:
@@ -2086,6 +2088,28 @@ export function o_unleash(otmp) {
     /* update_inventory(); -- no perm_invent window */
 }
 
+// C ref: apply.c m_unleash()
+/* mtmp is about to die, or become untame;
+   with 'feedback' the message is async: like exercise(), this then
+   returns its promise, which the caller must await */
+export function m_unleash(mtmp, feedback) {
+    let otmp;
+    let msg = null;
+
+    if (feedback) {
+        if (canseemon(mtmp))
+            msg = `${Monnam(mtmp)} pulls free of ${mhis(mtmp)} leash!`; /* pline_mon() */
+        else
+            msg = "Your leash falls slack."; /* Your() */
+    }
+    if ((otmp = get_mleash(mtmp)) !== null) {
+        otmp.leashmon = 0;
+        /* update_inventory(); -- no perm_invent window */
+    }
+    mtmp.mleashed = 0;
+    return msg ? pline(msg) : undefined;
+}
+
 // C ref: apply.c leashable()
 function leashable(mtmp) {
     return (mtmp.data !== mons_ls[PM_LONG_WORM_LS] /* mtmp->mnum */
@@ -2179,6 +2203,17 @@ async function use_leash_core(obj, mtmp, cc, spotmon) {
         /* applying a leash which is currently in use */
         throw new Error('use_leash_core(): removing a leash not ported yet');
     }
+}
+
+// C ref: apply.c get_mleash()
+/* assuming mtmp->mleashed has been checked */
+export function get_mleash(mtmp) {
+    let otmp;
+
+    for (otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (otmp.otyp === O.LEASH && otmp.leashmon === mtmp.m_id)
+            break;
+    return otmp || null;
 }
 
 // C ref: apply.c flip_coin()

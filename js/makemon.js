@@ -57,7 +57,7 @@ import {
 import { ROLL_FROM } from './rng.js';
 import { depth } from './dungeon.js';
 import { mkobj, rndmonnum, can_be_hatched } from './mkobj.js';
-import { t_at, locomotion } from './trap.js';
+import { t_at, locomotion, is_waterwall } from './trap.js';
 import { ansimpleoname } from './iactions.js';
 import { oname } from './do_name.js';
 import { ONAME_RANDOM } from './const.js';
@@ -75,7 +75,8 @@ import { monsndx, set_mon_data, is_elf, is_dwarf, is_demon, is_male, is_female,
 import { new_light_source } from './light.js';
 import { LS_MONSTER } from './const.js';
 import { deliver_obj_to_mon } from './dokick.js';
-import { See_invisible } from './youprop.js';
+import { See_invisible, Swimming, Amphibious, Levitation, Flying,
+         Wwalking, Fire_resistance } from './youprop.js';
 import { Role_if, Race_if, u_at } from './const.js';
 import { mhe } from './mhitu.js';
 import { engr_at } from './engrave.js';
@@ -90,7 +91,7 @@ import { does_block, block_point, cansee, couldsee } from './vision.js';
 import { Resists_Elem } from './mondata.js';
 import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
          SEE_INVIS } from './const.js';
-import { set_apparxy, dochugw } from './monmove.js';
+import { set_apparxy, dochugw, m_in_air } from './monmove.js';
 import { is_exclusion_zone } from './mklev.js';
 import { LR_MONGEN } from './const.js';
 import { noteleport_level } from './teleport.js';
@@ -101,9 +102,10 @@ import { m_dowear, which_armor, mon_adjust_speed_sync } from './worn.js';
 import { def_monsyms } from './drawing.js';
 import { get_wormno, initworm, count_wsegs, place_worm_tail_randomly,
          wseg_mon_at } from './worm.js';
+import { Upolyd } from './const.js';
 import { Is_waterlevel, Is_firelevel, Is_airlevel, G_GENOD,
          G_EXTINCT } from './const.js';
-import { is_flyer } from './mondata.js';
+import { is_flyer, likes_lava } from './mondata.js';
 import { G_EXTINCT as G_EXTINCT_CM, isok as isok_cm, MGIVENNAME as MGIVENNAME_cm,
          has_mgivenname as has_mgivenname_cm } from './const.js';
 import { enexto as enexto_cm } from './teleport.js';
@@ -325,10 +327,19 @@ export function goodpos(x, y, mtmp, gpflags) {
 
         mdat = mtmp.data;
         if (is_pool(x, y) && !ignorewater) {
-            /* the hero (gy.youmonst) case isn't reached from makemon();
-               m_in_air(): is_flyer || is_floater (no monster levitation) */
-            return (is_swimmer(mdat)
-                    || ((mdat.mflags1 & M.M1_FLY) !== 0 || is_floater(mdat)));
+            /* [what about Breathless?] */
+            if (mtmp === game.youmonst)
+                return (Swimming() || Amphibious()
+                        || (!Is_waterlevel(game.u.uz)
+                            && !is_waterwall(x, y)
+                            /* water on the Plane of Water has no surface
+                               so there's no way to be on or above that */
+                            && (Levitation() || Flying() || Wwalking())));
+            else
+                return (is_swimmer(mdat)
+                        || (!Is_waterlevel(game.u.uz)
+                            && !is_waterwall(x, y)
+                            && m_in_air(mtmp)));
         } else if (mdat.mlet === M.S_EEL && rn2(13) && !ignorewater) {
             return false;
         } else if (is_lava(x, y) && !ignorelava) {
@@ -336,10 +347,13 @@ export function goodpos(x, y, mtmp, gpflags) {
                that due the effect of the heat causing it to dry out */
             if (mdat === mons[M.PM_FLOATING_EYE])
                 return false;
-            /* m_in_air(mtmp) || likes_lava(mdat) */
-            return ((mdat.mflags1 & M.M1_FLY) !== 0 || is_floater(mdat)
-                    || mdat === mons[M.PM_FIRE_ELEMENTAL]
-                    || mdat === mons[M.PM_SALAMANDER]);
+            else if (mtmp === game.youmonst)
+                return (Levitation() || Flying()
+                        || (Fire_resistance() && Wwalking() && game.uarmf
+                            && game.uarmf.oerodeproof)
+                        || (Upolyd() && likes_lava(game.youmonst.data)));
+            else
+                return (m_in_air(mtmp) || likes_lava(mdat));
         }
         if (passes_walls(mdat) && may_passwall(x, y))
             return true;

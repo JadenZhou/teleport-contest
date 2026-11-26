@@ -1713,7 +1713,7 @@ export async function digactualhole(x, y, madeby, ttyp) {
                     }
                     if (mtmp.isshk)
                         await make_angry_shk(mtmp, 0, 0);
-                    migrate_to_level(mtmp, ledger_no(tolevel),
+                    await migrate_to_level(mtmp, ledger_no(tolevel),
                                      MIGR_RANDOM, null);
                 }
             }

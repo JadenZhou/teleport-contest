@@ -406,7 +406,7 @@ export async function teleds(nux, nuy, teleds_flags) {
 
     /* must set u.ux, u.uy after drag_ball(), which may need to know
        the old position if allow_drag is true... */
-    u_on_newpos(nux, nuy); /* set u.<x,y>, usteed-><mx,my>; cliparound() */
+    await u_on_newpos(nux, nuy); /* set u.<x,y>, usteed-><mx,my>; cliparound() */
     await fill_pit(u.ux0, u.uy0);
     if (ball_active && game.uchain && game.uchain.where === 'OBJ_FREE')
         await placebc(); /* put back the ball&chain if they were taken off map */
@@ -1753,7 +1753,7 @@ export async function mlevel_tele_trap(mtmp, trap, force_it, in_sight) {
         }
         if (is_xport(tt) && !control_teleport(mtmp.data))
             mtmp.mconf = 1;
-        migrate_to_level(mtmp, ledger_no(tolevel), migrate_typ, null);
+        await migrate_to_level(mtmp, ledger_no(tolevel), migrate_typ, null);
         return Trap_Moved_Mon; /* no longer on this level */
     }
     return Trap_Effect_Finished;
