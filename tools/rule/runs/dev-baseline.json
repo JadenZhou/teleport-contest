@@ -1,5 +1,5 @@
 {
- "when": "2026-11-26T12:46:29.902Z",
+ "when": "2026-11-26T20:41:34.100Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -502,8 +502,8 @@
    "totalScreens": 230,
    "valuePrefix": 3320,
    "rulePrefix": 3320,
-   "screens": 222,
-   "honestScreens": 222,
+   "screens": 220,
+   "honestScreens": 220,
    "firstScreenMiss": 158,
    "first": null,
    "error": null
@@ -579,8 +579,8 @@
   "rule": 504996,
   "value": 504996,
   "rolls": 504996,
-  "honestScreens": 8362,
-  "screens": 8362,
+  "honestScreens": 8360,
+  "screens": 8360,
   "totalScreens": 8438
  },
  "todo": [],
