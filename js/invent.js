@@ -119,6 +119,7 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
          JUSTPICKED as JUSTPICKED_IV,
          INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
 import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
+import { unpunish } from './read.js';
 
 const invlet_basic = 52;
 const GOLD_SYM = '$';
@@ -2596,6 +2597,25 @@ export function merged(r) {
         return 1;
     }
     return 0;
+}
+
+// C ref: invent.c delallobj()
+/* destroy all objects at <x,y> */
+export async function delallobj(x, y) {
+    /* for (otmp = svl.level.objects[x][y]; otmp; otmp = otmp2): the pile
+       at <x,y> from the floor chain */
+    const pile = (game.level.objects || []).filter(
+        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    for (const otmp of pile) {
+        if (otmp === game.uball)
+            await unpunish();
+        /* after unpunish(), or might get deallocated chain */
+        if (otmp === game.uchain)
+            continue;
+        if (otmp.where !== 'OBJ_FLOOR')
+            continue; /* unpunish() took the chain off the floor */
+        delobj(otmp);
+    }
 }
 
 // C ref: invent.c delobj()

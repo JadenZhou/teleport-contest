@@ -156,9 +156,49 @@ import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_SC, DB_UNDER as DB_UNDER_SC,
 import { spot_time_left as spot_time_left_sc,
          spot_stop_timers as spot_stop_timers_sc } from './timeout.js';
 import { obj_ice_effects as obj_ice_effects_sc } from './mkobj.js';
+import { is_rider } from './mondata.js';
+import { PM_WIZARD_OF_YENDOR } from './monsters.js';
+import { enexto, rloc_to } from './teleport.js';
+import { revive_corpse } from './zap.js';
 
 // C's impossible() (pline.c) is not ported yet.
 export function impossible(msg) { console.error(`impossible: ${msg}`); }
+
+// C ref: hack.c revive_nasty()
+export async function revive_nasty(x, y, msg) {
+    let mtmp;
+    const cc = { x: 0, y: 0 };
+    let revived = false;
+
+    /* for (otmp = svl.level.objects[x][y]; otmp; otmp = otmp2):
+       the pile at <x,y> from the floor chain, read before any revival */
+    const pile = (game.level.objects || []).filter(
+        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    for (const otmp of pile) {
+        if (otmp.otyp === CORPSE
+            && (is_rider(mons[otmp.corpsenm])
+                || otmp.corpsenm === PM_WIZARD_OF_YENDOR)) {
+            /* move any living monster already at that location */
+            if ((mtmp = m_at(x, y)) && enexto(cc, x, y, mtmp.data))
+                await rloc_to(mtmp, cc.x, cc.y);
+            if (msg)
+                await Norep(msg);
+            revived = !!(await revive_corpse(otmp));
+        }
+    }
+
+    /* this location might not be safe, if not, move revived monster */
+    if (revived) {
+        mtmp = m_at(x, y);
+        if (mtmp && !goodpos(x, y, mtmp, 0)
+            && enexto(cc, x, y, mtmp.data)) {
+            await rloc_to(mtmp, cc.x, cc.y);
+        }
+        /* else impossible? */
+    }
+
+    return revived;
+}
 
 // C ref: hack.c weight_cap()
 export function weight_cap() {
@@ -2388,11 +2428,10 @@ async function moverock_core(sx, sy) {
                 return await cannot_push(otmp, sx, sy);
             }
 
-            /* revive_nasty(rx, ry, "You sense movement on the other side.") */
-            if ((game.level.objects || []).some(
-                o => o.ox === rx && o.oy === ry && o.where === 'OBJ_FLOOR'
-                     && o.otyp === CORPSE))
-                throw new Error('moverock_core(): revive_nasty() not ported yet');
+            if (await revive_nasty(rx, ry,
+                                   "You sense movement on the other side.")) {
+                return -1;
+            }
 
             if (mtmp && !noncorporeal(mtmp.data)
                 && (!mtmp.mtrapped || !(ttmp && is_pit(ttmp.ttyp)))) {

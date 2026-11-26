@@ -358,6 +358,9 @@ import { Stone_resistance } from './youprop.js';
 import { PM_STONE_GOLEM } from './monsters.js';
 import { polymon } from './polyself.js';
 import { bury_an_obj } from './dig.js';
+import { destroy_drawbridge } from './dbridge.js';
+import { maybe_dunk_boulders } from './apply.js';
+import { spot_checks } from './hack.js';
 import { sellobj } from './shk.js';
 export { is_hole, is_pit };
 
@@ -4112,8 +4115,12 @@ export async function blow_up_landmine(trap) {
     /* destroy drawbridge if present */
     if (lev.typ === DRAWBRIDGE_DOWN_L || is_drawbridge_wall_l(x, y) >= 0) {
         /* if under the portcullis, the bridge is adjacent */
-        if (find_drawbridge_l(x, y))
-            throw new Error('blow_up_landmine(): destroy_drawbridge() not ported yet');
+        let dbx = x, dby = y;
+        const db = find_drawbridge_l(dbx, dby);
+        if (db) {
+            dbx = db.x, dby = db.y;
+            await destroy_drawbridge(dbx, dby);
+        }
     }
     trap = t_at(x, y); /* expected to be null after destruction */
     /* or could be null if scatter blew up oil which melted ice */
@@ -4138,13 +4145,9 @@ export async function blow_up_landmine(trap) {
         }
     }
     await fill_pit(x, y);
-    /* maybe_dunk_boulders(x, y) */
-    if ((is_pool(x, y) || is_lava(x, y)) && sobj_at(BOULDER, x, y))
-        throw new Error('blow_up_landmine(): maybe_dunk_boulders() not ported yet');
+    await maybe_dunk_boulders(x, y);
     recalc_block_point_l(x, y);
-    /* spot_checks(x, y, old_typ) */
-    if (old_typ === DRAWBRIDGE_UP_L || old_typ === ICE_L)
-        throw new Error('blow_up_landmine(): spot_checks() for ice not ported yet');
+    spot_checks(x, y, old_typ);
 }
 
 // C ref: trap.c clamp_hole_destination()

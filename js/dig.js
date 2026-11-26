@@ -136,13 +136,13 @@ import { undestroyable_trap, set_wounded_legs, deltrap, trapname, maketrap,
 import { Can_dig_down } from './mklev.js';
 import { altarmask_at, altar_wrath, desecrate_altar } from './pray.js';
 import { angry_priest } from './priest.js';
-import { is_db_wall, is_drawbridge_wall } from './dbridge.js';
+import { is_db_wall, is_drawbridge_wall, destroy_drawbridge } from './dbridge.js';
 import { welded } from './wield.js';
 import { dropx, goto_level } from './do.js';
 import { the, simpleonames } from './iactions.js';
 import { abon, dmgval } from './weapon.js';
 import { an, An } from './objnam.js';
-import { break_statue, fracture_rock } from './zap.js';
+import { break_statue, fracture_rock, find_drawbridge } from './zap.js';
 import { does_block } from './vision.js';
 import { makemon, mkclass } from './makemon.js';
 import { dogushforth, dryup, breaksink } from './fountain.js';
@@ -1508,9 +1508,13 @@ async function furniture_handled(x, y, madeby_u) {
         await breaksink(x, y);
     } else if (lev.typ === DRAWBRIDGE_DOWN
                || (is_drawbridge_wall(x, y) >= 0)) {
+        let bx = x, by = y;
+
         /* if under the portcullis, the bridge is adjacent */
-        /* (void) find_drawbridge(&bx, &by); destroy_drawbridge(bx, by); */
-        throw new Error('furniture_handled(): destroy_drawbridge() not ported yet');
+        const db = find_drawbridge(bx, by);
+        if (db)
+            bx = db.x, by = db.y;
+        await destroy_drawbridge(bx, by);
     } else {
         return false;
     }
@@ -1769,9 +1773,13 @@ export async function dighole(pit_only, by_magic, cc) {
         if (pit_only) {
             await pline_The("drawbridge seems too hard to dig through.");
         } else {
+            let x = dig_x, y = dig_y;
             /* if under the portcullis, the bridge is adjacent */
-            /* (void) find_drawbridge(&x, &y); destroy_drawbridge(x, y); */
-            throw new Error('dighole(): destroy_drawbridge() not ported yet');
+            const db = find_drawbridge(x, y);
+            if (db)
+                x = db.x, y = db.y;
+            await destroy_drawbridge(x, y);
+            retval = true;
         }
 
     } else if ((boulder_here = sobj_at(BOULDER, dig_x, dig_y)) != null) {

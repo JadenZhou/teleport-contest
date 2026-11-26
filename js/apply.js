@@ -712,7 +712,7 @@ async function broken_wand_explode(obj, dmg, expltype) {
 
 // C ref: apply.c maybe_dunk_boulders()
 /* if x,y has lava or water, dunk any boulders at that location into it */
-async function maybe_dunk_boulders(x, y) {
+export async function maybe_dunk_boulders(x, y) {
     let otmp;
 
     while (is_pool_or_lava(x, y) && (otmp = sobj_at(BOULDER, x, y)) !== null) {

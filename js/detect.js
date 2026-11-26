@@ -69,6 +69,7 @@ import { engr_at } from './engrave.js';
 import { room_discovered } from './dungeon.js';
 import { closed_door as closed_door_dt } from './makemon.js';
 import { find_drawbridge as find_drawbridge_dt } from './zap.js';
+import { open_drawbridge } from './dbridge.js';
 import { get_obj_location as get_obj_location_dt } from './shk.js';
 import { observe_object as observe_object_dt } from './o_init.js';
 import { money_cnt as money_cnt_dt } from './u_init.js';
@@ -1695,6 +1696,7 @@ async function findone(zx, zy, found_p) {
 async function openone(zx, zy, num_p) {
     const lev = game.level.at(zx, zy);
     let ttmp;
+    let db; /* find_drawbridge(&zx, &zy) */
 
     if (objects_at_dt(zx, zy).length) { /* OBJ_AT(zx, zy) */
         for (const otmp of objects_at_dt(zx, zy)) {
@@ -1735,8 +1737,11 @@ async function openone(zx, zy, num_p) {
         if (await openholdingtrap(mon, dummy)
             || await openfallingtrap(mon, true, dummy))
             num_p.v++;
-    } else if (find_drawbridge_dt(zx, zy)) {
-        throw new Error('openone(): open_drawbridge() not ported yet');
+    } else if ((db = find_drawbridge_dt(zx, zy)) != null) {
+        zx = db.x, zy = db.y;
+        /* make sure it isn't an open drawbridge */
+        await open_drawbridge(zx, zy);
+        num_p.v++;
     }
 }
 
