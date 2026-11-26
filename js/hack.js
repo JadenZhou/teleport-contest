@@ -118,7 +118,7 @@ import { immune_to_trap, into_vs_onto, u_locomotion, trapname,
          TRAPNUM } from './trap.js';
 import { TRAP_CLEARLY_IMMUNE } from './const.js';
 import { visible_region_at, reg_damg, in_out_region } from './region.js';
-import { paranoid_query } from './cmd.js';
+import { paranoid_query, floor_pile_at } from './cmd.js';
 import { FROMOUTSIDE, MAX_TYPE, NO_TRAP, FAILEDUNTRAP, TIMEOUT, WARNING,
          IS_SINK } from './const.js';
 import { M1_CLING, PM_SOLDIER, PM_SERGEANT, PM_LIEUTENANT, PM_CAPTAIN } from './monsters.js';
@@ -160,6 +160,12 @@ import { is_rider } from './mondata.js';
 import { PM_WIZARD_OF_YENDOR } from './monsters.js';
 import { enexto, rloc_to } from './teleport.js';
 import { revive_corpse } from './zap.js';
+import { rn1 } from './rng.js';
+import { doname } from './objnam.js';
+import { losehp, selftouch, Maybe_Half_Phys } from './trap.js';
+import { Ring_off, Boots_off, stop_donning, off_msg } from './do_wear.js';
+import { LEVITATION_BOOTS, RIN_LEVITATION, is_weptool } from './objects.js';
+import { NO_KILLER_PREFIX, W_ARTI, FROMFORM } from './const.js';
 
 // C's impossible() (pline.c) is not ported yet.
 export function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -1525,6 +1531,94 @@ let spotterrain = STONE;
 let spottrap = null;
 let spottraptyp = NO_TRAP;
 
+// C ref: hack.c dosinkfall()
+async function dosinkfall() {
+    const u = game.u;
+    const fell_on_sink = "fell onto a sink";
+    const HLev = sp_prop(LEVITATION), HFly = sp_prop(FLYING);
+    let obj;
+    let dmg;
+    let lev_boots = !!(game.uarmf && game.uarmf.otyp === LEVITATION_BOOTS);
+    const innate_lev = ((HLev.intrinsic & (FROMOUTSIDE | FROMFORM)) !== 0),
+          /* to handle being chained to buried iron ball, trying to
+             levitate but being blocked, then moving onto adjacent sink;
+             no need to worry about being blocked by terrain because we
+             couldn't be over a sink at the same time */
+          blockd_lev = (HLev.blocked === I_SPECIAL),
+          ufall = (!innate_lev && !blockd_lev
+                   && !(HFly.intrinsic || HFly.extrinsic)); /* BFlying */
+
+    if (!ufall) {
+        await You((innate_lev || blockd_lev) ? "wobble unsteadily for a moment."
+                                             : "gain control of your flight.");
+    } else {
+        const save_ELev = HLev.extrinsic, save_HLev = HLev.intrinsic;
+
+        /* fake removal of levitation in advance so that final
+           disclosure will be right in case this turns out to
+           be fatal; fortunately the fact that rings and boots
+           are really still worn has no effect on bones data */
+        HLev.extrinsic = HLev.intrinsic = 0;
+        await You("crash to the floor!");
+        dmg = rn1(8, 25 - ACURR(A_CON));
+        await losehp(Maybe_Half_Phys(dmg), fell_on_sink, NO_KILLER_PREFIX);
+        await exercise(A_DEX, false);
+        await selftouch("Falling, you");
+        /* svl.level.objects[u.ux][u.uy] via ->nexthere */
+        for (obj of floor_pile_at(u.ux, u.uy))
+            if (obj.oclass === WEAPON_CLASS || is_weptool(obj)) {
+                await You(`fell on ${doname(obj)}.`);
+                await losehp(Maybe_Half_Phys(rnd(3)), fell_on_sink,
+                             NO_KILLER_PREFIX);
+                await exercise(A_CON, false);
+            }
+        HLev.extrinsic = save_ELev;
+        HLev.intrinsic = save_HLev;
+    }
+
+    /*
+     * Interrupt multi-turn putting on/taking off of armor (in which
+     * case we reached the sink due to being teleported while busy;
+     * in 3.4.3, Boots_on()/Boots_off() [called via (*afternmv)() when
+     * 'multi' reaches 0] triggered a crash if we were donning/doffing
+     * levitation boots [because the Boots_off() below causes 'uarmf'
+     * to be null by the time 'afternmv' gets called]).
+     *
+     * Interrupt donning/doffing if we fall onto the sink, or if the
+     * code below is going to remove levitation boots even when we
+     * haven't fallen (innate floating or flying becoming unblocked).
+     */
+    if (ufall || lev_boots) {
+        await stop_donning(lev_boots ? game.uarmf : null);
+        /* recalculate in case uarmf just got set to null */
+        lev_boots = !!(game.uarmf && game.uarmf.otyp === LEVITATION_BOOTS);
+    }
+
+    /* remove worn levitation items */
+    HLev.extrinsic &= ~W_ARTI;
+    HLev.intrinsic &= ~(I_SPECIAL | TIMEOUT);
+    HLev.intrinsic++;
+    if (game.uleft && game.uleft.otyp === RIN_LEVITATION) {
+        obj = game.uleft;
+        await Ring_off(obj);
+        await off_msg(obj);
+    }
+    if (game.uright && game.uright.otyp === RIN_LEVITATION) {
+        obj = game.uright;
+        await Ring_off(obj);
+        await off_msg(obj);
+    }
+    if (lev_boots) {
+        obj = game.uarmf;
+        await Boots_off();
+        await off_msg(obj);
+    }
+    HLev.intrinsic--;
+    /* probably moot; we're either still levitating or went
+       through float_down(), but make sure BFlying is up to date */
+    float_vs_flight();
+}
+
 // C ref: hack.c spoteffects()
 export async function spoteffects(pick) {
     const u = game.u;
@@ -1561,7 +1655,7 @@ export async function spoteffects(pick) {
     if (!await pooleffects(true)) {
         await check_special_room(false);
         if (IS_SINK(game.level.at(u.ux, u.uy).typ) && sp_Levitation())
-            throw new Error('spoteffects(): dosinkfall() not ported yet');
+            await dosinkfall();
         if (!game.in_steed_dismounting) { /* if dismounting, check again later */
             const HLev = sp_prop(LEVITATION);
 

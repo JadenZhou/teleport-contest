@@ -299,7 +299,7 @@ import { ceiling as ceiling_tr } from './dungeon.js';
 import { mbodypart as mbodypart_tr } from './insight.js';
 import { schedule_goto, UTOTYPE_FALLING, UTOTYPE_NONE } from './do.js';
 import { impact_drop } from './dokick.js';
-import { next_to_u } from './teleport.js';
+import { next_to_u, domagicportal } from './teleport.js';
 import { ceiling_hider } from './engrave.js';
 import { find_hell, assign_level, depth } from './dungeon.js';
 import { Is_stronghold } from './const.js';
@@ -3227,8 +3227,8 @@ async function trapeffect_level_telep(mtmp, trap, trflags) {
 // C ref: trap.c trapeffect_magic_portal()
 async function trapeffect_magic_portal(mtmp, trap, trflags) {
     if (mtmp === game.youmonst) {
-        /* feeltrap(trap); domagicportal(trap); */
-        throw new Error('trapeffect_magic_portal(): domagicportal() not ported yet');
+        feeltrap(trap);
+        await domagicportal(trap);
     } else {
         return trapeffect_level_telep(mtmp, trap, trflags);
     }
