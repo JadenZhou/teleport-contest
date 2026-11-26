@@ -768,7 +768,7 @@ async function angrygods(resp_god) {
             game.youmonst.data.mlet === S_HUMAN ? "mortal" : "creature"}."`);
         /* SetVoice(): speech synthesis only */
         await verbalize("Thou must relearn thy lessons!");
-        await adjattrib(A_WIS, -1, false);
+        await adjattrib(A_WIS, -1, 0 /* FALSE */);
         await losexp(null);
         break;
     case 6:

@@ -2348,10 +2348,23 @@ async function moverock_core(sx, sy) {
 
         if (game.context.nopick)
             throw new Error('moverock_core(): m-prefix move onto a boulder not ported yet');
-        if (Levitation() || Is_airlevel(game.u.uz))
-            throw new Error('moverock_core(): no leverage while levitating not ported yet');
-        if (verysmall(game.youmonst.data) && !game.u.usteed)
-            throw new Error('moverock_core(): too small to push not ported yet');
+        if (Levitation() || Is_airlevel(game.u.uz)) {
+            /* FIXME?  behavior in an air bubble on the water level should
+               be similar to being on the air level; both cases probably
+               ought to let push attempt proceed when flying (which implies
+               not levitating) */
+            if (Blind())
+                feel_location(sx, sy);
+            await You(`don't have enough leverage to push ${the(xname(otmp))}.`);
+            /* Give them a chance to climb over it? */
+            return -1;
+        }
+        if (verysmall(game.youmonst.data) && !game.u.usteed) {
+            if (Blind())
+                feel_location(sx, sy);
+            await pline(`You're too small to push that ${xname(otmp)}.`);
+            return await cannot_push(otmp, sx, sy);
+        }
         if (isok(rx, ry) && !IS_OBSTRUCTED(game.level.at(rx, ry).typ)
             && game.level.at(rx, ry).typ !== IRONBARS
             && (!IS_DOOR(game.level.at(rx, ry).typ) || !(game.u.dx && game.u.dy)
