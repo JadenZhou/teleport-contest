@@ -165,6 +165,8 @@ import { end_burn } from './timeout.js';
 import { rnd_treefruit_at } from './mkobj.js';
 import { b_trapped } from './trap.js';
 import { NO_PART } from './const.js';
+import { cnv_trap_obj } from './trap.js';
+import { LAND_MINE, BEARTRAP } from './objects.js';
 
 /* C ref: invent.c update_inventory() -- no perm_invent window */
 function update_inventory() { }
@@ -1835,10 +1837,10 @@ export async function dighole(pit_only, by_magic, cc) {
             /* magical digging disarms settable traps */
             if (by_magic && ttmp
                 && (ttmp.ttyp === LANDMINE || ttmp.ttyp === BEAR_TRAP)) {
-                /* int otyp = (ttmp->ttyp == LANDMINE) ? LAND_MINE : BEARTRAP;
-                   convert trap into buried object (deletes trap):
-                   cnv_trap_obj(otyp, 1, ttmp, TRUE); */
-                throw new Error('dighole(): cnv_trap_obj() not ported yet');
+                const otyp = (ttmp.ttyp === LANDMINE) ? LAND_MINE : BEARTRAP;
+
+                /* convert trap into buried object (deletes trap) */
+                await cnv_trap_obj(otyp, 1, ttmp, true);
             }
 
             /* finally we get to make a hole */

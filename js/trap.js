@@ -357,6 +357,8 @@ import { STONING } from './const.js';
 import { Stone_resistance } from './youprop.js';
 import { PM_STONE_GOLEM } from './monsters.js';
 import { polymon } from './polyself.js';
+import { bury_an_obj } from './dig.js';
+import { sellobj } from './shk.js';
 export { is_hole, is_pit };
 
 
@@ -1060,6 +1062,35 @@ export function immune_to_trap(mon, ttype) {
         /* impossible("immune_to_trap: unknown trap type %u", ttype) */
         return TRAP_NOT_IMMUNE;
     }
+}
+
+// C ref: trap.c cnv_trap_obj()
+/* Replace trap with object(s).  Helge Hafting */
+export async function cnv_trap_obj(otyp, cnt, ttmp, bury_it) {
+    const otmp = mksobj(otyp, true, false);
+    let mtmp;
+
+    otmp.quan = cnt;
+    otmp.owt = weight(otmp);
+    /* Only dart traps are capable of being poisonous */
+    if (otyp !== DART)
+        otmp.opoisoned = 0;
+    place_object(otmp, ttmp.tx, ttmp.ty);
+    if (bury_it) {
+        /* magical digging first disarms this trap, then will unearth it */
+        bury_an_obj(otmp, null);
+    } else {
+        /* Sell your own traps only... */
+        if (ttmp.madeby_u)
+            await sellobj(otmp, ttmp.tx, ttmp.ty);
+        stackobj(otmp);
+    }
+    newsym(ttmp.tx, ttmp.ty);
+    if (game.u.utrap && u_at(ttmp.tx, ttmp.ty))
+        await reset_utrap(true);
+    if (((mtmp = m_at(ttmp.tx, ttmp.ty)) != null) && mtmp.mtrapped)
+        mtmp.mtrapped = 0;
+    deltrap(ttmp);
 }
 
 // C ref: trap.c into_vs_onto()

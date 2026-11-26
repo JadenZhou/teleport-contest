@@ -186,6 +186,15 @@ import { splitobj } from './mkobj.js';
 import { fingers_or_gloves } from './do_wear.js';
 import { Yname2, otense } from './objnam.js';
 import { end_burn } from './timeout.js';
+import { dig_check, watch_dig, fillholetyp, liquid_flow,
+         digactualhole } from './dig.js';
+import { DIGCHECK_FAILED, DIGCHECK_FAIL_BOULDER, IS_WALL, SHOPBASE, ICE,
+         MELT_ICE_AWAY, ROOM, PIT, HOLE } from './const.js';
+import { in_rooms } from './hack.js';
+import { spot_stop_timers } from './timeout.js';
+import { Can_dig_down } from './mklev.js';
+import { fill_pit } from './muse.js';
+import { boulder_hits_pool } from './do.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
@@ -701,6 +710,17 @@ async function broken_wand_explode(obj, dmg, expltype) {
     discard_broken_wand();
 }
 
+// C ref: apply.c maybe_dunk_boulders()
+/* if x,y has lava or water, dunk any boulders at that location into it */
+async function maybe_dunk_boulders(x, y) {
+    let otmp;
+
+    while (is_pool_or_lava(x, y) && (otmp = sobj_at(BOULDER, x, y)) !== null) {
+        obj_extract_self_ap(otmp);
+        await boulder_hits_pool(otmp, x, y, false);
+    }
+}
+
 // C ref: apply.c do_break_wand()
 /* return 1 if the wand is broken, hence some time elapsed */
 async function do_break_wand(obj) {
@@ -713,6 +733,7 @@ async function do_break_wand(obj) {
     let dmg, damage;
     let affects_objects;
     let shop_damage = false;
+    let fillmsg = false;
     let confirm, buf;
     const is_fragile = (objdescr_is_bw(obj, "balsa")
                         || objdescr_is_bw(obj, "glass"));
@@ -838,9 +859,45 @@ async function do_break_wand(obj) {
             continue;
 
         if (obj.otyp === O.WAN_DIGGING) {
-            /* dig_check(BY_OBJECT, x, y), digactualhole(), fill_pit(),
-               maybe_dunk_boulders() ... */
-            throw new Error('do_break_wand(): breaking a wand of digging (dig_check()/digactualhole()) not ported yet');
+            let typ;
+            const dcres = dig_check(null /* BY_OBJECT */, x, y);
+
+            if (dcres < DIGCHECK_FAILED || dcres === DIGCHECK_FAIL_BOULDER) {
+                if (IS_WALL(g.level.at(x, y).typ)
+                    || IS_DOOR(g.level.at(x, y).typ)) {
+                    /* normally, pits and holes don't anger guards, but they
+                     * do if it's a wall or door that's being dug */
+                    await watch_dig(null, x, y, true);
+                    if (in_rooms(x, y, SHOPBASE).length)
+                        shop_damage = true;
+                }
+                if (g.level.at(x, y).typ === ICE)
+                    spot_stop_timers(x, y, MELT_ICE_AWAY);
+                /*
+                 * Let liquid flow into the newly created pits.
+                 * Adjust corresponding code in music.c for
+                 * drum of earthquake if you alter this sequence.
+                 */
+                typ = fillholetyp(x, y, false);
+                if (typ !== ROOM) {
+                    g.level.at(x, y).typ = typ, g.level.at(x, y).flags = 0;
+                    await liquid_flow(x, y, typ, t_at(x, y),
+                                      fillmsg
+                                        ? null
+                                        : "Some holes are quickly filled with %s!");
+                    fillmsg = true;
+                } else {
+                    await digactualhole(x, y, null /* BY_OBJECT */,
+                                        (rn2(obj.spe) < 3
+                                         || (!Can_dig_down(u.uz)
+                                             && !g.level.at(x, y).candig))
+                                            ? PIT : HOLE);
+                }
+            }
+            await fill_pit(x, y);
+            await maybe_dunk_boulders(x, y);
+            recalc_block_point(x, y);
+            continue;
         } else if (obj.otyp === O.WAN_CREATE_MONSTER) {
             /* u.ux,u.uy creates it near you--x,y might create it in rock */
             makemon_bw(null, u.ux, u.uy, NO_MM_FLAGS_BW);
