@@ -4772,7 +4772,7 @@ export async function passive_obj(
 }
 
 // C ref: uhitm.c missum()
-async function missum(mdef, mattk, wouldhavehit) {
+export async function missum(mdef, mattk, wouldhavehit) {
     if (wouldhavehit) /* monk is missing due to penalty for wearing suit */
         await Your("armor is rather cumbersome...");
 
@@ -4829,7 +4829,7 @@ function doorless_door(x, y) {
 }
 
 // C ref: uhitm.c damageum()
-async function damageum(
+export async function damageum(
     mdef,   /* target */
     mattk,  /* hero's attack */
     specialdmg) /* blessed and/or silver bonus against various things */ {

@@ -192,6 +192,8 @@ import { is_crackable } from './objects.js';
 import { erode_obj } from './trap.js';
 import { ERODE_CRACK, EF_DESTROY, EF_VERBOSE, ER_DESTROYED, EYE } from './const.js';
 import { costly_spot as costly_spot_br } from './shk.js';
+import { KICKED_WEAPON, OBJ_AT } from './const.js';
+import { is_pool_or_lava } from './hack.js';
 import { add_damage as add_damage_bh, pay_for_damage as pay_for_damage_bh } from './shk.js';
 import { doorlock as doorlock_bh } from './lock.js';
 import { learnwand as learnwand_bh } from './zap.js';
@@ -1584,9 +1586,9 @@ export function breaktest(obj) {
     }
 }
 
-// C ref: zap.c bhit() -- thrown objects (THROWN_WEAPON) and IMMEDIATE wands
-// (ZAPPED_WAND); kicked objects, flashed light and invisible beams are not
-// ported yet
+// C ref: zap.c bhit() -- thrown (THROWN_WEAPON) and kicked (KICKED_WEAPON)
+// objects and IMMEDIATE wands (ZAPPED_WAND); flashed light and invisible
+// beams are not ported yet
 /*
  *  Called for the following distance effects:
  *      when a weapon is thrown (weapon == THROWN_WEAPON)
@@ -1622,10 +1624,16 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     void point_blank;
 
     if (weapon !== THROWN_WEAPON && weapon !== THROWN_TETHERED_WEAPON
-        && weapon !== ZAPPED_WAND)
-        throw new Error('bhit(): kicked objects, flashed light and beams not ported yet');
+        && weapon !== KICKED_WEAPON && weapon !== ZAPPED_WAND)
+        throw new Error('bhit(): flashed light and beams not ported yet');
 
-    g.bhitpos = { x: u.ux, y: u.uy };
+    if (weapon === KICKED_WEAPON) {
+        /* object starts one square in front of player */
+        g.bhitpos = { x: u.ux + ddx, y: u.uy + ddy };
+        range--;
+    } else {
+        g.bhitpos = { x: u.ux, y: u.uy };
+    }
 
     if (weapon === THROWN_WEAPON && obj && obj.otyp === ROCK) {
         skiprange(range, skip);
@@ -1657,12 +1665,12 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
 
         /* WATER aka "wall of water" stops items */
         if (typ === WATER || typ === LAVAWALL) { /* IS_WATERWALL(typ) */
-            if (weapon === THROWN_WEAPON)
+            if (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
                 break;
         }
 
         /* iron bars will block anything big enough and break some things */
-        if (weapon === THROWN_WEAPON) {
+        if (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON) {
             if (obj.lamplit && !Blind())
                 await show_transient_light(obj, x, y);
             if (typ === IRONBARS
@@ -1686,7 +1694,8 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         mtmp = m_at(x, y);
         ttmp = t_at(x, y);
         if (!mtmp && ttmp && (ttmp.ttyp === WEB)
-            && weapon === THROWN_WEAPON && !rn2(3)) {
+            && (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
+            && !rn2(3)) {
             throw new Error('bhit(): stuck in a web not ported yet');
         }
 
@@ -1710,7 +1719,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
            give message and skip it in order to keep going;
            thrown objects don't hit mimics pretending to be objects */
         const xyglyph = glyph_at(x, y);
-        if (mtmp && weapon === THROWN_WEAPON
+        if (mtmp && (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
             && (await shade_miss(game.youmonst, mtmp, obj, true, true)
                 || (mtmp.m_ap_type === M_AP_OBJECT
                     && xyglyph.kind !== 'mon' /* !glyph_is_monster() */
@@ -1748,6 +1757,14 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         if (fhito) {
             if (await bhitpile(obj, fhito, x, y, 0))
                 range--;
+        } else {
+            if (weapon === KICKED_WEAPON
+                && ((obj.oclass === COIN_CLASS && OBJ_AT(x, y))
+                    || await ship_object(obj, x, y, costly_spot(x, y)))) {
+                await tmp_at(DISP_END, 0);
+                bhit_done = true;
+                break; /* goto bhit_done; result == (struct monst *) 0 */
+            }
         }
         if (weapon === ZAPPED_WAND && (IS_DOOR(typ) || typ === SDOOR)) {
             switch (obj.otyp) {
@@ -1784,6 +1801,9 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             }
             await tmp_at(x, y);
             /* nh_delay_output() */
+            /* kicked objects fall in pools */
+            if ((weapon === KICKED_WEAPON) && is_pool_or_lava(x, y))
+                break;
             if (IS_SINK(typ))
                 break; /* physical objects fall onto sink */
         }
@@ -1808,7 +1828,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     /* bhit_done: */
     /* note: for FLASHED_LIGHT, _caller_ must call transient_light_cleanup()
        after possibly calling flash_hits_mon() */
-    if (weapon === THROWN_WEAPON /* || weapon == KICKED_WEAPON */)
+    if (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
         await transient_light_cleanup();
 
     return result;
