@@ -32,7 +32,8 @@ import {
     tty_select_menu, tty_destroy_nhwindow,
 } from './wintty.js';
 import { xname, makeplural, makesingular, fruit_from_name, an,
-         armor_simple_name, the_unique_obj, cxname } from './objnam.js';
+         armor_simple_name, the_unique_obj, cxname,
+         distant_name } from './objnam.js';
 import { data_base } from './data_base.js';
 import { is_flammable } from './mkobj.js';
 import * as M from './monsters.js';
@@ -215,8 +216,7 @@ export function call_ok(obj) {
     return GETOBJ_SUGGEST;
 }
 
-/* C ref: objnam.c minimal_xname() -- distant_name() of an inventory
-   object is xname() */
+/* C ref: objnam.c minimal_xname() */
 function minimal_xname(obj) {
     const otyp = obj.otyp;
     const save_uname = objects[otyp].oc_uname;
@@ -243,7 +243,9 @@ function minimal_xname(obj) {
     };
     let bufp;
     try {
-        bufp = xname(bareobj);
+        /* bareobj is a free object, so distant_name() formats it as seen
+           from afar: xname() won't observe_object() it */
+        bufp = distant_name(bareobj, xname);
     } finally {
         objects[otyp].oc_uname = save_uname;
         objects[otyp].oc_name_known = save_name_known;
