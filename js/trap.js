@@ -339,6 +339,10 @@ import { mon_adjust_speed } from './worn.js';
 import { XKILL_NOMSG, CXN_PFX_THE } from './const.js';
 import { corpse_xname } from './objnam.js';
 import { mwepgone } from './weapon.js';
+import { poly_obj } from './zap.js';
+import { update_mon_extrinsics } from './worn.js';
+import { mpickobj } from './steal.js';
+import { IRON_SHOES, KICKING_BOOTS } from './objects.js';
 export { is_hole, is_pit };
 
 
@@ -4389,9 +4393,21 @@ async function trapeffect_poly_trap(mtmp, trap, trflags) {
         const in_sight = canseemon(mtmp) || (mtmp === u.usteed);
 
         if (wearing_iron_shoes(mtmp)) {
-            /* remove and readd the shoes to forcibly unwear them;
-               poly_obj() of worn boots */
-            throw new Error('trapeffect_poly_trap(): monster iron shoes warping not ported yet');
+            /* remove and readd the shoes to forcibly unwear them */
+            let shoes = which_armor(mtmp, W_ARMF);
+            extract_from_minvent(mtmp, shoes, true, true);
+            if (mpickobj(mtmp, shoes)) {
+                impossible("re-equipping iron shoes destroyed them?");
+                return Trap_Effect_Finished;
+            }
+            shoes = await poly_obj(
+                shoes, shoes.otyp === IRON_SHOES ? KICKING_BOOTS : IRON_SHOES);
+            /* now equip them again */
+            if (shoes) {
+                mtmp.misc_worn_check = (mtmp.misc_worn_check || 0) | W_ARMF;
+                shoes.owornmask = W_ARMF;
+                await update_mon_extrinsics(mtmp, shoes, true, true);
+            }
         } else if (resists_magm(mtmp)) {
             await shieldeff_mon_tp(mtmp);
         } else if (!resist(mtmp, WAND_CLASS_TP, 0, NOTELL)) {
