@@ -111,6 +111,7 @@ import { mon_track_clear as mon_track_clear_cm } from './monmove.js';
 import { tamedog as tamedog_cm } from './dog.js';
 import { hard_helmet } from './do_wear.js';
 import { mon_aligntyp } from './priest.js';
+import { obfree } from './invent.js';
 export {
     NO_MM_FLAGS, NO_MINVENT, MM_NOWAIT, MM_NOCOUNTBIRTH, MM_IGNOREWATER,
     MM_ADJACENTOK, MM_NONAME, MM_EDOG, MM_ASLEEP, MM_NOGRP, MM_MALE,
@@ -1895,7 +1896,7 @@ export function set_mimic_sym(mtmp) {
                 otmp = mkobj(s_sym, FALSE);
                 appear = otmp.otyp;
                 /* make sure container contents are free'ed */
-                /* obfree(otmp, (struct obj *) 0): JS garbage-collects it */
+                obfree(otmp, null);
             }
         }
     }

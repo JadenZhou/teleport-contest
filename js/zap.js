@@ -4994,7 +4994,16 @@ export async function zombify_mon(arg, timeout) {
 // C ref: zap.c melt_ice_away()
 /* timer callback routine: melt ice at a location */
 export async function melt_ice_away(arg, timeout) {
-    throw new Error('melt_ice_away() not ported yet');
+    const where = arg.a_long;
+    const save_mon_moving = game.context.mon_moving; /* will be False */
+
+    /* melt_ice -> minliquid -> mondead|xkilled shouldn't credit/blame hero */
+    game.context.mon_moving = 1; /* hero isn't causing this ice to melt */
+    const y = (where & 0xFFFF);
+    const x = ((where >> 16) & 0xFFFF);
+    /* melt_ice does newsym when appropriate */
+    await melt_ice(x, y, "Some ice melts away.");
+    game.context.mon_moving = save_mon_moving;
 }
 
 // C ref: zap.c cancel_item()
