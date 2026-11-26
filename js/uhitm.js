@@ -252,6 +252,23 @@ import { adtyp_to_expltype } from './explode.js';
 import { silver_sears } from './weapon.js';
 import { drop_uswapwep } from './wield.js';
 import { wake_nearto } from './mon.js';
+import { monkilled, mondied, newcham, corpse_chance } from './mon.js';
+import { grow_up } from './makemon.js';
+import { acid_damage, sleep_monst } from './trap.js';
+import { findgold } from './steal.js';
+import { obj_extract_self, add_to_minv, mksobj, set_corpsenm,
+         dealloc_obj } from './mkobj.js';
+import { were_change } from './were.js';
+import { paralyze_monst, slept_monst, xdrainenergym,
+         mhitm_ad_phys as mhitm_ad_phys_mm,
+         mhitm_ad_sedu as mhitm_ad_sedu_mm } from './mhitm.js';
+import { RLOC_NOMSG, MSLOW, NO_NC_FLAGS, NC_SHOW_MSG } from './const.js';
+import { G_NOCORPSE } from './monsters.js';
+import { mon_adjust_speed } from './worn.js';
+import { carnivorous, herbivorous, metallivorous, is_rider,
+         slimeproof } from './mondata.js';
+import { m_useup } from './mthrowu.js';
+import { dog_nutrition } from './dogmove.js';
 
 /* C ref: uhitm.c mhitm_ad_phys() -- !artifact_hit(magr, mdef, otmp,
    &mhm->damage, gm.mhitu_dieroll) */
@@ -454,7 +471,8 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
             }
         }
     } else {
-        throw new Error('mhitm_ad_phys(): mhitm branch is in mhitm.js');
+        /* mhitm: the monster-vs-monster part lives in mhitm.js */
+        await mhitm_ad_phys_mm(magr, mattk, mdef, mhm);
     }
 }
 
@@ -495,7 +513,21 @@ async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
         } else
             mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_elec(): mhitm branch not ported yet');
+        /* mhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (game.mhitm_vis && canseemon(mdef))
+            await pline(`${Monnam(mdef)} gets zapped!`); /* pline_mon() */
+        if (resists_elec(mdef) || defended(mdef, AD_ELEC)) {
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline_The(`zap doesn't shock ${mon_nam(mdef)}!`);
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await golemeffects(mdef, AD_ELEC, mhm.damage);
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_ELEC, orig_dmg);
     }
 }
 
@@ -600,7 +632,35 @@ async function mhitm_ad_sgld(magr, mattk, mdef, mhm) {
         if (!magr.mcan)
             await stealgold(magr);
     } else {
-        throw new Error('mhitm_ad_sgld(): mhitm branch not ported yet');
+        /* mhitm */
+        mhm.damage = 0;
+        if (magr.mcan)
+            return;
+        /* technically incorrect; no check for stealing gold from
+         * between mdef's feet...
+         */
+        {
+            const gold = findgold(mdef.minvent);
+
+            if (!gold)
+                return;
+            obj_extract_self(gold);
+            add_to_minv(magr, gold);
+        }
+        mdef.mstrategy &= ~STRAT_WAITFORU;
+        const buf = Monnam(magr);
+        if (game.mhitm_vis && canseemon(mdef)) {
+            await pline(`${buf} steals some gold from ${mon_nam(mdef)}.`);
+        }
+        if (!await tele_restrict(magr)) {
+            const couldspot = canspotmon(magr);
+
+            mhm.hitflags = M_ATTK_AGR_DONE;
+            await rloc(magr, RLOC_NOMSG);
+            /* TODO: use RLOC_MSG instead? */
+            if (game.mhitm_vis && couldspot && !canspotmon(magr))
+                await pline(`${buf} suddenly disappears!`);
+        }
     }
     void mhm;
 }
@@ -688,7 +748,8 @@ async function mhitm_ad_sedu(magr, mattk, mdef, mhm) {
             return;
         }
     } else {
-        throw new Error('mhitm_ad_sedu(): mhitm branch not ported yet');
+        /* mhitm: the monster-vs-monster part lives in mhitm.js */
+        await mhitm_ad_sedu_mm(magr, mattk, mdef, mhm);
     }
 }
 
@@ -863,7 +924,27 @@ async function mhitm_ad_rust(magr, mattk, mdef, mhm) {
         }
         await erode_armor(game.youmonst, ERODE_RUST);
     } else {
-        throw new Error('mhitm_ad_rust(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan)
+            return;
+        if (completelyrusts(pd)) { /* PM_IRON_GOLEM */
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline(`${Monnam(mdef)} ${
+                    !mlifesaver(mdef) ? "falls" : "starts to fall"} to pieces!`); /* pline_mon() */
+            await monkilled(mdef, null, M.AD_RUST);
+            if (!DEADMONSTER(mdef)) {
+                mhm.hitflags = M_ATTK_MISS;
+                mhm.done = true;
+                return;
+            }
+            mhm.hitflags = (M_ATTK_DEF_DIED
+                            | ((await grow_up(magr, mdef)) ? 0 : M_ATTK_AGR_DIED));
+            mhm.done = true;
+            return;
+        }
+        await erode_armor(mdef, ERODE_RUST);
+        mdef.mstrategy &= ~STRAT_WAITFORU;
+        mhm.damage = 0; /* mdamagem(), int tmp */
     }
     void mhm;
 }
@@ -879,7 +960,12 @@ async function mhitm_ad_corr(magr, mattk, mdef, mhm) {
             return;
         await erode_armor(mdef, ERODE_CORRODE);
     } else {
-        throw new Error('mhitm_ad_corr(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan)
+            return;
+        await erode_armor(mdef, ERODE_CORRODE);
+        mdef.mstrategy &= ~STRAT_WAITFORU;
+        mhm.damage = 0;
     }
     void mhm;
 }
@@ -903,7 +989,29 @@ async function mhitm_ad_dcay(magr, mattk, mdef, mhm) {
         }
         await erode_armor(mdef, ERODE_ROT);
     } else {
-        throw new Error('mhitm_ad_dcay(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan)
+            return;
+        if (completelyrots(pd)) { /* PM_WOOD_GOLEM || PM_LEATHER_GOLEM */
+            /* note: the life-saved case is hypothetical because
+               life-saving doesn't work for golems */
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline(`${Monnam(mdef)} ${
+                    !mlifesaver(mdef) ? "falls" : "starts to fall"} to pieces!`); /* pline_mon() */
+            await monkilled(mdef, null, M.AD_DCAY);
+            if (!DEADMONSTER(mdef)) {
+                mhm.done = true;
+                mhm.hitflags = M_ATTK_MISS;
+                return;
+            }
+            mhm.done = true;
+            mhm.hitflags = (M_ATTK_DEF_DIED
+                            | ((await grow_up(magr, mdef)) ? 0 : M_ATTK_AGR_DIED));
+            return;
+        }
+        await erode_armor(mdef, ERODE_ROT);
+        mdef.mstrategy &= ~STRAT_WAITFORU;
+        mhm.damage = 0;
     }
     void mhm;
 }
@@ -921,7 +1029,11 @@ async function mhitm_ad_dren(magr, mattk, mdef, mhm) {
             await drain_en(mhm.damage, false);
         mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_dren(): mhitm branch not ported yet');
+        /* mhitm */
+        if (!negated && !rn2(4))
+            await xdrainenergym(mdef, !!(game.mhitm_vis && canspotmon(mdef)
+                                          && mattk.aatyp !== AT_ENGL));
+        mhm.damage = 0;
     }
 }
 
@@ -1070,7 +1182,40 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
             mhm.damage = 0;
         }
     } else {
-        throw new Error('mhitm_ad_fire(): mhitm branch not ported yet');
+        /* mhitm */
+        if (await mgc_atk_negated(magr, mdef, true)) {
+            mhm.damage = 0;
+            return;
+        }
+        if (game.mhitm_vis && canseemon(mdef))
+            await pline(`${Monnam(mdef)} is ${on_fire(pd, mattk)}!`); /* pline_mon() */
+        if (completelyburns(pd)) { /* paper golem or straw golem */
+            /* note: the life-saved case is hypothetical because
+               life-saving doesn't work for golems */
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline(`${Monnam(mdef)} ${
+                    !mlifesaver(mdef) ? "burns completely"
+                                      : "is totally engulfed in flames"}!`); /* pline_mon() */
+            await monkilled(mdef, null, AD_FIRE);
+            if (!DEADMONSTER(mdef)) {
+                mhm.hitflags = M_ATTK_MISS;
+                mhm.done = true;
+                return;
+            }
+            mhm.hitflags = (M_ATTK_DEF_DIED
+                            | ((await grow_up(magr, mdef)) ? 0 : M_ATTK_AGR_DIED));
+            mhm.done = true;
+            return;
+        }
+        if (resists_fire(mdef) || defended(mdef, AD_FIRE)) {
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline_The(`fire doesn't seem to burn ${mon_nam(mdef)}!`);
+            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await golemeffects(mdef, AD_FIRE, mhm.damage);
+            mhm.damage = 0;
+        }
+        mhm.damage += await destroy_items(mdef, AD_FIRE, orig_dmg);
+        await ignite_items(mdef.minvent);
     }
 }
 
@@ -1149,7 +1294,24 @@ async function mhitm_ad_acid(magr, mattk, mdef, mhm) {
         else
             mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_acid(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan) {
+            mhm.damage = 0;
+            return;
+        }
+        if (resists_acid(mdef) || defended(mdef, AD_ACID)) {
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline(`${Monnam(mdef)} is covered in ${
+                    hliquid("acid")}, but it seems harmless.`);
+            mhm.damage = 0;
+        } else if (game.mhitm_vis && canseemon(mdef)) {
+            await pline(`${Monnam(mdef)} is covered in ${hliquid("acid")}!`); /* pline_mon() */
+            await pline(`It burns ${mon_nam(mdef)}!`);
+        }
+        if (!rn2(30))
+            await erode_armor(mdef, ERODE_CORRODE);
+        if (!rn2(6))
+            await acid_damage(mdef.mw || null); /* MON_WEP(mdef) */
     }
 }
 
@@ -1193,7 +1355,31 @@ async function mhitm_ad_tlpt(magr, mattk, mdef, mhm) {
             }
         }
     } else {
-        throw new Error('mhitm_ad_tlpt(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan || mhm.damage >= mdef.mhp || await tele_restrict(mdef)) {
+            ; /* no negation message */
+        } else if (await mgc_atk_negated(magr, mdef, true)) {
+            if (game.mhitm_vis)
+                await pline(`${Monnam(mdef)} is not affected.`); /* pline_mon() */
+        } else {
+            let mdef_Monnam = '';
+            const wasseen = canspotmon(mdef);
+
+            /* save the name before monster teleports, otherwise
+               we'll get "it" in the suddenly disappears message */
+            if (game.mhitm_vis && wasseen)
+                mdef_Monnam = Monnam(mdef);
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+            await rloc(mdef, RLOC_NOMSG);
+            /* TODO: use RLOC_MSG instead? */
+            if (game.mhitm_vis && wasseen && !canspotmon(mdef) && mdef !== u.usteed)
+                await pline(`${mdef_Monnam} suddenly disappears!`);
+            if (mhm.damage >= mdef.mhp) { /* see hitmu(mhitu.c) */
+                if (mdef.mhp === 1)
+                    ++mdef.mhp;
+                mhm.damage = mdef.mhp - 1;
+            }
+        }
     }
 }
 
@@ -1213,7 +1399,29 @@ async function mhitm_ad_blnd(magr, mattk, mdef, mhm) {
         }
         mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_blnd(): mhitm branch not ported yet');
+        /* mhitm */
+        if (can_blnd(magr, mdef, mattk.aatyp, null)) {
+            let buf;
+            let rnd_tmp;
+
+            if (game.mhitm_vis && mdef.mcansee && canspotmon(mdef)) {
+                /* feedback for becoming blinded is given if observed
+                   telepathically (canspotmon suffices) but additional
+                   info about archon's glow is only given if seen */
+                buf = `${Monnam(mdef)} is blinded`;
+                if (mdef.data === mons[M.PM_ARCHON] && canseemon(mdef))
+                    buf += ` by ${s_suffix(mon_nam(magr))} radiance`;
+                await pline(`${buf}.`);
+            }
+            rnd_tmp = d(mattk.damn, mattk.damd);
+            if ((rnd_tmp += mdef.mblinded) > 127)
+                rnd_tmp = 127;
+            mdef.mblinded = rnd_tmp;
+            mdef.mcansee = 0;
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+        }
+        if (mhm)
+            mhm.damage = 0;
     }
 }
 
@@ -1221,6 +1429,7 @@ async function mhitm_ad_blnd(magr, mattk, mdef, mhm) {
 async function mhitm_ad_curs(magr, mattk, mdef, mhm) {
     const u = game.u;
     const pa = magr.data;
+    const pd = mdef.data;
 
     if (magr === game.youmonst) {
         throw new Error('mhitm_ad_curs(): uhitm branch not ported yet');
@@ -1247,7 +1456,42 @@ async function mhitm_ad_curs(magr, mattk, mdef, mhm) {
             await mon_give_prop(magr, await attrcurse());
         }
     } else {
-        throw new Error('mhitm_ad_curs(): mhitm branch not ported yet');
+        /* mhitm */
+        if (!night() && (pa === mons[M.PM_GREMLIN]))
+            return;
+        if (!magr.mcan && !rn2(10)) {
+            mdef.mcan = 1; /* cancelled regardless of lifesave */
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+            if (is_were(pd) && pd.mlet !== M.S_HUMAN)
+                await were_change(mdef);
+            if (pd === mons[M.PM_CLAY_GOLEM]) {
+                if (game.mhitm_vis && canseemon(mdef)) {
+                    await pline(`Some writing vanishes from ${
+                        s_suffix(mon_nam(mdef))} head!`);
+                    await pline(`${Monnam(mdef)} is destroyed!`); /* pline_mon() */
+                }
+                await mondied(mdef);
+                if (!DEADMONSTER(mdef)) {
+                    mhm.hitflags = M_ATTK_MISS;
+                    mhm.done = true;
+                    return;
+                } else if (mdef.mtame && !game.mhitm_vis) {
+                    /* You(brief_feeling, "strangely sad") */
+                    await You("have a strangely sad feeling for a moment, then it passes.");
+                }
+                mhm.hitflags = (M_ATTK_DEF_DIED
+                                | ((await grow_up(magr, mdef)) ? 0
+                                   : M_ATTK_AGR_DIED));
+                mhm.done = true;
+                return;
+            }
+            if (!Deaf()) {
+                if (!game.mhitm_vis)
+                    await You_hear("laughter.");
+                else if (canseemon(magr))
+                    await pline(`${Monnam(magr)} chuckles.`); /* pline_mon() */
+            }
+        }
     }
     void mhm;
 }
@@ -1449,7 +1693,13 @@ async function mhitm_ad_wrap(magr, mattk, mdef, mhm) {
         } else
             mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_wrap(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan)
+            mhm.damage = 0;
+
+        if (!mhm.damage && (canseemon(magr) || canseemon(mdef))) {
+            await pline(`${Some_Monnam(magr)} brushes against ${some_mon_nam(mdef)}.`);
+        }
     }
 }
 
@@ -1478,7 +1728,15 @@ async function mhitm_ad_plys(magr, mattk, mdef, mhm) {
             }
         }
     } else {
-        throw new Error('mhitm_ad_plys(): mhitm branch not ported yet');
+        /* mhitm */
+        if (mdef.mcanmove && !rn2(3)
+            && !await mgc_atk_negated(magr, mdef, true)) {
+            if (game.mhitm_vis && canspotmon(mdef)) {
+                const buf = Monnam(mdef);
+                await pline(`${buf} is frozen by ${mon_nam(magr)}.`);
+            }
+            paralyze_monst(mdef, rnd(10));
+        }
     }
     void mhm;
 }
