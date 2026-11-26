@@ -179,6 +179,10 @@ import { s_suffix } from './hacklib.js';
 import { mbodypart } from './insight.js';
 import { yobjnam } from './objnam.js';
 import { STOMACH as STOMACH_do } from './const.js';
+import { Luck } from './const.js';
+import { is_plural } from './wield.js';
+import { obj_resists } from './dogmove.js';
+import { breakobj } from './dothrow.js';
 
 /* C ref: cmd.c DIR_DOWN, DIR_UP (after the 8 compass directions) */
 const DIR_DOWN = 8, DIR_UP = 9;
@@ -1247,10 +1251,8 @@ export async function boulder_hits_pool(
     return false;
 }
 
-// C ref: do.c flooreffects() -- only the plain case, where nothing
-// happens to the object, is ported; boulders filling pits or pools, lava
-// and water damage, objects tumbling into the hero's pit, globs, altars
-// and potions on hot ground stop with a not-ported error
+// C ref: do.c flooreffects() -- boulders filling pits, objects tumbling
+// into the hero's pit, globs and altars stop with a not-ported error
 /* returns TRUE if obj is gone (or out of play), FALSE if the caller
    should place it on the floor */
 export async function flooreffects(obj, /* the object landing on the floor */
@@ -1306,7 +1308,38 @@ export async function flooreffects(obj, /* the object landing on the floor */
         throw new Error('flooreffects(): doaltarobj() not ported yet');
     } else if (obj.oclass === O.POTION_CLASS && (g.level.flags?.temperature || 0) > 0
                && (g.level.at(x, y).typ === ROOM || g.level.at(x, y).typ === CORR)) {
-        throw new Error('flooreffects(): potions on hot ground not ported yet');
+        /* Potions are sometimes destroyed when landing on very hot
+           ground. The basic odds are 50% for nonblessed potions and
+           30% for blessed potions; if you have handled the object
+           (i.e. it is or was yours), these odds are adjusted by Luck
+           (each Luck point affects them by 2%). Artifact potions
+           would not be affected, if any existed.
+
+           Oil is not affected because its boiling point (and flash
+           point) are higher than that of water. */
+        if (cansee(x, y)) {
+            /* unconditional "ground" is safe as this only runs for
+               room and corridor tiles */
+            await pline(`${Tobjnam(obj, "heat")} up as ${
+                is_plural(obj) ? "they hit" : "it hits"} the hot ground.`);
+        }
+
+        let survival_chance = obj.blessed ? 70 : 50;
+        if (obj.invlet)
+            survival_chance += Luck() * 2;
+        if (obj.otyp === O.POT_OIL)
+            survival_chance = 100;
+
+        if (!obj_resists(obj, survival_chance, 100)) {
+            if (cansee(x, y)) {
+                await pline(`${is_plural(obj) ? "They shatter" : "It shatters"
+                    } from the heat!`);
+            } else {
+                await You_hear("a shattering noise.");
+            }
+            await breakobj(obj, x, y, false, false);
+            res = true;
+        }
     }
 
     g.bhitpos = save_bhitpos;
