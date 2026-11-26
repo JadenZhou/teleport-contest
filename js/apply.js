@@ -1186,17 +1186,17 @@ async function display_jump_positions(on_off) {
 
     if (on_off) {
         /* on */
-        tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
+        await tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
         for (dx = -4; dx <= 4; dx++)
             for (dy = -4; dy <= 4; dy++) {
                 x = dx + game.u.ux;
                 y = dy + game.u.uy;
                 if (await get_valid_jump_position(x, y) && !u_at(x, y))
-                    tmp_at(x, y);
+                    await tmp_at(x, y);
             }
     } else {
         /* off */
-        tmp_at(DISP_END, 0);
+        await tmp_at(DISP_END, 0);
     }
 }
 
@@ -1605,23 +1605,23 @@ function get_valid_polearm_position(x, y) {
 }
 
 // C ref: apply.c display_polearm_positions()
-function display_polearm_positions(on_off) {
+async function display_polearm_positions(on_off) {
     let x, y, dx, dy;
 
     if (on_off) {
         /* on */
-        tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
+        await tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_goodpos) */
         for (dx = -3; dx <= 3; dx++)
             for (dy = -3; dy <= 3; dy++) {
                 x = dx + game.u.ux;
                 y = dy + game.u.uy;
                 if (get_valid_polearm_position(x, y)) {
-                    tmp_at(x, y);
+                    await tmp_at(x, y);
                 }
             }
     } else {
         /* off */
-        tmp_at(DISP_END, 0);
+        await tmp_at(DISP_END, 0);
     }
 }
 

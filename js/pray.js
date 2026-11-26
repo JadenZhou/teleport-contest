@@ -719,7 +719,7 @@ async function angrygods(resp_god) {
     switch (rn2(maxanger)) {
     case 0:
     case 1:
-        await pline(`You feel that ${align_gname(resp_god)} is ${
+        await You_feel(`that ${align_gname(resp_god)} is ${
             Hallucination() ? "bummed" : "displeased"}.`); /* You_feel() */
         break;
     case 2:
@@ -1004,7 +1004,7 @@ async function pleased(g_align) {
     let trouble = in_trouble(); /* what's your worst difficulty? */
     let pat_on_head = 0;
 
-    await pline(`You feel that ${align_gname(g_align)} is ${
+    await You_feel(`that ${align_gname(g_align)} is ${
         (u.ualign.record >= DEVOUT)
             ? Hallucination() ? "pleased as punch" : "well-pleased"
             : (u.ualign.record >= STRIDENT)
