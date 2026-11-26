@@ -1538,7 +1538,7 @@ async function use_up_tin(tin) {
 }
 
 // C ref: eat.c eating_conducts()
-async function eating_conducts(pd) {
+export async function eating_conducts(pd) {
     let ll_conduct = 0;
 
     if (!conduct_inc('food')) {
@@ -2733,4 +2733,15 @@ export async function cant_finish_meal(corpse) {
         await stop_occupation();
         await newuhs(false);
     }
+}
+
+// C ref: eat.c Finish_digestion()
+/* the hero has swallowed a monster whole as a purple worm or similar, and has
+   finished digesting its corpse (called via ga.afternmv) */
+export async function Finish_digestion() {
+    if (game.corpsenm_digested !== NON_PM) {
+        await cpostfx(game.corpsenm_digested);
+        game.corpsenm_digested = NON_PM;
+    }
+    return 0;
 }

@@ -122,6 +122,9 @@ import { AD_ACID } from './monsters.js';
 import { COST_BURN, COST_RUST, COST_ROT, COST_CORRODE,
          COST_CRACK } from './const.js';
 import { float_vs_flight } from './polyself.js';
+import { touch_petrifies } from './mondata.js';
+import { obj_pmname, an } from './objnam.js';
+import { uwepgone, uswapwepgone } from './wield.js';
 import { s_suffix } from './hacklib.js';
 import { m_at } from './makemon.js';
 import { ROLL as ROLL_L, LAUNCH_KNOWN as LAUNCH_KNOWN_L,
@@ -2789,21 +2792,33 @@ export async function minstapetrify(mon, byplayer) {
 // C ref: trap.c selftouch()
 export async function selftouch(arg) {
     const g = game;
-    const Stone_resistance = !!(uprop(STONE_RES).intrinsic
-                                || uprop(STONE_RES).extrinsic);
-    void arg;
+    let kbuf;
+    let corpse_pmname;
+
     if (g.uwep && g.uwep.otyp === CORPSE
-        && (g.uwep.corpsenm === PM_COCKATRICE
-            || g.uwep.corpsenm === PM_CHICKATRICE) /* touch_petrifies() */
-        && !Stone_resistance)
-        throw new Error('selftouch(): instapetrify() not ported yet');
+        && touch_petrifies(mons[g.uwep.corpsenm])
+        && !Stone_resistance()) {
+        corpse_pmname = obj_pmname(g.uwep);
+        await pline(`${arg} touch the ${corpse_pmname} corpse.`);
+        kbuf = `${an(corpse_pmname)} corpse`;
+        await instapetrify(kbuf);
+        /* life-saved; unwield the corpse if we can't handle it */
+        if (!g.uarmg && !Stone_resistance())
+            uwepgone();
+    }
     /* Or your secondary weapon, if wielded [hypothetical; we don't
        allow two-weapon combat when either weapon is a corpse] */
     if (g.u.twoweap && g.uswapwep && g.uswapwep.otyp === CORPSE
-        && (g.uswapwep.corpsenm === PM_COCKATRICE
-            || g.uswapwep.corpsenm === PM_CHICKATRICE)
-        && !Stone_resistance)
-        throw new Error('selftouch(): instapetrify() not ported yet');
+        && touch_petrifies(mons[g.uswapwep.corpsenm])
+        && !Stone_resistance()) {
+        corpse_pmname = obj_pmname(g.uswapwep);
+        await pline(`${arg} touch the ${corpse_pmname} corpse.`);
+        kbuf = `${an(corpse_pmname)} corpse`;
+        await instapetrify(kbuf);
+        /* life-saved; unwield the corpse */
+        if (!g.uarmg && !Stone_resistance())
+            uswapwepgone();
+    }
 }
 
 // C ref: trap.c mselftouch()

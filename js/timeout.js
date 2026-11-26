@@ -111,6 +111,9 @@ import { UNCHANGING, W_SADDLE, DISMOUNT_FELL } from './const.js';
 import { is_were } from './mondata.js';
 import { rehumanize } from './polyself.js';
 import { float_down } from './trap.js';
+import { instapetrify } from './trap.js';
+import { highc } from './hacklib.js';
+import { NEUTRAL } from './const.js';
 import { which_armor } from './worn.js';
 import { dismount_steed } from './steed.js';
 import { x_monnam as x_monnam_to } from './do_name.js';
@@ -950,15 +953,20 @@ async function slip_or_trip() {
                              ? "something"
                              : (otmp2.quan === 1 ? "a rock" : "some rocks"));
         if (Hallu) {
-            throw new Error('slip_or_trip(): hallucinatory "Egads!" message not ported yet');
+            what = highc(what[0]) + what.slice(1); /* buf[0] = highc(buf[0]) */
+            await pline(`Egads!  ${what} bite${
+                (!otmp || otmp.quan === 1) ? "s" : ""} your ${body_part(FOOT)}!`);
         } else {
             await You(`trip over ${what}.`);
         }
         if (!game.uarmf && otmp.otyp === CORPSE
             && (otmp.corpsenm === PM_COCKATRICE
                 || otmp.corpsenm === PM_CHICKATRICE) /* touch_petrifies() */
-            && !prop_on(P[STONE_RES]))
-            throw new Error('slip_or_trip(): instapetrify() not ported yet');
+            && !prop_on(P[STONE_RES])) {
+            killer_to().name = `tripping over ${
+                an(mons[otmp.corpsenm].pmnames[NEUTRAL])} corpse`;
+            await instapetrify(killer_to().name);
+        }
     } else if ((P[FUMBLING].intrinsic & FROMOUTSIDE)
                || (is_ice(u.ux, u.uy) && !rn2(3))) {
         /* is fumbling from ice alone? */
