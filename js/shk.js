@@ -2042,21 +2042,29 @@ export async function make_happy_shk(shkp, silentkops) {
 /* called by make_happy_shk() and also by losedogs() for migrating shk */
 export async function make_happy_shoppers(silentkops) {
     if (!angry_shk_exists()) {
-        kops_gone(silentkops);
+        await kops_gone(silentkops);
         pacify_guards();
     }
 }
 
 // C ref: shk.c kops_gone()
 /* remove all kops from the level */
-function kops_gone(silent) {
-    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon) {
+async function kops_gone(silent) {
+    let cnt = 0;
+    let mtmp2;
+
+    for (let mtmp = game.fmon; mtmp; mtmp = mtmp2) {
+        mtmp2 = mtmp.nmon;
         if (mtmp.mhp < 1) /* DEADMONSTER */
             continue;
-        if (mtmp.data.mlet === S_KOP)
-            throw new Error('kops_gone(): removing Keystone Kops not ported yet');
+        if (mtmp.data.mlet === S_KOP) {
+            if (canspotmon(mtmp))
+                cnt++;
+            mongone(mtmp);
+        }
     }
-    void silent;
+    if (cnt && !silent)
+        await pline_The(`Kop${plur(cnt)} (disappointed) vanish${(cnt === 1) ? "es" : ""} into thin air.`);
 }
 
 // C ref: mon.c pacify_guards()
@@ -2164,7 +2172,7 @@ async function home_shk(shkp, killkops) {
     await mnearto(shkp, x, y, true, RLOC_NOMSG);
     game.level.flags.has_shop = 1;
     if (killkops) {
-        kops_gone(true);
+        await kops_gone(true);
         pacify_guards();
     }
     await after_shk_move(shkp);
