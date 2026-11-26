@@ -87,7 +87,7 @@ import { freeinv, addinv_nomerge, useup, useupf, will_feel_cockatrice,
          hands_obj } from './invent.js';
 import { inv_cnt, nomul } from './hack.js';
 import { dropy } from './do.js';
-import { set_occupation, stop_occupation } from './allmain.js';
+import { set_occupation, stop_occupation, unmul } from './allmain.js';
 import { exercise, adjalign, change_luck, adjattrib, ABASE, ATTRMAX,
          poison_strdmg } from './attrib.js';
 import { more_experienced, newexplevel, pluslvl } from './exper.js';
@@ -236,6 +236,13 @@ export async function init_uhunger() {
 // C ref: eat.c is_fainted()
 export function is_fainted() {
     return game.u.uhs === FAINTED;
+}
+
+// C ref: eat.c reset_faint()
+/* call when a faint must be prematurely terminated */
+export async function reset_faint() {
+    if (game.afternmv === unfaint)
+        await unmul("You revive.");
 }
 
 

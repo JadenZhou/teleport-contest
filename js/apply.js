@@ -162,6 +162,11 @@ import { is_lava as is_lava_wh } from './makemon.js';
 import { dbon } from './weapon.js';
 import { losehp, Maybe_Half_Phys } from './trap.js';
 import { dropx } from './do.js';
+import { gloves_simple_name } from './objnam.js';
+import { is_wet_towel } from './objects.js';
+import { incr_itimeout, set_itimeout } from './potion.js';
+import { dry_a_towel } from './weapon.js';
+import { gulp_blnd_check } from './mhitu.js';
 import { check_unpaid as check_unpaid_cam, zapyourself as zapyourself_cam } from './zap.js';
 import { s_suffix as s_suffix_cam } from './hacklib.js';
 import { mon_nam as mon_nam_cam } from './do_name.js';
@@ -1011,7 +1016,8 @@ export async function doapply() {
         res = await use_camera(obj);
         break;
     case O.TOWEL:
-        throw new Error('doapply(): use_towel() not ported yet');
+        res = await use_towel(obj);
+        break;
     case O.CRYSTAL_BALL:
         throw new Error('doapply(): use_crystal_ball() not ported yet');
     case O.MAGIC_MARKER:
@@ -1420,8 +1426,93 @@ export async function fig_transform(arg, timeout) {
     throw new Error('fig_transform() not ported yet');
 }
 
+// C ref: apply.c use_towel()
+async function use_towel(obj) {
+    const u = game.u;
+    const drying_feedback = (obj === game.uwep);
+    const HBlinded = () => u.uprops[BLINDED_AP].intrinsic;
+    const Glib = () => !!(u.uprops[GLIB_WH].intrinsic || u.uprops[GLIB_WH].extrinsic);
+
+    if (!freehand()) {
+        await You(`have no free ${body_part(HAND)}!`);
+        return ECMD_OK;
+    } else if (obj === game.ublindf) {
+        await You("cannot use it while you're wearing it!");
+        return ECMD_OK;
+    } else if (obj.cursed) {
+        let old;
+
+        switch (rn2(3)) {
+        case 2:
+            old = (u.uprops[GLIB_WH].intrinsic & TIMEOUT_AP); /* (Glib & TIMEOUT) */
+            make_glib_lp(old + rn1_ap(10, 3)); /* + 3..12 */
+            await Your_lp(`${makeplural_ap(body_part(HAND))} ${
+                old ? "are filthier than ever" : "get slimy"}!`);
+            if (is_wet_towel(obj))
+                await dry_a_towel(obj, -1, drying_feedback);
+            return ECMD_TIME;
+        case 1:
+            if (!game.ublindf) {
+                old = u.ucreamed || 0;
+                u.ucreamed = old + rn1_ap(10, 3);
+                await pline(`Yecch!  Your ${body_part(FACE_AP)} ${
+                    old ? "has more" : "now has"} gunk on it!`);
+                await make_blinded_ap((HBlinded() & TIMEOUT_AP) /* BlindedTimeout */
+                                      + u.ucreamed - old, true);
+            } else {
+                const ublindf = game.ublindf;
+                const what = (ublindf.otyp === O.LENSES)
+                             ? "lenses"
+                             : (obj.otyp === ublindf.otyp) ? "other towel"
+                                                           : "blindfold";
+                if (ublindf.cursed) {
+                    await You(`push your ${what} ${rn2(2) ? "cock-eyed" : "crooked"}.`);
+                } else {
+                    const saved_ublindf = ublindf;
+                    await You(`push your ${what} off.`);
+                    await Blindf_off_dw(ublindf);
+                    await dropx(saved_ublindf);
+                }
+            }
+            if (is_wet_towel(obj))
+                await dry_a_towel(obj, -1, drying_feedback);
+            return ECMD_TIME;
+        case 0:
+            break;
+        }
+    }
+
+    if (Glib()) {
+        make_glib_lp(0);
+        await You(`wipe off your ${!game.uarmg ? makeplural_ap(body_part(HAND))
+                                                : gloves_simple_name(game.uarmg)}.`);
+        if (is_wet_towel(obj))
+            await dry_a_towel(obj, -1, drying_feedback);
+        return ECMD_TIME;
+    } else if (u.ucreamed) {
+        incr_itimeout(BLINDED_AP, -1 * u.ucreamed); /* &HBlinded */
+        u.ucreamed = 0;
+        if (!HBlinded()) { /* !Blinded */
+            await pline("You've got the glop off.");
+            if (!(await gulp_blnd_check())) {
+                set_itimeout(BLINDED_AP, 1); /* &HBlinded */
+                await make_blinded_ap(0, true);
+            }
+        } else {
+            await Your_lp(`${body_part(FACE_AP)} feels clean now.`);
+        }
+        if (is_wet_towel(obj))
+            await dry_a_towel(obj, -1, drying_feedback);
+        return ECMD_TIME;
+    }
+
+    await Your_lp(`${body_part(FACE_AP)} and ${makeplural_ap(body_part(HAND))} are already clean.`);
+
+    return ECMD_OK;
+}
+
 // C ref: apply.c use_whip()
-async function use_whip(obj) {
+export async function use_whip(obj) {
     const g = game;
     const u = g.u;
     let mtmp;

@@ -111,6 +111,7 @@ import { can_reach_floor as can_reach_floor_iv } from './engrave.js';
 import { surface as surface_iv } from './iactions.js';
 import { DRAWBRIDGE_UP as DRAWBRIDGE_UP_IV } from './const.js';
 import { query_category as query_category_iv } from './pickup.js';
+import { force_decor as force_decor_iv } from './pickup.js';
 import { doinvbill as doinvbill_iv } from './shk.js';
 import { mungspaces as mungspaces_iv } from './hacklib.js';
 import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
@@ -838,6 +839,13 @@ async function addinv_core0(obj, other_obj, update_perm_invent) {
 // default fashion
 export async function addinv(obj) {
     return await addinv_core0(obj, null, true);
+}
+
+// C ref: invent.c addinv_before()
+/* add obj to the hero's inventory by inserting in front of a specific item */
+export async function addinv_before(obj, other_obj) {
+    /* if 'other_obj' is present this will implicitly be 'nomerge' */
+    return await addinv_core0(obj, other_obj, true);
 }
 
 // C ref: invent.c addinv_nomerge()
@@ -1759,7 +1767,14 @@ export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup 
             /* don't say "altar" twice, dfeature has more info */
             await You("try to feel what is here.");
         } else if (SURFACE_AT_iv(u.ux, u.uy) === ICE_IV) {
-            throw new Error('look_here(): feeling for objects on ice (force_decor()) not ported yet');
+            /* using describe_decor() to handle ice is simpler than
+               replicating it in the conditional message construction */
+            if (!game.flags.mention_decor || game.iflags.prev_decor === ICE_IV)
+                await force_decor_iv(false);
+            /* plain "ice" if blind and levitating, otherwise "solid ice" &c;
+              "There is [thin ]ice here.  You try to feel what is on it." */
+            await You("try to feel what is on it.");
+            skip_dfeature = true; /* ice already described */
         } else {
             const cant_reach = !can_reach_floor_iv(true);
             const surf = surface_iv(u.ux, u.uy),

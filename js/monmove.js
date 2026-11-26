@@ -78,6 +78,10 @@ import { newcham } from './mon.js';
 import { PROT_FROM_SHAPE_CHANGERS, NC_SHOW_MSG, NO_NC_FLAGS } from './const.js';
 import { tty_display_nhwindow } from './wintty.js';
 import { mon_learns_traps } from './mondata.js';
+import { is_demon } from './mondata.js';
+import { Amonnam } from './do_name.js';
+import { set_malign } from './makemon.js';
+import { demon_talk } from './minion.js';
 import { TRAPPED_DOOR } from './const.js';
 import { has_ceiling } from './insight.js';
 import { cuss, tactics } from './wizard.js';
@@ -999,8 +1003,27 @@ export async function dochug(mtmp) {
 
     /* Demonic Blackmail! */
     if (d.nearby && mdat.msound === M.MS_BRIBE && mtmp.mpeaceful
-        && !mtmp.mtame && !u.uswallow)
-        throw new Error('dochug(): demon_talk() not ported yet');
+        && !mtmp.mtame && !u.uswallow) {
+        if (mtmp.mux !== u.ux || mtmp.muy !== u.uy) {
+            await pline(`${cansee(mtmp.mux, mtmp.muy) ? Monnam(mtmp) : "It"
+                           } whispers at thin air.`);
+
+            if (is_demon(game.youmonst.data)) {
+                /* "Good hunting, brother" */
+                if (!(await tele_restrict(mtmp)))
+                    /* (void) */ await rloc(mtmp, RLOC_MSG);
+            } else {
+                mtmp.minvis = mtmp.perminvis = 0;
+                /* Why?  For the same reason in real demon talk */
+                /* if (canseemon(mtmp)) set_msg_xy(mtmp->mx, mtmp->my); */
+                await pline(`${Amonnam(mtmp)} gets angry!`);
+                mtmp.mpeaceful = 0;
+                set_malign(mtmp);
+                /* since no way is an image going to pay it off */
+            }
+        } else if (await demon_talk(mtmp))
+            return 1; /* you paid it off */
+    }
 
     /* the watch will look around and see if you are up to no good :-) */
     if (is_watch(mdat)) {

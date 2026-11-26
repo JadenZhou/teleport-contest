@@ -1,6 +1,6 @@
 // vault.js — vault guards.
 // C ref: vault.c — clear_fcorr(), blackout(), restfakecorr(), parkguard(),
-// in_fcorridor(), findgd(), vault_occupied(), uleftvault(), find_guard_dest(), invault(),
+// in_fcorridor(), findgd(), vault_occupied(), find_guard_dest(), invault(),
 // move_gold(), wallify_vault(), gd_mv_monaway(), gd_pick_corridor_gold(),
 // gd_move_cleanup(), gd_letknow(), gd_move().
 //
@@ -281,7 +281,7 @@ export function vault_occupied(array) {
 }
 
 // C ref: vault.c uleftvault()
-/* called in hack.c when hero leaves a vault (and in teleport.c) */
+/* hero has teleported out of vault while a guard is active */
 export async function uleftvault(grd) {
     const u = game.u;
 
@@ -303,7 +303,7 @@ export async function uleftvault(grd) {
            guard an extra move to deliver message(s) and to teleport
            out of and remove that corridor */
         if (!in_fcorridor(grd, u.ux, u.uy))
-            await gd_move(grd);
+            /* (void) */ await gd_move(grd);
     }
 }
 

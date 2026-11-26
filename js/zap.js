@@ -399,6 +399,7 @@ import { unearth_objs as unearth_objs_dg } from './dig.js';
 import { mksobj, set_corpsenm } from './mkobj.js';
 import { STATUE, FIGURINE } from './objects.js';
 import { W_ARTI, BURIED_TOO, CONTAINED_TOO } from './const.js';
+import { force_decor } from './pickup.js';
 
 // C ref: zap.c learnwand()
 export function learnwand(obj) {
@@ -1902,7 +1903,8 @@ export async function zap_map(x, y, obj) { /* zapped wand, or book for cast spel
            likewise for furniture in case hero is levitating while blind */
         } else if (ltyp === ICE || IS_FURNITURE(ltyp)) {
             if (u.dz > 0) { /* down, which also means x,y == u.ux,u.uy */
-                throw new Error('zap_map(): probing down at ice/furniture (force_decor()) not ported yet');
+                await force_decor(true);
+                learn_it = true;
             }
         }
         /*

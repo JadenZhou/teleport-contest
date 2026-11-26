@@ -251,6 +251,8 @@ import { M1_NOHANDS as M1_NOHANDS_TR, mons as mons_tr, PM_CAVE_SPIDER as PM_CAVE
          PM_GIANT_SPIDER as PM_GIANT_SPIDER_TR } from './monsters.js';
 import { is_ice as is_ice_bg } from './dig.js';
 import { strcmpi as strcmpi_bg } from './hacklib.js';
+import { copynchars as copynchars_tp } from './hacklib.js';
+import { rank_of as rank_of_tp } from './botl.js';
 import { PLNMSG_BACK_ON_GROUND as PLNMSG_BACK_ON_GROUND_BG } from './const.js';
 import { SWIMMING as SWIMMING_DR, MAGICAL_BREATHING as MAGICAL_BREATHING_DR,
          TELEPORT as TELEPORT_DR, TELEPORT_CONTROL as TELEPORT_CONTROL_DR,
@@ -1074,10 +1076,62 @@ export function into_vs_onto(traptype) {
     return false;
 }
 
+/* C ref: trap.c trapname() 'static const char *const halu_trapnames[]' */
+const halu_trapnames = [
+    /* riffs on actual nethack traps */
+    "bottomless pit", "polymorphism trap", "devil teleporter",
+    "falling boulder trap", "anti-anti-magic field", "weeping gas trap",
+    "queasy board", "electrified web", "owlbear trap", "sand mine",
+    "vacillating triangle",
+    /* some traps found in nethack variants */
+    "death trap", "disintegration trap", "ice trap", "monochrome trap",
+    /* plausible real-life traps */
+    "axeblade trap", "pool of boiling oil", "pool of quicksand",
+    "field of caltrops", "buzzsaw trap", "spiked floor", "revolving wall",
+    "uneven floor", "finger trap", "jack-in-a-box", "yellow snow",
+    "booby trap", "rat trap", "poisoned nail", "snare", "whirlpool",
+    "trip wire", "roach motel (tm)",
+    /* sci-fi */
+    "negative space", "tensor field", "singularity", "imperial fleet",
+    "black hole", "thermal detonator", "event horizon",
+    "entoptic phenomenon",
+    /* miscellaneous suggestions */
+    "sweet-smelling gas vent", "phone booth", "exploding runes",
+    "never-ending elevator", "slime pit", "warp zone", "illusory floor",
+    "pile of poo", "honey trap", "tourist trap",
+    "banana peel", "garden rake", "whoopie cushion", "box and stick trap",
+    "fly trap", "legal trap", "pit of snakes", "pollywog trap",
+    "slippery slope", "thirst trap", "suntrap",
+];
+
 // C ref: trap.c trapname()
 export function trapname(ttyp, override) /* if True, ignore Hallucination */ {
-    if (Hallucination() && !override)
-        throw new Error('trapname(): hallucinatory trap names not ported yet');
+    if (Hallucination() && !override) {
+        const total_names = TRAPNUM + halu_trapnames.length;
+        let nameidx = rn2_on_display_rng_l(total_names + 1);
+
+        if (nameidx === total_names) {
+            const u = game.u;
+            const fem = Upolyd() ? u.mfemale : game.flags.female;
+            const urole = game.urole;
+            /* static char roletrap[33]; [17 + 5 + 1] should suffice */
+            let roletrap;
+
+            /* inspired by "tourist trap" */
+            roletrap = copynchars_tp(
+                rn2(3) ? ((fem && urole.name.f) ? urole.name.f
+                                                : urole.name.m)
+                       : rank_of_tp(u.ulevel, urole.mnum /* Role_switch */, fem),
+                33 - 6); /* (sizeof roletrap - sizeof " trap") */
+            roletrap += " trap";
+            return roletrap.toLowerCase(); /* lcase() */
+        } else if (nameidx >= TRAPNUM) {
+            nameidx -= TRAPNUM;
+            return halu_trapnames[nameidx];
+        } /* else use an actual trap type */
+        if (nameidx !== NO_TRAP)
+            ttyp = nameidx;
+    }
     return trap_explanations[ttyp - 1];
 }
 

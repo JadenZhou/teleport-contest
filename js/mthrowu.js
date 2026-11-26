@@ -93,6 +93,7 @@ import { hero_breaks, breaks } from './dothrow.js';
 import { dissolve_bars } from './monmove.js';
 import { acurrstr } from './attrib.js';
 import { WT_IRON_BALL_INCR } from './const.js';
+import { BACKTRACK } from './const.js';
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
 function verbose() { return game.flags.verbose ?? true; }
@@ -947,7 +948,7 @@ async function return_from_mtoss(magr, otmp, tethered_weapon) {
     if (otmp && made_it_back) {
         /* it made it back to thrower's location */
         if (tethered_weapon) {
-            throw new Error('return_from_mtoss(): tethered weapon backtrack not ported yet');
+            await tmp_at(DISP_END, BACKTRACK);
         } else {
             const dx = sgn(x - magr.mx),
                 dy = sgn(y - magr.my);

@@ -85,6 +85,7 @@ import { done as done_lt } from './end.js';
 import { NO_KILLER_PREFIX as NO_KILLER_PREFIX_LT, DIED as DIED_LT } from './const.js';
 import { tty_display_nhwindow as tty_display_nhwindow_lt } from './wintty.js';
 import { You_feel as You_feel_lt } from './display.js';
+import { shieldeff } from './display.js';
 import { tty_yn_function as tty_yn_function_tp } from './wintty.js';
 import { On_W_tower_level as On_W_tower_level_tp } from './dungeon.js';
 import { inhishop, make_angry_shk, costly_spot, find_objowner,
@@ -333,6 +334,7 @@ export async function teleds(nux, nuy, teleds_flags) {
     let ball_active, ball_still_in_range = false,
         allow_drag = (teleds_flags & TELEDS_ALLOW_DRAG) !== 0;
     const is_teleport = (teleds_flags & TELEDS_TELEPORT) !== 0;
+
     const vault_guard = vault_occupied(u.urooms) ? findgd() : null;
 
     if (u.utraptype === TT_BURIEDBALL) {
@@ -825,7 +827,7 @@ export async function tele_trap(trap) {
                                  && resists_magm(game.youmonst)));
         if (In_endgame(u.uz) || Antimagic || noteleport_level(game.youmonst)) {
             if (Antimagic)
-                throw new Error('tele_trap(): shieldeff() not ported yet');
+                await shieldeff(u.ux, u.uy);
             await You_feel_lt("a wrenching sensation."); /* You_feel() */
         } else if (!await next_to_u()) {
             await pline(`You ${shudder_for_moment}`); /* You1() */
@@ -880,7 +882,7 @@ export async function level_tele_trap(trap, trflags) {
     await You(`${verbbuf} a level teleport trap!`);
 
     if (Antimagic && !intentional) {
-        /* shieldeff(u.ux, u.uy): transient display only */
+        await shieldeff(u.ux, u.uy);
     }
     if ((Antimagic && !intentional) || In_endgame(u.uz)) {
         await You_feel_lt("a wrenching sensation."); /* You_feel() */

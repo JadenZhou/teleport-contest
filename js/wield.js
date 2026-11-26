@@ -552,8 +552,7 @@ export async function dowieldquiver() {
 }
 
 // C ref: wield.c doquiver_core() -- guts of #quiver command; also used by
-// #fire when refilling empty quiver; readying the chosen object is not
-// ported yet
+// #fire when refilling empty quiver
 export async function doquiver_core(verb) { /* "ready" or "fire" */
     let was_uwep = false;
     const was_twoweap = game.u.twoweap;
@@ -591,7 +590,22 @@ export async function doquiver_core(verb) { /* "ready" or "fire" */
         return ECMD_OK;
     } else if (game.context?.objsplit?.child_oid
                && newquiver.o_id === game.context.objsplit.child_oid) {
-        throw new Error('doquiver_core(): readying part of a stack not ported yet');
+        /* if newquiver is the result of supplying a count to getobj()
+           we don't want to split something already in the quiver;
+           for any other item, we need to give it its own inventory slot */
+        if (game.uquiver
+            && game.uquiver.o_id === game.context.objsplit.parent_oid) {
+            unsplitobj(newquiver);
+            /* goto already_quivered; */
+            await pline("That ammunition is already readied!");
+            return ECMD_OK;
+        } else if (newquiver.oclass === COIN_CLASS) {
+            /* don't allow splitting a stack of coins into quiver */
+            await You("can't ready only part of your gold.");
+            unsplitobj(newquiver);
+            return ECMD_OK;
+        }
+        await finish_splitting(newquiver);
     } else if (newquiver === game.uquiver) {
         /* already_quivered: */
         await pline("That ammunition is already readied!");

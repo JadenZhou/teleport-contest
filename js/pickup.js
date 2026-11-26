@@ -8,7 +8,7 @@
 import { impossible } from './hack.js';
 import { FUMBLING, TIMEOUT, DRAWBRIDGE_UP, ICE, STONE, IS_POOL, IS_LAVA,
          IS_FURNITURE, PLNMSG_BACK_ON_GROUND } from './const.js';
-import { db_under_typ } from './display.js';
+import { db_under_typ, lastseentyp_array } from './display.js';
 import { dfeature_at } from './invent.js';
 import { waterbody_name } from './pager.js';
 import { back_on_ground, unconscious } from './trap.js';
@@ -363,6 +363,29 @@ async function describe_decor() {
        describe_decor() by what has just occurred in this one when it's On */
     g.iflags.prev_decor = g.flags.mention_decor ? ltyp : STONE;
     return res;
+}
+
+// C ref: pickup.c force_decor()
+/* wand of probing zapped down; perhaps hero is levitating while blind */
+export async function force_decor(via_probing) {
+    const g = game;
+    const u = g.u;
+
+    /* we don't want describe_decor() to defer feedback if hero is fumbling
+       with 1 turn left until next slip_or_trip(), or for ice_descr() to
+       omit thawing details if hero is probing when levitating while blind
+       (those will be skipped for look_here() and farlook() or autodescribe);
+       we can't control that by temporarily tweaking properties because that
+       could become noticeable if status gets updated while decor feedback
+       is being delivered */
+    g.decor_fumble_override = true;
+    g.decor_levitate_override = via_probing;
+    /* force current terrain to be different from previous location, or
+       uninteresting if previous location was actually inside solid stone */
+    g.iflags.prev_decor = STONE;
+    /* (void) */ await describe_decor();
+    g.decor_fumble_override = g.decor_levitate_override = false;
+    lastseentyp_array()[u.ux][u.uy] = g.level.at(u.ux, u.uy).typ;
 }
 
 // C ref: pickup.c check_here()
