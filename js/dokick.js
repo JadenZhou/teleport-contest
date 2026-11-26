@@ -97,6 +97,8 @@ import { mintrap, Trap_Killed_Mon } from './trap.js';
 import { is_flyer, is_floater, haseyes, can_teleport, slithy, verysmall,
          bigmonst, nohands, nolimbs, is_giant, likes_gold, is_mercenary,
          thick_skinned, attacktype } from './mondata.js';
+import { digests } from './mondata.js';
+import { hliquid } from './potion.js';
 import { map_invisible, There, glyph_at, show_glyph,
          glyph_is_invisible } from './display.js';
 import { a_monnam } from './do_name.js';
@@ -713,7 +715,21 @@ export async function dokick() {
         avrg_attrib = Math.trunc((acurrstr() + ACURR(A_DEX) + ACURR(A_CON)) / 3);
 
     if (u.uswallow) {
-        throw new Error('dokick(): kicking while engulfed not ported yet');
+        switch (rn2(3)) {
+        case 0:
+            await You_cant(`move your ${body_part(LEG)}!`);
+            break;
+        case 1:
+            if (digests(u.ustuck.data)) {
+                await pline(`${Monnam(u.ustuck)} burps loudly.`);
+                break;
+            }
+            /*FALLTHRU*/
+        default:
+            await Your("feeble kick has no effect.");
+            break;
+        }
+        return ECMD_TIME;
     } else if (u.utrap && u.utraptype === TT_PIT) {
         /* must be Passes_walls */
         await You("kick at the side of the pit.");
@@ -788,7 +804,11 @@ export async function dokick() {
 
     unmap_invisible(x, y);
     if ((is_pool(x, y) || g.maploc.typ === LAVAWALL) !== !!u.uinwater) {
-        throw new Error('dokick(): splashing water or lava not ported yet');
+        /* objects normally can't be removed from water by kicking */
+        await You(`splash some ${
+            hliquid(is_pool(x, y) ? "water" : "lava")} around.`);
+        /* pretend the kick is fast enough for lava not to burn */
+        return ECMD_TIME;
     }
 
     if (OBJ_AT(x, y) && (!Levitation() || Is_airlevel(u.uz)
