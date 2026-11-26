@@ -207,16 +207,6 @@ import { a_monnam } from './do_name.js';
 import { an } from './objnam.js';
 import { impossible } from './hack.js';
 import { POTION_CLASS } from './objects.js';
-import { D_NODOOR, D_TRAPPED, SUPPRESS_IT, SUPPRESS_NAME, SUPPRESS_INVISIBLE,
-         AUGMENT_IT } from './const.js';
-import { noncorporeal } from './mondata.js';
-import { Unaware } from './youprop.js';
-import { expels } from './mhitu.js';
-import { uunstick } from './polyself.js';
-import { upstart } from './hacklib.js';
-import { You_see, pline_The } from './display.js';
-import { recalc_block_point } from './vision.js';
-import { mb_trapped } from './monmove.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -587,106 +577,6 @@ function lifesaved_monster(mtmp) {
         throw new Error('lifesaved_monster(): life saving not ported yet');
 }
 
-// C ref: mon.c vamprises()
-/* when a shape-shifted vampire is killed, it reverts to base form instead
-   of dying; returns True if mtmp successfully revives, False otherwise;
-   "successfully revived" vampire might be killed by a booby trapped door */
-async function vamprises(mtmp) {
-    const mndx = mtmp.cham;
-
-    /*
-     * Protection from shape changers protects against this because
-     * the vampire will always be in normal form instead of shifted.
-     * So there's no need to check for that attribute being active.
-     */
-    if (mndx >= LOW_PM && mndx < NUMMONS /* ismnum(mndx) */
-        && mndx !== monsndx(mtmp.data)
-        && !(game.mvitals[mndx].mvflags & G_GENOD)) {
-        /* alternate message phrasing for some monster types */
-        const spec_mon = (nonliving(mtmp.data)
-                          || noncorporeal(mtmp.data)
-                          || amorphous(mtmp.data)),
-            spec_death = (game.disintegested /* disintegrated/digested */
-                          || noncorporeal(mtmp.data)
-                          || amorphous(mtmp.data));
-        const x = mtmp.mx, y = mtmp.my;
-
-        /* construct a 'before' argument to pass to pline(); this used
-           to construct a dynamic format string but that's overkill */
-        const action = `${Unaware() ? 'you dream that ' : ''}${
-            x_monnam(mtmp, ARTICLE_THE,
-                     spec_mon ? null : 'seemingly dead',
-                     (SUPPRESS_INVISIBLE | AUGMENT_IT), false)} ${
-            Unaware() ? '' : 'suddenly '}${
-            spec_death ? 'reconstitutes' : 'transforms'} and rises as`;
-        mtmp.mcanmove = 1;
-        mtmp.mfrozen = 0;
-        set_mon_min_mhpmax(mtmp, 10); /* mtmp->mhpmax=max(m_lev+1,10) */
-        mtmp.mhp = mtmp.mhpmax;
-        /* mtmp==u.ustuck can happen if previously a fog cloud or if
-           poly'd hero is hugging a vampire bat */
-        if (mtmp === game.u.ustuck) {
-            if (game.u.uswallow)
-                await expels(mtmp, mtmp.data, false);
-            else
-                await uunstick();
-        }
-
-        if (!await newcham(mtmp, mons[mndx], NO_NC_FLAGS))
-            return !DEADMONSTER(mtmp);
-        mtmp.cham = (mtmp.data === mons[mndx]) ? NON_PM : mndx;
-
-        if (canspotmon(mtmp)) {
-            /* 3.6.0 used a_monnam(mtmp); that was weird if mtmp was
-               named: "Dracula suddenly transforms and rises as Dracula";
-               3.6.1 used mtmp->data->mname; that ignored hallucination */
-            await pline(`${upstart(action)} ${
-                x_monnam(mtmp, ARTICLE_A, null,
-                         (SUPPRESS_NAME | SUPPRESS_IT | SUPPRESS_INVISIBLE),
-                         false)}!`); /* pline_mon() */
-            game.vamp_rise_msg = true;
-        }
-        /* revived vampire is in normal shape, so can't be amorphous; if on
-           a closed door spot, destroy the door and if trapped, blow it up */
-        if (closed_door(x, y)) {
-            const door_smashed = 'a door being smashed',
-                door_go_boom = 'a door exploding';
-            const door = game.level.at(x, y);
-            const trapped = (door.doormask & D_TRAPPED) !== 0,
-                seeit = cansee(x, y);
-
-            /* set_msg_xy(x, y): You()/pline() will reset this */
-            if (!seeit)
-                await You_hear(`${trapped ? 'an explosion' : door_smashed}.`);
-            else if (!canspotmon(mtmp))
-                await You_see(`${trapped ? door_go_boom : door_smashed}.`);
-            else if (!Unaware())
-                await pline_The(`door is smashed${
-                    trapped ? ' and it explodes!' : '.'}`);
-            /* set_msg_xy(0, 0): in case none of the messages was delivered */
-
-            door.doormask = D_NODOOR;
-            recalc_block_point(x, y);
-            if (trapped) {
-                const save_verbose = game.flags.verbose;
-
-                game.flags.verbose = false; /* suppress mb_trapped() messages
-                                             * (that makes the 'seeit' arg moot) */
-                const trap_killed = await mb_trapped(mtmp, seeit);
-                game.flags.verbose = save_verbose;
-                /* if the booby trap has killed the monster, mondied() will
-                   have been called but no message about its death given yet;
-                   mtmp was a vampire so use unconditional "destroyed" */
-                if (trap_killed && canspotmon(mtmp) && !Unaware())
-                    await pline(`${Monnam(mtmp)} is destroyed!`); /* pline_mon() */
-            }
-        }
-        newsym(x, y);
-        return true;
-    }
-    return false;
-}
-
 // C ref: mon.c mondead()
 export async function mondead(mtmp) {
     /* potential pet message; always clear global flag */
@@ -699,8 +589,8 @@ export async function mondead(mtmp) {
         return;
 
     /* vampire in bat/fog/wolf form reverts to vampire instead of dying */
-    if (is_vampshifter(mtmp) && await vamprises(mtmp))
-        return;
+    if (is_vampshifter(mtmp))
+        throw new Error('mondead(): vamprises() not ported yet');
 
     if (be_sad)
         await pline('You have a sad feeling for a moment, then it passes.');
