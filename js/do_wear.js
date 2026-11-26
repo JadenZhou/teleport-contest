@@ -889,7 +889,7 @@ export function adj_abon(otmp, delta) {
    not blocked */
 
 // C ref: potion.c toggle_blindness() -- blindness has just been toggled
-export function toggle_blindness() {
+export async function toggle_blindness() {
     const g = game;
     const Stinging = !!(g.uwep && (uprop(WARN_OF_MON).extrinsic & W_WEP) !== 0);
     const Blind_telepat = !!(uprop(TELEPAT).intrinsic || uprop(TELEPAT).extrinsic);
@@ -908,11 +908,11 @@ export function toggle_blindness() {
         throw new Error('toggle_blindness(): Sting_effects() not ported yet');
     /* update dknown flag for inventory picked up while blind */
     if (!Blind())
-        learn_unseen_invent();
+        await learn_unseen_invent();
 }
 
 // C ref: invent.c learn_unseen_invent()
-function learn_unseen_invent() {
+async function learn_unseen_invent() {
     if (Blind())
         return; /* sanity check */
 
@@ -923,7 +923,7 @@ function learn_unseen_invent() {
         /* xname() will set dknown, perhaps bknown (for priest[ess]);
            result from xname() is immediately released for re-use */
         xname(otmp);
-        addinv_core2(otmp); /* you react to seeing the object */
+        await addinv_core2(otmp); /* you react to seeing the object */
     }
     /* update_inventory(): no perm_invent */
 }
@@ -966,7 +966,7 @@ export async function Blindf_on(otmp) {
             await You("can see!");
     }
     if (changed) {
-        toggle_blindness(); /* potion.c */
+        await toggle_blindness(); /* potion.c */
     }
 }
 
@@ -1009,7 +1009,7 @@ export async function Blindf_off(otmp) {
         }
     }
     if (changed) {
-        toggle_blindness(); /* potion.c */
+        await toggle_blindness(); /* potion.c */
     }
 }
 

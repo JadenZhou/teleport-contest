@@ -64,7 +64,7 @@ import { objects, WAND_CLASS, SPBOOK_CLASS, DWARVISH_CLOAK, NODIR, IMMEDIATE,
 import { PIT, SPIKED_PIT, STATUE_TRAP, HEADSTONE, DOOR, DBWALL,
          DB_DIR, DB_NORTH, DB_SOUTH, DB_EAST, DB_WEST, IS_DRAWBRIDGE,
          isok } from './const.js';
-import { t_at, activate_statue_trap } from './trap.js';
+import { t_at, activate_statue_trap, trap_ice_effects } from './trap.js';
 import { sobj_at, is_pool, is_lava } from './makemon.js';
 import { delobj } from './invent.js';
 import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
@@ -3870,7 +3870,7 @@ export async function melt_ice(x, y, msg) {
     }
     spot_stop_timers_zp(x, y, MELT_ICE_AWAY_ZP); /* no more ice to melt away */
     if (t_at(x, y))
-        throw new Error('melt_ice(): trap_ice_effects() not ported yet');
+        trap_ice_effects(x, y, true); /* TRUE because ice_is_melting */
     obj_ice_effects_zp(x, y, false);
     unearth_objs_zp(x, y);
     if (g.u.uinwater) /* Underwater */

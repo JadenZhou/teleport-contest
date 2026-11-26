@@ -431,7 +431,7 @@ export async function make_blinded(xtime, talk) {
     set_itimeout(BLINDED, xtime);
 
     if (u_could_see !== can_see_now) { /* one or the other but not both */
-        toggle_blindness();
+        await toggle_blindness();
     }
 }
 

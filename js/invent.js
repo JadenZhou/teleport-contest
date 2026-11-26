@@ -89,6 +89,10 @@ import { mons as mons_iv } from './monsters.js';
 import { discover_object as discover_object_iv,
          observe_object as observe_object_iv } from './o_init.js';
 import { discover_artifact } from './artifact.js';
+import { ice_descr as ice_descr_iv } from './pager.js';
+import { yname as yname_iv } from './objnam.js';
+import { livelog_printf as livelog_printf_iv } from './display.js';
+import { LL_CONDUCT as LL_CONDUCT_IV } from './const.js';
 import { not_fully_identified as not_fully_identified_iv } from './objnam.js';
 import { query_objlist as query_objlist_iv } from './pickup.js';
 import { sortloot as sortloot_pk } from './pickup.js';
@@ -710,7 +714,7 @@ export async function addinv_core1(obj) {
  * object was being added to the hero's inventory.  Called _after_ the
  * object has been added to the hero's inventory.
  */
-export function addinv_core2(obj) {
+export async function addinv_core2(obj) {
     if (confers_luck(obj)) {
         /* new luckstone must be in inventory by this point
            for correct calculation */
@@ -723,7 +727,15 @@ export function addinv_core2(obj) {
     if (inv_Role_if(M.PM_ARCHEOLOGIST) && obj.oclass === O.SCROLL_CLASS
         && obj.otyp !== O.SCR_BLANK_PAPER && !Blind()
         && !objects[obj.otyp].oc_name_known) {
-        throw new Error('addinv_core2(): Archeologist deciphering a scroll label not ported yet');
+        observe_object_iv(obj, Hallucination());
+        await pline(`You decipher the label on ${yname_iv(obj)}.`);
+        discover_object_iv(obj.otyp, true, true, true); /* makeknown() */
+
+        /* conduct: this is avoidable via not picking up / wishing for
+           scrolls */
+        if (!game.u.uconduct.literate++)
+            livelog_printf_iv(LL_CONDUCT_IV,
+                              "became literate by deciphering a scroll label");
     }
 }
 
@@ -814,7 +826,7 @@ async function addinv_core0(obj, other_obj, update_perm_invent) {
     }
     /* added: */
     obj.pickup_prev = 1;
-    addinv_core2(obj); /* handle extrinsics conferred by carrying obj */
+    await addinv_core2(obj); /* handle extrinsics conferred by carrying obj */
     carry_obj_effects(obj); /* carrying affects the obj */
     if (update_perm_invent) {
         /* update_inventory(): no perm_invent window */
@@ -1629,7 +1641,7 @@ export function dfeature_at(x, y) {
     else if (is_lava(x, y))
         cmap = 'S_lava'; /* "molten lava" */
     else if (ltyp === ICE)
-        throw new Error('dfeature_at(): ice_descr() not ported yet');
+        dfeature = ice_descr_iv(x, y), cmap = null; /* "ice" */
     else if (is_pool(x, y))
         dfeature = "pool of water";
     else if (IS_SINK(ltyp))

@@ -171,7 +171,7 @@ import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
          VEGGY, PAPER, SPBOOK_CLASS } from './objects.js';
 import { corpse_xname, An, singular, cxname } from './objnam.js';
 import { observe_object } from './o_init.js';
-import { munstone } from './muse.js';
+import { munstone, munslime } from './muse.js';
 import { stale_egg, eat_brains } from './eat.js';
 import { explode } from './explode.js';
 import { is_vampshifter, haseyes, resists_acid,
@@ -1762,7 +1762,16 @@ async function mhitm_ad_slee(magr, mattk, mdef, mhm) {
                 await You(`are put to sleep by ${mon_nam(magr)}!`);
         }
     } else {
-        throw new Error('mhitm_ad_slee(): mhitm branch not ported yet');
+        /* mhitm */
+        if (!mdef.msleeping && sleep_monst(mdef, rnd(10), -1)
+            && sleep_monst(mdef, rnd(10), -1)) {
+            if (game.mhitm_vis && canspotmon(mdef)) {
+                const buf = Monnam(mdef);
+                await pline(`${buf} is put to sleep by ${mon_nam(magr)}.`);
+            }
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+            await slept_monst(mdef);
+        }
     }
     void mhm;
 }
@@ -1797,7 +1806,28 @@ async function mhitm_ad_slim(magr, mattk, mdef, mhm) {
         } else
             await pline("Yuck!");
     } else {
-        throw new Error('mhitm_ad_slim(): mhitm branch not ported yet');
+        /* mhitm */
+        if (negated)
+            return; /* physical damage only */
+        if (!rn2(4) && !slimeproof(pd)) {
+            if (!await munslime(mdef, false) && !DEADMONSTER(mdef)) {
+                let ncflags = NO_NC_FLAGS;
+
+                if (game.mhitm_vis && canseemon(mdef))
+                    ncflags |= NC_SHOW_MSG;
+                await newcham(mdef, mons[M.PM_GREEN_SLIME], ncflags);
+                /* if (newcham(...)) pd = mdef->data; pd is unused after */
+                mdef.mstrategy &= ~STRAT_WAITFORU;
+                mhm.hitflags = M_ATTK_HIT;
+            }
+            /* munslime attempt could have been fatal,
+               potentially to multiple monsters (SCR_FIRE) */
+            if (DEADMONSTER(magr))
+                mhm.hitflags |= M_ATTK_AGR_DIED;
+            if (DEADMONSTER(mdef))
+                mhm.hitflags |= M_ATTK_DEF_DIED;
+            mhm.damage = 0;
+        }
     }
 }
 
@@ -1862,7 +1892,15 @@ async function mhitm_ad_slow(magr, mattk, mdef, mhm) {
         if (!negated && game.u.uprops[FAST].intrinsic && !rn2(4))
             await u_slow_down();
     } else {
-        throw new Error('mhitm_ad_slow(): mhitm branch not ported yet');
+        /* mhitm */
+        if (!negated && mdef.mspeed !== MSLOW) {
+            const oldspeed = mdef.mspeed;
+
+            await mon_adjust_speed(mdef, -1, null);
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+            if (mdef.mspeed !== oldspeed && game.mhitm_vis && canspotmon(mdef))
+                await pline(`${Monnam(mdef)} slows down.`); /* pline_mon() */
+        }
     }
     void mhm;
 }
@@ -1884,7 +1922,17 @@ async function mhitm_ad_conf(magr, mattk, mdef, mhm) {
         }
         mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_conf(): mhitm branch not ported yet');
+        /* mhitm */
+        /* Since confusing another monster doesn't have a real time
+         * limit, setting spec_used would not really be right (though
+         * we still should check for it).
+         */
+        if (!magr.mcan && !mdef.mconf && !magr.mspec_used) {
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline(`${Monnam(mdef)} looks confused.`); /* pline_mon() */
+            mdef.mconf = 1;
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+        }
     }
 }
 
@@ -1936,6 +1984,8 @@ async function mhitm_ad_poly(magr, mattk, mdef, mhm) {
 
 // C ref: uhitm.c mhitm_ad_famn()
 async function mhitm_ad_famn(magr, mattk, mdef, mhm) {
+    const pd = mdef.data;
+
     if (magr === game.youmonst) {
         throw new Error('mhitm_ad_famn(): uhitm branch not ported yet');
     } else if (mdef === game.youmonst) {
@@ -1946,7 +1996,12 @@ async function mhitm_ad_famn(magr, mattk, mdef, mhm) {
             await morehungry(rn1(40, 40));
         /* plus the normal damage */
     } else {
-        throw new Error('mhitm_ad_famn(): mhitm branch not ported yet');
+        /* mhitm_famn: */
+        /* mhitm; it's possible for Famine to hit another monster;
+           if target is something that doesn't eat, it won't be harmed;
+           otherwise, just inflict the normal damage */
+        if (!(carnivorous(pd) || herbivorous(pd) || metallivorous(pd)))
+            mhm.damage = 0;
     }
     void mattk; void mhm;
 }
@@ -1963,7 +2018,12 @@ async function mhitm_ad_pest(magr, mattk, mdef, mhm) {
         await diseasemu(pa);
         /* plus the normal damage */
     } else {
-        throw new Error('mhitm_ad_pest(): mhitm branch not ported yet');
+        /* mhitm_pest: */
+        /* mhitm; it's possible for Pestilence to hit another monster;
+           treat it the same as an attack for AD_DISE damage */
+        const alt_attk = { ...mattk };
+        alt_attk.adtyp = M.AD_DISE;
+        await mhitm_ad_dise(magr, alt_attk, mdef, mhm);
     }
     void mattk; void mhm;
 }
@@ -2010,20 +2070,37 @@ async function mhitm_ad_deth(magr, mattk, mdef, mhm) {
             return;
         }
     } else {
-        throw new Error('mhitm_ad_deth(): mhitm branch not ported yet');
+        /* mhitm_deth: */
+        /* mhitm; it's possible for Death to hit another monster;
+           if target is undead, it will take some damage but less than an
+           undead hero would; otherwise, just inflict the normal damage */
+        if (is_undead(pd) && mhm.damage > 1)
+            mhm.damage = rnd(Math.trunc(mhm.damage / 2));
+        /* simulate Death's touch with drain life attack */
+        await mhitm_ad_drli(magr, mattk, mdef, mhm);
     }
     void mattk;
 }
 
 // C ref: uhitm.c mhitm_ad_halu()
 async function mhitm_ad_halu(magr, mattk, mdef, mhm) {
+    const pd = mdef.data;
+
     if (magr === game.youmonst) {
         throw new Error('mhitm_ad_halu(): uhitm branch not ported yet');
     } else if (mdef === game.youmonst) {
         /* mhitu */
         mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_halu(): mhitm branch not ported yet');
+        /* mhitm */
+        if (!magr.mcan && haseyes(pd) && mdef.mcansee) {
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline(`${Monnam(mdef)} looks ${
+                    mdef.mconf ? "more " : ""}confused.`); /* pline_mon() */
+            mdef.mconf = 1;
+            mdef.mstrategy &= ~STRAT_WAITFORU;
+        }
+        mhm.damage = 0;
     }
     void mattk;
 }
@@ -2138,12 +2215,17 @@ async function mhitm_ad_heal(magr, mattk, mdef, mhm) {
                 await hitmsg(magr, mattk);
         }
     } else {
-        throw new Error('mhitm_ad_heal(): mhitm branch not ported yet');
+        /* mhitm */
+        await mhitm_ad_phys(magr, mattk, mdef, mhm);
+        if (mhm.done)
+            return;
     }
 }
 
 // C ref: uhitm.c mhitm_ad_stun()
 async function mhitm_ad_stun(magr, mattk, mdef, mhm) {
+    const pd = mdef.data;
+
     if (magr === game.youmonst) {
         throw new Error('mhitm_ad_stun(): uhitm branch not ported yet');
     } else if (mdef === game.youmonst) {
@@ -2155,7 +2237,16 @@ async function mhitm_ad_stun(magr, mattk, mdef, mhm) {
             mhm.damage = Math.trunc(mhm.damage / 2);
         }
     } else {
-        throw new Error('mhitm_ad_stun(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan)
+            return;
+        if (canseemon(mdef))
+            await pline(`${Monnam(mdef)} ${
+                makeplural(stagger(pd, "stagger"))} for a moment.`); /* pline_mon() */
+        mdef.mstun = 1;
+        await mhitm_ad_phys(magr, mattk, mdef, mhm);
+        if (mhm.done)
+            return;
     }
 }
 
@@ -2201,20 +2292,89 @@ async function mhitm_ad_legs(magr, mattk, mdef, mhm) {
             await exercise(A_DEX, false);
         }
     } else {
-        throw new Error('mhitm_ad_legs(): mhitm branch not ported yet');
+        /* mhitm */
+        if (magr.mcan) {
+            mhm.damage = 0;
+            return;
+        }
+        await mhitm_ad_phys(magr, mattk, mdef, mhm);
+        if (mhm.done)
+            return;
     }
     void mattk;
 }
 
 // C ref: uhitm.c mhitm_ad_dgst()
 async function mhitm_ad_dgst(magr, mattk, mdef, mhm) {
+    const pd = mdef.data;
+
     if (magr === game.youmonst) {
         throw new Error('mhitm_ad_dgst(): uhitm branch not ported yet');
     } else if (mdef === game.youmonst) {
         /* mhitu */
         mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_dgst(): mhitm branch not ported yet');
+        /* mhitm */
+        let num;
+        let obj;
+
+        /* eating a Rider or its corpse is fatal */
+        if (is_rider(pd)) {
+            if (game.mhitm_vis && canseemon(magr))
+                await pline(`${Monnam(magr)} ${
+                    (pd === mons[M.PM_FAMINE])
+                        ? "belches feebly, shrivels up and dies"
+                        : (pd === mons[M.PM_PESTILENCE])
+                              ? "coughs spasmodically and collapses"
+                              : "vomits violently and drops dead"}!`); /* pline_mon() */
+            await mondied(magr);
+            if (!DEADMONSTER(magr)) {
+                mhm.hitflags = M_ATTK_MISS; /* lifesaved */
+                mhm.done = true;
+                return;
+            } else if (magr.mtame && !game.mhitm_vis)
+                /* You(brief_feeling, "queasy") */
+                await You("have a queasy feeling for a moment, then it passes.");
+            mhm.hitflags = M_ATTK_AGR_DIED;
+            mhm.done = true;
+            return;
+        }
+        if (game.flags.verbose && !Deaf()) {
+            /* Soundeffect? */
+            /* SetVoice(magr, 0, 80, 0) */
+            await verbalize("Burrrrp!");
+        }
+        await wake_nearto(magr.mx, magr.my, 2 * 2); /* Burrrrp! */
+        mhm.damage = mdef.mhp;
+        /* Use up amulet of life saving */
+        if ((obj = mlifesaver(mdef)) != null)
+            m_useup(mdef, obj);
+
+        /* Is a corpse for nutrition possible?  It may kill magr */
+        if (!await corpse_chance(mdef, magr, true) || DEADMONSTER(magr))
+            return;
+
+        /* Pets get nutrition from swallowing monster whole.
+         * No nutrition from G_NOCORPSE monster, eg, undead.
+         * DGST monsters don't die from undead corpses
+         */
+        num = monsndx(pd);
+        if (magr.mtame && !magr.isminion
+            && !(game.mvitals[num].mvflags & G_NOCORPSE)) {
+            const virtualcorpse = mksobj(CORPSE, false, false);
+            let nutrit;
+
+            set_corpsenm(virtualcorpse, num);
+            nutrit = dog_nutrition(magr, virtualcorpse);
+            dealloc_obj(virtualcorpse);
+
+            /* only 50% nutrition, 25% of normal eating time */
+            if (magr.meating > 1)
+                magr.meating = Math.trunc((magr.meating + 3) / 4);
+            if (nutrit > 1)
+                nutrit = Math.trunc(nutrit / 2);
+            magr.edog.hungrytime += nutrit;
+        }
     }
     void mattk;
 }
@@ -2222,6 +2382,7 @@ async function mhitm_ad_dgst(magr, mattk, mdef, mhm) {
 // C ref: uhitm.c mhitm_ad_dise()
 async function mhitm_ad_dise(magr, mattk, mdef, mhm) {
     const pa = magr.data;
+    const pd = mdef.data;
 
     if (magr === game.youmonst) {
         throw new Error('mhitm_ad_dise(): uhitm branch not ported yet');
@@ -2231,7 +2392,14 @@ async function mhitm_ad_dise(magr, mattk, mdef, mhm) {
         if (!await diseasemu(pa))
             mhm.damage = 0;
     } else {
-        throw new Error('mhitm_ad_dise(): mhitm branch not ported yet');
+        /* mhitm_dise: */
+        /* mhitm; protected monsters use the same criteria as for poly'd
+           hero gaining sick resistance combined with any hero wielding a
+           weapon or wearing dragon scales/mail that guards against disease */
+        if (pd.mlet === M.S_FUNGUS || pd === mons[M.PM_GHOUL]
+            || defended(mdef, M.AD_DISE))
+            mhm.damage = 0;
+        /* else does ordinary damage */
     }
 }
 

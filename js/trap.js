@@ -1315,6 +1315,27 @@ export function feeltrap(trap) {
     newsym(trap.tx, trap.ty);
 }
 
+// C ref: trap.c trap_ice_effects()
+/* used for ice melting (and freezing) */
+export function trap_ice_effects(x, y, ice_is_melting) {
+    const ttmp = t_at(x, y);
+
+    if (ttmp && ice_is_melting) {
+        let mtmp;
+
+        if (((mtmp = m_at(x, y)) != null) && mtmp.mtrapped)
+            mtmp.mtrapped = 0;
+        if (ttmp.ttyp === LANDMINE || ttmp.ttyp === BEAR_TRAP) {
+            /* landmine or bear trap set on top of the ice falls
+               into the water */
+            throw new Error('trap_ice_effects(): cnv_trap_obj() not ported yet');
+        } else {
+            if (!undestroyable_trap(ttmp.ttyp))
+                deltrap(ttmp);
+        }
+    }
+}
+
 // C ref: trap.c deltrap()
 export function deltrap(trap) {
     const traps = ftraps();
