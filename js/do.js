@@ -1537,7 +1537,7 @@ export async function canletgo(obj, word) {
     }
     if (obj.otyp === O.LEASH && obj.leashmon) {
         if (word)
-            throw new Error('canletgo(): leash message not ported yet');
+            await pline_The(`leash is tied around your ${body_part(HAND)}.`);
         return false;
     }
     if (obj.owornmask & W_SADDLE) {

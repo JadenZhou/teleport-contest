@@ -30,7 +30,8 @@ import { vision_recalc, vision_reset, init_vision_globals } from './vision.js';
 import { mcalcmove, mcalcdistress, movemon } from './mon.js';
 import { initrack, settrack } from './track.js';
 import { m_at, makemon, makemon_flush_msg } from './makemon.js';
-import { mnexto } from './teleport.js';
+import { mnexto, tele, next_to_u } from './teleport.js';
+import { check_leash } from './apply.js';
 import { makedog } from './dog.js';
 import { deferred_goto, hellish_smoke_mesg, schedule_goto, UTOTYPE_NONE } from './do.js';
 import { assign_level } from './dungeon.js';
@@ -610,8 +611,16 @@ async function moveloop_core() {
                 if (!u.uinvulnerable) {
                     if ((P[TELEPORT].intrinsic || P[TELEPORT].extrinsic) /* Teleportation */
                         && !rn2(85)) {
-                        /* tele(): teleportation isn't ported yet */
-                        throw new Error('moveloop_core(): tele() not ported yet');
+                        const old_ux = u.ux, old_uy = u.uy;
+
+                        await tele();
+                        if (u.ux !== old_ux || u.uy !== old_uy) {
+                            if (!(await next_to_u())) {
+                                await check_leash(old_ux, old_uy);
+                            }
+                            /* clear doagain keystrokes */
+                            g.cmdq = []; /* cmdq_clear(CQ_CANNED); cmdq_clear(CQ_REPEAT) */
+                        }
                     }
                     const Polymorph = P[POLYMORPH].intrinsic || P[POLYMORPH].extrinsic;
                     /* delayed change may not be valid anymore */

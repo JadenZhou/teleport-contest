@@ -359,9 +359,8 @@ function keep_mon_accessible(mon) {
 }
 
 // C ref: dog.c keepdogs()
-// Followers that come along are moved from fmon to game.mydogs.
-// Leashed pets, migrate_to_level() for keep_mon_accessible() monsters and
-// the steed are not ported yet.
+// Followers that come along are moved from fmon to game.mydogs (a leashed
+// pet keeps its leash).  The steed is not ported yet.
 export async function keepdogs(pets_only) /* true for ascension or final escape */ {
     const g = game;
     const u = g.u;
@@ -426,8 +425,6 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
             }
 
             /* prepare to take mtmp off the map */
-            if (mtmp.mleashed)
-                throw new Error('keepdogs(): leashed pet following not ported yet');
             const num_segs = mon_leave(mtmp);
             /* take off map and move mtmp from fmon list to mydogs */
             relmon(mtmp, 'mydogs'); /* mtmp->mx,my retain current value */

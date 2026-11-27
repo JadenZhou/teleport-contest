@@ -401,6 +401,7 @@ import { STATUE, FIGURINE } from './objects.js';
 import { W_ARTI, BURIED_TOO, CONTAINED_TOO } from './const.js';
 import { force_decor } from './pickup.js';
 import { is_db_wall, open_drawbridge, close_drawbridge, destroy_drawbridge } from './dbridge.js';
+import { o_unleash } from './apply.js';
 
 // C ref: zap.c learnwand()
 export function learnwand(obj) {
@@ -1596,8 +1597,16 @@ export async function poly_obj(obj, id) {
             otmp.cursed = 0;
         }
     }
-    if (obj.otyp === LEASH && obj.leashmon)
-        throw new Error('poly_obj(): polymorphing a leash in use not ported yet');
+    if (obj.otyp === LEASH && obj.leashmon) {
+        if (otmp.otyp === LEASH) {
+            otmp.leashmon = obj.leashmon;
+            /* clear m_id before delobj(), to avoid o_unleash() by obfree() */
+            obj.leashmon = 0;
+        } else {
+            /* obfree() would do this if we didn't do it here */
+            o_unleash(obj);
+        }
+    }
 
     /* no box contents --KAA */
     if (Has_contents(otmp) && otmp.cobj.length)

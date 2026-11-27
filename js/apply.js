@@ -180,6 +180,16 @@ import { use_pick_axe, buried_ball_to_freedom } from './dig.js';
 import { glyph_is_invisible as glyph_is_invisible_ls } from './display.js';
 import { mons as mons_ls, PM_LONG_WORM as PM_LONG_WORM_LS, M1_UNSOLID as M1_UNSOLID_LS,
          M1_NOLIMBS as M1_NOLIMBS_LS, M1_NOHEAD as M1_NOHEAD_LS } from './monsters.js';
+import { MS_SILENT as MS_SILENT_LS } from './monsters.js';
+import { find_mid } from './light.js';
+import { FM_FMON, RLOC_NOMSG, XKILL_NOMSG, m_next2u } from './const.js';
+import { mnexto } from './teleport.js';
+import { You_feel } from './display.js';
+import { impossible } from './hack.js';
+import { um_dist } from './shk.js';
+import { breathless } from './mondata.js';
+import { xkilled } from './mon.js';
+import { growl, yelp, whimper } from './sounds.js';
 import { an, singular, xname } from './objnam.js';
 import { Glib, Fumbling, Underwater } from './youprop.js';
 import { A_DEX } from './const.js';
@@ -2111,7 +2121,7 @@ export function m_unleash(mtmp, feedback) {
 }
 
 // C ref: apply.c leashable()
-function leashable(mtmp) {
+export function leashable(mtmp) {
     return (mtmp.data !== mons_ls[PM_LONG_WORM_LS] /* mtmp->mnum */
             && !unsolid(mtmp.data)
             && (!nolimbs(mtmp.data) || has_head(mtmp.data)));
@@ -2195,13 +2205,27 @@ async function use_leash_core(obj, mtmp, cc, spotmon) {
                 lmonnam = `${s_suffix_cam(lmonnam)} tail`;
             await pline(`The leash won't fit onto ${spotmon ? "your " : ""}${lmonnam}.`);
         } else {
-            /* mtmp->mleashed = 1; obj->leashmon = mtmp->m_id: leashed pets
-               (check_leash(), next_to_u(), dog movement) aren't ported */
-            throw new Error('use_leash_core(): leashing a pet not ported yet');
+            await You(`slip the leash around ${spotmon ? "your " : ""}${
+                l_monnam_ls(mtmp)}.`);
+            mtmp.mleashed = 1;
+            obj.leashmon = mtmp.m_id;
+            mtmp.msleeping = 0;
+            /* update_inventory(); -- no perm_invent window */
         }
     } else {
         /* applying a leash which is currently in use */
-        throw new Error('use_leash_core(): removing a leash not ported yet');
+        if (obj.leashmon !== mtmp.m_id) {
+            await pline("This leash is not attached to that creature.");
+        } else if (obj.cursed) {
+            await pline_The("leash would not come off!");
+            obj.bknown = 1; /* set_bknown(obj, 1): update_inventory() is a no-op */
+        } else {
+            mtmp.mleashed = 0;
+            obj.leashmon = 0;
+            /* update_inventory(); -- no perm_invent window */
+            await You(`remove the leash from ${spotmon ? "your " : ""}${
+                l_monnam_ls(mtmp)}.`);
+        }
     }
 }
 
@@ -2214,6 +2238,94 @@ export function get_mleash(mtmp) {
         if (otmp.otyp === O.LEASH && otmp.leashmon === mtmp.m_id)
             break;
     return otmp || null;
+}
+
+// C ref: apply.c mleashed_next2u()
+/* get_iter_mons() callback for next_to_u() */
+export async function mleashed_next2u(mtmp) {
+    if (mtmp.mleashed) {
+        if (!m_next2u(mtmp))
+            await mnexto(mtmp, RLOC_NOMSG);
+        if (!m_next2u(mtmp)) {
+            const otmp = get_mleash(mtmp);
+
+            if (!otmp) {
+                impossible("leashed-unleashed mon?");
+                return true;
+            }
+
+            if (otmp.cursed)
+                return true;
+            mtmp.mleashed = 0;
+            otmp.leashmon = 0;
+            /* update_inventory(); -- no perm_invent window */
+            await You_feel(`${(number_leashed() > 1) ? "a" : "the"} leash go slack.`);
+        }
+    }
+    return false;
+}
+
+// C ref: apply.c check_leash()
+export async function check_leash(x, y) {
+    const u = game.u;
+    let otmp;
+    let mtmp;
+
+    for (otmp = game.invent; otmp; otmp = otmp.nobj) {
+        if (otmp.otyp !== O.LEASH || !otmp.leashmon)
+            continue;
+        mtmp = find_mid(otmp.leashmon, FM_FMON);
+        if (!mtmp) {
+            impossible("leash in use isn't attached to anything?");
+            otmp.leashmon = 0;
+            continue;
+        }
+        if (dist2(u.ux, u.uy, mtmp.mx, mtmp.my)
+            > dist2(x, y, mtmp.mx, mtmp.my)) {
+            if (!um_dist(mtmp.mx, mtmp.my, 3)) {
+                ; /* still close enough */
+            } else if (otmp.cursed && !breathless(mtmp.data)) {
+                if (um_dist(mtmp.mx, mtmp.my, 5)
+                    || (mtmp.mhp -= rnd(2)) <= 0) {
+                    const save_pacifism = u.uconduct.killer;
+
+                    await Your_lp(`leash chokes ${mon_nam_cam(mtmp)} to death!`);
+                    /* hero might not have intended to kill pet, but
+                       that's the result of his actions; gain experience,
+                       lose pacifism, take alignment and luck hit, make
+                       corpse less likely to remain tame after revival */
+                    await xkilled(mtmp, XKILL_NOMSG);
+                    /* life-saving doesn't ordinarily reset this */
+                    if (!(mtmp.mhp < 1)) /* !DEADMONSTER(mtmp) */
+                        u.uconduct.killer = save_pacifism;
+                } else {
+                    await pline(`${Monnam(mtmp)} is choked by the leash!`); /* pline_mon() */
+                    /* tameness eventually drops to 1 here (never 0) */
+                    if (mtmp.mtame && rn2(mtmp.mtame))
+                        mtmp.mtame--;
+                }
+            } else {
+                if (um_dist(mtmp.mx, mtmp.my, 5)) {
+                    await pline(`${s_suffix_cam(Monnam(mtmp))} leash snaps loose!`);
+                    m_unleash(mtmp, false);
+                } else {
+                    await You("pull on the leash.");
+                    if (mtmp.data.msound !== MS_SILENT_LS)
+                        switch (rn2(3)) {
+                        case 0:
+                            await growl(mtmp);
+                            break;
+                        case 1:
+                            await yelp(mtmp);
+                            break;
+                        default:
+                            await whimper(mtmp);
+                            break;
+                        }
+                }
+            }
+        }
+    }
 }
 
 // C ref: apply.c flip_coin()
