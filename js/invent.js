@@ -146,6 +146,7 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
 import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
 import { unpunish } from './read.js';
 import { throwing_weapon } from './dothrow.js';
+import { wait_synch } from './end.js';
 
 const invlet_basic = 52;
 const GOLD_SYM = '$';
@@ -2738,7 +2739,7 @@ async function menu_identify(id_limit) {
             for (i = 0; i < n; i++, id_limit--)
                 await identify(pick_list[i].obj);
             if (id_limit)
-                wait_synch_iv(); /* Before we loop to pop open another menu */
+                wait_synch(); /* Before we loop to pop open another menu */
             first = 0;
         } else if (n === -2) { /* player used ESC to quit menu */
             break;
@@ -3165,13 +3166,6 @@ export async function askchain(objchn, olets, allflag, fn, ckfn, mx, word) {
        applied to selected ones might move them to a different chain */
     clear_bypasses_gg();
     return cnt;
-}
-
-/* C ref: wintty.c tty_wait_synch() -- the map window is up and no raw
-   output is pending, so this only flushes the (unbuffered) screen */
-function wait_synch_iv() {
-    if (game.ttyDisplay?.rawprint)
-        throw new Error('wait_synch(): getret() not ported yet');
 }
 
 

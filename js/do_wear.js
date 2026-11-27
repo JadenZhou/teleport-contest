@@ -21,7 +21,7 @@ import { drown } from './trap.js';
 import { is_pool_or_lava } from './hack.js';
 import { set_bc } from './ball.js';
 import { M1_SWIM, M1_AMPHIBIOUS } from './monsters.js';
-import { cantweararm, WrappingAllowed } from './worn.js';
+import { cantweararm, WrappingAllowed, setworn } from './worn.js';
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
 import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
@@ -52,8 +52,7 @@ import * as O from './objects.js';
 import { prinv } from './invent.js';
 import { tty_yn_function } from './wintty.js';
 import { body_part } from './insight.js';
-import { setworn, setuwep, setuswapwep, setuqwep, welded,
-         retouch_object } from './wield.js';
+import { setuwep, setuswapwep, setuqwep, welded } from './wield.js';
 import { W_RING, W_AMUL, W_TOOL, W_SADDLE, W_WEAPONS, LEFT_RING, RIGHT_RING,
          FINGER, GLIB } from './const.js';
 import { W_ARM, W_ARMC, W_ARMH, W_ARMS, W_ARMG, W_ARMF, W_ARMU, W_WEP,
@@ -130,7 +129,7 @@ import { has_ceiling as has_ceiling_bo } from './insight.js';
 import { spoteffects as spoteffects_bo } from './hack.js';
 import { float_down as float_down_bo } from './trap.js';
 import { FROMOUTSIDE as FROMOUTSIDE_BO } from './const.js';
-import { artifact_light } from './artifact.js';
+import { artifact_light, retouch_object } from './artifact.js';
 import { obj_resists as obj_resists_dw } from './dogmove.js';
 import { urgent_pline as urgent_pline_dw } from './display.js';
 import { vtense as vtense_dw } from './objnam.js';

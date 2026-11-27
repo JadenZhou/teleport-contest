@@ -8,7 +8,7 @@
 
 import { use_pole, could_pole_mon, use_whip, snuff_candle } from './apply.js';
 import { end_burn } from './timeout.js';
-import { get_obj_location } from './shk.js';
+import { get_obj_location, inside_shop } from './shk.js';
 import { shop_keeper, costly_spot, stolen_value, subfrombill, is_unpaid,
          contained_gold, donate_gold } from './shk.js';
 import { in_rooms } from './hack.js';
@@ -99,7 +99,7 @@ import { Is_waterlevel as Is_waterlevel_tg } from './const.js';
 import { AT_ENGL, AD_DGST } from './monsters.js';
 import { sellobj } from './shk.js';
 import { ghitm } from './dokick.js';
-import { weapon_descr, skill_name, inside_shop, body_part } from './insight.js';
+import { weapon_descr, skill_name, body_part } from './insight.js';
 import { xname, an, singular, The, Tobjnam } from './objnam.js';
 import { the, surface } from './iactions.js';
 import { doname, otense } from './objnam.js';

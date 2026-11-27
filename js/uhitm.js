@@ -91,7 +91,7 @@ import { check_capacity, overexertion, near_capacity, nomul,
 import { can_twoweapon, untwoweapon } from './wield.js';
 import { yname, makeplural, an, doname, xname, vtense, The } from './objnam.js';
 import { ing_suffix, s_suffix } from './hacklib.js';
-import { body_part } from './insight.js';
+import { body_part, mbodypart } from './insight.js';
 import { object_from_map, defsyms_explanation } from './pager.js';
 import { simpleonames } from './iactions.js';
 import { otense } from './objnam.js';
@@ -181,7 +181,6 @@ import { explode } from './explode.js';
 import { is_vampshifter, haseyes, resists_acid,
          mon_hates_blessings } from './mondata.js';
 import { AT_SPIT } from './monsters.js';
-import { mbodypart } from './shk.js';
 import { setmangry } from './mon.js';
 import { mlifesaver, golemeffects } from './mon.js';
 import { destroy_items } from './zap.js';

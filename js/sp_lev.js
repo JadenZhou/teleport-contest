@@ -42,7 +42,7 @@ import {
     IS_FURNITURE, FOUNTAIN, SINK, POOL, THRONE, TREE,
     F_LOOTED, F_WARNED, S_LPUDDING, S_LDWASHER, S_LRING, T_LOOTED,
     TREE_LOOTED, TREE_SWARM, MATCH_WALL, IS_STWALL, ACCESSIBLE, SCORR,
-    In_mines, Is_medusa_level,
+    In_mines, Is_medusa_level, is_hole, is_pit,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring, check_mapchr, get_table_mapchr, get_table_mapchr_opt } from './nhlua.js';
 import { set_levltyp, set_levltyp_lit, SET_LIT_NOCHANGE } from './mkmaze.js';
@@ -116,7 +116,7 @@ import {
     get_level_extends, Can_dig_down, Can_fall_thru,
 } from './mklev.js';
 import { fixup_special, create_maze, walkfrom, pick_vibrasquare_location } from './mkmaze.js';
-import { deltrap, maketrap, is_pit, is_hole, trap_explanations } from './trap.js';
+import { deltrap, maketrap, trap_explanations } from './trap.js';
 import { defsyms_explanation } from './pager.js';
 import { mk_mplayer } from './mplayer.js';
 import { obj_extract_self } from './mkobj.js';

@@ -57,13 +57,13 @@ import { reset_remarm } from './do_wear.js';
 import { book_cursed_sync } from './spell.js';
 import { eaten_stat, tin_variety, tintxt_fodder, vegetarian,
          nonrotting_corpse } from './eat.js';
-import { costly_spot } from './insight.js';
 import { is_ice } from './dig.js';
 import { obj_sheds_light, obj_split_light_source, del_light_source } from './light.js';
 import { nartifact_exist, mk_artifact } from './artifact.js';
 import { A_NONE } from './const.js';
 import { splitbill, get_obj_location, unpaid_cost, subfrombill, shop_keeper,
-         addtobill, alter_cost, oid_price_adjustment } from './shk.js';
+         addtobill, alter_cost, oid_price_adjustment,
+         costly_spot } from './shk.js';
 import { COST_SINGLEOBJ } from './const.js';
 import { CONTAINED_TOO } from './const.js';
 import { arti_light_radius, obj_adjust_light_radius } from './light.js';

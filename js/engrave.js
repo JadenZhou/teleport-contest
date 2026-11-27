@@ -14,13 +14,13 @@ import { altar_wrath as altar_wrath_eg } from './pray.js';
 import { is_art } from './artifact.js';
 import { game } from './gstate.js';
 import { livelog_printf } from './display.js';
-import { LL_CONDUCT } from './const.js';
+import { LL_CONDUCT, is_hole, is_pit } from './const.js';
 import { P_SKILL, dry_a_towel } from './weapon.js';
 import { P_RIDING, P_BASIC } from './const.js';
 import { rn2, rnd, rn2_fnptr } from './rng.js';
 import { DUST, BURN, ENGR_BLOOD, HEADSTONE, N_ENGRAVE, ICE, ROOM, GRAVE } from './const.js';
 import { getrumor, get_rnd_text, ENGRAVEFILE, EPITAPHFILE, MD_PAD_RUMORS } from './rumors.js';
-import { t_at, is_pit, is_hole } from './trap.js';
+import { t_at } from './trap.js';
 import { LEVITATION, FLYING, TT_PIT, Is_airlevel, Is_waterlevel } from './const.js';
 import { ENGRAVE, MARK, BLINDED, IS_AIR, IS_POOL, LAVAPOOL, DRAWBRIDGE_DOWN,
          IS_ALTAR, IS_GRAVE, IS_FOUNTAIN, STAIRS, LADDER, IS_WALL, SDOOR,

@@ -376,7 +376,6 @@ import { spot_checks } from './hack.js';
 import { sellobj } from './shk.js';
 import { pline_mon } from './display.js';
 import { CAN_OVERWRITE_TERRAIN } from './mkmaze.js';
-export { is_hole, is_pit };
 
 
 // C ref: trap.c mk_trap_statue()

@@ -140,7 +140,6 @@ import {
 } from './youprop.js';
 import { Upolyd, Role_if, Luck } from './const.js';
 import { mon_aligntyp } from './priest.js';
-export { costly_spot, shop_keeper, inhishop, inside_shop } from './shk.js';
 import { costly_spot, contained_gold } from './shk.js';
 import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
          TT_INFLOOR as TT_INFLOOR_IS } from './const.js';

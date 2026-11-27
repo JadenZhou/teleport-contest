@@ -1172,6 +1172,15 @@ export function In_hell(lev) {
     return game.dungeons[lev.dnum].flags.hellish ? true : false;
 }
 
+// C ref: dungeon.c single_level_branch()
+export function single_level_branch(lev) {
+    /*
+     * TODO:  this should be generalized instead of assuming that
+     * Fort Ludios is the only single level branch in the dungeon.
+     */
+    return Is_knox_level(lev);
+}
+
 // C ref: dungeon.c assign_level()
 /* equivalent to dest = source */
 export function assign_level(dest, src) {

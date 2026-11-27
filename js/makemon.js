@@ -99,7 +99,7 @@ import { is_exclusion_zone } from './mklev.js';
 import { LR_MONGEN } from './const.js';
 import { noteleport_level } from './teleport.js';
 import { newcham_sync } from './mon.js';
-import { mpickobj } from './steal.js';
+import { mpickobj, findgold } from './steal.js';
 import { add_to_minv, weight } from './mkobj.js';
 import { m_dowear, which_armor, mon_adjust_speed_sync } from './worn.js';
 import { def_monsyms } from './drawing.js';
@@ -374,16 +374,6 @@ export function goodpos(x, y, mtmp, gpflags) {
         return false;
 
     return true;
-}
-
-// ---- inventory helpers ----
-/* C ref: worn.c which_armor() lives in worn.js */
-export { which_armor };
-// C ref: invent.c findgold()
-function findgold(chain) {
-    for (const o of chain || [])
-        if (o.otyp === O.GOLD_PIECE) return o;
-    return null;
 }
 
 // C ref: makemon.c m_initthrow()

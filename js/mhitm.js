@@ -128,9 +128,6 @@ import { pline_mon } from './display.js';
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
 
-/* C ref: worn.c find_mac() lives in worn.js */
-export { find_mac };
-
 /* C ref: mhitu.c getmattk() is mhitu.js getmattk() (any defender) */
 
 // C ref: mondata.c max_passive_dmg()

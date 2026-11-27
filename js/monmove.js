@@ -175,6 +175,7 @@ import { yname } from './objnam.js';
 import { aggravate as aggravate_mm } from './potion.js';
 import { pline_mon, set_msg_xy } from './display.js';
 import { impossible_async } from './display.js';
+import { money_cnt } from './u_init.js';
 
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
@@ -633,9 +634,6 @@ async function distfleeck(mtmp, out) {
         out.scared = 0;
 }
 
-// C ref: priest.c in_your_sanctuary() -- ported in priest.js
-export { in_your_sanctuary };
-
 // ── C ref: monmove.c set_apparxy() ──
 export function set_apparxy(mtmp) {
     const u = game.u;
@@ -702,13 +700,6 @@ export function set_apparxy(mtmp) {
     mtmp.muy = my;
 }
 
-// C ref: invent.c money_cnt()
-function money_cnt(otmp) {
-    for (; otmp; otmp = otmp.nobj)
-        if (otmp.oclass === objects[GOLD_PIECE].oc_class && otmp.otyp === GOLD_PIECE)
-            return otmp.quan;
-    return 0;
-}
 // C ref: monmove.c can_ooze()
 function can_ooze(mtmp) {
     if (!amorphous(mtmp.data) || stuff_prevents_passage(mtmp))

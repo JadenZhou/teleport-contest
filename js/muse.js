@@ -138,7 +138,7 @@ import { t_at } from './trap.js';
 import { monsndx, is_floater, passes_walls, dmgtype, haseyes,
          mon_knows_traps } from './mondata.js';
 import { monnear } from './mon.js';
-import { onscary, lined_up, in_your_sanctuary } from './monmove.js';
+import { onscary, lined_up } from './monmove.js';
 import * as M from './monsters.js';
 import { mons } from './monsters.js';
 import { BOULDER, BUGLE, UNICORN_HORN, CORPSE, TIN, POT_FULL_HEALING,
@@ -169,6 +169,7 @@ import { removed_from_icebox } from './pickup.js';
 import { cancel_monst } from './zap.js';
 import { hard_helmet } from './do_wear.js';
 import { pline_mon } from './display.js';
+import { in_your_sanctuary } from './priest.js';
 
 const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
 const QBUFSZ = 128; /* global.h */
