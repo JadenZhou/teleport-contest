@@ -103,6 +103,7 @@ import { weapon_descr, skill_name, inside_shop, body_part } from './insight.js';
 import { xname, an, singular, The, Tobjnam } from './objnam.js';
 import { the, surface } from './iactions.js';
 import { doname, otense } from './objnam.js';
+import { Yname2 as Yname2_bh } from './objnam.js';
 import { dropy, dropz, doaltarobj } from './do.js';
 import { IS_ALTAR, PIT, SPIKED_PIT, HOLE, TRAPDOOR, is_pit, is_hole } from './const.js';
 import { IS_TREE, KILLED_BY } from './const.js';
@@ -1686,7 +1687,14 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         if (!mtmp && ttmp && (ttmp.ttyp === WEB)
             && (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
             && !rn2(3)) {
-            throw new Error('bhit(): stuck in a web not ported yet');
+            if (cansee(x, y)) {
+                await pline(`${Yname2_bh(obj)} gets stuck in a web!`);
+                ttmp.tseen = true;
+                newsym(x, y);
+            }
+            if (was_returning)
+                g.iflags.returning_missile = null;
+            break;
         }
 
         /*

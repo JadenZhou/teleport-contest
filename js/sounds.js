@@ -2,8 +2,8 @@
 // C ref: sounds.c
 //
 // Ported so far: mon_in_room(), throne_mon_sound(), beehive_mon_sound(),
-// morgue_mon_sound(), zoo_mon_sound(), dosounds().  temple_priest_sound()
-// and oracle_sound() are only partly ported (see their comments).
+// morgue_mon_sound(), zoo_mon_sound(), temple_priest_sound(), oracle_sound(),
+// dosounds(); domonnoise() except the cases its default: stop lists.
 
 import { DEADMONSTER } from './mon.js';
 import { g_at, vault_occupied, findgd } from './vault.js';
@@ -65,6 +65,11 @@ import { WEAPON_CLASS as WEAPON_CLASS_SN, is_weptool as is_weptool_sn } from './
 import { money_cnt as money_cnt_sn } from './u_init.js';
 import { aggravate as aggravate_sn } from './potion.js';
 import { You as You_sn } from './display.js';
+import { midnight as midnight_sn } from './calendar.js';
+import { body_part as body_part_sn } from './insight.js';
+import { an as an_sn } from './objnam.js';
+import { pmname as pmname_sn } from './do_name.js';
+import { Upolyd as Upolyd_sn, BLOOD as BLOOD_SN, FEMALE as FEMALE_SN, MALE as MALE_SN } from './const.js';
 
 /* C ref: mondata.h predicates */
 
@@ -714,6 +719,86 @@ async function domonnoise(mtmp) {
     case MS_GUARDIAN:
         await quest_chat(mtmp);
         break;
+    case MM.MS_VAMPIRE: {
+        /* vampire messages are varied by tameness, peacefulness, and time of
+           night */
+        const u = game.u;
+        const isnight = night();
+        const kindred = (Upolyd_sn() && (u.umonnum === MM.PM_VAMPIRE
+                                         || u.umonnum === MM.PM_VAMPIRE_LEADER));
+        const nightchild = (Upolyd_sn() && (u.umonnum === MM.PM_WOLF
+                                            || u.umonnum === MM.PM_WINTER_WOLF
+                                            || u.umonnum === MM.PM_WINTER_WOLF_CUB));
+        const racenoun = (game.flags.female && game.urace.individual.f)
+                         ? game.urace.individual.f
+                         : (game.urace.individual.m)
+                           ? game.urace.individual.m
+                           : game.urace.noun;
+
+        if (mtmp.mtame) {
+            if (kindred) {
+                verbl_msg = `Good ${isnight ? "evening" : "day"} to you Master${
+                    isnight ? "!" : ".  Why do we not rest?"}`;
+            } else {
+                verbl_msg = `${nightchild ? "Child of the night, " : ""}${
+                    midnight_sn()
+                     ? "I can stand this craving no longer!"
+                     : isnight
+                      ? "I beg you, help me satisfy this growing craving!"
+                      : "I find myself growing a little weary."}`;
+            }
+        } else if (mtmp.mpeaceful) {
+            if (kindred && isnight) {
+                verbl_msg = `Good feeding ${game.flags.female ? "sister" : "brother"}!`;
+            } else if (nightchild && isnight) {
+                verbl_msg = "How nice to hear you, child of the night!";
+            } else
+                verbl_msg = "I only drink... potions.";
+        } else {
+            const vampmsg = [
+                /* These first two (0 and 1) are specially handled below */
+                "I vant to suck your %s!",
+                "I vill come after %s without regret!",
+                /* other famous vampire quotes can follow here if desired */
+            ];
+            let vampindex;
+
+            if (kindred) {
+                verbl_msg = "This is my hunting ground"
+                            + " that you dare to prowl!";
+            } else if (game.youmonst.data === mons[MM.PM_SILVER_DRAGON]
+                       || game.youmonst.data === mons[MM.PM_BABY_SILVER_DRAGON]) {
+                /* Silver dragons are silver in color, not made of silver */
+                verbl_msg = `${(game.youmonst.data === mons[MM.PM_SILVER_DRAGON])
+                                ? "Fool"
+                                : "Young Fool"}!  Your silver sheen does not frighten me!`;
+            } else {
+                vampindex = rn2(vampmsg.length);
+                if (vampindex === 0) {
+                    verbl_msg = vampmsg[vampindex].replace('%s', body_part_sn(BLOOD_SN));
+                } else if (vampindex === 1) {
+                    verbl_msg = vampmsg[vampindex].replace('%s',
+                            Upolyd_sn() ? an_sn(pmname_sn(mons[u.umonnum],
+                                                          game.flags.female ? FEMALE_SN : MALE_SN))
+                                        : an_sn(racenoun));
+                } else
+                    verbl_msg = vampmsg[vampindex];
+            }
+        }
+        break;
+    }
+    case MM.MS_WERE:
+        if (game.flags.moonphase === FULL_MOON
+            && ((night() ? 1 : 0) ^ (!rn2(13) ? 1 : 0))) {
+            await pline(`${Monnam(mtmp)} throws back ${mhis_sn(mtmp)} head and lets out a blood curdling ${
+                (ptr === mons[MM.PM_HUMAN_WERERAT]) ? "shriek" : "howl"}!`);
+            /* Soundeffect(se_scream or se_canine_howl, 80) */
+            await wake_nearto(mtmp.mx, mtmp.my, 11 * 11);
+        } else {
+            pline_msg =
+                "whispers inaudibly.  All you can make out is \"moon\".";
+        }
+        break;
     case MS_BARK:
         if (game.flags.moonphase === FULL_MOON && night()) {
             pline_msg = "howls.";
@@ -1039,8 +1124,8 @@ async function domonnoise(mtmp) {
         break;
     }
     default:
-        /* MS_ORACLE, MS_PRIEST, MS_SELL (shopkeepers), MS_VAMPIRE,
-           MS_WERE and MS_RIDER aren't ported yet */
+        /* MS_ORACLE, MS_PRIEST, MS_SELL (shopkeepers) and MS_RIDER
+           aren't ported yet */
         throw new Error(`domonnoise(): msound ${msound} not ported yet`);
     }
 
