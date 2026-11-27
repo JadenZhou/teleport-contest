@@ -18,7 +18,7 @@ import { MHID_ARTICLE, MHID_ALTMON, In_sokoban, In_mines, In_quest, In_V_tower,
          Is_knox_level } from './const.js';
 import { db_under_typ } from './display.js';
 import { impossible } from './hack.js';
-import { rnd_class } from './mkobj.js';
+import { rnd_class, level_objects_at } from './mkobj.js';
 import { christen_monst, rndghostname, Amonnam, y_monnam, mon_nam, pmname,
          Mgender, YMonnam, pronoun_gender, PRONOUN_HALLU } from './do_name.js';
 import { genders } from './role.js';
@@ -1981,7 +1981,7 @@ export function can_hide_under_obj(obj) {
 // the objects at <x,y>, top of the pile first (C's level.objects[x][y]
 // chain); game.level.objects is fobj, newest first, in pile order
 function floor_pile(x, y) {
-    return (game.level.objects || []).filter(o => o.ox === x && o.oy === y);
+    return level_objects_at(x, y);
 }
 
 // C ref: mon.c hideunder()

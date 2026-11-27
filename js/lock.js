@@ -71,7 +71,7 @@ import { objects, ICE_BOX, CORPSE, LARGE_BOX, POTION_CLASS, WEAPON_CLASS,
 import { COST_BRKLCK, PASSES_WALLS, DBWALL, BLINDED, P_DAGGER, P_FLAIL,
          P_LANCE, P_SABER, P_PICK_AXE, isok } from './const.js';
 import { costly_alteration, obj_extract_self, start_corpse_timeout,
-         place_object } from './mkobj.js';
+         place_object, level_objects_at } from './mkobj.js';
 import { costly_spot, shop_keeper, add_damage, stolen_value } from './shk.js';
 import { the, surface } from './iactions.js';
 import { xname, singular, an } from './objnam.js';
@@ -551,8 +551,7 @@ function lk_Levitation() {
 
 /* C ref: display.h level.objects[x][y] -- the pile at <x,y>, top first */
 function lk_objects_at(x, y) {
-    return (game.level?.objects || []).filter(
-        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    return level_objects_at(x, y);
 }
 
 /* lev->glyph comparison for the remembered-glyph objects JS keeps */
@@ -1177,10 +1176,8 @@ export async function doforce() {
 
     /* A lock is made only for the honest man, the thief will break it. */
     xl.box = null;
-    /* svl.level.objects[u.ux][u.uy] via ->nexthere: the floor chain
-       (fobj, newest first) filtered to the hero's spot */
-    const here = (game.level.objects || []).filter(
-        o => o.ox === u.ux && o.oy === u.uy && o.where === 'OBJ_FLOOR');
+    /* svl.level.objects[u.ux][u.uy] via ->nexthere */
+    const here = level_objects_at(u.ux, u.uy);
     for (const otmp of here)
         if (Is_box(otmp)) {
             if (otmp.obroken || !otmp.olocked) {

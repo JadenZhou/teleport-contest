@@ -44,7 +44,7 @@ import { couldsee } from './vision.js';
 import { pline } from './display.js';
 import { canseemon } from './display.js';
 import { Monnam } from './do_name.js';
-import { doname } from './objnam.js';
+import { doname, distant_name } from './objnam.js';
 import { which_armor } from './worn.js';
 import { mon_hates_silver, mon_hates_blessings } from './mondata.js';
 import { ACURR } from './attrib.js';
@@ -79,7 +79,11 @@ import { arti_light_description } from './light.js';
 import { mbodypart } from './insight.js';
 import { HAND } from './const.js';
 import { m_carrying } from './mthrowu.js';
-import { pline_mon } from './display.js';
+import { pline_mon, newsym } from './display.js';
+import { obj_extract_self, place_object } from './mkobj.js';
+import { flooreffects } from './do.js';
+import { bypass_obj } from './worn.js';
+import { stackobj } from './invent.js';
 import { will_weld } from './wield.js';
 
 function weapon_skills() {
@@ -859,10 +863,20 @@ export async function possibly_unwield(mon, polyspot) {
     if (!attacktype(mon.data, M.AT_WEAP)) {
         setmnotwielded(mon, mw_tmp);
         mon.weapon_check = NO_WEAPON_WANTED;
-        void polyspot;
-        /* "%s drops %s.", obj_extract_self(), flooreffects(),
-           bypass_obj(), place_object() and stackobj() */
-        throw new Error('possibly_unwield(): dropping the weapon not ported yet');
+        /* if we're going to call distant_name(), do so before extract_self */
+        if (cansee(mon.mx, mon.my)) {
+            await pline_mon(mon, `${Monnam(mon)} drops ${distant_name(obj, doname)}.`);
+            newsym(mon.mx, mon.my);
+        }
+        obj_extract_self(obj);
+        /* might be dropping object into water or lava */
+        if (!await flooreffects(obj, mon.mx, mon.my, "drop")) {
+            if (polyspot)
+                bypass_obj(obj);
+            place_object(obj, mon.mx, mon.my);
+            stackobj(obj);
+        }
+        return;
     }
     /* The remaining case where there is a change is where a monster
      * is polymorphed into a stronger/weaker monster with a different

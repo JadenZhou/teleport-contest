@@ -11,7 +11,7 @@
 import { rndmonnam } from './do_name.js';
 import { adjalign } from './attrib.js';
 import { PM_ARCHEOLOGIST } from './monsters.js';
-import { obj_extract_self, place_object } from './mkobj.js';
+import { obj_extract_self, place_object, level_objects_at } from './mkobj.js';
 import { sokoban_guilt } from './trap.js';
 import { breakobj } from './dothrow.js';
 import { shkname } from './shknam.js';
@@ -1164,8 +1164,7 @@ export async function bhito(obj, otmp) {
                 await boxlock_zy(obj, otmp);
 
             if (obj_shudders(obj)) {
-                const top = (g.level.objects || []).find(o => o.ox === u.ux
-                                                         && o.oy === u.uy);
+                const top = level_objects_at(u.ux, u.uy)[0] || null;
                 const cover = ((obj === top) && u.uundetected
                                && (g.youmonst.data.mflags1 & M1_CONCEAL) !== 0);
 
@@ -1738,8 +1737,7 @@ export async function bhitpile(
     let first;
     let hitanything = 0;
     /* svl.level.objects[tx][ty] chain, top of the pile first */
-    const pile_at = () => (g.level.objects || []).filter(o => o.ox === tx
-                                                         && o.oy === ty);
+    const pile_at = () => level_objects_at(tx, ty);
 
     if (!pile_at().length)
         return 0;
@@ -4343,8 +4341,7 @@ export async function burn_floor_objects(
     u_caused) {
     let cnt = 0;
 
-    for (const obj of (game.level.objects || []).filter(o => o.ox === x
-                                                        && o.oy === y)) {
+    for (const obj of level_objects_at(x, y)) {
         if (obj.oclass === SCROLL_CLASS || obj.oclass === SPBOOK_CLASS
             || (obj.oclass === FOOD_CLASS
                 && obj.otyp === GLOB_OF_GREEN_SLIME)) {
@@ -4387,8 +4384,7 @@ export async function burn_floor_objects(
     /* This also ignites floor items, but does not change cnt
        because they weren't consumed. */
     /* ignite_items(svl.level.objects[x][y]), along the nexthere chain */
-    for (const obj of (game.level.objects || []).filter(o => o.ox === x
-                                                        && o.oy === y))
+    for (const obj of level_objects_at(x, y))
         if (!obj.lamplit && !obj.in_use)
             await catch_lit_zp(obj);
     return cnt;

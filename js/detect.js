@@ -104,6 +104,7 @@ import { ROCK_CLASS as ROCK_CLASS_DT, SCROLL_CLASS as SCROLL_CLASS_DT,
 import { u_at as u_at_dt, M_AP_TYPE as M_AP_TYPE_DT, M_AP_OBJECT as M_AP_OBJECT_DT,
          MCORPSENM as MCORPSENM_DT } from './const.js';
 import { PM_TENGU as PM_TENGU_DT } from './monsters.js';
+import { level_objects_at } from './mkobj.js';
 import { findgold } from './steal.js';
 
 // C ref: lock.c cvt_sdoor_to_door()
@@ -640,8 +641,7 @@ function glyph_is_object_dt(glyph) { return !!glyph && g_kind(glyph) === 'obj'; 
 
 /* C ref: level.objects[x][y] -- the floor objects at a spot */
 function objects_at_dt(x, y) {
-    return (game.level.objects || []).filter(o => o.ox === x && o.oy === y
-                                               && o.where === 'OBJ_FLOOR');
+    return level_objects_at(x, y);
 }
 
 // C ref: detect.c check_map_spot()

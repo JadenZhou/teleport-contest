@@ -89,7 +89,7 @@ import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY, LOCK_PICK, EGG,
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES, M_POISONGAS_OK, M_POISONGAS_MINOR, M_POISONGAS_BAD,
          MAGICAL_BREATHING, Is_waterlevel } from './const.js';
-import { attacktype_fordmg, resists_poison } from './mondata.js';
+import { attacktype_fordmg, resists_poison, attacktype } from './mondata.js';
 import { visible_region_at, cmap_to_glyph, S_poisoncloud, create_gas_cloud } from './region.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
@@ -119,13 +119,16 @@ import { on_fire } from './uhitm.js';
 import { m_in_air, can_fog } from './monmove.js';
 import { FOUNTAIN, FLYING, LEVITATION, RLOC_MSG } from './const.js';
 import { canseemon, sensemon } from './display.js';
-import { UNICORN_HORN, WORM_TOOTH } from './objects.js';
+import { UNICORN_HORN, WORM_TOOTH, IRON_CHAIN, FIRST_GLASS_GEM, NUM_GLASS_GEMS,
+         QUARTERSTAFF, SMALL_SHIELD, CLUB, ELVEN_SPEAR, BOOMERANG, LEASH,
+         BULLWHIP, GRAPPLING_HOOK, LEATHER_ARMOR, LEATHER_CLOAK, SADDLE,
+         SCR_BLANK_PAPER } from './objects.js';
 import { CORPSTAT_NONE, CORPSTAT_BURIED, CORPSTAT_INIT, CORPSTAT_FEMALE,
          CORPSTAT_MALE, TAINT_AGE, ONAME_NO_FLAGS, BLINDED } from './const.js';
 import { mksobj_at, mkcorpstat, undead_to_corpse,
-         clear_dknown } from './mkobj.js';
+         clear_dknown, mkgold } from './mkobj.js';
 import { stackobj } from './invent.js';
-import { oname } from './do_name.js';
+import { oname, free_mgivenname } from './do_name.js';
 import { rnd } from './rng.js';
 import { XKILL_GIVEMSG, XKILL_NOMSG, XKILL_NOCORPSE, XKILL_NOCONDUCT,
          engulfing_u, is_pit, A_CHAOTIC, TELEPAT, INTRINSIC, M_AP_NOTHING,
@@ -195,7 +198,7 @@ import { A_NONE } from './const.js';
 import { AD_ELEC as AD_ELEC_MN, AD_FIRE as AD_FIRE_MN,
          AD_COLD as AD_COLD_MN } from './monsters.js';
 import { mon_adjust_speed as mon_adjust_speed_mn } from './worn.js';
-import { d } from './rng.js';
+import { d, rnl } from './rng.js';
 import { pmname } from './do_name.js';
 import { There as There_mn } from './display.js';
 import { body_part as body_part_mn } from './insight.js';
@@ -899,11 +902,14 @@ export async function corpse_chance(mon, magr, was_swallowed) {
     const mdat = mon.data;
     let tmp;
 
-    if (!magr && game.mswallower)
-        throw new Error('corpse_chance(): engulfer explosions not ported yet');
+    if (!magr && game.mswallower && attacktype(game.mswallower.data, MM.AT_ENGL))
+        magr = game.mswallower, was_swallowed = true; /* for gas spore boom */
 
-    if (mdat === mons[PM_VLAD_THE_IMPALER] || mdat.mlet === S_LICH)
-        throw new Error('corpse_chance(): body crumbles into dust not ported yet');
+    if (mdat === mons[PM_VLAD_THE_IMPALER] || mdat.mlet === S_LICH) {
+        if (cansee(mon.mx, mon.my) && !was_swallowed)
+            await pline_mon(mon, `${s_suffix(Monnam(mon))} body crumbles into dust.`);
+        return false;
+    }
 
     /* Gas spores always explode upon death */
     for (let i = 0; i < NATTK; i++) {
@@ -1056,15 +1062,68 @@ function make_corpse(mtmp, corpseflags) {
         obj.age -= (TAINT_AGE + 1); /* this is an *OLD* corpse */
         break;
     case MM.PM_IRON_GOLEM:
+        num = d(2, 6);
+        while (num--)
+            obj = mksobj_at(IRON_CHAIN, x, y, true, false);
+        free_mgivenname(mtmp); /* don't christen obj */
+        break;
     case MM.PM_GLASS_GOLEM:
+        num = d(2, 4); /* very low chance of creating all glass gems */
+        while (num--)
+            obj = mksobj_at(FIRST_GLASS_GEM + rn2(NUM_GLASS_GEMS),
+                            x, y, true, false);
+        free_mgivenname(mtmp);
+        break;
     case MM.PM_CLAY_GOLEM:
+        obj = mksobj_at(ROCK, x, y, false, false);
+        obj.quan = rn2(20) + 50;
+        obj.owt = weight(obj);
+        free_mgivenname(mtmp);
+        break;
     case MM.PM_STONE_GOLEM:
+        corpstatflags &= ~CORPSTAT_INIT;
+        obj = mkcorpstat(STATUE, null, mdat, x, y, corpstatflags);
+        break;
     case MM.PM_WOOD_GOLEM:
+        num = d(2, 4);
+        while (num--) {
+            obj = mksobj_at(
+                            rn2(2) ? QUARTERSTAFF
+                            : rn2(3) ? SMALL_SHIELD
+                            : rn2(3) ? CLUB
+                            : rn2(3) ? ELVEN_SPEAR : BOOMERANG,
+                            x, y, true, false);
+        }
+        free_mgivenname(mtmp);
+        break;
     case MM.PM_ROPE_GOLEM:
+        num = rn2(3);
+        while (num-- > 0) {
+            obj = mksobj_at(rn2(2) ? LEASH
+                            : rn2(3) ? BULLWHIP : GRAPPLING_HOOK,
+                            x, y, true, false);
+        }
+        free_mgivenname(mtmp);
+        break;
     case MM.PM_LEATHER_GOLEM:
+        num = d(2, 4);
+        while (num--)
+            obj = mksobj_at(rn2(4) ? LEATHER_ARMOR
+                            : rn2(3) ? LEATHER_CLOAK : SADDLE,
+                            x, y, true, false);
+        free_mgivenname(mtmp);
+        break;
     case MM.PM_GOLD_GOLEM:
+        /* Good luck gives more coins */
+        obj = mkgold(200 - rnl(101), x, y);
+        free_mgivenname(mtmp);
+        break;
     case MM.PM_PAPER_GOLEM:
-        throw new Error('make_corpse(): golem remains not ported yet');
+        num = rnd(4);
+        while (num--)
+            obj = mksobj_at(SCR_BLANK_PAPER, x, y, true, false);
+        free_mgivenname(mtmp);
+        break;
     /* expired puddings will congeal into a large blob;
        like dragons, relies on the order remaining consistent */
     case MM.PM_GRAY_OOZE:
@@ -1081,10 +1140,7 @@ function make_corpse(mtmp, corpseflags) {
                pudding_merge_message(obj, otmp); obj = obj_meld(&obj, &otmp); } */
         if (obj && obj_nexto(obj) !== null)
             throw new Error('make_corpse(): melding pudding globs (obj_meld()) not ported yet');
-        /* free_mgivenname(mtmp) */
-        mtmp.mgivenname = '';
-        if (mtmp.mextra)
-            mtmp.mextra.mgivenname = null;
+        free_mgivenname(mtmp);
         newsym(x, y);
         return obj;
     }

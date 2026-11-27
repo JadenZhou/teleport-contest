@@ -167,6 +167,16 @@ export function safe_oname(obj) {
     return "";
 }
 
+// C ref: do_name.c free_mgivenname()
+/* release a monster's name; retains mextra even if all fields are now null */
+export function free_mgivenname(mon) {
+    if (has_mgivenname(mon)) {
+        mon.mgivenname = '';
+        if (mon.mextra)
+            mon.mextra.mgivenname = null;
+    }
+}
+
 // C ref: do_name.c christen_monst()
 export function christen_monst(mtmp, name) {
     let lth;
