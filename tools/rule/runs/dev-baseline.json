@@ -1,5 +1,5 @@
 {
- "when": "2026-11-27T13:57:27.752Z",
+ "when": "2026-11-27T15:28:13.756Z",
  "results": [
   {
    "session": "dev81000-healer-reflection-drummer.session.json",
@@ -138,9 +138,9 @@
    "totalScreens": 36,
    "valuePrefix": 3335,
    "rulePrefix": 3335,
-   "screens": 35,
-   "honestScreens": 35,
-   "firstScreenMiss": 26,
+   "screens": 36,
+   "honestScreens": 36,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -268,9 +268,9 @@
    "totalScreens": 267,
    "valuePrefix": 3005,
    "rulePrefix": 3005,
-   "screens": 266,
-   "honestScreens": 266,
-   "firstScreenMiss": 257,
+   "screens": 267,
+   "honestScreens": 267,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -294,9 +294,9 @@
    "totalScreens": 303,
    "valuePrefix": 11797,
    "rulePrefix": 11797,
-   "screens": 302,
-   "honestScreens": 302,
-   "firstScreenMiss": 293,
+   "screens": 303,
+   "honestScreens": 303,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -307,9 +307,9 @@
    "totalScreens": 127,
    "valuePrefix": 15567,
    "rulePrefix": 15567,
-   "screens": 126,
-   "honestScreens": 126,
-   "firstScreenMiss": 117,
+   "screens": 127,
+   "honestScreens": 127,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -320,9 +320,9 @@
    "totalScreens": 40,
    "valuePrefix": 2977,
    "rulePrefix": 2977,
-   "screens": 39,
-   "honestScreens": 39,
-   "firstScreenMiss": 30,
+   "screens": 40,
+   "honestScreens": 40,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -333,9 +333,9 @@
    "totalScreens": 833,
    "valuePrefix": 90908,
    "rulePrefix": 90908,
-   "screens": 832,
-   "honestScreens": 832,
-   "firstScreenMiss": 823,
+   "screens": 833,
+   "honestScreens": 833,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -359,9 +359,9 @@
    "totalScreens": 324,
    "valuePrefix": 63213,
    "rulePrefix": 63213,
-   "screens": 321,
-   "honestScreens": 321,
-   "firstScreenMiss": 64,
+   "screens": 324,
+   "honestScreens": 324,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -385,9 +385,9 @@
    "totalScreens": 219,
    "valuePrefix": 24088,
    "rulePrefix": 24088,
-   "screens": 218,
-   "honestScreens": 218,
-   "firstScreenMiss": 209,
+   "screens": 219,
+   "honestScreens": 219,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -411,9 +411,9 @@
    "totalScreens": 532,
    "valuePrefix": 11658,
    "rulePrefix": 11658,
-   "screens": 531,
-   "honestScreens": 531,
-   "firstScreenMiss": 522,
+   "screens": 532,
+   "honestScreens": 532,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -424,9 +424,9 @@
    "totalScreens": 28,
    "valuePrefix": 2806,
    "rulePrefix": 2806,
-   "screens": 27,
-   "honestScreens": 27,
-   "firstScreenMiss": 4,
+   "screens": 28,
+   "honestScreens": 28,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
@@ -502,8 +502,8 @@
    "totalScreens": 230,
    "valuePrefix": 3320,
    "rulePrefix": 3320,
-   "screens": 220,
-   "honestScreens": 220,
+   "screens": 221,
+   "honestScreens": 221,
    "firstScreenMiss": 158,
    "first": null,
    "error": null
@@ -515,23 +515,39 @@
    "totalScreens": 38,
    "valuePrefix": 10894,
    "rulePrefix": 10894,
-   "screens": 37,
-   "honestScreens": 37,
-   "firstScreenMiss": 28,
+   "screens": 38,
+   "honestScreens": 38,
+   "firstScreenMiss": null,
    "first": null,
    "error": null
   },
   {
    "session": "dev82640-knight-coverage.session.json",
    "total": 71392,
-   "jsTotal": 71392,
+   "jsTotal": 89771,
    "totalScreens": 1112,
-   "valuePrefix": 71392,
-   "rulePrefix": 71392,
-   "screens": 1059,
-   "honestScreens": 1059,
+   "valuePrefix": 7833,
+   "rulePrefix": 7833,
+   "screens": 245,
+   "honestScreens": 238,
    "firstScreenMiss": 189,
-   "first": null,
+   "first": {
+    "index": 7833,
+    "step": 254,
+    "c": "rn2(20)=6 @ gethungry(eat.c:3191)",
+    "js": "rn2(12)=2 @ mcalcmove",
+    "kind": "value",
+    "cCaller": "gethungry",
+    "jsCaller": "mcalcmove",
+    "context": [
+     "rn2(5)=1 @ distfleeck(monmove.c:538)",
+     "rn2(24)=15 @ m_move(monmove.c:1963)",
+     "rn2(5)=2 @ distfleeck(monmove.c:538)",
+     "rn2(20)=6 @ gethungry(eat.c:3191)",
+     "rn2(19)=7 @ exercise(attrib.c:509)",
+     "rnd(20)=12 @ hitum(uhitm.c:780)"
+    ]
+   },
    "error": null
   },
   {
@@ -576,13 +592,23 @@
  ],
  "staticCounts": {},
  "totals": {
-  "rule": 504996,
-  "value": 504996,
+  "rule": 441437,
+  "value": 441437,
   "rolls": 504996,
-  "honestScreens": 8360,
-  "screens": 8360,
+  "honestScreens": 7553,
+  "screens": 7560,
   "totalScreens": 8438
  },
- "todo": [],
+ "todo": [
+  {
+   "fn": "gethungry",
+   "sessions": 1,
+   "blockedRolls": 63559,
+   "blockedScreens": 874,
+   "examples": [
+    "dev82640-knight-coverage @7833: C \"rn2(20)=6 @ gethungry(eat.c:3191)\" / JS \"rn2(12)=2 @ mcalcmove\""
+   ]
+  }
+ ],
  "violations": []
 }
