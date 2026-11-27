@@ -34,7 +34,8 @@ import { visible_region_at, show_region } from './region.js';
 import { In_hell } from './dungeon.js';
 import { rn2_on_display_rng } from './rng.js';
 import { sgn } from './hacklib.js';
-import { BACKTRACK } from './const.js';
+import { BACKTRACK, xdir, ydir, GPCOORDS_NONE, GPCOORDS_COMFULL } from './const.js';
+import { coord_desc } from './pager.js';
 import {
     objects, BOULDER, STATUE, CORPSE, POTION_CLASS, FIRST_REAL_GEM,
     LAST_GLASS_GEM, FIRST_SPELL, LAST_SPELL, FIRST_OBJECT, NUM_OBJECTS,
@@ -3318,7 +3319,13 @@ export function display_self() {
                         ptr.mcolor ?? NO_COLOR, false, 0, 'mon');
         return;
     }
-    show_glyph_cell(u.ux, u.uy, '@', CLR_WHITE, false, 0, 'mon');
+    /* showrace: a non-human hero is shown by the symbol of the race's
+       monster, in the human hero's color (display.c map_glyphinfo():
+       HI_DOMESTIC for flags.showrace) */
+    show_glyph_cell(u.ux, u.uy,
+                    game.flags.showrace
+                        ? (def_monsyms[mons[game.urace.mnum].mlet] ?? '?') : '@',
+                    CLR_WHITE, false, 0, 'mon');
 }
 
 // C ref: display.c swallow_to_glyph()
@@ -3473,11 +3480,57 @@ export function livelog_printf(ll_type, line) {
     /* strNsubst(gamelogbuf, "\t", "_", 0); livelog_add(ll_type, gamelogbuf) */
 }
 
+// C ref: pline.c set_msg_dir()
+/* set the direction where next message happens */
+export function set_msg_dir(dir) {
+    const cc = { ...(game.a11y.msg_loc || { x: 0, y: 0 }) };
+
+    if (dir > -1 /* DIR_ERR */ && dir < 10 /* N_DIRS_Z */) { /* dirtocoord() */
+        cc.x = xdir[dir];
+        cc.y = ydir[dir];
+    }
+    game.a11y.msg_loc = { x: cc.x + game.u.ux, y: cc.y + game.u.uy };
+}
+
+// C ref: pline.c set_msg_xy()
+/* set the coordinate where next message happens */
+export function set_msg_xy(x, y) {
+    game.a11y.msg_loc = { x, y };
+}
+
+// C ref: pline.c vpline() -- the a11y.msg_loc handling at its start:
+// always reset a11y.msg_loc whether we end up using it or not; when
+// accessiblemsg is set and a11y.msg_loc is on the map, insert a location
+// prefix in front of the message; null for an empty message
+export function a11y_msg_prefix(line) {
+    const a11y = game.a11y;
+    let a11y_mesgxy = { x: 0, y: 0 };
+
+    if (a11y) {
+        if (a11y.msg_loc)
+            a11y_mesgxy = a11y.msg_loc; /* save a11y.msg_loc before reseting it */
+        a11y.msg_loc = { x: 0, y: 0 };
+    }
+    if (!line)
+        return null;
+    if (a11y?.accessiblemsg && isok(a11y_mesgxy.x, a11y_mesgxy.y)) {
+        const gc = game.iflags?.getpos_coords;
+        const dirstr = coord_desc(a11y_mesgxy.x, a11y_mesgxy.y,
+                                  (!gc || gc === GPCOORDS_NONE)
+                                      ? GPCOORDS_COMFULL : gc);
+        line = `${dirstr}: ${line}`;
+    }
+    return line;
+}
+
 // ── pline ──
 // C ref: pline.c vpline() -- the plain message path: bring the map up to
 // date (vision, flush_screen(1)) and put the line in the message window
 // (tty update_topl(), which handles concatenation and --More--)
 export async function pline(msg) {
+    msg = a11y_msg_prefix(msg);
+    if (msg === null)
+        return;
     if (game.vision_full_recalc)
         vision_recalc(0);
     if (game.u?.ux)
@@ -3488,10 +3541,34 @@ export async function pline(msg) {
         game.iflags.last_msg = 0; /* PLNMSG_UNKNOWN */
 }
 
+// C ref: pline.c pline_dir()
+export async function pline_dir(dir, line) {
+    set_msg_dir(dir);
+    await pline(line);
+}
+
+// C ref: pline.c pline_xy()
+export async function pline_xy(x, y, line) {
+    set_msg_xy(x, y);
+    await pline(line);
+}
+
+// C ref: pline.c pline_mon()
+export async function pline_mon(mtmp, line) {
+    if (mtmp === game.youmonst)
+        set_msg_xy(0, 0);
+    else
+        set_msg_xy(mtmp.mx, mtmp.my);
+    await pline(line);
+}
+
 // C ref: pline.c urgent_pline() -- vpline() with URGENT_MESSAGE: the tty
 // (WC2_URGENT_MESG) gets the line with ATR_URGENT, which overrides a
 // pending ESC at --More-- (WIN_STOP)
 export async function urgent_pline(msg) {
+    msg = a11y_msg_prefix(msg);
+    if (msg === null)
+        return;
     if (game.vision_full_recalc)
         vision_recalc(0);
     if (game.u?.ux)

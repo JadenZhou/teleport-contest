@@ -141,9 +141,9 @@ export class NethackGame {
         g.iflags = { ...dflt.iflags, ...opts.iflags };
         g.a11y = { ...dflt.a11y, ...opts.a11y };
         /* petname_optfn(): gc.catname, gd.dogname, gh.horsename */
+        if (opts.horsename !== undefined) g.horsename = opts.horsename;
         if (opts.catname !== undefined) g.catname = opts.catname;
         if (opts.dogname !== undefined) g.dogname = opts.dogname;
-        if (opts.horsename !== undefined) g.horsename = opts.horsename;
         g.pl_character = opts.pl_character || '';
         /* the fixed clock calendar.c getlt() reads */
         g.datetime = this._datetime;

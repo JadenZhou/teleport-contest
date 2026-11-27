@@ -27,7 +27,7 @@ import { genl_player_setup } from './role.js';
 import { lowc, tabexpand, pmatchi } from './hacklib.js';
 import { help_files } from './help_files.js';
 import { row_refresh, bot, flush_screen, pline, docrt, dec_cell_char,
-         decode_mixed } from './display.js';
+         decode_mixed, a11y_msg_prefix } from './display.js';
 import { vision_recalc } from './vision.js';
 import { extcmds_match, readchar as core_readchar, key2txt } from './cmd.js';
 import { extcmdlist, ECM_NOFLAGS, ECM_IGNOREAC, ECM_EXACTMATCH } from './func_tab.js';
@@ -1344,6 +1344,10 @@ async function hooked_tty_getlin(query, hook) {
 // the message window; putmesg() passes ATR_NOHISTORY for SUPPRESS_HISTORY
 // (the tty has WC2_SUPPRESS_HIST)
 export async function custompline(line, no_curs_on_u = false) {
+    /* vpline(): the a11y.msg_loc prefix (and reset) */
+    line = a11y_msg_prefix(line);
+    if (line === null)
+        return;
     /* vpline(): bring the map and status up to date before putmesg() */
     if (game.vision_full_recalc)
         vision_recalc(0);

@@ -27,7 +27,8 @@ import { CONTAINED_SYM } from './const.js';
 import { look_here } from './invent.js';
 import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
-import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME, ECMD_CANCEL, GETOBJ_DOWNPLAY } from './const.js';
+import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME, ECMD_CANCEL, GETOBJ_DOWNPLAY,
+         ParanoidAutoAll } from './const.js';
 import { W_QUIVER, W_SWAPWEP, W_WEP,
          WORN_SHIRT, WORN_BOOTS, WORN_GLOVES, WORN_HELMET, WORN_SHIELD,
          WORN_CLOAK, WORN_ARMOR, WORN_BLINDF, WORN_AMUL, LEFT_RING,
@@ -977,16 +978,6 @@ export function add_valid_menu_class(c) {
 export function allow_all(obj) {
     void obj;
     return true;
-}
-
-/* C ref: flag.h ParanoidAutoAll -- flags.paranoia_bits does not include
-   PARANOID_AUTOALL by default (options.c initoptions_init()); parsing the
-   paranoid_confirmation option isn't ported */
-function ParanoidAutoAll() {
-    if (game.flags.paranoid_confirmation !== undefined
-        || game.flags.paranoid_confirm !== undefined)
-        throw new Error('paranoia_bits: the paranoid_confirmation option is not ported yet');
-    return false;
 }
 
 // C ref: pickup.c is_worn_by_type() -- query_objlist callback: return

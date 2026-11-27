@@ -177,7 +177,7 @@ import { stinky_nemesis } from './questpgr.js';
 import { Hallucination, Conflict, Deaf } from './youprop.js';
 import { m_next2u } from './const.js';
 import { uhis, unstuck } from './mhitu.js';
-import { m_unleash } from './apply.js';
+import { m_unleash, leashable } from './apply.js';
 import { obj_extract_self } from './mkobj.js';
 import { possibly_unwield } from './weapon.js';
 import { split_mon } from './potion.js';
@@ -222,6 +222,7 @@ import { a_monnam } from './do_name.js';
 import { an } from './objnam.js';
 import { impossible } from './hack.js';
 import { POTION_CLASS } from './objects.js';
+import { pline_mon } from './display.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -854,7 +855,7 @@ export async function mon_to_stone(mtmp) {
     if (mtmp.data.mlet === S_GOLEM) {
         /* it's a golem, and not a stone golem */
         if (canseemon(mtmp))
-            await pline(`${Monnam(mtmp)} solidifies...`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} solidifies...`);
         if (await newcham(mtmp, mons[PM_STONE_GOLEM], NO_NC_FLAGS)) {
             if (canseemon(mtmp))
                 await pline(`Now it's ${an(pmname(mtmp.data, Mgender(mtmp)))}.`);
@@ -1527,7 +1528,7 @@ async function peacefuls_respond(mtmp) {
                         mon.mstrategy &= ~STRAT_WAITMASK;
                         adjalign(-1);
                         if (!exclaimed)
-                            await pline(`${Monnam(mon)} gets angry!`); /* pline_mon() */
+                            await pline_mon(mon, `${Monnam(mon)} gets angry!`);
                     }
                 }
             } else if (mon.data.mlet === mtmp.data.mlet
@@ -1732,7 +1733,7 @@ async function minliquid_core(mtmp) {
         const dam = d(2, 6);
 
         if (cansee(mtmp.mx, mtmp.my))
-            await pline(`${Monnam(mtmp)} rusts.`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} rusts.`);
         mtmp.mhp -= dam;
         if (mtmp.mhpmax > dam)
             mtmp.mhpmax -= dam;
@@ -1768,9 +1769,9 @@ async function minliquid_core(mtmp) {
                     const dummy = ptr.mattk[0];
                     const how = on_fire(ptr, dummy);
 
-                    await pline(`${Monnam(mtmp)} ${how === "boiling" ? "boils away"
+                    await pline_mon(mtmp, `${Monnam(mtmp)} ${how === "boiling" ? "boils away"
                                  : how === "melting" ? "melts away"
-                                   : "burns to a crisp"}.`); /* pline_mon() */
+                                   : "burns to a crisp"}.`);
                 }
                 /* unlike fire -> melt ice -> pool, there's no way for the
                    hero to create lava beneath a monster, so the !mon_moving
@@ -1782,8 +1783,8 @@ async function minliquid_core(mtmp) {
             } else {
                 mtmp.mhp -= 1;
                 if (DEADMONSTER(mtmp)) {
-                    if (cansee(mtmp.mx, mtmp.my)) /* pline_mon() */
-                        await pline(`${Monnam(mtmp)} surrenders to the fire.`);
+                    if (cansee(mtmp.mx, mtmp.my))
+                        await pline_mon(mtmp, `${Monnam(mtmp)} surrenders to the fire.`);
                     await mondead(mtmp); /* no corpse */
                 } else if (cansee(mtmp.mx, mtmp.my)) {
                     await pline(`${Monnam(mtmp)} burns slightly.`);
@@ -1823,7 +1824,7 @@ async function minliquid_core(mtmp) {
             }
             if (cansee(mtmp.mx, mtmp.my)) {
                 if (game.context.mon_moving)
-                    await pline(`${Monnam(mtmp)} drowns.`); /* pline_mon() */
+                    await pline_mon(mtmp, `${Monnam(mtmp)} drowns.`);
                 else
                     /* hero used fire to melt ice that monster was on */
                     await pline(`You drown ${mon_nam(mtmp)}.`);
@@ -2479,8 +2480,16 @@ const newcham_g = ({ *newcham(mtmp, mdat, ncflags) {
     /* take on the new form... */
     set_mon_data(mtmp, mdat);
 
-    if (mtmp.mleashed)
-        throw new Error('newcham(): leashed monsters not ported yet');
+    if (mtmp.mleashed) {
+        if (!leashable(mtmp))
+            yield { newcham_async: () => m_unleash(mtmp, true), /* message */
+                    what: 'm_unleash()' };
+        else
+            /* if leashed, persistent inventory window needs updating
+               (really only when mon_nam() is going to yield "a frog"
+               rather than "Kermit" but no need to micromanage here) */
+            ; /* update_inventory(); -- no perm_invent window */
+    }
 
     if (emits_light(olddata) !== emits_light(mtmp.data)) {
         /* used to give light, now doesn't, or vice versa,
@@ -3793,5 +3802,5 @@ export async function shieldeff_mon(mtmp) {
     await shieldeff(mtmp.mx, mtmp.my);
     /* does not depend on seeing the monster; the shield effect is visible */
     if (cansee(mtmp.mx, mtmp.my))
-        await pline(`${Monnam(mtmp)} resists!`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monnam(mtmp)} resists!`);
 }

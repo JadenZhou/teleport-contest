@@ -211,8 +211,10 @@ export function reorder_invent() {
 
 // C ref: invent.c obj_to_let()
 function obj_to_let(obj) {
-    if (!invlet_constant())
-        throw new Error('obj_to_let(): reassign() for !fixinv is not ported yet');
+    if (!invlet_constant()) {
+        obj.invlet = NOINVSYM;
+        reassign();
+    }
     return obj.invlet;
 }
 
@@ -396,8 +398,9 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
         await pline("Not carrying anything.");
         return '\0';
     }
+    /* oxymoron? temporarily assign permanent inventory letters */
     if (!invlet_constant())
-        throw new Error('display_pickinv(): reassign() is not ported yet');
+        reassign();
 
     if (n === 1 && !game.iflags?.force_invmenu && !game.iflags?.menu_requested) {
         /* when only one item of interest, use pline instead of menus;
@@ -1290,7 +1293,7 @@ export async function getobj(word, /* usually a direct verb such as "drop" */
     const bpstart = buf.length; /* bp = buf + bpstart */
 
     if (!invlet_constant())
-        throw new Error('getobj(): reassign() is not ported yet');
+        reassign();
 
     /* force invent to be in invlet order before collecting candidate
        inventory letters */
@@ -2839,6 +2842,40 @@ function extract_nobj_invent(obj) {
     obj.nobj = null;
 }
 
+// C ref: invent.c reassign()
+/* give consecutive letters to every item in inventory (for !fixinv mode);
+   gold is always forced to '$' slot at head of list */
+export function reassign() {
+    let i;
+    let obj, prevobj, goldobj;
+
+    /* first, remove [first instance of] gold from invent, if present */
+    prevobj = goldobj = null;
+    for (obj = game.invent; obj; prevobj = obj, obj = obj.nobj)
+        if (obj.oclass === O.COIN_CLASS) {
+            goldobj = obj;
+            if (prevobj)
+                prevobj.nobj = goldobj.nobj;
+            else
+                game.invent = goldobj.nobj;
+            break;
+        }
+    /* second, re-letter the rest of the list */
+    for (obj = game.invent, i = 0; obj; obj = obj.nobj, i++)
+        obj.invlet = (i < 26) ? String.fromCharCode(0x61 + i) /* 'a' + i */
+                     : (i < 52) ? String.fromCharCode(0x41 + i - 26) /* 'A' + i - 26 */
+                       : NOINVSYM;
+    /* third, assign gold the "letter" '$' and re-insert it at head */
+    if (goldobj) {
+        goldobj.invlet = GOLD_SYM;
+        goldobj.nobj = game.invent;
+        game.invent = goldobj;
+    }
+    if (i >= 52)
+        i = 52 - 1;
+    game.lastinvnr = i;
+}
+
 // C ref: invent.c check_invent_gold()
 export function check_invent_gold(why) { /* 'why' == caller in case of warning */
     let goldstacks = 0, wrongslot = 0;
@@ -2893,7 +2930,7 @@ export async function doorganize() {
     }
 
     if (!invlet_constant())
-        throw new Error('doorganize(): reassign() not ported yet');
+        reassign();
 
     /* filter passed to getobj() depends upon gold sanity */
     const adjust_filter = check_invent_gold("adjust") ? adjust_gold_ok

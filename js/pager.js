@@ -29,7 +29,7 @@ import { NHW_TEXT, MENU_SELECT_ALL, MENU_SELECT_PAGE, MENU_INVERT_ALL,
          MENU_INVERT_PAGE, MENU_UNSELECT_ALL, MENU_UNSELECT_PAGE,
          MENU_NEXT_PAGE, MENU_PREVIOUS_PAGE, MENU_FIRST_PAGE, MENU_LAST_PAGE,
          MENU_SEARCH } from './const.js';
-import { getpos } from './getpos.js';
+import { getpos, dxdy_to_dist_descr } from './getpos.js';
 import { NHW_MENU, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE, PICK_ONE,
          ECMD_OK } from './const.js';
 import { NO_COLOR, ATR_NONE } from './terminal.js';
@@ -2202,8 +2202,12 @@ export function coord_desc(x, y, cmode) {
     default:
         return "";
     case GPCOORDS_COMFULL:
-    case GPCOORDS_COMPASS:
-        throw new Error('coord_desc(): compass coordinates not ported yet');
+    case GPCOORDS_COMPASS: {
+        /* "east", "3s", "2n,4w" */
+        const dx = x - game.u.ux;
+        const dy = y - game.u.uy;
+        return `(${dxdy_to_dist_descr(dx, dy, cmode === GPCOORDS_COMFULL)})`;
+    }
     case GPCOORDS_MAP: /* x,y */
         /* upper left corner of map is <1,0>;
            with default COLNO,ROWNO lower right corner is <79,20> */

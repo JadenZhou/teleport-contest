@@ -96,6 +96,7 @@ import { WT_IRON_BALL_INCR } from './const.js';
 import { BACKTRACK } from './const.js';
 import { snuff_candle } from './apply.js';
 import { obj_sheds_light } from './light.js';
+import { set_msg_xy } from './display.js';
 
 /* C ref: youprop.h -- (H* || E*) && !B* */
 function verbose() { return game.flags.verbose ?? true; }
@@ -409,7 +410,7 @@ async function monshoot(mtmp, otmp, mwep) {
         }
         ms.s = ammo_and_launcher(otmp, mwep) ? true : false;
         const trgbuf = mtarg ? some_mon_nam(mtarg) : "";
-        /* set_msg_xy(mtmp->mx, mtmp->my): tty ignores the position */
+        set_msg_xy(mtmp.mx, mtmp.my);
         await pline(`${Monnam(mtmp)} ${ms.s ? "shoots" : "throws"} ${onm}${
             mtarg ? " at " : ""}${trgbuf}!`);
         ms.o = otmp.otyp;

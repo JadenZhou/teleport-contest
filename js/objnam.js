@@ -95,6 +95,10 @@ import { recalc_block_point } from './vision.js';
 import { spot_stop_timers } from './timeout.js';
 import { Levitation, Flying } from './youprop.js';
 import { str_start_is, upstart } from './hacklib.js';
+import { find_mid as find_mid_xn } from './light.js';
+import { FM_FMON as FM_FMON_XN } from './const.js';
+import { noit_mon_nam as noit_mon_nam_xn, mon_pmname as mon_pmname_xn } from './do_name.js';
+import { impossible as impossible_xn } from './hack.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -4079,8 +4083,20 @@ function doname_base(obj, doname_flags) {
             bp += " (being worn)";
             break;
         }
-        if (obj.otyp === O.LEASH && obj.leashmon)
-            xn_not_ported('leash suffix');
+        if (obj.otyp === O.LEASH && obj.leashmon) {
+            const mlsh = find_mid_xn(obj.leashmon, FM_FMON_XN);
+
+            if (mlsh && !(mlsh.mhp < 1) /* !DEADMONSTER(mlsh) */) {
+                bp += ` (attached to ${noit_mon_nam_xn(mlsh)})`;
+            } else {
+                if (mlsh) /*&& DEADMONSTER(mlsh)*/
+                    impossible_xn(`leashed ${mon_pmname_xn(mlsh)} #${obj.leashmon} is dead`);
+                else
+                    impossible_xn(`leashed monster #${obj.leashmon} not found`);
+                obj.leashmon = 0;
+            }
+            break;
+        }
         if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
             xn_not_ported('candelabrum suffix');
         } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
