@@ -65,7 +65,7 @@ import { mon_nam, l_monnam, x_monnam, ARTICLE_A, SUPPRESS_IT,
 import { adjalign, ACURR } from './attrib.js';
 import { STRAT_WAITMASK, MMOVE_DIED, HAND, A_DEX, A_WIS, A_LAWFUL, CONFUSION, A_CON,
          STUNNED, PROT_FROM_SHAPE_CHANGERS, DETECT_MONSTERS, FREE_ACTION,
-         REFLECTING, FLYING, LEVITATION, POISON_RES,
+         FLYING, LEVITATION, POISON_RES,
          PARANOID_HIT, engulfing_u, HMON_MELEE, HMON_THROWN, HMON_KICKED,
          HMON_APPLIED, M_ATTK_MISS, M_ATTK_DEF_DIED, XKILL_NOMSG, NATTK,
          isok, IS_DOOR, Is_airlevel,
@@ -80,8 +80,7 @@ import { WEAPON_CLASS, TOOL_CLASS, ARMOR_CLASS, GEM_CLASS, POTION_CLASS,
          NO_MATERIAL, RUBBER_HOSE, BOOMERANG, KATANA, YA, YUMI, ELVEN_ARROW,
          ELVEN_BOW, HEAVY_IRON_BALL, BOULDER, IRON_CHAIN, MIRROR,
          CLOVE_OF_GARLIC, LOADSTONE, GOLD_DRAGON_SCALE_MAIL,
-         GOLD_DRAGON_SCALES, SHIELD_OF_REFLECTION,
-         AMULET_OF_REFLECTION } from './objects.js';
+         GOLD_DRAGON_SCALES } from './objects.js';
 import { abon, dbon, hitval, weapon_hit_bonus, weapon_dam_bonus, use_skill,
          uwep_skill_type, special_dmgval, weapon_type,
          P_SKILL } from './weapon.js';
@@ -114,7 +113,7 @@ import { exclam } from './zap.js';
 import { could_seduce, mhis } from './mhitu.js';
 import { carrying } from './invent.js';
 import { abuse_dog } from './dog.js';
-import { discover_object, makeknown } from './o_init.js';
+import { discover_object } from './o_init.js';
 import { steal, stealgold, stealamulet } from './steal.js';
 import { tele_restrict, rloc } from './teleport.js';
 import { locomotion } from './trap.js';
@@ -160,7 +159,7 @@ import { urgent_pline, You_feel } from './display.js';
 import { Some_Monnam } from './do_name.js';
 import { fall_asleep, obj_stop_timers } from './timeout.js';
 import { some_armor, cant_drown } from './do_wear.js';
-import { touch_of_death } from './mcastu.js';
+import { touch_of_death, ureflects } from './mcastu.js';
 import { set_uasmon } from './polyself.js';
 import { splitobj, weight, place_object } from './mkobj.js';
 import { setuwep } from './wield.js';
@@ -5885,42 +5884,6 @@ export async function passive(
         }
     }
     return (malive | mhit);
-}
-
-// C ref: muse.c ureflects()
-/* Check from outermost to innermost objects; fmt has two %s: str and
-   the reflecting item */
-async function ureflects(fmt, str) {
-    const ERefl = game.u.uprops[REFLECTING].extrinsic || 0;
-    const msg = (what) => fmt.replace("%s", str).replace("%s", what);
-
-    if (ERefl & W_ARMS) {
-        if (fmt && str) {
-            await pline(msg("shield"));
-            makeknown(SHIELD_OF_REFLECTION);
-        }
-        return true;
-    } else if (ERefl & W_WEP) {
-        /* Due to wielded artifact weapon */
-        if (fmt && str)
-            await pline(msg("weapon"));
-        return true;
-    } else if (ERefl & W_AMUL) {
-        if (fmt && str) {
-            await pline(msg("medallion"));
-            makeknown(AMULET_OF_REFLECTION);
-        }
-        return true;
-    } else if (ERefl & W_ARM) {
-        if (fmt && str)
-            await pline(msg(game.uskin ? "luster" : "armor"));
-        return true;
-    } else if (game.youmonst.data === mons[M.PM_SILVER_DRAGON]) {
-        if (fmt && str)
-            await pline(msg("scales"));
-        return true;
-    }
-    return false;
 }
 
 /* C ref: mondata.c locomotion verb tables used by stagger() */

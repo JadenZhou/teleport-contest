@@ -20,7 +20,8 @@ import {
     GETOBJ_DOWNPLAY, GETOBJ_EXCLUDE, Has_contents, ONAME, has_oname,
     P_DAGGER, P_SABER, P_BOW, P_CROSSBOW, IS_ALTAR, IS_GRAVE, IS_FOUNTAIN,
     IS_WALL, IS_DOOR, IS_ROOM, SDOOR, STAIRS, LADDER, CORR,
-    DRAWBRIDGE_UP, DRAWBRIDGE_DOWN, CLOUD, IS_AIR, Is_waterlevel, Is_earthlevel,
+    DRAWBRIDGE_UP, DRAWBRIDGE_DOWN, CLOUD, IS_AIR, Is_waterlevel,
+    Is_earthlevel, HAND,
 } from './const.js';
 import { db_under_typ, stairway_at } from './display.js';
 import { is_pool, is_lava } from './makemon.js';
@@ -41,6 +42,7 @@ import { artiname, artifact_name, undiscovered_artifact } from './artifact.js';
 import { strncmpi, lowc, strstri } from './hacklib.js';
 import { CapitalMon } from './rumors.js';
 import { cantwield, could_twoweap, metallivorous, vegan } from './mondata.js';
+import { body_part } from './insight.js';
 
 const IA_NONE = 0,
     IA_UNWIELD = 1, /* hack for 'w-' */
@@ -82,13 +84,6 @@ function hero_data() {
     if (!d)
         ia_not_ported('youmonst.data');
     return d;
-}
-
-/* C ref: polyself.c body_part() -- unpolymorphed humanoid hero only */
-function body_part_hand() {
-    if (game.u.mtimedone) /* Upolyd */
-        ia_not_ported('body_part() for a polymorphed hero');
-    return "hand"; /* humanoid_parts[HAND] */
 }
 
 // C ref: eat.c is_edible()
@@ -907,7 +902,7 @@ export async function itemactions(otmp) {
                    "Wield the tin opener to easily open tins");
     } else if (!already_worn) {
         buf = `Wield this ${(otmp.quan > 1) ? "stack" : "item"} in your ${
-            makeplural(body_part_hand())}`;
+            makeplural(body_part(HAND))}`;
         ia_addmenu(win, IA_WIELD_OBJ, 'w', buf);
     }
 
