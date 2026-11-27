@@ -170,6 +170,7 @@ import { cancel_monst } from './zap.js';
 import { hard_helmet } from './do_wear.js';
 import { pline_mon } from './display.js';
 import { in_your_sanctuary } from './priest.js';
+import { shieldeff } from './display.js';
 
 const WAND_BACKFIRE_CHANCE = 100; /* hack.h */
 const QBUFSZ = 128; /* global.h */
@@ -2425,7 +2426,7 @@ async function mbhitm(mtmp, otmp) {
         if (hits_you) {
             if (Antimagic()) {
                 monstseesu(M_SEEN_MAGR); /* monsters notice hero resisting */
-                /* shieldeff(u.ux, u.uy): transient display only */
+                await shieldeff(game.u.ux, game.u.uy);
                 /* Soundeffect(se_boing, 40) */
                 await pline("Boing!");
                 learnit = true;
@@ -2444,7 +2445,7 @@ async function mbhitm(mtmp, otmp) {
             await stop_occupation();
             nomul(0);
         } else if (resists_magm(mtmp)) {
-            /* shieldeff(mtmp->mx, mtmp->my): transient display only */
+            await shieldeff(mtmp.mx, mtmp.my);
             /* Soundeffect(se_boing, 40) */
             await pline("Boing!");
             learnit = true;

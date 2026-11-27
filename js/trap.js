@@ -92,7 +92,7 @@ import { crawl_destination } from './hack.js';
 import { linedup } from './monmove.js';
 import { xdir, ydir, N_DIRS, ZAP_POS, is_xport } from './const.js';
 import { mongone, wake_nearto, wake_nearby } from './mon.js';
-import { newsym, pline, urgent_pline, You_feel, You_hear } from './display.js';
+import { newsym, pline, urgent_pline, You_feel, You_hear, shieldeff } from './display.js';
 import { done } from './end.js';
 import { killer } from './topten.js';
 import { DIED } from './const.js';
@@ -1855,7 +1855,7 @@ async function trapeffect_bear_trap(mtmp, trap, trflags) {
 
 // C ref: mhitm.c sleep_monst()
 /* `mon' is hit by a sleep attack; return 1 if it's affected, 0 otherwise */
-export function sleep_monst(mon, amt, how) {
+export async function sleep_monst(mon, amt, how) {
     /* reveal mimic unless already asleep or paralyzed (won't be 'busy') */
     if (how >= 0 && !mon.msleeping && !mon.mfrozen
         && mon.data.mlet === S_MIMIC && (mon.m_ap_type === M_AP_FURNITURE
@@ -1864,7 +1864,7 @@ export function sleep_monst(mon, amt, how) {
 
     if (resists_sleep(mon) || defended(mon, AD_SLEE)
         || (how >= 0 && resist(mon, how, 0, NOTELL))) {
-        /* shieldeff(mon->mx, mon->my): display effect only */
+        await shieldeff(mon.mx, mon.my);
     } else if (mon.mcanmove) {
         finish_meating(mon); /* terminate any meal-in-progress */
         amt += (mon.mfrozen || 0);
@@ -1897,7 +1897,7 @@ async function trapeffect_slp_gas_trap(mtmp, trap, trflags) {
 
         if (!resists_sleep(mtmp) && !breathless(mtmp.data)
             && !helpless(mtmp)) {
-            if (sleep_monst(mtmp, rnd(25), -1) && in_sight) {
+            if (await sleep_monst(mtmp, rnd(25), -1) && in_sight) {
                 await pline_mon(mtmp, `${Monnam(mtmp)} suddenly falls asleep!`);
                 seetrap(trap);
             }
@@ -2679,7 +2679,7 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
         }
         if (resists_fire(mtmp)) {
             if (in_sight) {
-                /* shieldeff(mtmp->mx, mtmp->my): display effect only */
+                await shieldeff(mtmp.mx, mtmp.my);
                 await pline(`${Monnam(mtmp)} is uninjured.`);
             }
         } else {
@@ -2771,7 +2771,7 @@ async function dofiretrap(
     await pline(`A ${tower_of_flame} ${box ? "bursts" : "erupts"} from ${
         the(box ? xname(box) : surface_tr(u.ux, u.uy))}!`);
     if (Fire_resistance()) {
-        /* shieldeff(u.ux, u.uy): display effect only */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu_tr(M_SEEN_FIRE_TR);
         num = rn2(2);
     } else if (Upolyd()) {
@@ -3722,7 +3722,7 @@ async function steedintrap(trap, otmp) {
     case SLP_GAS_TRAP:
         if (!resists_sleep(steed) && !breathless(steed.data)
             && !helpless(steed)) {
-            if (sleep_monst(steed, rnd(25), -1))
+            if (await sleep_monst(steed, rnd(25), -1))
                 /* no in_sight check here; you can feel it even if blind */
                 await pline(`${Monnam(steed)} suddenly falls asleep!`);
         }
@@ -4654,7 +4654,7 @@ async function trapeffect_poly_trap(mtmp, trap, trflags) {
         } else if (Antimagic()
                    || (u.uprops[UNCHANGING].intrinsic
                        || u.uprops[UNCHANGING].extrinsic)) { /* Unchanging */
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             await You_feel("momentarily different.");
             /* Trap did nothing; don't remove it --KAA */
         } else {
@@ -5368,7 +5368,7 @@ export async function chest_trap(obj, bodypart, disarm) {
 
             await You("are jolted by a surge of electricity!");
             if (Shock_resistance()) {
-                /* shieldeff(u.ux, u.uy): transient display only */
+                await shieldeff(game.u.ux, game.u.uy);
                 await You("don't seem to be affected.");
                 monstseesu_tr(M_SEEN_ELEC);
                 dmg = 0;

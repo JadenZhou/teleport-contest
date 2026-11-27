@@ -2921,9 +2921,17 @@ function _statusLine1() {
     return `${title}${' '.repeat(gap)}${stats} ${align}`;
 }
 
-function _statusLine2() {
+// timeonly: botl.c stat_update_time() -- only BL_TIME is re-evaluated; the
+// tty status window renders every other field from the values it was given
+// by the previous bot() (game.tty_st2_fields).
+function _statusLine2(timeonly = false) {
     const u = game.u;
     if (!u) return '';
+    if (timeonly && game.tty_st2_fields) {
+        const f = game.tty_st2_fields;
+        const tmmv = game.flags?.time ? ` T:${game.moves}` : '';
+        return make_things_fit(f.leveldesc, `${f.midpre}${tmmv}${f.hunger}`, f.conds);
+    }
     /* C ref: botl.c do_statusline2(): experience is "Xp:N/pts" only with
        the showexp option, and the turn counter is shown only with time */
     const Upolyd = (u.umonnum !== u.umonster);
@@ -2947,7 +2955,8 @@ function _statusLine2() {
        symset */
     const goldsym = (game.currentgraphics === ROGUESET) ? '*' : '$';
     /* BL_GOLD .. BL_HUNGER: the fields between BL_LEVELDESC and BL_CAP */
-    const mid = ` ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${hpmax}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}${tmmv}${hunger}`;
+    const midpre = ` ${goldsym}:${Math.min(money_cnt(game.invent), 999999)} HP:${hpval}(${hpmax}) Pw:${u.uen || 0}(${u.uenmax || 0}) AC:${u.uac ?? 10} ${expr}`;
+    const mid = `${midpre}${tmmv}${hunger}`;
     /* BL_CAP: botl.c sends it to the window port only when its value
        changed since the previous bot(); tty_status_update() then stores
        " %s" (a lone blank suppressed), resets enc_shrinklvl and takes
@@ -2958,7 +2967,9 @@ function _statusLine2() {
         game.tty_capval = (cap > UNENCUMBERED) ? ` ${STAT_ENC[cap]}` : '';
         game.tty_enc_shrinklvl = 0;
     }
-    return make_things_fit(leveldesc, mid, status_conditions());
+    const conds = status_conditions();
+    game.tty_st2_fields = { leveldesc, midpre, hunger, conds };
+    return make_things_fit(leveldesc, mid, conds);
 }
 
 /* C ref: wintty.c encvals[][] -- BL_CAP text for enc_shrinklvl 0..2 */
@@ -3520,9 +3531,19 @@ export function bot() {
        have a menu or prompt up */
     if (game.bot_disabled)
         return;
+    render_status(false);
+    game.disp_botl = game.disp_botlx = game.disp_time_botl = false;
+}
+
+// Compose the two status rows and draw them on rows 22-23.  With timeonly
+// (botl.c stat_update_time()), row 1 keeps what the previous bot() put
+// there and row 2 re-evaluates only the time field.
+function render_status(timeonly) {
     const display = game?.nhDisplay;
     if (game.u && game.u.uhp !== -1) {
-        const st1 = _statusLine1(), st2 = _statusLine2();
+        const st1 = (timeonly && game._status_lines) ? game._status_lines[0]
+                                                     : _statusLine1();
+        const st2 = _statusLine2(timeonly && !!game._status_lines);
         game._status_lines = [st1, st2];
         game.status_shown = true;
         if (display?.grid) {
@@ -3536,19 +3557,18 @@ export function bot() {
             }
         }
     }
-    game.disp_botl = game.disp_botlx = game.disp_time_botl = false;
 }
 
 // C ref: botl.c timebot() -- special purpose status update: move counter
-// ('time' status) only.  tty's windowport stat_update_time() redraws the
-// status line with only the time field re-evaluated; bot() recomposes
-// every field from current state (C's "old status display" path).
+// ('time' status) only.  The tty status is VIA_WINDOWPORT(), so this is
+// botl.c stat_update_time(): BL_TIME is re-evaluated and the other fields
+// keep the values the previous bot() sent (they change on the next bot()).
 export function timebot() {
     if (game.bot_disabled)
         return;
     /* iflags.status_updates is always on; suppress_map_output() */
     if (game.flags?.time && !game.in_mklev && game.u?.ux)
-        bot();
+        render_status(true); /* stat_update_time() */
     game.disp_time_botl = false;
 }
 
