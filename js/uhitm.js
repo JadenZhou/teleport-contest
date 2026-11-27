@@ -268,7 +268,7 @@ import { paralyze_monst, slept_monst, xdrainenergym,
          mhitm_ad_sedu as mhitm_ad_sedu_mm } from './mhitm.js';
 import { RLOC_NOMSG, MSLOW, NO_NC_FLAGS, NC_SHOW_MSG } from './const.js';
 import { G_NOCORPSE } from './monsters.js';
-import { mon_adjust_speed } from './worn.js';
+import { mon_adjust_speed, worn_pline } from './worn.js';
 import { carnivorous, herbivorous, metallivorous, is_rider,
          slimeproof } from './mondata.js';
 import { m_useup } from './mthrowu.js';
@@ -823,12 +823,8 @@ async function steal_it(mdef, mattk) {
         if (otmp.oartifact && !Blind())
             find_artifact(otmp);
         /* take the object away from the monster */
-        for (const msg of extract_from_minvent_g(mdef, otmp, true, false)) {
-            if (msg?.newcham_async)
-                await msg.newcham_async();
-            else
-                await pline(msg);
-        }
+        for (const msg of extract_from_minvent_g(mdef, otmp, true, false))
+            await worn_pline(msg); /* pline(), pline_mon() or an async callee */
         /* special message for final item; no need to check owornmask because
          * ustealo is only set on objects with (owornmask & W_ARM) */
         if (otmp === ustealo)
