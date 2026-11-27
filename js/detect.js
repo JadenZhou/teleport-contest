@@ -453,8 +453,12 @@ function reveal_terrain_getglyph(x, y, swallowed, default_glyph, which_subset) {
         }
     }
     /* FIXME: dirty hack */
-    if (glyph.cmap === 'S_darkroom')
-        glyph = { ...glyph, cmap: 'S_room' };
+    if (glyph.cmap === 'S_darkroom'
+        /* a glyph_at() glyph carries the S_* index, not the name */
+        || (glyph.cmap === undefined && glyph.kind === 'cmap'
+            && glyph.cmapidx === 20 /* S_darkroom */))
+        /* drawn like the S_room spot; cmap_to_glyph(S_room) */
+        glyph = { ...glyph, cmap: 'S_room', cmapidx: 19 /* S_room */ };
     else if (glyph.cmap === 'S_litcorr'
              /* a glyph_at() glyph carries the S_* index, not the name */
              || (glyph.cmap === undefined && glyph.kind === 'cmap'
@@ -465,7 +469,7 @@ function reveal_terrain_getglyph(x, y, swallowed, default_glyph, which_subset) {
 
 /* cmap_to_glyph(S_corr) in the remembered-glyph form */
 function back_to_glyph_cmap_corr() {
-    return { ch: '#', color: CLR_GRAY, decgfx: false, cmap: 'S_corr' };
+    return { ch: '#', color: CLR_GRAY, decgfx: false, cmap: 'S_corr', cmapidx: 22 };
 }
 
 /* GLYPH_UNEXPLORED, shown as blank */
