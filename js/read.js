@@ -140,6 +140,7 @@ import { S_invisible as S_invisible_rd, S_WORM_TAIL as S_WORM_TAIL_RD,
 import { buried_ball_to_freedom } from './dig.js';
 import { LEG } from './const.js';
 import { uslinging } from './dothrow.js';
+import { shieldeff } from './display.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -1599,7 +1600,7 @@ async function seffect_fire(sobjp) {
         if (Underwater()) {
             await pline(`A little ${hliquid("water")} around you vaporizes.`);
         } else if (Fire_resistance()) {
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             monstseesu_rd(M_SEEN_FIRE);
             if (!Blind())
                 await pline(`Oh, look, what a pretty fire in your ${

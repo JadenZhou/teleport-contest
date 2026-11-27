@@ -297,6 +297,7 @@ import { dropy } from './do.js';
 import { nonliving } from './makemon.js';
 import { u_teleport_mon } from './teleport.js';
 import { pline_mon } from './display.js';
+import { shieldeff } from './display.js';
 
 const invlet_basic = 52; /* C ref: invent.c */
 
@@ -522,7 +523,7 @@ async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
             if (!Blind())
                 await pline_The(`zap doesn't shock ${mon_nam(mdef)}!`);
             await golemeffects(mdef, AD_ELEC, mhm.damage);
-            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await shieldeff(mdef.mx, mdef.my);
             mhm.damage = 0;
         }
         mhm.damage += await destroy_items(mdef, AD_ELEC, orig_dmg);
@@ -553,7 +554,7 @@ async function mhitm_ad_elec(magr, mattk, mdef, mhm) {
         if (resists_elec(mdef) || defended(mdef, AD_ELEC)) {
             if (game.mhitm_vis && canseemon(mdef))
                 await pline_The(`zap doesn't shock ${mon_nam(mdef)}!`);
-            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await shieldeff(mdef.mx, mdef.my);
             await golemeffects(mdef, AD_ELEC, mhm.damage);
             mhm.damage = 0;
         }
@@ -1380,7 +1381,7 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
             if (!Blind())
                 await pline_The(`fire doesn't heat ${mon_nam(mdef)}!`);
             await golemeffects(mdef, AD_FIRE, mhm.damage);
-            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await shieldeff(mdef.mx, mdef.my);
             mhm.damage = 0;
         }
         mhm.damage += await destroy_items(mdef, AD_FIRE, orig_dmg);
@@ -1440,7 +1441,7 @@ async function mhitm_ad_fire(magr, mattk, mdef, mhm) {
         if (resists_fire(mdef) || defended(mdef, AD_FIRE)) {
             if (game.mhitm_vis && canseemon(mdef))
                 await pline_The(`fire doesn't seem to burn ${mon_nam(mdef)}!`);
-            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await shieldeff(mdef.mx, mdef.my);
             await golemeffects(mdef, AD_FIRE, mhm.damage);
             mhm.damage = 0;
         }
@@ -1462,7 +1463,7 @@ async function mhitm_ad_cold(magr, mattk, mdef, mhm) {
         if (!Blind())
             await pline(`${Monnam(mdef)} is covered in frost!`);
         if (resists_cold(mdef) || defended(mdef, AD_COLD)) {
-            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await shieldeff(mdef.mx, mdef.my);
             if (!Blind())
                 await pline_The(`frost doesn't chill ${mon_nam(mdef)}!`);
             await golemeffects(mdef, AD_COLD, mhm.damage);
@@ -1496,7 +1497,7 @@ async function mhitm_ad_cold(magr, mattk, mdef, mhm) {
         if (resists_cold(mdef) || defended(mdef, AD_COLD)) {
             if (game.mhitm_vis && canseemon(mdef))
                 await pline_The(`frost doesn't seem to chill ${mon_nam(mdef)}!`);
-            /* shieldeff(mdef->mx, mdef->my): transient display only */
+            await shieldeff(mdef.mx, mdef.my);
             await golemeffects(mdef, AD_COLD, mhm.damage);
             mhm.damage = 0;
         }
@@ -2054,7 +2055,7 @@ async function mhitm_ad_slee(magr, mattk, mdef, mhm) {
     if (magr === game.youmonst) {
         /* uhitm */
         if (!mdef.msleeping && !await mgc_atk_negated(magr, mdef, false)
-            && sleep_monst(mdef, rnd(10), -1)) {
+            && await sleep_monst(mdef, rnd(10), -1)) {
             if (!Blind())
                 await pline(`${Monnam(mdef)} is put to sleep by you!`);
             await slept_monst(mdef);
@@ -2077,8 +2078,8 @@ async function mhitm_ad_slee(magr, mattk, mdef, mhm) {
         }
     } else {
         /* mhitm */
-        if (!mdef.msleeping && sleep_monst(mdef, rnd(10), -1)
-            && sleep_monst(mdef, rnd(10), -1)) {
+        if (!mdef.msleeping && await sleep_monst(mdef, rnd(10), -1)
+            && await sleep_monst(mdef, rnd(10), -1)) {
             if (game.mhitm_vis && canspotmon(mdef)) {
                 const buf = Monnam(mdef);
                 await pline(`${buf} is put to sleep by ${mon_nam(magr)}.`);
@@ -2411,7 +2412,7 @@ async function mhitm_ad_deth(magr, mattk, mdef, mhm) {
         case 1:
         case 0:
             if (Antimagic())
-                throw new Error('mhitm_ad_deth(): shieldeff() not ported yet');
+                await shieldeff(game.u.ux, game.u.uy);
             await pline("Lucky for you, it didn't work!");
             mhm.damage = 0;
             return;
@@ -5747,7 +5748,7 @@ export async function passive(
     case AD_MAGM:
         /* wrath of gods for attacking Oracle */
         if (Antimagic()) { /* Antimagic */
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             monstseesu(M_SEEN_MAGR);
             await pline("A hail of magic missiles narrowly misses you!");
         } else {
@@ -5832,7 +5833,7 @@ export async function passive(
         case AD_COLD: /* brown mold or blue jelly */
             if (monnear(mon, game.u.ux, game.u.uy)) {
                 if (Cold_resistance()) { /* Cold_resistance */
-                    /* shieldeff(u.ux, u.uy): transient display only */
+                    await shieldeff(game.u.ux, game.u.uy);
                     await You_feel("a mild chill.");
                     monstseesu(M_SEEN_COLD);
                     await ugolemeffects(AD_COLD, tmp);
@@ -5856,7 +5857,7 @@ export async function passive(
         case AD_FIRE:
             if (monnear(mon, game.u.ux, game.u.uy)) {
                 if (Fire_resistance()) { /* Fire_resistance */
-                    /* shieldeff(u.ux, u.uy): transient display only */
+                    await shieldeff(game.u.ux, game.u.uy);
                     await You_feel("mildly warm.");
                     monstseesu(M_SEEN_FIRE);
                     await ugolemeffects(AD_FIRE, tmp);
@@ -5869,7 +5870,7 @@ export async function passive(
             break;
         case AD_ELEC:
             if (Shock_resistance()) { /* Shock_resistance */
-                /* shieldeff(u.ux, u.uy): transient display only */
+                await shieldeff(game.u.ux, game.u.uy);
                 await You_feel("a mild tingle.");
                 monstseesu(M_SEEN_ELEC);
                 await ugolemeffects(AD_ELEC, tmp);
@@ -5997,7 +5998,7 @@ export async function flash_hits_mon(
             }
         } else if (useeit) {
             if (resists_blnd_by_arti_fh(mtmp)) {
-                /* shieldeff(mx, my): transient display only */
+                await shieldeff(mx, my);
             }
             if (g.flags.verbose ?? true) {
                 if (lev.lit)

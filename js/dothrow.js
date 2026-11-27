@@ -537,7 +537,7 @@ async function throw_gold(obj) {
         g.bhitpos = { x: u.ux, y: u.uy };
     } else {
         /* consistent with range for normal objects */
-        range = Math.trunc(acurrstr() / 2 - obj.owt / 40);
+        range = Math.trunc(acurrstr() / 2) - Math.trunc(obj.owt / 40);
 
         /* see if the gold has a place to move into */
         odx = u.ux + u.dx;
