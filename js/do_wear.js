@@ -2984,7 +2984,7 @@ async function take_off() {
 export async function doddoremarm() {
     const g = game;
     const tk = takeoff_ctx();
-    const result = 0;
+    let result = 0;
 
     if (tk.what || tk.mask) {
         await You(`continue ${tk.disrobing}.`);
