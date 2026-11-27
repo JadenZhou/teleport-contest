@@ -3318,7 +3318,13 @@ export function display_self() {
                         ptr.mcolor ?? NO_COLOR, false, 0, 'mon');
         return;
     }
-    show_glyph_cell(u.ux, u.uy, '@', CLR_WHITE, false, 0, 'mon');
+    /* showrace: a non-human hero is shown by the symbol of the race's
+       monster, in the human hero's color (display.c map_glyphinfo():
+       HI_DOMESTIC for flags.showrace) */
+    show_glyph_cell(u.ux, u.uy,
+                    game.flags.showrace
+                        ? (def_monsyms[mons[game.urace.mnum].mlet] ?? '?') : '@',
+                    CLR_WHITE, false, 0, 'mon');
 }
 
 // C ref: display.c swallow_to_glyph()

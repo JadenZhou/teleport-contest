@@ -88,7 +88,7 @@ import { monsndx } from './mondata.js';
 import { rnd } from './rng.js';
 import { region_danger } from './region.js';
 import { Blind, Glib, Invisible, Levitation, Flying } from './youprop.js';
-import { Upolyd, Role_if } from './const.js';
+import { Upolyd, Role_if, ParanoidRemove } from './const.js';
 import { uprop } from './youprop.js';
 import { setnotworn as setnotworn_dw } from './worn.js';
 import { arti_light_description } from './light.js';
@@ -2237,17 +2237,6 @@ export async function ia_dotakeoff() {
         game.item_action_in_progress = false;
     }
     return res;
-}
-
-/* C ref: flag.h ParanoidRemove -- flags.paranoia_bits is
-   PARANOID_PRAY | PARANOID_SWIM | PARANOID_TRAP by default (options.c
-   initoptions_init()); parsing the paranoid_confirmation option isn't
-   ported */
-function ParanoidRemove() {
-    if (game.flags.paranoid_confirmation !== undefined
-        || game.flags.paranoid_confirm !== undefined)
-        throw new Error('paranoia_bits: the paranoid_confirmation option is not ported yet');
-    return false;
 }
 
 // C ref: do_wear.c cursed()

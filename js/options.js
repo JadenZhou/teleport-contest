@@ -23,7 +23,7 @@ import { def_char_to_objclass, def_oc_syms, def_oc_explain } from './drawing.js'
 import { pline, flush_screen, docrt, bot } from './display.js';
 import { vision_recalc } from './vision.js';
 import { condtests } from './botl.js';
-import { def_inv_order, add_menu_heading } from './invent.js';
+import { def_inv_order, add_menu_heading, reassign } from './invent.js';
 import { count_bind_keys, update_rest_on_space } from './cmd.js';
 import { allopt, BoolOpt, CompOpt, OthrOpt, OptS_General, OptS_Advanced,
          Term_False, num_terms, set_in_config, set_gameview, set_in_game,
@@ -37,6 +37,9 @@ import {
     NHW_MENU, PICK_ONE, PICK_ANY, MENU_BEHAVE_STANDARD, MENU_ITEMFLAGS_NONE,
     MENU_ITEMFLAGS_SELECTED, MENU_ITEMFLAGS_SKIPINVERT, ECMD_OK,
     PARANOID_PRAY, PARANOID_SWIM, PARANOID_TRAP, RUN_LEAP, MOD_ENCUMBER,
+    PARANOID_CONFIRM, PARANOID_QUIT, PARANOID_DIE, PARANOID_BONES,
+    PARANOID_HIT, PARANOID_BREAKWAND, PARANOID_EATING, PARANOID_WERECHANGE,
+    PARANOID_AUTOALL, PARANOID_REMOVE,
     DISCLOSE_PROMPT_DEFAULT_NO, MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION,
     STONE, Is_rogue_level, DISCLOSE_PROMPT_DEFAULT_YES,
     DISCLOSE_PROMPT_DEFAULT_SPECIAL, DISCLOSE_YES_WITHOUT_PROMPT,
@@ -482,6 +485,145 @@ function optfn_runmode(result, negated, op) {
     return true;
 }
 
+// C ref: options.c match_optname()
+function match_optname(user_string, optn_name, min_length, val_allowed) {
+    let len = user_string.length;
+
+    if (val_allowed) /* length_without_val() */
+        len = user_string.search(/[:=]|$/);
+
+    return (len >= min_length
+            && !strncmpi(optn_name, user_string, len)
+            && len <= optn_name.length);
+}
+
+// C ref: options.c optfn_paranoid_confirmation() (req == do_set)
+/* for "paranoid_confirmation:foo" and alias "[!]prayconfirm"; sets
+   result.flags.paranoia_bits, starting from the default bits
+   initoptions_init() set */
+function optfn_paranoid_confirmation(result, opt_negated, opts, op) {
+    let fld_negated;
+    let i;
+    let plus_or_minus = false;
+    let bits = result.flags.paranoia_bits
+               ?? initoptions_init_defaults().flags.paranoia_bits;
+    const optname = "paranoid_confirmation"; /* allopt[optidx].name */
+
+    /*
+     * "prayconfirm" used to be a separate boolean option,
+     * now it is a synonym for paranoid_confirm:+pray and
+     * "!prayconfirm" has become one for paranoid_confirm:-pray.
+     */
+    if (!strncmpi(opts, "prayconfirm", 4)) {
+        if (op) {
+            /* presence of any value is treated as an error */
+            config_error_add(`deprecated ${opt_negated ? "!" : ""}prayconfirm option takes no parameters (found '${op}')`);
+            return false; /* optn_silenterr */
+        }
+        /* convert prayconfirm to paranoid_confirm:+pray and
+           !prayconfirm to paranoid_confirm:-pray */
+        op = `${opt_negated ? '-' : '+'}pray`;
+        /* possibly changing !prayconfirm to paranoid_confirm:-pray
+           which clears a paranoia bit but isn't a negated option */
+        opt_negated = false;
+    } else if (opt_negated) {
+        /* "!paranoid_confirm" w/o args is same as paranoid_confirm:none;
+           "!paranoid_confirm:anything" is disallowed */
+        if (!op) {
+            result.flags.paranoia_bits = 0;
+            return true; /* optn_ok */
+        } else {
+            config_error_add(`!${optname} does not accept a value`);
+            return false; /* optn_silenterr */
+        }
+    } else if (!op) {
+        /* "paranoid_confirm" without any arguments is disallowed */
+        config_error_add(`${optname} requires a value; use 'none' to cancel all`);
+        return false; /* optn_silenterr */
+    }
+
+    /*
+     * Multiple settings for paranoid_confirmation are allowed.
+     * paranoid_confirm:foo bar clears all confirmation bits (from
+     * previous settings, including default), then sets the bits for foo
+     * and bar; paranoid_confirm:+foo bar keeps the existing bits and sets
+     * those for foo and bar; paranoid_confirm:-foo bar keeps the existing
+     * bits except those for foo and bar get cleared.
+     */
+    op = mungspaces(op);
+    if (op[0] !== '+' && op[0] !== '-') {
+        /* new value; first clear all old bits */
+        bits = 0;
+    } else {
+        /* augmenting existing value; keep old bits */
+        plus_or_minus = true; /* only used for "+none" and "-none" */
+        opt_negated = (op[0] === '-'); /* context is changed */
+        op = op.slice(1);
+        if (op[0] === ' ') /* skip '+' or '-', maybe whitespace */
+            op = op.slice(1);
+    }
+
+    for (;;) {
+        fld_negated = (op[0] === '!');
+        if (fld_negated) {
+            op = op.slice(1);
+            if (op[0] === ' ') /* skip '!', maybe whitespace */
+                op = op.slice(1);
+        } else {
+            /* accept "nofoo" to be same as "!foo", unless "no" is
+               followed by a space or 'foo' begins with "n" (to avoid
+               confusion for "none"; C tests lowc(op[2] != 'n' && ...)) */
+            if (op.length > 2 && lowc(op[0]) === 'n' && lowc(op[1]) === 'o'
+                && op[2] !== 'n') {
+                fld_negated = true;
+                op = op.slice(2); /* skip "no"; we know next char isn't space */
+            }
+        }
+        /* We're looking to parse
+           "paranoid_confirm:whichone wheretwo whothree"
+           and "paranoid_confirm:" prefix has already
+           been stripped off by the time we get here */
+        const pp = op.indexOf(' ');
+        const tok = (pp >= 0) ? op.slice(0, pp) : op;
+        /* we aren't matching option names but match_optname()
+           does what we want once we've broken the space
+           delimited aggregate into separate tokens */
+        for (i = 0; i < paranoia.length; ++i) {
+            if (match_optname(tok, paranoia[i].argname,
+                              paranoia[i].argMinLen, false)
+                || (paranoia[i].synonym
+                    && match_optname(tok, paranoia[i].synonym,
+                                     paranoia[i].synMinLen, false))) {
+                if (!paranoia[i].flagmask) {
+                    /* flagmask==0 is "none", clear all bits
+                       but "+none" and "-none" are no-ops */
+                    if (!plus_or_minus)
+                        bits = 0; /* clear all */
+                } else if (opt_negated || fld_negated) {
+                    bits &= ~paranoia[i].flagmask;
+                } else {
+                    bits |= paranoia[i].flagmask;
+                }
+                break;
+            }
+        }
+        if (i === paranoia.length) {
+            /* didn't match anything, so arg is bad;
+               any flags already modified will stay modified */
+            result.flags.paranoia_bits = bits;
+            config_error_add(`Unknown ${optname} parameter '${tok}'`);
+            return false; /* optn_silenterr */
+        }
+        /* move on to next token */
+        if (pp >= 0)
+            op = op.slice(pp + 1);
+        else
+            break; /* no next token */
+    } /* for(;;) */
+    result.flags.paranoia_bits = bits;
+    return true; /* optn_ok */
+}
+
 export function parseNethackrc(rc) {
     const result = {
         name: '', role: -1, race: -1, gender: -1, align: -1,
@@ -567,6 +709,9 @@ export function parseNethackrc(rc) {
                 else if (key === 'msg_window') optfn_msg_window(result, negated, val);
                 else if (key === 'runmode') optfn_runmode(result, negated, val);
                 else if (key === 'number_pad') optfn_number_pad(result, negated, val);
+                else if (match_optname(key, "paranoid_confirmation", 3, false)
+                         || !strcmpi(key, "prayconfirm"))
+                    optfn_paranoid_confirmation(result, negated, key, val);
                 else if (key === 'horsename') result.horsename = val; /* petname_optfn() */
                 else result.flags[key] = val;
             } else {
@@ -588,6 +733,9 @@ export function parseNethackrc(rc) {
                 else if (lname === 'mention_walls') result.flags.mention_walls = value;
                 else if (lname === 'autounlock') optfn_autounlock(result, negated, '');
                 else if (lname === 'number_pad') optfn_number_pad(result, negated, '');
+                else if (match_optname(lname, "paranoid_confirmation", 3, false)
+                         || !strcmpi(lname, "prayconfirm"))
+                    optfn_paranoid_confirmation(result, negated, lname, '');
                 // C ref: options.c boolean option case opt_female ("female",
                 // alias "male"); go.opt_initial is TRUE while reading the rc
                 else if (lname.length >= 3 && !strncmpi(lname, "female", Math.max(lname.length, 3)))
@@ -1033,22 +1181,69 @@ const menutype = ["traditional", "combination", "full", "partial"];
 /* C ref: options.c objsymvals[].nam */
 const objsymvals = ["none", "headers", "entries", "both", "conditional",
                     "one-or-other"];
-/* C ref: options.c paranoia[] (flagmask, argname), the entries
-   optfn_paranoid_confirmation() lists */
+/* C ref: options.c paranoia[] - used by parseoptions() and
+   handler_paranoid_confirmation() */
+/* there are some initial-letter conflicts: "a"ttack vs "A"utoall vs
+   "a"ll, "attack" takes precedence and "all" isn't present in the
+   interactive menu with "Autoall" capitalized there,
+   and "d"ie vs "d"eath, synonyms for each other so doesn't matter;
+   (also "p"ray vs "P"aranoia, "pray" takes precedence since "Paranoia"
+   is just a synonym for "Confirm"); "b"ones vs "br"eak-wand, the
+   latter requires at least two letters; "e"at vs "ex"plore,
+   "cont"inue eating vs "C"onfirm; "wand"-break vs "Were"-change,
+   both require at least two letters during config processing but use
+   one letter with case-sensitivity for 'm O's interactive menu;
+   if any entry or alias beginning with 'n' gets added, aside from "none",
+   the parsing to accept "nofoo" to mean "!foo" will need fixing */
 const paranoia = [
-    [0x0001, "Confirm"],     /* PARANOID_CONFIRM */
-    [0x0002, "quit"],        /* PARANOID_QUIT */
-    [0x0004, "die"],         /* PARANOID_DIE */
-    [0x0008, "bones"],       /* PARANOID_BONES */
-    [0x0010, "attack"],      /* PARANOID_HIT */
-    [0x0080, "wand-break"],  /* PARANOID_BREAKWAND */
-    [0x0200, "eat"],         /* PARANOID_EATING */
-    [0x0100, "Were-change"], /* PARANOID_WERECHANGE */
-    [0x0020, "pray"],        /* PARANOID_PRAY */
-    [0x0800, "trap"],        /* PARANOID_TRAP */
-    [0x1000, "Autoall"],     /* PARANOID_AUTOALL */
-    [0x0400, "swim"],        /* PARANOID_SWIM */
-    [0x0040, "Remove"],      /* PARANOID_REMOVE */
+    { flagmask: PARANOID_CONFIRM, argname: "Confirm", argMinLen: 1,
+      synonym: "Paranoia", synMinLen: 2,
+      explain: "for \"yes\" confirmations, require \"no\" to reject" },
+    { flagmask: PARANOID_QUIT, argname: "quit", argMinLen: 1,
+      synonym: "explore", synMinLen: 2,
+      explain: "yes vs y to quit or to enter explore mode" },
+    { flagmask: PARANOID_DIE, argname: "die", argMinLen: 1,
+      synonym: "death", synMinLen: 2,
+      explain: "yes vs y to die (explore mode or debug mode)" },
+    { flagmask: PARANOID_BONES, argname: "bones", argMinLen: 1,
+      synonym: null, synMinLen: 0,
+      explain: "yes vs y to save bones data when dying in debug mode" },
+    { flagmask: PARANOID_HIT, argname: "attack", argMinLen: 1,
+      synonym: "hit", synMinLen: 1,
+      explain: "yes vs y to attack a peaceful monster" },
+    { flagmask: PARANOID_BREAKWAND, argname: "wand-break", argMinLen: 2,
+      synonym: "break-wand", synMinLen: 2,
+      explain: "yes vs y to break a wand via (a)pply" },
+    { flagmask: PARANOID_EATING, argname: "eat", argMinLen: 1,
+      synonym: "continue", synMinLen: 4,
+      explain: "yes vs y to continue eating after first bite when satiated" },
+    { flagmask: PARANOID_WERECHANGE, argname: "Were-change", argMinLen: 2,
+      synonym: null, synMinLen: 0,
+      explain: "yes vs y to change form when lycanthropy is controllable" },
+    /* extra y/n questions rather than changing y/n to yes/n[o];
+       they switch to yes/no if paranoid:confirm is also set */
+    { flagmask: PARANOID_PRAY, argname: "pray", argMinLen: 1,
+      synonym: null, synMinLen: 0,
+      explain: "y required to pray (supersedes old \"prayconfirm\" option)" },
+    { flagmask: PARANOID_TRAP, argname: "trap", argMinLen: 1,
+      synonym: "move-trap", synMinLen: 1,
+      explain: "y required to enter known trap unless considered harmless" },
+    { flagmask: PARANOID_AUTOALL, argname: "Autoall", argMinLen: 2,
+      synonym: "autoselect-all", synMinLen: 2,
+      explain: "y required to pick filter choice 'A' for menustyle:Full" },
+    /* not a yes/n[o] vs y/n change nor a y/n addition */
+    { flagmask: PARANOID_SWIM, argname: "swim", argMinLen: 1,
+      synonym: null, synMinLen: 0,
+      explain: "'m' prefix necessary to deliberately walk into lava or water" },
+    { flagmask: PARANOID_REMOVE, argname: "Remove", argMinLen: 1,
+      synonym: "Takeoff", synMinLen: 1,
+      /* normally when there is only 1 candidate it's chosen automatically */
+      explain: "always pick from inventory for Remove and Takeoff" },
+    /* for config file parsing; interactive menu skips these */
+    { flagmask: 0, argname: "none", argMinLen: 4, synonym: null, synMinLen: 0,
+      explain: null }, /* require full word match */
+    { flagmask: ~0, argname: "all", argMinLen: 3, synonym: null, synMinLen: 0,
+      explain: null }, /* ditto */
 ];
 /* C ref: decl.c disclosure_options[] */
 const disclosure_options = "iavgco";
@@ -1513,7 +1708,8 @@ function opt_get_val(o, req) {
         return oc_to_str(def_inv_order.map(c => String.fromCharCode(c)).join(''));
     case "optfn_paranoid_confirmation": {
         let tmpbuf = '';
-        for (const [flagmask, argname] of paranoia) {
+        for (let i = 0; paranoia[i].flagmask !== 0; ++i) {
+            const { flagmask, argname } = paranoia[i];
             if ((flags.paranoia_bits & flagmask) !== 0
                 /* hide paranoid_confirm:bones during play except for wizard
                    mode; keep it for any mode if rewriting the config file */
@@ -2492,7 +2688,7 @@ async function optfn_boolean(o, req, negated, opts, op) {
     case "implicit_uncursed":
     case "wizweight":
         if (!game.flags.invlet_constant)
-            throw new Error('optfn_boolean(): reassign() not ported yet');
+            reassign();
         /* update_inventory(): no perm_invent window */
         break;
     case "lit_corridor":

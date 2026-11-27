@@ -11,7 +11,8 @@ import { feeltrap } from './trap.js';
 import { just_an } from './objnam.js';
 import { mintrap, Trap_Effect_Finished, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon } from './trap.js';
-import { NO_TRAP_FLAGS, LL_CONDUCT } from './const.js';
+import { NO_TRAP_FLAGS, LL_CONDUCT, ParanoidTrap, ParanoidSwim,
+         ParanoidConfirm } from './const.js';
 import { abuse_dog } from './dog.js';
 import { adjalign } from './attrib.js';
 import { livelog_printf, You_feel, verbalize, You_hear } from './display.js';
@@ -3017,20 +3018,6 @@ async function avoid_running_into_trap_or_liquid(x, y) {
     }
     return false;
 }
-
-/* C ref: flag.h ParanoidTrap, ParanoidConfirm -- flags.paranoia_bits is
-   PARANOID_PRAY | PARANOID_SWIM | PARANOID_TRAP by default (options.c
-   initoptions_init()); parsing the paranoid_confirmation option isn't
-   ported */
-function paranoia_default() {
-    if (game.flags.paranoid_confirmation !== undefined
-        || game.flags.paranoid_confirm !== undefined)
-        throw new Error('paranoia_bits: the paranoid_confirmation option is not ported yet');
-    return true;
-}
-function ParanoidTrap() { return paranoia_default(); }
-function ParanoidSwim() { return paranoia_default(); }
-function ParanoidConfirm() { return !paranoia_default(); }
 
 // C ref: hack.c avoid_trap_andor_region()
 /* if paranoid_confirm:Trap is enabled, check whether the next step forward
