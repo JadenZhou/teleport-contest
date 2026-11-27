@@ -1234,7 +1234,7 @@ export function m_avoid_kicked_loc(mtmp, nx, ny) {
    x and y are the coordinates mtmp wants to attack.
    Return values are the same as for m_move, but this function only return
    MMOVE_DIED or MMOVE_DONE. */
-async function m_move_aggress(mtmp, x, y) {
+export async function m_move_aggress(mtmp, x, y) {
     let mtmp2;
     let mstatus = 0; /* M_ATTK_MISS */
 

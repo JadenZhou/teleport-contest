@@ -33,7 +33,8 @@ import { m_at, makemon, makemon_flush_msg } from './makemon.js';
 import { mnexto, tele, next_to_u } from './teleport.js';
 import { check_leash } from './apply.js';
 import { makedog } from './dog.js';
-import { deferred_goto, hellish_smoke_mesg, schedule_goto, UTOTYPE_NONE } from './do.js';
+import { deferred_goto, hellish_smoke_mesg, schedule_goto, UTOTYPE_NONE,
+         save_currentstate } from './do.js';
 import { assign_level } from './dungeon.js';
 import { com_pager } from './questpgr.js';
 import { objects_globals_init } from './objects.js';
@@ -161,7 +162,7 @@ export async function newgame() {
     /* urealtime.realtime = 0L; urealtime.start_timing = getnow(): the
        fixed game clock */
     g.urealtime = { realtime: 0, start_timing: 0, finish_time: 0 };
-    /* INSURANCE save_currentstate(): the level 0 lock file isn't modelled */
+    await save_currentstate(); /* INSURANCE */
     g.program_state.something_worth_saving =
         (g.program_state.something_worth_saving || 0) + 1; /* useful data now exists */
 

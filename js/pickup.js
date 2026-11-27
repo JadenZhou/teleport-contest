@@ -45,7 +45,10 @@ import { CORPSE, BAG_OF_TRICKS, HORN_OF_PLENTY, WOODEN_FLUTE, MAGIC_FLUTE,
          greatest_erosion, Is_mbag, Is_box, SchroedingersBox, carried, is_pick,
          Is_container, is_pole, is_wet_towel } from './objects.js';
 import { cxname_singular } from './objnam.js';
-import { strcmpi } from './hacklib.js';
+import { strcmpi, plur } from './hacklib.js';
+import { unbless } from './mkobj.js';
+import { trycall } from './potion.js';
+import { useupf } from './invent.js';
 import { P_BOW, P_CROSSBOW, P_SPEAR, P_DAGGER, P_KNIFE } from './const.js';
 import { t_at, is_pit } from './trap.js';
 import { can_reach_floor, cant_reach_floor } from './engrave.js';
@@ -1880,7 +1883,33 @@ export async function pickup_object(obj,
             || await rider_corpse_revival(obj, telekinesis))
             return -1;
     } else if (obj.otyp === SCR_SCARE_MONSTER) {
-        throw new Error('pickup_object(): scroll of scare monster not ported yet');
+        /* process a count before altering/deleting scrolls;
+           tricky because being unable to lift full stack imposes an
+           implicit count; unliftable ones should be treated as if
+           the count excluded them so that they don't change state */
+        const wts = { before: 0, after: 0 };
+        if ((count = await carry_count(obj, null,
+                                       count ? count : obj.quan,
+                                       false, wts)) < 1)
+            return -1; /* couldn't even pick up 1, so effectively untouched */
+        /* all current callers handle a new object sanely when traversing
+           a list; other half of a split will be left as-is and whatever
+           already follows 'obj' will still be processed next */
+        if (count > 0 && count < obj.quan)
+            obj = splitobj(obj, count);
+
+        if (obj.blessed) {
+            unbless(obj);
+        } else if (!obj.spe && !obj.cursed) {
+            obj.spe = 1;
+        } else {
+            await pline_The(`scroll${plur(obj.quan)} ${otense(obj, "turn")} to dust as you ${
+                telekinesis ? "raise" : "pick"} ${(obj.quan === 1) ? "it" : "them"} up.`);
+            await trycall(obj);
+            await useupf(obj, obj.quan);
+            return 1; /* tried to pick something up and failed, but
+                         don't want to terminate pickup loop yet   */
+        }
     }
 
     /* obj has either already passed autopick_testobj or we are explicitly

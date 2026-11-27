@@ -49,6 +49,7 @@ import { M_ATTK_MISS, M_ATTK_HIT, M_ATTK_AGR_DIED, M_ATTK_AGR_DONE, NATTK,
          NEED_WEAPON, NEED_HTH_WEAPON, P_POLEARMS, P_LANCE, P_WHIP,
          is_pit } from './const.js';
 import { t_at } from './trap.js';
+import { msummon } from './minion.js';
 import { objects, AMULET_OF_GUARDING, WEAPON_CLASS, TOOL_CLASS, TOWEL,
          PIERCE } from './objects.js';
 import { mon_wield_item, hitval } from './weapon.js';
@@ -584,7 +585,7 @@ async function summonmu(mtmp, youseeit) {
     if (is_demon(mdat)) {
         if (mdat !== mons[M.PM_BALROG] && mdat !== mons[M.PM_AMOROUS_DEMON]) {
             if (!rn2(In_hell(game.u.uz) ? 10 : 16))
-                throw new Error('summonmu(): msummon() not ported yet');
+                await msummon(mtmp);
         }
         return; /* no such thing as a demon were creature, so we're done */
     }

@@ -946,7 +946,7 @@ export async function thitmonst(mon,
 
 // C ref: dothrow.c throwit()
 /* throw an object, NB: obj may be consumed in the process */
-async function throwit(obj,
+export async function throwit(obj,
                        wep_mask,  /* used to re-equip returning boomerang */
                        twoweap,   /* used to restore twoweapon mode if
                                    * wielded weapon returns */

@@ -508,6 +508,27 @@ export async function deferred_goto() {
     game.dfr_post_msg = null;
 }
 
+// C ref: do.c save_currentstate() -- INSURANCE
+export async function save_currentstate() {
+    let nhfp;
+
+    game.program_state.in_checkpoint = (game.program_state.in_checkpoint || 0) + 1;
+    if (game.flags.ins_chkpt) {
+        /* write out just-attained level, with pets and everything */
+        nhfp = await currentlevel_rewrite();
+        if (!nhfp)
+            return;
+        /* if (nhfp->structlevel) bufon(nhfp->fd): no buffering to do */
+        nhfp.mode = WRITING;
+        savelev(nhfp, ledger_no(game.u.uz));
+        close_nhfile(nhfp);
+    }
+
+    /* write out non-level state */
+    /* savestateinlock(): the level 0 lock file isn't modelled */
+    game.program_state.in_checkpoint--;
+}
+
 // C ref: do.c currentlevel_rewrite()
 async function currentlevel_rewrite() {
     /* since level change might be a bit slow, flush any buffered screen
@@ -1076,7 +1097,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     }
 
     assign_level(u.uz0, u.uz); /* reset u.uz0 */
-    /* save_currentstate(): INSURANCE, no files */
+    await save_currentstate(); /* INSURANCE */
     /* notice_mon_on(); notice_all_mons(TRUE): a11y mon_notices is off */
 
     await print_level_annotation();

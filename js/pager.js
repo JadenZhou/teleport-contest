@@ -17,6 +17,7 @@
 // (glyph_at()): hero, seen monster, seen object, seen trap, or the
 // background (back_to_glyph()).
 
+import { SYM_OFF_X } from './symbols.js';
 import { db_under_typ } from './display.js';
 import { game } from './gstate.js';
 import { obj_stop_timers } from './timeout.js';
@@ -1318,10 +1319,11 @@ export function do_screen_description(cc, looked, sym) {
         /* Now check for objects */
         if (!game.iflags.terrainmode || (game.iflags.terrainmode & TER_OBJ) !== 0) {
             let oc_ptr;
-            /* go.ov_primary_syms[SYM_BOULDER + SYM_OFF_X] is 0 */
             if (game.currentgraphics === ROGUESET)
                 throw new Error('do_screen_description(): rogue level symbols not ported yet');
-            const bouldersym = chcode(def_oc_syms[ROCK_CLASS]);
+            let bouldersym = game.ov_primary_syms?.[SYM_BOULDER + SYM_OFF_X] || 0;
+            if (!bouldersym)
+                bouldersym = chcode(def_oc_syms[ROCK_CLASS]);
 
             for (i = 1; i < MAXOCLASSES; i++) {
                 if ((i !== ROCK_CLASS)

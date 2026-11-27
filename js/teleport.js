@@ -30,6 +30,7 @@ import { rnd, rn1 } from './rng.js';
 import { newsym, canseemon, canspotmon, sensemon, see_monsters } from './display.js';
 import { couldsee, vision_recalc } from './vision.js';
 import { u_on_newpos, somexyspace } from './mklev.js';
+import { search_special } from './sounds.js';
 import { nomul, spoteffects, switch_terrain } from './hack.js';
 import { VIBRATING_SQUARE, deltrap, unconscious } from './trap.js';
 import { PASSES_WALLS, ANTIMAGIC } from './const.js';
@@ -1585,7 +1586,14 @@ export async function teleport_pet(mtmp, force_it) {
 
 // C ref: teleport.c mvault_tele()
 async function mvault_tele(mtmp) {
-    throw new Error('mvault_tele(): search_special(VAULT) not ported yet');
+    const croom = search_special(VAULT);
+    const c = { x: 0, y: 0 };
+
+    if (croom && somexyspace(croom, c) && goodpos(c.x, c.y, mtmp, 0)) {
+        await rloc_to(mtmp, c.x, c.y);
+        return;
+    }
+    await rloc(mtmp, RLOC_NONE);
 }
 
 // C ref: teleport.c mtele_trap()
