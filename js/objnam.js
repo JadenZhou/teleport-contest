@@ -15,7 +15,7 @@
 // ported yet (wizard-mode terrain wishes, artifacts by name, fruit names,
 // tins of a monster, lit light sources, novels, ...) raise not_ported().
 
-import { shk_your } from './shk.js';
+import { shk_your, get_obj_location } from './shk.js';
 import { letter, strsubst } from './hacklib.js';
 import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
@@ -3300,23 +3300,6 @@ export function shirt_simple_name(shirt) {
 /* C ref: decl.c gd.distantname -- set while distant_name() formats an
    object the hero only sees from afar */
 let distantname = 0;
-
-// C ref: mkobj.c get_obj_location() -- the locations distant_name() needs
-function get_obj_location(obj) {
-    switch (obj.where) {
-    case 'OBJ_INVENT':
-        return [game.u.ux, game.u.uy];
-    case 'OBJ_FLOOR':
-        return [obj.ox, obj.oy];
-    case 'OBJ_MINVENT':
-        if (obj.ocarry.mx)
-            return [obj.ocarry.mx, obj.ocarry.my];
-        break;
-    default:
-        break;
-    }
-    return null;
-}
 
 // C ref: objnam.c distant_name()
 /* format the object's name, treating it as seen up close only when the
