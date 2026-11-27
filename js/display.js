@@ -2511,6 +2511,45 @@ function room_cmap_glyph(idx) {
              cmap: idx === 20 ? 'S_darkroom' : 'S_room', cmapidx: idx };
 }
 
+// C ref: display.c reglyph_darkroom()
+/* the dark_room option, color, or the rogue level changes how remembered
+   out-of-sight floor and corridor spots are glyphed; called on arrival at
+   a level (before vision_reset(), so cansee() still holds the old view)
+   and after restoring a game */
+export function reglyph_darkroom() {
+    const dark_room = game.flags.dark_room !== false;
+    const use_color = game.iflags.wc_color !== false;
+
+    for (let x = 1; x < COLNO; x++)
+        for (let y = 0; y < ROWNO; y++) {
+            const lev = game.level.at(x, y);
+            const gl = lev.remembered_glyph;
+
+            if (!dark_room) {
+                if (gl?.cmap === 'S_corr' && lev.waslit)
+                    lev.remembered_glyph = rememb_glyph(S_litcorr_g);
+            } else {
+                if (gl?.cmap === 'S_litcorr' && !cansee(x, y))
+                    lev.remembered_glyph = rememb_glyph(S_corr_g);
+            }
+
+            if (!dark_room || !use_color || Is_rogue_level(game.u.uz)) {
+                if (lev.remembered_glyph?.cmap === 'S_darkroom')
+                    lev.remembered_glyph = lev.waslit ? room_cmap_glyph(19) /* S_room */
+                                                      : GLYPH_NOTHING;
+            } else {
+                if (lev.remembered_glyph?.cmap === 'S_room' && lev.seenv
+                    && lev.waslit && !cansee(x, y))
+                    lev.remembered_glyph = darkroom_glyph(lev.remembered_glyph);
+                else if (lev.remembered_glyph?.nothing /* GLYPH_NOTHING */
+                         && lev.typ === ROOM && lev.seenv && !cansee(x, y))
+                    lev.remembered_glyph = darkroom_glyph(room_cmap_glyph(19));
+            }
+        }
+    /* gs.showsyms[S_darkroom] = showsyms[S_room] or the SYM_NOTHING blank:
+       darkroom_glyph() draws S_darkroom spots that way */
+}
+
 /* a terrain glyph in the remembered-glyph form (lev->glyph) */
 function rememb_glyph(tg) {
     return { ch: tg.ch, color: tg.color, decgfx: tg.dec, cmap: tg.cmap,

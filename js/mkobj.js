@@ -44,6 +44,7 @@ import { isok } from './hacklib.js';
 import { obj_no_longer_held } from './do.js';
 import { block_point, recalc_block_point } from './vision.js';
 import { vobj_at } from './display.js';
+import { g_at } from './vault.js';
 import { attach_egg_hatch_timeout, attach_fig_transform_timeout, start_timer, stop_timer, obj_stop_timers, obj_split_timers, obj_to_any } from './timeout.js';
 import { ROT_CORPSE, REVIVE_MON, ZOMBIFY_MON, HATCH_EGG, SHRINK_GLOB, FIG_TRANSFORM, TIMER_OBJECT, LS_OBJECT } from './const.js';
 import { tt_oname } from './topten.js';
@@ -2053,11 +2054,7 @@ export function obj_attach_mid(obj, mid) {
 
 // C ref: mkobj.c mkgold()
 export function mkgold(amount, x, y) {
-    /* g_at(x, y): floor objects are not tracked yet; mklev.js recorded
-       gold amounts per location in game.level.gold_at */
-    if (!game.level.gold_at) game.level.gold_at = new Map();
-    const key = `${x},${y}`;
-    let gold = game.level.gold_at.get(key) || null;
+    let gold = g_at(x, y);
 
     if (amount <= 0) {
         const mul = rnd(Math.trunc(30 / Math.max(12 - depth(game.u.uz), 2)));
@@ -2069,9 +2066,8 @@ export function mkgold(amount, x, y) {
     } else {
         gold = mksobj_at(O.GOLD_PIECE, x, y, true, false);
         gold.quan = amount;
-        game.level.gold_at.set(key, gold);
     }
-    gold.owt = objects[O.GOLD_PIECE].oc_weight; /* weight(gold) */
+    gold.owt = weight(gold);
     return gold;
 }
 
