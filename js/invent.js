@@ -122,8 +122,8 @@ import { SORTLOOT_INVLET as SORTLOOT_INVLET_GG, ALL_FINISHED as ALL_FINISHED_GG,
          BUC_BLESSED as BUC_BLESSED_GG, BUC_UNCURSED as BUC_UNCURSED_GG,
          BUC_CURSED as BUC_CURSED_GG, BUC_UNKNOWN as BUC_UNKNOWN_GG } from './const.js';
 import { SORTLOOT_INUSE } from './const.js';
-import { little_to_big, touch_petrifies } from './mondata.js';
-import { MV_KNOWS_EGG, SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
+import { touch_petrifies } from './mondata.js';
+import { SIGNAL_NOMENU, SIGNAL_ESCAPE, USE_INVLET,
          INVORDER_SORT, PICK_ANY, thats_enough_tries,
          MENU_TRADITIONAL as MENU_TRADITIONAL_IV, MENU_FULL as MENU_FULL_IV,
          HALLUC as HALLUC_IV, HALLUC_RES as HALLUC_RES_IV } from './const.js';
@@ -147,6 +147,7 @@ import { shopper_financial_report as shopper_financial_report_iv } from './shk.j
 import { unpunish } from './read.js';
 import { throwing_weapon } from './dothrow.js';
 import { wait_synch } from './end.js';
+import { learn_egg_type } from './polyself.js';
 
 const invlet_basic = 52;
 const GOLD_SYM = '$';
@@ -2699,14 +2700,8 @@ export function fully_identify_obj(otmp) {
     observe_object_iv(otmp, Hallucination());
     otmp.known = otmp.bknown = otmp.rknown = 1;
     set_cknown_lknown(otmp); /* set otmp->{cknown,lknown} if applicable */
-    if (otmp.otyp === O.EGG && otmp.corpsenm !== NON_PM) {
-        /* C ref: timeout.c learn_egg_type() */
-        /* baby monsters hatch from grown-up eggs */
-        const mnum = little_to_big(otmp.corpsenm);
-        game.mvitals[mnum].mvflags |= MV_KNOWS_EGG;
-        /* we might have just learned about other eggs being carried */
-        /* update_inventory(): no perm_invent */
-    }
+    if (otmp.otyp === O.EGG && otmp.corpsenm !== NON_PM)
+        learn_egg_type(otmp.corpsenm);
 }
 
 // C ref: invent.c identify()
