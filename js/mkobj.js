@@ -61,7 +61,7 @@ import { obj_sheds_light, obj_split_light_source, del_light_source } from './lig
 import { nartifact_exist, mk_artifact } from './artifact.js';
 import { A_NONE } from './const.js';
 import { splitbill, get_obj_location, unpaid_cost, subfrombill, shop_keeper,
-         addtobill, alter_cost } from './shk.js';
+         addtobill, alter_cost, oid_price_adjustment } from './shk.js';
 import { COST_SINGLEOBJ } from './const.js';
 import { CONTAINED_TOO } from './const.js';
 import { arti_light_radius, obj_adjust_light_radius } from './light.js';
@@ -601,20 +601,6 @@ export function next_ident() {
     if (!game.context.ident)
         game.context.ident = rnd(2) + 1; /* id 1 is reserved */
 
-    return res;
-}
-
-// C ref: shk.c oid_price_adjustment()
-/* used by nextoid() so that a split-off stack keeps the same price
-   adjustment as its parent */
-function oid_price_adjustment(obj, oid) {
-    let res = 0;
-    const otyp = obj.otyp;
-
-    if (!(obj.dknown && objects[otyp].oc_name_known)
-        && (obj.oclass !== O.GEM_CLASS || objects[otyp].oc_material !== O.GLASS)) {
-        res = ((oid % 4) === 0) ? 1 : 0; /* id%4 ==0 -> +1, ==1..3 -> 0 */
-    }
     return res;
 }
 

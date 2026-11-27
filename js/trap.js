@@ -1401,7 +1401,7 @@ function grounded(ptr) {
 }
 
 // C ref: trap.c wearing_iron_shoes()
-function wearing_iron_shoes(mtmp) {
+export function wearing_iron_shoes(mtmp) {
     const armf = which_armor(mtmp, W_ARMF);
     return !!armf && objects[armf.otyp].oc_material === IRON;
 }

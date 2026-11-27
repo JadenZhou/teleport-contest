@@ -576,7 +576,7 @@ async function throw_gold(obj) {
 
 // C ref: dothrow.c throwing_weapon()
 /* return true for weapon meant to be thrown; excludes ammo */
-function throwing_weapon(obj) {
+export function throwing_weapon(obj) {
     const oc = objects[obj.otyp];
     return !!(is_missile(obj) || is_spear(obj)
               /* daggers and knife (excludes scalpel) */

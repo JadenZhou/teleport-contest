@@ -6,7 +6,7 @@
 
 import { may_dig } from './dig.js';
 import { monhaskey, m_can_break_boulder } from './monmove.js';
-import { online2, sgn, plur, NODIAG } from './hacklib.js';
+import { online2, sgn, plur, NODIAG, ordin } from './hacklib.js';
 import { game } from './gstate.js';
 import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
          has_mgivenname, MGIVENNAME } from './const.js';
@@ -3715,7 +3715,7 @@ function logdeadmon(mtmp, mndx) {
                 llevent_type |= LL_ACHIEVE;
             xtra = '';
             if (howmany > 1) /* "(2nd time)" or "(50th time)" */
-                xtra = ` (${howmany}${ordin_ld(howmany)} time)`;
+                xtra = ` (${howmany}${ordin(howmany)} time)`;
 
             mkilled = nonliving(mtmp.data) ? "destroyed" : "killed";
             /* hero is responsible: "killed <monst>" */
@@ -3727,14 +3727,6 @@ function logdeadmon(mtmp, mndx) {
                                `${livelog_mon_nam(mtmp)}${shkdetail} has been ${mkilled}${xtra}`);
         }
     }
-}
-
-/* C ref: hacklib.c ordin() */
-function ordin_ld(n) { /* note: should be non-negative */
-    const dd = n % 10;
-
-    return (dd === 0 || dd > 3 || Math.trunc((n % 100) / 10) === 1) ? "th"
-           : (dd === 1) ? "st" : (dd === 2) ? "nd" : "rd";
 }
 
 

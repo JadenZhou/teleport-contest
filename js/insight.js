@@ -63,7 +63,7 @@ import { PICK_ONE, MENU_ITEMFLAGS_NONE, MENU_ITEMFLAGS_SELECTED } from './const.
 import { NO_COLOR, ATR_NONE, ATR_INVERSE } from './terminal.js';
 import { def_monsyms_explain } from './drawing.js';
 import { upstart } from './hacklib.js';
-import { objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS, COIN_CLASS,
+import { objects, OBJ_NAME, WEAPON_CLASS, GEM_CLASS,
          GAUNTLETS_OF_POWER, DUNCE_CAP, SHIELD_OF_REFLECTION, TOWEL, CORPSE,
          TIN, EGG, STATUE, BOULDER, TIN_OPENER, ROCK, GRAPPLING_HOOK,
          DWARVISH_MATTOCK, LUCKSTONE, LOADSTONE, FLINT, TOUCHSTONE, DAGGER,
@@ -141,7 +141,7 @@ import {
 import { Upolyd, Role_if, Luck } from './const.js';
 import { mon_aligntyp } from './priest.js';
 export { costly_spot, shop_keeper, inhishop, inside_shop } from './shk.js';
-import { costly_spot } from './shk.js';
+import { costly_spot, contained_gold } from './shk.js';
 import { TT_BURIEDBALL as TT_BURIEDBALL_IS, TT_LAVA as TT_LAVA_IS,
          TT_INFLOOR as TT_INFLOOR_IS } from './const.js';
 import { hliquid as hliquid_is } from './potion.js';
@@ -412,20 +412,6 @@ export function mbodypart(mon, part) {
 // C ref: polyself.c body_part()
 export function body_part(part) {
     return mbodypart(game.youmonst, part);
-}
-
-// C ref: invent.c contained_gold()
-function contained_gold(obj, even_if_unknown) {
-    let value = 0;
-
-    /* objects other than coins won't have any gold inside them
-       (JS container contents are an array) */
-    for (const otmp of (Array.isArray(obj.cobj) ? obj.cobj : []))
-        if (otmp.oclass === COIN_CLASS)
-            value += otmp.quan;
-        else if (otmp.cobj && (otmp.cknown || even_if_unknown))
-            value += contained_gold(otmp, even_if_unknown);
-    return value;
 }
 
 // C ref: invent.c hidden_gold()

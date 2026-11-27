@@ -99,32 +99,13 @@ import { find_mid as find_mid_xn } from './light.js';
 import { FM_FMON as FM_FMON_XN } from './const.js';
 import { noit_mon_nam as noit_mon_nam_xn, mon_pmname as mon_pmname_xn } from './do_name.js';
 import { impossible as impossible_xn } from './hack.js';
+import { counter_were } from './were.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
 
 function not_ported(what) {
     throw new Error(`readobjnam: ${what} is not ported yet`);
-}
-
-// C ref: were.c counter_were()
-function counter_were(pm) {
-    switch (pm) {
-    case M.PM_WEREWOLF:
-        return M.PM_HUMAN_WEREWOLF;
-    case M.PM_HUMAN_WEREWOLF:
-        return M.PM_WEREWOLF;
-    case M.PM_WEREJACKAL:
-        return M.PM_HUMAN_WEREJACKAL;
-    case M.PM_HUMAN_WEREJACKAL:
-        return M.PM_WEREJACKAL;
-    case M.PM_WERERAT:
-        return M.PM_HUMAN_WERERAT;
-    case M.PM_HUMAN_WERERAT:
-        return M.PM_WERERAT;
-    default:
-        return NON_PM;
-    }
 }
 
 // C ref: mon.c genus()
@@ -655,6 +636,19 @@ export function obj_typename(otyp) {
     if (dn)
         buf += ` (${dn})`;
     return buf;
+}
+
+/* C ref: objnam.c simple_typename() -- obj_typename() without the
+   user-assigned name or the appended description */
+export function simple_typename(otyp) {
+    const save_uname = objects[otyp].oc_uname;
+    objects[otyp].oc_uname = null; /* suppress any name given by user */
+    let bufp = obj_typename(otyp);
+    objects[otyp].oc_uname = save_uname;
+    const pp = bufp.indexOf(" (");
+    if (pp >= 0)
+        bufp = bufp.slice(0, pp); /* strip the appended description */
+    return bufp;
 }
 
 // C ref: objnam.c otense()

@@ -35,7 +35,7 @@ import { nomul } from './hack.js';
 import { mons, PM_HIGH_CLERIC, PM_GHOST, PM_WRAITH, PM_VAMPIRE, PM_GHOUL,
          PM_HUMAN, PM_GREEN_SLIME, PM_TOURIST, S_WRAITH, S_MUMMY, S_VAMPIRE,
          G_UNIQ, G_NOCORPSE, M2_PNAME } from './monsters.js';
-import { AMULET_OF_LIFE_SAVING, LARGE_BOX, STATUE, TIN, CORPSE,
+import { AMULET_OF_LIFE_SAVING, LARGE_BOX, STATUE, CORPSE,
          FAKE_AMULET_OF_YENDOR, SchroedingersBox,
          Is_container } from './objects.js';
 import { pmname, Mgender, m_monnam } from './do_name.js';
@@ -64,7 +64,7 @@ import { hidden_gold, currency, enlightenment, list_vanquished,
 import { keepdogs } from './dog.js';
 import { Goodbye } from './role.js';
 import { inven_inuse } from './restore.js';
-import { useup, display_inventory, carrying, stackobj } from './invent.js';
+import { useup, display_inventory, carrying, stackobj, set_cknown_lknown } from './invent.js';
 import { adjattrib, ACURR, minuhpmax, setuhpmax } from './attrib.js';
 import { init_uhunger } from './eat.js';
 import { paranoid_query } from './cmd.js';
@@ -139,13 +139,6 @@ function nowrap_add(a, b) {
 }
 /* C ref: dungeon.c single_level_branch() */
 function single_level_branch(lev) { return Is_knox_level(lev); }
-/* C ref: invent.c set_cknown_lknown() */
-function set_cknown_lknown(obj) {
-    if (Is_container(obj) || obj.otyp === STATUE)
-        obj.cknown = obj.lknown = 1;
-    else if (obj.otyp === TIN)
-        obj.cknown = 1;
-}
 /* C ref: wintty.c tty_wait_synch() -- the map window is up and no raw
    output is pending, so this only flushes the (unbuffered) screen */
 function wait_synch() {

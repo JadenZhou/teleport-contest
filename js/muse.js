@@ -24,7 +24,7 @@ import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
 import { seemimic } from './mon.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
-import { losehp, unconscious as unconscious_mu } from './trap.js';
+import { losehp, unconscious as unconscious_mu, wearing_iron_shoes } from './trap.js';
 import { find_mac } from './worn.js';
 import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
          likes_gems, noncorporeal, amorphous, unsolid, is_mercenary, acidic,
@@ -104,10 +104,10 @@ import { HEAVY_IRON_BALL, SILVER, ICE_BOX, BAG_OF_HOLDING,
 import { monverbself, PRONOUN_HALLU } from './do_name.js';
 import { same_race } from './mondata.js';
 import { ARTICLE_A, SUPPRESS_INVISIBLE, SUPPRESS_SADDLE, SUPPRESS_IT,
-         AUGMENT_IT, W_ARMF, TELEPORT_CONTROL, STRAT_WAITFORU, XKILL_NOMSG,
+         AUGMENT_IT, TELEPORT_CONTROL, STRAT_WAITFORU, XKILL_NOMSG,
          XKILL_NOCONDUCT, HAND, DOOR, DBWALL } from './const.js';
 import { AMULET_OF_YENDOR, BELL_OF_OPENING, CANDELABRUM_OF_INVOCATION,
-         SPE_BOOK_OF_THE_DEAD, IRON } from './objects.js';
+         SPE_BOOK_OF_THE_DEAD} from './objects.js';
 import { ART_ORB_OF_DETECTION } from './artilist.js';
 import { arti_reflects } from './artifact.js';
 import { Can_rise_up, ceiling } from './dungeon.js';
@@ -238,11 +238,6 @@ export function mon_has_special(mtmp) {
             || otmp.otyp === SPE_BOOK_OF_THE_DEAD)
             return true;
     return false;
-}
-/* C ref: trap.c wearing_iron_shoes() -- uses the monster's worn boots */
-function wearing_iron_shoes(mon) {
-    const boots = which_armor(mon, W_ARMF);
-    return !!(boots && objects[boots.otyp].oc_material === IRON);
 }
 
 // C ref: muse.c m_use_healing()

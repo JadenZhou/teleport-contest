@@ -57,7 +57,7 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap, fill_zoo } from './mklev.js';
+import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap, fill_zoo, count_level_features } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container,
@@ -4748,22 +4748,6 @@ export function lspo_levregion(tbl) {
 
     levregion_add(tmplregion);
     return 0;
-}
-
-// C ref: mklev.c count_level_features()
-function count_level_features() {
-    const flags = game.level.flags;
-
-    flags.nfountains = flags.nsinks = 0;
-    for (let y = 0; y < ROWNO; y++)
-        for (let x = 1; x < COLNO; x++) {
-            const typ = game.level.at(x, y).typ;
-
-            if (typ === FOUNTAIN)
-                flags.nfountains++;
-            else if (typ === SINK)
-                flags.nsinks++;
-        }
 }
 
 // C ref: sp_lev.c floodfillchk_match_accessible()

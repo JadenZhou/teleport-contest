@@ -53,7 +53,7 @@ import { passes_walls } from './mondata.js';
 import { ART_STORMBRINGER } from './artilist.js';
 import { highc, sgn, plur, NODIAG } from './hacklib.js';
 import { monflee } from './monmove.js';
-import { is_safemon, end_running, in_rooms } from './hack.js';
+import { is_safemon, end_running, in_rooms, doorless_door } from './hack.js';
 import { rnl, d } from './rng.js';
 import {
     Your, pline_The, sensemon, canseemon, newsym, glyph_at, glyph_is_warning,
@@ -68,7 +68,7 @@ import { STRAT_WAITMASK, MMOVE_DIED, HAND, A_DEX, A_WIS, A_LAWFUL, CONFUSION, A_
          REFLECTING, FLYING, LEVITATION, POISON_RES, M_AP_TYPMASK,
          PARANOID_HIT, engulfing_u, HMON_MELEE, HMON_THROWN, HMON_KICKED,
          HMON_APPLIED, M_ATTK_MISS, M_ATTK_DEF_DIED, XKILL_NOMSG, NATTK,
-         isok, IS_DOOR, D_NODOOR, D_BROKEN, Is_rogue_level, Is_airlevel,
+         isok, IS_DOOR, Is_airlevel,
          Is_waterlevel, W_RINGL, W_RINGR, W_ARM, W_ARMS, W_WEP, W_AMUL,
          P_BARE_HANDED_COMBAT, P_BASIC, P_SKILLED, P_NONE, P_LANCE, P_KNIFE,
          P_DAGGER, P_SABER, P_AXE, P_WHIP, P_SHURIKEN, P_BOW,
@@ -4810,19 +4810,6 @@ export function m_is_steadfast(mtmp) {
         return true;
 
     return false;
-}
-
-/* C ref: hack.c doorless_door() */
-function doorless_door(x, y) {
-    const lev = game.level.at(x, y);
-
-    if (!IS_DOOR(lev.typ))
-        return false;
-    /* all rogue level doors are doorless but disallow diagonal access, so
-       we treat them as if their non-existent doors were actually present */
-    if (Is_rogue_level(game.u.uz))
-        return false;
-    return !(lev.doormask & ~(D_NODOOR | D_BROKEN));
 }
 
 // C ref: uhitm.c damageum()

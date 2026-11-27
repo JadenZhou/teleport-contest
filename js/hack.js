@@ -1840,7 +1840,7 @@ function block_entry(x, y) {
 }
 
 // C ref: hack.c doorless_door()
-function doorless_door(x, y) {
+export function doorless_door(x, y) {
     const lev_p = game.level.at(x, y);
 
     if (!IS_DOOR(lev_p.typ))

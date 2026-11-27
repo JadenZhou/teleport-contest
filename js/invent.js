@@ -3,7 +3,7 @@
 //        xprname()
 
 import { fingers_or_gloves } from './do_wear.js';
-import { addtobill, stolen_value, get_obj_location } from './shk.js';
+import { addtobill, stolen_value, get_obj_location, picked_container } from './shk.js';
 import { in_rooms, impossible } from './hack.js';
 import { hideunder_async } from './makemon.js';
 import { get_count, GC_SAVEHIST } from './cmd.js';
@@ -40,7 +40,7 @@ import {
     GETOBJ_PROMPT, Never_mind, FINGERTIP, HAND, W_ARMOR, W_ACCESSORY,
     W_SADDLE, W_WEAPONS, W_TOOL,
 } from './const.js';
-import { objects, Is_container, is_missile, is_ammo } from './objects.js';
+import { objects, Is_container, is_ammo } from './objects.js';
 import * as M from './monsters.js';
 import { mons, PM_COCKATRICE, PM_CHICKATRICE } from './monsters.js';
 import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
@@ -48,7 +48,7 @@ import { STONE_RES, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
 import { weight, erosion_matters, Is_candle, obj_extract_self, splitobj,
          dead_species, curse, dealloc_obj } from './mkobj.js';
 import { itemactions } from './iactions.js';
-import { NON_PM, P_DAGGER, P_SHORT_SWORD, P_SABER, P_SPEAR, Is_knox_level,
+import { NON_PM, Is_knox_level,
          Is_earthlevel, Is_airlevel, Is_firelevel, Is_waterlevel } from './const.js';
 import { dunlev, depth } from './dungeon.js';
 import { is_quest_artifact } from './questpgr.js';
@@ -144,6 +144,7 @@ import { MENU_PARTIAL as MENU_PARTIAL_IV, UNPAID_TYPES as UNPAID_TYPES_IV,
          INCLUDE_VENOM as INCLUDE_VENOM_IV } from './const.js';
 import { shopper_financial_report as shopper_financial_report_iv } from './shk.js';
 import { unpunish } from './read.js';
+import { throwing_weapon } from './dothrow.js';
 
 const invlet_basic = 52;
 const GOLD_SYM = '$';
@@ -1012,21 +1013,6 @@ export function obfree(obj, merge) {
     dealloc_obj(obj);
 }
 
-// C ref: shk.c picked_container()
-export function picked_container(obj) {
-    /* the "top" container is treated in the calling fn */
-    for (const otmp of obj.cobj || []) {
-        if (otmp.oclass === O.COIN_CLASS)
-            continue;
-
-        if (otmp.no_charge)
-            otmp.no_charge = 0;
-
-        if (otmp.cobj && otmp.cobj.length) /* Has_contents() */
-            picked_container(otmp);
-    }
-}
-
 // C ref: invent.c carry_obj_effects()
 /*
  * Some objects are affected by being carried.
@@ -1102,20 +1088,6 @@ export function merge_choice(objlist, obj) {
     } while (objlist);
     obj.no_charge = save_nocharge;
     return objlist;
-}
-
-// C ref: dothrow.c throwing_weapon()
-function throwing_weapon(obj) {
-    const skill = objects[obj.otyp].oc_skill;
-    const is_weapon = obj.oclass === O.WEAPON_CLASS;
-    return (is_missile(obj)
-            || (is_weapon && skill === P_SPEAR) /* is_spear() */
-            /* daggers and knife (excludes scalpel) */
-            || (is_weapon && skill >= P_DAGGER && skill <= P_SABER /* is_blade() */
-                && !(skill >= P_SHORT_SWORD && skill <= P_SABER) /* is_sword() */
-                && (objects[obj.otyp].oc_dir & O.PIERCE))
-            /* special cases [might want to add AXE] */
-            || obj.otyp === O.WAR_HAMMER || obj.otyp === O.AKLYS);
 }
 
 // C ref: pickup.c reset_justpicked() -- reset last-picked-up flags
