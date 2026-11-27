@@ -68,7 +68,7 @@ import { breakchestlock } from './lock.js';
 import { addtobill, add_damage, pay_for_damage } from './shk.js';
 import { SHOP_DOOR_COST } from './const.js';
 import { flooreffects, impact_disturbs_zombies } from './do.js';
-import { place_object } from './mkobj.js';
+import { place_object, level_objects_at } from './mkobj.js';
 import { stackobj } from './invent.js';
 import { attack_checks } from './uhitm.js';
 import { overexertion } from './hack.js';
@@ -1359,10 +1359,7 @@ async function kick_object(x, y, kickobjnam) {
 
 /* C ref: display.h level.objects[x][y] -- the top object of the pile */
 function objects_at_top(x, y) {
-    for (const o of game.level?.objects || [])
-        if (o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR')
-            return o;
-    return null;
+    return level_objects_at(x, y)[0] || null;
 }
 
 // C ref: dokick.c really_kick_object() -- guts of kick_object
@@ -1726,8 +1723,7 @@ export async function impact_drop(
     isrock = (missile && missile.otyp === ROCK_DK);
     oct = dct = 0;
     /* svl.level.objects[x][y] via ->nexthere, top first */
-    const pile = game.level.objects.filter(o => o.ox === x && o.oy === y
-                                                && o.where === 'OBJ_FLOOR');
+    const pile = level_objects_at(x, y);
     for (const obj of pile) {
         if (obj === missile)
             continue;

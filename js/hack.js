@@ -117,7 +117,7 @@ import { bad_rock, passes_bars, minliquid } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
 import { an, xname, The } from './objnam.js';
 import { the } from './iactions.js';
-import { obj_extract_self, place_object } from './mkobj.js';
+import { obj_extract_self, place_object, level_objects_at } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
 import { set_ustuck, stumble_onto_mimic } from './uhitm.js';
 import { CONFLICT, HVY_ENCUMBER } from './const.js';
@@ -228,8 +228,7 @@ export async function revive_nasty(x, y, msg) {
 
     /* for (otmp = svl.level.objects[x][y]; otmp; otmp = otmp2):
        the pile at <x,y> from the floor chain, read before any revival */
-    const pile = (game.level.objects || []).filter(
-        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    const pile = level_objects_at(x, y);
     for (const otmp of pile) {
         if (otmp.otyp === CORPSE
             && (is_rider(mons[otmp.corpsenm])
@@ -1746,8 +1745,19 @@ export async function spoteffects(pick) {
                 await pickup(1);
         }
         /* Warning alerts you to ice danger */
-        if (Warning() && game.level.at(u.ux, u.uy).typ === ICE)
-            throw new Error('spoteffects(): ice warnings (spot_time_left()) not ported yet');
+        if (Warning() && is_ice_sf(u.ux, u.uy)) {
+            const icewarnings = [
+                "The ice seems very soft and slushy.",
+                "You feel the ice shift beneath you!",
+                "The ice, is gonna BREAK!", /* The Dead Zone */
+            ];
+            const time_left = spot_time_left_sc(u.ux, u.uy, MELT_ICE_AWAY_SC);
+
+            if (time_left && time_left < 15)
+                await pline(icewarnings[(time_left < 5) ? 2
+                                        : (time_left < 10) ? 1
+                                          : 0]);
+        }
 
         if ((mtmp = m_at(u.ux, u.uy)) != null && !u.uswallow) {
             mtmp.mundetected = mtmp.msleeping = 0;
@@ -2781,8 +2791,7 @@ async function moverock_core(sx, sy) {
         firstboulder = false;
 
         /* make sure that this boulder is visible as the top object */
-        const top = (game.level.objects || []).find(
-            o => o.ox === sx && o.oy === sy && o.where === 'OBJ_FLOOR');
+        const top = level_objects_at(sx, sy)[0] || null;
         if (otmp !== top)
             movobj(otmp, sx, sy);
 

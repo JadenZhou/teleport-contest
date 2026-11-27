@@ -124,7 +124,7 @@ import { LANDMINE as LANDMINE_SK, BEAR_TRAP as BEAR_TRAP_SK, HOLE as HOLE_SK,
          PIT as PIT_SK, SPIKED_PIT as SPIKED_PIT_SK } from './const.js';
 import { unplacebc, placebc } from './ball.js';
 import { obfree } from './invent.js';
-import { place_object, mksobj } from './mkobj.js';
+import { place_object, mksobj, level_objects_at } from './mkobj.js';
 import { closed_door } from './makemon.js';
 import { picking_at } from './lock.js';
 import { block_point } from './vision.js';
@@ -942,10 +942,7 @@ const vert = (i) => (Math.trunc(i / 3) - 1);
 /* C ref: svl.level.objects[x][y] -- top object of the floor pile at <x,y>
    (place_object() puts new objects at the front of level.objects) */
 export function level_objects_top(x, y) {
-    for (const o of game.level.objects || [])
-        if (o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR')
-            return o;
-    return null;
+    return level_objects_at(x, y)[0] || null;
 }
 
 // C ref: shk.c litter_getpos()
