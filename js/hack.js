@@ -61,7 +61,7 @@ import {
 } from './const.js';
 import { waterbody_name } from './pager.js';
 import { has_ceiling, record_achievement } from './insight.js';
-import { ing_suffix, visctrl, upstart, NODIAG } from './hacklib.js';
+import { ing_suffix, visctrl, upstart, NODIAG, s_suffix } from './hacklib.js';
 import { cmd_from_func } from './cmd.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
          PM_GRID_BUG, mons, M1_TUNNEL, M1_NEEDPICK, M1_AMORPHOUS, MZ_SMALL,
@@ -126,7 +126,7 @@ import { AT_ENGL, AT_HUGS, AD_STCK, AD_RUST, AD_CORR, M1_METALLIVORE } from './m
 import { WT_SQUEEZABLE_INV, A_STR, LANDMINE, SPIKED_PIT, PIT, HOLE, TRAPDOOR,
          LEVEL_TELEP, TELEP_TRAP, ROLLING_BOULDER_TRAP } from './const.js';
 import { CORPSE } from './objects.js';
-import { is_flyer, is_floater, dmgtype } from './mondata.js';
+import { is_flyer, is_floater, dmgtype, digests } from './mondata.js';
 import { float_vs_flight } from './polyself.js';
 import { pickup } from './pickup.js';
 import { shop_keeper, u_left_shop, u_entered_shop, costly_spot } from './shk.js';
@@ -513,8 +513,18 @@ async function pickup_checks() {
     const u = game.u;
 
     /* uswallow case added by GAN 01/29/87 */
-    if (u.uswallow)
-        throw new Error('pickup_checks(): picking up while engulfed not ported yet');
+    if (u.uswallow) {
+        if (!u.ustuck.minvent) {
+            if (digests(u.ustuck.data)) {
+                await You(`pick up ${s_suffix(mon_nam(u.ustuck))} tongue.`);
+                await pline("But it's kind of slimy, so you drop it.");
+            } else
+                await You(`don't ${Blind() ? "feel" : "see"} anything in here to pick up.`);
+            return 1;
+        } else {
+            return -2; /* loot the monster inventory */
+        }
+    }
     if (is_pool(u.ux, u.uy))
         throw new Error('pickup_checks(): picking things up in water not ported yet');
     if (is_lava(u.ux, u.uy))
