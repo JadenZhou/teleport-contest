@@ -38,6 +38,7 @@ import { max_rank_sz } from './botl.js';
 import { assigninvlet, reorder_invent, merged, addinv } from './invent.js';
 import { Japanese_item_name } from './objnam.js';
 import { setworn } from './worn.js';
+import { setuwep, setuqwep, setuswapwep } from './wield.js';
 import { ARM_BONUS } from './hacklib.js';
 import { hidden_gold } from './insight.js';
 
@@ -1290,11 +1291,6 @@ export function money_cnt(otmp) {
             return otmp.quan;
     return 0;
 }
-
-// C ref: wield.c setuwep(), setuqwep(), setuswapwep() -- slot only
-function setuwep(obj) { game.uwep = obj; obj.owornmask = (obj.owornmask || 0) | K.W_WEP; }
-function setuqwep(obj) { game.uquiver = obj; obj.owornmask = (obj.owornmask || 0) | K.W_QUIVER; }
-function setuswapwep(obj) { game.uswapwep = obj; obj.owornmask = (obj.owornmask || 0) | K.W_SWAPWEP; }
 
 // C ref: u_init.c ini_inv_use_obj()
 /* initial inventory: wear, wield, learn the spell/obj */

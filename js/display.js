@@ -1689,11 +1689,9 @@ export function unmap_object(x, y) {
         /* turn remembered dark room squares dark */
         if (!lev.waslit && lev.remembered_glyph?.cmap === 'S_room'
             && lev.typ === ROOM)
-            lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
-                                     cmap: 'S_stone' };
+            lev.remembered_glyph = room_cmap_glyph(0); /* cmap_to_glyph(S_stone) */
     } else {
-        lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
-                                 cmap: 'S_stone' }; /* default val */
+        lev.remembered_glyph = room_cmap_glyph(0); /* cmap_to_glyph(S_stone): default val */
     }
 }
 
@@ -2469,8 +2467,7 @@ export function feel_location(x, y) {
             && (!lev.waslit || (game.flags.dark_room !== false
                                 && game.iflags.wc_color !== false))) {
             if (game.flags.dark_room === false)
-                lev.remembered_glyph = { ch: ' ', color: NO_COLOR, decgfx: false,
-                                         cmap: 'S_stone' };
+                lev.remembered_glyph = room_cmap_glyph(0); /* S_stone */
             else
                 lev.remembered_glyph = { ...lev.remembered_glyph,
                                          cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
