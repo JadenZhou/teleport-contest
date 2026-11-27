@@ -989,7 +989,7 @@ export async function buried_ball_to_freedom() {
 
 /* C ref: context.h struct dig_info (svc.context.digging); C's context
    starts zeroed */
-function digging_ctx() {
+export function digging_ctx() {
     const g = game;
     if (!g.context) g.context = {};
     if (!g.context.digging)
@@ -1001,7 +1001,7 @@ function digging_ctx() {
 }
 
 /* C ref: (void) memset(&svc.context.digging, 0, sizeof svc.context.digging) */
-function clear_digging() {
+export function clear_digging() {
     const digging = digging_ctx();
     digging.pos.x = 0, digging.pos.y = 0;
     digging.level.dnum = 0, digging.level.dlevel = 0;

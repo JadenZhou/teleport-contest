@@ -9,6 +9,7 @@
 // start_tin(), opentin(), consume_tin().  Non-food and edibility prompts
 // are not ported yet.
 
+import { altar_wrath as altar_wrath_et } from './pray.js';
 import { selftouch } from './trap.js';
 import { Levitation, Deaf } from './youprop.js';
 import { melt_ice } from './zap.js';
@@ -725,7 +726,7 @@ export async function vomit() {
             throw new Error('vomit(): ubreatheu() not ported yet');
         /* vomiting on an altar is, all things considered, rather impolite */
         if (g.level.at(u.ux, u.uy).typ === ALTAR_TYP)
-            throw new Error('vomit(): altar_wrath() not ported yet');
+            await altar_wrath_et(u.ux, u.uy);
         /* if poly'd into acidic form, stomach acid is stronger than normal */
         if ((ptr.mflags1 & M.M1_ACID) !== 0) {
             /* TODO: if there's a web here, destroy that too (before ice) */
