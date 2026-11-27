@@ -1744,8 +1744,19 @@ export async function spoteffects(pick) {
                 await pickup(1);
         }
         /* Warning alerts you to ice danger */
-        if (Warning() && game.level.at(u.ux, u.uy).typ === ICE)
-            throw new Error('spoteffects(): ice warnings (spot_time_left()) not ported yet');
+        if (Warning() && is_ice_sf(u.ux, u.uy)) {
+            const icewarnings = [
+                "The ice seems very soft and slushy.",
+                "You feel the ice shift beneath you!",
+                "The ice, is gonna BREAK!", /* The Dead Zone */
+            ];
+            const time_left = spot_time_left_sc(u.ux, u.uy, MELT_ICE_AWAY_SC);
+
+            if (time_left && time_left < 15)
+                await pline(icewarnings[(time_left < 5) ? 2
+                                        : (time_left < 10) ? 1
+                                          : 0]);
+        }
 
         if ((mtmp = m_at(u.ux, u.uy)) != null && !u.uswallow) {
             mtmp.mundetected = mtmp.msleeping = 0;
