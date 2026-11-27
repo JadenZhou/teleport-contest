@@ -25,7 +25,7 @@ import { nomul } from './hack.js';
 import { seemimic } from './mon.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
 import { losehp, unconscious as unconscious_mu, wearing_iron_shoes } from './trap.js';
-import { find_mac } from './worn.js';
+import { find_mac, Dragon_mail_to_pm, Dragon_scales_to_pm, Is_dragon_mail } from './worn.js';
 import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
          likes_gems, noncorporeal, amorphous, unsolid, is_mercenary, acidic,
          is_unicorn, touch_petrifies, resists_ston, resists_acid, slimeproof,
@@ -98,8 +98,7 @@ import { rndmonnam } from './do_name.js';
 import { HEAVY_IRON_BALL, SILVER, ICE_BOX, BAG_OF_HOLDING,
          SHIELD_OF_REFLECTION, AMULET_OF_REFLECTION, SILVER_DRAGON_SCALES,
          SILVER_DRAGON_SCALE_MAIL, AMULET_OF_LIFE_SAVING, ARMOR_CLASS,
-         GRAY_DRAGON_SCALES, YELLOW_DRAGON_SCALES,
-         GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL } from './objects.js';
+         YELLOW_DRAGON_SCALES } from './objects.js';
 
 import { monverbself, PRONOUN_HALLU } from './do_name.js';
 import { same_race } from './mondata.js';
@@ -218,16 +217,6 @@ export function m_seenres(mon, mask) { return (mon.seen_resistance || 0) & mask;
 
 /* C ref: obj.h Has_contents() */
 function Has_contents(o) { return !!(o.cobj && o.cobj.length); }
-/* C ref: obj.h Is_dragon_mail(), Dragon_scales_to_pm(), Dragon_mail_to_pm() */
-function Is_dragon_mail(o) {
-    return o.otyp >= GRAY_DRAGON_SCALE_MAIL && o.otyp <= YELLOW_DRAGON_SCALE_MAIL;
-}
-function Dragon_scales_to_pm(o) {
-    return mons[M.PM_GRAY_DRAGON + o.otyp - GRAY_DRAGON_SCALES];
-}
-function Dragon_mail_to_pm(o) {
-    return mons[M.PM_GRAY_DRAGON + o.otyp - GRAY_DRAGON_SCALE_MAIL];
-}
 /* C ref: wizard.c mon_has_special() */
 export function mon_has_special(mtmp) {
     for (const otmp of minv(mtmp))

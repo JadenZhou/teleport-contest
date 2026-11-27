@@ -40,7 +40,7 @@ import { ABASE, AMAX, adjattrib, adjalign, change_luck, exercise } from './attri
 import { losexp } from './exper.js';
 import { near_capacity, nomul } from './hack.js';
 import { paranoid_query } from './cmd.js';
-import { welded } from './wield.js';
+import { welded, freehand } from './wield.js';
 import { which_armor, sobj_at, is_pool, is_lava, m_at, set_malign } from './makemon.js';
 import { confers_luck } from './timeout.js';
 import { region_danger } from './region.js';
@@ -355,13 +355,6 @@ function a_align(x, y) {
 }
 /* C ref: obj.h Cursed_obj() */
 function Cursed_obj(obj, typ) { return !!(obj && obj.otyp === typ && obj.cursed); }
-
-// C ref: engrave.c freehand()
-function freehand() {
-    const uwep = game.uwep;
-    return (!uwep || !welded(uwep)
-            || (!bimanual(uwep) && (!game.uarms || !game.uarms.cursed)));
-}
 
 // C ref: pray.c critically_low_hp()
 /* critically low hit points if hp <= 5 or hp <= maxhp/N for some N */

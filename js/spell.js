@@ -49,7 +49,7 @@ import { tele } from './teleport.js';
 import { aggravate, make_blinded, make_confused, make_stunned, trycall,
          peffects, healup, make_slimed } from './potion.js';
 import { erode_obj, losehp, Maybe_Half_Phys } from './trap.js';
-import { poison_strdmg, exercise as exercise_sp } from './attrib.js';
+import { poison_strdmg, exercise } from './attrib.js';
 import { body_part } from './insight.js';
 import { tty_display_nhwindow, tty_yn_function } from './wintty.js';
 import { useup, obfree } from './invent.js';
@@ -1182,8 +1182,6 @@ export function force_learn_spell(otyp) {
                       * a spell by reading its book, we don't need to add 1 */
     return spellet(i);
 }
-
-async function exercise(i, inc) { await exercise_sp(i, inc); }
 
 /* C ref: spell.c enum spl_sort_types */
 const SORTBY_LETTER = 0;

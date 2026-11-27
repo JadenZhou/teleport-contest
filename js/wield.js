@@ -744,7 +744,7 @@ async function quivering(verb, newquiver, was_uwep, was_twoweap) {
 }
 
 // C ref: wield.c erodeable_wep() -- used by will_weld()
-function erodeable_wep(optr) {
+export function erodeable_wep(optr) {
     return (optr.oclass === WEAPON_CLASS || is_weptool(optr)
             || optr.otyp === HEAVY_IRON_BALL || optr.otyp === IRON_CHAIN);
 }

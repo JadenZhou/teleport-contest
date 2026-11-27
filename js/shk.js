@@ -949,7 +949,7 @@ const horiz = (i) => ((i % 3) - 1);
 const vert = (i) => (Math.trunc(i / 3) - 1);
 /* C ref: svl.level.objects[x][y] -- top object of the floor pile at <x,y>
    (place_object() puts new objects at the front of level.objects) */
-function level_objects_top(x, y) {
+export function level_objects_top(x, y) {
     for (const o of game.level.objects || [])
         if (o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR')
             return o;

@@ -45,7 +45,7 @@ import { cansee as cansee_tp } from './vision.js';
 import { EPRI } from './const.js';
 import { getdir } from './cmd.js';
 import { is_flyer, is_undead, is_vampshifter, same_race, is_animal,
-         is_mercenary, is_silent, is_lord, is_prince} from './mondata.js';
+         is_mercenary, is_silent, is_lord, is_prince } from './mondata.js';
 import { Blind, Strangled, Hallucination, Deaf, Unaware } from './youprop.js';
 import { S_NYMPH as S_NYMPH_SN } from './monsters.js';
 import { could_seduce as could_seduce_sn, doseduce as doseduce_sn } from './mhitu.js';

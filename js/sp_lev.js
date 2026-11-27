@@ -60,7 +60,7 @@ import {
 import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap, fill_zoo, count_level_features } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
-    rndmonnum, weight, add_to_container,
+    rndmonnum, weight, add_to_container, unbless, uncurse,
 } from './mkobj.js';
 import {
     NON_PM, MALE, FEMALE, NEUTRAL, G_EXTINCT, G_GONE, LR_TELE, LR_UPTELE,
@@ -2803,11 +2803,6 @@ export function get_table_objtype(tbl) {
 
     return ret;
 }
-
-// C ref: mkobj.c unbless(), uncurse() — the light-source and inventory
-// updates are not needed during level creation
-function unbless(otmp) { otmp.blessed = 0; }
-function uncurse(otmp) { otmp.cursed = 0; }
 
 // C ref: sp_lev.c create_object()
 function create_object(o, croom) {

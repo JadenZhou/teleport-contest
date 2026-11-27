@@ -4106,8 +4106,8 @@ function doname_base(obj, doname_flags) {
         if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
             xn_not_ported('candelabrum suffix');
         } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
-                   || obj.otyp === O.BRASS_LANTERN || Is_candle_x(obj)) {
-            if (Is_candle_x(obj)) {
+                   || obj.otyp === O.BRASS_LANTERN || Is_candle(obj)) {
+            if (Is_candle(obj)) {
                 let timer;
                 const full_burn_time = 20 * objects[obj.otyp].oc_cost;
                 let turns_left = obj.age;
@@ -4282,11 +4282,6 @@ function doname_base(obj, doname_flags) {
 }
 
 function omndx_ok(n) { return n != null && n >= 0; }
-// C ref: role.h Role_if()
-// C ref: obj.h Is_candle()
-function Is_candle_x(otmp) {
-    return otmp.otyp === O.TALLOW_CANDLE || otmp.otyp === O.WAX_CANDLE;
-}
 // C ref: objclass.h GemStone()
 function GemStone_x(typ) {
     return typ === O.FLINT

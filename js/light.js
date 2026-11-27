@@ -28,7 +28,7 @@ import { artifact_light } from './artifact.js';
 import { vision_recalc } from './vision.js';
 import { flush_screen, canseemon, canspotmon, map_invisible } from './display.js';
 import { dist2 } from './hacklib.js';
-import { place_object, obj_extract_self } from './mkobj.js';
+import { place_object, obj_extract_self, Is_candle } from './mkobj.js';
 import { impossible } from './hack.js';
 import { otense } from './objnam.js';
 import { simpleonames } from './iactions.js';
@@ -552,11 +552,6 @@ export function obj_split_light_source(src, dest) {
             game.light_base = new_ls;
             dest.lamplit = 1; /* now an active light source */
         }
-}
-
-/* C ref: obj.h Is_candle() */
-function Is_candle(otmp) {
-    return otmp.otyp === TALLOW_CANDLE || otmp.otyp === WAX_CANDLE;
 }
 
 // C ref: light.c obj_merge_light_sources()

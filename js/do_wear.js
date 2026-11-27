@@ -21,11 +21,11 @@ import { drown } from './trap.js';
 import { is_pool_or_lava } from './hack.js';
 import { set_bc } from './ball.js';
 import { M1_SWIM, M1_AMPHIBIOUS } from './monsters.js';
-import { cantweararm } from './worn.js';
+import { cantweararm, WrappingAllowed } from './worn.js';
 import { has_horns } from './polyself.js';
 import { impossible } from './hack.js';
 import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
-         noncorporeal, is_whirly, mindless, has_head, breathless,
+         is_whirly, mindless, has_head, breathless,
          num_horns } from './mondata.js';
 import { itimeout } from './potion.js';
 import { game } from './gstate.js';
@@ -40,10 +40,10 @@ import { ARMOR_CLASS, RING_CLASS, AMULET_CLASS, MEAT_RING, BLINDFOLD, TOWEL,
          LENSES, is_helmet, is_shield, is_cloak, is_shirt, is_suit, is_sword,
          is_flimsy, is_boots, is_gloves, bimanual, is_metallic, is_crackable,
          is_rustprone, is_corrodeable } from './objects.js';
-import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, MZ_HUGE, M1_NOLIMBS, M1_HUMANOID,
+import { M1_NOHANDS, MZ_SMALL, MZ_LARGE, M1_NOLIMBS, M1_HUMANOID,
          M1_NOHEAD, M1_SLITHY, M1_FLY, M1_MINDLESS, M1_BREATHLESS, S_CENTAUR,
-         S_GHOST, S_VORTEX, mons, PM_AIR_ELEMENTAL, PM_MARILITH,
-         PM_WINGED_GARGOYLE, PM_HORNED_DEVIL, PM_MINOTAUR, PM_ASMODEUS,
+         S_GHOST, S_VORTEX, PM_AIR_ELEMENTAL,
+         PM_HORNED_DEVIL, PM_MINOTAUR, PM_ASMODEUS,
          PM_BALROG, PM_WHITE_UNICORN, PM_GRAY_UNICORN, PM_BLACK_UNICORN,
          PM_KI_RIN, PM_WIZARD } from './monsters.js';
 import { xname, an, makeplural, Tobjnam, obj_is_pname } from './objnam.js';
@@ -146,13 +146,6 @@ const c_armor = "armor", c_suit = "suit", c_shirt = "shirt",
     c_helmet = "helmet", c_shield = "shield", c_weapon = "weapon",
     c_sword = "sword", c_axe = "axe", c_that_ = "that";
 void c_helmet;
-
-/* C ref: obj.h WrappingAllowed() */
-function WrappingAllowed(mptr) {
-    return humanoid(mptr) && mptr.msize >= MZ_SMALL && mptr.msize <= MZ_HUGE
-        && !noncorporeal(mptr) && mptr.mlet !== S_CENTAUR
-        && mptr !== mons[PM_WINGED_GARGOYLE] && mptr !== mons[PM_MARILITH];
-}
 
 // C ref: do_wear.c fingers_or_gloves() -- plural "fingers" or optionally
 // "gloves"

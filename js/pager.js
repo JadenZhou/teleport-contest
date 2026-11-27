@@ -1886,6 +1886,13 @@ export function pmatch(patrn, strng) {
     }
 }
 
+// C ref: pager.c ia_checkfile()
+export async function ia_checkfile(otmp) {
+    /* singular() of xname() of otmp is what "/i" looks up */
+    const itemnam = singular(otmp, xname);
+    return await checkfile(itemnam, null, chkfilIaCheck | chkfilDontAsk, null);
+}
+
 // C ref: pager.c checkfile() -- look in the "data" file (data.base, here
 // the generated data_base.js) for more info. Called if the user typed in
 // the whole name (user_typed_name), or we've found a possible match with a

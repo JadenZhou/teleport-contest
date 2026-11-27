@@ -14,7 +14,7 @@ import { obj_resists } from './dogmove.js';
 import { maybe_unhide_at } from './mon.js';
 import { doname, doname_with_price, makeplural } from './objnam.js';
 import { rn2, rn2_on_display_rng } from './rng.js';
-import { ing_suffix, visctrl } from './hacklib.js';
+import { ing_suffix, visctrl, letter } from './hacklib.js';
 import { def_oc_syms } from './drawing.js';
 import { body_part, hidden_gold, currency, empty_handed } from './insight.js';
 import { money_cnt } from './u_init.js';
@@ -3181,11 +3181,6 @@ function SURFACE_AT_iv(x, y) {
                                           : lev.typ;
 }
 
-// C ref: hacklib.c letter()
-function letter_iv(c) {
-    return ('@' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
-}
-
 // C ref: mkobj.c extract_nobj() -- for the hero's inventory chain
 function extract_nobj_invent(obj) {
     let curr, prev;
@@ -3447,7 +3442,7 @@ async function doorganize_core(obj) {
         /* letter() classifies '@' as one; compactify() can put '-' in lets;
            the only thing of interest that strchr() might find is '$' or '#'
            since letter() catches everything else that we put into lets[] */
-        if ((letter_iv(let_) && let_ !== '@') || (lets.includes(let_) && let_ !== '-'))
+        if ((letter(let_) && let_ !== '@') || (lets.includes(let_) && let_ !== '-'))
             break; /* got one */
         if (trycnt === 5) {
             noadjust = true;

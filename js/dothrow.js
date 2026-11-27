@@ -24,7 +24,7 @@ import { glyph_at, glyph_is_warning, You_hear as
 import { noit_mhim } from './mhitu.js';
 import { shade_miss } from './uhitm.js';
 import { switch_terrain } from './hack.js';
-import { dotrap, trapname } from './trap.js';
+import { dotrap, trapname, is_waterwall } from './trap.js';
 import { cmdq_add_ec, cmdq_add_key } from './cmd.js';
 import { is_art } from './artifact.js';
 import { game } from './gstate.js';
@@ -123,7 +123,7 @@ import { uprop } from './youprop.js';
 import { goodpos as goodpos_hu, m_at as m_at_hu,
          place_monster as place_monster_hu } from './makemon.js';
 import { MM_IGNOREWATER as MM_IGNOREWATER_HU, MM_IGNORELAVA as MM_IGNORELAVA_HU,
-         IS_WATERWALL as IS_WATERWALL_HU, HURTLING as HURTLING_HU,
+         HURTLING as HURTLING_HU,
          FORCEBUNGLE as FORCEBUNGLE_HU, W_ARMU as W_ARMU_HU, W_ARM as W_ARM_HU,
          W_ARMC as W_ARMC_HU, TT_WEB as TT_WEB_HU, TT_LAVA as TT_LAVA_HU,
          TT_INFLOOR as TT_INFLOOR_HU, TT_BURIEDBALL as TT_BURIEDBALL_HU
@@ -2318,7 +2318,7 @@ export async function hurtle_step(arg, x, y) {
                                 || u.uprops?.[WWALKING_HT]?.extrinsic
                                 || game.hurtle_via_jumping)
                                && !Is_waterlevel_tg(u.uz));
-        if (is_waterwall_hu(x, y) || !(Levitation() || Flying_ht || Wwalking_ht)) {
+        if (is_waterwall(x, y) || !(Levitation() || Flying_ht || Wwalking_ht)) {
             /* couldn't move while hurtling; allow movement now so that
                drown() will give a chance to crawl out of pool and survive */
             game.multi = 0;
@@ -2376,11 +2376,6 @@ export function will_hurtle(mon, x, y) {
     return goodpos_hu(x, y, mon, MM_IGNOREWATER_HU | MM_IGNORELAVA_HU);
 }
 
-/* C ref: dbridge.c is_waterwall() */
-function is_waterwall_hu(x, y) {
-    return isok(x, y) && IS_WATERWALL_HU(game.level.at(x, y).typ);
-}
-
 // C ref: dothrow.c mhurtle_step()
 async function mhurtle_step(mon, x, y) {
     const u = game.u;
@@ -2402,7 +2397,7 @@ async function mhurtle_step(mon, x, y) {
         }
         /* flush_screen(1); nh_delay_output(): display timing only */
         set_apparxy_hu(mon);
-        if (is_waterwall_hu(x, y))
+        if (is_waterwall(x, y))
             return false;
         res = await mintrap_hu(mon, HURTLING_HU);
         if (res === Trap_Killed_Mon_HU
