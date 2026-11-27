@@ -68,6 +68,7 @@ import { obj_merge_light_sources } from './light.js';
 import { set_moreluck } from './attrib.js';
 import { setnotworn, setworn } from './worn.js';
 import { oname } from './do_name.js';
+import { o_unleash } from './apply.js';
 import { W_WEP, W_SWAPWEP, W_QUIVER, ONAME_SKIP_INVUPD } from './const.js';
 import { food_disappears } from './eat.js';
 import { maybe_reset_pick } from './lock.js';
@@ -902,7 +903,7 @@ export function delete_contents(obj) {
 /* delete obj from the game; 'merge' is the stack it merged into, if any */
 export function obfree(obj, merge) {
     if (obj.otyp === O.LEASH && obj.leashmon)
-        throw new Error('obfree(): o_unleash() not ported yet');
+        o_unleash(obj);
     if (obj.oclass === O.FOOD_CLASS)
         food_disappears(obj);
     if (obj.oclass === O.SPBOOK_CLASS) {

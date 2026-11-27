@@ -2215,7 +2215,7 @@ export async function hurtle_step(arg, x, y) {
 
     ox = u.ux;
     oy = u.uy;
-    u_on_newpos(x, y); /* set u.<ux,uy>, u.usteed-><mx,my>; cliparound(); */
+    await u_on_newpos(x, y); /* set u.<ux,uy>, u.usteed-><mx,my>; cliparound(); */
     newsym(ox, oy);    /* update old position */
     vision_recalc(1);  /* update for new position */
     await flush_screen(1);

@@ -3209,7 +3209,7 @@ async function domove_core() {
     if (u.uswallow) {
         u.dx = u.dy = 0;
         x = u.ustuck.mx, y = u.ustuck.my;
-        u_on_newpos(x, y); /* set u.ux,uy and handle CLIPPING */
+        await u_on_newpos(x, y); /* set u.ux,uy and handle CLIPPING */
         mtmp = u.ustuck;
     } else {
         /* air_turbulence() */
@@ -3382,7 +3382,7 @@ async function domove_core() {
     /* tentative move above didn't handle CLIPPING, in case there was a
        monster in the way and the move attempt ended up being blocked;
        do a full re-position now, possibly back to where hero started */
-    u_on_newpos(u.ux, u.uy);
+    await u_on_newpos(u.ux, u.uy);
 
     /* reset_occupations(): occupations aren't ported yet */
     if (ctx.run) {
