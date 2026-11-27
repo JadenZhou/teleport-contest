@@ -497,7 +497,8 @@ export async function reveal_terrain(which_subset) {
         /* default_sym = arboreal ? S_tree : S_stone */
         if (game.level.flags.arboreal)
             throw new Error('reveal_terrain(): arboreal default glyph not ported yet');
-        const default_glyph = { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'S_stone' };
+        const default_glyph = { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'S_stone',
+                                cmapidx: 0 /* S_stone */ };
 
         if (unconstrain_map())
             await docrt();
