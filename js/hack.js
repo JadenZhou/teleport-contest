@@ -12,7 +12,7 @@ import { just_an } from './objnam.js';
 import { mintrap, Trap_Effect_Finished, Trap_Caught_Mon, Trap_Killed_Mon,
          Trap_Moved_Mon } from './trap.js';
 import { NO_TRAP_FLAGS, LL_CONDUCT, ParanoidTrap, ParanoidSwim,
-         ParanoidConfirm } from './const.js';
+         ParanoidConfirm, is_pit } from './const.js';
 import { abuse_dog } from './dog.js';
 import { adjalign } from './attrib.js';
 import { livelog_printf, You_feel, verbalize, You_hear } from './display.js';
@@ -60,7 +60,7 @@ import {
     BARRACKS, DELPHI, THRONE, STEALTH, WT_ELF, WATER, POOL, LAVAPOOL, FIRE_RES,
 } from './const.js';
 import { waterbody_name } from './pager.js';
-import { has_ceiling } from './insight.js';
+import { has_ceiling, record_achievement } from './insight.js';
 import { ing_suffix, visctrl, upstart, NODIAG } from './hacklib.js';
 import { cmd_from_func } from './cmd.js';
 import { S_NYMPH, M2_STRONG, M2_ROCKTHROW, MZ_HUMAN, AT_BOOM, M1_HIDE,
@@ -87,7 +87,8 @@ import { carrying } from './invent.js';
 import { WAN_DIGGING, is_pick } from './objects.js';
 import { u_at, Is_rogue_level, Upolyd } from './const.js';
 import { fall_asleep } from './timeout.js';
-import { t_at, VIBRATING_SQUARE, is_pit, WEB, climb_pit, reset_utrap, sokoban_guilt } from './trap.js';
+import { t_at, VIBRATING_SQUARE, WEB, climb_pit, reset_utrap,
+         sokoban_guilt } from './trap.js';
 import { TT_BEARTRAP, TT_PIT, TT_WEB, TT_LAVA, TT_INFLOOR, TT_BURIEDBALL, TT_NONE } from './const.js';
 import { ART_STING } from './artilist.js';
 import { buried_ball, buried_ball_to_punishment } from './dig.js';
@@ -103,7 +104,7 @@ import { back_to_cmap, defsyms_explanation } from './pager.js';
 import { u_on_newpos } from './mklev.js';
 import { room_discovered } from './dungeon.js';
 import { inside_room } from './sp_lev.js';
-import { record_achievement, boulder_hits_pool } from './do.js';
+import { boulder_hits_pool } from './do.js';
 import { ACH_TOWN } from './const.js';
 import { RUN_TPORT, RUN_LEAP } from './const.js';
 import { flush_screen as flush_screen_hk } from './display.js';
@@ -1850,7 +1851,7 @@ function block_entry(x, y) {
 }
 
 // C ref: hack.c doorless_door()
-function doorless_door(x, y) {
+export function doorless_door(x, y) {
     const lev_p = game.level.at(x, y);
 
     if (!IS_DOOR(lev_p.typ))

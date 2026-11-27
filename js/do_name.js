@@ -6,7 +6,7 @@
 import { docall } from './potion.js';
 import { set_artifact_intrinsic_sync } from './artifact.js';
 import { livelog_printf } from './display.js';
-import { LL_CONDUCT, LL_ARTIFACT } from './const.js';
+import { LL_CONDUCT, LL_ARTIFACT, has_mgivenname } from './const.js';
 import { ansimpleoname, bare_artifactname } from './iactions.js';
 import { W_WEP } from './const.js';
 import { game } from './gstate.js';
@@ -577,9 +577,6 @@ export const EXACT_NAME = 0x1F;
 export const SUPPRESS_NAME = 0x20;
 export const AUGMENT_IT = 0x40;
 
-/* C ref: monst.h has_mgivenname(); mondata.h type_is_pname(),
-   is_mplayer() */
-function has_mgivenname(mtmp) { return !!mtmp.mgivenname; }
 /* C ref: mondata.c pmname(); mondata.h mon_pmname() */
 export function pmname(pm, mgender) {
     if ((mgender >= MALE && mgender < NUM_MGENDERS) && pm.pmnames[mgender])

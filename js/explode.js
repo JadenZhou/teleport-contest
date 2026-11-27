@@ -13,7 +13,8 @@ import { fracture_rock, break_statue } from './zap.js';
 import { rehumanize } from './polyself.js';
 import { hideunder_async } from './makemon.js';
 import { DEADMONSTER } from './mon.js';
-import { pay_for_damage as pay_for_damage_ex } from './shk.js';
+import { pay_for_damage as pay_for_damage_ex,
+         level_objects_top } from './shk.js';
 import { game } from './gstate.js';
 import { pline, You, pline_The, map_invisible, unmap_invisible, canspotmon,
          tmp_at, DISP_BEAM, DISP_CHANGE, DISP_END, explosion_to_glyph,
@@ -66,7 +67,7 @@ import { maybe_unhide_at } from './mon.js';
 import { shop_keeper, costly_spot, credit_report, addtobill } from './shk.js';
 import { in_rooms, nomul } from './hack.js';
 import { unpunish } from './read.js';
-import { splitobj, obj_extract_self, place_object, level_objects_at } from './mkobj.js';
+import { splitobj, obj_extract_self, place_object } from './mkobj.js';
 import { breaks } from './dothrow.js';
 import { closed_door } from './makemon.js';
 import { ohitmon, thitu } from './mthrowu.js';
@@ -711,11 +712,6 @@ export async function explode(
     await wake_nearto(x, y, i);
 }
 
-
-/* C ref: display.h level.objects[x][y] -- the top object of the pile */
-function level_objects_top(x, y) {
-    return level_objects_at(x, y)[0] || null;
-}
 
 // C ref: explode.c scatter()
 /*

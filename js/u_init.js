@@ -39,6 +39,7 @@ import { assigninvlet, reorder_invent, merged, addinv } from './invent.js';
 import { Japanese_item_name } from './objnam.js';
 import { setworn } from './worn.js';
 import { ARM_BONUS } from './hacklib.js';
+import { hidden_gold } from './insight.js';
 
 /* C ref: spell.h SPELL_LEV_PW() */
 function SPELL_LEV_PW(lvl) { return (lvl) * 5; }
@@ -1238,14 +1239,6 @@ async function ini_inv(trops) {
         quan = trquan(trop);
     }
 }
-
-// C ref: invent.c hidden_gold()
-/* the hero's starting inventory never holds a container with gold */
-function hidden_gold(even_if_unknown) {
-    void even_if_unknown;
-    return 0;
-}
-
 
 // C ref: u_init.c u_init_carry_attr_boost()
 /* boost STR and CON until hero can carry inventory */

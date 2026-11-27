@@ -41,9 +41,8 @@ import { mksobj_at, mkobj_at, mkobj, rnd_class, curse, uncurse, bless,
          mkgold, level_objects_at } from './mkobj.js';
 import { exercise, adjattrib, poison_strdmg, ACURR } from './attrib.js';
 import { in_town } from './hack.js';
-import { mbodypart } from './shk.js';
 import { newuhs, morehungry, vomit } from './eat.js';
-import { body_part, enlightenment } from './insight.js';
+import { body_part, enlightenment, mbodypart } from './insight.js';
 import { surface } from './iactions.js';
 import { monflee } from './monmove.js';
 import { exist_artifact, artiname, discover_artifact } from './artifact.js';

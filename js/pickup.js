@@ -7,7 +7,7 @@
 
 import { impossible } from './hack.js';
 import { FUMBLING, TIMEOUT, DRAWBRIDGE_UP, ICE, STONE, IS_POOL, IS_LAVA,
-         IS_FURNITURE, PLNMSG_BACK_ON_GROUND } from './const.js';
+         IS_FURNITURE, PLNMSG_BACK_ON_GROUND, is_pit } from './const.js';
 import { db_under_typ, lastseentyp_array } from './display.js';
 import { dfeature_at } from './invent.js';
 import { waterbody_name } from './pager.js';
@@ -50,7 +50,7 @@ import { unbless } from './mkobj.js';
 import { trycall } from './potion.js';
 import { useupf } from './invent.js';
 import { P_BOW, P_CROSSBOW, P_SPEAR, P_DAGGER, P_KNIFE } from './const.js';
-import { t_at, is_pit } from './trap.js';
+import { t_at } from './trap.js';
 import { can_reach_floor, cant_reach_floor } from './engrave.js';
 import { P_SKILL } from './weapon.js';
 import { P_RIDING, P_BASIC } from './const.js';

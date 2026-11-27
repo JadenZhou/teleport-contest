@@ -86,7 +86,7 @@ import { setmangry, killed, mondied, wakeup, wake_nearto } from './mon.js';
 import { m_at, closed_door } from './makemon.js';
 import { initedog, tamedog } from './dog.js';
 import { body_part, has_ceiling } from './insight.js';
-import { which_armor, setworn } from './worn.js';
+import { which_armor, setworn, is_elven_armor } from './worn.js';
 import { create_gas_cloud } from './region.js';
 import { getpos, getpos_sethilite } from './getpos.js';
 import { cansee, do_clear_area, vision_recalc } from './vision.js';
@@ -139,18 +139,13 @@ import { S_invisible as S_invisible_rd, S_WORM_TAIL as S_WORM_TAIL_RD,
          PM_STALKER as PM_STALKER_RD } from './monsters.js';
 import { buried_ball_to_freedom } from './dig.js';
 import { LEG } from './const.js';
+import { uslinging } from './dothrow.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
       NH_SILVER = "silver", NH_PURPLE = "purple", NH_RED = "red",
       NH_BLUE = "blue";
 
-/* C ref: obj.h is_elven_armor() */
-function is_elven_armor(o) {
-    return o.otyp === O.ELVEN_LEATHER_HELM || o.otyp === O.ELVEN_MITHRIL_COAT
-           || o.otyp === O.ELVEN_CLOAK || o.otyp === O.ELVEN_SHIELD
-           || o.otyp === O.ELVEN_BOOTS;
-}
 /* C ref: hacklib.c sgn(), upwords() */
 function upwords(s) {
     let space = true;
@@ -1188,11 +1183,6 @@ async function seffect_remove_curse(sobjp) {
         await pline_The(`clasp on your ${body_part(LEG)} vanishes.`);
     }
     /* update_inventory(): no perm_invent */
-}
-
-/* C ref: wield.c uslinging() */
-function uslinging() {
-    return !!(game.uwep && game.uwep.otyp === O.SLING);
 }
 
 // C ref: read.c seffect_create_monster()
