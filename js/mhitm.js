@@ -124,6 +124,7 @@ import { drain_item } from './zap.js';
 import { hliquid } from './potion.js';
 import { finish_meating as finish_meating_md } from './dogmove.js';
 import { pline_mon } from './display.js';
+import { shieldeff } from './display.js';
 
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
@@ -1006,7 +1007,7 @@ export async function mon_poly(magr, mdef, dmg) {
     if (mdef === game.youmonst) {
         const up = (p) => !!(u.uprops[p]?.intrinsic || u.uprops[p]?.extrinsic);
         if (up(ANTIMAGIC_MP)) { /* Antimagic */
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
         } else if (up(UNCHANGING_MP)) { /* Unchanging */
             ; /* just take a little damage */
         } else {

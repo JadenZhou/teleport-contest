@@ -662,7 +662,7 @@ export async function bhitm(mtmp, otmp) {
         if (resists_magm_zp(mtmp)) { /* match effect on player */
             if (disguised_mimic && !disguised_as_mon(mtmp))
                 seemimic_rv(mtmp);
-            /* shieldeff(mtmp->mx, mtmp->my): transient display only */
+            await shieldeff(mtmp.mx, mtmp.my);
             await pline("Boing!");
             /* 5.0: used to 'break' to avoid setting learn_it here */
         } else if (u.uswallow || rnd(20) < 10 + find_mac(mtmp)) {
@@ -2167,7 +2167,7 @@ export async function zapyourself(obj, ordinary) {
     case O_zy.SPE_FORCE_BOLT:
         learn_it = true;
         if (u.uprops[ANTIMAGIC_ZY].intrinsic || u.uprops[ANTIMAGIC_ZY].extrinsic) {
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline("Boing!");
             monstseesu(M_SEEN_MAGR_ZY);
         } else {
@@ -2190,7 +2190,7 @@ export async function zapyourself(obj, ordinary) {
             await exercise(A_CON_ZP, false);
             monstunseesu(M_SEEN_ELEC_ZP);
         } else {
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await You("zap yourself, but seem unharmed.");
             monstseesu(M_SEEN_ELEC_ZP);
             await ugolemeffects_zp(AD_ELEC, orig_dmg);
@@ -2208,7 +2208,7 @@ export async function zapyourself(obj, ordinary) {
         learn_it = true;
         orig_dmg = d(12, 6);
         if (uhave_zp(FIRE_RES)) { /* Fire_resistance */
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await You_feel("rather warm.");
             monstseesu(M_SEEN_FIRE_ZP);
             await ugolemeffects_zp(AD_FIRE, orig_dmg);
@@ -2229,7 +2229,7 @@ export async function zapyourself(obj, ordinary) {
         learn_it = true;
         orig_dmg = d(12, 6);
         if (uhave_zp(COLD_RES)) { /* Cold_resistance */
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await You_feel("a little chill.");
             monstseesu(M_SEEN_COLD_ZP);
             await ugolemeffects_zp(AD_COLD, orig_dmg);
@@ -2245,7 +2245,7 @@ export async function zapyourself(obj, ordinary) {
     case O_zy.SPE_MAGIC_MISSILE:
         learn_it = true;
         if (Antimagic()) {
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline_The("missiles bounce!");
             monstseesu(M_SEEN_MAGR_ZY);
         } else {
@@ -2309,7 +2309,7 @@ export async function zapyourself(obj, ordinary) {
     case SPE_SLEEP:
         learn_it = true;
         if (Sleep_resistance()) {
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             await You("don't feel sleepy!");
             monstseesu(M_SEEN_SLEEP);
         } else {
@@ -2647,7 +2647,7 @@ export async function flashburn(duration, via_lightning) {
        a sparkle animation (even if also resisted due to being blind)
        _unless_ this is lightning-induced */
     if (!via_lightning && resists_blnd_by_arti(game.youmonst)) {
-        /* shieldeff(u.ux, u.uy): transient display only */
+        await shieldeff(game.u.ux, game.u.uy);
         return true;
     }
     return false;

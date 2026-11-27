@@ -1225,7 +1225,7 @@ export async function gazemu(mtmp, mattk) {
                 await pline_mon(mtmp, `${Monnam(mtmp)} attacks you with a fiery gaze!`);
                 stop_occupation();
                 if (Fire_resistance()) {
-                    /* shieldeff(u.ux, u.uy): display effect only */
+                    await shieldeff_mu(game.u.ux, game.u.uy);
                     await pline("The fire doesn't feel hot!"); /* pline_The() */
                     monstseesu(M_SEEN_FIRE);
                     await ugolemeffects(M.AD_FIRE, d(12, 6));

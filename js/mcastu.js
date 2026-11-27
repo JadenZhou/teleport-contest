@@ -62,6 +62,7 @@ import { burnarmor, ignite_items } from './trap.js';
 import { destroy_items } from './zap.js';
 import { sgn, upstart, plur } from './hacklib.js';
 import { pline_mon, set_msg_xy } from './display.js';
+import { shieldeff } from './display.js';
 
 /* C ref: mcastu.h MONSPELL() list -- enum mcast_spells */
 export const MCAST_PSI_BOLT = 0;
@@ -348,7 +349,7 @@ export async function castmu(
     case AD_FIRE:
         await pline("You're enveloped in flames.");
         if (Fire_resistance()) {
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline("But you resist the effects.");
             monstseesu(M_SEEN_FIRE);
             dmg = 0;
@@ -362,7 +363,7 @@ export async function castmu(
     case AD_COLD:
         await pline("You're covered in frost.");
         if (Cold_resistance()) {
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline("But you resist the effects.");
             monstseesu(M_SEEN_COLD);
             dmg = 0;
@@ -375,7 +376,7 @@ export async function castmu(
     case AD_MAGM:
         await You("are hit by a shower of missiles!");
         if (Antimagic()) {
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline_The("missiles bounce off!");
             monstseesu(M_SEEN_MAGR);
             dmg = 0;
@@ -491,7 +492,7 @@ async function mcast_death_touch(mtmp) {
         monstunseesu(M_SEEN_MAGR);
     } else {
         if (Antimagic()) {
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             monstseesu(M_SEEN_MAGR);
         }
         await pline("Lucky for you, it didn't work!");
@@ -536,7 +537,7 @@ async function mcast_summon_mons(mtmp) {
 // C ref: mcastu.c mcast_destroy_armor()
 async function mcast_destroy_armor() {
     if (Antimagic()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         await pline("A field of force surrounds you!");
     } else if (!await destroy_arm()) {
@@ -551,7 +552,7 @@ async function mcast_destroy_armor() {
 // C ref: mcastu.c mcast_weaken_you()
 async function mcast_weaken_you(mtmp, dmg) {
     if (Antimagic()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         await You_feel("momentarily weakened.");
     } else {
@@ -584,7 +585,7 @@ async function mcast_disappear(mtmp) {
 // C ref: mcastu.c mcast_stun_you()
 async function mcast_stun_you(dmg) {
     if (Antimagic() || Free_action()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         if (!Stunned())
             await You_feel("momentarily disoriented.");
@@ -618,7 +619,7 @@ async function mcast_fire_pillar(mtmp, dmg) {
     await pline("A pillar of fire strikes all around you!");
     orig_dmg = dmg = d(8, 6);
     if (Fire_resistance()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_FIRE);
         dmg = 0;
     } else {
@@ -645,7 +646,7 @@ async function mcast_lightning(mtmp, dmg) {
     const reflects = await ureflects("It bounces off your %s%s.", "");
     orig_dmg = dmg = d(8, 6);
     if (reflects || Shock_resistance()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         dmg = 0;
         if (reflects) {
             monstseesu(M_SEEN_REFL);
@@ -674,7 +675,7 @@ async function mcast_psi_bolt(dmg) {
     /* prior to 3.4.0 Antimagic was setting the damage to 1--this
        made the spell virtually harmless to players with magic res. */
     if (Antimagic()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         dmg = Math.trunc((dmg + 1) / 2);
     } else {
@@ -694,7 +695,7 @@ async function mcast_psi_bolt(dmg) {
 // C ref: mcastu.c mcast_open_wounds()
 async function mcast_open_wounds(dmg) {
     if (Antimagic()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         dmg = Math.trunc((dmg + 1) / 2);
     } else {
@@ -818,7 +819,7 @@ async function mcast_paralyze(mtmp) {
     let dmg = 0;
 
     if (Antimagic() || Free_action()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         if (game.multi >= 0)
             await You("stiffen briefly.");
@@ -840,7 +841,7 @@ async function mcast_paralyze(mtmp) {
 // C ref: mcastu.c mcast_confuse_you()
 async function mcast_confuse_you(mtmp) {
     if (Antimagic()) {
-        /* shieldeff(u.ux, u.uy) */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu(M_SEEN_MAGR);
         await You_feel("momentarily dizzy.");
     } else {

@@ -2771,7 +2771,7 @@ async function dofiretrap(
     await pline(`A ${tower_of_flame} ${box ? "bursts" : "erupts"} from ${
         the(box ? xname(box) : surface_tr(u.ux, u.uy))}!`);
     if (Fire_resistance()) {
-        /* shieldeff(u.ux, u.uy): display effect only */
+        await shieldeff(game.u.ux, game.u.uy);
         monstseesu_tr(M_SEEN_FIRE_TR);
         num = rn2(2);
     } else if (Upolyd()) {
@@ -4654,7 +4654,7 @@ async function trapeffect_poly_trap(mtmp, trap, trflags) {
         } else if (Antimagic()
                    || (u.uprops[UNCHANGING].intrinsic
                        || u.uprops[UNCHANGING].extrinsic)) { /* Unchanging */
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             await You_feel("momentarily different.");
             /* Trap did nothing; don't remove it --KAA */
         } else {
@@ -5368,7 +5368,7 @@ export async function chest_trap(obj, bodypart, disarm) {
 
             await You("are jolted by a surge of electricity!");
             if (Shock_resistance()) {
-                /* shieldeff(u.ux, u.uy): transient display only */
+                await shieldeff(game.u.ux, game.u.uy);
                 await You("don't seem to be affected.");
                 monstseesu_tr(M_SEEN_ELEC);
                 dmg = 0;

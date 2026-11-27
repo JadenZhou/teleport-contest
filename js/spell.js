@@ -80,6 +80,7 @@ import { S_VORTEX as S_VORTEX_SP, PM_AIR_ELEMENTAL as PM_AIR_ELEMENTAL_SP,
          PM_FOG_CLOUD as PM_FOG_CLOUD_SP,
          M1_ANIMAL as M1_ANIMAL_SP } from './monsters.js';
 import { rndcurse } from './sit.js';
+import { shieldeff } from './display.js';
 
 const KEEN = 20000; /* C ref: spell.c */
 
@@ -368,7 +369,7 @@ async function cursed_book(bp) {
         break;
     case 6:
         if (u_have_prop(ANTIMAGIC)) {
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline_The("book explodes, but you are unharmed!");
         } else {
             await pline(`As you read the book, it explodes in your ${body_part(FACE)}!`);

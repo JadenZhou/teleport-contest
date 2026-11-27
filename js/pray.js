@@ -132,6 +132,7 @@ import { dropy } from './do.js';
 import { oname } from './do_name.js';
 import { uhis } from './mhitu.js';
 import { which_armor } from './worn.js';
+import { shieldeff } from './display.js';
 /* C ref: defsym.h S_altar (cmap index) */
 const S_altar = 33;
 const NH_BLACK = "black"; /* color.h */
@@ -692,14 +693,14 @@ async function god_zaps_you(resp_god) {
     } else {
         await pline("Suddenly, a bolt of lightning strikes you!");
         if (Reflecting()) { /* Reflecting */
-            /* shieldeff(u.ux, u.uy): transient display only */
+            await shieldeff(game.u.ux, game.u.uy);
             if (Blind())
                 await pline("For some reason you're unaffected.");
             else
                 await ureflects_pr("%s reflects from your %s.", "It");
             monstseesu_pr(M_SEEN_REFL);
         } else if (Shock_resistance()) { /* Shock_resistance */
-            /* shieldeff(u.ux, u.uy) */
+            await shieldeff(game.u.ux, game.u.uy);
             await pline("It seems not to affect you.");
             monstseesu_pr(M_SEEN_ELEC);
             monstunseesu_pr(M_SEEN_REFL);
