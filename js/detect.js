@@ -455,7 +455,10 @@ function reveal_terrain_getglyph(x, y, swallowed, default_glyph, which_subset) {
     /* FIXME: dirty hack */
     if (glyph.cmap === 'S_darkroom')
         glyph = { ...glyph, cmap: 'S_room' };
-    else if (glyph.cmap === 'S_litcorr')
+    else if (glyph.cmap === 'S_litcorr'
+             /* a glyph_at() glyph carries the S_* index, not the name */
+             || (glyph.cmap === undefined && glyph.kind === 'cmap'
+                 && glyph.cmapidx === 23 /* S_litcorr */))
         glyph = back_to_glyph_cmap_corr();
     return glyph;
 }
