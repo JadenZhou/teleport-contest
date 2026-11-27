@@ -1,5 +1,5 @@
 {
- "when": "2026-11-27T11:46:06.801Z",
+ "when": "2026-11-27T13:29:00.054Z",
  "results": [
   {
    "session": "seed0002-healer-reflection-drummer.session.json",
@@ -69,12 +69,12 @@
   {
    "session": "seed0012-monk-vault-escort.session.json",
    "total": 13878,
-   "jsTotal": 13902,
+   "jsTotal": 13878,
    "totalScreens": 308,
    "valuePrefix": 13878,
    "rulePrefix": 13878,
-   "screens": 306,
-   "honestScreens": 306,
+   "screens": 307,
+   "honestScreens": 307,
    "firstScreenMiss": 152,
    "first": null,
    "error": null
@@ -579,8 +579,8 @@
   "rule": 792838,
   "value": 792838,
   "rolls": 792838,
-  "honestScreens": 11340,
-  "screens": 11340,
+  "honestScreens": 11341,
+  "screens": 11341,
   "totalScreens": 11405
  },
  "todo": [],
