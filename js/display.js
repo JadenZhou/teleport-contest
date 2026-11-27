@@ -3614,6 +3614,36 @@ export async function pline_mon(mtmp, line) {
     await pline(line);
 }
 
+// C ref: pline.c impossible() -- report an internal inconsistency: the
+// message is URGENT (shown even after ESC at --More--), then the
+// "Program in disorder!" lines; the recorder's sysconf sets neither SUPPORT
+// nor CRASHREPORTURL, so no further lines or "Report now?" prompt
+export async function impossible_async(msg) {
+    const ps = game.program_state || (game.program_state = {});
+
+    if (ps.in_impossible)
+        throw new Error('panic: impossible called impossible');
+    ps.in_impossible = 1;
+    const pbuf = String(msg).slice(0, 256 - 1); /* pbuf[BUFSZ - 1] = 0: sanity */
+    /* paniclog("impossible", pbuf); */
+    await urgent_pline(pbuf); /* gp.pline_flags = URGENT_MESSAGE */
+
+    if (ps.in_sanity_check) {
+        /* skip rest of multi-line feedback */
+        ps.in_impossible = 0;
+        return;
+    }
+
+    let pbuf2 = "Program in disorder!";
+    if (ps.something_worth_saving)
+        pbuf2 += "  (Saving and reloading may fix this problem.)";
+    await pline(pbuf2);
+    await pline("Please report these messages to devteam@nethack.org.");
+    /* sysopt.support: not set */
+    /* CRASHREPORT: sysopt.crashreporturl not set */
+    ps.in_impossible = 0;
+}
+
 // C ref: pline.c urgent_pline() -- vpline() with URGENT_MESSAGE: the tty
 // (WC2_URGENT_MESG) gets the line with ATR_URGENT, which overrides a
 // pending ESC at --More-- (WIN_STOP)
