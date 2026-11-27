@@ -347,6 +347,9 @@ import { poly_when_stoned } from './mondata.js';
 import { mon_to_stone, vamp_stone, xkilled, monstone } from './mon.js';
 import { mon_adjust_speed } from './worn.js';
 import { XKILL_NOMSG, CXN_PFX_THE } from './const.js';
+import { livelog_printf } from './display.js';
+import { ordin } from './hacklib.js';
+import { LL_MINORAC, LL_DUMP } from './const.js';
 import { corpse_xname } from './objnam.js';
 import { mwepgone } from './weapon.js';
 import { poly_obj } from './zap.js';
@@ -1462,8 +1465,42 @@ export function deltrap(trap) {
     traps.splice(i, 1);
     if (game.level.flags.sokoban_rules
         && (trap.ttyp === PIT || trap.ttyp === HOLE))
-        throw new Error('deltrap(): maybe_finish_sokoban() not ported yet');
+        maybe_finish_sokoban();
     /* dealloc_trap(trap): garbage collected */
+}
+
+// C ref: trap.c maybe_finish_sokoban()
+/* called when a trap has been deleted or had its ttyp replaced */
+function maybe_finish_sokoban() {
+    if (game.level.flags.sokoban_rules && !game.in_mklev) {
+        /* scan all remaining traps, ignoring any created by the hero;
+           if this level has no more pits or holes, the current sokoban
+           puzzle has been solved */
+        let found = false;
+        for (const t of ftraps()) {
+            if (t.madeby_u)
+                continue;
+            if (t.ttyp === PIT || t.ttyp === HOLE) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            /* for livelog to report the sokoban depth in the way that
+               players tend to think about it: 1 for entry level, 4 for top */
+            const sokonum = game.dungeons[game.u.uz.dnum].entry_lev - game.u.uz.dlevel + 1;
+
+            /* we've passed the last trap without finding a pit or hole;
+               clear the sokoban_rules flag so that luck penalties for
+               things like breaking boulders or jumping will no longer
+               be given, and restrictions on diagonal moves are lifted */
+            game.level.flags.sokoban_rules = 0; /* Sokoban = 0 */
+            /* log the completion event regardless of whether or not
+               any normal in-game feedback has just been given */
+            livelog_printf(LL_MINORAC | LL_DUMP,
+                           `completed ${sokonum}${ordin(sokonum)} Sokoban level`);
+        }
+    }
 }
 
 // C ref: trap.c t_missile()

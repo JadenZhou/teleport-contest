@@ -66,6 +66,16 @@ import { is_pool, is_lava } from './makemon.js';
 import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
 import { minstapetrify } from './trap.js';
 import { cansee } from './vision.js';
+import { distu } from './hacklib.js';
+import { passes_walls, throws_rocks, is_whirly, is_vampshifter } from './mondata.js';
+import { dmgval } from './weapon.js';
+import { canspotmon } from './display.js';
+import { Monnam } from './do_name.js';
+import { nonliving } from './makemon.js';
+import { hmon } from './uhitm.js';
+import { HMON_THROWN, NO_KILLER_PREFIX } from './const.js';
+import { Passes_walls } from './youprop.js';
+import { reset_utrap } from './trap.js';
 import { PM_TOURIST, PM_ROGUE } from './monsters.js';
 import { onquest, ok_to_quest } from './quest.js';
 import { com_pager, deliver_splev_message } from './questpgr.js';
@@ -1274,8 +1284,8 @@ export async function boulder_hits_pool(
     return false;
 }
 
-// C ref: do.c flooreffects() -- boulders filling pits, objects tumbling
-// into the hero's pit, globs and altars stop with a not-ported error
+// C ref: do.c flooreffects() -- objects tumbling into the hero's pit,
+// globs and altars stop with a not-ported error
 /* returns TRUE if obj is gone (or out of play), FALSE if the caller
    should place it on the floor */
 export async function flooreffects(obj, /* the object landing on the floor */
@@ -1301,7 +1311,80 @@ export async function flooreffects(obj, /* the object landing on the floor */
         res = true;
     } else if (obj.otyp === O.BOULDER && (t = t_at(x, y)) !== null && t
                && (is_pit(t.ttyp) || is_hole(t.ttyp))) {
-        throw new Error('flooreffects(): boulder filling a pit not ported yet');
+        const ttyp = t.ttyp;
+        const tseen = t.tseen ? true : false;
+        let mtmp = null;
+        let squished = false;
+        if (((mtmp = m_at(x, y)) && mtmp.mtrapped)
+            || (game.u.utrap && u_at(x, y))) {
+            if (verb && (cansee(x, y) || distu(x, y) === 0))
+                await pline(`${Blind() ? "A" : "The"} boulder ${vtense(null, verb)}`
+                            + ` into the pit${mtmp ? "" : " with you"}.`);
+            if (mtmp) {
+                if (!passes_walls(mtmp.data) && !throws_rocks(mtmp.data)) {
+                    /* dieroll was rnd(20); 1: maximum chance to hit
+                       since trapped target is a sitting duck */
+                    let damage;
+                    const dieroll = 1;
+
+                    if (g.context.mon_moving) {
+                        /* normally we'd use ohitmon() but it can call
+                           drop_throw() which calls flooreffects() */
+                        damage = dmgval(obj, mtmp);
+                        mtmp.mhp -= damage;
+                        if (mtmp.mhp <= 0) { /* DEADMONSTER() */
+                            if (canspotmon(mtmp))
+                                await pline(`${Monnam(mtmp)} is `
+                                            + `${(nonliving(mtmp.data) || is_vampshifter(mtmp))
+                                                 ? "destroyed" : "killed"}!`);
+                            await mondied(mtmp);
+                        }
+                    } else {
+                        await hmon(mtmp, obj, HMON_THROWN, dieroll);
+                    }
+                    if (!(mtmp.mhp <= 0) && !is_whirly(mtmp.data))
+                        res = false; /* still alive, boulder still intact */
+                }
+                mtmp.mtrapped = 0;
+            } else {
+                if (!Passes_walls() && !throws_rocks(game.youmonst.data)) {
+                    await losehp(Maybe_Half_Phys(rnd(15)),
+                                 "squished under a boulder", NO_KILLER_PREFIX);
+                    squished = true; /* goto deletedwithboulder */
+                } else
+                    await reset_utrap(true);
+            }
+        }
+        if (verb && !squished) {
+            if (Blind() && u_at(x, y)) {
+                /* Soundeffect(se_crashing_boulder, 100) */
+                await You_hear("a CRASH! beneath you.");
+            } else if (!Blind() && cansee(x, y)) {
+                await pline_The(`boulder ${(ttyp === TRAPDOOR && !tseen) ? "triggers and " : ""}`
+                                + `${(ttyp === TRAPDOOR) ? "plugs a trap door"
+                                     : (ttyp === HOLE) ? "plugs a hole"
+                                       : "fills a pit"}.`);
+            } else {
+                /* Soundeffect(se_boulder_drop, 100) */
+                await You_hear(`a boulder ${verb}.`);
+            }
+        }
+        /*
+         * Note:  trap might have gone away via ((hmon -> killed -> xkilled)
+         *  || mondied) -> mondead -> m_detach -> fill_pit.
+         */
+        /* deletedwithboulder: */
+        /* creating a pit in ice results in that ice being turned into
+           floor so we shouldn't need any special ice handing here */
+        if ((t = t_at(x, y)) !== null && t) {
+            await delfloortrap(t);
+            if (game.u.utrap && u_at(x, y))
+                await reset_utrap(false);
+        }
+        await useupf(obj, 1);
+        await bury_objs(x, y);
+        newsym(x, y);
+        res = true;
     } else if (is_lava(x, y)) {
         res = await lava_damage(obj, x, y);
     } else if (is_pool(x, y)) {

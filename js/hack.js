@@ -73,7 +73,14 @@ import { dig_typ, use_pick_axe2 } from './dig.js';
 import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible, map_object } from './display.js';
-import { vision_recalc, couldsee } from './vision.js';
+import { vision_recalc, couldsee, cansee } from './vision.js';
+import { launch_obj, blow_up_landmine } from './trap.js';
+import { Tobjnam, otense } from './objnam.js';
+import { fill_pit } from './muse.js';
+import { flooreffects } from './do.js';
+import { useupf } from './invent.js';
+import { bury_objs } from './dig.js';
+import { ROLL, LAUNCH_KNOWN, IN_SIGHT, W_NONDIGGABLE } from './const.js';
 import { glyph_at, Norep, feel_location, glyph_is_warning, pline_dir, pline_xy,
          pline_mon, set_msg_xy } from './display.js';
 import { carrying } from './invent.js';
@@ -2750,8 +2757,8 @@ async function moverock() {
     return ret;
 }
 
-// C ref: hack.c moverock_core() -- pushing into traps, pools, Sokoban
-// and the m-prefix cases are not ported yet
+// C ref: hack.c moverock_core() -- pushing into teleport traps is not
+// ported yet
 async function moverock_core(sx, sy) {
     let rx, ry;
     let otmp, ttmp, mtmp;
@@ -2780,8 +2787,35 @@ async function moverock_core(sx, sy) {
         ry = game.u.uy + 2 * game.u.dy;
         nomul(0);
 
-        if (game.context.nopick)
-            throw new Error('moverock_core(): m-prefix move onto a boulder not ported yet');
+        /* using m<dir> towards an adjacent boulder steps over/onto it if
+           poly'd into a giant or squeezes under/beside it if small/light
+           enough but is a no-op in other circumstances unless move attempt
+           reveals an unseen boulder or lack of remembered, unseen monster */
+        if (game.context.nopick) {
+            const oldglyph = glyph_at(sx, sy); /* before feel_location() */
+            let res;
+
+            feel_location(sx, sy); /* same for all 3 if/else-if/else cases */
+            if (throws_rocks(game.youmonst.data)) {
+                /* player has used 'm<dir>' to move, so step to boulder's
+                   spot without pushing it */
+                await You(`${u_locomotion("step")} over a boulder here.`);
+                sokoban_guilt();
+                res = 0; /* move to <sx,sy> */
+            } else if (could_move_onto_boulder(sx, sy)) {
+                await You(`squeeze yourself ${Flying() ? "over" : "against"} the boulder.`);
+                sokoban_guilt();
+                res = 0; /* move to <sx,sy> */
+            } else {
+                await There("is a boulder in your way.");
+                /* use a move if hero learns something; see test_move() for
+                   how/why 'context.door_opened' is being dragged into this */
+                if (glyph_at(sx, sy) !== oldglyph)
+                    game.context.door_opened = game.context.move = 1;
+                res = -1; /* don't move to <sx,sy>, so no soko guilt */
+            }
+            return res;
+        }
         if (Levitation() || Is_airlevel(game.u.uz)) {
             /* FIXME?  behavior in an air bubble on the water level should
                be similar to being on the air level; both cases probably
@@ -2859,11 +2893,84 @@ async function moverock_core(sx, sy) {
             disturb_buried_zombies(sx, sy);
 
             if (ttmp) {
+                /* if a trap operates on the boulder, don't attempt
+                   to move any others at this location; return -1
+                   if another boulder is in hero's way, or 0 if he
+                   should advance to the vacated boulder position */
                 switch (ttmp.ttyp) {
-                case LANDMINE: case SPIKED_PIT: case PIT: case HOLE:
-                case TRAPDOOR: case LEVEL_TELEP: case TELEP_TRAP:
-                case ROLLING_BOULDER_TRAP:
-                    throw new Error('moverock_core(): pushing a boulder into a trap not ported yet');
+                case LANDMINE:
+                    if (rn2(10)) {
+                        const D = game.u.uprops[DEAF];
+                        const deaf = !!(D.intrinsic || D.extrinsic || game.u.uroleplay?.deaf);
+                        obj_extract_self(otmp);
+                        place_object(otmp, rx, ry);
+                        newsym(sx, sy);
+                        await pline(`${(!deaf || !Blind()) ? "KAABLAMM!!" : "Gadzooks"}!  `
+                                    + `${Tobjnam(otmp, "trigger")} ${ttmp.madeby_u ? "your" : "a"} land mine.`);
+                        await blow_up_landmine(ttmp);
+                        /* if the boulder remains, it should fill the pit */
+                        await fill_pit(game.u.ux, game.u.uy);
+                        if (cansee(rx, ry))
+                            newsym(rx, ry);
+                        return sobj_at(BOULDER, sx, sy) ? -1 : 0;
+                    }
+                    break;
+                case SPIKED_PIT:
+                case PIT:
+                    obj_extract_self(otmp);
+                    /* vision kludge to get messages right;
+                       the pit will temporarily be seen even
+                       if this is one among multiple boulders */
+                    if (!Blind())
+                        game.viz_array[ry][rx] |= IN_SIGHT;
+                    if (!(await flooreffects(otmp, rx, ry, "fall"))) {
+                        place_object(otmp, rx, ry);
+                    }
+                    if (mtmp && !Blind())
+                        newsym(rx, ry);
+                    return sobj_at(BOULDER, sx, sy) ? -1 : 0;
+                case HOLE:
+                case TRAPDOOR: {
+                    /* Soundeffect(se_kerplunk_boulder_gone, 40) */
+                    if (Blind())
+                        await pline(`Kerplunk!  You no longer feel ${the(xname(otmp))}.`);
+                    else
+                        await pline(`${Tobjnam(otmp, (ttmp.ttyp === TRAPDOOR) ? "trigger" : "fall")}`
+                                    + `${(ttmp.ttyp === TRAPDOOR) ? "" : " into"}`
+                                    + ` and ${otense(otmp, "plug")} a`
+                                    + ` ${(ttmp.ttyp === TRAPDOOR) ? "trap door" : "hole"}`
+                                    + ` in the ${surface(rx, ry)}!`);
+                    deltrap_fw(ttmp);
+                    await useupf(otmp, 1);
+                    await bury_objs(rx, ry);
+                    const rlev = game.level.at(rx, ry);
+                    rlev.wall_info = (rlev.wall_info ?? 0) & ~W_NONDIGGABLE;
+                    rlev.candig = 1;
+                    if (cansee(rx, ry))
+                        newsym(rx, ry);
+                    return sobj_at(BOULDER, sx, sy) ? -1 : 0;
+                }
+                case LEVEL_TELEP:
+                case TELEP_TRAP:
+                    throw new Error('moverock_core(): pushing a boulder into a teleport trap not ported yet');
+                case ROLLING_BOULDER_TRAP: {
+                    let tox = rx;
+                    let toy = ry;
+                    /* the boulder continues until it reaches one of
+                       the trap's launch spots or hits a wall / out-of-bounds */
+                    while (isok(tox + game.u.dx, toy + game.u.dy)) {
+                        tox += game.u.dx;
+                        toy += game.u.dy;
+                        if (tox === ttmp.launch.x && toy === ttmp.launch.y)
+                            break;
+                        if (tox === ttmp.launch2.x && toy === ttmp.launch2.y)
+                            break;
+                    }
+                    await pline(`${Tobjnam(otmp, "suddenly roll")} away from you!`);
+                    feeltrap(ttmp);
+                    await launch_obj(BOULDER, sx, sy, tox, toy, ROLL | LAUNCH_KNOWN);
+                    return sobj_at(BOULDER, sx, sy) ? -1 : 0;
+                }
                 default:
                     break; /* boulder not affected by this trap */
                 }
