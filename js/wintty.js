@@ -579,8 +579,8 @@ export function tty_putstr(window, attr, str) {
 }
 
 // C ref: wintty.c tty_putstr() -- the NHW_MENU and NHW_TEXT case, for a
-// synchronous caller (e.g. insight.c enlght_out()); the paths that would
-// have to await (a full NHW_TEXT page, breaking an over-long line) stop
+// synchronous caller (e.g. insight.c enlght_out()); the path that would
+// have to await (a full NHW_TEXT page) stops
 export function tty_putstr_sync(window, attr, str) {
     const cw = wins()[window];
     const t = tty();
@@ -593,8 +593,6 @@ export function tty_putstr_sync(window, attr, str) {
     str = compress_str(str);
     if (cw.type === NHW_TEXT && (cw.cury + cw.offy) === t.rows - 1)
         throw new Error('tty_putstr(): full text page from a synchronous caller not ported yet');
-    if (str.length + 1 > t.cols)
-        throw new Error('tty_putstr(): line breaking from a synchronous caller not ported yet');
     /* always grows one at a time, but alloc 12 at a time */
     if (!cw.data)
         cw.data = [];
@@ -611,6 +609,18 @@ export function tty_putstr_sync(window, attr, str) {
         cw.maxcol = n0;
     if (++cw.cury > cw.maxrow)
         cw.maxrow = cw.cury;
+    if (n0 > t.cols) { /* CO */
+        /* attempt to break the line */
+        for (i = t.cols - 1; i && str[i] !== ' ' && str[i] !== '\n';)
+            i--;
+        if (i) {
+            /* cw->data[cw->cury - 1][++i] = '\0': the stored copy is
+               offset by the attribute byte, so it ends before str[i-1] */
+            ++i;
+            cw.data[cw.cury - 1].str = str.slice(0, i - 1);
+            tty_putstr_sync(window, attr, str.slice(i));
+        }
+    }
 }
 
 // C ref: wintty.c tty_putstr() -- the NHW_MENU and NHW_TEXT case

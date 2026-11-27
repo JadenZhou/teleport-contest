@@ -6,6 +6,11 @@
 // Not ported yet: shop damage,
 // set_levltyp()'s object/timer side effects, Sokoban bookkeeping.
 
+import { adjattrib } from './attrib.js';
+import { A_CHA, CONFUSION } from './const.js';
+import { tamedog } from './dog.js';
+import { seffects } from './read.js';
+import { SPE_REMOVE_CURSE } from './objects.js';
 import { fracture_rock } from './zap.js';
 import { change_luck } from './attrib.js';
 import { helpless } from './monmove.js';
@@ -1265,7 +1270,14 @@ export async function dotrap(trap, trflags) {
 
     /* KMH -- You can't escape the Sokoban level traps */
     if (game.level.flags.sokoban_rules && (is_pit(ttype) || is_hole(ttype))) {
-        throw new Error('dotrap(): Sokoban air currents not ported yet');
+        /* The "air currents" message is still appropriate -- even when
+         * the hero isn't flying or levitating -- because it conveys the
+         * reason why the player cannot escape the trap with a dexterity
+         * check, clinging to the ceiling, etc.
+         */
+        await pline(`Air currents pull you down into ${a_your[madeby_u]} ${
+            trapname(ttype, true)}!`); /* do force "pit" while hallucinating */
+        /* then proceed to normal trap effect */
     } else if (!forcetrap) {
         if (floor_trigger(ttype) && check_in_air(game.youmonst, trflags)) {
             if (already_seen) {
@@ -3831,10 +3843,35 @@ async function domagictrap() {
             break;
 
         /* very occasionally something nice happens. */
-        case 19: /* tame nearby monsters */
-            throw new Error('domagictrap(): taming nearby monsters not ported yet');
-        case 20: /* uncurse stuff */
-            throw new Error('domagictrap(): remove curse not ported yet');
+        case 19: { /* tame nearby monsters */
+            let i, j;
+            let mtmp;
+
+            await adjattrib(A_CHA, 1, false);
+            for (i = -1; i <= 1; i++)
+                for (j = -1; j <= 1; j++) {
+                    if (!isok(u.ux + i, u.uy + j))
+                        continue;
+                    mtmp = m_at(u.ux + i, u.uy + j);
+                    if (mtmp)
+                        await tamedog(mtmp, null, true);
+                }
+            break;
+        }
+        case 20: { /* uncurse stuff */
+            const save_conf = u.uprops[CONFUSION].intrinsic;
+
+            /* pseudo = cg.zeroobj: force 'uncursed' and zero out oextra */
+            /* used to be SCR_REMOVE_CURSE but that could cause seffects()
+               to have hero discover scroll of remove curse */
+            const pseudo = { otyp: 0, oclass: 0, quan: 0, blessed: 0, cursed: 0, spe: 0 }; /* cg.zeroobj */
+            pseudo.otyp = SPE_REMOVE_CURSE;
+            pseudo.oclass = SPBOOK_CLASS;
+            u.uprops[CONFUSION].intrinsic = 0;
+            await seffects(pseudo);
+            u.uprops[CONFUSION].intrinsic = save_conf;
+            break;
+        }
         default:
             break;
         }

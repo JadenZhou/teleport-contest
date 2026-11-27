@@ -32,7 +32,16 @@ import { hit_bars } from './mthrowu.js';
 import { ansimpleoname } from './iactions.js';
 import { helpless } from './monmove.js';
 import { game } from './gstate.js';
-import { rn2, rnd } from './rng.js';
+import { rn2, rnd, d } from './rng.js';
+import { S_PIERCER } from './monsters.js';
+import { Amonnam } from './do_name.js';
+import { ceiling } from './dungeon.js';
+import { hard_helmet } from './do_wear.js';
+import { helm_simple_name } from './objnam.js';
+import { ARTICLE_A, RLOC_NOMSG } from './const.js';
+import { Half_physical_damage } from './youprop.js';
+import { mdamageu } from './mhitu.js';
+import { mnexto } from './teleport.js';
 import { ACURR, acurrstr, exercise } from './attrib.js';
 import {
     A_CON, WT_WEIGHTCAP_STRCON, WT_WEIGHTCAP_SPARE, MAX_CARR_CAP, WT_HUMAN,
@@ -1727,8 +1736,45 @@ export async function spoteffects(pick) {
         if (Warning() && game.level.at(u.ux, u.uy).typ === ICE)
             throw new Error('spoteffects(): ice warnings (spot_time_left()) not ported yet');
 
-        if ((mtmp = m_at(u.ux, u.uy)) != null && !u.uswallow)
-            throw new Error('spoteffects(): monster at the hero\'s spot (falling piercer/surprise) not ported yet');
+        if ((mtmp = m_at(u.ux, u.uy)) != null && !u.uswallow) {
+            mtmp.mundetected = mtmp.msleeping = 0;
+            switch (mtmp.data.mlet) {
+            case S_PIERCER:
+                await pline(`${Amonnam(mtmp)} suddenly drops from the ${
+                    ceiling(u.ux, u.uy)}!`);
+                if (mtmp.mtame) { /* jumps to greet you, not attack */
+                    ;
+                } else if (hard_helmet(game.uarmh)) {
+                    await pline(`Its blow glances off your ${
+                        helm_simple_name(game.uarmh)}.`);
+                } else if (u.uac + 3 <= rnd(20)) {
+                    await You(`are almost hit by ${
+                        x_monnam(mtmp, ARTICLE_A, "falling", 0, true)}!`);
+                } else {
+                    let dmg;
+
+                    await You(`are hit by ${
+                        x_monnam(mtmp, ARTICLE_A, "falling", 0, true)}!`);
+                    dmg = d(4, 6);
+                    if (Half_physical_damage())
+                        dmg = Math.trunc((dmg + 1) / 2);
+                    await mdamageu(mtmp, dmg);
+                }
+                break;
+            default: /* monster surprises you. */
+                if (mtmp.mtame)
+                    await pline(`${Amonnam(mtmp)} jumps near you from the ${
+                        ceiling(u.ux, u.uy)}.`);
+                else if (mtmp.mpeaceful) {
+                    await You(`surprise ${(Blind() && !sensemon(mtmp))
+                                          ? "something" : a_monnam(mtmp)}!`);
+                    mtmp.mpeaceful = 0;
+                } else
+                    await pline(`${Amonnam(mtmp)} attacks you by surprise!`);
+                break;
+            }
+            await mnexto(mtmp, RLOC_NOMSG); /* have to move the monster */
+        }
     }
     /* spotdone: */
     if (!--inspoteffects) {

@@ -57,7 +57,7 @@ import { the as the_article } from './iactions.js';
 import { is_unpaid, unpaid_cost, get_cost_of_shop_item,
          record_price_quote, append_price_quote } from './shk.js';
 import { currency, body_part } from './insight.js';
-import { candy_wrapper_text } from './read.js';
+import { candy_wrapper_text, tshirt_text, apron_text, hawaiian_motif } from './read.js';
 import { mksobj, mkobj, curse, weight, erosion_matters, is_flammable,
          is_rottable, is_damageable, is_poisonable, permapoisoned, Is_candle,
          rnd_class } from './mkobj.js';
@@ -3741,8 +3741,11 @@ function xname_flags(obj, cxn_flags) {
             switch (obj.otyp) {
             case O.T_SHIRT:
             case O.ALCHEMY_SMOCK:
+                buf += ` with text "${(obj.otyp === O.T_SHIRT)
+                                      ? tshirt_text(obj) : apron_text(obj)}"`;
+                break;
             case O.HAWAIIAN_SHIRT:
-                xn_not_ported('end-of-game shirt/apron text');
+                buf += ` with ${an(hawaiian_motif(obj))} motif`;
                 break;
             case O.CANDY_BAR: {
                 const lbl = candy_wrapper_text(obj);

@@ -8,9 +8,14 @@
 // flags.initrole &c, wizard and discover the way C does. The rest of
 // this parser is still the skeleton's simplified version.
 
+import { def_char_to_monclass } from './drawing.js';
+import { MAXMCLASSES } from './monsters.js';
+import { WARNCOUNT, SYM_BOULDER } from './const.js';
+import { SYM_OFF_X } from './symbols.js';
+import { visctrl } from './hacklib.js';
 import { game } from './gstate.js';
 import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSIZ,
-         PL_FSIZ, ismnum } from './const.js';
+         PL_FSIZ, PL_PSIZ, ismnum } from './const.js';
 
 import { strncmpi, strcmpi, mungspaces, str_end_is, copynchars } from './hacklib.js';
 import { makesingular, fruit_from_name } from './objnam.js';
@@ -560,6 +565,9 @@ export function parseNethackrc(rc) {
                     else if (val === 'cat' || val === 'c') result.preferred_pet = 'c';
                 }
                 else if (key === 'symset') result.symset = val;
+                /* optfn_boulder(): applied in file order with the SYMBOLS=
+                   lines (both set go.ov_primary_syms[]) */
+                else if (key === 'boulder') (result.symbols ||= []).push({ boulder: val });
                 else if (key === 'autounlock') optfn_autounlock(result, negated, val);
                 else if (key === 'pickup_types') optfn_pickup_types(result, negated, val);
                 else if (key === 'suppress_alert') optfn_suppress_alert(result, negated, val);
@@ -567,7 +575,12 @@ export function parseNethackrc(rc) {
                 else if (key === 'msg_window') optfn_msg_window(result, negated, val);
                 else if (key === 'runmode') optfn_runmode(result, negated, val);
                 else if (key === 'number_pad') optfn_number_pad(result, negated, val);
-                else if (key === 'horsename') result.horsename = val; /* petname_optfn() */
+                else if (key === 'horsename' || key === 'dogname' || key === 'catname')
+                    petname_optfn(result, key, negated, val);
+                /* optfn_fruit(): go.opt_initial, so it only sets pl_fruit;
+                   the game start-up applies it before initoptions_finish()'s
+                   fruitadd() */
+                else if (key === 'fruit') result.fruit = { negated, opts: stripped };
                 else result.flags[key] = val;
             } else {
                 // Boolean flag
@@ -1213,6 +1226,41 @@ function config_erradd(buf) {
     throw new Error('config_erradd(): config error message outside Lua not ported yet');
 }
 
+// C ref: options.c optfn_boulder() -- the do_set case (BACKWARD_COMPAT):
+// boulder:symbol overrides the default boulder symbol; 'op' is the value
+// string_for_opt() returns. go.opt_initial is TRUE while reading the rc,
+// so the showsyms[] update waits for initoptions_finish() (display.js
+// reads the override when it shows a glyph).
+export function optfn_boulder_set(op) {
+    let clash = 0;
+    const opts = escapes(op);
+    const c0 = opts.length ? opts.charCodeAt(0) : 0;
+
+    /* note: dummy monclass #0 has symbol value '\0'; we allow that--
+       attempting to set bouldersym to '^@'/'\0' will reset to default */
+    if (def_char_to_monclass(opts.length ? opts[0] : '\0') !== MAXMCLASSES)
+        clash = c0 ? 1 : 0;
+    else if (c0 >= 0x31 /* '1' */ && c0 < WARNCOUNT + 0x30 /* '0' */)
+        clash = 2;
+    if (c0 < 0x20 /* ' ' */) {
+        config_error_add("boulder symbol cannot be a control character");
+        return true; /* optn_ok */
+    } else if (clash) {
+        /* symbol chosen matches a used monster or warning
+           symbol which is not good - reject it */
+        config_error_add(`Badoption - boulder symbol '${visctrl(opts[0])
+                          }' would conflict with a ${
+                          (clash === 1) ? "monster" : "warning"} symbol`);
+    } else {
+        /*
+         * Override the default boulder symbol.
+         */
+        game.ov_primary_syms[SYM_BOULDER + SYM_OFF_X] = c0;
+        /* go.ov_rogue_syms[]: the Rogue level symset isn't ported */
+    }
+    return true; /* optn_ok */
+}
+
 // C ref: pline.c config_error_add() -- vconfig_error_add() formats the
 // message (the callers here pass it formatted) for config_erradd()
 function config_error_add(buf) {
@@ -1447,10 +1495,12 @@ function opt_get_val(o, req) {
             opts += p + unlocktypes[3]; /*no more p*/
         return opts;
     }
-    case "optfn_boulder":
-        /* go.ov_primary_syms[SYM_BOULDER]: no S_boulder override, so
-           the rock class symbol */
-        return def_oc_syms[ROCK_CLASS];
+    case "optfn_boulder": {
+        /* BACKWARD_COMPAT: the S_boulder override, else the rock class
+           symbol (no SYMBOLS= override of the class is consulted here) */
+        const ov = game.ov_primary_syms?.[SYM_BOULDER + SYM_OFF_X];
+        return ov ? String.fromCharCode(ov) : def_oc_syms[ROCK_CLASS];
+    }
     case "optfn_crash_email":
         return game.crash_email || '';
     case "optfn_crash_name":
@@ -2221,6 +2271,28 @@ function nmcpy(src, maxlen) {
         i++;
     }
     return src.slice(0, i);
+}
+
+// C ref: options.c petname_optfn() -- the do_set case for catname,
+// dogname and horsename while reading the config file (the name is kept
+// in the parse result for the game start-up to install)
+function petname_optfn(result, key, negated, op) {
+    if (op === empty_optstr && !negated)
+        return optn_err;
+    if (negated || op === "none" || op === none)
+        op = empty_optstr;
+    result[key] = sanitize_name(nmcpy(op, PL_PSIZ));
+    return optn_ok;
+}
+
+// C ref: options.c optfn_fruit() -- do_set from the config file
+// (go.opt_initial is TRUE while it is read)
+export function optfn_fruit_initial(negated, opts) {
+    const save_initial = game.opt_initial;
+
+    game.opt_initial = true;
+    optfn_fruit(null, do_set, negated, opts, null);
+    game.opt_initial = save_initial;
 }
 
 // C ref: options.c optfn_fruit()

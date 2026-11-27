@@ -10,7 +10,7 @@ import { There } from './display.js';
 import { impossible } from './hack.js';
 import { nhcb_counts, nhcb_name } from './nhlua.js';
 import { NHCB_CMD_BEFORE } from './const.js';
-import { dobreathe } from './polyself.js';
+import { dobreathe, dospit } from './polyself.js';
 import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline, You_cant, You } from './display.js';
@@ -870,7 +870,7 @@ async function domonability() {
     if (can_breathe(uptr))
         return await dobreathe();
     else if (attacktype(uptr, AT_SPIT))
-        throw new Error('domonability(): dospit() not ported yet');
+        return await dospit();
     else if (uptr.mlet === S_NYMPH)
         throw new Error('domonability(): doremove() not ported yet');
     else if (attacktype(uptr, AT_GAZE))
