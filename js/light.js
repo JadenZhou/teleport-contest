@@ -19,7 +19,7 @@ import { LS_OBJECT, LS_MONSTER, RANGE_LEVEL, COUNTING, WRITING, FREEING,
          FM_MYDOGS } from './const.js';
 import { objects, CANDELABRUM_OF_INVOCATION, TALLOW_CANDLE, WAX_CANDLE,
          POT_OIL, BRASS_LANTERN, OIL_LAMP, MAGIC_LAMP } from './objects.js';
-import { obj_is_local, mon_is_local, end_burn } from './timeout.js';
+import { obj_is_local, end_burn } from './timeout.js';
 import { get_mon_location } from './zap.js';
 import { get_obj_location } from './shk.js';
 import { clear_path, circle_data, circle_start, COULD_SEE } from './vision.js';
@@ -229,6 +229,13 @@ function discard_flashes() {
         if (ls.type === LS_OBJECT && !ls.id.a_obj)
             delete_ls(ls);
     }
+}
+
+// C ref: light.c mon_is_local() -- light.c's own macro, not timeout.c's
+/* (mon->mx == 0) implies migrating; the hero (gy.youmonst.mx is always 0)
+   is never local, so a polymorphed hero's light follows the hero */
+function mon_is_local(mon) {
+    return (mon.mx || 0) > 0;
 }
 
 // C ref: light.c find_mid()
