@@ -953,7 +953,7 @@ export async function bhitm(mtmp, otmp) {
            so it's okay to leave `wake' set to TRUE here;
            revealing concealed mimic is handled by sleep_monst()] */
         reveal_invis = true;
-        if (sleep_monst_zp(mtmp, d(1 + otmp.spe, 12), WAND_CLASS))
+        if (await sleep_monst_zp(mtmp, d(1 + otmp.spe, 12), WAND_CLASS))
             await slept_monst(mtmp);
         if (!Blind())
             learn_it = true;
@@ -2905,7 +2905,7 @@ async function zhitm(
         /* resistance and shield effect and revealing concealed mimic are
            handled by sleep_monst() */
         tmp = 0;
-        sleep_monst_zp(mon, d(nd, 25),
+        await sleep_monst_zp(mon, d(nd, 25),
                        type === ZT_WAND(ZT_SLEEP) ? WAND_CLASS : 0);
         break;
     case ZT_DEATH:                                   /* death/disintegration */

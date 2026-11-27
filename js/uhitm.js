@@ -2054,7 +2054,7 @@ async function mhitm_ad_slee(magr, mattk, mdef, mhm) {
     if (magr === game.youmonst) {
         /* uhitm */
         if (!mdef.msleeping && !await mgc_atk_negated(magr, mdef, false)
-            && sleep_monst(mdef, rnd(10), -1)) {
+            && await sleep_monst(mdef, rnd(10), -1)) {
             if (!Blind())
                 await pline(`${Monnam(mdef)} is put to sleep by you!`);
             await slept_monst(mdef);
@@ -2077,8 +2077,8 @@ async function mhitm_ad_slee(magr, mattk, mdef, mhm) {
         }
     } else {
         /* mhitm */
-        if (!mdef.msleeping && sleep_monst(mdef, rnd(10), -1)
-            && sleep_monst(mdef, rnd(10), -1)) {
+        if (!mdef.msleeping && await sleep_monst(mdef, rnd(10), -1)
+            && await sleep_monst(mdef, rnd(10), -1)) {
             if (game.mhitm_vis && canspotmon(mdef)) {
                 const buf = Monnam(mdef);
                 await pline(`${buf} is put to sleep by ${mon_nam(magr)}.`);

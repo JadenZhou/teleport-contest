@@ -1705,7 +1705,7 @@ export async function potionhit(mon, obj, how) {
         }
         case O.POT_SLEEPING:
             /* wakeup() doesn't rouse victims of temporary sleep */
-            if (sleep_monst(mon, rnd(12), POTION_CLASS)) {
+            if (await sleep_monst(mon, rnd(12), POTION_CLASS)) {
                 await pline(`${Monnam(mon)} falls asleep.`);
                 await slept_monst(mon);
             }
