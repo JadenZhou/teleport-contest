@@ -577,7 +577,7 @@ async function mind_blast(mtmp) {
         nmon = m2.nmon;
         if (m2.mhp < 1) /* DEADMONSTER(m2) */
             continue;
-        if (m2.mpeaceful === mtmp.mpeaceful)
+        if (!!m2.mpeaceful === !!mtmp.mpeaceful) /* bitfields: 0/1 vs false/true */
             continue;
         if (mindless(m2.data))
             continue;

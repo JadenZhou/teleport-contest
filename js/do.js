@@ -26,7 +26,7 @@ import { finesse_ahriman } from './artifact.js';
 import { float_down } from './trap.js';
 import { W_ART, W_ARTI, I_SPECIAL } from './const.js';
 import { change_luck } from './attrib.js';
-import { obj_extract_self, add_to_migration } from './mkobj.js';
+import { obj_extract_self, add_to_migration, obj_nexto_xy } from './mkobj.js';
 import { obfree } from './invent.js';
 import { discard_minvent } from './steal.js';
 import { emits_light, digests } from './mondata.js';
@@ -1408,7 +1408,14 @@ export async function flooreffects(obj, /* the object landing on the floor */
         /* uteetering_at_seen_pit(t) || uescaped_shaft(t) */
         throw new Error('flooreffects(): objects tumbling into a pit not ported yet');
     } else if (obj.globby) {
-        throw new Error('flooreffects(): obj_meld() not ported yet');
+        let globbyobj = obj; /* allow obj to be nonnull arg */
+
+        /* Globby things like puddings might stick together */
+        if (globbyobj && obj_nexto_xy(globbyobj, x, y, true) !== null)
+            /* pudding_merge_message(globbyobj, otmp);
+               (void) obj_meld(&globbyobj, &otmp); */
+            throw new Error('flooreffects(): melding globs (obj_meld()) not ported yet');
+        res = !globbyobj;
     } else if (g.context?.mon_moving && IS_ALTAR(g.level.at(x, y).typ)
                && cansee(x, y)) {
         await doaltarobj(obj);

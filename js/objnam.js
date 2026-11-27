@@ -3604,8 +3604,20 @@ function xname_flags(obj, cxn_flags) {
             }
             break;
         }
-        if (obj.globby)
-            xn_not_ported('globby food names');
+        if (game.iflags?.partly_eaten_hack && obj.oeaten) {
+            /* normally "partly eaten" is supplied by doname() when
+               appropriate and omitted by xname(); shrink_glob() wants
+               it but uses Yname2() -> yname() -> xname() rather than
+               doname() so we've added an external flag to request it */
+            buf += "partly eaten ";
+        }
+        if (obj.globby) { /* 5.0 added "medium" to replace no-prefix */
+            buf += `${(obj.owt <= 100) ? "small"
+                      : (obj.owt <= 300) ? "medium"
+                        : (obj.owt <= 500) ? "large"
+                          : "very large"} ${actualn}`;
+            break;
+        }
         buf += actualn;
         if (typ === O.TIN && known)
             buf = tin_details(obj, omndx, buf);

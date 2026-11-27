@@ -357,7 +357,7 @@ import { noit_Monnam as noit_Monnam_bm } from './do_name.js';
 import { mstatusline as mstatusline_bm } from './insight.js';
 import { sticks as sticks_bm } from './engrave.js';
 import { obj_typename as obj_typename_bm } from './objnam.js';
-import { u_teleport_mon } from './teleport.js';
+import { u_teleport_mon, rloco } from './teleport.js';
 import { closeholdingtrap as closeholdingtrap_bm, openholdingtrap as openholdingtrap_bm,
          openfallingtrap as openfallingtrap_bm } from './trap.js';
 import { See_invisible as See_invisible_bm, Detect_monsters as Detect_monsters_bm,
@@ -1239,6 +1239,14 @@ export async function bhito(obj, otmp) {
         case SPE_EXTRA_HEALING:
             res = 0;
             break;
+        case WAN_TELEPORTATION_BM:
+        case SPE_TELEPORT_AWAY_BM: {
+            const ox = obj.ox, oy = obj.oy;
+
+            await rloco(obj);
+            maybe_unhide_at(ox, oy);
+            break;
+        }
         default:
             throw new Error(`bhito(): wand/spell ${otmp.otyp} hitting an object not ported yet`);
         }

@@ -1539,14 +1539,14 @@ async function thitm(tlev,          /* missile's attack level */
      */
     if (!strike) {
         if (obj && cansee(mon.mx, mon.my))
-            await pline(`${Monnam(mon)} is almost hit by ${doname(obj)}!`);
+            await pline_mon(mon, `${Monnam(mon)} is almost hit by ${doname(obj)}!`);
     } else {
         let dam = 1;
         const harmless = (obj && stone_missile(obj)
                           && passes_rocks(mon.data));
 
         if (obj && cansee(mon.mx, mon.my))
-            await pline(`${Monnam(mon)} is hit by ${doname(obj)}${
+            await pline_mon(mon, `${Monnam(mon)} is hit by ${doname(obj)}${
                 harmless ? " but is not harmed." : "!"}`);
         if (d_override) {
             dam = d_override;

@@ -215,7 +215,8 @@ import { add_to_container, weight } from './mkobj.js';
 import { digests } from './mondata.js';
 import { You } from './display.js';
 import { u_locomotion } from './trap.js';
-import { STATUE, ROCK } from './objects.js';
+import { STATUE, ROCK, GLOB_OF_BLACK_PUDDING } from './objects.js';
+import { obj_nexto } from './mkobj.js';
 import { MZ_TINY, PM_STONE_GOLEM, S_GOLEM, MR_STONE } from './monsters.js';
 import { CORPSTAT_HISTORIC } from './const.js';
 import { a_monnam } from './do_name.js';
@@ -645,10 +646,10 @@ async function vamprises(mtmp) {
             /* 3.6.0 used a_monnam(mtmp); that was weird if mtmp was
                named: "Dracula suddenly transforms and rises as Dracula";
                3.6.1 used mtmp->data->mname; that ignored hallucination */
-            await pline(`${upstart_vr(action)} ${
+            await pline_mon(mtmp, `${upstart_vr(action)} ${
                 x_monnam(mtmp, ARTICLE_A_VR, null,
                          (SUPPRESS_NAME_VR | SUPPRESS_IT_VR | SUPPRESS_INVISIBLE_VR),
-                         false)}!`); /* pline_mon() */
+                         false)}!`);
             game.vamp_rise_msg = true;
         }
         /* revived vampire is in normal shape, so can't be amorphous; if on
@@ -683,7 +684,7 @@ async function vamprises(mtmp) {
                    have been called but no message about its death given yet;
                    mtmp was a vampire so use unconditional "destroyed" */
                 if (trap_killed && canspotmon(mtmp) && !Unaware_vr())
-                    await pline(`${Monnam_vr(mtmp)} is destroyed!`); /* pline_mon() */
+                    await pline_mon(mtmp, `${Monnam_vr(mtmp)} is destroyed!`);
             }
         }
         newsym(x, y);
@@ -1069,7 +1070,23 @@ function make_corpse(mtmp, corpseflags) {
     case MM.PM_BROWN_PUDDING:
     case MM.PM_GREEN_SLIME:
     case MM.PM_BLACK_PUDDING:
-        throw new Error('make_corpse(): pudding globs (obj_nexto()) not ported yet');
+    {
+        /* we have to do this here because most other places
+           expect there to be an object coming back; not this one */
+        obj = mksobj_at(GLOB_OF_BLACK_PUDDING - (MM.PM_BLACK_PUDDING - mndx),
+                        x, y, true, false);
+
+        /* while ((otmp = obj_nexto(obj)) != 0) {
+               pudding_merge_message(obj, otmp); obj = obj_meld(&obj, &otmp); } */
+        if (obj && obj_nexto(obj) !== null)
+            throw new Error('make_corpse(): melding pudding globs (obj_meld()) not ported yet');
+        /* free_mgivenname(mtmp) */
+        mtmp.mgivenname = '';
+        if (mtmp.mextra)
+            mtmp.mextra.mgivenname = null;
+        newsym(x, y);
+        return obj;
+    }
     case NON_PM: case MM.NUMMONS: /* never use as index */
         break;
     default:
@@ -1153,8 +1170,8 @@ export async function monkilled(mdef, fltxt, how) {
     /* C tests the pointer: "" is non-null and still gives the message */
     if (fltxt != null && (mdef.wormno ? worm_known(mdef)
                               : cansee(mdef.mx, mdef.my)))
-        await pline(`${Monnam(mdef)} is ${nonliving(mptr) ? 'destroyed' : 'killed'}`
-                    + `${fltxt ? ' by the ' : ''}${fltxt}!`);
+        await pline_mon(mdef, `${Monnam(mdef)} is ${nonliving(mptr) ? 'destroyed' : 'killed'}`
+                        + `${fltxt ? ' by the ' : ''}${fltxt}!`);
     else
         /* sad feeling is deferred until after potential life-saving */
         game.sad_feeling = mdef.mtame ? true : false;

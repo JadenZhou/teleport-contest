@@ -590,9 +590,9 @@ export async function dog_eat(mtmp,
                result won't be printed */
             obj_name = distant_name(obj, doname);
             if (tunnels(mtmp.data))
-                await pline(`${noit_Monnam(mtmp)} digs in.`);
+                await pline_mon(mtmp, `${noit_Monnam(mtmp)} digs in.`);
             else
-                await pline(`${noit_Monnam(mtmp)} ${
+                await pline_mon(mtmp, `${noit_Monnam(mtmp)} ${
                     devour ? "devours" : "eats"} ${obj_name}.`);
         } else if (seeobj) {
             obj_name = distant_name(obj, doname);
@@ -623,7 +623,7 @@ async function dog_starve(mtmp) {
     if (mtmp.mleashed && mtmp !== game.u.usteed)
         await Your_dm("leash goes slack.");
     else if (cansee(mtmp.mx, mtmp.my))
-        await pline(`${Monnam(mtmp)} starves.`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monnam(mtmp)} starves.`);
     else
         await You_feel_dm(`${Hallucination() ? "bummed" : "sad"} for a moment.`);
     await mondied(mtmp);
@@ -649,7 +649,7 @@ async function dog_hunger(mtmp, edog) {
                 return true;
             }
             if (cansee(mtmp.mx, mtmp.my))
-                await pline(`${Monnam(mtmp)} is confused from hunger.`);
+                await pline_mon(mtmp, `${Monnam(mtmp)} is confused from hunger.`);
             else if (couldsee(mtmp.mx, mtmp.my))
                 throw new Error('dog_hunger(): beg() not ported yet');
             else

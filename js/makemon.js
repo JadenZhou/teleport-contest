@@ -88,7 +88,9 @@ import { dist2, sgn, ARM_BONUS } from './hacklib.js';
 import { an, vtense } from './objnam.js';
 import { newsym, pline, Norep, canseemon, You_see, vobj_at } from './display.js';
 import { does_block, block_point, cansee, couldsee } from './vision.js';
-import { Resists_Elem } from './mondata.js';
+import { Resists_Elem, mon_learns_traps } from './mondata.js';
+import { MS_LEADER, MS_NEMESIS } from './monsters.js';
+import { ALL_TRAPS, HOLE, TRAPDOOR } from './const.js';
 import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
          SEE_INVIS } from './const.js';
 import { set_apparxy, dochugw, m_in_air } from './monmove.js';
@@ -1486,8 +1488,15 @@ export function makemon(ptr, x, y, mmflags) {
     else
         mtmp.female = femaleok ? rn2(2) : 0;
 
-    /* mon_learns_traps() for Sokoban/stronghold/quest leaders: trap
-       knowledge bits only, no rolls -- not ported yet */
+    if (In_sokoban(game.u.uz) && !mindless(ptr)) { /* know about traps here */
+        mon_learns_traps(mtmp, PIT);
+        mon_learns_traps(mtmp, HOLE);
+    }
+    if (Is_stronghold() && !mindless(ptr)) /* know about trap doors */
+        mon_learns_traps(mtmp, TRAPDOOR);
+    /* quest leader and nemesis both know about all trap types */
+    if (ptr.msound === MS_LEADER || ptr.msound === MS_NEMESIS)
+        mon_learns_traps(mtmp, ALL_TRAPS);
     /* locations where monsters are already experienced with wands */
     if (Is_stronghold() || Is_knox() || In_endgame(game.u.uz)
         || In_hell(game.u.uz) || In_V_tower(game.u.uz) || In_quest(game.u.uz))

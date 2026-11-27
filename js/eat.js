@@ -1820,6 +1820,12 @@ export async function Hear_again() {
     return 0;
 }
 
+// C ref: eat.c eating_glob()
+/* is the hero eating this glob right now? */
+export function eating_glob(glob) {
+    return (game.occupation === eatfood && glob === game.context.victual?.piece);
+}
+
 // C ref: eat.c rottenfood()
 /* called on the "first bite" of rotten food */
 async function rottenfood(obj) {
