@@ -39,7 +39,7 @@ import { discover_object } from './o_init.js';
 import { freehand } from './wield.js';
 import { Blind as Blind_sp } from './youprop.js';
 import { Role_if } from './const.js';
-import { uhim } from './mhitu.js';
+import { uhim, enfolds } from './mhitu.js';
 import { rn2, rnd, rn1, rnl } from './rng.js';
 import * as O from './objects.js';
 import { SPE_BOOK_OF_THE_DEAD, SPE_BLANK_PAPER, SPE_NOVEL, SPE_DETECT_FOOD,
@@ -75,11 +75,10 @@ import { hcolor as hcolor_sp } from './do_name.js';
 import { hliquid as hliquid_sp } from './potion.js';
 import { an as an_sp } from './objnam.js';
 import { find_ac as find_ac_sp } from './u_init.js';
-import { dmgtype_fromattack as dmgtype_fromattack_sp } from './mondata.js';
 import { CLOUD as CLOUD_SP, IS_TREE as IS_TREE_SP, IS_STWALL as IS_STWALL_SP } from './const.js';
 import { S_VORTEX as S_VORTEX_SP, PM_AIR_ELEMENTAL as PM_AIR_ELEMENTAL_SP,
-         PM_FOG_CLOUD as PM_FOG_CLOUD_SP, M1_ANIMAL as M1_ANIMAL_SP,
-         AD_WRAP as AD_WRAP_SP, AT_ENGL as AT_ENGL_SP } from './monsters.js';
+         PM_FOG_CLOUD as PM_FOG_CLOUD_SP,
+         M1_ANIMAL as M1_ANIMAL_SP } from './monsters.js';
 import { rndcurse } from './sit.js';
 
 const KEEN = 20000; /* C ref: spell.c */
@@ -1695,11 +1694,6 @@ export function known_spell(otyp) {
     return spe_Unknown;
 }
 
-/* C ref: mondata.h enfolds() */
-function enfolds_sp(ptr) {
-    return dmgtype_fromattack_sp(ptr, AD_WRAP_SP, AT_ENGL_SP) != null; /* 't' */
-}
-
 // C ref: spell.c cast_protection()
 async function cast_protection() {
     const u = game.u;
@@ -1734,7 +1728,7 @@ async function cast_protection() {
                 atmosphere = (pm && u.uswallow)
                                 ? ((pm === mons_sp[PM_FOG_CLOUD_SP]) ? "mist"
                                    : is_whirly(pm) ? "maelstrom"
-                                     : enfolds_sp(pm) ? "folds"
+                                     : enfolds(pm) ? "folds"
                                        : is_animal(pm) ? "maw"
                                          : "ooze")
                                 : (u.uinwater ? hliquid_sp("water")

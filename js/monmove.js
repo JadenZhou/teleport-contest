@@ -59,7 +59,8 @@ import { castmu } from './mcastu.js';
 import { M_ATTK_HIT, G_GENOD } from './const.js';
 import { Is_rogue_level, M_ATTK_DEF_DIED, M_ATTK_AGR_DIED, NORMAL_SPEED } from './const.js';
 import { mattackm } from './mhitm.js';
-import { obj_resists, dogfood, finish_meating, could_reach_item } from './dogmove.js';
+import { obj_resists, dogfood, finish_meating,
+         could_reach_item } from './dogmove.js';
 import { MANFOOD, ACCFOOD } from './const.js';
 import { touch_artifact, has_magic_key, artifact_light } from './artifact.js';
 import { is_metallic, is_rustprone, AMULET_OF_STRANGULATION,
@@ -178,7 +179,7 @@ import { impossible_async } from './display.js';
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
 /* C ref: monst.h mon_offmap() */
-function mon_offmap(mon) {
+export function mon_offmap(mon) {
     return ((mon.mstate || 0)
             & (MON_DETACH | MON_MIGRATING | MON_LIMBO | MON_OFFMAP)) !== 0;
 }

@@ -64,7 +64,8 @@ import { hidden_gold, currency, enlightenment, list_vanquished,
 import { keepdogs } from './dog.js';
 import { Goodbye } from './role.js';
 import { inven_inuse } from './restore.js';
-import { useup, display_inventory, carrying, stackobj, set_cknown_lknown } from './invent.js';
+import { useup, display_inventory, carrying, stackobj,
+         set_cknown_lknown } from './invent.js';
 import { adjattrib, ACURR, minuhpmax, setuhpmax } from './attrib.js';
 import { init_uhunger } from './eat.js';
 import { paranoid_query } from './cmd.js';

@@ -1844,7 +1844,7 @@ function skiprange(range, skip) {
 }
 
 /* C ref: hack.h uslinging() */
-function uslinging() {
+export function uslinging() {
     return !!game.uwep && objects[game.uwep.otyp].oc_skill === P_SLING;
 }
 

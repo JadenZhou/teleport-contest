@@ -37,7 +37,7 @@ import { PM_WIZARD, PM_ELF, PM_VALKYRIE } from './monsters.js';
 import { rn2, rnl } from './rng.js';
 import { dunlev, dunlevs_in_dungeon, In_hell } from './dungeon.js';
 import {
-    ROOM, CORR, DOOR, STONE, SCORR, SDOOR, DRAWBRIDGE_UP, STAIRS, LADDER,
+    ROOM, CORR, DOOR, STONE, SCORR, SDOOR, DRAWBRIDGE_UP,
     IS_FURNITURE, IS_WALL, IS_POOL, IS_ROOM, LAVAPOOL, In_quest,
     CORPSTAT_NONE, MM_NOCOUNTBIRTH, MM_NOMSG,
     TOOKPLUNGE, VIASITTING, HURTLING, isok,
@@ -163,7 +163,8 @@ import { MAY_DESTROY as MAY_DESTROY_L, MAY_HIT as MAY_HIT_L,
 import { del_engr_at as del_engr_at_l } from './engrave.js';
 import { is_drawbridge_wall as is_drawbridge_wall_l } from './dbridge.js';
 import { find_drawbridge as find_drawbridge_l } from './zap.js';
-import { fillholetyp as fillholetyp_l, unearth_objs as unearth_objs_l } from './dig.js';
+import { fillholetyp as fillholetyp_l, unearth_objs as unearth_objs_l,
+         grounded } from './dig.js';
 import { M1_SLITHY, M1_NOLIMBS } from './monsters.js';
 import { CAN_OF_GREASE, SCROLL_CLASS, SPBOOK_CLASS, POTION_CLASS,
          GRAY_DRAGON_SCALE_MAIL, YELLOW_DRAGON_SCALE_MAIL, GRAY_DRAGON_SCALES,
@@ -374,6 +375,7 @@ import { maybe_dunk_boulders } from './apply.js';
 import { spot_checks } from './hack.js';
 import { sellobj } from './shk.js';
 import { pline_mon } from './display.js';
+import { CAN_OVERWRITE_TERRAIN } from './mkmaze.js';
 export { is_hole, is_pit };
 
 
@@ -433,14 +435,9 @@ export const TRAPPED_CHEST = 25;
 export const TRAPNUM = 26;
 
 // C ref: trap.h is_pit(), is_hole(), unhideable_trap(), undestroyable_trap()
-function unhideable_trap(ttyp) { return ttyp === HOLE; }
+export function unhideable_trap(ttyp) { return ttyp === HOLE; }
 export function undestroyable_trap(ttyp) {
     return ttyp === MAGIC_PORTAL || ttyp === VIBRATING_SQUARE;
-}
-
-// C ref: rm.h CAN_OVERWRITE_TERRAIN()  (stairs and ladders can't be)
-function CAN_OVERWRITE_TERRAIN(typ) {
-    return typ !== STAIRS && typ !== LADDER;
 }
 
 function ftraps() {
@@ -1395,10 +1392,6 @@ const A_gush_of_water_hits = "A gush of water hits";
 /* C ref: mondata.h passes_rocks(), grounded(); obj.h stone_missile();
    trap.c completelyrusts */
 export function passes_rocks(ptr) { return passes_walls(ptr) && !unsolid(ptr); }
-function grounded(ptr) {
-    /* has_ceiling(&u.uz): no air or water levels are generated yet */
-    return !is_flyer(ptr) && !is_floater(ptr) && !is_clinger(ptr);
-}
 
 // C ref: trap.c wearing_iron_shoes()
 export function wearing_iron_shoes(mtmp) {

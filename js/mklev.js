@@ -48,7 +48,9 @@ import {
     BEEHIVE, MORGUE, ANTHOLE, BARRACKS, SWAMP, COCKNEST, DUST, MARK,
     TAINT_AGE, MM_NOGRP, NO_MM_FLAGS, MKTRAP_NOFLAGS, MKTRAP_SEEN,
     MKTRAP_MAZEFLAG, MKTRAP_NOSPIDERONWEB, MKTRAP_NOVICTIM, LA_UP, LA_DOWN,
-    BR_PORTAL, BR_NO_END1, BR_NO_END2,
+    BR_PORTAL, BR_NO_END1, BR_NO_END2, Is_botlevel, Is_stronghold, In_mines,
+    In_quest, In_V_tower, Is_oracle_level, Is_rogue_level, In_endgame,
+    Is_waterlevel,
 } from './const.js';
 import {
     SPBOOK_no_NOVEL, next_ident, blessorcurse, curse, mksobj, mksobj_at,
@@ -2391,17 +2393,6 @@ export function Can_dig_down(lev) {
             && !Invocation_lev(lev));
 }
 
-// C ref: dungeon.c Is_botlevel()
-function Is_botlevel(lev) {
-    return (lev.dlevel === game.dungeons[lev.dnum].num_dunlevs);
-}
-
-// C ref: dungeon.h Is_stronghold() macro — Lcheck(x, &stronghold_level)
-function Is_stronghold(lev) {
-    const z = game.dungeon_topology.d_stronghold_level;
-    return ((z.dlevel || z.dnum) && on_level(lev, z)) ? true : false;
-}
-
 // C ref: dungeon.c Invocation_lev()
 export function Invocation_lev(lev) {
     return (In_hell(lev)
@@ -2668,27 +2659,7 @@ export function wallification(x1, y1, x2, y2) {
 // Fill ordinary room
 // ============================================================
 
-// C ref: dungeon.h In_mines(), In_quest(), In_V_tower(), Is_oracle_level(),
-// Is_rogue_level(), In_endgame(), Inhell
-function In_mines(lev) {
-    return lev.dnum === game.dungeon_topology.d_mines_dnum;
-}
-function In_quest(lev) {
-    return lev.dnum === game.dungeon_topology.d_quest_dnum;
-}
-function In_V_tower(lev) {
-    return lev.dnum === game.dungeon_topology.d_tower_dnum;
-}
-function Is_oracle_level(lev) {
-    return on_level(lev, game.dungeon_topology.d_oracle_level);
-}
-function Is_rogue_level(lev) {
-    const z = game.dungeon_topology.d_rogue_level;
-    return !!((z.dlevel || z.dnum) && lev.dnum === z.dnum && lev.dlevel === z.dlevel);
-}
-function In_endgame(lev) {
-    return lev.dnum === game.dungeon_topology.d_astral_level.dnum;
-}
+// C ref: dungeon.h Inhell
 export function Inhell() { return In_hell(game.u.uz); }
 
 // C ref: dungeon.c single_level_branch()
@@ -3339,11 +3310,6 @@ function water_has_kelp(x, y, kelp_pool, kelp_moat) {
         || (kelp_moat && typ === MOAT && !rn2(kelp_moat)))
         return true;
     return false;
-}
-
-// C ref: dungeon.h Is_waterlevel()
-function Is_waterlevel(lev) {
-    return on_level(lev, game.dungeon_topology.d_water_level);
 }
 
 // C ref: mklev.c mineralize()

@@ -1019,7 +1019,7 @@ const BY_OBJECT = null;
 function SHOP_WALL_DMG() { return 10 * acurrstr(); }
 
 /* C ref: mondata.h grounded() */
-function grounded(ptr) {
+export function grounded(ptr) {
     return (!is_flyer(ptr) && !is_floater(ptr)
             && (!is_clinger(ptr) || !has_ceiling(game.u.uz)));
 }

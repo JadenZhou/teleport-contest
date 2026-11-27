@@ -9,7 +9,8 @@ import { monhaskey, m_can_break_boulder } from './monmove.js';
 import { online2, sgn, plur, NODIAG, ordin } from './hacklib.js';
 import { game } from './gstate.js';
 import { LL_KILLEDPET, LL_UMONST, LL_ACHIEVE, ACH_MEDU,
-         has_mgivenname, MGIVENNAME } from './const.js';
+         has_mgivenname, MGIVENNAME, Is_stronghold,
+         In_endgame } from './const.js';
 import { EXACT_NAME, Mgender } from './do_name.js';
 import { record_achievement } from './insight.js';
 import { shtypes } from './shknam.js';
@@ -42,7 +43,7 @@ import { dist2 } from './hacklib.js';
 import { vision_recalc, cansee } from './vision.js';
 import { newsym, pline, glyph_is_invisible, unmap_object, shieldeff } from './display.js';
 import { m_at, sobj_at, is_pool, is_lava, may_passwall, accessible, nonliving,
-         is_golem, closed_door, hideunder, In_endgame, mbirth_limit, newmonhp,
+         is_golem, closed_door, hideunder, mbirth_limit, newmonhp,
          pm_to_cham } from './makemon.js';
 import { is_male, is_female, is_neuter, pm_invisible, humanoid, is_animal,
          throws_rocks, verysmall, bigmonst, slithy, amorphous, is_whirly,
@@ -2955,12 +2956,6 @@ export function zombie_form(pm) {
         return MM.PM_GNOME_ZOMBIE;
     }
     return NON_PM;
-}
-// C ref: dungeon.h Is_stronghold() -- Lcheck(x, &stronghold_level)
-function Is_stronghold(lev) {
-    const z = game.dungeon_topology.d_stronghold_level;
-    return !!(z && (z.dlevel || z.dnum)
-              && lev.dnum === z.dnum && lev.dlevel === z.dlevel);
 }
 /* C ref: mon.c mm_2way_aggression() */
 function mm_2way_aggression(magr, mdef) {

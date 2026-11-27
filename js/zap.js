@@ -35,7 +35,8 @@ import { more_experienced } from './exper.js';
 import { observe_object, discover_object } from './o_init.js';
 import { The, xname, Tobjnam, vtense, cloak_simple_name, suit_simple_name,
          helm_simple_name, gloves_simple_name, boots_simple_name,
-         shirt_simple_name, shield_simple_name, simple_typename } from './objnam.js';
+         shirt_simple_name, shield_simple_name,
+         simple_typename } from './objnam.js';
 import { mon_nam } from './do_name.js';
 import { resists_blnd, resists_blnd_by_arti, nohands, is_mplayer, is_whirly,
          mindless, digests, is_rider, eyecount,
@@ -178,7 +179,8 @@ import { which_armor as which_armor_zp, setnotworn as setnotworn_zp,
          bypass_objlist as bypass_objlist_zp,
          nxt_unbypassed_obj as nxt_unbypassed_obj_zp } from './worn.js';
 import { m_useup, rnd_hallublast } from './mthrowu.js';
-import { uhim, uhis, ugolemeffects as ugolemeffects_zp, u_slow_down } from './mhitu.js';
+import { uhim, uhis, ugolemeffects as ugolemeffects_zp,
+         u_slow_down } from './mhitu.js';
 import { burn_away_slime as burn_away_slime_zp,
          hliquid as hliquid_zp, potionbreathe as potionbreathe_zp,
          make_stunned as make_stunned_zp, incr_itimeout as incr_itimeout_zp,

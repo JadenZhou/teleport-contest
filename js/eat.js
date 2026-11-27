@@ -161,7 +161,7 @@ export function vegetarian(ptr) {
         || (ptr.mlet === M.S_PUDDING && ptr !== mons[M.PM_BLACK_PUDDING]);
 }
 /* C ref: eat.c nonrotting_corpse() */
-function nonrotting_corpse(mnum) {
+export function nonrotting_corpse(mnum) {
     return mnum === M.PM_LIZARD || mnum === M.PM_LICHEN
         || is_rider(mons[mnum]) || mnum === M.PM_ACID_BLOB;
 }

@@ -16,7 +16,7 @@ import { curse } from './mkobj.js';
 import { Hallucination, Underwater, Swimming, Breathless } from './youprop.js';
 import { ACURR, ABASE, ABON, ATEMP } from './attrib.js';
 import { begin_burn, end_burn } from './timeout.js';
-import { hliquid } from './potion.js';
+import { hliquid, incr_itimeout } from './potion.js';
 import { drown } from './trap.js';
 import { is_pool_or_lava } from './hack.js';
 import { set_bc } from './ball.js';
@@ -27,7 +27,6 @@ import { impossible } from './hack.js';
 import { is_flyer, nohands, verysmall, bigmonst, humanoid, slithy,
          is_whirly, mindless, has_head, breathless,
          num_horns } from './mondata.js';
-import { itimeout } from './potion.js';
 import { game } from './gstate.js';
 import { make_slimed, make_glib, make_hallucinated } from './potion.js';
 import { pline, You, Your, There, pline_The, newsym, see_monsters,
@@ -267,7 +266,7 @@ async function on_msg(otmp) {
 const NH_BLACK = "black";
 
 /* C ref: mondata.h cant_drown() */
-function cant_drown(ptr) {
+export function cant_drown(ptr) {
     return ((ptr.mflags1 & M1_SWIM) !== 0 || (ptr.mflags1 & M1_AMPHIBIOUS) !== 0
             || breathless(ptr));
 }
@@ -351,12 +350,6 @@ async function toggle_displacement(obj,
  * The Type_off() functions call setworn() themselves.
  * [Blindf_on() is an exception and calls setworn() itself.]
  */
-
-// C ref: timeout.c itimeout(), itimeout_incr(), incr_itimeout()
-function incr_itimeout(prop, incr) {
-    const p = uprop(prop);
-    p.intrinsic = (p.intrinsic & ~TIMEOUT) | itimeout((p.intrinsic & TIMEOUT) + incr);
-}
 
 // C ref: do_wear.c Boots_on()
 async function Boots_on() {

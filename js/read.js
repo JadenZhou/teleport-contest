@@ -139,6 +139,7 @@ import { S_invisible as S_invisible_rd, S_WORM_TAIL as S_WORM_TAIL_RD,
          PM_STALKER as PM_STALKER_RD } from './monsters.js';
 import { buried_ball_to_freedom } from './dig.js';
 import { LEG } from './const.js';
+import { uslinging } from './dothrow.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -1182,11 +1183,6 @@ async function seffect_remove_curse(sobjp) {
         await pline_The(`clasp on your ${body_part(LEG)} vanishes.`);
     }
     /* update_inventory(): no perm_invent */
-}
-
-/* C ref: wield.c uslinging() */
-function uslinging() {
-    return !!(game.uwep && game.uwep.otyp === O.SLING);
 }
 
 // C ref: read.c seffect_create_monster()

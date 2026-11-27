@@ -20,7 +20,8 @@ import { depth, level_difficulty, In_hell } from './dungeon.js';
 import * as O from './objects.js';
 import { objects, is_weptool, Is_mbag, Is_container, bimanual, is_rustprone,
          is_crackable, is_corrodeable } from './objects.js';
-import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD } from './const.js';
+import { P_NONE, P_SHURIKEN, P_BOW, FIRE_RES, G_GONE, G_GENOD,
+         Is_rogue_level } from './const.js';
 import { rndmonst_adj } from './makemon.js';
 import { monsndx, little_to_big, big_to_little, is_human, verysmall, is_male,
          is_female, is_neuter, is_rider } from './mondata.js';
@@ -54,7 +55,8 @@ import { confers_luck } from './timeout.js';
 import { set_moreluck } from './attrib.js';
 import { reset_remarm } from './do_wear.js';
 import { book_cursed_sync } from './spell.js';
-import { eaten_stat, tin_variety, tintxt_fodder, vegetarian } from './eat.js';
+import { eaten_stat, tin_variety, tintxt_fodder, vegetarian,
+         nonrotting_corpse } from './eat.js';
 import { costly_spot } from './insight.js';
 import { is_ice } from './dig.js';
 import { obj_sheds_light, obj_split_light_source, del_light_source } from './light.js';
@@ -462,12 +464,6 @@ const hellprobs = [
     [1, SCROLL_CLASS], [8, WAND_CLASS], [8, RING_CLASS],
     [4, AMULET_CLASS],
 ];
-
-// C ref: dungeon.h Is_rogue_level() — Lcheck(x, &rogue_level)
-function Is_rogue_level(lev) {
-    const z = game.dungeon_topology.d_rogue_level;
-    return !!((z.dlevel || z.dnum) && lev.dnum === z.dnum && lev.dlevel === z.dlevel);
-}
 
 // C ref: obj.h is_multigen()
 function is_multigen(otmp) {
@@ -1574,14 +1570,6 @@ const RANDOM_TIN = -2;
 const HEALTHY_TIN = -3;
 // C ref: eat.c TTSZ == SIZE(tintxts); tintxts[] has 16 entries
 const TTSZ = 16;
-
-// C ref: eat.c nonrotting_corpse()
-function nonrotting_corpse(mnum) {
-    return mnum === M.PM_LIZARD || mnum === M.PM_LICHEN
-           || mnum === M.PM_DEATH || mnum === M.PM_FAMINE
-           || mnum === M.PM_PESTILENCE /* is_rider() */
-           || mnum === M.PM_ACID_BLOB;
-}
 
 // C ref: eat.c set_tin_variety()
 export function set_tin_variety(obj, forcetype) {

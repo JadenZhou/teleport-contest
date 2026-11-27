@@ -42,6 +42,7 @@ import {
     IS_FURNITURE, FOUNTAIN, SINK, POOL, THRONE, TREE,
     F_LOOTED, F_WARNED, S_LPUDDING, S_LDWASHER, S_LRING, T_LOOTED,
     TREE_LOOTED, TREE_SWARM, MATCH_WALL, IS_STWALL, ACCESSIBLE, SCORR,
+    In_mines, Is_medusa_level,
 } from './const.js';
 import { splev_chr2typ, luaL_checkstring, check_mapchr, get_table_mapchr, get_table_mapchr_opt } from './nhlua.js';
 import { set_levltyp, set_levltyp_lit, SET_LIT_NOCHANGE } from './mkmaze.js';
@@ -57,7 +58,9 @@ import {
     luaL_checkoption, luaL_checkinteger, lua_type, LUA_TNIL, LUA_TSTRING,
     LUA_TBOOLEAN, LUA_TNUMBER, LUA_TFUNCTION, LUA_TTABLE, lua_error,
 } from './nhlua.js';
-import { create_room, topologize, add_door, add_room, add_subroom, okdoor, somex, somey, somexy, mktrap, fill_zoo, count_level_features } from './mklev.js';
+import { create_room, topologize, add_door, add_room, add_subroom, okdoor,
+         somex, somey, somexy, mktrap, fill_zoo,
+         count_level_features } from './mklev.js';
 import {
     mkgold, mkobj_at, mksobj_at, bless, curse, blessorcurse, set_corpsenm,
     rndmonnum, weight, add_to_container, unbless, uncurse,
@@ -91,7 +94,7 @@ import {
     def_char_to_monclass, def_monsyms, def_char_to_objclass,
 } from './drawing.js';
 import { mkclass, makemon, set_malign, m_at, sobj_at, propagate } from './makemon.js';
-import { t_at } from './trap.js';
+import { t_at, undestroyable_trap } from './trap.js';
 import { create_gas_cloud_selection } from './region.js';
 import { enexto } from './teleport.js';
 import { strcmpi, strncmpi, strstri } from './hacklib.js';
@@ -135,9 +138,6 @@ import { Protection_from_shape_changers } from './youprop.js';
 import { A_NONE as A_NONE_SP, A_LAWFUL as A_LAWFUL_SP } from './const.js';
 import { makeroguerooms } from './extralev.js';
 import { begin_burn } from './timeout.js';
-
-// C ref: dungeon.h In_mines()
-function In_mines(lev) { return lev.dnum === game.dungeon_topology.d_mines_dnum; }
 
 // C's impossible() and panic() (pline.c) are not ported yet.
 
@@ -3044,13 +3044,6 @@ function create_object(o, croom) {
     return otmp;
 }
 
-// C ref: dungeon.h Is_medusa_level()
-function Is_medusa_level(lev) {
-    const z = game.dungeon_topology?.d_medusa_level;
-    return !!(z && (z.dlevel || z.dnum) && lev.dnum === z.dnum
-              && lev.dlevel === z.dlevel);
-}
-
 // C ref: sp_lev.c spo_pop_container()
 function spo_pop_container() {
     if (container_idx > 0) {
@@ -3434,11 +3427,6 @@ function solidify_map() {
         for (let y = 0; y < ROWNO; y++)
             if (IS_STWALL(game.level.at(x, y).typ) && !SpLev_Map_at(x, y))
                 game.level.at(x, y).wall_info |= (W_NONDIGGABLE | W_NONPASSWALL);
-}
-
-// C ref: trap.c undestroyable_trap()
-function undestroyable_trap(ttyp) {
-    return (ttyp === MAGIC_PORTAL || ttyp === VIBRATING_SQUARE);
 }
 
 // C ref: sp_lev.c map_cleanup()

@@ -13,7 +13,7 @@ import { artifact_hit } from './artifact.js';
 import { dismount_steed } from './steed.js';
 import { zombie_form } from './mon.js';
 import { DEADMONSTER } from './mon.js';
-import { helpless } from './monmove.js';
+import { helpless, mon_offmap } from './monmove.js';
 import { game } from './gstate.js';
 import { you_were, you_unwere } from './were.js';
 import { rn2, rnd, rn1, d } from './rng.js';
@@ -125,10 +125,6 @@ import { hliquid } from './potion.js';
 import { finish_meating as finish_meating_md } from './dogmove.js';
 import { pline_mon } from './display.js';
 
-// C ref: monst.h mon_offmap()
-function mon_offmap(mon) {
-    return ((mon.mstate || 0) & (0x01 | 0x02 | 0x04 | 0x08)) !== 0;
-}
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
 

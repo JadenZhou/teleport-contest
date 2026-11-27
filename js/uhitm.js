@@ -28,7 +28,7 @@ import { cutworm } from './worm.js';
 import { rn2, rnd, rn1 } from './rng.js';
 import { pline, canspotmon, You } from './display.js';
 import { Monnam, y_monnam } from './do_name.js';
-import { hitmsg, magic_negation, mpoisons_subj } from './mhitu.js';
+import { hitmsg, magic_negation, mpoisons_subj, enfolds } from './mhitu.js';
 import { poisoned } from './attrib.js';
 import { pmname, Mgender } from './do_name.js';
 import { exercise } from './attrib.js';
@@ -41,7 +41,7 @@ import { objects, CORPSE, GAUNTLETS_OF_POWER, SILVER, IRON, METAL, is_blade,
          is_axe, is_shield, is_flimsy, stone_missile, greatest_erosion,
          is_weptool, bimanual, is_launcher, is_missile, is_ammo, is_pole,
          is_wet_towel, ammo_and_launcher, u_wield_art } from './objects.js';
-import { permapoisoned } from './mkobj.js';
+import { permapoisoned, is_poisonable } from './mkobj.js';
 import { dmgval, martial_bonus } from './weapon.js';
 import { which_armor } from './worn.js';
 import { rustm, mon_poly } from './mhitm.js';
@@ -65,13 +65,13 @@ import { mon_nam, l_monnam, x_monnam, ARTICLE_A, SUPPRESS_IT,
 import { adjalign, ACURR } from './attrib.js';
 import { STRAT_WAITMASK, MMOVE_DIED, HAND, A_DEX, A_WIS, A_LAWFUL, CONFUSION, A_CON,
          STUNNED, PROT_FROM_SHAPE_CHANGERS, DETECT_MONSTERS, FREE_ACTION,
-         REFLECTING, FLYING, LEVITATION, POISON_RES, M_AP_TYPMASK,
+         REFLECTING, FLYING, LEVITATION, POISON_RES,
          PARANOID_HIT, engulfing_u, HMON_MELEE, HMON_THROWN, HMON_KICKED,
          HMON_APPLIED, M_ATTK_MISS, M_ATTK_DEF_DIED, XKILL_NOMSG, NATTK,
          isok, IS_DOOR, Is_airlevel,
          Is_waterlevel, W_RINGL, W_RINGR, W_ARM, W_ARMS, W_WEP, W_AMUL,
          P_BARE_HANDED_COMBAT, P_BASIC, P_SKILLED, P_NONE, P_LANCE, P_KNIFE,
-         P_DAGGER, P_SABER, P_AXE, P_WHIP, P_SHURIKEN, P_BOW,
+         P_DAGGER, P_SABER, P_AXE, P_WHIP,
          TEST_MOVE } from './const.js';
 import { AT_NONE, AD_FIRE, AD_RUST, AD_CORR, AD_ACID, AD_STON, AD_MAGM,
          AD_ENCH, AD_PLYS, AD_COLD, AD_STUN } from './monsters.js';
@@ -159,7 +159,7 @@ import { helm_simple_name, cloak_simple_name } from './objnam.js';
 import { urgent_pline, You_feel } from './display.js';
 import { Some_Monnam } from './do_name.js';
 import { fall_asleep, obj_stop_timers } from './timeout.js';
-import { some_armor } from './do_wear.js';
+import { some_armor, cant_drown } from './do_wear.js';
 import { touch_of_death } from './mcastu.js';
 import { set_uasmon } from './polyself.js';
 import { splitobj, weight, place_object } from './mkobj.js';
@@ -217,7 +217,7 @@ import { tended_shop } from './shk.js';
 /* flash_hits_mon(), light_hits_gremlin() */
 import { canseemon as canseemon_fh, glyph_at as glyph_at_fh, pline as pline_fh,
          canspotmon as canspotmon_fh, map_invisible as map_invisible_fh } from './display.js';
-import { M_AP_TYPE as M_AP_TYPE_FH, M_AP_NOTHING as M_AP_NOTHING_FH,
+import { M_AP_TYPE, M_AP_NOTHING as M_AP_NOTHING_FH,
          MHID_ALTMON as MHID_ALTMON_FH, ARTICLE_YOUR as ARTICLE_YOUR_FH,
          ARTICLE_A as ARTICLE_A_FH } from './const.js';
 import { mhidden_description as mhidden_description_fh } from './pager.js';
@@ -277,7 +277,7 @@ import { hcolor } from './do_name.js';
 import { Invisible } from './youprop.js';
 import { resist } from './zap.js';
 import { NOTELL } from './const.js';
-import { dmgtype_fromattack, digests } from './mondata.js';
+import { digests } from './mondata.js';
 import { engulf_target } from './mhitu.js';
 import { tmp_at, mon_to_glyph, map_location } from './display.js';
 import { rn2_on_display_rng } from './rng.js';
@@ -292,7 +292,7 @@ import { mhe } from './mhitu.js';
 import { upstart } from './hacklib.js';
 import { is_neuter } from './mondata.js';
 import { COIN_CLASS } from './objects.js';
-import { is_swimmer, breathless } from './mondata.js';
+import { breathless } from './mondata.js';
 import { merge_choice, addinv } from './invent.js';
 import { inv_cnt } from './hack.js';
 import { dropy } from './do.js';
@@ -1771,12 +1771,6 @@ async function mhitm_ad_curs(magr, mattk, mdef, mhm) {
     void mhm;
 }
 
-/* C ref: mondata.h cant_drown() */
-function cant_drown(ptr) {
-    return (is_swimmer(ptr) || (ptr.mflags1 & M.M1_AMPHIBIOUS) !== 0
-            || breathless(ptr));
-}
-
 // C ref: uhitm.c m_slips_free()
 /* check whether slippery clothing protects from hug or wrap attack */
 /* [currently assumes that you are the attacker] */
@@ -3126,18 +3120,10 @@ export async function do_attack(mtmp) {
     return true;
 }
 
-/* C ref: youprop.h and mondata.h/obj.h predicates used below */
-function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 function mon_hates_light(mon) { return mon.data === mons[M.PM_GREMLIN]; }
 function is_blunt_weapon(o) {
     return (o.oclass === WEAPON_CLASS || is_weptool(o))
            && (objects[o.otyp].oc_dir & WHACK) !== 0;
-}
-function is_poisonable(otmp) {
-    return (otmp.oclass === WEAPON_CLASS
-            && objects[otmp.otyp].oc_skill >= -P_SHURIKEN
-            && objects[otmp.otyp].oc_skill <= -P_BOW)
-           || permapoisoned(otmp);
 }
 /* C ref: monst.h troll_baned() */
 function troll_baned(m, o) {
@@ -4908,11 +4894,6 @@ export async function explum(mdef, mattk) {
     return M_ATTK_HIT;
 }
 
-/* C ref: mondata.h enfolds() */
-function enfolds(ptr) {
-    return !!dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL);
-}
-
 // C ref: uhitm.c start_engulf()
 async function start_engulf(mdef) {
     const u = game.u;
@@ -6003,7 +5984,7 @@ export async function flash_hits_mon(
     lev = g.level.at(mx, my);
     useeit = canseemon_fh(mtmp);
 
-    if (M_AP_TYPE_FH(mtmp) !== M_AP_NOTHING_FH) {
+    if (M_AP_TYPE(mtmp) !== M_AP_NOTHING_FH) {
         let whatbuf;
         const oldglyph = glyph_at_fh(mx, my);
 

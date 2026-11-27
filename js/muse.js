@@ -24,8 +24,10 @@ import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
 import { seemimic } from './mon.js';
 import { monstseesu, monstunseesu } from './uhitm.js';
-import { losehp, unconscious as unconscious_mu, wearing_iron_shoes } from './trap.js';
-import { find_mac, Dragon_mail_to_pm, Dragon_scales_to_pm, Is_dragon_mail } from './worn.js';
+import { losehp, unconscious as unconscious_mu,
+         wearing_iron_shoes } from './trap.js';
+import { find_mac, Dragon_mail_to_pm, Dragon_scales_to_pm,
+         Is_dragon_mail } from './worn.js';
 import { resists_magm, is_animal, mindless, nohands, verysmall, throws_rocks,
          likes_gems, noncorporeal, amorphous, unsolid, is_mercenary, acidic,
          is_unicorn, touch_petrifies, resists_ston, resists_acid, slimeproof,

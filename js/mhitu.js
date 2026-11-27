@@ -1337,7 +1337,7 @@ export function could_seduce(magr, mdef, mattk) {
 }
 
 /* C ref: mondata.h enfolds() */
-function enfolds(ptr) {
+export function enfolds(ptr) {
     return dmgtype_fromattack(ptr, M.AD_WRAP, AT_ENGL) !== null; /* 't' */
 }
 

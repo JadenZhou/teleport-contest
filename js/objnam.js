@@ -76,8 +76,7 @@ import {
     TREE_LOOTED, TREE_SWARM, IRONBARS, CLOUD, DOOR, SDOOR, IS_WALL, DBWALL,
     Is_rogue_level, D_LOCKED, D_NODOOR, D_ISOPEN, D_BROKEN, D_CLOSED, D_TRAPPED, WM_MASK,
     HWALL, VWALL, isok, COLNO, ROWNO, CORR, SCORR, ROOM, IS_FURNITURE, ICE, TT_LAVA,
-    IS_FOUNTAIN, IS_SINK, MELT_ICE_AWAY, IS_DOOR, W_NONDIGGABLE, W_NONPASSWALL, LADDER,
-    STAIRS,
+    IS_FOUNTAIN, IS_SINK, MELT_ICE_AWAY, IS_DOOR, W_NONDIGGABLE, W_NONPASSWALL,
 } from './const.js';
 import { trapname, maketrap, t_at, deltrap, water_damage_chain, fire_damage_chain,
          set_uinwater, reset_utrap } from './trap.js';
@@ -100,6 +99,7 @@ import { FM_FMON as FM_FMON_XN } from './const.js';
 import { noit_mon_nam as noit_mon_nam_xn, mon_pmname as mon_pmname_xn } from './do_name.js';
 import { impossible as impossible_xn } from './hack.js';
 import { counter_were } from './were.js';
+import { CAN_OVERWRITE_TERRAIN } from './mkmaze.js';
 
 // C ref: decl.c vowels[]
 const vowels = "aeiouAEIOU";
@@ -1335,12 +1335,6 @@ export function rnd_otyp_by_namedesc(
 // C ref: objnam.c shiny_obj()
 export function shiny_obj(oclass) {
     return rnd_otyp_by_namedesc("shiny", oclass, 0);
-}
-
-// C ref: rm.h CAN_OVERWRITE_TERRAIN()
-function CAN_OVERWRITE_TERRAIN(ttyp) {
-    return !!game.iflags?.debug_overwrite_stairs
-        || !(ttyp === LADDER || ttyp === STAIRS);
 }
 
 // the floor objects at <x,y> in svl.level.objects[x][y] order (top first)

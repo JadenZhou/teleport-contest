@@ -3,7 +3,8 @@
 //        xprname()
 
 import { fingers_or_gloves } from './do_wear.js';
-import { addtobill, stolen_value, get_obj_location, picked_container } from './shk.js';
+import { addtobill, stolen_value, get_obj_location,
+         picked_container } from './shk.js';
 import { in_rooms, impossible } from './hack.js';
 import { hideunder_async } from './makemon.js';
 import { get_count, GC_SAVEHIST } from './cmd.js';
