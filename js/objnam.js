@@ -43,7 +43,7 @@ import { name_to_mon, name_to_monplus, is_male, is_female, is_neuter, is_were,
          is_human, is_elf, is_dwarf, is_gnome, is_orc,
          verysmall } from './mondata.js';
 import { ismnum } from './const.js';
-import { dead_species, set_corpsenm, can_be_hatched } from './mkobj.js';
+import { dead_species, set_corpsenm, can_be_hatched, level_objects_at } from './mkobj.js';
 import { zombie_form } from './mon.js';
 import { def_char_to_objclass } from './drawing.js';
 import { genders } from './role.js';
@@ -1351,8 +1351,7 @@ function CAN_OVERWRITE_TERRAIN(ttyp) {
 
 // the floor objects at <x,y> in svl.level.objects[x][y] order (top first)
 function level_objects_at_wt(x, y) {
-    return (game.level.objects || []).filter(o => o.ox === x && o.oy === y
-                                             && o.where === 'OBJ_FLOOR');
+    return level_objects_at(x, y);
 }
 
 // C ref: objnam.c set_wallprop_from_str()

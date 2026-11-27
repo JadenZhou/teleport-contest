@@ -19,7 +19,7 @@ import { an, xname, doname, singular } from './objnam.js';
 import { simpleonames } from './iactions.js';
 import { observe_object, discover_object, objdescr_is,
          makeknown } from './o_init.js';
-import { unknow_object, unbless } from './mkobj.js';
+import { unknow_object, unbless, level_objects_at } from './mkobj.js';
 import { stop_occupation } from './allmain.js';
 import { nomul } from './hack.js';
 import { seemimic } from './mon.js';
@@ -1390,7 +1390,7 @@ function mon_likes_objpile_at(mtmp, x, y) {
 
     /* monster likes any of the top 3 items in the pile?
        (svl.level.objects[x][y] chain, top of the pile first) */
-    const pile = (game.level.objects || []).filter(o => o.ox === x && o.oy === y);
+    const pile = level_objects_at(x, y);
     for (i = 0; i < pile.length && i < 3; i++) {
         if (mon_would_take_item(mtmp, pile[i]))
             return true;
@@ -2513,9 +2513,7 @@ async function mbhitm(mtmp, otmp) {
 async function fhito_loc(obj, tx, ty, fhito) {
     let hitanything = 0;
     /* svl.level.objects[tx][ty] chain, top of the pile first */
-    const pile = (game.level.objects || []).filter(o => o.ox === tx
-                                                    && o.oy === ty
-                                                    && o.where === 'OBJ_FLOOR');
+    const pile = level_objects_at(tx, ty);
 
     if (!fhito || !pile.length)
         return false;

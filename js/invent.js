@@ -111,7 +111,7 @@ import { bypass_obj as bypass_obj_gg, bypass_objlist as bypass_objlist_gg,
 import { def_char_to_objclass as def_char_to_objclass_gg } from './drawing.js';
 import { tty_getlin as tty_getlin_gg,
          tty_yn_function as tty_yn_function_gg } from './wintty.js';
-import { unsplitobj as unsplitobj_gg } from './mkobj.js';
+import { unsplitobj as unsplitobj_gg, level_objects_at } from './mkobj.js';
 import { highc as highc_gg } from './hacklib.js';
 import { ARMOR_CLASS as ARMOR_CLASS_GG, WEAPON_CLASS as WEAPON_CLASS_GG,
          RING_CLASS as RING_CLASS_GG, AMULET_CLASS as AMULET_CLASS_GG,
@@ -1783,8 +1783,7 @@ export async function look_here(obj_cnt, /* obj_cnt > 0 implies that autopickup 
                 trap ? an(trapname(trap.ttyp, false)) : ""} here.`);
     }
 
-    const here = (game.level.objects || []).filter(
-        o => o.ox === u.ux && o.oy === u.uy && o.where === 'OBJ_FLOOR');
+    const here = level_objects_at(u.ux, u.uy);
     dfeature = dfeature_at(u.ux, u.uy);
     if (dfeature && dfeature === "pool of water" && u.uinwater)
         dfeature = null;
@@ -2632,8 +2631,7 @@ export function merged(r) {
 export async function delallobj(x, y) {
     /* for (otmp = svl.level.objects[x][y]; otmp; otmp = otmp2): the pile
        at <x,y> from the floor chain */
-    const pile = (game.level.objects || []).filter(
-        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    const pile = level_objects_at(x, y);
     for (const otmp of pile) {
         if (otmp === game.uball)
             await unpunish();

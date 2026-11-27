@@ -998,8 +998,9 @@ export function add_to_migration(obj) {
 }
 
 // C ref: mkobj.c place_object() -- the level's floor object chain (fobj)
-// is game.level.objects, newest first; per-square piles are read from it
-// in the same order (boulder-first pile ordering isn't ported yet).
+// is game.level.objects, newest first; each square's pile, with C's
+// "non-boulder object goes under boulders" order, is read from it by
+// level_objects_at().
 export function place_object(otmp, x, y) {
     const otmp2 = vobj_at(x, y); /* level.objects[x][y] */
 
@@ -1025,7 +1026,7 @@ const ROT_ICE_ADJUSTMENT = 2; /* rotting on ice takes 2 times as long */
  * Also used for starting ice effects too. [zap.c]
  */
 export function obj_ice_effects(x, y, do_buried) {
-    for (const otmp of vobj_pile(x, y)) {
+    for (const otmp of level_objects_at(x, y)) {
         if (otmp.timed)
             obj_timer_checks(otmp, x, y, 0);
     }
@@ -1039,9 +1040,25 @@ export function obj_ice_effects(x, y, do_buried) {
     }
 }
 
-/* the floor pile at <x,y>, top first (svl.level.objects[x][y] chain) */
-function vobj_pile(x, y) {
-    return (game.level.objects || []).filter(o => o.ox === x && o.oy === y);
+/* C ref: svl.level.objects[x][y] -- the floor pile at <x,y> along its
+   ->nexthere chain, top first.  JS keeps only the fobj chain
+   (game.level.objects, newest first).  C's place_object() puts a boulder
+   on top of the pile and any other object under the boulders already
+   there, while splitobj() and replace_object() keep the old object's
+   place in both chains (and restore.c find_lev_obj() rebuilds each pile
+   with place_object() in fobj order), so a C pile is always its boulders
+   followed by its other objects, each group in fobj order. */
+export function level_objects_at(x, y) {
+    const boulders = [], others = [];
+    for (const o of game.level?.objects || []) {
+        if (o.ox !== x || o.oy !== y || o.where !== 'OBJ_FLOOR')
+            continue;
+        if (o.otyp === O.BOULDER)
+            boulders.push(o);
+        else
+            others.push(o);
+    }
+    return boulders.length ? boulders.concat(others) : others;
 }
 
 // C ref: mkobj.c obj_timer_checks()

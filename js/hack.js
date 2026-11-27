@@ -116,7 +116,7 @@ import { bad_rock, passes_bars, minliquid } from './mon.js';
 import { engr_at, wipe_engr_at, can_reach_floor } from './engrave.js';
 import { an, xname, The } from './objnam.js';
 import { the } from './iactions.js';
-import { obj_extract_self, place_object } from './mkobj.js';
+import { obj_extract_self, place_object, level_objects_at } from './mkobj.js';
 import { a_monnam, y_monnam } from './do_name.js';
 import { set_ustuck, stumble_onto_mimic } from './uhitm.js';
 import { CONFLICT, HVY_ENCUMBER } from './const.js';
@@ -227,8 +227,7 @@ export async function revive_nasty(x, y, msg) {
 
     /* for (otmp = svl.level.objects[x][y]; otmp; otmp = otmp2):
        the pile at <x,y> from the floor chain, read before any revival */
-    const pile = (game.level.objects || []).filter(
-        o => o.ox === x && o.oy === y && o.where === 'OBJ_FLOOR');
+    const pile = level_objects_at(x, y);
     for (const otmp of pile) {
         if (otmp.otyp === CORPSE
             && (is_rider(mons[otmp.corpsenm])
@@ -2780,8 +2779,7 @@ async function moverock_core(sx, sy) {
         firstboulder = false;
 
         /* make sure that this boulder is visible as the top object */
-        const top = (game.level.objects || []).find(
-            o => o.ox === sx && o.oy === sy && o.where === 'OBJ_FLOOR');
+        const top = level_objects_at(sx, sy)[0] || null;
         if (otmp !== top)
             movobj(otmp, sx, sy);
 
