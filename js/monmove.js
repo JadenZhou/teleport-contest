@@ -173,6 +173,7 @@ import { bare_artifactname } from './iactions.js';
 import { yname } from './objnam.js';
 import { aggravate as aggravate_mm } from './potion.js';
 import { pline_mon, set_msg_xy } from './display.js';
+import { impossible_async } from './display.js';
 
 // ── small helpers (C ref: youprop.h / mondata.h / display.h macros) ──
 
@@ -2682,6 +2683,16 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
         /* set also in domove(), hack.c */
         if (game.u.uswallow && mtmp === game.u.ustuck) {
             throw new Error('postmov(): engulfer movement not ported yet');
+        } else if (!isok(mtmp.mx, mtmp.my) && !game.in_mklev) {
+            /* C ref: display.c newsym() -- off-map spot (a vault guard
+               that gd_move() just parked at <0,0>): misuse of column 0
+               is impossible(), anything worse is panic() */
+            if (mtmp.mx < 0 || mtmp.my < 0 || mtmp.mx > COLNO - 1
+                || mtmp.my > ROWNO - 1)
+                throw new Error(`panic: newsym: attempting screen update for <${
+                    mtmp.mx},${mtmp.my}>`);
+            await impossible_async(`newsym: attempting screen update for <${
+                mtmp.mx},${mtmp.my}>`);
         } else {
             newsym(mtmp.mx, mtmp.my);
         }
