@@ -908,11 +908,12 @@ function glyph_is_invisible(glyph) { return glyph.kind === 'invisible'; }
 function glyph_is_statue(glyph) {
     return glyph.kind === 'obj' && glyph.otyp === STATUE;
 }
-/* a JS glyph shows no GLYPH_NOTHING apart from the blank background; the
-   callers' symbol tests (SYM_NOTHING, SYM_UNEXPLORED) match it */
-function glyph_is_nothing(/*glyph*/) { return false; }
+/* GLYPH_NOTHING (display.js magic_map_background() of an unlit floor spot
+   with !dark_room) carries the 'nothing' mark into the shown glyph */
+function glyph_is_nothing(glyph) { return !!glyph.nothing; }
 function glyph_is_unexplored(glyph) {
-    return glyph.kind === 'cmap' && glyph.ch === ' ' && glyph.cmapidx === undefined;
+    return glyph.kind === 'cmap' && glyph.ch === ' ' && glyph.cmapidx === undefined
+        && !glyph.nothing;
 }
 /* C ref: display.h glyph_to_trap() -- the trap a trap glyph shows */
 function glyph_to_trap(glyph, x, y) {
@@ -1043,6 +1044,8 @@ export function lookat(x, y) {
         buf = def_warnsyms[warnindx].desc;
     } else if (glyph_is_invisible(glyph)) {
         buf = invisexplain; /* redundant; handled by caller */
+    } else if (glyph_is_nothing(glyph)) {
+        buf = "dark part of a room";
     } else if (glyph.unexplored) {
         /* glyph_is_unexplored(glyph): the glyph buffer was cleared (cls())
            and nothing has been shown here since */

@@ -315,14 +315,14 @@ export async function castmu(
         return M_ATTK_MISS;
     }
     if (canspotmon(mtmp) || !is_undirected_spell(spellnum)) {
-        await pline(`${canspotmon(mtmp) ? Monnam(mtmp) : "Something"} casts a spell${
+        await pline_mon(mtmp, `${canspotmon(mtmp) ? Monnam(mtmp) : "Something"} casts a spell${
             is_undirected_spell(spellnum) ? ""
             : (Invis() && !perceives(mtmp.data)
                && !u_at(mtmp.mux, mtmp.muy))
               ? " at a spot near you"
               : (Displaced() && !u_at(mtmp.mux, mtmp.muy))
                 ? " at your displaced image"
-                : " at you"}!`); /* pline_mon() */
+                : " at you"}!`);
     }
 
     /*
@@ -798,7 +798,7 @@ async function mcast_insects(mtmp) {
         fmt = (m, w) => `${m} summons ${w}!`;
     }
     if (fmt) {
-        await pline(fmt(Monnam(mtmp), what)); /* pline_mon() */
+        await pline_mon(mtmp, fmt(Monnam(mtmp), what));
     }
 }
 

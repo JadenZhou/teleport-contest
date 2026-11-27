@@ -223,7 +223,7 @@ import { a_monnam } from './do_name.js';
 import { an } from './objnam.js';
 import { impossible } from './hack.js';
 import { POTION_CLASS } from './objects.js';
-import { pline_mon } from './display.js';
+import { pline_mon, set_msg_xy } from './display.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -661,7 +661,7 @@ async function vamprises(mtmp) {
             const trapped = (door.doormask & D_TRAPPED_VR) !== 0,
                   seeit = cansee(x, y);
 
-            /* set_msg_xy(x, y): You()/pline() will reset this */
+            set_msg_xy(x, y); /* You()/pline() will reset this */
             if (!seeit)
                 await You_hear(`${trapped ? "an explosion" : door_smashed}.`);
             else if (!canspotmon(mtmp))
@@ -669,7 +669,7 @@ async function vamprises(mtmp) {
             else if (!Unaware_vr())
                 await pline_The_vr(`door is smashed${
                     trapped ? " and it explodes!" : "."}`);
-            /* set_msg_xy(0, 0): in case none of the messages was delivered */
+            set_msg_xy(0, 0); /* in case none of the messages was delivered */
 
             door.doormask = D_NODOOR_VR;
             recalc_block_point_vr(x, y);
@@ -929,9 +929,9 @@ export async function corpse_chance(mon, magr, was_swallowed) {
                         await mondied(magr);
                     if (DEADMONSTER(magr)) { /* maybe lifesaved */
                         if (canspotmon(magr))
-                            await pline(`${Monnam(magr)} rips open!`);
+                            await pline_mon(magr, `${Monnam(magr)} rips open!`);
                     } else if (canseemon(magr))
-                        await pline(`${Monnam(magr)} seems to have indigestion.`);
+                        await pline_mon(magr, `${Monnam(magr)} seems to have indigestion.`);
                 }
                 return false;
             }
@@ -1518,7 +1518,7 @@ async function peacefuls_respond(mtmp) {
                         || (mon.data === MM.mons[quest_info(MM.MS_LEADER)]
                             && mtmp.data !== MM.mons[game.urole.guardnum])) {
                         if (exclaimed)
-                            await pline(`${buf} then shrugs.`); /* pline_mon() */
+                            await pline_mon(mon, `${buf} then shrugs.`);
                         continue;
                     }
 
@@ -1536,7 +1536,7 @@ async function peacefuls_respond(mtmp) {
                             exclaimed = true; /* got msg from monflee() */
                     }
                     if (buf)
-                        await pline(`${buf}${needpunct ? "." : ""}`); /* pline_mon() */
+                        await pline_mon(mon, `${buf}${needpunct ? "." : ""}`);
                     if (mon.mtame) {
                         ; /* mustn't set mpeaceful to 0 as below;
                            * perhaps reduce tameness? */
@@ -1637,7 +1637,7 @@ export async function setmangry(mtmp, via_attack) {
         adjalign(-1); /* attacking peaceful monsters is bad */
     if ((mtmp.data.mflags1 & M1_HUMANOID) || mtmp.isshk || mtmp.isgd) {
         if (couldsee(mtmp.mx, mtmp.my))
-            await pline(`${Monnam(mtmp)} gets angry!`);
+            await pline_mon(mtmp, `${Monnam(mtmp)} gets angry!`);
     } else {
         await growl(mtmp);
     }
@@ -2723,7 +2723,7 @@ export function check_gear_next_turn(mon) {
 // C ref: mon.c wake_msg()
 export async function wake_msg(mtmp, interesting) {
     if (mtmp.msleeping && canseemon(mtmp)) {
-        await pline(`${Monnam(mtmp)} wakes up${interesting ? "!" : "."}${
+        await pline_mon(mtmp, `${Monnam(mtmp)} wakes up${interesting ? "!" : "."}${
             mtmp.data === mons[PM_FLESH_GOLEM] ? " It's alive!" : ""}`);
     }
 }
@@ -3378,7 +3378,7 @@ export async function golemeffects(mon, damtype, dam) {
     if (heal) {
         if (healmon(mon, heal, 0)) {
             if (cansee(mon.mx, mon.my))
-                await pline(`${Monnam(mon)} seems healthier.`);
+                await pline_mon(mon, `${Monnam(mon)} seems healthier.`);
         }
     }
 }

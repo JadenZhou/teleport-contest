@@ -1999,9 +1999,9 @@ async function mhitm_ad_wrap(magr, mattk, mdef, mhm) {
                 mhm.damage = 0;
                 if (game.flags.verbose) {
                     if (coil)
-                        await pline(`${Monnam(magr)} brushes against you.`);
+                        await pline_mon(magr, `${Monnam(magr)} brushes against you.`);
                     else
-                        await pline(`${Monnam(magr)} brushes against your ${body_part(LEG)}.`);
+                        await pline_mon(magr, `${Monnam(magr)} brushes against your ${body_part(LEG)}.`);
                 }
             }
         } else

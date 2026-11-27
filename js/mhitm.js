@@ -468,7 +468,7 @@ export async function mattackm(magr, mdef) {
 
                     if ((mclone = await clone_mon(mdef, 0, 0)) != null) {
                         if (game.mhitm_vis && canspotmon(mdef))
-                            await pline(`${Monnam(mdef)} divides as ${mon_nam(magr)} hits it!`); /* pline_mon() */
+                            await pline(`${Monnam(mdef)} divides as ${mon_nam(magr)} hits it!`);
                         await mintrap(mclone, NO_TRAP_FLAGS);
                         if (DEADMONSTER(magr))
                             res[i] |= M_ATTK_AGR_DIED;
@@ -637,7 +637,7 @@ export async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
             mhm.damage = dmgp.val;
             if (!arthit) {
                 if (vis)
-                    await pline(`${Monnam(magr)} hits ${mon_nam_too(mdef, magr)}.`); /* pline_mon() */
+                    await pline_mon(magr, `${Monnam(magr)} hits ${mon_nam_too(mdef, magr)}.`);
                 mhm.hitflags |= M_ATTK_HIT;
             }
             /* artifact_hit updates 'tmp' but doesn't inflict any

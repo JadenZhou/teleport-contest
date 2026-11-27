@@ -866,13 +866,17 @@ function tty_color(color) {
 // for a cmap glyph (glyph_to_cmap()), { mndx } for a monster glyph
 // (glyph_to_mon())
 export function show_glyph_cell(x, y, ch, color = NO_COLOR, decgfx = false, attr = 0,
-                                kind = 'cmap', objpile = false, gid = null) {
+                                kind = 'cmap', objpile = false, gid = null,
+                                hero_color = false) {
     const loc = game.level?.at(x, y);
     if (!loc) return;
     if (game.currentgraphics === ROGUESET) {
         ch = rogue_cell_ch(ch, decgfx, kind, gid);
         decgfx = false;
-        color = NO_COLOR;
+        /* the rogue level's glyphmap has no colors; map_glyphinfo() then
+           gives the hero (is_you) HI_DOMESTIC for flags.showrace */
+        if (!hero_color)
+            color = NO_COLOR;
     } else {
         const sym = ov_showsym(kind, gid);
         if (sym) {
@@ -947,13 +951,33 @@ function sym_char(sym) {
     return String.fromCharCode(sym_decgfx(sym) ? (sym & 0x7f) : sym);
 }
 
+// C ref: display.c map_glyphinfo(0, 0, glyph, 0U, &glyphinfo) -- the
+// ttychar and color of an object glyph that a menu entry carries (tty
+// process_menu_window() shows it in place of the '-' for use_menu_glyphs)
+export function menu_glyphinfo(glyph) {
+    let ch = glyph.ch, color = glyph.color ?? NO_COLOR;
+    const kind = glyph.obj ? 'obj' : glyph_kind(glyph), gid = glyph_gid(glyph);
+
+    if (game.currentgraphics === ROGUESET) {
+        ch = rogue_cell_ch(ch, glyph.decgfx, kind, gid);
+        color = NO_COLOR;
+    } else {
+        const sym = ov_showsym(kind, gid);
+        if (sym)
+            ch = sym_char(sym);
+    }
+    /* termcap.c term_start_color(): hilites[] (gray as the default,
+       black as dark gray with use_darkgray; nothing without use_color) */
+    return { ttychar: ch, color: tty_color(color) };
+}
+
 /* the glyph identity of two shown glyphs (show_glyph_cell() 'gid') */
 function same_gid(a, b) {
     if (!a || !b)
         return !a === !b;
     return a.otyp === b.otyp && a.corpsenm === b.corpsenm
         && a.cmapidx === b.cmapidx && a.mndx === b.mndx
-        && !!a.unexplored === !!b.unexplored;
+        && !!a.unexplored === !!b.unexplored && !!a.nothing === !!b.nothing;
 }
 
 // C ref: display.c gbuf_start[]/gbuf_stop[] -- per map row, the bounding
@@ -978,6 +1002,8 @@ function gbuf_mark_new(loc, x, y) {
 
 /* the glyph identity fields of a glyph (see show_glyph_cell()) */
 function glyph_gid(glyph) {
+    if (glyph.nothing) /* GLYPH_NOTHING */
+        return { nothing: true };
     if (glyph.otyp === undefined && glyph.cmapidx === undefined
         && glyph.mndx === undefined)
         return null;
@@ -1709,7 +1735,8 @@ export function magic_map_background(x, y, show) {
 }
 
 /* GLYPH_NOTHING, shown as blank */
-const GLYPH_NOTHING = { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'nothing' };
+const GLYPH_NOTHING = { ch: ' ', color: NO_COLOR, decgfx: false, cmap: 'nothing',
+                        nothing: true /* glyph_is_nothing() */ };
 /* GLYPH_INVISIBLE in the remembered-glyph form: S_invisible 'I',
    invis_color() NO_COLOR */
 export const GLYPH_INVISIBLE = { ch: 'I', color: NO_COLOR, decgfx: false,
@@ -2243,18 +2270,16 @@ export function newsym(x, y) {
                      && !loc.waslit)
                 loc.remembered_glyph = room_cmap_glyph(0); /* S_stone */
             /* else goto show_mem */
-        } else if ((!loc.waslit || (game.flags.dark_room !== false
-                             && game.iflags.wc_color !== false))
-            && loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
-            loc.remembered_glyph = rememb_glyph(S_corr_g);
-        /* lev->glyph = cmap_to_glyph(DARKROOMSYM) for a remembered lit
-           floor spot; with dark_room set the S_darkroom glyph is drawn
-           like the remembered S_room spot (see feel_location()) */
-        else if (game.flags.dark_room !== false && game.iflags.wc_color !== false
-                 && loc.typ === ROOM && loc.remembered_glyph.cmap === 'S_room'
-                 && game.currentgraphics !== ROGUESET)
-            loc.remembered_glyph = { ...loc.remembered_glyph,
-                                     cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
+        } else if (!loc.waslit || (game.flags.dark_room !== false
+                                   && game.iflags.wc_color !== false)) {
+            if (loc.typ === CORR && loc.remembered_glyph.cmap === 'S_litcorr')
+                loc.remembered_glyph = rememb_glyph(S_corr_g);
+            /* lev->glyph = cmap_to_glyph(DARKROOMSYM) for a remembered
+               floor spot (not the rogue level here, so S_darkroom) */
+            else if (loc.typ === ROOM && loc.remembered_glyph.cmap === 'S_room')
+                loc.remembered_glyph = darkroom_glyph(loc.remembered_glyph);
+            /* else goto show_mem */
+        }
         // Out of sight but remembered — show remembered glyph
         show_glyph_cell(x, y, loc.remembered_glyph.ch,
             loc.remembered_glyph.color, loc.remembered_glyph.decgfx, 0,
@@ -2463,6 +2488,17 @@ export function feel_location(x, y) {
                         (tp_sensemon(mon) || MATCH_WARN_OF_MON(mon))
                             ? PHYSICALLY_SEEN : DETECTED,
                         is_worm_tail(mon, x, y));
+}
+
+// C ref: display.h cmap_to_glyph(S_darkroom) -- in the remembered-glyph
+// form, made from the remembered S_room spot.  display.c reglyph_darkroom()
+// sets gs.showsyms[S_darkroom] to showsyms[S_room] when flags.dark_room and
+// color are on (drawn like the S_room spot), else to the SYM_NOTHING blank.
+function darkroom_glyph(roomg) {
+    if (game.flags.dark_room !== false && game.iflags.wc_color !== false)
+        return { ...roomg, cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
+    return { ch: ' ', color: NO_COLOR, decgfx: false,
+             cmap: 'S_darkroom', cmapidx: 20 /* S_darkroom */ };
 }
 
 // C ref: display.h cmap_to_glyph(S_stone / S_room / S_darkroom) -- in the
@@ -3338,7 +3374,10 @@ export function display_self() {
     show_glyph_cell(u.ux, u.uy,
                     game.flags.showrace
                         ? (def_monsyms[mons[game.urace.mnum].mlet] ?? '?') : '@',
-                    CLR_WHITE, false, 0, 'mon');
+                    CLR_WHITE, false, 0, 'mon', false, null,
+                    /* map_glyphinfo(): is_you, use_color, !Upolyd and
+                       glyph == hero_glyph: HI_DOMESTIC for showrace */
+                    !!game.flags.showrace && game.iflags.wc_color !== false);
 }
 
 // C ref: display.c swallow_to_glyph()

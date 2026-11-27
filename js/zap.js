@@ -23,9 +23,10 @@ import { game } from './gstate.js';
 import { livelog_printf, urgent_pline, You_hear as You_hear_zp,
          You_hear } from './display.js';
 import { LL_CONDUCT } from './const.js';
-import { You, Your, pline, pline_The } from './display.js';
+import { You, Your, pline, pline_The, pline_dir } from './display.js';
 import { getobj, useupall } from './invent.js';
 import { check_capacity } from './hack.js';
+import { xytodir } from './hack.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { getdir } from './cmd.js';
 import { exercise } from './attrib.js';
@@ -3735,8 +3736,8 @@ export async function dobuzz(
                 } else {
                     if (!forcemiss && zap_hit(u.uac, 0)) {
                         range -= 2;
-                        /* pline_dir(xytodir(-dx, -dy), ...) */
-                        await pline(`${The(flash_str(fltyp, false))} hits you!`);
+                        await pline_dir(xytodir(-dx, -dy),
+                                        `${The(flash_str(fltyp, false))} hits you!`);
                         if (Reflecting()) {
                             if (!Blind()) {
                                 await ureflects("But %s reflects from your %s!",

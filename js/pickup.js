@@ -20,7 +20,7 @@ import { near_capacity } from './hack.js';
 import { You, Your, You_cant, pline } from './display.js';
 import { rn2, rn2_on_display_rng } from './rng.js';
 import { check_capacity, nomul } from './hack.js';
-import { flush_screen, obj_to_glyph, what_mon } from './display.js';
+import { flush_screen, obj_to_glyph, menu_glyphinfo, what_mon } from './display.js';
 import { self_lookat } from './pager.js';
 import { digests } from './mondata.js';
 import { CONTAINED_SYM } from './const.js';
@@ -1513,9 +1513,7 @@ export async function query_objlist(qstr, /* query string */
                 }
 
                 const tmpglyph = obj_to_glyph(curr, rn2_on_display_rng);
-                /* map_glyphinfo(): tty menus don't show the glyph */
-                void tmpglyph;
-                tty_add_menu(win, null, curr,
+                tty_add_menu(win, menu_glyphinfo(tmpglyph), curr,
                              (qflags & USE_INVLET) ? curr.invlet
                                : (first && curr.oclass === COIN_CLASS) ? '$' : 0,
                              def_oc_syms[objects[curr.otyp].oc_class],

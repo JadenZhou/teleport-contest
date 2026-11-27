@@ -7,7 +7,7 @@
 // check_jump(), is_valid_jump_pos(), get_valid_jump_position().
 
 import { game } from './gstate.js';
-import { You, You_hear } from './display.js';
+import { You, You_hear, pline_mon } from './display.js';
 import { getobj } from './invent.js';
 import { check_capacity } from './hack.js';
 import { retouch_object } from './wield.js';
@@ -2291,12 +2291,13 @@ export function o_unleash(otmp) {
    returns its promise, which the caller must await */
 export function m_unleash(mtmp, feedback) {
     let otmp;
-    let msg = null;
+    let msg = null, msgmon = null;
 
     if (feedback) {
-        if (canseemon(mtmp))
+        if (canseemon(mtmp)) {
             msg = `${Monnam(mtmp)} pulls free of ${mhis(mtmp)} leash!`; /* pline_mon() */
-        else
+            msgmon = mtmp;
+        } else
             msg = "Your leash falls slack."; /* Your() */
     }
     if ((otmp = get_mleash(mtmp)) !== null) {
@@ -2304,7 +2305,7 @@ export function m_unleash(mtmp, feedback) {
         /* update_inventory(); -- no perm_invent window */
     }
     mtmp.mleashed = 0;
-    return msg ? pline(msg) : undefined;
+    return msg ? (msgmon ? pline_mon(msgmon, msg) : pline(msg)) : undefined;
 }
 
 // C ref: apply.c unleash_all()
@@ -2499,7 +2500,7 @@ export async function check_leash(x, y) {
                     if (!(mtmp.mhp < 1)) /* !DEADMONSTER(mtmp) */
                         u.uconduct.killer = save_pacifism;
                 } else {
-                    await pline(`${Monnam(mtmp)} is choked by the leash!`); /* pline_mon() */
+                    await pline_mon(mtmp, `${Monnam(mtmp)} is choked by the leash!`);
                     /* tameness eventually drops to 1 here (never 0) */
                     if (mtmp.mtame && rn2(mtmp.mtame))
                         mtmp.mtame--;
