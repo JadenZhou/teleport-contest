@@ -362,6 +362,7 @@ import { destroy_drawbridge } from './dbridge.js';
 import { maybe_dunk_boulders } from './apply.js';
 import { spot_checks } from './hack.js';
 import { sellobj } from './shk.js';
+import { pline_mon } from './display.js';
 export { is_hole, is_pit };
 
 
@@ -2404,8 +2405,8 @@ async function trapeffect_rust_trap(mtmp, trap, trflags) {
 
         if (mptr === mons[PM_IRON_GOLEM]) { /* completelyrusts(mptr) */
             if (in_sight)
-                await pline(`${Monnam(mtmp)} ${!mlifesaver(mtmp) ? "falls"
-                                               : "starts to fall"} to pieces!`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} ${!mlifesaver(mtmp) ? "falls"
+                                               : "starts to fall"} to pieces!`);
             await monkilled(mtmp, null, AD_RUST);
             if (mtmp.mhp < 1) /* DEADMONSTER(mtmp) */
                 trapkilled = true;
@@ -2624,8 +2625,8 @@ async function trapeffect_fire_trap(mtmp, trap, trflags) {
         const orig_dmg = d(2, 4);
 
         if (in_sight)
-            await pline(`A ${tower_of_flame} erupts from the ${
-                surface_tr(mtmp.mx, mtmp.my)} under ${mon_nam(mtmp)}!`); /* pline_mon() */
+            await pline_mon(mtmp, `A ${tower_of_flame} erupts from the ${
+                surface_tr(mtmp.mx, mtmp.my)} under ${mon_nam(mtmp)}!`);
         else if (see_it) { /* evidently `mtmp' is invisible */
             /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
             await You_see_l(`a ${tower_of_flame} erupt from the ${
@@ -2815,7 +2816,7 @@ export async function minstapetrify(mon, byplayer) {
     await mon_adjust_speed(mon, -3, null);
 
     if (cansee(mon.mx, mon.my))
-        await pline(`${Monnam(mon)} turns to stone.`); /* pline_mon() */
+        await pline_mon(mon, `${Monnam(mon)} turns to stone.`);
     if (byplayer) {
         game.stoned = true;
         await xkilled(mon, XKILL_NOMSG);
@@ -2863,8 +2864,8 @@ export async function mselftouch(mon, arg, byplayer) {
         && (mwep.corpsenm === PM_COCKATRICE || mwep.corpsenm === PM_CHICKATRICE)
         && !resists_ston(mon)) {
         if (cansee(mon.mx, mon.my)) {
-            await pline(`${arg ? arg : ""}${arg ? mon_nam(mon) : Monnam(mon)} touches ${
-                corpse_xname(mwep, null, CXN_PFX_THE)}.`); /* pline_mon() */
+            await pline_mon(mon, `${arg ? arg : ""}${arg ? mon_nam(mon) : Monnam(mon)} touches ${
+                corpse_xname(mwep, null, CXN_PFX_THE)}.`);
         }
         await minstapetrify(mon, byplayer);
         /* if life-saved, might not be able to continue wielding */
@@ -4186,8 +4187,8 @@ async function trapeffect_rolling_boulder_trap(mtmp, trap, trflags) {
 
             newsym(mtmp.mx, mtmp.my);
             if (in_sight)
-                await pline(`${!Deaf() ? "Click!  " : ""}${Monnam(mtmp)} triggers ${
-                    trap.tseen ? "a rolling boulder trap" : "something"}.`); /* pline_mon() */
+                await pline_mon(mtmp, `${!Deaf() ? "Click!  " : ""}${Monnam(mtmp)} triggers ${
+                    trap.tseen ? "a rolling boulder trap" : "something"}.`);
             if (await launch_obj(BOULDER, trap.launch.x, trap.launch.y,
                                  trap.launch2.x, trap.launch2.y, style)) {
                 if (in_sight)

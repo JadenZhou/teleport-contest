@@ -64,6 +64,7 @@ import { mdisplacem as mdisplacem_dm } from './mhitm.js';
 import { mon_reflects } from './muse.js';
 import { resists_ston, touch_petrifies } from './mondata.js';
 import { is_quest_artifact } from './questpgr.js';
+import { pline_mon, pline_xy } from './display.js';
 
 const DOG_HUNGRY = 300;
 const DOG_WEAK = 500;
@@ -710,7 +711,7 @@ async function dog_invent(mtmp, edog, udist) {
                             const otmpname = distant_name(otmp, doname);
 
                             if (game.flags?.verbose)
-                                await pline(`${Monnam(mtmp)} picks up ${otmpname}.`);
+                                await pline_xy(omx, omy, `${Monnam(mtmp)} picks up ${otmpname}.`);
                         }
                         obj_extract_self(otmp);
                         newsym(omx, omy);
@@ -1482,7 +1483,7 @@ export async function dog_move(mtmp, after) {
     if (nix !== omx || niy !== omy) {
         if (mfp.info[chi] & ALLOW_U) {
             if (mtmp.mleashed) { /* play it safe */
-                await pline(`${Monnam(mtmp)} breaks loose of ${mhis(mtmp)} leash!`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} breaks loose of ${mhis(mtmp)} leash!`);
                 m_unleash(mtmp, false);
             }
             await mattacku(mtmp);
@@ -1508,11 +1509,11 @@ export async function dog_move(mtmp, after) {
                           ? vobj_at(nix, niy) : null;
             const what = o ? distant_name(o, doname) : "something";
 
-            await pline(`${noit_Monnam(mtmp)} ${
+            await pline_mon(mtmp, `${noit_Monnam(mtmp)} ${
                 vtense(null, locomotion(mtmp.data, "step"))} reluctantly ${
                 (is_flyer(mtmp.data) || is_floater(mtmp.data)) ? "over"
                                                                : "onto"} ${
-                what}.`); /* pline_mon() */
+                what}.`);
         }
         mon_track_add(mtmp, omx, omy);
         /* We have to know if the pet's going to do a combined eat and

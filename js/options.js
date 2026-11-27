@@ -10,7 +10,7 @@
 
 import { game } from './gstate.js';
 import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSIZ,
-         PL_FSIZ, ismnum } from './const.js';
+         PL_FSIZ, PL_PSIZ, ismnum } from './const.js';
 
 import { strncmpi, strcmpi, mungspaces, str_end_is, copynchars } from './hacklib.js';
 import { makesingular, fruit_from_name } from './objnam.js';
@@ -485,6 +485,17 @@ function optfn_runmode(result, negated, op) {
     return true;
 }
 
+// C ref: options.c petname_optfn() (req == do_set) -- catname, dogname,
+// horsename; sets result.catname &c (jsmain.js copies them to game)
+function petname_optfn(result, which, negated, op) {
+    if (!op && !negated)
+        return false; /* optn_err */
+    if (negated || op === "none" || op === none)
+        op = '';
+    result[which] = sanitize_name(nmcpy(op, PL_PSIZ));
+    return true; /* optn_ok */
+}
+
 // C ref: options.c match_optname()
 function match_optname(user_string, optn_name, min_length, val_allowed) {
     let len = user_string.length;
@@ -712,7 +723,8 @@ export function parseNethackrc(rc) {
                 else if (match_optname(key, "paranoid_confirmation", 3, false)
                          || !strcmpi(key, "prayconfirm"))
                     optfn_paranoid_confirmation(result, negated, key, val);
-                else if (key === 'horsename') result.horsename = val; /* petname_optfn() */
+                else if (key === 'horsename' || key === 'catname' || key === 'dogname')
+                    petname_optfn(result, key, negated, val);
                 else result.flags[key] = val;
             } else {
                 // Boolean flag
@@ -2776,8 +2788,24 @@ async function optfn_pickup_types_set(o, negated, opts, op) {
         let ocl = oc_to_str(def_inv_order.map(c => String.fromCharCode(c)).join(''));
         use_menu = true;
         if (flags.menu_style === MENU_TRADITIONAL
-            || flags.menu_style === MENU_COMBINATION)
-            throw new Error('optfn_pickup_types(): traditional menustyle not ported yet');
+            || flags.menu_style === MENU_COMBINATION) {
+            let wasspace;
+
+            use_menu = false;
+            const qbuf = `New ${o.name}: [${ocl} am] (${tbuf ? tbuf : "all"})`;
+            let abuf = (await tty_getlin(qbuf)) || '';
+            wasspace = (abuf[0] === ' '); /* before mungspaces */
+            abuf = mungspaces(abuf);
+            op = abuf;
+            if (wasspace && !abuf[0])
+                ; /* one or more spaces will remove old value */
+            else if (!abuf[0] || abuf[0] === '\x1b')
+                op = tbuf; /* restore */
+            else if (abuf[0] === 'm')
+                use_menu = true;
+            /* note: abuf[0]=='a' is already handled via clearing
+               the old value (above) as a default action */
+        }
         if (use_menu) {
             if (game.flags.debug && !ocl.includes(VENOM_SYM))
                 ocl += VENOM_SYM;

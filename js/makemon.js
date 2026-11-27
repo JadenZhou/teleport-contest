@@ -11,7 +11,7 @@
 // set_mimic_sym, rndghostname, worm tail segments.
 
 import { shkname } from './shknam.js';
-import { sensemon } from './display.js';
+import { sensemon, set_msg_xy } from './display.js';
 import { mhidden_description } from './pager.js';
 import { MHID_ARTICLE, MHID_ALTMON } from './const.js';
 import { db_under_typ } from './display.js';
@@ -1682,7 +1682,7 @@ export function makemon(ptr, x, y, mmflags) {
                 what = mbuf ? mbuf[0].toUpperCase() + mbuf.slice(1) : mbuf; /* upstart() */
             }
             if (what) {
-                /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
+                set_msg_xy(mtmp.mx, mtmp.my);
                 const msg = `${what}${exclaim ? " suddenly" : ""} `
                     /* 'what' might be "gold pieces" so need plural verb */
                     + `${vtense(what, "appear")}`

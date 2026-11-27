@@ -83,6 +83,7 @@ import { deliver_obj_to_mon } from './dokick.js';
 import { haseyes as haseyes_wd } from './mondata.js';
 import { body_part as body_part_wd } from './insight.js';
 import { EYE as EYE_WD } from './const.js';
+import { pline_mon } from './display.js';
 
 const DF_ALL = 0x04; /* hack.h */
 
@@ -1057,11 +1058,11 @@ export async function wary_dog(mtmp, was_dead) {
         if (!quietly && cansee(mtmp.mx, mtmp.my)) {
             if (haseyes_wd(game.youmonst.data)) {
                 if (haseyes_wd(mtmp.data))
-                    await pline(`${Monnam(mtmp)} ${mtmp.mpeaceful ? "seems unable"
+                    await pline_mon(mtmp, `${Monnam(mtmp)} ${mtmp.mpeaceful ? "seems unable"
                                                                   : "refuses"} to look you in the ${
-                                    body_part_wd(EYE_WD)}.`); /* pline_mon() */
+                                    body_part_wd(EYE_WD)}.`);
                 else
-                    await pline(`${Monnam(mtmp)} avoids your gaze.`); /* pline_mon() */
+                    await pline_mon(mtmp, `${Monnam(mtmp)} avoids your gaze.`);
             }
         }
     } else {
@@ -1073,8 +1074,8 @@ export async function wary_dog(mtmp, was_dead) {
 
     if (!mtmp.mtame) {
         if (!quietly && canspotmon(mtmp))
-            await pline(`${Monnam(mtmp)} ${mtmp.mpeaceful ? "is no longer tame"
-                                                          : "has become feral"}.`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} ${mtmp.mpeaceful ? "is no longer tame"
+                                                          : "has become feral"}.`);
         newsym(mtmp.mx, mtmp.my);
         /* a life-saved monster might be leashed;
            don't leave it that way if it's no longer tame */

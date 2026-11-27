@@ -154,6 +154,7 @@ import { paralyze_monst as paralyze_monst_mu } from './mhitm.js';
 import { shieldeff as shieldeff_mu } from './display.js';
 import { golemeffects as golemeffects_mu } from './mon.js';
 import { stagger as stagger_mu } from './uhitm.js';
+import { pline_mon, set_msg_xy } from './display.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -221,8 +222,8 @@ async function mswings(
     bash)  /* True: polearm used at too close range */
 {
     if (game.flags.verbose && !Blind() && mon_visible(mtmp)) {
-        await pline(`${Monnam(mtmp)} ${mswings_verb(otemp, bash)} ${
-            (otemp.quan > 1) ? "one of " : ""}${mhis(mtmp)} ${xname(otemp)}.`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monnam(mtmp)} ${mswings_verb(otemp, bash)} ${
+            (otemp.quan > 1) ? "one of " : ""}${mhis(mtmp)} ${xname(otemp)}.`);
     }
 }
 
@@ -356,7 +357,7 @@ export async function hitmsg(mtmp, mattk) {
                        && mattk === mtmp.data.mattk[prev.idx + 1]
                        && prev.mdat === mtmp.data
                        && mattk.aatyp === prev.attk.aatyp) ? ' again' : '';
-        await pline(`${Monst_name} ${verb}${again}${punct}`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monst_name} ${verb}${again}${punct}`);
     }
     game.hitmsg_mid = mtmp.m_id;
     game.hitmsg_prev = { attk: mattk, mdat: mtmp.data,
@@ -373,9 +374,9 @@ async function missmu(mtmp, nearmiss, mattk) {
         map_invisible(mtmp.mx, mtmp.my);
 
     if (could_seduce(mtmp, game.youmonst, mattk) && !mtmp.mcan)
-        await pline(`${Monnam(mtmp)} pretends to be friendly.`);
+        await pline_mon(mtmp, `${Monnam(mtmp)} pretends to be friendly.`);
     else
-        await pline(`${Monnam(mtmp)} ${(nearmiss && game.flags.verbose) ? 'just ' : ''}misses!`);
+        await pline_mon(mtmp, `${Monnam(mtmp)} ${(nearmiss && game.flags.verbose) ? 'just ' : ''}misses!`);
 
     await stop_occupation();
 }
@@ -401,7 +402,7 @@ async function wildmiss(mtmp, mattk) {
                     ? could_seduce(mtmp, game.youmonst, mattk) : 0);
     const Monst_name = Monnam(mtmp);
 
-    /* set_msg_xy(mtmp->mx, mtmp->my): message positioning only */
+    set_msg_xy(mtmp.mx, mtmp.my);
     if (unotseen) { /* !mtmp->cansee || (Invis && !perceives(mtmp->data)) */
         const swings = (mattk.aatyp === AT_BITE) ? "snaps"
                        : (mattk.aatyp === AT_KICK) ? "kicks"
@@ -610,7 +611,7 @@ async function summonmu(mtmp, youseeit) {
             const out = { visible: 0, genbuf: "creature" };
 
             if (youseeit)
-                await pline(`${Monnam(mtmp)} summons help!`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} summons help!`);
             const numhelp = await were_summon(mdat, false, out);
             const numseen = out.visible, genericwere = out.genbuf;
             if (youseeit) {
@@ -732,7 +733,7 @@ export async function mattacku(mtmp) {
     if (u.uinvulnerable) { /* in the midst of successful prayer */
         /* monsters won't attack you */
         if (mtmp === u.ustuck) {
-            await pline(`${Monnam(mtmp)} loosens its grip slightly.`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} loosens its grip slightly.`);
         } else if (!v.range2) {
             if (v.youseeit || sensemon(mtmp))
                 await pline(`${Monnam(mtmp)} starts to attack you, but pulls back.`);
@@ -839,10 +840,10 @@ export async function mattacku(mtmp) {
                         await missmu(mtmp, (tmp === j), mattk);
                     }
                 } else if (digests(mtmp.data)) {
-                    await pline(`${Monnam(mtmp)} gulps some air!`); /* pline_mon() */
+                    await pline_mon(mtmp, `${Monnam(mtmp)} gulps some air!`);
                 } else {
                     if (v.youseeit) {
-                        await pline(`${Monnam(mtmp)} lunges forward and recoils!`); /* pline_mon() */
+                        await pline_mon(mtmp, `${Monnam(mtmp)} lunges forward and recoils!`);
                     } else {
                         /* if (is_whirly()) Soundeffect(se_rushing_wind_noise, 60); */
                         await You_hear(`a ${is_whirly(mtmp.data) ? "rushing noise"
@@ -1144,7 +1145,7 @@ export async function gazemu(mtmp, mattk) {
 
                 mtmp.mspec_used = (mtmp.mspec_used || 0) + (conf + rn2(6));
                 if (!(u.uprops[CONFUSION_MH].intrinsic)) /* !Confusion */
-                    await pline(`${s_suffix(Monnam(mtmp))} gaze confuses you!`); /* pline_mon() */
+                    await pline_mon(mtmp, `${s_suffix(Monnam(mtmp))} gaze confuses you!`);
                 else
                     await pline("You are getting more and more confused."); /* You() */
                 await make_confused_mh((u.uprops[CONFUSION_MH].intrinsic || 0) + conf,
@@ -1162,7 +1163,7 @@ export async function gazemu(mtmp, mattk) {
                 const stun = d(2, 6);
 
                 mtmp.mspec_used = (mtmp.mspec_used || 0) + (stun + rn2(6));
-                await pline(`${Monnam(mtmp)} stares piercingly at you!`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} stares piercingly at you!`);
                 await make_stunned_mh(((u.uprops[STUNNED_MH].intrinsic || 0) & TIMEOUT_MH)
                                       + stun, true);
                 stop_occupation();
@@ -1209,7 +1210,7 @@ export async function gazemu(mtmp, mattk) {
                 let dmg = d(2, 6);
                 const orig_dmg = dmg, lev = mtmp.m_lev;
 
-                await pline(`${Monnam(mtmp)} attacks you with a fiery gaze!`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} attacks you with a fiery gaze!`);
                 stop_occupation();
                 if (Fire_resistance()) {
                     /* shieldeff(u.ux, u.uy): display effect only */
@@ -1241,8 +1242,8 @@ export async function gazemu(mtmp, mattk) {
             react = rn2(reactions.length);
         /* cancelled/hallucinatory feedback; monster might look "confused",
            "stunned",&c but we don't actually set corresponding attribute */
-        await pline(`${Monnam(mtmp)} looks ${!rn2(3) ? "" : already ? "quite "
-                    : (!rn2(2) ? "a bit " : "somewhat ")}${reactions[react]}.`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monnam(mtmp)} looks ${!rn2(3) ? "" : already ? "quite "
+                    : (!rn2(2) ? "a bit " : "somewhat ")}${reactions[react]}.`);
     }
     return M_ATTK_MISS;
 }
@@ -1447,7 +1448,7 @@ export async function expels(
         if (digests(mdat)) {
             await pline("You get regurgitated!"); /* You() */
         } else if (enfolds(mdat)) {
-            await pline(`${Monnam(mtmp)} unfolds and you are released!`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} unfolds and you are released!`);
         } else {
             let blast = '';
             const attk = attacktype_fordmg(mdat, AT_ENGL, M.AD_ANY);
@@ -1911,8 +1912,8 @@ export async function doseduce(mon) {
     let qbuf, Who;
 
     if (mon.mcan || mon.mspec_used) {
-        await pline(`${Monnam(mon)} acts as though ${mhe(mon)} has got a ${
-            mon.mcan ? "severe " : ""}headache.`); /* pline_mon() */
+        await pline_mon(mon, `${Monnam(mon)} acts as though ${mhe(mon)} has got a ${
+            mon.mcan ? "severe " : ""}headache.`);
         return 0;
     }
     if (unresponsive()) {
@@ -2068,7 +2069,7 @@ export async function doseduce(mon) {
                     yourgloves ? " and eleven more pairs of gloves" : ""}!`);
             }
         } else if (seewho)
-            await pline(`${Monnam(mon)} appears to sigh.`); /* pline_mon() */
+            await pline_mon(mon, `${Monnam(mon)} appears to sigh.`);
         /* else no regret message if can't see or hear seducer */
 
         if (!await tele_restrict(mon))
@@ -2200,8 +2201,8 @@ export async function doseduce(mon) {
                 await pline("No charge.");
             }
         } else {
-            await pline(`${noit_Monnam(mon)} takes ${cost} ${
-                currency(cost)} for services rendered!`); /* pline_mon() */
+            await pline_mon(mon, `${noit_Monnam(mon)} takes ${cost} ${
+                currency(cost)} for services rendered!`);
             await money2mon(mon, cost);
             game.disp_botl = true;
         }
@@ -2319,13 +2320,13 @@ async function passiveum(olduasmon, mtmp, mattk) {
                         if (await mon_reflects_mu(mtmp,
                                                   "Your gaze is reflected by %s %s."))
                             return 1;
-                        await pline(`${Monnam(mtmp)} is frozen by your gaze!`); /* pline_mon() */
+                        await pline_mon(mtmp, `${Monnam(mtmp)} is frozen by your gaze!`);
                         paralyze_monst_mu(mtmp, tmp);
                         return M_ATTK_AGR_DONE;
                     }
                 }
             } else { /* gelatinous cube */
-                await pline(`${Monnam(mtmp)} is frozen by you.`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} is frozen by you.`);
                 paralyze_monst_mu(mtmp, tmp);
                 return M_ATTK_AGR_DONE;
             }
@@ -2333,12 +2334,12 @@ async function passiveum(olduasmon, mtmp, mattk) {
         case AD_COLD: /* Brown mold or blue jelly */
             if (resists_cold_mu(mtmp)) {
                 await shieldeff_mu(mtmp.mx, mtmp.my);
-                await pline(`${Monnam(mtmp)} is mildly chilly.`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} is mildly chilly.`);
                 await golemeffects_mu(mtmp, AD_COLD, tmp);
                 tmp = 0;
                 break;
             }
-            await pline(`${Monnam(mtmp)} is suddenly very cold!`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} is suddenly very cold!`);
             game.u.mh += Math.trunc((tmp + rn2(2)) / 2);
             if (game.u.mhmax < game.u.mh)
                 game.u.mhmax = game.u.mh;
@@ -2348,30 +2349,30 @@ async function passiveum(olduasmon, mtmp, mattk) {
         case M.AD_STUN: /* Yellow mold */
             if (!mtmp.mstun) {
                 mtmp.mstun = 1;
-                await pline(`${Monnam(mtmp)} ${
-                    makeplural(stagger_mu(mtmp.data, "stagger"))}.`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} ${
+                    makeplural(stagger_mu(mtmp.data, "stagger"))}.`);
             }
             tmp = 0;
             break;
         case M.AD_FIRE: /* Red mold */
             if (resists_fire_mu(mtmp)) {
                 await shieldeff_mu(mtmp.mx, mtmp.my);
-                await pline(`${Monnam(mtmp)} is mildly warm.`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} is mildly warm.`);
                 await golemeffects_mu(mtmp, M.AD_FIRE, tmp);
                 tmp = 0;
                 break;
             }
-            await pline(`${Monnam(mtmp)} is suddenly very hot!`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} is suddenly very hot!`);
             break;
         case M.AD_ELEC:
             if (resists_elec_mu(mtmp)) {
                 await shieldeff_mu(mtmp.mx, mtmp.my);
-                await pline(`${Monnam(mtmp)} is slightly tingled.`); /* pline_mon() */
+                await pline_mon(mtmp, `${Monnam(mtmp)} is slightly tingled.`);
                 await golemeffects_mu(mtmp, M.AD_ELEC, tmp);
                 tmp = 0;
                 break;
             }
-            await pline(`${Monnam(mtmp)} is jolted with your electricity!`); /* pline_mon() */
+            await pline_mon(mtmp, `${Monnam(mtmp)} is jolted with your electricity!`);
             break;
         default:
             tmp = 0;
@@ -2386,7 +2387,7 @@ async function passiveum(olduasmon, mtmp, mattk) {
 // C ref: mhitu.c assess_dmg()
 async function assess_dmg_mu(mtmp, tmp) {
     if ((mtmp.mhp -= tmp) <= 0) {
-        await pline(`${Monnam(mtmp)} dies!`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monnam(mtmp)} dies!`);
         await xkilled_mu(mtmp, XKILL_NOMSG_MU);
         if (!(mtmp.mhp < 1)) /* !DEADMONSTER(mtmp) */
             return M_ATTK_HIT;

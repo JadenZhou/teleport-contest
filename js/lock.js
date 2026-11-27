@@ -79,7 +79,7 @@ import { obfree, useup, stackobj, delobj } from './invent.js';
 import { currency } from './insight.js';
 import { obj_resists } from './dogmove.js';
 import { wake_nearby } from './mon.js';
-import { There } from './display.js';
+import { There, set_msg_xy } from './display.js';
 import { safe_qbuf } from './pickup.js';
 import { getdir } from './cmd.js';
 import { is_drawbridge_wall } from './dbridge.js';
@@ -746,7 +746,8 @@ export async function doopen_indir(x, y) {
             locked = true;
             break;
         }
-        await pline(`This door${mesg}.`); /* set_msg_xy(cc.x, cc.y) */
+        set_msg_xy(cc.x, cc.y);
+        await pline(`This door${mesg}.`);
         const autounlock = game.flags.autounlock ?? AUTOUNLOCK_APPLY_KEY;
         if (locked && autounlock) {
             let unlocktool;
@@ -776,7 +777,8 @@ export async function doopen_indir(x, y) {
 
     /* door is known to be CLOSED */
     if (rnl(20) < Math.trunc((acurrstr() + ACURR(A_DEX) + ACURR(A_CON)) / 3)) {
-        await pline_The("door opens."); /* set_msg_xy() */
+        set_msg_xy(cc.x, cc.y);
+        await pline_The("door opens.");
         if (door.doormask & D_TRAPPED) {
             throw new Error('doopen_indir(): b_trapped() not ported yet');
         } else
@@ -785,7 +787,8 @@ export async function doopen_indir(x, y) {
         recalc_block_point(cc.x, cc.y); /* vision: new see through there */
     } else {
         await exercise(A_STR, true);
-        await pline_The("door resists!"); /* set_msg_xy() */
+        set_msg_xy(cc.x, cc.y);
+        await pline_The("door resists!");
     }
 
     return ECMD_TIME;

@@ -65,7 +65,8 @@ import { pline, canspotmon, mon_visible, newsym, sensemon, You, Your,
          You_cant, pline_The, There, unmap_invisible, unmap_object, map_invisible,
          glyph_is_invisible, map_object } from './display.js';
 import { vision_recalc, couldsee } from './vision.js';
-import { glyph_at, Norep, feel_location, glyph_is_warning } from './display.js';
+import { glyph_at, Norep, feel_location, glyph_is_warning, pline_dir, pline_xy,
+         pline_mon, set_msg_xy } from './display.js';
 import { carrying } from './invent.js';
 import { WAN_DIGGING, is_pick } from './objects.js';
 import { u_at, Is_rogue_level, Upolyd } from './const.js';
@@ -696,7 +697,7 @@ async function avoid_moving_on_trap(x, y, msg) {
            it were a type of terrain */
         && trap.ttyp !== VIBRATING_SQUARE) {
         if (msg && game.flags.mention_walls) {
-            /* set_msg_xy(x, y); */
+            set_msg_xy(x, y);
             await You(`stop in front of ${an(trapname(trap.ttyp, false))}.`);
         }
         return true;
@@ -728,7 +729,7 @@ async function avoid_moving_on_liquid(x, y, msg) {
         return false; /* liquid is safe to traverse */
     } else if (is_pool_or_lava(x, y) && loc.seenv) {
         if (msg && game.flags.mention_walls) {
-            /* set_msg_xy(x, y); */
+            set_msg_xy(x, y);
             await You(`stop at the edge of the ${
                 hliquid(is_pool(x, y) ? "water" : "lava")}.`);
         }
@@ -778,8 +779,8 @@ export async function lookaround() {
                 /* OR it blocks our move direction and we're not traveling */
                 if ((g.context.run !== 1 && !is_safemon(mtmp))
                     || (infront && !g.context.travel)) {
-                    if (g.flags.mention_walls) /* pline_xy() */
-                        await pline(`${upstart(a_monnam(mtmp))} blocks your path.`);
+                    if (g.flags.mention_walls)
+                        await pline_xy(x, y, `${upstart(a_monnam(mtmp))} blocks your path.`);
                     nomul(0); /* goto stop */
                     return;
                 }
@@ -2168,8 +2169,7 @@ export async function test_move(ux, uy, dx, dy, mode) {
                     const sym = back_to_cmap(x, y);
                     const buf = (sym === 0 /* S_stone */) ? "solid stone"
                                 : an(defsyms_explanation[sym]);
-                    /* pline_dir(xytodir(dx, dy), ...) */
-                    await pline(`It's ${buf}.`);
+                    await pline_dir(xytodir(dx, dy), `It's ${buf}.`);
                 }
             }
             return false;
@@ -2334,8 +2334,7 @@ async function test_move_rest(ux, uy, dx, dy, mode, x, y) {
         if (mode !== TEST_TRAV && game.context.run >= 2
             && !(Blind() || Hallucination()) && !could_move_onto_boulder(x, y)) {
             if (mode === DO_MOVE && game.flags.mention_walls)
-                /* pline_dir(xytodir(dx,dy), ...) */
-                await pline("A boulder blocks your path.");
+                await pline_dir(xytodir(dx, dy), "A boulder blocks your path.");
             return false;
         }
         if (mode === DO_MOVE) {

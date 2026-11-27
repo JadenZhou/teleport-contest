@@ -74,6 +74,7 @@ import { costly_spot } from './shk.js';
 import { in_rooms } from './hack.js';
 import { SHOPBASE } from './const.js';
 import { bimanual } from './objects.js';
+import { pline_mon } from './display.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -919,7 +920,7 @@ export async function mdrop_obj(mon, obj, verbosely) {
     }
     /* obj_no_longer_held(obj); -- done by place_object */
     if (verbosely && cansee(omx, omy))
-        await pline(`${Monnam(mon)} drops ${obj_name}.`); /* pline_mon() */
+        await pline_mon(mon, `${Monnam(mon)} drops ${obj_name}.`);
     if (!await flooreffects(obj, omx, omy, "fall")) {
         place_object(obj, omx, omy);
         stackobj(obj);

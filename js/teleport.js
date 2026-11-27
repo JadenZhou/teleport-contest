@@ -62,7 +62,7 @@ import { STRAT_APPEARMSG, RLOC_MSG, RLOC_NONE, NO_TRAP_FLAGS, BLINDED,
 import { VAULT, POOL, MOAT, WATER, LAVAPOOL, LAVAWALL,
          TT_BURIEDBALL, LEVITATION, FLYING, TELEDS_TELEPORT } from './const.js';
 import { ECMD_OK, ECMD_TIME, TELEPORT, A_STR } from './const.js';
-import { You } from './display.js';
+import { You, set_msg_xy } from './display.js';
 import { docrt as docrt_tp } from './display.js';
 import { getpos } from './getpos.js';
 import { u_locomotion } from './trap.js';
@@ -1396,7 +1396,7 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
         const next = (du <= 2) ? " next to you" : null, /* next2u() */
               nearu = (du <= BOLT_LIM * BOLT_LIM) ? " close by" : null;
 
-        /* set_msg_xy(x, y) */
+        set_msg_xy(x, y);
         mtmp.mstrategy &= ~STRAT_APPEARMSG; /* one chance only */
         if (telemsg && (couldsee(x, y) || sensemon(mtmp))) {
             await pline(`${Monnam(mtmp)} vanishes and reappears${

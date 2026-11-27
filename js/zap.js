@@ -401,6 +401,7 @@ import { STATUE, FIGURINE } from './objects.js';
 import { W_ARTI, BURIED_TOO, CONTAINED_TOO } from './const.js';
 import { force_decor } from './pickup.js';
 import { is_db_wall, open_drawbridge, close_drawbridge, destroy_drawbridge } from './dbridge.js';
+import { set_msg_xy } from './display.js';
 
 // C ref: zap.c learnwand()
 export function learnwand(obj) {
@@ -992,7 +993,7 @@ export async function bhitm(mtmp, otmp) {
             /* note: if that_is_a_mimic() doesn't get called to reveal the
                mimic, wakeup() below will call seemimic() */
             if (cansee(mtmp.mx, mtmp.my)) {
-                /* set_msg_xy(mtmp->mx, mtmp->my): accessibility only */
+                set_msg_xy(mtmp.mx, mtmp.my);
                 await that_is_a_mimic_bm(mtmp, MIM_REVEAL_BM | MIM_OMIT_WAIT_BM);
             }
         } else {
