@@ -348,6 +348,7 @@ import { poly_obj } from './zap.js';
 import { update_mon_extrinsics } from './worn.js';
 import { mpickobj } from './steal.js';
 import { IRON_SHOES, KICKING_BOOTS } from './objects.js';
+import { SADDLE as SADDLE_LM } from './objects.js';
 import { level_difficulty } from './dungeon.js';
 import { The } from './objnam.js';
 import { make_stunned } from './potion.js';
@@ -4042,7 +4043,62 @@ async function trapeffect_landmine(mtmp, trap, trflags) {
         damage = Math.trunc((damage + 3) / 4);
 
     if (mtmp === game.youmonst) {
-        throw new Error('trapeffect_landmine(): hero branch not ported yet');
+        const u = game.u;
+        const already_seen = trap.tseen;
+        const forcetrap = ((trflags & FORCETRAP) !== 0
+                           || (trflags & FAILEDUNTRAP) !== 0);
+        const forcebungle = (trflags & FORCEBUNGLE) !== 0;
+        let steed_mid = 0;
+        let saddle = null;
+
+        if ((Levitation() || Flying()) && !forcetrap) {
+            if (!already_seen && rn2(3))
+                return Trap_Effect_Finished;
+            feeltrap(trap);
+            await pline(`${already_seen ? "There is" : "You discover"} ${
+                trap.madeby_u ? "the trigger of your mine" : "a trigger"
+                } in a pile of soil below you.`);
+            if (already_seen && rn2(3))
+                return Trap_Effect_Finished;
+            /* Soundeffect(se_kaablamm_of_mine, 80): no sound */
+            await pline(`KAABLAMM!!!  ${forcebungle ? "Your inept attempt sets"
+                                                    : "The air currents set"} ${
+                already_seen ? a_your[trap.madeby_u ? 1 : 0] : ""}${
+                already_seen ? " land mine" : "it"} off!`);
+        } else {
+            /* prevent landmine from killing steed, throwing you to
+             * the ground, and then that same landmine affecting you
+             * again because it hasn't been deleted yet
+             */
+            /* C's static recursive_mine is per-game state here */
+            if (game.recursive_mine)
+                return Trap_Effect_Finished;
+            feeltrap(trap);
+            await pline(`KAABLAMM!!!  You triggered ${
+                a_your[trap.madeby_u ? 1 : 0]} land mine!`);
+            if (u.usteed)
+                steed_mid = u.usteed.m_id;
+            game.recursive_mine = true;
+            await steedintrap(trap, null);
+            game.recursive_mine = false;
+            saddle = sobj_at(SADDLE_LM, u.ux, u.uy);
+            await set_wounded_legs(LEFT_SIDE, rn1(35, 41));
+            await set_wounded_legs(RIGHT_SIDE, rn1(35, 41));
+            await exercise(A_DEX, false);
+        }
+        /* add a pit before calling losehp so bones won't keep the landmine;
+           blow_up_landmine() will remove pit afterwards if inappropriate */
+        trap.ttyp = PIT;
+        trap.madeby_u = false;
+        await losehp(Maybe_Half_Phys(damage), "land mine", KILLED_BY_AN);
+        await blow_up_landmine(trap);
+        if (steed_mid && saddle && !u.usteed)
+            throw new Error('trapeffect_landmine(): keep_saddle_with_steedcorpse() not ported yet');
+        newsym(u.ux, u.uy); /* update trap symbol */
+        /* fall recursively into the pit... */
+        if ((trap = t_at(u.ux, u.uy)) !== null && trap !== undefined)
+            await dotrap(trap, RECURSIVETRAP);
+        await fill_pit(u.ux, u.uy);
     } else {
         const in_sight = canseemon(mtmp) || (mtmp === game.u.usteed);
         const tx = trap.tx, ty = trap.ty;
@@ -4057,7 +4113,8 @@ async function trapeffect_landmine(mtmp, trap, trflags) {
             const already_seen = trap.tseen;
 
             if (in_sight && !already_seen) {
-                await pline(`A trigger appears in a pile of soil below ${mon_nam(mtmp)}.`);
+                await pline_mon(mtmp,
+                                `A trigger appears in a pile of soil below ${mon_nam(mtmp)}.`);
                 seetrap(trap);
             }
             if (rn2(3))

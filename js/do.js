@@ -97,6 +97,7 @@ import { query_category, query_objlist, add_valid_menu_class, allow_all,
          allow_category, count_justpicked, find_justpicked } from './pickup.js';
 import { bypass_objlist, nxt_unbypassed_obj } from './worn.js';
 import { splitobj } from './mkobj.js';
+import { ggetobj as ggetobj_dd } from './invent.js';
 import { MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION, UNPAID_TYPES,
          ALL_TYPES, CHOOSE_ALL, BUC_BLESSED, BUC_CURSED, BUC_UNCURSED,
          BUC_UNKNOWN, JUSTPICKED, INCLUDE_VENOM, PICK_ANY, ALL_TYPES_SELECTED,
@@ -1374,10 +1375,9 @@ export async function doddrop() {
     add_valid_menu_class(0); /* clear any classes already there */
     if (game.u.ushops)
         sellobj_state(SELL_DELIBERATE);
-    if ((game.flags.menu_style ?? MENU_FULL) !== MENU_TRADITIONAL)
+    if ((game.flags.menu_style ?? MENU_FULL) !== MENU_TRADITIONAL
+        || (result = await ggetobj_dd("drop", drop, 0, false, null)) < -1)
         result = await menu_drop(result);
-    else
-        throw new Error('doddrop(): ggetobj() (menustyle:traditional) not ported yet');
     if (game.u.ushops)
         sellobj_state(SELL_NORMAL);
     if (result)

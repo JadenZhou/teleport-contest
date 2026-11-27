@@ -63,6 +63,16 @@ import { dist2, distu, mdistu } from './hacklib.js';
 import { ACURR } from './attrib.js';
 import { A_CHA } from './const.js';
 import { poly_gender } from './polyself.js';
+import { observe_object as observe_object_st,
+         makeknown as makeknown_st } from './o_init.js';
+import { any_obj_ok as any_obj_ok_st, prinv as prinv_st,
+         useup as useup_st } from './invent.js';
+import { obj_resists as obj_resists_st } from './dogmove.js';
+import { You_feel as You_feel_st, You_see as You_see_st } from './display.js';
+import { plur as plur_st } from './hacklib.js';
+import { Race_if as Race_if_st, Role_if as Role_if_st,
+         GETOBJ_PROMPT as GETOBJ_PROMPT_ST } from './const.js';
+import { PM_GNOME as PM_GNOME_ST } from './monsters.js';
 import { SPE_JUMPING, BOULDER } from './objects.js';
 import { ECMD_TIME, ECMD_FAIL, JUMPING, PASSES_WALLS, LEVITATION, WOUNDED_LEGS,
          INTRINSIC, UNENCUMBERED, A_STR, TT_PIT, IS_STWALL, IS_DOOR, D_ISOPEN,
@@ -1123,7 +1133,8 @@ export async function doapply() {
     case O.LUCKSTONE:
     case O.LOADSTONE:
     case TOUCHSTONE:
-        throw new Error('doapply(): use_stone() not ported yet');
+        res = await use_stone(obj);
+        break;
     case BANANA:
         if (Hallucination()) {
             await pline("It rings! ... But no-one answers.");
@@ -1535,6 +1546,162 @@ export function beautiful() {
                       : (cha >= 6) ? "homely"
                         : (cha >= 4) ? "ugly"
                           : "hideous"); /* 3 is the minimum possible */
+}
+
+// C ref: apply.c touchstone_ok()
+function touchstone_ok(obj) {
+    if (!obj)
+        return GETOBJ_EXCLUDE;
+
+    /* Gold being suggested as a rub target is questionable - it fits the
+     * real-world historic use of touchstones, but doesn't do anything
+     * significant in the game. */
+    if (obj.oclass === COIN_CLASS)
+        return GETOBJ_SUGGEST;
+
+    /* don't suggest identified gems */
+    if (obj.oclass === O.GEM_CLASS
+        && !(obj.dknown && objects[obj.otyp].oc_name_known))
+        return GETOBJ_SUGGEST;
+
+    return GETOBJ_DOWNPLAY;
+}
+
+/* C ref: decl.c c_obj_colors[] */
+const c_obj_colors_st = [
+    "black", "red", "green", "brown", "blue", "magenta", "cyan", "gray",
+    "transparent", "orange", "bright green", "yellow", "bright blue",
+    "bright magenta", "bright cyan", "white",
+];
+
+// C ref: apply.c use_stone() -- touchstones - by Ken Arnold
+async function use_stone(tstone) {
+    const scritch = "\"scritch, scritch\"";
+    let obj;
+    let do_scratch;
+    let streak_color;
+    let stonebuf;
+    let oclass;
+
+    /* in case it was acquired while blinded */
+    if (!Blind())
+        observe_object_st(tstone, Hallucination());
+    const known = (tstone.otyp === TOUCHSTONE && tstone.dknown
+                   && objects[TOUCHSTONE].oc_name_known);
+    stonebuf = `rub on the stone${plur_st(tstone.quan)}`;
+    /* when the touchstone is fully known, don't bother listing extra
+       junk as likely candidates for rubbing */
+    if ((obj = await getobj(stonebuf, known ? touchstone_ok : any_obj_ok_st,
+                            GETOBJ_PROMPT_ST)) === null || obj === undefined)
+        return ECMD_CANCEL;
+
+    if (obj === tstone && obj.quan === 1) {
+        await You_cant(`rub ${the_ap(xname_ap(obj))} on itself.`);
+        return ECMD_OK;
+    }
+
+    if (tstone.otyp === TOUCHSTONE && tstone.cursed
+        && obj.oclass === O.GEM_CLASS && !is_graystone(obj)
+        && !obj_resists_st(obj, 80, 100)) {
+        if (Blind())
+            await You_feel_st("something shatter.");
+        else if (Hallucination())
+            await pline("Oh, wow, look at the pretty shards.");
+        else
+            await pline(`A sharp crack shatters ${
+                (obj.quan > 1) ? "one of " : ""}${the_ap(xname_ap(obj))}.`);
+        useup_st(obj);
+        return ECMD_TIME;
+    }
+
+    if (Blind()) {
+        await pline(scritch);
+        return ECMD_TIME;
+    } else if (Hallucination()) {
+        await pline("Oh wow, man: Fractals!");
+        return ECMD_TIME;
+    }
+
+    do_scratch = false;
+    streak_color = null;
+
+    oclass = obj.oclass;
+    /* prevent non-gemstone rings from being treated like gems */
+    if (oclass === O.RING_CLASS
+        && objects[obj.otyp].oc_material !== O.GEMSTONE
+        && objects[obj.otyp].oc_material !== O.MINERAL)
+        oclass = O.RANDOM_CLASS; /* something that's neither gem nor ring */
+
+    switch (oclass) {
+    case O.GEM_CLASS: /* these have class-specific handling below */
+    case O.RING_CLASS:
+        if (tstone.otyp !== TOUCHSTONE) {
+            do_scratch = true;
+        } else if (obj.oclass === O.GEM_CLASS
+                   && (tstone.blessed
+                       || (!tstone.cursed && (Role_if_st(PM_ARCHEOLOGIST_WH)
+                                              || Race_if_st(PM_GNOME_ST))))) {
+            makeknown_st(TOUCHSTONE);
+            makeknown_st(obj.otyp);
+            await prinv_st(null, obj, 0);
+            return ECMD_TIME;
+        } else {
+            /* either a ring or the touchstone was not effective */
+            if (objects[obj.otyp].oc_material === O.GLASS) {
+                do_scratch = true;
+                break;
+            }
+        }
+        streak_color = c_obj_colors_st[objects[obj.otyp].oc_color];
+        break; /* gem or ring */
+
+    default:
+        switch (objects[obj.otyp].oc_material) {
+        case O.CLOTH:
+            await pline(`${Tobjnam_lp(tstone, "look")} a little more polished now.`);
+            return ECMD_TIME;
+        case O.LIQUID:
+            if (!obj.known) /* note: not "whetstone" */
+                await You("must think this is a wetstone, do you?");
+            else
+                await pline(`${Tobjnam_lp(tstone, "are")} a little wetter now.`);
+            return ECMD_TIME;
+        case O.WAX:
+            streak_color = "waxy";
+            break; /* okay even if not touchstone */
+        case O.WOOD:
+            streak_color = "wooden";
+            break; /* okay even if not touchstone */
+        case O.GOLD:
+            do_scratch = true; /* scratching and streaks */
+            streak_color = "golden";
+            break;
+        case O.SILVER:
+            do_scratch = true; /* scratching and streaks */
+            streak_color = "silvery";
+            break;
+        default:
+            /* Objects passing the is_flimsy() test will not
+               scratch a stone.  They will leave streaks on
+               non-touchstones and touchstones alike. */
+            if (O.is_flimsy(obj))
+                streak_color = c_obj_colors_st[objects[obj.otyp].oc_color];
+            else
+                do_scratch = (tstone.otyp !== TOUCHSTONE);
+            break;
+        }
+        break; /* default oclass */
+    }
+
+    stonebuf = `stone${plur_st(tstone.quan)}`;
+    if (do_scratch)
+        await You(`make ${streak_color ? streak_color : ""}${
+            streak_color ? " " : ""}scratch marks on the ${stonebuf}.`);
+    else if (streak_color)
+        await You_see_st(`${streak_color} streaks on the ${stonebuf}.`);
+    else
+        await pline(scritch);
+    return ECMD_TIME;
 }
 
 // C ref: apply.c use_towel()

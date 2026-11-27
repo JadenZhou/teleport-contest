@@ -123,6 +123,7 @@ import { confdir as confdir_to } from './hack.js';
 import { hurtle as hurtle_to } from './dothrow.js';
 import { mhe } from './mhitu.js';
 import { Your } from './display.js';
+import { deferred_decor } from './pickup.js';
 /* slimed_to_death() */
 import { polymon as polymon_st } from './polyself.js';
 import { emits_light as emits_light_st } from './mondata.js';
@@ -978,6 +979,12 @@ export async function nh_timeout() {
                 upp.intrinsic &= ~FROMOUTSIDE;
                 if (prop_on(upp)) /* Fumbling */
                     incr_itimeout(FUMBLING, rnd(20));
+
+                if (g.iflags.defer_decor) {
+                    /* 'mention_decor' was deferred for message sequencing
+                       reasons; catch up now */
+                    await deferred_decor(false);
+                }
                 break;
             default:
                 /* the remaining properties have no case in C */

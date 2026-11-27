@@ -732,8 +732,6 @@ export async function tty_putmixed(window, attr, str) {
         throw new Error('tty_putmixed(): tty_raw_print() of a mixed string not ported yet');
     tty().mixed = 1;
     const buf = decode_mixed(str);
-    if (cw.type !== NHW_MESSAGE && /[\x80-\xff]/.test(buf))
-        throw new Error('tty_putmixed(): graphics symbol in a text window not ported yet');
     try {
         /* now send it to the normal tty_putstr */
         await tty_putstr(window, attr, buf);
@@ -1875,9 +1873,28 @@ async function process_text_window(window, cw) {
             }
             term_start_attr(attr);
             const str = cw.data[i].str;
+            let linestart = true;
             for (let cp = 0; cp < str.length && ++t.curx < t.cols; cp++) {
+                const code = str.charCodeAt(cp);
                 t.curx--; /* xputc() writes at curx; NOMUX bookkeeping */
-                xputc(str[cp]);
+                /* message recall for msg_window:full/combination/reverse
+                   might have output from '/' in it (see redotoplin()) */
+                if (linestart) {
+                    if (code >= 0x80 && code <= 0xff) {
+                        g_putch(code);
+                        /* end_glyphout() */
+                    } else {
+                        xputc(str[cp]);
+                    }
+                    linestart = false;
+                } else if (code >= 0x80 && code <= 0xff) {
+                    /* (void) putchar(*cp) of a symbol decode_mixed() left
+                       with its high bit set: the tty capture (nomux_putch()
+                       takes it as a negative char) records nothing, so the
+                       cell keeps what cl_end() left there */
+                } else {
+                    xputc(str[cp]);
+                }
                 t.curx++;
             }
             term_end_attr(attr);

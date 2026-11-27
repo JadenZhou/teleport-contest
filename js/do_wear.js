@@ -8,6 +8,7 @@
 // common amulets, Blindf_on(), #takeoff with the X_off() routines, and
 // donning()/doffing()/cancel_don()/cancel_doff().
 
+import { ggetobj as ggetobj_dw } from './invent.js';
 import { x_monnam, hcolor } from './do_name.js';
 import { ARTICLE_YOUR, SUPPRESS_SADDLE, SUPPRESS_HALLUCINATION, NECK,
          Is_waterlevel, Is_airlevel } from './const.js';
@@ -2996,10 +2997,9 @@ export async function doddoremarm() {
     }
 
     add_valid_menu_class_dw(0); /* reset */
-    if ((g.flags.menu_style ?? MENU_FULL_DW) !== MENU_TRADITIONAL_DW)
+    if ((g.flags.menu_style ?? MENU_FULL_DW) !== MENU_TRADITIONAL_DW
+        || (result = await ggetobj_dw("take off", select_off, 0, false, null)) < -1)
         await menu_remarm(result);
-    else /* (result = ggetobj("take off", select_off, 0, FALSE, NULL)) < -1 */
-        throw new Error('doddoremarm(): ggetobj() (menustyle:traditional) not ported yet');
 
     if (tk.mask) {
         tk.disrobing = ((tk.mask & ~W_WEAPONS) !== 0)

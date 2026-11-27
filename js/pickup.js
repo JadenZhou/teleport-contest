@@ -88,6 +88,14 @@ import { UNPAID_TYPES, BILLED_TYPES, WORN_TYPES, ALL_TYPES, CHOOSE_ALL,
          ALL_TYPES_SELECTED, MENU_ITEMFLAGS_SKIPINVERT, W_ARMOR, W_ACCESSORY,
          W_WEAPONS, Has_contents } from './const.js';
 import { is_worn, count_unpaid, count_buc } from './invent.js';
+/* query_classes(), traditional_loot() */
+import { collect_obj_classes as collect_obj_classes_qc,
+         tally_BUCX as tally_BUCX_qc, askchain as askchain_qc,
+         display_inventory as display_inventory_qc,
+         objchain_items as objchain_items_qc } from './invent.js';
+import { def_char_to_objclass as def_char_to_objclass_qc } from './drawing.js';
+import { tty_getlin as tty_getlin_qc } from './wintty.js';
+import { NHW_MENU as NHW_MENU_QC } from './const.js';
 import { add_menu_str } from './wintty.js';
 import { tty_putstr, tty_display_nhwindow } from './wintty.js';
 import { PM_CLERIC } from './monsters.js';
@@ -218,8 +226,7 @@ export async function pickup(what) /* should be a long */ {
 
     let n_tried = 0, n_picked = 0;
 
-    /* add_valid_menu_class(0): reset -- menu classes only matter to the
-       interactive menus, which aren't ported */
+    add_valid_menu_class(0); /* reset */
     let objchain;
     if (!u.uswallow) {
         objchain = objects_at(u.ux, u.uy); /* traverse_how = BY_NEXTHERE */
@@ -258,7 +265,99 @@ export async function pickup(what) /* should be a long */ {
         }
         menu_pickup = true;
     } else {
-        throw new Error('pickup(): menustyle:traditional pickup not ported yet');
+        /* old style interface */
+        let ct = 0;
+        let lcount;
+        let all_of_a_type, selective, bycat;
+        let oclasses = [];   /* types to consider (empty for all) */
+        let obj;
+
+        all_of_a_type = true; /* take all of considered types */
+        selective = false;    /* ask for each item */
+
+        /* check for more than one object */
+        ct = objchain.length; /* FOLLOW(obj, traverse_how) */
+
+        end_query: {
+            if (ct === 1 && count) {
+                /* if only one thing, then pick it */
+                obj = objchain[0];
+                lcount = Math.min(obj.quan, count);
+                n_tried++;
+                reset_justpicked(game.invent);
+                if (await pickup_object(obj, lcount, false) > 0)
+                    n_picked++; /* picked something */
+                break end_query;
+
+            } else if (ct >= 2) {
+                await There(`are ${(ct <= 10) ? "several" : "many"} objects here.`);
+                const q = await query_classes("pick up", objchain,
+                                              (traverse_how & BY_NEXTHERE) !== 0,
+                                              true);
+                oclasses = q.oclasses;
+                selective = q.one_at_a_time;
+                all_of_a_type = q.everything;
+                if (!q.ok) {
+                    if (!q.menu_on_demand) {
+                        /* goto pickupdone */
+                        game.pickup_encumbrance = 0;
+                        add_valid_menu_class(0); /* reset */
+                        return (n_tried > 0) ? 1 : 0;
+                    }
+                    if (selective)
+                        traverse_how |= INVORDER_SORT;
+                    n = await query_objlist("Pick up what?", objchain, traverse_how,
+                                            pick_list, PICK_ANY,
+                                            (q.menu_on_demand === -2) ? allow_all
+                                                                      : allow_category);
+                    menu_pickup = true; /* goto menu_pickup */
+                    break end_query;
+                }
+            }
+            bycat = (menu_class_present(0x42) || menu_class_present(0x55)
+                     || menu_class_present(0x43) || menu_class_present(0x58));
+
+            for (const o of objchain.slice()) { /* obj2 = FOLLOW(obj, ...) */
+                obj = o;
+                if (bycat ? !allow_category(obj)
+                          : (!selective && oclasses.length
+                             && !oclasses.includes(obj.oclass)))
+                    continue;
+
+                lcount = -1;
+                if (!all_of_a_type) {
+                    const qbuf = safe_qbuf("Pick up ", "?", obj, doname, something);
+                    const c = await tty_yn_function(qbuf,
+                                                    (obj.quan < 2) ? "ynaq" : "yn#aq",
+                                                    (obj.quan < 2) ? 'y' : 'y');
+                    if (c === 'q')
+                        break end_query; /* out 2 levels */
+                    if (c === 'n')
+                        continue;
+                    if (c === 'a') {
+                        all_of_a_type = true;
+                        if (selective) {
+                            selective = false;
+                            oclasses = [obj.oclass];
+                        }
+                    } else if (c === '#') {
+                        throw new Error('pickup(): a count (yn_number) not ported yet');
+                    }
+                    /* default: 'y' */
+                }
+                if (lcount === -1)
+                    lcount = obj.quan;
+
+                if (!n_tried) /* reset just before the first item picked */
+                    reset_justpicked(game.invent);
+
+                n_tried++;
+                const res = await pickup_object(obj, lcount, false);
+                if (res < 0)
+                    break;
+                n_picked += res;
+            }
+        } /* end_query: */
     }
 
     if (menu_pickup) {
@@ -289,8 +388,21 @@ export async function pickup(what) /* should be a long */ {
     }
     /* pickupdone: */
     game.pickup_encumbrance = 0;
-    /* add_valid_menu_class(0): reset */
+    add_valid_menu_class(0); /* reset */
     return (n_tried > 0) ? 1 : 0;
+}
+
+// C ref: pickup.c deferred_decor()
+export async function deferred_decor(
+    setup) { /* True: deferring, False: catching up */
+    if (!game.flags.mention_decor) {
+        game.iflags.defer_decor = false;
+    } else if (setup) {
+        game.iflags.defer_decor = true;
+    } else {
+        await describe_decor();
+        game.iflags.defer_decor = false;
+    }
 }
 
 // C ref: pickup.c describe_decor()
@@ -316,7 +428,8 @@ async function describe_decor() {
          * steps off ice onto non-ice.  Defer the back-on-floor part if
          * that is about to happen.
          */
-        throw new Error('describe_decor(): deferred_decor() not ported yet');
+        await deferred_decor(true);
+        return false;
     }
 
     {   /* SURFACE_AT(u.ux, u.uy) */
@@ -3056,11 +3169,187 @@ export async function use_container(obj,
     return used;
 }
 
+// C ref: pickup.c simple_look()
+async function simple_look(otmp, /* list of objects */
+                           here) { /* flag for type of obj list linkage */
+    /* Neither of the first two cases is expected to happen, since
+     * we're only called after multiple classes of objects have been
+     * detected, hence multiple objects must be present.
+     */
+    void here; /* JS floor piles and container contents are arrays */
+    const list = objchain_items_qc(otmp);
+    if (!list.length) {
+        throw new Error('simple_look(): impossible("simple_look(null)") not ported yet');
+    } else if (list.length === 1) {
+        await pline(doname(list[0]));
+    } else {
+        const tmpwin = tty_create_nhwindow(NHW_MENU_QC);
+
+        await tty_putstr(tmpwin, 0, "");
+        for (const o of list)
+            await tty_putstr(tmpwin, 0, doname(o));
+        await tty_display_nhwindow(tmpwin, true);
+        await tty_destroy_nhwindow(tmpwin);
+    }
+}
+
+// C ref: pickup.c query_classes() -- for menustyle:Traditional and
+// menustyle:Combination; returns { ok, oclasses, one_at_a_time,
+// everything, menu_on_demand } (oclasses: an array of object classes)
+export async function query_classes(
+    action, /* verb for what activity needs objects */
+    objs, /* invent or container->cobj or level.objects[x][y] */
+    here, /* True: traverse by obj->nexthere; False: by obj->nobj */
+    want_menu_on_demand) { /* caller passed menu_on_demand */
+    const r = { ok: false, oclasses: [], one_at_a_time: false,
+                everything: false, menu_on_demand: 0 };
+    let ilets, iletct, oclassct;
+    let not_everything, filtered;
+    let m_seen = false;
+
+    const coc = collect_obj_classes_qc(objs, here, null);
+    ilets = coc.ilets;
+    const itemcount = coc.itemcount;
+    iletct = ilets.length;
+    if (iletct === 0)
+        return r;
+
+    if (iletct === 1) {
+        r.oclasses = [def_char_to_objclass_qc(ilets[0])];
+    } else { /* more than one choice available */
+        /* additional choices */
+        ilets += ' ';
+        ilets += 'a';
+        ilets += 'A';
+        ilets += (objs === game.invent ? 'i' : ':');
+    }
+    if (itemcount && want_menu_on_demand)
+        ilets += 'm';
+    if (count_unpaid(objs))
+        ilets += 'u';
+
+    const t = tally_BUCX_qc(objs, here);
+    if (t.bcnt)
+        ilets += 'B';
+    if (t.ucnt)
+        ilets += 'U';
+    if (t.ccnt)
+        ilets += 'C';
+    if (t.xcnt)
+        ilets += 'X';
+    if (t.jcnt)
+        ilets += 'P';
+    iletct = ilets.length;
+
+    if (iletct > 1) {
+        let where = null;
+
+        for (;;) { /* ask_again: */
+            r.oclasses = [];
+            oclassct = 0;
+            r.one_at_a_time = r.everything = false;
+            not_everything = filtered = false;
+            const qbuf = `What kinds of thing do you want to ${action}? [${ilets}]`;
+            const inbuf = await tty_getlin_qc(qbuf);
+            if (inbuf[0] === '\x1b')
+                return r;
+
+            let again = false;
+            for (const sym of inbuf) {
+                if (sym === ' ')
+                    continue;
+                else if (sym === 'A')
+                    r.one_at_a_time = true;
+                else if (sym === 'a')
+                    r.everything = true;
+                else if (sym === ':') {
+                    await simple_look(objs, here); /* dumb if objs==invent */
+                    /* if we just scanned the contents of a container
+                       then mark it as having known contents */
+                    {
+                        const o0 = objchain_items_qc(objs)[0];
+                        if (o0 && o0.where === 'OBJ_CONTAINED' && o0.ocontainer)
+                            o0.ocontainer.cknown = 1;
+                    }
+                    again = true;
+                    break;
+                } else if (sym === 'i') {
+                    await display_inventory_qc(null, true);
+                    again = true;
+                    break;
+                } else if (sym === 'm') {
+                    m_seen = true;
+                } else if ("uBUCXP".includes(sym)) {
+                    add_valid_menu_class(sym.charCodeAt(0)); /* 'u' or 'B','U','C','X','P' */
+                    filtered = true;
+                } else {
+                    const oc_of_sym = def_char_to_objclass_qc(sym);
+                    if (ilets.includes(sym)) {
+                        add_valid_menu_class(oc_of_sym);
+                        r.oclasses[oclassct++] = oc_of_sym;
+                    } else {
+                        if (!where)
+                            where = (action === "pick up") ? "here"
+                                    : (action === "take out") ? "inside" : "";
+                        if (where)
+                            await There(`are no ${sym}'s ${where}.`);
+                        else
+                            await You(`have no ${sym}'s.`);
+                        not_everything = true;
+                    }
+                }
+            } /* for p:sym in inbuf */
+            if (again)
+                continue; /* goto ask_again */
+
+            if (m_seen && want_menu_on_demand) {
+                r.menu_on_demand = (((r.everything || !oclassct) && !filtered)
+                                    ? -2 : -3);
+                return r;
+            }
+            if (!oclassct && (!r.everything || not_everything)) {
+                /* didn't pick anything,
+                   or tried to pick something that's not present */
+                r.one_at_a_time = true; /* force 'A' */
+                r.everything = false;   /* inhibit 'a' */
+            }
+            break;
+        }
+    }
+    r.ok = true;
+    return r;
+}
+
 // C ref: pickup.c traditional_loot()
 /* loot current_container (take things out or put things in), by prompting */
 async function traditional_loot(put_in) {
-    void put_in;
-    throw new Error('traditional_loot(): query_classes()/askchain() not ported yet');
+    let actionfunc, checkfunc;
+    let objlist;
+    let action;
+    let used = ECMD_OK;
+
+    if (put_in) {
+        action = "put in";
+        objlist = () => game.invent;
+        actionfunc = in_container;
+        checkfunc = ck_bag;
+    } else {
+        action = "take out";
+        objlist = () => game.current_container.cobj;
+        actionfunc = out_container;
+        checkfunc = null;
+        game.pickup_encumbrance = 0; /* used to limit verbosity */
+    }
+
+    const q = await query_classes(action, objlist(), false, true);
+    if (q.ok) {
+        if (await askchain_qc(objlist, (q.one_at_a_time ? null : q.oclasses),
+                              q.everything, actionfunc, checkfunc, 0, action))
+            used = ECMD_TIME;
+    } else if (q.menu_on_demand < 0) {
+        used = ((await menu_loot(q.menu_on_demand, put_in)) > 0) ? 1 : 0;
+    }
+    return used;
 }
 
 // C ref: pickup.c menu_loot()

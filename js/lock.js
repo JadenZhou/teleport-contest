@@ -56,7 +56,8 @@ import { LEVITATION } from './const.js';
 import { Some_Monnam } from './do_name.js';
 import { s_suffix } from './hacklib.js';
 import { cansee, block_point, vision_recalc } from './vision.js';
-import { t_at, chest_trap } from './trap.js';
+import { t_at, chest_trap, b_trapped } from './trap.js';
+import { SHOP_DOOR_COST as SHOP_DOOR_COST_LK } from './const.js';
 import { FINGER } from './const.js';
 import { wake_nearto } from './mon.js';
 import { in_rooms } from './hack.js';
@@ -213,7 +214,13 @@ async function picklock() {
     await You(`succeed in ${lock_action()}.`);
     if (xl.door) {
         if (xl.door.doormask & D_TRAPPED) {
-            throw new Error('picklock(): b_trapped() not ported yet');
+            const u = game.u;
+            await b_trapped("door", FINGER);
+            xl.door.doormask = D_NODOOR;
+            unblock_point_lk(u.ux + u.dx, u.uy + u.dy);
+            if (in_rooms(u.ux + u.dx, u.uy + u.dy, SHOPBASE).length)
+                add_damage(u.ux + u.dx, u.uy + u.dy, SHOP_DOOR_COST_LK);
+            newsym(u.ux + u.dx, u.uy + u.dy);
         } else if (xl.door.doormask & D_LOCKED)
             xl.door.doormask = D_CLOSED;
         else
@@ -780,7 +787,10 @@ export async function doopen_indir(x, y) {
         set_msg_xy(cc.x, cc.y);
         await pline_The("door opens.");
         if (door.doormask & D_TRAPPED) {
-            throw new Error('doopen_indir(): b_trapped() not ported yet');
+            await b_trapped("door", FINGER);
+            door.doormask = D_NODOOR;
+            if (in_rooms(cc.x, cc.y, SHOPBASE).length)
+                add_damage(cc.x, cc.y, SHOP_DOOR_COST_LK);
         } else
             door.doormask = D_ISOPEN;
         feel_newsym(cc.x, cc.y); /* the hero knows she opened it */

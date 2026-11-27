@@ -848,6 +848,10 @@ function terrain_glyph_dec(loc, x, y) {
 // recorder's nomux_set_fg() makes the same remap); without it, black is
 // shown as blue.
 function tty_color(color) {
+    /* C ref: wintty.c tty_print_glyph(): if (iflags.use_color) -- with
+       the color option off, a map glyph is printed without color */
+    if (game.iflags?.wc_color === false)
+        return NO_COLOR;
     if (color === undefined || color === CLR_GRAY)
         return NO_COLOR;
     if (color === CLR_BLACK)

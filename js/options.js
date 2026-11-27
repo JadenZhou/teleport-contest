@@ -8,6 +8,7 @@
 // flags.initrole &c, wizard and discover the way C does. The rest of
 // this parser is still the skeleton's simplified version.
 
+import { choose_disco_sort } from './o_init.js';
 import { game } from './gstate.js';
 import { ROLE_NONE, ROLE_RANDOM, RS_ROLE, RS_RACE, RS_GENDER, RS_ALGNMNT, PL_NSIZ,
          PL_FSIZ, PL_PSIZ, ismnum } from './const.js';
@@ -40,7 +41,7 @@ import {
     PARANOID_CONFIRM, PARANOID_QUIT, PARANOID_DIE, PARANOID_BONES,
     PARANOID_HIT, PARANOID_BREAKWAND, PARANOID_EATING, PARANOID_WERECHANGE,
     PARANOID_AUTOALL, PARANOID_REMOVE,
-    DISCLOSE_PROMPT_DEFAULT_NO, MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION,
+    DISCLOSE_PROMPT_DEFAULT_NO, MENU_FULL, MENU_TRADITIONAL, MENU_COMBINATION, MENU_PARTIAL,
     STONE, Is_rogue_level, DISCLOSE_PROMPT_DEFAULT_YES,
     DISCLOSE_PROMPT_DEFAULT_SPECIAL, DISCLOSE_YES_WITHOUT_PROMPT,
     DISCLOSE_NO_WITHOUT_PROMPT, DISCLOSE_SPECIAL_WITHOUT_PROMPT,
@@ -635,6 +636,44 @@ function optfn_paranoid_confirmation(result, opt_negated, opts, op) {
     return true; /* optn_ok */
 }
 
+// C ref: options.c optfn_menustyle() -- do_set:
+// menustyle:traditional or combination or full or partial
+function optfn_menustyle(result, negated, op) {
+    let tmp;
+    const val_required = !negated; /* strlen(opts) > 5: "menustyle:..." */
+
+    if (!op) {
+        if (val_required)
+            return false; /* optn_err; string_for_opt gave feedback */
+        tmp = negated ? 'n' : 'f';
+    } else {
+        tmp = op[0].toLowerCase();
+    }
+    switch (tmp) {
+    case 'n': /* none */
+    case 't': /* traditional: prompt for class(es) by symbol,
+                 prompt for each item within class(es) one at a time */
+        result.flags.menu_style = MENU_TRADITIONAL;
+        break;
+    case 'c': /* combination: prompt for class(es) by symbol,
+                 choose items within selected class(es) by menu */
+        result.flags.menu_style = MENU_COMBINATION;
+        break;
+    case 'f': /* full: choose class(es) by first menu,
+                 choose items within selected class(es) by second menu */
+        result.flags.menu_style = MENU_FULL;
+        break;
+    case 'p': /* partial: skip class filtering, choose items among all
+                 classes by menu */
+        result.flags.menu_style = MENU_PARTIAL;
+        break;
+    default:
+        config_error_add(`Unknown menustyle parameter '${op}'`);
+        return false; /* optn_err */
+    }
+    return true; /* optn_ok */
+}
+
 export function parseNethackrc(rc) {
     const result = {
         name: '', role: -1, race: -1, gender: -1, align: -1,
@@ -719,6 +758,7 @@ export function parseNethackrc(rc) {
                 else if (key === 'disclose') optfn_disclose(result, negated, val);
                 else if (key === 'msg_window') optfn_msg_window(result, negated, val);
                 else if (key === 'runmode') optfn_runmode(result, negated, val);
+                else if (key === 'menustyle') optfn_menustyle(result, negated, val);
                 else if (key === 'number_pad') optfn_number_pad(result, negated, val);
                 else if (match_optname(key, "paranoid_confirmation", 3, false)
                          || !strcmpi(key, "prayconfirm"))
@@ -764,6 +804,13 @@ export function parseNethackrc(rc) {
                         if (!result[o.addr[0]])
                             result[o.addr[0]] = {};
                         result[o.addr[0]][o.addr[1]] = value;
+                        /* After the change */
+                        if (o.name === "pauper") {
+                            /* pauper implies nudist */
+                            if (!result.uroleplay)
+                                result.uroleplay = {};
+                            result.uroleplay.nudist = result.uroleplay.pauper;
+                        }
                     } else if (!o) {
                         result.flags[lname] = value;
                     }
@@ -2327,6 +2374,10 @@ async function optfn_do_handler(o) {
     switch (o.optfn) {
     case "optfn_pickup_types":
         return await handler_pickup_types();
+    case "optfn_sortdiscoveries":
+        /* return handler_sortdiscoveries(); */
+        await choose_disco_sort(0); /* o_init.c */
+        return optn_ok;
     default:
         throw new Error(`${o.optfn}(): do_handler not ported yet`);
     }
@@ -2829,10 +2880,32 @@ async function optfn_pickup_types_set(o, negated, opts, op) {
             } else
                 badopt = true;
         }
-        if (badopt)
-            throw new Error('optfn_pickup_types(): config_error_add() not ported yet');
+        if (badopt) {
+            /* op has been advanced past the last symbol */
+            await config_error_add_interactive(
+                `Unknown ${o.name} parameter ''`);
+            return optn_err;
+        }
     }
     return optn_ok;
+}
+
+// C ref: cfgfiles.c config_erradd() -- the !program_state.config_error_ready
+// case, reached when the player gives a bad value when prompted by the
+// interactive 'O' command (pline() then wait_synch(), a no-op for tty
+// with the map window up)
+async function config_error_add_interactive(buf) {
+    if (game.program_state?.config_error_ready) {
+        config_error_add(buf);
+        return;
+    }
+    if (!buf)
+        buf = "Unknown error";
+    /* if buf[] doesn't end in a period, exclamation point, or question
+       mark, we'll include a period (in the message, not appended to buf[]) */
+    const punct = ".!?".includes(buf[buf.length - 1]) ? "" : ".";
+    await pline(`${!game.iflags.window_inited ? "config_error_add: " : ""}${
+        buf}${punct}`);
 }
 
 // C ref: windows.c choose_classes_menu() -- a menu of object class
