@@ -82,6 +82,10 @@ import { run_regions, any_visible_region } from './region.js';
 import { m_everyturn_effect } from './monmove.js';
 import { Blind, Hallucination } from './youprop.js';
 import { Upolyd } from './const.js';
+import { You as You_am } from './display.js';
+import { an as an_am } from './objnam.js';
+import { pmname as pmname_am } from './do_name.js';
+import { strncmpi } from './hacklib.js';
 import { invault } from './vault.js';
 import { sink_into_lava as sink_into_lava_am } from './trap.js';
 import { pooleffects as pooleffects_am, overexert_hp } from './hack.js';
@@ -357,8 +361,16 @@ export async function unmul(msg_override) {
         g.nomovemsg = "You can move again."; /* You_can_move_again */
     if (g.nomovemsg) {
         await pline(g.nomovemsg);
-        /* "You survived that attempt on your life" while Upolyd: not
-           reached */
+        /* follow "you survived that attempt on your life" with a message
+           about current form if it's not the default; primarily for
+           life-saving while turning into green slime but is also a reminder
+           if life-saved while poly'd and Unchanging (explore or wizard mode
+           declining to die since can't be both Unchanging and Lifesaved) */
+        if (Upolyd() && !strncmpi(g.nomovemsg, "You survived that ", 18)) {
+            const Ugender = (g.u.mfemale ? 1 : 0); /* Upolyd */
+            await You_am(`are ${an_am(pmname_am(mons[g.u.umonnum], Ugender))}.`);
+            /* (ignore Hallu) */
+        }
     }
     g.nomovemsg = null;
     g.u.usleep = 0;

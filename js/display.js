@@ -3311,6 +3311,15 @@ export function display_self() {
                         { mndx });
         return;
     }
+    /* U_AP_TYPE == M_AP_MONSTER: monnum_to_glyph(youmonst.mappearance,
+       Ugender), e.g. slime_dialogue()'s final green slime;
+       [M_AP_FURNITURE and M_AP_OBJECT for the hero are not ported yet] */
+    if (game.youmonst?.m_ap_type === 3 /* M_AP_MONSTER */) {
+        const ptr = mons[game.youmonst.mappearance];
+        show_glyph_cell(u.ux, u.uy, def_monsyms[ptr.mlet] ?? '?',
+                        ptr.mcolor ?? NO_COLOR, false, 0, 'mon');
+        return;
+    }
     /* hero_glyph: monnum_to_glyph((Upolyd || !flags.showrace) ? u.umonnum
        : gu.urace.mnum, Ugender); a polymorphed hero shows the monster */
     if (u.umonnum !== u.umonster) { /* Upolyd */

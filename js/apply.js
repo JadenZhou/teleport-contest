@@ -61,6 +61,8 @@ import { closed_door, sobj_at } from './makemon.js';
 import { t_at } from './trap.js';
 import { dist2, distu, mdistu } from './hacklib.js';
 import { ACURR } from './attrib.js';
+import { A_CHA } from './const.js';
+import { poly_gender } from './polyself.js';
 import { SPE_JUMPING, BOULDER } from './objects.js';
 import { ECMD_TIME, ECMD_FAIL, JUMPING, PASSES_WALLS, LEVITATION, WOUNDED_LEGS,
          INTRINSIC, UNENCUMBERED, A_STR, TT_PIT, IS_STWALL, IS_DOOR, D_ISOPEN,
@@ -1515,6 +1517,24 @@ async function use_lamp(obj) {
 /* figurine timeout callback */
 export async function fig_transform(arg, timeout) {
     throw new Error('fig_transform() not ported yet');
+}
+
+// C ref: apply.c beautiful()
+/* the hero's appearance; this used to be about mirror-related
+   magnetism rather than just appearance, but it has devolved to this... */
+export function beautiful() {
+    const cha = ACURR(A_CHA);
+
+    /* don't bother complaining about the sexism; NetHack is not real life */
+    return ((cha >= 25) ? "sublime" /* 25 is the maximum possible */
+            : (cha >= 19) ? "splendorous" /* note: not "splendiferous" */
+              : (cha >= 16) ? ((poly_gender() === 1) ? "beautiful" : "handsome")
+                : (cha >= 14) ? ((poly_gender() === 1) ? "winsome" : "amiable")
+                  : (cha >= 11) ? "cute"
+                    : (cha >= 9) ? "plain"
+                      : (cha >= 6) ? "homely"
+                        : (cha >= 4) ? "ugly"
+                          : "hideous"); /* 3 is the minimum possible */
 }
 
 // C ref: apply.c use_towel()
