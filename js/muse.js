@@ -479,8 +479,7 @@ async function mon_consume_unstone(
         const save_quan = obj.quan;
 
         obj.quan = 1;
-        /* pline_mon() */
-        await pline(`${Monnam(mon)} ${
+        await pline_mon(mon, `${Monnam(mon)} ${
             (obj.oclass === POTION_CLASS) ? "quaffs"
             : (obj.otyp === TIN) ? "opens and eats the contents of"
               : "eats"} ${distant_name(obj, doname)}.`);
@@ -497,7 +496,7 @@ async function mon_consume_unstone(
         if (vis)
             await pline_mon(mon, `${Monnam(mon)} has a very bad case of stomach acid.`);
         if (DEADMONSTER(mon)) {
-            await pline(`${Monnam(mon)} dies!`); /* pline_mon() */
+            await pline_mon(mon, `${Monnam(mon)} dies!`);
             if (by_you)
                 /* hero gets credit (experience) and blame (possible loss
                    of alignment and/or luck and/or telepathy depending on
@@ -518,7 +517,7 @@ async function mon_consume_unstone(
         mon.mconf = 0;
         mon.mstun = 0;
         if (vis && !is_bat(mon.data) && mon.data !== mons[M.PM_STALKER])
-            await pline(`${Monnam(mon)} seems steadier now.`); /* pline_mon() */
+            await pline_mon(mon, `${Monnam(mon)} seems steadier now.`);
     }
     if (mon.mtame && !mon.isminion && nutrit > 0) {
         const edog = mon.edog || mon.mextra?.edog; /* EDOG(mon) */
@@ -995,8 +994,7 @@ export async function use_defensive(mtmp) {
             /* pit creation succeeded */
             if (vis) {
                 seetrap(t);
-                /* pline_mon() */
-                await pline(`${Monnam(mtmp)} has made a pit in the ${
+                await pline_mon(mtmp, `${Monnam(mtmp)} has made a pit in the ${
                     surface(mtmp.mx, mtmp.my)}.`);
             }
             await fill_pit(mtmp.mx, mtmp.my);
@@ -1009,10 +1007,9 @@ export async function use_defensive(mtmp) {
         recalc_block_point(mtmp.mx, mtmp.my);
         seetrap(t);
         if (vis) {
-            /* pline_mon() */
-            await pline(`${Monnam(mtmp)} has made a hole in the ${
+            await pline_mon(mtmp, `${Monnam(mtmp)} has made a hole in the ${
                 surface(mtmp.mx, mtmp.my)}.`);
-            await pline(`${Monnam(mtmp)} ${
+            await pline_mon(mtmp, `${Monnam(mtmp)} ${
                 is_flyer(mtmp.data) ? "dives" : "falls"} through...`);
         } else if (!Deaf()) {
             /* Soundeffect(se_crash_through_floor, 100) */
@@ -1110,8 +1107,7 @@ export async function use_defensive(mtmp) {
         await m_flee(mtmp);
         t = t_at(game.trapx, game.trapy);
         if (vis) {
-            /* pline_mon() */
-            await pline(`${Monnam(mtmp)} ${
+            await pline_mon(mtmp, `${Monnam(mtmp)} ${
                 vtense("mon" /* fakename[0] */, locomotion(mtmp.data, "jump"))} into a ${
                 trapname(t.ttyp, false)}!`);
         }
@@ -1200,8 +1196,7 @@ export async function use_defensive(mtmp) {
         await m_flee(mtmp);
         t = t_at(game.trapx, game.trapy);
         if (vis) {
-            /* pline_mon() */
-            await pline(`${Monnam(mtmp)} ${
+            await pline_mon(mtmp, `${Monnam(mtmp)} ${
                 vtense("mon" /* fakename[0] */, locomotion(mtmp.data, "jump"))} onto a ${
                 trapname(t.ttyp, false)}!`);
         }
@@ -1864,8 +1859,7 @@ export async function use_misc(mtmp) {
                     skipmsg = true;
                 } else {
                     if (vismon) {
-                        /* pline_mon() */
-                        await pline(`${Monnam(mtmp)} rises up, through the ${
+                        await pline_mon(mtmp, `${Monnam(mtmp)} rises up, through the ${
                             ceiling(mtmp.mx, mtmp.my)}!`);
                         await trycall(otmp);
                     }
@@ -1980,8 +1974,7 @@ export async function use_misc(mtmp) {
         if (vis || vistrapspot)
             seetrap(t);
         if (vismon || vistrapspot) {
-            /* pline_mon() */
-            await pline(`${Some_Monnam(mtmp)} deliberately ${
+            await pline_mon(mtmp, `${Some_Monnam(mtmp)} deliberately ${
                 vtense("mon" /* fakename[0] */, locomotion(mtmp.data, "jump"))} onto a ${
                 t.tseen ? trapname(t.ttyp, false) : "hidden trap"}!`);
             /* note: if mtmp is unseen because it is invisible, its new
@@ -2026,8 +2019,8 @@ export async function use_misc(mtmp) {
                 hand = makeplural(hand);
             const hand_buf = hand;
 
-            if (vismon) /* pline_mon() */
-                await pline(`${Monnam(mtmp)} flicks a bullwhip towards your ${
+            if (vismon)
+                await pline_mon(mtmp, `${Monnam(mtmp)} flicks a bullwhip towards your ${
                     hand_buf}!`);
             if (obj.otyp === HEAVY_IRON_BALL) {
                 await pline(`${The_whip} fails to wrap around ${the_weapon}.`);
@@ -2054,14 +2047,12 @@ export async function use_misc(mtmp) {
             freeinv(obj);
             switch (where_to) {
             case 1: /* onto floor beneath mon */
-                /* pline_mon() */
-                await pline(`${Monnam(mtmp)} yanks ${the_weapon} from your ${
+                await pline_mon(mtmp, `${Monnam(mtmp)} yanks ${the_weapon} from your ${
                     hand_buf}!`);
                 place_object(obj, mtmp.mx, mtmp.my);
                 break;
             case 2: /* onto floor beneath you */
-                /* pline_mon() */
-                await pline(`${Monnam(mtmp)} yanks ${the_weapon} to the ${
+                await pline_mon(mtmp, `${Monnam(mtmp)} yanks ${the_weapon} to the ${
                     surface(u.ux, u.uy)}!`);
                 await dropy(obj);
                 break;
@@ -2227,8 +2218,7 @@ async function mzapwand(mtmp, otmp, self) {
         await pline(`${monverbself(mtmp, Monnam(mtmp), "zap", null)} with ${
             doname(otmp)}!`);
     } else {
-        /* pline_mon(): tty ignores the position */
-        await pline(`${Monnam(mtmp)} zaps ${an(xname(otmp))}!`);
+        await pline_mon(mtmp, `${Monnam(mtmp)} zaps ${an(xname(otmp))}!`);
         await stop_occupation();
     }
     otmp.spe -= 1;
@@ -2284,7 +2274,7 @@ async function mreadmsg(mtmp, otmp) {
 
     if (vismon) {
         /* directly see the monster reading the scroll */
-        await pline(`${Monnam(mtmp)} reads ${onambuf}!`); /* pline_mon() */
+        await pline_mon(mtmp, `${Monnam(mtmp)} reads ${onambuf}!`);
     } else { /* !Deaf, otherwise we wouldn't reach here */
         const similar = same_race(game.youmonst.data, mtmp.data),
             uniqmon = ((mtmp.data.geno & G_UNIQ) !== 0
@@ -2717,8 +2707,7 @@ export async function use_offensive(mtmp) {
          */
         if (cansee(mtmp.mx, mtmp.my)) {
             observe_object(otmp, Hallucination());
-            /* pline_mon(): tty ignores the position */
-            await pline(`${Monnam(mtmp)} hurls ${singular(otmp, doname)}!`);
+            await pline_mon(mtmp, `${Monnam(mtmp)} hurls ${singular(otmp, doname)}!`);
         }
         await m_throw(mtmp, mtmp.mx, mtmp.my, sgn(mtmp.mux - mtmp.mx),
                       sgn(mtmp.muy - mtmp.my),
@@ -2742,6 +2731,6 @@ export async function mcureblindness(mon, verbos) {
         mon.mcansee = 1;
         mon.mblinded = 0;
         if (verbos && haseyes(mon.data))
-            await pline(`${Monnam(mon)} can see again.`);
+            await pline_mon(mon, `${Monnam(mon)} can see again.`);
     }
 }

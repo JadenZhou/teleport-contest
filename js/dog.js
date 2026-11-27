@@ -405,7 +405,7 @@ export async function keepdogs(pets_only) /* true for ascension or final escape 
                 throw new Error('keepdogs(): steed accompanying hero not ported yet');
             } else if (mtmp.meating || mtmp.mtrapped) {
                 if (canseemon(mtmp))
-                    await pline(`${Monnam(mtmp)} is still ${
+                    await pline_mon(mtmp, `${Monnam(mtmp)} is still ${
                         mtmp.meating ? "eating" : "trapped"}.`);
                 stay_behind = true;
             } else if (mon_has_amulet(mtmp)) {
@@ -942,7 +942,7 @@ export async function tamedog(
                 const big_corpse =
                     (obj.otyp === CORPSE && ismnum(obj.corpsenm)
                      && mons[obj.corpsenm].msize > mtmp.data.msize);
-                await pline(`${Monnam(mtmp)} catches ${the(xname(obj))}${
+                await pline_mon(mtmp, `${Monnam(mtmp)} catches ${the(xname(obj))}${
                             !big_corpse ? "." : ", or vice versa!"}`);
             } else if (cansee(mtmp.mx, mtmp.my))
                 await pline(`${Tobjnam(obj, "stop")}.`);
@@ -1008,7 +1008,7 @@ export async function tamedog(
     }
 
     if (givemsg && canspotmon(mtmp))
-        await pline(`${Monnam(mtmp)} seems quite ${Hallucination() ? "approachable"
+        await pline_mon(mtmp, `${Monnam(mtmp)} seems quite ${Hallucination() ? "approachable"
                                                                    : "friendly"}.`);
 
     newsym(mtmp.mx, mtmp.my);

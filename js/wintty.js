@@ -13,7 +13,7 @@
 
 import { game } from './gstate.js';
 import { nhgetch } from './input.js';
-import { NO_COLOR, ATR_NONE, ATR_INVERSE, ATR_BOLD } from './terminal.js';
+import { NO_COLOR, CLR_GRAY, ATR_NONE, ATR_INVERSE, ATR_BOLD } from './terminal.js';
 import {
     NHW_MESSAGE, NHW_STATUS, NHW_MAP, NHW_MENU, NHW_TEXT, NHW_BASE, WIN_ERR,
     PICK_NONE, PICK_ONE, PICK_ANY, MENU_ITEMFLAGS_SELECTED,
@@ -72,12 +72,18 @@ function cmov(x, y) {
 // shadow (here: the Terminal grid) in step with what putchar() shows
 function xputc(ch) {
     const t = tty();
-    term()?.setCell(t.curx, t.cury, ch, NO_COLOR, t.attrs);
+    term()?.setCell(t.curx, t.cury, ch, t.color ?? NO_COLOR, t.attrs);
 }
 
 // C ref: termcap.c term_start_attr(), term_end_attr()
 function term_start_attr(attr) { tty().attrs = (attr === ATR_INVERSE) ? ATR_INVERSE : ATR_NONE; }
 function term_end_attr(/*attr*/) { tty().attrs = ATR_NONE; }
+// C ref: termcap.c term_start_color(), term_end_color()
+/* hilites[CLR_GRAY] and hilites[NO_COLOR] are the empty string */
+function term_start_color(color) {
+    tty().color = (color === CLR_GRAY) ? NO_COLOR : color;
+}
+function term_end_color() { tty().color = NO_COLOR; }
 
 // C ref: termcap.c cl_end() -- clear to end of line
 function cl_end() {
@@ -1429,6 +1435,8 @@ export function tty_add_menu(window, glyphinfo, identifier, ch, gch, attr, clr,
         identifier, count: -1, selected: preselected, itemflags,
         selector: ch || '', gselector: gch || '', attr, color: clr,
         str: newstr,
+        /* curr->glyphinfo: the glyph's ttychar and color, or NO_GLYPH */
+        glyphinfo: glyphinfo || null,
     });
 }
 
@@ -1941,6 +1949,10 @@ async function process_menu_window(window, cw) {
     count = 0;
     reset_count = true;
     finished = false;
+    /* iflags.use_menu_glyphs, iflags.menuobjsyms & 4 ("conditional") */
+    const menuobjsyms = game.iflags?.menuobjsyms ?? 4;
+    const only_if_no_headers = (menuobjsyms & 4) !== 0;
+    let show_obj_syms = (menuobjsyms & (2 | 4)) !== 0;
 
     /* collect group accelerators; for PICK_NONE, they're ignored;
        for PICK_ONE, only those which match exactly one entry will be
@@ -1964,6 +1976,14 @@ async function process_menu_window(window, cw) {
                         || gcnt[curr.gselector] === 1)) {
                     gacc += curr.gselector;
                 }
+    }
+
+    if (only_if_no_headers) {
+        for (const curr of cw.mlist)
+            if (!curr.identifier) {
+                show_obj_syms = false;
+                break;
+            }
     }
 
     /* loop until finished */
@@ -2023,6 +2043,16 @@ async function process_menu_window(window, cw) {
                         if (n === 2 && curr.identifier && curr.selected) {
                             /* all selected: '*' vs count selected: '#' */
                             xputc((curr.count === -1) ? '*' : '#');
+                        } else if (n === 2 && curr.identifier
+                                   && show_obj_syms && curr.glyphinfo) {
+                            const gcolor = curr.glyphinfo.color ?? NO_COLOR;
+
+                            /* toggle_menu_attr(TRUE, gcolor, ATR_NONE) */
+                            if (gcolor !== NO_COLOR)
+                                term_start_color(gcolor);
+                            xputc(curr.glyphinfo.ttychar);
+                            if (gcolor !== NO_COLOR)
+                                term_end_color();
                         } else {
                             xputc(curr.str[n]);
                         }

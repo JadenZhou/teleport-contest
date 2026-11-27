@@ -19,7 +19,7 @@ import { def_oc_syms } from './drawing.js';
 import { body_part, hidden_gold, currency, empty_handed } from './insight.js';
 import { money_cnt } from './u_init.js';
 import { welded } from './wield.js';
-import { stairway_at, obj_to_glyph, db_under_typ as db_under_typ_iv } from './display.js';
+import { stairway_at, obj_to_glyph, menu_glyphinfo, db_under_typ as db_under_typ_iv } from './display.js';
 import { an, vtense } from './objnam.js';
 import { t_at, trapname } from './trap.js';
 import { visible_region_at, reg_damg } from './region.js';
@@ -556,9 +556,8 @@ async function display_pickinv(lets, /* non-compacted list of invlet values */
                 } else {
                     /* normal inventory item */
                     const tmpglyph = obj_to_glyph(otmp, rn2_on_display_rng);
-                    /* map_glyphinfo(): tty menus don't show the glyph */
-                    void tmpglyph;
-                    tty_add_menu(win, null, wizid ? otmp : ilet, ilet,
+                    tty_add_menu(win, menu_glyphinfo(tmpglyph),
+                                 wizid ? otmp : ilet, ilet,
                                  wizid ? def_oc_syms[otmp.oclass] : '',
                                  ATR_NONE, clr, doname(otmp), MENU_ITEMFLAGS_NONE);
                 }

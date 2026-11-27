@@ -286,7 +286,7 @@ export async function u_slip_free(mtmp, mattk) {
        protection might fail (33% chance) when the armor is cursed */
     if (obj && (obj.greased || obj.otyp === OILSKIN_CLOAK)
         && (!obj.cursed || rn2(3))) {
-        await pline(`${Monnam(mtmp)} ${
+        await pline_mon(mtmp, `${Monnam(mtmp)} ${
             (mattk.adtyp === M.AD_WRAP) ? "slips off of"
                                         : "grabs you, but cannot hold onto"} your ${
             obj.greased ? "greased" : "slippery"} ${
@@ -294,7 +294,7 @@ export async function u_slip_free(mtmp, mattk) {
                for undiscovered oilskin cloak */
             (obj.greased || objects[obj.otyp].oc_name_known)
                 ? xname(obj)
-                : cloak_simple_name(obj)}!`); /* pline_mon() */
+                : cloak_simple_name(obj)}!`);
 
         if (obj.greased && !rn2(2)) {
             await pline("The grease wears off."); /* pline_The() */
@@ -317,9 +317,9 @@ export async function hitmsg(mtmp, mattk) {
        if same gender, "engagingly" for nymph, normal msg for others. */
     if ((compat = could_seduce(mtmp, game.youmonst, mattk)) !== 0
         && !mtmp.mcan && !mtmp.mspec_used) {
-        await pline(`${Monst_name} ${
+        await pline_mon(mtmp, `${Monst_name} ${
             !Blind() ? "smiles at" : !Deaf() ? "talks to" : "touches"} you ${
-            (compat === 2) ? "engagingly" : "seductively"}.`); /* pline_mon() */
+            (compat === 2) ? "engagingly" : "seductively"}.`);
     } else {
         switch (mattk.aatyp) {
         case AT_BITE:
@@ -354,6 +354,9 @@ export async function hitmsg(mtmp, mattk) {
         const prev = game.hitmsg_prev;
         const again = (mtmp.m_id === game.hitmsg_mid
                        && prev != null
+                       /* mattk == gh.hitmsg_prev + 1: never when the
+                          previous attack was getmattk()'s alt_attk_buf */
+                       && prev.idx >= 0
                        && mattk === mtmp.data.mattk[prev.idx + 1]
                        && prev.mdat === mtmp.data
                        && mattk.aatyp === prev.attk.aatyp) ? ' again' : '';
@@ -1917,7 +1920,7 @@ export async function doseduce(mon) {
         return 0;
     }
     if (unresponsive()) {
-        await pline(`${Monnam(mon)} seems dismayed at your lack of response.`);
+        await pline_mon(mon, `${Monnam(mon)} seems dismayed at your lack of response.`);
         return 0;
     }
 
@@ -2177,7 +2180,7 @@ export async function doseduce(mon) {
         await pline(`${noit_Monnam(mon)} demands that you pay ${
             noit_mhim(mon)}, but you refuse...`);
     } else if (u.umonnum === M.PM_LEPRECHAUN) {
-        await pline(`${noit_Monnam(mon)} tries to take your gold, but fails...`);
+        await pline_mon(mon, `${noit_Monnam(mon)} tries to take your gold, but fails...`);
     } else {
         let cost;
         const umoney = money_cnt(game.invent);

@@ -222,7 +222,7 @@ import { a_monnam } from './do_name.js';
 import { an } from './objnam.js';
 import { impossible } from './hack.js';
 import { POTION_CLASS } from './objects.js';
-import { pline_mon } from './display.js';
+import { pline_mon, set_msg_xy } from './display.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -645,10 +645,10 @@ async function vamprises(mtmp) {
             /* 3.6.0 used a_monnam(mtmp); that was weird if mtmp was
                named: "Dracula suddenly transforms and rises as Dracula";
                3.6.1 used mtmp->data->mname; that ignored hallucination */
-            await pline(`${upstart_vr(action)} ${
+            await pline_mon(mtmp, `${upstart_vr(action)} ${
                 x_monnam(mtmp, ARTICLE_A_VR, null,
                          (SUPPRESS_NAME_VR | SUPPRESS_IT_VR | SUPPRESS_INVISIBLE_VR),
-                         false)}!`); /* pline_mon() */
+                         false)}!`);
             game.vamp_rise_msg = true;
         }
         /* revived vampire is in normal shape, so can't be amorphous; if on
@@ -660,7 +660,7 @@ async function vamprises(mtmp) {
             const trapped = (door.doormask & D_TRAPPED_VR) !== 0,
                   seeit = cansee(x, y);
 
-            /* set_msg_xy(x, y): You()/pline() will reset this */
+            set_msg_xy(x, y); /* You()/pline() will reset this */
             if (!seeit)
                 await You_hear(`${trapped ? "an explosion" : door_smashed}.`);
             else if (!canspotmon(mtmp))
@@ -668,7 +668,7 @@ async function vamprises(mtmp) {
             else if (!Unaware_vr())
                 await pline_The_vr(`door is smashed${
                     trapped ? " and it explodes!" : "."}`);
-            /* set_msg_xy(0, 0): in case none of the messages was delivered */
+            set_msg_xy(0, 0); /* in case none of the messages was delivered */
 
             door.doormask = D_NODOOR_VR;
             recalc_block_point_vr(x, y);
@@ -683,7 +683,7 @@ async function vamprises(mtmp) {
                    have been called but no message about its death given yet;
                    mtmp was a vampire so use unconditional "destroyed" */
                 if (trap_killed && canspotmon(mtmp) && !Unaware_vr())
-                    await pline(`${Monnam_vr(mtmp)} is destroyed!`); /* pline_mon() */
+                    await pline_mon(mtmp, `${Monnam_vr(mtmp)} is destroyed!`);
             }
         }
         newsym(x, y);
@@ -928,9 +928,9 @@ export async function corpse_chance(mon, magr, was_swallowed) {
                         await mondied(magr);
                     if (DEADMONSTER(magr)) { /* maybe lifesaved */
                         if (canspotmon(magr))
-                            await pline(`${Monnam(magr)} rips open!`);
+                            await pline_mon(magr, `${Monnam(magr)} rips open!`);
                     } else if (canseemon(magr))
-                        await pline(`${Monnam(magr)} seems to have indigestion.`);
+                        await pline_mon(magr, `${Monnam(magr)} seems to have indigestion.`);
                 }
                 return false;
             }
@@ -1153,7 +1153,7 @@ export async function monkilled(mdef, fltxt, how) {
     /* C tests the pointer: "" is non-null and still gives the message */
     if (fltxt != null && (mdef.wormno ? worm_known(mdef)
                               : cansee(mdef.mx, mdef.my)))
-        await pline(`${Monnam(mdef)} is ${nonliving(mptr) ? 'destroyed' : 'killed'}`
+        await pline_mon(mdef, `${Monnam(mdef)} is ${nonliving(mptr) ? 'destroyed' : 'killed'}`
                     + `${fltxt ? ' by the ' : ''}${fltxt}!`);
     else
         /* sad feeling is deferred until after potential life-saving */
@@ -1501,7 +1501,7 @@ async function peacefuls_respond(mtmp) {
                         || (mon.data === MM.mons[quest_info(MM.MS_LEADER)]
                             && mtmp.data !== MM.mons[game.urole.guardnum])) {
                         if (exclaimed)
-                            await pline(`${buf} then shrugs.`); /* pline_mon() */
+                            await pline_mon(mon, `${buf} then shrugs.`);
                         continue;
                     }
 
@@ -1519,7 +1519,7 @@ async function peacefuls_respond(mtmp) {
                             exclaimed = true; /* got msg from monflee() */
                     }
                     if (buf)
-                        await pline(`${buf}${needpunct ? "." : ""}`); /* pline_mon() */
+                        await pline_mon(mon, `${buf}${needpunct ? "." : ""}`);
                     if (mon.mtame) {
                         ; /* mustn't set mpeaceful to 0 as below;
                            * perhaps reduce tameness? */
@@ -1620,7 +1620,7 @@ export async function setmangry(mtmp, via_attack) {
         adjalign(-1); /* attacking peaceful monsters is bad */
     if ((mtmp.data.mflags1 & M1_HUMANOID) || mtmp.isshk || mtmp.isgd) {
         if (couldsee(mtmp.mx, mtmp.my))
-            await pline(`${Monnam(mtmp)} gets angry!`);
+            await pline_mon(mtmp, `${Monnam(mtmp)} gets angry!`);
     } else {
         await growl(mtmp);
     }
@@ -2706,7 +2706,7 @@ export function check_gear_next_turn(mon) {
 // C ref: mon.c wake_msg()
 export async function wake_msg(mtmp, interesting) {
     if (mtmp.msleeping && canseemon(mtmp)) {
-        await pline(`${Monnam(mtmp)} wakes up${interesting ? "!" : "."}${
+        await pline_mon(mtmp, `${Monnam(mtmp)} wakes up${interesting ? "!" : "."}${
             mtmp.data === mons[PM_FLESH_GOLEM] ? " It's alive!" : ""}`);
     }
 }
@@ -3361,7 +3361,7 @@ export async function golemeffects(mon, damtype, dam) {
     if (heal) {
         if (healmon(mon, heal, 0)) {
             if (cansee(mon.mx, mon.my))
-                await pline(`${Monnam(mon)} seems healthier.`);
+                await pline_mon(mon, `${Monnam(mon)} seems healthier.`);
         }
     }
 }
