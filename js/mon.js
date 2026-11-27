@@ -88,7 +88,7 @@ import { BOULDER, CLOVE_OF_GARLIC, CREDIT_CARD, SKELETON_KEY, LOCK_PICK, EGG,
 import { NO_NC_FLAGS, FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
          POISON_RES, STONE_RES, M_POISONGAS_OK, M_POISONGAS_MINOR, M_POISONGAS_BAD,
          MAGICAL_BREATHING, Is_waterlevel } from './const.js';
-import { attacktype_fordmg, resists_poison } from './mondata.js';
+import { attacktype_fordmg, resists_poison, attacktype } from './mondata.js';
 import { visible_region_at, cmap_to_glyph, S_poisoncloud, create_gas_cloud } from './region.js';
 import { corpse_intrinsic, should_givit } from './eat.js';
 import { delobj } from './invent.js';
@@ -901,11 +901,14 @@ export async function corpse_chance(mon, magr, was_swallowed) {
     const mdat = mon.data;
     let tmp;
 
-    if (!magr && game.mswallower)
-        throw new Error('corpse_chance(): engulfer explosions not ported yet');
+    if (!magr && game.mswallower && attacktype(game.mswallower.data, MM.AT_ENGL))
+        magr = game.mswallower, was_swallowed = true; /* for gas spore boom */
 
-    if (mdat === mons[PM_VLAD_THE_IMPALER] || mdat.mlet === S_LICH)
-        throw new Error('corpse_chance(): body crumbles into dust not ported yet');
+    if (mdat === mons[PM_VLAD_THE_IMPALER] || mdat.mlet === S_LICH) {
+        if (cansee(mon.mx, mon.my) && !was_swallowed)
+            await pline_mon(mon, `${s_suffix(Monnam(mon))} body crumbles into dust.`);
+        return false;
+    }
 
     /* Gas spores always explode upon death */
     for (let i = 0; i < NATTK; i++) {
