@@ -99,7 +99,7 @@ import { DIED } from './const.js';
 import { cansee, couldsee } from './vision.js';
 import { m_in_air } from './monmove.js';
 import { canseemon, set_msg_xy } from './display.js';
-import { mon_nam, Monnam } from './do_name.js';
+import { mon_nam, Monnam, Amonnam } from './do_name.js';
 import { self_invis_message } from './potion.js';
 import { perceives, pm_invisible } from './mondata.js';
 import { INVIS, SEE_INVIS } from './const.js';
@@ -3088,7 +3088,7 @@ async function trapeffect_pit(mtmp, trap, trflags) {
         if (!passes_walls(mptr))
             mtmp.mtrapped = 1;
         if (in_sight) {
-            await pline(`${Monnam(mtmp)} ${fallverb} into ${
+            await pline_mon(mtmp, `${Monnam(mtmp)} ${fallverb} into ${
                 a_your[trap.madeby_u ? 1 : 0]} pit!`);
             if (mptr === mons[PM_PIT_VIPER]
                 || mptr === mons[PM_PIT_FIEND])
@@ -4864,8 +4864,13 @@ export async function mintrap(mtmp, mintrapflags) {
            (mtmp hiding under object at armed bear trap location, hero
            zaps wand of locking or spell of wizard lock at spot triggering
            the trap and trapping mtmp there) */
-        if (!(mtmp.mhp < 1) && mtmp.mtrapped)
+        if (!(mtmp.mhp < 1) && mtmp.mtrapped) {
+            const alreadyspotted = canspotmon_l(mtmp);
+
             maybe_unhide_at(mtmp.mx, mtmp.my);
+            if (!alreadyspotted && canseemon(mtmp))
+                await pline_mon(mtmp, `${Amonnam(mtmp)} appears.`);
+        }
     }
     return trap_result;
 }

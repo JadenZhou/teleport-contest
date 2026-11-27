@@ -830,8 +830,10 @@ export async function lookaround() {
                     if (x !== u.ux && y !== u.uy)
                         continue;
                     if (g.context.run !== 1 && !g.context.travel) {
-                        if (g.flags.mention_walls)
-                            await pline("You stop in front of the door.");
+                        if (g.flags.mention_walls) {
+                            set_msg_xy(x, y);
+                            await You("stop in front of the door.");
+                        }
                         stop = true; /* goto stop */
                     } else {
                         /* orthogonal to a closed door, consider it a

@@ -21,7 +21,7 @@ import { cansee, couldsee, clear_path, vision_recalc,
          recalc_block_point } from './vision.js';
 import { newsym, pline, canseemon, canspotmon, vobj_at } from './display.js';
 import { can_hide_under_obj, nonliving } from './makemon.js';
-import { Monnam, Adjmonnam } from './do_name.js';
+import { Monnam, Adjmonnam, YMonnam } from './do_name.js';
 import { W_NONDIGGABLE as W_NONDIGGABLE_MM } from './const.js';
 import { dmgtype as dmgtype_mm, is_animal, mindless, nohands, verysmall,
          hides_under, amorphous, likes_gems, throws_rocks, tunnels, needspick,
@@ -1304,14 +1304,14 @@ async function meatmetal(mtmp) {
                     /* (see above; format even if it won't be printed) */
                     otmpname = distant_name(otmp, doname);
                     if (game.flags.verbose)
-                        await pline(`${Monnam(mtmp)} spits ${otmpname} out in disgust!`);
+                        await pline_mon(mtmp, `${Monnam(mtmp)} spits ${otmpname} out in disgust!`);
                 }
             } else {
                 if (cansee(mtmp.mx, mtmp.my)) {
                     /* (see above; format even if it won't be printed) */
                     otmpname = distant_name(otmp, doname);
                     if (game.flags.verbose)
-                        await pline(`${Monnam(mtmp)} eats ${otmpname}!`);
+                        await pline_mon(mtmp, `${Monnam(mtmp)} eats ${otmpname}!`);
                 } else {
                     if (game.flags.verbose) {
                         /* Soundeffect(se_crunching_sound, 50) */
@@ -2589,7 +2589,9 @@ async function postmov(mtmp, ptr, omx, omy, mmoved, seenflgs,
             if ((here.doormask & (D_LOCKED | D_CLOSED)) !== 0
                 && amorphous(ptr)) {
                 if (game.flags.verbose && canseemon(mtmp))
-                    throw new Error('postmov(): oozing under a door message not ported yet');
+                    await pline_mon(mtmp, `${YMonnam(mtmp)} ${
+                        (ptr === mons[M.PM_FOG_CLOUD]
+                         || ptr.mlet === M.S_LIGHT) ? "flows" : "oozes"} under the door.`);
             } else if ((here.doormask & D_LOCKED) !== 0 && can_unlock) {
                 /* like the vampshift hack, there are sequencing
                    issues when the monster is moved to the door's spot
