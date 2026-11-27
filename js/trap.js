@@ -270,7 +270,7 @@ import { M1_SWIM as M1_SWIM_DR, M1_AMPHIBIOUS as M1_AMPHIBIOUS_DR,
          M1_BREATHLESS as M1_BREATHLESS_DR, PM_GREMLIN as PM_GREMLIN_DR,
          PM_IRON_GOLEM as PM_IRON_GOLEM_DR, PM_WATER_ELEMENTAL as PM_WATER_ELEMENTAL_DR,
          PM_STEAM_VORTEX as PM_STEAM_VORTEX_DR, PM_FOG_CLOUD as PM_FOG_CLOUD_DR } from './monsters.js';
-import { LEASH as LEASH_DR, LOADSTONE as LOADSTONE_DR, SCR_FIRE as SCR_FIRE_DR,
+import { LOADSTONE as LOADSTONE_DR, SCR_FIRE as SCR_FIRE_DR,
          SPE_FIREBALL as SPE_FIREBALL_DR, SPE_BOOK_OF_THE_DEAD as SPE_BOOK_OF_THE_DEAD_DR,
          objects as objects_dr, POTION_CLASS as POTION_CLASS_DR,
          is_organic as is_organic_dr } from './objects.js';
@@ -334,7 +334,7 @@ import { has_oname, ONAME, OBJ_AT, M_AP_TYPE, Role_if, u_at, ismnum,
          NO_NC_FLAGS, SHOPBASE } from './const.js';
 import { MS_GUARDIAN, PM_DOPPELGANGER, PM_FLESH_GOLEM, PM_ARCHEOLOGIST,
          M1_CONCEAL } from './monsters.js';
-import { number_leashed } from './apply.js';
+import { number_leashed, unleash_all } from './apply.js';
 import { buried_ball as buried_ball_tr } from './dig.js';
 import { is_animal as is_animal_tr } from './mondata.js';
 import { Lev_at_will as Lev_at_will_tr } from './youprop.js';
@@ -5350,16 +5350,6 @@ export async function set_uinwater(in_out) {
         game.u.uinwater = in_out ? 1 : 0;
         await switch_terrain_dr();
     }
-}
-
-// C ref: apply.c unleash_all()
-/* Ensure no leashed monsters */
-export function unleash_all() {
-    for (let otmp = game.invent; otmp; otmp = otmp.nobj)
-        if (otmp.otyp === LEASH_DR)
-            otmp.leashmon = 0;
-    for (let mtmp = game.fmon; mtmp; mtmp = mtmp.nmon)
-        mtmp.mleashed = 0;
 }
 
 // C ref: trap.c emergency_disrobe()

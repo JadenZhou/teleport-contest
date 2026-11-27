@@ -2120,6 +2120,19 @@ export function m_unleash(mtmp, feedback) {
     return msg ? pline(msg) : undefined;
 }
 
+// C ref: apply.c unleash_all()
+/* player is about to die (for bones) */
+export function unleash_all() {
+    let otmp;
+    let mtmp;
+
+    for (otmp = game.invent; otmp; otmp = otmp.nobj)
+        if (otmp.otyp === O.LEASH)
+            otmp.leashmon = 0;
+    for (mtmp = game.fmon; mtmp; mtmp = mtmp.nmon)
+        mtmp.mleashed = 0;
+}
+
 // C ref: apply.c leashable()
 export function leashable(mtmp) {
     return (mtmp.data !== mons_ls[PM_LONG_WORM_LS] /* mtmp->mnum */

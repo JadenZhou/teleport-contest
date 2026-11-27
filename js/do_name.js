@@ -166,7 +166,7 @@ export function christen_monst(mtmp, name) {
     /* new_mgivenname(mtmp, lth): removes old name if one is present */
     mtmp.mgivenname = lth ? name : '';
     /* if 'mtmp' is leashed, persistent inventory window needs updating:
-       update_inventory() -- leashes aren't ported yet */
+       update_inventory() -- no perm_invent window */
     return mtmp;
 }
 

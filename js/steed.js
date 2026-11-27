@@ -206,8 +206,15 @@ async function mount_steed(mtmp, force) {
         return false;
     }
 
-    if (!force && !Role_if(PM_KNIGHT) && !(--mtmp.mtame))
-        throw new Error('mount_steed(): steed resists (no longer tame) not ported yet');
+    if (!force && !Role_if(PM_KNIGHT) && !(--mtmp.mtame)) {
+        /* no longer tame */
+        newsym(mtmp.mx, mtmp.my);
+        await pline(`${Monnam(mtmp)} resists${
+            mtmp.mleashed ? " and its leash comes off" : ""}!`);
+        if (mtmp.mleashed)
+            m_unleash(mtmp, false);
+        return false;
+    }
     if (!force && u.uinwater && !is_swimmer(ptr)) { /* Underwater */
         await You_cant(`ride that creature while under ${hliquid("water")}.`);
         return false;
