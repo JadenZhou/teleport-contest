@@ -26,7 +26,7 @@ import { aggravate, make_stunned, make_confused, make_blinded,
          burn_away_slime } from './potion.js';
 import { destroy_arm } from './do_wear.js';
 import { losestr, ACURR, minuhpmax, setuhpmax, adjuhploss } from './attrib.js';
-import { losehp } from './trap.js';
+import { losehp, is_waterwall } from './trap.js';
 import { done } from './end.js';
 import { killer } from './topten.js';
 import { flashburn, buzz, flash_str, mon_spell_hits_spot } from './zap.js';
@@ -43,7 +43,7 @@ import { mons, AD_SPEL, AD_CLRC, AD_FIRE, AD_COLD, AD_MAGM, AD_SPC2, AD_ELEC,
          S_ANT, S_SNAKE } from './monsters.js';
 import { M_ATTK_MISS, M_ATTK_HIT, M_SEEN_MAGR, M_SEEN_FIRE, M_SEEN_COLD,
          M_SEEN_ELEC, M_SEEN_REFL, MCF_INDIRECT, MCF_SIGHT, MCF_HOSTILE,
-         MFAST, MM_ANGRY, MM_NOMSG, M_AP_OBJECT, WATER, TIMEOUT, KILLED_BY,
+         MFAST, MM_ANGRY, MM_NOMSG, M_AP_OBJECT, TIMEOUT, KILLED_BY,
          DIED, HEAD, EYE, A_DEX, ANTIMAGIC, HALF_SPDAM, HALF_PHDAM,
          FREE_ACTION, FIRE_RES, COLD_RES, SHOCK_RES, STUNNED, CONFUSION, BLINDED,
          INVIS, DISPLACED, SEE_INVIS, DEAF, DETECT_MONSTERS,
@@ -122,10 +122,6 @@ const mon_wizard_spells = [
     MCAST_AGGRAVATION, MCAST_SUMMON_MONS, MCAST_CLONE_WIZ, MCAST_DEATH_TOUCH,
 ];
 
-/* C ref: eat.c is_fainted() */
-function is_fainted() { return game.u.uhs === 5; /* FAINTED */ }
-/* C ref: rm.h IS_WATERWALL(), is_waterwall() */
-function is_waterwall(x, y) { return game.level.at(x, y).typ === WATER; }
 /* C ref: potion.c vision_clears[] */
 const vision_clears = "vision quickly clears.";
 

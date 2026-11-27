@@ -80,6 +80,7 @@ import { mbodypart } from './insight.js';
 import { HAND } from './const.js';
 import { m_carrying } from './mthrowu.js';
 import { pline_mon } from './display.js';
+import { will_weld } from './wield.js';
 
 function weapon_skills() {
     const u = game.u;
@@ -229,16 +230,6 @@ function set_propellor(p) { game.propellor = p; }
 /* mondata.h */
 function is_wooden(ptr) { return ptr === M.mons[M.PM_WOOD_GOLEM]; }
 function hates_light(ptr) { return ptr === M.mons[M.PM_GREMLIN]; }
-
-/* obj.h */
-/* C ref: wield.c erodeable_wep(), will_weld() */
-function erodeable_wep(optr) {
-    return optr.oclass === WEAPON_CLASS || is_weptool(optr)
-        || optr.otyp === O.HEAVY_IRON_BALL || optr.otyp === O.IRON_CHAIN;
-}
-function will_weld(optr) {
-    return !!optr.cursed && (erodeable_wep(optr) || optr.otyp === O.TIN_OPENER);
-}
 
 /* targets that provide attacker with small to-hit bonus when using a spear */
 const kebabable = [M.S_XORN, M.S_DRAGON, M.S_JABBERWOCK, M.S_NAGA, M.S_GIANT];

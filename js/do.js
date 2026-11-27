@@ -8,7 +8,7 @@
 // ported yet.
 
 import { sellobj_state } from './pickup.js';
-import { SELL_NORMAL, SELL_DELIBERATE } from './const.js';
+import { SELL_NORMAL, SELL_DELIBERATE, is_hole, is_pit } from './const.js';
 import { game } from './gstate.js';
 import { fix_shop_damage } from './shk.js';
 import { livelog_printf, You_hear } from './display.js';
@@ -63,7 +63,7 @@ import { grow_up as grow_up_do } from './makemon.js';
 import { mcureblindness as mcureblindness_do } from './muse.js';
 import { delobj as delobj_do } from './invent.js';
 import { is_pool, is_lava } from './makemon.js';
-import { t_at, is_pit, is_hole, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
+import { t_at, set_utrap, seetrap, lava_damage, climb_pit } from './trap.js';
 import { minstapetrify } from './trap.js';
 import { cansee } from './vision.js';
 import { distu } from './hacklib.js';
@@ -1181,9 +1181,6 @@ async function temperature_change_msg(prev_temperature) {
             await You("are out of the cold.");
     }
 }
-
-// C ref: insight.c record_achievement() (ported in insight.js)
-export { record_achievement };
 
 // C ref: do.c boulder_hits_pool()
 /* Called when a boulder is dropped, thrown, or pushed.  If it ends up

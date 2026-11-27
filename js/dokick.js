@@ -9,7 +9,7 @@
 
 import { find_drawbridge } from './zap.js';
 import { scatter } from './explode.js';
-import { VIS_EFFECTS, MAY_HIT } from './const.js';
+import { VIS_EFFECTS, MAY_HIT, M_AP_TYPE } from './const.js';
 import { ROLL_FROM } from './rng.js';
 import { DEADMONSTER } from './mon.js';
 import { game } from './gstate.js';
@@ -82,7 +82,7 @@ import { M2_GREEDY, M2_MERC, S_MIMIC } from './monsters.js';
 import { M_AP_NOTHING } from './const.js';
 import { M1_THICK_HIDE, MZ_LARGE, M1_NOHANDS, PM_SHADE, AT_KICK,
          S_EEL } from './monsters.js';
-import { M_AP_TYPMASK, M_AP_MONSTER, W_ARMF, P_NONE, P_MARTIAL_ARTS,
+import { M_AP_MONSTER, W_ARMF, P_NONE, P_MARTIAL_ARTS,
          NO_TRAP_FLAGS, engulfing_u } from './const.js';
 import { special_dmgval, use_skill, martial_bonus } from './weapon.js';
 import { seemimic, killed } from './mon.js';
@@ -801,8 +801,6 @@ export async function ghitm(mtmp, gold) {
 }
 
 const kick_passes_thru = "kick passes harmlessly through";
-
-function M_AP_TYPE(mon) { return (mon.m_ap_type || 0) & M_AP_TYPMASK; }
 
 // C ref: dokick.c kickdmg()
 /* kicking damage when not poly'd into a form with a kick attack */
