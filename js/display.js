@@ -3188,6 +3188,13 @@ function _buildScreenOutput(cursor_on_u, printed = null) {
                     continue;
                 }
                 const ch = loc.disp_decgfx ? dec_cell_char(loc.disp_ch) : loc.disp_ch;
+                /* a spot that isn't gnew is not printed again: the terminal
+                   keeps the color and attribute it was printed with (after
+                   the color option is toggled, unchanged spots keep their
+                   colors until the next redraw) */
+                if (printed && !printed.has(y * COLNO + x)
+                    && display.grid[y + 1]?.[x - 1]?.ch === ch)
+                    continue;
                 display.setCell(x - 1, y + 1, ch, tty_color(loc.disp_color), tty_glyph_attr(loc));
             }
         }
