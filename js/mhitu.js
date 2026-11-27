@@ -141,10 +141,9 @@ import { xkilled as xkilled_mu } from './mon.js';
 import { resists_cold as resists_cold_mu } from './mondata.js';
 import { XKILL_NOMSG as XKILL_NOMSG_MU } from './const.js';
 import { mon_explodes } from './explode.js';
-import { unleash_all } from './trap.js';
 import { vtense } from './objnam.js';
 import { pline_The } from './display.js';
-import { number_leashed, snuff_lit } from './apply.js';
+import { number_leashed, snuff_lit, unleash_all } from './apply.js';
 import { haseyes as haseyes_mu, resists_fire as resists_fire_mu,
          resists_elec as resists_elec_mu } from './mondata.js';
 import { pmname as pmname_mu } from './do_name.js';

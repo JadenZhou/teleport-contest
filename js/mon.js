@@ -177,7 +177,7 @@ import { stinky_nemesis } from './questpgr.js';
 import { Hallucination, Conflict, Deaf } from './youprop.js';
 import { m_next2u } from './const.js';
 import { uhis, unstuck } from './mhitu.js';
-import { m_unleash } from './apply.js';
+import { m_unleash, leashable } from './apply.js';
 import { obj_extract_self } from './mkobj.js';
 import { possibly_unwield } from './weapon.js';
 import { split_mon } from './potion.js';
@@ -2480,8 +2480,16 @@ const newcham_g = ({ *newcham(mtmp, mdat, ncflags) {
     /* take on the new form... */
     set_mon_data(mtmp, mdat);
 
-    if (mtmp.mleashed)
-        throw new Error('newcham(): leashed monsters not ported yet');
+    if (mtmp.mleashed) {
+        if (!leashable(mtmp))
+            yield { newcham_async: () => m_unleash(mtmp, true), /* message */
+                    what: 'm_unleash()' };
+        else
+            /* if leashed, persistent inventory window needs updating
+               (really only when mon_nam() is going to yield "a frog"
+               rather than "Kermit" but no need to micromanage here) */
+            ; /* update_inventory(); -- no perm_invent window */
+    }
 
     if (emits_light(olddata) !== emits_light(mtmp.data)) {
         /* used to give light, now doesn't, or vice versa,

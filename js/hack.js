@@ -198,6 +198,7 @@ import { weapon_descr as weapon_descr_fw } from './insight.js';
 import { makeplural as makeplural_fw } from './objnam.js';
 import { You_cant as You_cant_fw } from './display.js';
 import { deltrap as deltrap_fw } from './trap.js';
+import { check_leash } from './apply.js';
 
 // C's impossible() (pline.c) is not ported yet.
 export function impossible(msg) { console.error(`impossible: ${msg}`); }
@@ -2564,7 +2565,7 @@ export async function still_chewing(x, y) {
 async function cannot_push_msg(otmp, sx, sy) {
     const what = the(xname(otmp));
     if (game.u.usteed)
-        throw new Error('cannot_push_msg(): steed message not ported yet');
+        await pline(`${YMonnam(game.u.usteed)} tries to move ${what}, but cannot.`);
     else
         await You(`try to move ${what}, but in vain.`);
     if (Blind())
@@ -3697,7 +3698,7 @@ async function domove_core() {
         || u.dx || u.dy)
         hideunder(game.youmonst);
 
-    /* check_leash(u.ux0, u.uy0): leashes aren't ported */
+    await check_leash(u.ux0, u.uy0);
 
     if (u.ux0 !== u.ux || u.uy0 !== u.uy) {
         /* let caller know so that an evaluation may take place */

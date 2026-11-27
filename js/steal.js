@@ -75,6 +75,7 @@ import { in_rooms } from './hack.js';
 import { SHOPBASE } from './const.js';
 import { bimanual } from './objects.js';
 import { pline_mon } from './display.js';
+import { o_unleash } from './apply.js';
 
 /* C ref: global.h LARGEST_INT */
 const LARGEST_INT = 32767;
@@ -529,7 +530,7 @@ export async function steal(mtmp, objnambuf) {
             if (otmp.otyp === O.LEASH && otmp.leashmon) {
                 if (monkey_business && otmp.cursed)
                     break cant_take;
-                throw new Error('steal(): o_unleash() not ported yet');
+                o_unleash(otmp);
             }
 
             was_doffing = doffing(otmp);
