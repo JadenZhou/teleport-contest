@@ -163,6 +163,29 @@ option_help() shows the recorder's temp config path (decision E, not modelled), 
 uncompressed `glyph` line used to wrap and offset it. Those screens stay lost; don't add code
 to win them back.
 
+**G. The reference recorder's clock and screen encoding are modelled (2026-11-27).** The
+owner reversed the "don't model `u.ubirthday`/shopkeeper names" and "runs of 5+ blanks inside
+inverse video in menu headings" parts of decision E, to match as many sessions as possible
+before the Phase 1 freeze. Both use only the session's declared inputs plus fixed facts about
+the reference recorder; no session data goes into `js/`.
+- **Clock.** C's `getnow()` is `mktime()` of `NETHACK_FIXED_DATETIME` in America/New_York, with
+  the DST flag of the recording machine's real clock. The reference sessions (public, held-out)
+  were recorded on daylight time, so `getnow()` reads the datetime as EDT (UTC-4) in every season;
+  `getlt()` is `localtime()` of it (a winter datetime reads an hour earlier) and `u.ubirthday =
+  getnow()` (shopkeeper names, prices, T-shirts, mkroom). Verified: seed0030 (Jan–Mar datetimes)
+  matches only with UTC-4; seed0012/0002 likewise.
+- **Screen encoding.** The reference recorder (`run_session.py compress_ansi_line`) writes every
+  run of 5+ spaces of a row's ANSI text as `ESC[nC`, which decodes with no attribute, even inside
+  inverse video. `frozen/terminal.js serialize()` does that only for leading blanks, so
+  `js/jsmain.js captureScreen()` clears the attribute of such runs while serializing a scored
+  frame (the live grid and display are unchanged).
+- **Approved regressions.** sessions-dev and the probe sets were recorded locally on a
+  standard-time clock (the November recorder), where `getnow()` is UTC-5; sessions there may
+  lose screens that depend on `u.ubirthday` or the hour. A merge may regress such sessions only;
+  label gate runs `approved-regression: recorder-clock …`.
+- Still not modelled: option_help()'s config path (decision E) — it is the recording machine's
+  file path, i.e. session data.
+
 **Gate: browser playability (2026-11-24).** The leaderboard's "Playable" column runs
 `bash frozen/play.sh`: every public session in one Node process, one `moveloop_core()` per key.
 It fails if any session throws (a "not ported yet" stop included), not only when it is slower
