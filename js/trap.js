@@ -4857,8 +4857,18 @@ export async function mintrap(mtmp, mintrapflags) {
                 mtmp.mtrapped = 0;
             }
         } else if (metallivorous(mptr)) {
-            if (trap.ttyp === BEAR_TRAP || trap.ttyp === SPIKED_PIT)
-                throw new Error('mintrap(): metallivore eating a trap not ported yet');
+            if (trap.ttyp === BEAR_TRAP) {
+                if (canseemon(mtmp))
+                    await pline_mon(mtmp, `${Monnam(mtmp)} eats a bear trap!`);
+                deltrap(trap);
+                mtmp.meating = 5;
+                mtmp.mtrapped = 0;
+            } else if (trap.ttyp === SPIKED_PIT) {
+                if (canseemon(mtmp))
+                    await pline_mon(mtmp, `${Monnam(mtmp)} munches on some spikes!`);
+                trap.ttyp = PIT;
+                mtmp.meating = 5;
+            }
         }
         trap_result = mtmp.mtrapped ? Trap_Caught_Mon : Trap_Effect_Finished;
     } else {

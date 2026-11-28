@@ -71,7 +71,7 @@ import { glyph_at, glyph_ttychar, encglyph, canspotself, canseemon,
          cmap_to_glyph, trap_to_glyph } from './display.js';
 import { couldsee } from './vision.js';
 import { worm_known } from './worm.js';
-import { distant_monnam, rndmonnam, mon_nam } from './do_name.js';
+import { distant_monnam, rndmonnam, mon_nam, coyotename } from './do_name.js';
 import { doname_with_price, doname_vague_quan, an, xname, singular,
          makesingular, fruit_from_name } from './objnam.js';
 import { obj_descr, SLIME_MOLD as SLIME_MOLD_PG, BOULDER, APPLE, ORANGE, PEAR,
@@ -796,9 +796,9 @@ function look_at_monster(mtmp, x, y, want_monbuf) {
     const accurate = !Hallucination();
     let monbuf = null;
 
-    if (mtmp.data === mons[PM_COYOTE] && accurate)
-        throw new Error('look_at_monster(): coyotename() not ported yet');
-    const name = distant_monnam(mtmp, ARTICLE_NONE);
+    const name = (mtmp.data === mons[PM_COYOTE] && accurate)
+                   ? coyotename(mtmp)
+                   : distant_monnam(mtmp, ARTICLE_NONE);
     let buf = `${(mtmp.mx !== x || mtmp.my !== y)
                  ? ((mtmp.isshk && accurate) ? "tail of " : "tail of a ") : ""}`
         /* monhealthdescr() is disabled in C ("") */
