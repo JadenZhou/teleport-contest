@@ -186,6 +186,12 @@ import { resists_acid as resists_acid_pu, resists_ston as resists_ston_pu,
 import { erode_armor as erode_armor_pu } from './uhitm.js';
 import { acid_damage as acid_damage_pu } from './trap.js';
 import { attk_protection as attk_protection_pu } from './mhitm.js';
+import { mattackm as mattackm_mu } from './mhitm.js';
+import { dismount_steed as dismount_steed_mu } from './steed.js';
+import { Some_Monnam as Some_Monnam_mu } from './do_name.js';
+import { amorphous as amorphous_mu } from './mondata.js';
+import { M_ATTK_DEF_DIED as M_ATTK_DEF_DIED_MU,
+         DISMOUNT_ENGULFED as DISMOUNT_ENGULFED_MU } from './const.js';
 import { mon_to_stone as mon_to_stone_pu } from './mon.js';
 import { drain_item as drain_item_pu } from './zap.js';
 import { W_ARMG as W_ARMG_PU, ERODE_CORRODE as ERODE_CORRODE_PU } from './const.js';
@@ -718,8 +724,21 @@ export async function mattacku(mtmp) {
             /* Your steed won't attack you */
             return 0;
         /* Orcs like to steal and eat horses and the like */
-        if (!rn2(is_orc(mtmp.data) ? 2 : 4) && m_next2u(mtmp))
-            throw new Error('mattacku(): attacking hero\'s steed not ported yet');
+        if (!rn2(is_orc(mtmp.data) ? 2 : 4) && m_next2u(mtmp)) {
+            /* attack your steed instead; 'bhitpos' and 'notonhead' are
+               already set from targeting hero */
+            i = await mattackm_mu(mtmp, u.usteed);
+            if ((i & M_ATTK_AGR_DIED) !== 0)
+                return 1;
+            /* make sure steed is still alive and within range */
+            if ((i & M_ATTK_DEF_DIED_MU) !== 0 || !u.usteed
+                || !m_next2u(mtmp))
+                return 0;
+            /* Let your steed retaliate */
+            game.bhitpos.x = mtmp.mx, game.bhitpos.y = mtmp.my;
+            game.notonhead = false;
+            return !!((await mattackm_mu(u.usteed, mtmp)) & M_ATTK_DEF_DIED_MU) ? 1 : 0;
+        }
     }
 
     /* Ugender */
@@ -1382,7 +1401,7 @@ export async function gazemu(mtmp, mattk) {
                     await pline("You are getting more and more confused."); /* You() */
                 await make_confused_mh((u.uprops[CONFUSION_MH].intrinsic || 0) + conf,
                                        false);
-                stop_occupation();
+                await stop_occupation();
             }
         }
         break;
@@ -1398,7 +1417,7 @@ export async function gazemu(mtmp, mattk) {
                 await pline_mon(mtmp, `${Monnam(mtmp)} stares piercingly at you!`);
                 await make_stunned_mh(((u.uprops[STUNNED_MH].intrinsic || 0) & TIMEOUT_MH)
                                       + stun, true);
-                stop_occupation();
+                await stop_occupation();
             }
         }
         break;
@@ -1417,7 +1436,7 @@ export async function gazemu(mtmp, mattk) {
 
                 await pline(`You are blinded by ${s_suffix(mon_nam(mtmp))} radiance!`); /* You() */
                 await make_blinded(blnd, false);
-                stop_occupation();
+                await stop_occupation();
                 /* not blind at this point implies you're wearing
                    the Eyes of the Overworld; make them block this
                    particular stun attack too */
@@ -1443,7 +1462,7 @@ export async function gazemu(mtmp, mattk) {
                 const orig_dmg = dmg, lev = mtmp.m_lev;
 
                 await pline_mon(mtmp, `${Monnam(mtmp)} attacks you with a fiery gaze!`);
-                stop_occupation();
+                await stop_occupation();
                 if (Fire_resistance()) {
                     await shieldeff_mu(game.u.ux, game.u.uy);
                     await pline("The fire doesn't feel hot!"); /* pline_The() */
@@ -1763,7 +1782,20 @@ async function gulpmu(mtmp, mattk) {
         newsym(mtmp.mx, mtmp.my);
         /* 5.0: dismount for all engulfers, not just for purple worms */
         if (u.usteed) {
-            throw new Error('gulpmu(): dismount_steed(DISMOUNT_ENGULFED) not ported yet');
+            const buf = mon_nam(u.usteed);
+
+            await urgent_pline(`${Some_Monnam_mu(mtmp)} ${
+                /* 't', purple 'w' */
+                is_animal(mtmp.data) ? "lunges"
+                  /* 'v', air 'E' */
+                  : is_whirly(mtmp.data) ? "whirls"
+                    /* none (some 'v', already whirling) */
+                    : unsolid(mtmp.data) ? "flows"
+                      /* ochre 'j', Juiblex */
+                      : amorphous_mu(mtmp.data) ? "oozes"
+                        /* none (all AT_ENGL are already covered) */
+                        : "surges"} forward and plucks you off ${buf}!`);
+            await dismount_steed_mu(DISMOUNT_ENGULFED_MU);
         } else {
             await urgent_pline(`${Monnam(mtmp)} ${
                 digests(mtmp.data) ? "swallows you whole"
