@@ -4,7 +4,7 @@
 // move_gold(), wallify_vault(), gd_mv_monaway(), gd_pick_corridor_gold(),
 // gd_move_cleanup(), gd_letknow(), gd_move().
 //
-// Not ported yet: grddead() (mongone()/mondead() of a guard),
+// grddead() (mongone_async()/mondead() of a guard),
 // paygd() (end.js), vault_summon_gd(), vault_gd_watching().
 
 import { an } from './objnam.js';
@@ -12,6 +12,7 @@ import { You_see, verbalize, You_hear } from './display.js';
 import { simpleonames } from './iactions.js';
 import { fracture_rock } from './zap.js';
 import { DEADMONSTER } from './mon.js';
+import { relobj } from './steal.js';
 import { impossible } from './hack.js';
 import { remove_monster } from './muse.js';
 import { um_dist } from './shk.js';
@@ -236,6 +237,23 @@ function parkguard(grd) {
        just sets EGD(grd)->ogx,ogy to 0,0 too; is that what we want?] */
     grd.egd.ogx = grd.mx;
     grd.egd.ogy = grd.my;
+}
+
+// C ref: vault.c grddead()
+/* called in mon.c */
+export async function grddead(grd) {
+    let dispose = await clear_fcorr(grd, true);
+
+    if (!dispose) {
+        /* destroy guard's gold; drop any other inventory */
+        await relobj(grd, 0, false);
+        grd.mhp = 0;
+        parkguard(grd);
+        dispose = await clear_fcorr(grd, true);
+    }
+    if (dispose)
+        grd.isgd = 0; /* for dmonsfree() */
+    return dispose;
 }
 
 // C ref: vault.c in_fcorridor()

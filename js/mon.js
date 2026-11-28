@@ -214,7 +214,7 @@ import { killer as killer_mn } from './topten.js';
 import { losehp as losehp_mn, Maybe_Half_Phys as Maybe_Half_Phys_mn } from './trap.js';
 import { mon_explodes } from './explode.js';
 import { shkgone } from './shk.js';
-import { gd_move } from './vault.js';
+import { gd_move, grddead } from './vault.js';
 import { rloc_to as rloc_to_mn } from './teleport.js';
 import { place_wsegs as place_wsegs_rm } from './worm.js';
 import { set_ustuck as set_ustuck_rm } from './uhitm.js';
@@ -331,7 +331,7 @@ async function m_calcdistress(mtmp) {
 /* C ref: monst.h DEADMONSTER() */
 export function DEADMONSTER(mon) { return mon.mhp < 1; }
 
-// C ref: mon.c mongone() -- the vault guard case is not ported; unstuck()
+// C ref: mon.c mongone() -- the vault guard case is mongone_async(); unstuck()
 // is checked in mon_leaving_level().
 /* remove a monster from the game without leaving a corpse */
 export function mongone(mdef) {
@@ -340,7 +340,7 @@ export function mongone(mdef) {
     /* dead vault guard is actually kept at coordinate <0,0> until
        his temporary corridor to/from the vault has been removed */
     if (mdef.isgd)
-        throw new Error('mongone: vault guards are not ported yet');
+        throw new Error('mongone(): a vault guard outside mongone_async() not ported yet');
     /* stuck to you? release: unstuck(mdef) -- see mon_leaving_level() */
     /* drop special items like the Amulet so that a dismissed Kop or nurse
        can't remove them from the game */
@@ -348,6 +348,19 @@ export function mongone(mdef) {
     /* release rest of monster's inventory--it is removed from game */
     discard_minvent(mdef, false);
     m_detach(mdef, mdef.data, false);
+}
+
+// C ref: mon.c mongone() -- the vault guard case: grddead() is async (it
+// can print and relocate monsters), so a caller that can reach a guard
+// awaits this instead of mongone()
+export async function mongone_async(mdef) {
+    mdef.mhp = 0; /* can skip some inventory bookkeeping */
+
+    /* dead vault guard is actually kept at coordinate <0,0> until
+       his temporary corridor to/from the vault has been removed */
+    if (mdef.isgd && !(await grddead(mdef)))
+        return;
+    mongone(mdef);
 }
 
 // C ref: mon.c mon_leaving_level()
@@ -899,8 +912,11 @@ export async function mondead(mtmp) {
     if (mtmp.data === mons[PM_STEAM_VORTEX])
         await create_gas_cloud(mtmp.mx, mtmp.my, rn2(10) + 5, 0); /* harmless */
 
-    if (mtmp.isgd)
-        throw new Error('mondead(): grddead() not ported yet');
+    /* dead vault guard is actually kept at coordinate <0,0> until
+       his temporary corridor to/from the vault has been removed;
+       need to do this after life-saving and before m_detach() */
+    if (mtmp.isgd && !(await grddead(mtmp)))
+        return;
 
     const mptr = mtmp.data; /* save this for m_detach() */
     /* restore chameleon, lycanthropes to true form at death */

@@ -1459,14 +1459,16 @@ export async function rloc_to_core(mtmp, x, y, rlocflags) {
 // spot from synchronous level-creation code. rloc() is async in this port
 // only for its messages, the occupation interrupt and mintrap(); none of
 // them can happen here (RLOC_NOMSG while making a level, a monster that
-// isn't trapped), so it completes before returning. Its not-ported stops
+// isn't trapped), so it completes before returning. A long worm's
+// remove_worm()/place_worm_tail_randomly() in rloc_to_core() are
+// synchronous too. Its not-ported stops
 // are checked first: an async function would only report them through
 // its promise.
 export function rloc_mklev(mtmp, rlocflags) {
     const u = game.u;
     if (!(rlocflags & RLOC_NOMSG) || game.occupation || mtmp.mtrapped
         || mtmp === u.usteed || mtmp.iswiz || mtmp.isshk || mtmp.ispriest
-        || mtmp.wormno || !mtmp.mx
+        || !mtmp.mx
         || u.ustuck === mtmp)
         throw new Error('rloc(): relocating this monster during level creation not ported yet');
     void rloc(mtmp, rlocflags);
