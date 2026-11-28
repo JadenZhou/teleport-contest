@@ -1163,7 +1163,7 @@ async function cprefx(pm) {
     if (flesh_petrifies(mons[pm])) {
         if (!Stone_resistance()
             && !(poly_when_stoned(game.youmonst.data)
-                 && (() => { throw new Error('cprefx(): polymon(PM_STONE_GOLEM) not ported yet'); })())) {
+                 && (await polymon(M.PM_STONE_GOLEM)))) {
             /* if food was a tin, use it up early to keep it out of bones */
             if (tin_ctx().tin)
                 await use_up_tin(tin_ctx().tin);
@@ -2338,7 +2338,7 @@ async function fpostfx(otmp) {
             && flesh_petrifies(mons[otmp.corpsenm])) {
             if (!Stone_resistance()
                 && !(poly_when_stoned(game.youmonst.data)
-                     && (() => { throw new Error('fpostfx(): polymon(PM_STONE_GOLEM) not ported yet'); })())) {
+                     && (await polymon(M.PM_STONE_GOLEM)))) {
                 if (!Stoned()) {
                     if (!game.killer)
                         game.killer = { format: 0, name: '', next: null };
