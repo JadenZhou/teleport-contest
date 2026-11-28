@@ -1338,7 +1338,7 @@ export function nexttodoor(sx, sy) {
 }
 
 // C ref: mkroom.c courtmon()
-function courtmon() {
+export function courtmon() {
     const i = rn2(60) + rn2(3 * level_difficulty());
 
     if (i > 100)

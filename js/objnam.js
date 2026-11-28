@@ -67,7 +67,7 @@ import { Luck, HAND } from './const.js';
 import { W_TOOL as W_TOOL_XN, W_SADDLE as W_SADDLE_XN } from './const.js';
 import { is_plural } from './wield.js';
 import { peek_timer, obj_to_any } from './timeout.js';
-import { BURN_OBJECT } from './const.js';
+import { BURN_OBJECT, I_SPECIAL } from './const.js';
 import { is_quest_artifact } from './questpgr.js';
 import {
     NO_TRAP, TRAPNUM, ROCKTRAP, MAGIC_PORTAL, is_hole, DRAWBRIDGE_DOWN, DRAWBRIDGE_UP,
@@ -4047,12 +4047,11 @@ function doname_base(obj, doname_flags) {
         break;
     case O.ARMOR_CLASS:
         if (obj.owornmask & W_ARMOR) {
-            if (obj === game.uskin)
-                xn_not_ported('uskin suffix');
-            bp += /* in case of perm_invent update while Wear/Takeoff
+            bp += (obj === game.uskin) ? " (embedded in your skin)"
+                  /* in case of perm_invent update while Wear/Takeoff
                      is in progress; check doffing() before donning()
                      because donning() returns True for both cases */
-                  doffing(obj) ? " (being doffed)"
+                  : doffing(obj) ? " (being doffed)"
                   : donning(obj) ? " (being donned)"
                     : " (being worn)";
             /* slippery fingers is an intrinsic condition of the hero
@@ -4227,6 +4226,8 @@ function doname_base(obj, doname_flags) {
     }
     if ((obj.owornmask & ~(W_ARMOR | W_AMUL | W_WEP | W_SWAPWEP | W_QUIVER
                            | W_RINGL | W_RINGR | W_BALL | W_CHAIN
+                           /* uskin's I_SPECIAL bit gets no suffix */
+                           | I_SPECIAL
                            | ((obj.oclass === O.TOOL_CLASS && !is_weptool(obj))
                               ? (W_TOOL_XN | W_SADDLE_XN) : 0)))
         || ((obj.owornmask & (W_RINGL | W_RINGR)) && obj.oclass !== O.RING_CLASS))
