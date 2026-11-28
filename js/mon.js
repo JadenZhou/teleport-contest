@@ -36,7 +36,7 @@ import {
     ALLOW_U, ALLOW_M, ALLOW_TM, ALLOW_ALL, ALLOW_MDISP, ALLOW_TRAPS,
     ALLOW_SANCT, ALLOW_SSM, ALLOW_ROCK, ALLOW_WALL, ALLOW_DIG, ALLOW_BARS,
     NOTONL, OPENDOOR, UNLOCKDOOR, BUSTDOOR, NOGARLIC,
-    M_AP_MONSTER, MON_DETACH, MON_MIGRATING, W_AMUL, NON_PM, NATTK, Is_rogue_level,
+    M_AP_MONSTER, MON_DETACH, MON_MIGRATING, MON_OFFMAP, W_AMUL, NON_PM, NATTK, Is_rogue_level,
     G_GENOD, STRAT_WAITMASK, STRAT_WAITFORU, BOLT_LIM, W_ARM,
 } from './const.js';
 import { dist2 } from './hacklib.js';
@@ -408,8 +408,33 @@ export async function mnearto(
     if (mtmp.mx === x && mtmp.my === y && m_at(x, y) === mtmp)
         return res;
 
-    if (move_other && (othermon = m_at(x, y)) !== null)
-        throw new Error('mnearto(): moving another monster out of the way not ported yet');
+    if (move_other && (othermon = m_at(x, y)) !== null) {
+        /* take othermon off the map; it might end up immediately returning
+           but for the moment it is leaving */
+        /* mon_leaving_level(othermon): here game.level.monsters is also the
+           fmon chain, so the monster keeps its place in the list, off the map
+           as remove_monster() leaves it in C */
+        const ox = othermon.mx, oy = othermon.my;
+        othermon.mtrapped = 0;
+        await unstuck(othermon); /* not swallowing or holding you nor held by you */
+        if (othermon.wormno) {
+            const lst = game.level.monsters || [];
+            const idx = lst.indexOf(othermon);
+
+            remove_worm(othermon);
+            if (idx >= 0 && !lst.includes(othermon))
+                lst.splice(idx, 0, othermon);
+        }
+        othermon.mundetected = 0; /* for migration; doesn't matter for death */
+        if (othermon.m_ap_type && othermon.m_ap_type !== M_AP_MONSTER)
+            seemimic(othermon);
+        /* fill_pit(mx, my): boulders dropping into pits not ported */
+        othermon.mx = othermon.my = 0; /* 'othermon' is not on the map */
+        newsym(ox, oy);
+        if (game.context?.polearm && othermon === game.context.polearm.hitmon)
+            game.context.polearm.hitmon = null;
+        othermon.mstate = (othermon.mstate || 0) | MON_OFFMAP;
+    }
 
     newx = x;
     newy = y;
@@ -418,15 +443,40 @@ export async function mnearto(
          * Migrating_mons that need to be placed will cause
          * no end of trouble.
          */
-        if (!enexto(mm, newx, newy, mtmp.data) || !isok(mm.x, mm.y))
+        if (!enexto(mm, newx, newy, mtmp.data) || !isok(mm.x, mm.y)) {
+            if (othermon) {
+                /* othermon already had its mx, my set to 0 above
+                 * and this would shortly cause a sanity check to fail
+                 * if we just return 0 here. The caller only possesses
+                 * awareness of mtmp, not othermon. */
+                deal_with_overcrowding(othermon);
+            }
             return 0;
+        }
         newx = mm.x;
         newy = mm.y;
     }
     /* [this doesn't honor the 'montelecontrol' option] */
     await rloc_to_core(mtmp, newx, newy, rlocflags); /* rloc_to_flag() */
 
+    if (move_other && othermon) {
+        res = 2; /* moving another monster out of the way */
+        /* 'move_other'==FALSE this time; fail rather than recurse */
+        if (!(await mnearto(othermon, x, y, false, rlocflags)))
+            deal_with_overcrowding(othermon);
+        else /* place_monster() sets mstate = MON_FLOOR */
+            othermon.mstate &= ~MON_OFFMAP;
+    }
+
     return res;
+}
+
+// C ref: mon.c deal_with_overcrowding()
+function deal_with_overcrowding(mtmp) {
+    if (In_endgame(game.u.uz))
+        throw new Error('deal_with_overcrowding(): elemental_clog() not ported yet');
+    else
+        throw new Error('deal_with_overcrowding(): m_into_limbo() not ported yet');
 }
 
 // C ref: mon.c replmon()
