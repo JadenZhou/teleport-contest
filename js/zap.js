@@ -11,7 +11,7 @@
 import { rndmonnam } from './do_name.js';
 import { adjalign } from './attrib.js';
 import { PM_ARCHEOLOGIST } from './monsters.js';
-import { obj_extract_self, place_object, level_objects_at } from './mkobj.js';
+import { obj_extract_self, place_object, level_objects_at, fixup_oil } from './mkobj.js';
 import { sokoban_guilt } from './trap.js';
 import { breakobj } from './dothrow.js';
 import { shkname } from './shknam.js';
@@ -414,6 +414,17 @@ import { force_decor } from './pickup.js';
 import { is_db_wall, open_drawbridge, close_drawbridge, destroy_drawbridge } from './dbridge.js';
 import { set_msg_xy } from './display.js';
 import { o_unleash } from './apply.js';
+import { cmap_to_glyph } from './display.js';
+import { RIGHT_HANDED, DISP_FLASH, N_DIRS, xdir, ydir, IS_SINK } from './const.js';
+import { Fumbling } from './youprop.js';
+import { dmgval } from './weapon.js';
+import { thitu } from './mthrowu.js';
+import { endmultishot } from './end.js';
+import { wake_nearto } from './mon.js';
+import { throwit_mon_hit } from './dothrow.js';
+
+/* C ref: defsym.h S_boomleft, S_boomright (showsym[] indexes) */
+const S_boomleft = 80, S_boomright = 81;
 
 // C ref: zap.c learnwand()
 export function learnwand(obj) {
@@ -1649,7 +1660,7 @@ export async function poly_obj(obj, id) {
             otmp.otyp = rnd_class(POT_GAIN_ABILITY, POT_WATER);
         /* potions of oil use obj->age field differently from other potions */
         if (otmp.otyp === POT_OIL || obj.otyp === POT_OIL)
-            throw new Error('poly_obj(): fixup_oil() not ported yet');
+            fixup_oil(otmp, obj);
         break;
 
     case SPBOOK_CLASS:
@@ -3013,6 +3024,105 @@ function spell_hit_bonus(skill) {
         hit_bon += dex - 14;
 
     return hit_bon;
+}
+
+// C ref: zap.c boomhit()
+/* process thrown boomerang, which travels a curving path...
+ * A multi-shot volley ought to have all missiles in flight at once,
+ * but we're called separately for each one.  We terminate the volley
+ * early on a failed catch since continuing to throw after being hit
+ * is too obviously silly.
+ */
+export async function boomhit(obj, dx, dy) {
+    const g = game;
+    const u = g.u;
+    let i, ct;
+    let boom; /* showsym[] index  */
+    let mtmp;
+    const counterclockwise = (u.uhandedness === RIGHT_HANDED); /* URIGHTY;
+                                                     ULEFTY => clockwise */
+    let nhits = Math.max(1, obj.spe + 1);
+
+    /* counterclockwise traversal patterns, from @ to 1 then on through to 9
+     *  ..........................54.................................
+     *  ..................43.....6..3....765.........................
+     *  ..........32.....5..2...7...2...8...4....87..................
+     *  .........4..1....6..1...8..1....9...3...9..6.....98..........
+     *  ..21@....5...@...7..@....9@......@12....@...5...@..7.....@9..
+     *  .3...9....6..9....89.....................1..4...1..6....1..8.
+     *  .4...8.....78.............................23....2..5...2...7.
+     *  ..567............................................34....3..6..
+     *  ........................................................45...
+     * (invert rows for corresponding clockwise patterns)
+     */
+
+    g.bhitpos.x = u.ux;
+    g.bhitpos.y = u.uy;
+    boom = counterclockwise ? S_boomleft : S_boomright;
+    i = xytodir(dx, dy);
+    await tmp_at(DISP_FLASH, cmap_to_glyph(boom));
+    for (ct = 0; ct < 10; ct++) {
+        i = (i + N_DIRS) % N_DIRS; /* DIR_CLAMP(i) */
+        boom = (S_boomleft + S_boomright - boom); /* toggle */
+        await tmp_at(DISP_CHANGE, cmap_to_glyph(boom)); /* change glyph */
+        dx = xdir[i];
+        dy = ydir[i];
+        g.bhitpos.x += dx;
+        g.bhitpos.y += dy;
+        if (!isok(g.bhitpos.x, g.bhitpos.y)) {
+            g.bhitpos.x -= dx;
+            g.bhitpos.y -= dy;
+            break;
+        }
+        if ((mtmp = m_at(g.bhitpos.x, g.bhitpos.y))) {
+            await m_respond_bm(mtmp);
+            if (nhits-- < 0) {
+                await tmp_at(DISP_END, 0);
+                return mtmp;
+            } else if (await throwit_mon_hit(obj, mtmp) || !g.thrownobj) {
+                break;
+            }
+        }
+        if (!ZAP_POS(g.level.at(g.bhitpos.x, g.bhitpos.y).typ)
+            || closed_door(g.bhitpos.x, g.bhitpos.y)) {
+            g.bhitpos.x -= dx;
+            g.bhitpos.y -= dy;
+            break;
+        }
+        if (u_at(g.bhitpos.x, g.bhitpos.y)) { /* ct == 9 */
+            if (Fumbling() || rn2(20) >= ACURR_ZP(A_DEX_ZP)) {
+                const dam = dmgval(obj, g.youmonst);
+                const pobj = { obj };
+
+                /* we hit ourselves */
+                await thitu(10 + obj.spe, Maybe_Half_Phys(dam), pobj,
+                            "boomerang");
+                obj = pobj.obj;
+                endmultishot(true);
+                break;
+            } else { /* we catch it */
+                await tmp_at(DISP_END, 0);
+                await You("skillfully catch the boomerang.");
+                return g.youmonst;
+            }
+        }
+        await tmp_at(g.bhitpos.x, g.bhitpos.y);
+        /* nh_delay_output() */
+        if (IS_SINK(g.level.at(g.bhitpos.x, g.bhitpos.y).typ)) {
+            /* Soundeffect(se_boomerang_klonk, 75) */
+            if (!Deaf())
+                await pline("Klonk!");
+            await wake_nearto(g.bhitpos.x, g.bhitpos.y, 20);
+            break; /* boomerang falls on sink */
+        }
+        /* ct==0, initial position, we want next delta to be same;
+           ct==5, opposite position, repeat delta undoes first one */
+        if (ct % 5 !== 0)
+            i = counterclockwise ? (i + 7) % N_DIRS /* DIR_LEFT(i) */
+                                 : (i + 1) % N_DIRS; /* DIR_RIGHT(i) */
+    }
+    await tmp_at(DISP_END, 0); /* do not leave last symbol */
+    return null;
 }
 
 // C ref: zap.c zhitm()
