@@ -95,6 +95,7 @@ import { recalc_block_point } from './vision.js';
 import { spot_stop_timers } from './timeout.js';
 import { Levitation, Flying } from './youprop.js';
 import { str_start_is, upstart } from './hacklib.js';
+import { plur as plur_xn } from './hacklib.js';
 import { find_mid as find_mid_xn } from './light.js';
 import { FM_FMON as FM_FMON_XN } from './const.js';
 import { noit_mon_nam as noit_mon_nam_xn, mon_pmname as mon_pmname_xn } from './do_name.js';
@@ -4093,7 +4094,10 @@ function doname_base(obj, doname_flags) {
             break;
         }
         if (obj.otyp === O.CANDELABRUM_OF_INVOCATION) {
-            xn_not_ported('candelabrum suffix');
+            /* separately formatted suffix avoids need for ConcatF3() */
+            const suffix = `${plur_xn(obj.spe)}${!obj.lamplit ? " attached" : ", lit"}`;
+            bp += ` (${obj.spe} of 7 candle${suffix})`; /* ConcatF2() */
+            break;
         } else if (obj.otyp === O.OIL_LAMP || obj.otyp === O.MAGIC_LAMP
                    || obj.otyp === O.BRASS_LANTERN || Is_candle(obj)) {
             if (Is_candle(obj)) {
