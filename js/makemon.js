@@ -94,7 +94,7 @@ import { Resists_Elem } from './mondata.js';
 import { PIT, SPIKED_PIT, STONE_RES, PLNMSG_HIDE_UNDER, Is_juiblex_level,
          SEE_INVIS, HOLE, TRAPDOOR, ALL_TRAPS } from './const.js';
 import { mon_learns_traps } from './mondata.js';
-import { set_apparxy, dochugw, m_in_air } from './monmove.js';
+import { set_apparxy, dochugw, dochugw_sync, m_in_air } from './monmove.js';
 import { is_exclusion_zone } from './mklev.js';
 import { LR_MONGEN } from './const.js';
 import { noteleport_level } from './teleport.js';
@@ -1695,13 +1695,16 @@ export function makemon(ptr, x, y, mmflags) {
         }
         /* if discernable and a threat, stop fiddling while Rome burns */
         if (game.occupation) {
-            /* (void) dochugw(mtmp, FALSE): async (stop_occupation() prints),
-               so like the message above it is handed to the caller, which
-               runs it right after the message in makemon_flush_msg() */
+            /* (void) dochugw(mtmp, FALSE): async (stop_occupation() prints).
+               A caller that takes the message above gets it queued, to run
+               right after the message in makemon_flush_msg(); for any other
+               caller dochugw_sync() decides now, without a roll, stops the
+               occupation at once as C does, and defers only the "You stop
+               <occtxt>." line to the next message or key read */
             if (game.makemon_want_msg)
                 (game.makemon_pending ||= []).push({ mtmp });
             else
-                throw new Error('makemon(): dochugw() for an occupied hero not ported yet');
+                dochugw_sync(mtmp);
         }
 
         /* TODO: unify with teleport appears msg */
