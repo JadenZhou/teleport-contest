@@ -214,7 +214,8 @@ import { DIGCHECK_FAILED, DIGCHECK_FAIL_BOULDER, IS_WALL, SHOPBASE, ICE,
          MELT_ICE_AWAY, ROOM, PIT, HOLE } from './const.js';
 import { in_rooms } from './hack.js';
 import { begin_burn } from './timeout.js';
-import { freeinv, addinv } from './invent.js';
+import { freeinv, addinv, carrying } from './invent.js';
+import { s_suffix, plur } from './hacklib.js';
 import { shk_your, costly_spot } from './shk.js';
 import { check_unpaid } from './zap.js';
 import { verbalize } from './display.js';
@@ -1224,7 +1225,8 @@ export async function doapply() {
         throw new Error('doapply(): use_candelabrum() not ported yet');
     case O.WAX_CANDLE:
     case O.TALLOW_CANDLE:
-        throw new Error('doapply(): use_candle() not ported yet');
+        obj = await use_candle(obj);
+        break;
     case OIL_LAMP:
     case MAGIC_LAMP:
     case BRASS_LANTERN:
@@ -1657,10 +1659,40 @@ async function use_lamp(obj) {
             check_unpaid_lp(obj);
             await pline(`${Shk_Your_lp(obj)}${lamp} is now on.`);
         } else { /* candle(s) */
-            throw new Error('use_lamp(): lighting candles not ported yet');
+            await pline(`${s_suffix(Yname2(obj))} flame${plur(obj.quan)} ${
+                otense(obj, "burn")}${Blind() ? "." : " brightly!"}`);
+            if (obj.unpaid && costly_spot(u.ux, u.uy)
+                && obj.age === 20 * objects[obj.otyp].oc_cost) {
+                const ithem = (obj.quan > 1) ? "them" : "it";
+                /* shkp VOICEONLY: shop_keeper(*in_rooms(u.ux, u.uy, SHOPBASE));
+                   SetVoice(shkp, 0, 80, 0) */
+                await verbalize(`You burn ${ithem}, you bought ${ithem}!`);
+                await bill_dummy_object(obj);
+            }
         }
         begin_burn_lp(obj, false);
     }
+}
+
+// C ref: apply.c use_candle()
+/* returns the candle object left for doapply() (C updates *optr) */
+async function use_candle(obj) {
+    const u = game.u;
+    let otmp;
+
+    if (u.uswallow) {
+        await You("don't have enough elbow-room to maneuver."); /* no_elbow_room */
+        return obj;
+    }
+
+    /* obj is the candle; otmp is the candelabrum */
+    otmp = carrying(O.CANDELABRUM_OF_INVOCATION);
+    if (!otmp || otmp.spe === 7) {
+        await use_lamp(obj);
+        return obj;
+    }
+
+    throw new Error('use_candle(): attaching candles to the Candelabrum not ported yet');
 }
 
 // C ref: apply.c light_cocktail()
