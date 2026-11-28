@@ -231,6 +231,13 @@ import { bhit } from './dothrow.js';
 import { howmonseen } from './pager.js';
 import { paralyze_monst } from './mhitm.js';
 import { monflee } from './monmove.js';
+import { mon_reflects } from './muse.js';
+import { killed } from './mon.js';
+import { upstart } from './hacklib.js';
+import { mhe } from './mhitu.js';
+import { mpickobj } from './steal.js';
+import { tele_restrict, rloc } from './teleport.js';
+import { RLOC_MSG } from './const.js';
 /* do_blinding_ray() */
 import { FLASHED_LIGHT } from './const.js';
 import { flash_hits_mon } from './uhitm.js';
@@ -1673,7 +1680,12 @@ async function use_mirror(obj) {
         if (vis)
             await pline(`${Monnam(mtmp)} doesn't have a reflection.`);
     } else if (monable && mtmp.data === mons[PM_MEDUSA]) {
-        throw new Error('use_mirror(): Medusa turned to stone not ported yet');
+        if (await mon_reflects(mtmp, "The gaze is reflected away by %s %s!"))
+            return ECMD_TIME;
+        if (vis)
+            await pline(`${Monnam(mtmp)} is turned to stone!`);
+        g.stoned = true;
+        await killed(mtmp);
     } else if (monable && mtmp.data === mons[PM_FLOATING_EYE]) {
         let tmp = d_lp(mtmp.m_lev, mtmp.data.mattk[0].damd);
         if (!rn2(4))
@@ -1689,7 +1701,18 @@ async function use_mirror(obj) {
         mtmp.mconf = 1;
     } else if (monable && (mlet === S_NYMPH
                            || mtmp.data === mons[PM_AMOROUS_DEMON])) {
-        throw new Error('use_mirror(): nymph/amorous demon steals the mirror not ported yet');
+        if (vis) {
+            /* "She" or "He" */
+            await pline(`${monverbself(mtmp, Monnam(mtmp), "admire", null)
+                } in your ${mirror}.`); /* "<mon> admires self in your mirror " */
+            await pline(`${upstart(mhe(mtmp))} takes it!`);
+        } else
+            await pline(`It steals your ${mirror}!`);
+        setnotworn_ap(obj); /* in case mirror was wielded */
+        freeinv_bw(obj);
+        mpickobj(mtmp, obj);
+        if (!(await tele_restrict(mtmp)))
+            await rloc(mtmp, RLOC_MSG);
     } else if (!is_unicorn(mtmp.data) && !humanoid(mtmp.data)
                && !is_demon(mtmp.data)
                && (!mtmp.minvis || perceives(mtmp.data)) && rn2(5)) {
