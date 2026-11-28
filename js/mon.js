@@ -57,7 +57,7 @@ import { LS_MONSTER } from './const.js';
 import { Monnam, noit_mon_nam } from './do_name.js';
 import { m_dowear, which_armor, mon_break_armor_g, worn_pline } from './worn.js';
 import {
-    MS_NEMESIS, AT_BOOM, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
+    MS_NEMESIS, AT_BOOM, AT_EXPL, G_FREQ, AD_RBRE, AD_DCAY, AD_DGST, AD_FIRE,
     PM_LIZARD, PM_VLAD_THE_IMPALER, PM_WEREJACKAL, PM_HUMAN_WEREJACKAL,
     PM_WEREWOLF, PM_HUMAN_WEREWOLF, PM_WERERAT, PM_HUMAN_WERERAT,
     PM_PAPER_GOLEM, PM_STRAW_GOLEM, PM_IRON_GOLEM, PM_WOOD_GOLEM,
@@ -117,7 +117,7 @@ import { tele_restrict, rloc } from './teleport.js';
 import { can_teleport, resists_fire } from './mondata.js';
 import { on_fire } from './uhitm.js';
 import { m_in_air, can_fog } from './monmove.js';
-import { FOUNTAIN, FLYING, LEVITATION, RLOC_MSG } from './const.js';
+import { FOUNTAIN, FLYING, LEVITATION, RLOC_MSG, RLOC_NOMSG } from './const.js';
 import { canseemon, sensemon } from './display.js';
 import { UNICORN_HORN, WORM_TOOTH, IRON_CHAIN, FIRST_GLASS_GEM, NUM_GLASS_GEMS,
          QUARTERSTAFF, SMALL_SHIELD, CLUB, ELVEN_SPEAR, BOOMERANG, LEASH,
@@ -211,7 +211,9 @@ import { gd_move, grddead } from './vault.js';
 import { rloc_to as rloc_to_mn } from './teleport.js';
 import { place_wsegs as place_wsegs_rm } from './worm.js';
 import { set_ustuck as set_ustuck_rm } from './uhitm.js';
-import { m_carrying } from './mthrowu.js';
+import { m_carrying, m_useup } from './mthrowu.js';
+import { makeknown } from './o_init.js';
+import { wary_dog } from './dog.js';
 import { extract_from_minvent } from './steal.js';
 import { obj_resists } from './dogmove.js';
 import { end_burn } from './timeout.js';
@@ -658,11 +660,51 @@ export function mlifesaver(mon) {
 }
 
 // C ref: mon.c lifesaved_monster()
-function lifesaved_monster(mtmp) {
+async function lifesaved_monster(mtmp) {
+    let surviver;
     const lifesave = mlifesaver(mtmp);
 
-    if (lifesave)
-        throw new Error('lifesaved_monster(): life saving not ported yet');
+    if (lifesave) {
+        /* not canseemon; amulets are on the head, so you don't want
+         * to show this for a long worm with only a tail visible.
+         * Nor do you check invisibility, because glowing and
+         * disintegrating amulets are always visible. */
+        if (cansee(mtmp.mx, mtmp.my)) {
+            await pline("But wait...");
+            await pline(`${s_suffix(Monnam(mtmp))} medallion begins to glow!`);
+            makeknown(AMULET_OF_LIFE_SAVING);
+            /* amulet is visible, but monster might not be */
+            if (canseemon(mtmp)) {
+                if (attacktype(mtmp.data, AT_EXPL)
+                    || attacktype(mtmp.data, AT_BOOM))
+                    await pline(`${Monnam(mtmp)} reconstitutes!`);
+                else
+                    await pline(`${Monnam(mtmp)} looks much better!`);
+            }
+            await pline_The_vr("medallion crumbles to dust!");
+        }
+        /* mhp is 0 here, so extract_from_minvent() skips
+           update_mon_extrinsics() and its messages */
+        m_useup(mtmp, lifesave);
+        /* equip replacement amulet, if any, on next move */
+        check_gear_next_turn(mtmp);
+
+        surviver = !(game.mvitals[monsndx(mtmp.data)].mvflags & G_GENOD);
+        mtmp.mcanmove = 1;
+        mtmp.mfrozen = 0;
+        if (mtmp.mtame && !mtmp.isminion) {
+            await wary_dog(mtmp, !surviver);
+        }
+        set_mon_min_mhpmax(mtmp, 10); /* mtmp->mhpmax=max(mtmp->m_lev+1,10) */
+        mtmp.mhp = mtmp.mhpmax;
+
+        if (!surviver) {
+            /* genocided monster can't be life-saved */
+            if (cansee(mtmp.mx, mtmp.my))
+                await pline(`Unfortunately, ${mon_nam(mtmp)} is still genocided...`);
+            mtmp.mhp = 0;
+        }
+    }
 }
 
 // C ref: mon.c vamprises()
@@ -771,7 +813,7 @@ export async function mondead(mtmp) {
     game.sad_feeling = false;
 
     mtmp.mhp = 0; /* in case caller hasn't done this */
-    lifesaved_monster(mtmp);
+    await lifesaved_monster(mtmp);
     if (!DEADMONSTER(mtmp))
         return;
 
@@ -845,7 +887,7 @@ export async function monstone(mdef) {
      * making the statue....
      */
     mdef.mhp = 0; /* in case caller hasn't done this */
-    lifesaved_monster(mdef);
+    await lifesaved_monster(mdef);
     if (!DEADMONSTER(mdef))
         return;
 
@@ -1983,9 +2025,18 @@ async function minliquid_core(mtmp) {
             else
                 await xkilled(mtmp, XKILL_NOMSG);
             if (!DEADMONSTER(mtmp)) {
-                /* lifesaved: m_in_air(), water_damage_chain(), rloc(),
-                   deal_with_overcrowding() */
-                throw new Error('minliquid(): lifesaved drowning monster not ported yet');
+                if (m_in_air(mtmp)) {
+                    ; /* vampshifter in wolf form can revert to vampire lord
+                       * and become a flyer so not need to teleport */
+                } else {
+                    /* water_damage_chain(mtmp->minvent, FALSE): minvent in
+                       C's chain order (newest first) */
+                    await water_damage_chain_mn(mtmp.minvent ? mtmp.minvent.slice().reverse()
+                                                             : null, false);
+                    if (!(await rloc(mtmp, RLOC_NOMSG)))
+                        await deal_with_overcrowding(mtmp);
+                }
+                return 0;
             }
             return 1;
         }
