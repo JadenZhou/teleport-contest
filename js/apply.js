@@ -213,6 +213,15 @@ import { dig_check, watch_dig, fillholetyp, liquid_flow,
 import { DIGCHECK_FAILED, DIGCHECK_FAIL_BOULDER, IS_WALL, SHOPBASE, ICE,
          MELT_ICE_AWAY, ROOM, PIT, HOLE } from './const.js';
 import { in_rooms } from './hack.js';
+import { begin_burn } from './timeout.js';
+import { freeinv, addinv } from './invent.js';
+import { shk_your, costly_spot } from './shk.js';
+import { check_unpaid } from './zap.js';
+import { verbalize } from './display.js';
+import { bill_dummy_object, obj_extract_self } from './mkobj.js';
+import { makeknown } from './o_init.js';
+import { hold_another_object } from './wizcmds.js';
+import { doname } from './objnam.js';
 import { spot_stop_timers } from './timeout.js';
 import { Can_dig_down } from './mklev.js';
 import { fill_pit } from './muse.js';
@@ -1124,7 +1133,7 @@ export async function doapply() {
     if (await check_capacity(null))
         return ECMD_OK;
 
-    const obj = await getobj("use or apply", apply_ok, GETOBJ_NOFLAGS);
+    let obj = await getobj("use or apply", apply_ok, GETOBJ_NOFLAGS);
     if (!obj)
         return ECMD_CANCEL;
 
@@ -1222,7 +1231,8 @@ export async function doapply() {
         await use_lamp(obj);
         break;
     case POT_OIL:
-        throw new Error('doapply(): light_cocktail() not ported yet');
+        obj = await light_cocktail(obj);
+        break;
     case O.EXPENSIVE_CAMERA:
         res = await use_camera(obj);
         break;
@@ -1651,6 +1661,69 @@ async function use_lamp(obj) {
         }
         begin_burn_lp(obj, false);
     }
+}
+
+// C ref: apply.c light_cocktail()
+/* light a potion of oil; returns the (possibly split off) object, as C
+   updates *optr */
+async function light_cocktail(obj) { /* obj is a potion of oil */
+    const u = game.u;
+    let split1off;
+
+    if (u.uswallow) {
+        await You("don't have enough elbow-room to maneuver."); /* no_elbow_room */
+        return obj;
+    }
+
+    if (obj.lamplit) {
+        await You("snuff the lit potion.");
+        end_burn(obj, true);
+        /*
+         * Free & add to re-merge potion.  This will average the
+         * age of the potions.  Not exactly the best solution,
+         * but its easy.  Don't do that unless obj is not worn (uwep,
+         * uswapwep, or uquiver) because if wielded and other oil is
+         * quivered a "null obj after quiver merge" panic will occur.
+         */
+        if (!obj.owornmask) {
+            freeinv(obj);
+            obj = await addinv(obj);
+        }
+        return obj;
+    } else if (u.uinwater) { /* Underwater */
+        await There("is not enough oxygen to sustain a fire.");
+        return obj;
+    }
+
+    split1off = (obj.quan > 1);
+    if (split1off)
+        obj = splitobj(obj, 1);
+
+    await You(`light ${shk_your(obj)}potion.${
+        Blind() ? "" : "  It gives off a dim light."}`);
+
+    if (obj.unpaid && costly_spot(u.ux, u.uy)) {
+        /* shkp VOICEONLY: shop_keeper(*in_rooms(u.ux, u.uy, SHOPBASE)) */
+
+        /* Normally, we shouldn't both partially and fully charge
+         * for an item, but (Yendorian Fuel) Taxes are inevitable...
+         */
+        check_unpaid(obj);
+        /* SetVoice(shkp, 0, 80, 0) */
+        await verbalize("That's in addition to the cost of the potion, of course.");
+        await bill_dummy_object(obj);
+    }
+    makeknown(obj.otyp);
+
+    begin_burn(obj, false); /* after shop billing */
+    if (split1off) {
+        obj_extract_self(obj); /* free from inv */
+        obj.nomerge = 1;
+        obj = await hold_another_object(obj, "You drop %s!", doname(obj), null);
+        if (obj)
+            obj.nomerge = 0;
+    }
+    return obj;
 }
 
 // C ref: apply.c fig_transform()
