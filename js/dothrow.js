@@ -218,6 +218,10 @@ import { killer } from './topten.js';
 import { corpse_xname } from './objnam.js';
 import { pmname, ARTICLE_YOUR, EXACT_NAME, SUPPRESS_NAME } from './do_name.js';
 import { CXN_PFX_THE, NEUTRAL } from './const.js';
+import { INVIS_BEAM, FLASHED_LIGHT } from './const.js';
+import { DISP_BEAM } from './display.js';
+import { flash_hits_mon } from './uhitm.js';
+import { perceives } from './mondata.js';
 
 /* C ref: weight.h WT_SPLASH_THRESHOLD -- weight needed to make splash in
    water */
@@ -1614,10 +1618,6 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     const was_returning = (g.iflags.returning_missile === obj) ? obj : null;
     void point_blank;
 
-    if (weapon !== THROWN_WEAPON && weapon !== THROWN_TETHERED_WEAPON
-        && weapon !== KICKED_WEAPON && weapon !== ZAPPED_WAND)
-        throw new Error('bhit(): flashed light and beams not ported yet');
-
     if (weapon === KICKED_WEAPON) {
         /* object starts one square in front of player */
         g.bhitpos = { x: u.ux + ddx, y: u.uy + ddy };
@@ -1631,11 +1631,13 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
         allow_skip = !rn2(3);
     }
 
-    if (weapon === THROWN_TETHERED_WEAPON && obj) {
+    if (weapon === FLASHED_LIGHT) {
+        await tmp_at(DISP_BEAM, 0); /* cmap_to_glyph(S_flashbeam) */
+    } else if (weapon === THROWN_TETHERED_WEAPON && obj) {
         tethered_weapon = true;
         weapon = THROWN_WEAPON; /* simplify 'if's that follow below */
         await tmp_at(DISP_TETHER, obj_to_glyph(obj, rn2_on_display_rng));
-    } else if (weapon !== ZAPPED_WAND) /* && weapon != INVIS_BEAM */
+    } else if (weapon !== ZAPPED_WAND && weapon !== INVIS_BEAM)
         await tmp_at(DISP_FLASH, obj_to_glyph(obj, rn2_on_display_rng));
 
     while (range-- > 0) {
@@ -1673,6 +1675,9 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
                 g.bhitpos.y -= ddy;
                 break;
             }
+        } else if (weapon === FLASHED_LIGHT) {
+            if (!Blind())
+                await show_transient_light(null, x, y);
         }
 
         if (weapon === ZAPPED_WAND) {
@@ -1717,17 +1722,46 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
            give message and skip it in order to keep going;
            thrown objects don't hit mimics pretending to be objects */
         const xyglyph = glyph_at(x, y);
-        if (mtmp && (weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
-            && (await shade_miss(game.youmonst, mtmp, obj, true, true)
-                || (mtmp.m_ap_type === M_AP_OBJECT
-                    && xyglyph.kind !== 'mon' /* !glyph_is_monster() */
-                    && !glyph_is_warning(xyglyph)
-                    && !glyph_is_invisible(xyglyph))))
+        if (mtmp && (((weapon === THROWN_WEAPON || weapon === KICKED_WEAPON)
+                      && (await shade_miss(game.youmonst, mtmp, obj, true, true)
+                          || (mtmp.m_ap_type === M_AP_OBJECT
+                              && xyglyph.kind !== 'mon' /* !glyph_is_monster() */
+                              && !glyph_is_warning(xyglyph)
+                              && !glyph_is_invisible(xyglyph))))
+                     || (weapon === FLASHED_LIGHT
+                         && mtmp.m_ap_type === M_AP_OBJECT)))
             mtmp = null;
 
         if (mtmp) {
             g.notonhead = (x !== mtmp.mx || y !== mtmp.my);
-            if (weapon !== ZAPPED_WAND) {
+            if (weapon === FLASHED_LIGHT) {
+                /* FLASHED_LIGHT hitting invisible monster should pass
+                   through instead of stop so we call flash_hits_mon()
+                   directly rather than returning mtmp back to caller.
+                   That allows the flash to keep on going.  Note that we
+                   use mtmp->minvis, not canspotmon(), because it makes no
+                   difference whether hero can see the monster or not. */
+                if (mtmp.minvis) {
+                    obj.ox = u.ux, obj.oy = u.uy;
+                    await flash_hits_mon(mtmp, obj);
+                } else {
+                    await tmp_at(DISP_END, 0);
+                    result = mtmp; /* caller will call flash_hits_mon() */
+                    bhit_done = true;
+                    break; /* goto bhit_done */
+                }
+            } else if (weapon === INVIS_BEAM) {
+                /* Like FLASHED_LIGHT, INVIS_BEAM should continue
+                   through invisible targets; unlike it, we aren't
+                   prepared for multiple hits so just get first one
+                   that's either visible or could see its invisible
+                   self.  [No tmp_at() cleanup is needed here.] */
+                if (!mtmp.minvis || perceives(mtmp.data)) {
+                    result = mtmp;
+                    bhit_done = true;
+                    break; /* goto bhit_done */
+                }
+            } else if (weapon !== ZAPPED_WAND) {
                 /* THROWN_WEAPON, KICKED_WEAPON */
                 if (!tethered_weapon)
                     await tmp_at(DISP_END, 0);
@@ -1789,7 +1823,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             g.bhitpos.y -= ddy;
             break;
         }
-        if (weapon !== ZAPPED_WAND) {
+        if (weapon !== ZAPPED_WAND && weapon !== INVIS_BEAM) {
             /* 'I' present but no monster: erase; do this before tmp_at() */
             if (g.level.at(x, y).glyph !== undefined
                 && glyph_is_invisible(g.level.at(x, y).glyph)
@@ -1802,7 +1836,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
             /* kicked objects fall in pools */
             if ((weapon === KICKED_WEAPON) && is_pool_or_lava(x, y))
                 break;
-            if (IS_SINK(typ))
+            if (IS_SINK(typ) && weapon !== FLASHED_LIGHT)
                 break; /* physical objects fall onto sink */
         }
         /* limit range of ball so hero won't make an invalid move */
@@ -1815,7 +1849,7 @@ export async function bhit(ddx, ddy, range,   /* direction and range */
     }
 
     if (!bhit_done
-        && ((weapon !== ZAPPED_WAND /* && weapon != INVIS_BEAM */
+        && ((weapon !== ZAPPED_WAND && weapon !== INVIS_BEAM
              && !tethered_weapon)
             || (was_returning && was_returning !== g.iflags.returning_missile)))
         await tmp_at(DISP_END, 0);
