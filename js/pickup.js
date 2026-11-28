@@ -2018,8 +2018,8 @@ async function pickup_prinv(obj, count, verb) {
 }
 
 /* C ref: pickup.c u_safe_from_fatal_corpse() test bits */
-const st_gloves = 0x1, st_corpse = 0x2, st_petrifies = 0x4, st_resists = 0x8,
-    st_all = (st_gloves | st_corpse | st_petrifies | st_resists);
+const st_gloves = 0x1, st_corpse = 0x2, st_petrifies = 0x4, st_resists = 0x8;
+export const st_all = (st_gloves | st_corpse | st_petrifies | st_resists);
 
 // C ref: pickup.c u_safe_from_fatal_corpse()
 export function u_safe_from_fatal_corpse(obj, tests) {

@@ -2724,8 +2724,13 @@ export async function mstatusline(mtmp) {
 
     if (mtmp.mtame) {
         info += ", tame";
-        if (game.flags.debug)
-            throw new Error('mstatusline(): wizard-mode tameness details not ported yet');
+        if (game.flags.debug) { /* wizard */
+            info += ` (${mtmp.mtame}`;
+            if (!mtmp.isminion)
+                info += `; hungry ${mtmp.edog.hungrytime}; apport ${
+                    mtmp.edog.apport}`; /* EDOG(mtmp) */
+            info += ")";
+        }
     } else if (mtmp.mpeaceful)
         info += ", peaceful";
 

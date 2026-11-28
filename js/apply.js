@@ -217,6 +217,25 @@ import { spot_stop_timers } from './timeout.js';
 import { Can_dig_down } from './mklev.js';
 import { fill_pit } from './muse.js';
 import { boulder_hits_pool } from './do.js';
+/* use_mirror() */
+import { Invis, See_invisible, Free_action, Sick, HConfusion } from './youprop.js';
+import { MAXULEV, WEAK, INVIS_BEAM, MONSEEN_NORMAL, MONSEEN_SEEINVIS,
+         MONSEEN_INFRAVIS, Upolyd, FACE } from './const.js';
+import { PM_FLOATING_EYE, PM_UMBER_HULK, PM_MEDUSA, PM_AMOROUS_DEMON,
+         S_VAMPIRE, S_GHOST, S_NYMPH } from './monsters.js';
+import { is_vampire, is_vampshifter, haseyes, perceives, is_unicorn,
+         humanoid, is_demon } from './mondata.js';
+import { make_confused } from './potion.js';
+import { hcolor, monverbself } from './do_name.js';
+import { bhit } from './dothrow.js';
+import { howmonseen } from './pager.js';
+import { paralyze_monst } from './mhitm.js';
+import { monflee } from './monmove.js';
+/* do_blinding_ray() */
+import { FLASHED_LIGHT } from './const.js';
+import { flash_hits_mon } from './uhitm.js';
+import { see_monster_closeup } from './mon.js';
+import { transient_light_cleanup } from './light.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
@@ -1064,7 +1083,8 @@ export async function doapply() {
         res = await use_stethoscope(obj);
         break;
     case O.MIRROR:
-        throw new Error('doapply(): use_mirror() not ported yet');
+        res = await use_mirror(obj);
+        break;
     case O.BELL:
     case O.BELL_OF_OPENING:
         await use_bell(obj);
@@ -1533,6 +1553,171 @@ export function beautiful() {
                       : (cha >= 6) ? "homely"
                         : (cha >= 4) ? "ugly"
                           : "hideous"); /* 3 is the minimum possible */
+}
+
+// C ref: apply.c look_str
+function look_str(s) { return `look ${s}.`; }
+
+// C ref: apply.c use_mirror()
+async function use_mirror(obj) {
+    const g = game;
+    const u = g.u;
+    let mtmp;
+    let how_seen;
+    let mlet;
+    let vis, monable;
+
+    if (!(await getdir(null)))
+        return ECMD_CANCEL;
+    const invis_mirror = Invis();
+    const useeit = !Blind() && (!invis_mirror || See_invisible());
+    const uvisage = beautiful();
+    const mirror = simpleonames_ap(obj); /* "mirror" or "looking glass" */
+    if (obj.cursed && !rn2(2)) {
+        if (!Blind())
+            await pline_The(`${mirror} fogs up and doesn't reflect!`);
+        else
+            await pline(nothing_seems_to_happen_lp);
+        return ECMD_TIME;
+    }
+    if (!u.dx && !u.dy && !u.dz) {
+        if (!useeit) {
+            await You_cant(`see your ${uvisage} ${body_part(FACE)}.`);
+        } else {
+            if (u.umonnum === PM_FLOATING_EYE) {
+                if (Free_action()) {
+                    await You("stiffen momentarily under your gaze.");
+                } else {
+                    if (Hallucination())
+                        await pline(`Yow!  The ${mirror} stares back!`);
+                    else
+                        await pline("Yikes!  You've frozen yourself!");
+                    if (!Hallucination() || !rn2(4)) {
+                        nomul(-rnd(MAXULEV + 6 - u.ulevel));
+                        g.multi_reason = "gazing into a mirror";
+                    }
+                    g.nomovemsg = null; /* default, "you can move again" */
+                }
+            } else if (is_vampire(g.youmonst.data)
+                       || is_vampshifter(g.youmonst)) {
+                await You("don't have a reflection.");
+            } else if (u.umonnum === PM_UMBER_HULK) {
+                await pline("Huh?  That doesn't look like you!");
+                await make_confused(HConfusion() + d_lp(3, 4), false);
+            } else if (Hallucination()) {
+                await You(look_str(hcolor(null)));
+            } else if (Sick()) {
+                await You(look_str("peaked"));
+            } else if (u.uhs >= WEAK) {
+                await You(look_str("undernourished"));
+            } else if (Upolyd()) {
+                const Ugender = (Upolyd() ? u.mfemale : g.flags.female) ? 1 : 0;
+                await You(`look like ${an(pmname_ap(mons[u.umonnum], Ugender))}.`);
+            } else {
+                await You(`look as ${uvisage} as ever.`);
+            }
+        }
+        return ECMD_TIME;
+    }
+    if (u.uswallow) {
+        if (useeit)
+            await You(`reflect ${s_suffix_cam(mon_nam_cam(u.ustuck))} ${
+                mbodypart_cam(u.ustuck, STOMACH_CAM)}.`);
+        return ECMD_TIME;
+    }
+    if (Underwater()) {
+        if (useeit)
+            await You(`${Hallucination()
+                ? "give the fish a chance to fix their makeup"
+                : "reflect the murky water"}.`);
+        return ECMD_TIME;
+    }
+    if (u.dz) {
+        if (useeit)
+            await You(`reflect the ${
+                (u.dz > 0) ? surface(u.ux, u.uy) : ceiling_wh(u.ux, u.uy)}.`);
+        return ECMD_TIME;
+    }
+    const pobj = { obj };
+    mtmp = await bhit(u.dx, u.dy, COLNO, INVIS_BEAM, null, null, pobj);
+    obj = pobj.obj;
+    if (!mtmp || !haseyes(mtmp.data) || g.notonhead)
+        return ECMD_TIME;
+
+    /* couldsee(mtmp->mx, mtmp->my) is implied by the fact that bhit()
+       targeted it, so we can ignore possibility of X-ray vision */
+    vis = canseemon(mtmp);
+    /* ways to directly see monster (excludes X-ray vision, telepathy,
+       extended detection, type-specific warning) */
+    const SEENMON = (MONSEEN_NORMAL | MONSEEN_SEEINVIS | MONSEEN_INFRAVIS);
+    how_seen = vis ? howmonseen(mtmp) : 0;
+    /* whether monster is able to use its vision-based capabilities */
+    monable = !mtmp.mcan && (!mtmp.minvis || perceives(mtmp.data));
+    mlet = mtmp.data.mlet;
+    if (mtmp.msleeping) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} is too tired to look at your ${mirror}.`);
+    } else if (!mtmp.mcansee) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} can't see anything right now.`);
+    } else if (invis_mirror && !perceives(mtmp.data)) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} fails to notice your ${mirror}.`);
+        /* infravision doesn't produce an image in the mirror */
+    } else if ((how_seen & SEENMON) === MONSEEN_INFRAVIS) {
+        if (vis) /* (redundant) */
+            await pline(`${monverbself(mtmp, Monnam(mtmp), "are",
+                                       "too far away to see")} in the dark.`);
+        /* some monsters do special things */
+    } else if (mlet === S_VAMPIRE || mlet === S_GHOST || is_vampshifter(mtmp)) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} doesn't have a reflection.`);
+    } else if (monable && mtmp.data === mons[PM_MEDUSA]) {
+        throw new Error('use_mirror(): Medusa turned to stone not ported yet');
+    } else if (monable && mtmp.data === mons[PM_FLOATING_EYE]) {
+        let tmp = d_lp(mtmp.m_lev, mtmp.data.mattk[0].damd);
+        if (!rn2(4))
+            tmp = 120;
+        if (vis)
+            await pline(`${Monnam(mtmp)} is frozen by its reflection.`);
+        else
+            await You_hear("something stop moving.");
+        paralyze_monst(mtmp, mtmp.mfrozen + tmp);
+    } else if (monable && mtmp.data === mons[PM_UMBER_HULK]) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} confuses itself!`);
+        mtmp.mconf = 1;
+    } else if (monable && (mlet === S_NYMPH
+                           || mtmp.data === mons[PM_AMOROUS_DEMON])) {
+        throw new Error('use_mirror(): nymph/amorous demon steals the mirror not ported yet');
+    } else if (!is_unicorn(mtmp.data) && !humanoid(mtmp.data)
+               && !is_demon(mtmp.data)
+               && (!mtmp.minvis || perceives(mtmp.data)) && rn2(5)) {
+        let do_react = true;
+
+        if (mtmp.mfrozen) {
+            if (vis)
+                await You(`discern no obvious reaction from ${mon_nam_cam(mtmp)}.`);
+            else
+                await You_feel("a bit silly gesturing the mirror in that direction.");
+            do_react = false;
+        }
+        if (do_react) {
+            if (vis)
+                await pline(`${Monnam(mtmp)} is frightened by its reflection.`);
+            await monflee(mtmp, d_lp(2, 4), false, false);
+        }
+    } else if (!Blind()) {
+        if (mtmp.minvis && !See_invisible())
+            ;
+        else if ((mtmp.minvis && !perceives(mtmp.data))
+                 /* redundant: can't get here if these are true */
+                 || !haseyes(mtmp.data) || g.notonhead || !mtmp.mcansee)
+            await pline(`${Monnam(mtmp)} doesn't seem to notice ${mhis(mtmp)} reflection.`);
+        else
+            await pline(`${Monnam(mtmp)} ignores ${mhis(mtmp)} reflection.`);
+    }
+    return ECMD_TIME;
 }
 
 // C ref: apply.c touchstone_ok()
@@ -2214,6 +2399,25 @@ export function consume_obj_charge(obj,
     /* if (obj->known) update_inventory(): no perm_invent */
 }
 
+// C ref: apply.c do_blinding_ray()
+/* expensive camera and Eyes of the Overworld */
+export async function do_blinding_ray(obj) {
+    const u = game.u;
+    const pobj = { obj };
+    const mtmp = await bhit(u.dx, u.dy, COLNO, FLASHED_LIGHT, null, null, pobj);
+    obj = pobj.obj;
+
+    obj.ox = u.ux, obj.oy = u.uy; /* flash_hits_mon() wants this */
+    if (mtmp) {
+        await flash_hits_mon(mtmp, obj);
+        if (obj.otyp === O.EXPENSIVE_CAMERA)
+            await see_monster_closeup(mtmp, true); /* TRUE for photo */
+    }
+    /* normally bhit() would do this but for FLASHED_LIGHT we want it
+       to be deferred until after flash_hits_mon() */
+    await transient_light_cleanup();
+}
+
 // C ref: apply.c use_camera()
 async function use_camera(obj) {
     const u = game.u;
@@ -2243,7 +2447,7 @@ async function use_camera(obj) {
         /* TODO:  we ought to have a "selfie" joke here... */
         await zapyourself_cam(obj, true);
     } else {
-        throw new Error('use_camera(): do_blinding_ray() not ported yet');
+        await do_blinding_ray(obj);
     }
     return ECMD_TIME;
 }
