@@ -113,7 +113,7 @@ import { touch_petrifies as touch_petrifies_md, resists_ston as resists_ston_md 
 import { s_suffix as s_suffix_sm } from './hacklib.js';
 import { unstuck as unstuck_sm } from './mhitu.js';
 import { mhitm_adtyping as mhitm_adtyping_uh } from './uhitm.js';
-import { mhitm_knockback, stagger } from './uhitm.js';
+import { mhitm_knockback, stagger, troll_baned } from './uhitm.js';
 import { mon_reflects } from './muse.js';
 import { golemeffects, healmon, shieldeff_mon as shieldeff_mon_mp } from './mon.js';
 import { split_mon } from './potion.js';
@@ -139,6 +139,10 @@ import { t_at, Trap_Killed_Mon } from './trap.js';
 import { mon_explodes } from './explode.js';
 import { Your as Your_mm } from './display.js';
 import { ARTICLE_A, SUPPRESS_NAME, SUPPRESS_IT, SUPPRESS_INVISIBLE } from './do_name.js';
+import { Adjmonnam as Adjmonnam_gz } from './do_name.js';
+import { resists_blnd as resists_blnd_gz } from './mondata.js';
+import { mhitm_ad_blnd as mhitm_ad_blnd_gz } from './uhitm.js';
+import { M_AP_NOTHING as M_AP_NOTHING_GZ } from './const.js';
 
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
@@ -502,6 +506,11 @@ export async function mattackm(magr, mdef) {
             }
             break;
 
+        case M.AT_GAZE:
+            strike = 0;
+            res[i] = await gazemm(magr, mdef, mattk);
+            break;
+
         case AT_EXPL:
             /* D: Prevent explosions from a distance */
             if (distmin(magr.mx, magr.my, mdef.mx, mdef.my) > 1)
@@ -675,6 +684,72 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
         await noises(magr, mattk);
 
     return await mdamagem(magr, mdef, mattk, mwep, dieroll);
+}
+
+// C ref: mhitm.c gazemm()
+/* Returns the same values as mdamagem(). */
+async function gazemm(magr, mdef, mattk) {
+    /* an Archon's gaze affects target even if Archon itself is blinded */
+    const archon = (magr.data === mons[M.PM_ARCHON]
+                    && mattk.adtyp === M.AD_BLND),
+          altmesg = (archon && !magr.mcansee);
+
+    /* bring target out of hiding even if hero doesn't see it happen (this
+       is already done in pre_mm_attack() and shouldn't be needed here) */
+    if (mdef.data.mlet === M.S_MIMIC && M_AP_TYPE(mdef) !== M_AP_NOTHING_GZ)
+        seemimic(mdef);
+    mdef.mundetected = 0;
+
+    if (game.mhitm_vis) {
+        const buf = `${altmesg ? Adjmonnam_gz(magr, "blinded") : Monnam(magr)} gazes ${
+            altmesg ? "toward" : "at"}`;
+        await pline(`${buf} ${canspotmon(mdef) ? mon_nam(mdef) : "something"}...`);
+    }
+
+    if (magr.mcan || !mdef.mcansee
+        || (archon ? resists_blnd_gz(mdef) : !magr.mcansee)
+        || (magr.minvis && !perceives(mdef.data)) || mdef.msleeping) {
+        if (game.mhitm_vis && canspotmon(mdef))
+            await pline("but nothing happens.");
+        return M_ATTK_MISS;
+    }
+    /* call mon_reflects 2x, first test, then, if visible, print message */
+    if (magr.data === mons[M.PM_MEDUSA] && await mon_reflects(mdef, null)) {
+        if (canseemon(mdef))
+            await mon_reflects(mdef, "The gaze is reflected away by %s %s.");
+        if (mdef.mcansee) {
+            if (await mon_reflects(magr, null)) {
+                if (canseemon(magr))
+                    await mon_reflects(magr,
+                                       "The gaze is reflected away by %s %s.");
+                return M_ATTK_MISS;
+            }
+            if (mdef.minvis && !perceives(magr.data)) {
+                if (canseemon(magr)) {
+                    await pline(`${Monnam(magr)} doesn't seem to notice that ${
+                        mhis(magr)} gaze was reflected.`);
+                }
+                return M_ATTK_MISS;
+            }
+            if (canseemon(magr))
+                await pline_mon(magr, `${Monnam(magr)} is turned to stone!`);
+            await monstone(magr);
+            if (!DEADMONSTER(magr))
+                return M_ATTK_MISS;
+            return M_ATTK_AGR_DIED;
+        }
+    } else if (archon) {
+        await mhitm_ad_blnd_gz(magr, mattk, mdef, null);
+        /* an Archon's blinding radiance also stuns;
+           this is different from the way the hero gets stunned because
+           a stunned monster recovers randomly instead of via countdown;
+           both cases make an effort to prevent the target from being
+           continuously stunned due to repeated gaze attacks */
+        if (rn2(2))
+            mdef.mstun = 1;
+    }
+
+    return await mdamagem(magr, mdef, mattk, null, 0);
 }
 
 // C ref: mhitm.c gulpmm()
@@ -1035,9 +1110,32 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
         done: false,
     };
 
-    if (touch_petrifies(pd)
-        || (mattk.adtyp === AD_DGST && pd === mons[M.PM_MEDUSA]))
-        throw new Error('mdamagem(): petrification not ported yet');
+    if ((touch_petrifies(pd) /* or flesh_petrifies() */
+         || (mattk.adtyp === AD_DGST && pd === mons[M.PM_MEDUSA]))
+        && !resists_ston_md(magr)) {
+        const protector = attk_protection(mattk.aatyp);
+        let wornitems = magr.misc_worn_check || 0;
+
+        /* wielded weapon gives same protection as gloves here */
+        if (mwep)
+            wornitems |= W_ARMG;
+
+        if (protector === 0
+            || (protector !== ~0 && (wornitems & protector) !== protector)) {
+            if (poly_when_stoned(magr.data)) {
+                await mon_to_stone(magr);
+                return M_ATTK_HIT; /* no damage during the polymorph */
+            }
+            if (game.mhitm_vis && canspotmon(magr))
+                await pline_mon(magr, `${Monnam(magr)} turns to stone!`);
+            await monstone(magr);
+            if (!DEADMONSTER(magr))
+                return M_ATTK_HIT; /* lifesaved */
+            else if (magr.mtame && !game.mhitm_vis)
+                await You_mp(`have a ${"peculiarly sad"} feeling for a moment, then it passes.`); /* brief_feeling */
+            return M_ATTK_AGR_DIED;
+        }
+    }
 
     await mhitm_adtyping(magr, mattk, mdef, mhm);
 
@@ -1060,12 +1158,8 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
             place_monster(mdef, mdef.mx, mdef.my);
             mdef.mhp = 0;
         }
-        if (mattk.aatyp === AT_WEAP || mattk.aatyp === AT_CLAW) {
-            /* troll_baned(mdef, mwep) */
-            if (mdef.data.mlet === M.S_TROLL && mwep)
-                throw new Error('mdamagem(): troll_baned() not ported yet');
-            game.mkcorpstat_norevive = false;
-        }
+        if (mattk.aatyp === AT_WEAP || mattk.aatyp === AT_CLAW)
+            game.mkcorpstat_norevive = troll_baned(mdef, mwep) ? true : false;
         game.zombify = (!mwep && zombie_maker(magr)
                         && (mattk.aatyp === AT_TUCH
                             || mattk.aatyp === AT_CLAW

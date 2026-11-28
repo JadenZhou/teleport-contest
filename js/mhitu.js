@@ -5,6 +5,7 @@
 // error instead of skipping their rolls.
 
 import { Ring_gone } from './do_wear.js';
+import { some_mon_nam as some_mon_nam_fg } from './do_name.js';
 import { split_mon } from './potion.js';
 import { You, verbalize, You_hear } from './display.js';
 import { DEADMONSTER } from './mon.js';
@@ -1424,7 +1425,9 @@ export async function failed_grab(magr, mdef, mattk) {
             if (!tailmiss) {
                 mdefnam = (mdef === game.youmonst) ? "you" : mon_nam(mdef);
             } else {
-                throw new Error('failed_grab(): long worm tail miss not ported yet');
+                /* hero poly'd into long worm can't grow tail
+                   so no 'youmonst' handling is needed here */
+                mdefnam = `${s_suffix(some_mon_nam_fg(mdef))} tail`;
             }
             /* unsolid grab misses are actually somewhat iffy--how come
                ordinary attacks don't also pass right through? */

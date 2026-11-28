@@ -1679,7 +1679,7 @@ async function mhitm_ad_tlpt(magr, mattk, mdef, mhm) {
 }
 
 // C ref: uhitm.c mhitm_ad_blnd()
-async function mhitm_ad_blnd(magr, mattk, mdef, mhm) {
+export async function mhitm_ad_blnd(magr, mattk, mdef, mhm) {
     if (magr === game.youmonst) {
         /* uhitm */
         if (can_blnd(magr, mdef, mattk.aatyp, null)) {
@@ -3179,7 +3179,7 @@ function is_blunt_weapon(o) {
            && (objects[o.otyp].oc_dir & WHACK) !== 0;
 }
 /* C ref: monst.h troll_baned() */
-function troll_baned(m, o) {
+export function troll_baned(m, o) {
     return m.data.mlet === M.S_TROLL && !!o && o.oartifact === ART_TROLLSBANE;
 }
 
