@@ -7,6 +7,31 @@
 // check_jump(), is_valid_jump_pos(), get_valid_jump_position().
 
 import { game } from './gstate.js';
+import { set_ustuck as set_ustuck_jp } from './uhitm.js';
+import { Conflict as Conflict_jp, Flying as Flying_jp } from './youprop.js';
+import { mon_nam as mon_nam_jp, Monnam as Monnam_jp,
+         YMonnam as YMonnam_jp } from './do_name.js';
+import { set_wounded_legs as set_wounded_legs_jp, deltrap as deltrap_jp,
+         dotrap as dotrap_jp } from './trap.js';
+import { hliquid as hliquid_jp } from './potion.js';
+import { make_sick as make_sick_uh, make_stunned as make_stunned_uh,
+         make_vomiting as make_vomiting_uh,
+         make_hallucinated as make_hallucinated_uh,
+         make_deaf as make_deaf_uh } from './potion.js';
+import { vomit as vomit_uh } from './eat.js';
+import { shuffle_int_array as shuffle_int_array_uh } from './rng.js';
+import { attacktype_fordmg as attacktype_fordmg_uh } from './mondata.js';
+import { Vomiting as Vomiting_uh } from './youprop.js';
+import { A_CON as A_CON_UH, SICK as SICK_UH, VOMITING as VOMITING_UH,
+         CONFUSION as CONFUSION_UH, STUNNED as STUNNED_UH,
+         SICK_NONVOMITABLE as SICK_NONVOMITABLE_UH,
+         SICK_ALL as SICK_ALL_UH } from './const.js';
+import { AT_ENGL as AT_ENGL_UH, AD_BLND as AD_BLND_UH } from './monsters.js';
+import { LEG as LEG_JP, FORCETRAP as FORCETRAP_JP, TOOKPLUNGE as TOOKPLUNGE_JP,
+         LEFT_SIDE as LEFT_SIDE_JP, RIGHT_SIDE as RIGHT_SIDE_JP,
+         KILLED_BY as KILLED_BY_JP, TT_BEARTRAP as TT_BEARTRAP_JP,
+         TT_WEB as TT_WEB_JP, TT_LAVA as TT_LAVA_JP,
+         TT_INFLOOR as TT_INFLOOR_JP } from './const.js';
 import { You, You_hear, pline_mon } from './display.js';
 import { getobj } from './invent.js';
 import { check_capacity } from './hack.js';
@@ -1251,8 +1276,12 @@ export async function doapply() {
         break;
     case O.FIGURINE:
         throw new Error('doapply(): use_figurine() not ported yet');
-    case O.UNICORN_HORN:
-        throw new Error('doapply(): use_unicorn_horn() not ported yet');
+    case O.UNICORN_HORN: {
+        const optr = { obj };
+        await use_unicorn_horn(optr);
+        obj = optr.obj;
+        break;
+    }
     case O.WOODEN_FLUTE:
     case O.MAGIC_FLUTE:
     case O.TOOLED_HORN:
@@ -1433,6 +1462,144 @@ async function display_jump_positions(on_off) {
     }
 }
 
+// C ref: apply.c use_unicorn_horn()
+/* optr: { obj } holder for the horn (C's struct obj **), or null when
+   polymorphed into a unicorn */
+export async function use_unicorn_horn(optr) {
+    const PROP_COUNT = 7; /* number of properties we're dealing with */
+    let idx, val, val_limit, trouble_count, unfixable_trbl, did_prop;
+    const trouble_list = new Array(PROP_COUNT).fill(0);
+    const obj = (optr ? optr.obj : null);
+    const u = game.u;
+    const P = (p) => (u.uprops[p].intrinsic || 0);
+
+    if (obj && obj.cursed) {
+        const lcount = rn1_ap(90, 10);
+
+        switch (Math.trunc(rn2(13) / 2)) { /* case 6 is half as likely as the others */
+        case 0:
+            await make_sick_uh((P(SICK_UH) & TIMEOUT_AP)
+                               ? Math.trunc((P(SICK_UH) & TIMEOUT_AP) / 3) + 1
+                               : rn1_ap(ACURR(A_CON_UH), 20),
+                               xname(obj), true, SICK_NONVOMITABLE_UH);
+            break;
+        case 1:
+            await make_blinded_ap((P(BLINDED_AP) & TIMEOUT_AP) + lcount, true);
+            break;
+        case 2:
+            if (!Confusion())
+                await You(`suddenly feel ${
+                    Hallucination() ? "trippy" : "confused"}.`);
+            await make_confused((P(CONFUSION_UH) & TIMEOUT_AP) + lcount, true);
+            break;
+        case 3:
+            await make_stunned_uh((P(STUNNED_UH) & TIMEOUT_AP) + lcount, true);
+            break;
+        case 4:
+            if (Vomiting_uh())
+                await vomit_uh();
+            else
+                await make_vomiting_uh(14, false);
+            break;
+        case 5:
+            await make_hallucinated_uh((P(HALLUC) & TIMEOUT_AP) + lcount,
+                                       true, 0);
+            break;
+        case 6:
+            if (Deaf()) /* make_deaf() won't give feedback when already deaf */
+                await pline(nothing_seems_to_happen_lp);
+            await make_deaf_uh((P(DEAF) & TIMEOUT_AP) + lcount, true);
+            break;
+        }
+        return;
+    }
+
+    /* #define prop_trouble(X) trouble_list[trouble_count++] = (X) */
+    const prop_trouble = (X) => { trouble_list[trouble_count++] = X; };
+    /* #define TimedTrouble(P) (((P) && !((P) & ~TIMEOUT)) ? ((P) & TIMEOUT) : 0L) */
+    const TimedTrouble = (p) => ((p && !(p & ~TIMEOUT_AP)) ? (p & TIMEOUT_AP) : 0);
+
+    trouble_count = unfixable_trbl = did_prop = 0;
+
+    /* collect property troubles */
+    if (TimedTrouble(P(SICK_UH)))
+        prop_trouble(SICK_UH);
+    if (TimedTrouble(P(BLINDED_AP)) > (u.ucreamed || 0)
+        && !(u.uswallow
+             && attacktype_fordmg_uh(u.ustuck.data, AT_ENGL_UH, AD_BLND_UH)))
+        prop_trouble(BLINDED_AP);
+    if (TimedTrouble(P(HALLUC)))
+        prop_trouble(HALLUC);
+    if (TimedTrouble(P(VOMITING_UH)))
+        prop_trouble(VOMITING_UH);
+    if (TimedTrouble(P(CONFUSION_UH)))
+        prop_trouble(CONFUSION_UH);
+    if (TimedTrouble(P(STUNNED_UH)))
+        prop_trouble(STUNNED_UH);
+    if (TimedTrouble(P(DEAF)))
+        prop_trouble(DEAF);
+
+    if (trouble_count === 0) {
+        await pline(nothing_happens_ap);
+        return;
+    } else if (trouble_count > 1)
+        shuffle_int_array_uh(trouble_list, trouble_count);
+
+    /*
+     *  Chances for number of troubles to be fixed
+     *               0      1      2      3      4      5      6      7
+     *   blessed:  22.7%  22.7%  19.5%  15.4%  10.7%   5.7%   2.6%   0.8%
+     *  uncursed:  35.4%  35.4%  22.9%   6.3%    0      0      0      0
+     */
+    val_limit = rn2(d_lp(2, (obj && obj.blessed) ? 4 : 2));
+    if (val_limit > trouble_count)
+        val_limit = trouble_count;
+
+    /* fix [some of] the troubles */
+    for (val = 0; val < val_limit; val++) {
+        idx = trouble_list[val];
+
+        switch (idx) {
+        case SICK_UH:
+            await make_sick_uh(0, null, true, SICK_ALL_UH);
+            did_prop++;
+            break;
+        case BLINDED_AP:
+            await make_blinded_ap(u.ucreamed || 0, true);
+            did_prop++;
+            break;
+        case HALLUC:
+            await make_hallucinated_uh(0, true, 0);
+            did_prop++;
+            break;
+        case VOMITING_UH:
+            await make_vomiting_uh(0, true);
+            did_prop++;
+            break;
+        case CONFUSION_UH:
+            await make_confused(0, true);
+            did_prop++;
+            break;
+        case STUNNED_UH:
+            await make_stunned_uh(0, true);
+            did_prop++;
+            break;
+        case DEAF:
+            await make_deaf_uh(0, true);
+            did_prop++;
+            break;
+        default:
+            impossible(`use_unicorn_horn: bad trouble? (${idx})`);
+            break;
+        }
+    }
+
+    if (did_prop)
+        game.disp_botl = true;
+    else
+        await pline(nothing_seems_to_happen_lp);
+}
+
 // C ref: apply.c jump()
 /* 0=Physical, otherwise skill level */
 export async function jump(magic) {
@@ -1472,7 +1639,19 @@ export async function jump(magic) {
         await pline("This calls for swimming, not jumping!");
         return ECMD_OK;
     } else if (u.ustuck) {
-        throw new Error('jump(): jumping while stuck not ported yet');
+        if (u.ustuck.mtame && !Conflict_jp() && !u.ustuck.mconf) {
+            const mtmp = u.ustuck;
+
+            set_ustuck_jp(null);
+            await You(`pull free from ${mon_nam_jp(mtmp)}.`);
+            return ECMD_TIME;
+        }
+        if (magic) {
+            await You(`writhe a little in the grasp of ${mon_nam_jp(u.ustuck)}!`);
+            return ECMD_TIME;
+        }
+        await You(`cannot escape from ${mon_nam_jp(u.ustuck)}!`);
+        return ECMD_OK;
     } else if (Levitation() || Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
         if (magic) {
             await You("flail around a little.");
@@ -1490,7 +1669,8 @@ export async function jump(magic) {
         await legs_in_no_shape("jumping", !!u.usteed);
         return ECMD_OK;
     } else if (u.usteed && u.utrap) {
-        throw new Error('jump(): steed in a trap not ported yet');
+        await pline(`${Monnam_jp(u.usteed)} is stuck in a trap.`);
+        return ECMD_OK;
     }
 
     await pline("Where do you want to jump?");
@@ -1503,18 +1683,45 @@ export async function jump(magic) {
     if (!(await is_valid_jump_pos(cc.x, cc.y, magic, true))) {
         return ECMD_FAIL;
     } else if (u.usteed && u_at(cc.x, cc.y)) {
-        throw new Error('jump(): jumping in place while riding not ported yet');
+        await pline(`${YMonnam_jp(u.usteed)} isn't capable of jumping in place.`);
+        return ECMD_FAIL;
     } else {
         let wastrapped = false;
 
         if (u.utrap) {
             wastrapped = true;
             switch (u.utraptype) {
+            case TT_BEARTRAP_JP: {
+                const side = rn2(3) ? LEFT_SIDE_JP : RIGHT_SIDE_JP;
+                await You("rip yourself free of the bear trap!  Ouch!");
+                await losehp(Maybe_Half_Phys(rnd(10)), "jumping out of a bear trap",
+                             KILLED_BY_JP);
+                await set_wounded_legs_jp(side, rn1_ap(1000, 500));
+                break;
+            }
             case TT_PIT:
                 await You("leap from the pit!");
                 break;
+            case TT_WEB_JP:
+                await You("tear the web apart as you pull yourself free!");
+                deltrap_jp(t_at(u.ux, u.uy));
+                break;
+            case TT_LAVA_JP:
+                await You(`pull yourself above the ${hliquid_jp("lava")}!`);
+                cc.x = u.ux, cc.y = u.uy; /* take u_at() 'if' below */
+                break;
+            case TT_BURIEDBALL_bl:
+            case TT_INFLOOR_JP:
+                await You(`strain your ${makeplural_ap(body_part(LEG_JP))}, but you're still ${
+                    (u.utraptype === TT_INFLOOR_JP)
+                        ? "stuck in the floor"
+                        : "attached to the buried ball"}.`);
+                await set_wounded_legs_jp(LEFT_SIDE_JP, rn1_ap(10, 11));
+                await set_wounded_legs_jp(RIGHT_SIDE_JP, rn1_ap(10, 11));
+                return ECMD_TIME;
             default:
-                throw new Error(`jump(): jumping out of trap type ${u.utraptype} not ported yet`);
+                impossible(`Jumping out of strange trap (${u.utraptype})?`);
+                break;
             }
             /* if we reach here, hero is no longer trapped */
             await reset_utrap(true);
@@ -1528,8 +1735,12 @@ export async function jump(magic) {
                 return ECMD_TIME;
             }
             /* jumping in place on a trap will trigger it */
-            if (t_at(cc.x, cc.y))
-                throw new Error('jump(): jumping in place on a trap not ported yet');
+            let t;
+            if ((t = t_at(cc.x, cc.y)) != null) {
+                await You(`jump up and ${!Flying_jp() ? "come" : "fly"} back down.`);
+                await dotrap_jp(t, FORCETRAP_JP | TOOKPLUNGE_JP);
+                return ECMD_TIME;
+            }
             /* jumping in place takes no time and doesn't exercise anything */
             await You(`${Hallucination() ? "hop up and down a bit"
                                        : "decide not to jump after all"}.`);

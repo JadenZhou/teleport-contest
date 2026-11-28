@@ -16,6 +16,7 @@
 // tins of a monster, lit light sources, novels, ...) raise not_ported().
 
 import { shk_your, get_obj_location } from './shk.js';
+import { M_AP_OBJECT as M_AP_OBJECT_ON } from './const.js';
 import { letter, strsubst } from './hacklib.js';
 import { wizard } from './dungeon.js';
 import { game } from './gstate.js';
@@ -640,6 +641,18 @@ export function obj_typename(otyp) {
 
 /* C ref: objnam.c simple_typename() -- obj_typename() without the
    user-assigned name or the appended description */
+// C ref: objnam.c mimic_obj_name()
+/* name of an object a mimic (or the hero) is mimicking */
+export function mimic_obj_name(mtmp) {
+    if ((mtmp.m_ap_type || 0) === M_AP_OBJECT_ON) {
+        if (mtmp.mappearance === O.GOLD_PIECE)
+            return "gold";
+        if (mtmp.mappearance !== O.STRANGE_OBJECT)
+            return simple_typename(mtmp.mappearance);
+    }
+    return "whatcha-may-callit";
+}
+
 export function simple_typename(otyp) {
     const save_uname = objects[otyp].oc_uname;
     objects[otyp].oc_uname = null; /* suppress any name given by user */
