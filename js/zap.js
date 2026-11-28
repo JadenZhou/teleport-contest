@@ -11,7 +11,7 @@
 import { rndmonnam } from './do_name.js';
 import { adjalign } from './attrib.js';
 import { PM_ARCHEOLOGIST } from './monsters.js';
-import { obj_extract_self, place_object, level_objects_at } from './mkobj.js';
+import { obj_extract_self, place_object, level_objects_at, fixup_oil } from './mkobj.js';
 import { sokoban_guilt } from './trap.js';
 import { breakobj } from './dothrow.js';
 import { shkname } from './shknam.js';
@@ -1639,7 +1639,7 @@ export async function poly_obj(obj, id) {
             otmp.otyp = rnd_class(POT_GAIN_ABILITY, POT_WATER);
         /* potions of oil use obj->age field differently from other potions */
         if (otmp.otyp === POT_OIL || obj.otyp === POT_OIL)
-            throw new Error('poly_obj(): fixup_oil() not ported yet');
+            fixup_oil(otmp, obj);
         break;
 
     case SPBOOK_CLASS:
