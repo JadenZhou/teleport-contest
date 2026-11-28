@@ -228,6 +228,10 @@ import { an } from './objnam.js';
 import { impossible } from './hack.js';
 import { POTION_CLASS } from './objects.js';
 import { pline_mon, set_msg_xy } from './display.js';
+/* see_monster_closeup() */
+import { Blind, Blind_telepat } from './youprop.js';
+import { M_AP_TYPE, Role_if } from './const.js';
+import { PM_LONG_WORM, PM_LONG_WORM_TAIL, PM_TOURIST } from './monsters.js';
 
 /* monster inventory: makemon.js keeps mon->minvent as an array in pickup
    order; C prepends, so walk it newest first */
@@ -3863,4 +3867,61 @@ export async function shieldeff_mon(mtmp) {
     /* does not depend on seeing the monster; the shield effect is visible */
     if (cansee(mtmp.mx, mtmp.my))
         await pline_mon(mtmp, `${Monnam(mtmp)} resists!`);
+}
+
+// C ref: mon.c see_monster_closeup()
+/* mark a monster type as having been seen up close; for photos taken
+   with the expensive camera, also mark it as photographed */
+export async function see_monster_closeup(mtmp, photo) {
+    const g = game;
+    let mndx;
+
+    if (Hallucination() || (Blind() && !Blind_telepat()))
+        return;
+
+    mndx = monsndx(mtmp.data);
+    if (M_AP_TYPE(mtmp) === M_AP_MONSTER && !sensemon(mtmp))
+        mndx = mtmp.mappearance;
+    if (mndx === PM_LONG_WORM && g.notonhead)
+        mndx = PM_LONG_WORM_TAIL;
+
+    if (!g.context.lifelist)
+        g.context.lifelist = { total_seen_upclose: 0, total_photographed: 0 };
+    if (!g.mvitals[mndx].seen_close) {
+        g.mvitals[mndx].seen_close = 1;
+        g.context.lifelist.total_seen_upclose++;
+    }
+
+    /* hallucinatory monsters don't reach here--they're not recorded;
+       being able to see invisible doesn't make invisible monsters show up
+       on photos; likewise, telepathy allows hero to see hidden monsters
+       but doesn't cause them to appear on photos */
+    if (photo && !mtmp.minvis && !mtmp.mundetected
+        && (M_AP_TYPE(mtmp) === M_AP_NOTHING
+            || M_AP_TYPE(mtmp) === M_AP_MONSTER)) {
+        if (M_AP_TYPE(mtmp) === M_AP_MONSTER) /* cloned Wizard of Yendor */
+            mndx = mtmp.mappearance;
+
+        if (!g.mvitals[mndx].photographed) {
+            g.mvitals[mndx].photographed = 1;
+            g.context.lifelist.total_photographed++;
+
+            /* tourist earns points (toward EXP but not final score) for
+               the first instance of each type of monster photographed;
+               worm tail can be photographed but yields no EXP bonus */
+            if (Role_if(PM_TOURIST)
+                /* suppress extra points for photographing the pet that hero
+                   started with (unless it has changed shape due to growing
+                   up or being polymorphed) */
+                && (mtmp.m_id !== g.context.startingpet_mid
+                    || mndx !== g.context.startingpet_typ)
+                /* monsndx() check covers worm tail and also disguised
+                   Wizard of Yendor; experienced() won't yield a reasonable
+                   value for those */
+                && mndx === monsndx(mtmp.data)) {
+                more_experienced(experience(mtmp, 0), 0);
+                await newexplevel();
+            }
+        }
+    }
 }

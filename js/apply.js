@@ -217,18 +217,158 @@ import { spot_stop_timers } from './timeout.js';
 import { Can_dig_down } from './mklev.js';
 import { fill_pit } from './muse.js';
 import { boulder_hits_pool } from './do.js';
+/* use_mirror() */
+import { Invis, See_invisible, Free_action, Sick, HConfusion } from './youprop.js';
+import { MAXULEV, WEAK, INVIS_BEAM, MONSEEN_NORMAL, MONSEEN_SEEINVIS,
+         MONSEEN_INFRAVIS, Upolyd, FACE } from './const.js';
+import { PM_FLOATING_EYE, PM_UMBER_HULK, PM_MEDUSA, PM_AMOROUS_DEMON,
+         S_VAMPIRE, S_GHOST, S_NYMPH } from './monsters.js';
+import { is_vampire, is_vampshifter, haseyes, perceives, is_unicorn,
+         humanoid, is_demon } from './mondata.js';
+import { make_confused } from './potion.js';
+import { hcolor, monverbself } from './do_name.js';
+import { bhit } from './dothrow.js';
+import { howmonseen } from './pager.js';
+import { paralyze_monst } from './mhitm.js';
+import { monflee } from './monmove.js';
+import { mon_reflects } from './muse.js';
+import { killed } from './mon.js';
+import { upstart } from './hacklib.js';
+import { mhe } from './mhitu.js';
+import { mpickobj } from './steal.js';
+import { tele_restrict, rloc } from './teleport.js';
+import { RLOC_MSG } from './const.js';
+/* do_blinding_ray() */
+import { FLASHED_LIGHT } from './const.js';
+import { flash_hits_mon } from './uhitm.js';
+import { see_monster_closeup } from './mon.js';
+import { transient_light_cleanup } from './light.js';
+/* its_dead() */
+import { nxtobj } from './invent.js';
+import { get_mtraits } from './mkobj.js';
+import { pronoun_gender, PRONOUN_NO_IT } from './do_name.js';
+import { obj_has_timer } from './timeout.js';
+import { obj_pmname, The } from './objnam.js';
+import { type_is_pname, is_female, is_male } from './mondata.js';
+import { Has_contents, REVIVE_MON, Role_if } from './const.js';
+import { map_object, obj_to_glyph } from './display.js';
+import { highc } from './hacklib.js';
+import { MZ_TINY } from './monsters.js';
+import { genders } from './role.js';
+import { rn2_fnptr } from './rng.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
 async function its_dead(rx, ry, resp) {
-    void resp;
-    const corpse = sobj_at(O.CORPSE, rx, ry),
-          statue = sobj_at(O.STATUE, rx, ry);
+    let buf;
+    let mptr;
+    let corpse = sobj_at(O.CORPSE, rx, ry),
+        statue = sobj_at(O.STATUE, rx, ry);
 
+    if (!can_reach_floor(true)) { /* levitation or unskilled riding */
+        corpse = null;            /* can't reach corpse on floor */
+        /* you can't reach tiny statues (even though you can fight
+           tiny monsters while levitating--consistency, what's that?) */
+        while (statue && mons[statue.corpsenm].msize === MZ_TINY)
+            statue = nxtobj(statue, O.STATUE, true);
+    }
+    /* when both corpse and statue are present, pick the uppermost one */
+    if (corpse && statue) {
+        if (nxtobj(statue, O.CORPSE, true) === corpse)
+            corpse = null; /* corpse follows statue; ignore it */
+        else
+            statue = null; /* corpse precedes statue; ignore statue */
+    }
+    const more_corpses = !!(corpse && nxtobj(corpse, O.CORPSE, true));
+
+    /* additional stethoscope messages from jyoung@apanix.apana.org.au */
     if (!corpse && !statue) {
         ; /* nothing to do */
-    } else {
-        throw new Error('its_dead(): a corpse or statue under the stethoscope not ported yet');
+
+    } else if (Hallucination()) {
+        if (!corpse) {
+            /* it's a statue */
+            buf = "You're both stoned";
+        } else if (corpse.quan === 1 && !more_corpses) {
+            let gndr = 2; /* neuter: "it" */
+            const mtmp = get_mtraits(corpse, false);
+
+            /* (most corpses don't retain the monster's sex, so
+               we're usually forced to use generic pronoun here) */
+            if (mtmp) {
+                mtmp.data = mons[mtmp.mnum];
+                gndr = pronoun_gender(mtmp, PRONOUN_NO_IT);
+            } else {
+                mptr = mons[corpse.corpsenm];
+                if (is_female(mptr))
+                    gndr = 1;
+                else if (is_male(mptr))
+                    gndr = 0;
+            }
+            buf = `${genders[gndr].he}'s dead`; /* "he"/"she"/"it" */
+            buf = highc(buf[0]) + buf.slice(1);
+        } else { /* plural */
+            buf = "They're dead";
+        }
+        /* variations on "He's dead, Jim." (Star Trek's Dr McCoy) */
+        await You_hear(`a voice say, "${buf}, Jim."`);
+        resp.v = ECMD_TIME;
+        return true;
+
+    } else if (corpse) {
+        const here = u_at(rx, ry),
+              one = (corpse.quan === 1 && !more_corpses);
+        let reviver = false;
+
+        const visglyph = glyph_at(rx, ry);
+        const corpseglyph = obj_to_glyph(corpse, rn2_fnptr);
+
+        /* visglyph != corpseglyph */
+        if (Blind() && !(visglyph.otyp === corpseglyph.otyp
+                         && visglyph.corpsenm === corpseglyph.corpsenm
+                         && !!visglyph.piletop === !!corpseglyph.piletop))
+            map_object(corpse, true);
+
+        if (Role_if(PM_HEALER)) {
+            /* ok to reset `corpse' here; we're done with it */
+            do {
+                if (obj_has_timer(corpse, REVIVE_MON))
+                    reviver = true;
+                else
+                    corpse = nxtobj(corpse, O.CORPSE, true);
+            } while (corpse && !reviver);
+        }
+        await You(`determine that ${
+            one ? (here ? "this" : "that") : (here ? "these" : "those")
+            } unfortunate being${one ? "" : "s"} ${one ? "is" : "are"}${
+            reviver ? " mostly" : ""} dead.`);
+        return true;
+
+    } else { /* statue */
+        let what, how;
+
+        mptr = mons[statue.corpsenm];
+        if (Blind()) { /* ignore statue->dknown; it'll always be set */
+            buf = `${u_at(rx, ry) ? "This" : "That"} ${
+                humanoid(mptr) ? "person" : "creature"}`;
+            what = buf;
+        } else {
+            what = obj_pmname(statue);
+            if (!type_is_pname(mptr))
+                what = The(what);
+        }
+        how = "fine";
+        if (Role_if(PM_HEALER)) {
+            const ttmp = t_at(rx, ry);
+
+            if (ttmp && ttmp.ttyp === STATUE_TRAP)
+                how = "extraordinary";
+            else if (Has_contents(statue))
+                how = "remarkable";
+        }
+
+        await pline(`${what} is in ${how} health for a statue.`);
+        return true;
     }
     return false; /* no corpse or statue */
 }
@@ -354,6 +494,7 @@ async function use_stethoscope(obj) {
 
     res = (game.hero_seq === game.context.stethoscope_seq) ? ECMD_TIME : ECMD_OK;
     game.context.stethoscope_seq = game.hero_seq;
+    const resp = { v: res }; /* &res for its_dead() */
 
     game.bhitpos = { x: u.ux, y: u.uy }; /* tentative, reset below */
     game.notonhead = !!u.uswallow;
@@ -369,14 +510,14 @@ async function use_stethoscope(obj) {
             await You_hear("faint splashing.");
         } else if (u.dz < 0 || !can_reach_floor(true)) {
             await cant_reach_floor(u.ux, u.uy, (u.dz < 0), true, false);
-        } else if (await its_dead(u.ux, u.uy, res)) {
+        } else if (await its_dead(u.ux, u.uy, resp)) {
             ; /* message already given */
         } else if (Is_stronghold(u.uz)) {
             await You_hear("the crackling of hellfire.");
         } else {
             await pline_The(`${surface(u.ux, u.uy)} seems healthy enough.`);
         }
-        return res;
+        return resp.v;
     } else if (obj.cursed && !rn2(2)) {
         await You_hear("your heart beat.");
         return res;
@@ -477,9 +618,9 @@ async function use_stethoscope(obj) {
         return res;
     }
 
-    if (!(await its_dead(rx, ry, res)))
+    if (!(await its_dead(rx, ry, resp)))
         await You("hear nothing special."); /* not You_hear()  */
-    return res;
+    return resp.v;
 }
 
 // C ref: apply.c flip_through_book()
@@ -1064,7 +1205,8 @@ export async function doapply() {
         res = await use_stethoscope(obj);
         break;
     case O.MIRROR:
-        throw new Error('doapply(): use_mirror() not ported yet');
+        res = await use_mirror(obj);
+        break;
     case O.BELL:
     case O.BELL_OF_OPENING:
         await use_bell(obj);
@@ -1533,6 +1675,187 @@ export function beautiful() {
                       : (cha >= 6) ? "homely"
                         : (cha >= 4) ? "ugly"
                           : "hideous"); /* 3 is the minimum possible */
+}
+
+// C ref: apply.c look_str
+function look_str(s) { return `look ${s}.`; }
+
+// C ref: apply.c use_mirror()
+async function use_mirror(obj) {
+    const g = game;
+    const u = g.u;
+    let mtmp;
+    let how_seen;
+    let mlet;
+    let vis, monable;
+
+    if (!(await getdir(null)))
+        return ECMD_CANCEL;
+    const invis_mirror = Invis();
+    const useeit = !Blind() && (!invis_mirror || See_invisible());
+    const uvisage = beautiful();
+    const mirror = simpleonames_ap(obj); /* "mirror" or "looking glass" */
+    if (obj.cursed && !rn2(2)) {
+        if (!Blind())
+            await pline_The(`${mirror} fogs up and doesn't reflect!`);
+        else
+            await pline(nothing_seems_to_happen_lp);
+        return ECMD_TIME;
+    }
+    if (!u.dx && !u.dy && !u.dz) {
+        if (!useeit) {
+            await You_cant(`see your ${uvisage} ${body_part(FACE)}.`);
+        } else {
+            if (u.umonnum === PM_FLOATING_EYE) {
+                if (Free_action()) {
+                    await You("stiffen momentarily under your gaze.");
+                } else {
+                    if (Hallucination())
+                        await pline(`Yow!  The ${mirror} stares back!`);
+                    else
+                        await pline("Yikes!  You've frozen yourself!");
+                    if (!Hallucination() || !rn2(4)) {
+                        nomul(-rnd(MAXULEV + 6 - u.ulevel));
+                        g.multi_reason = "gazing into a mirror";
+                    }
+                    g.nomovemsg = null; /* default, "you can move again" */
+                }
+            } else if (is_vampire(g.youmonst.data)
+                       || is_vampshifter(g.youmonst)) {
+                await You("don't have a reflection.");
+            } else if (u.umonnum === PM_UMBER_HULK) {
+                await pline("Huh?  That doesn't look like you!");
+                await make_confused(HConfusion() + d_lp(3, 4), false);
+            } else if (Hallucination()) {
+                await You(look_str(hcolor(null)));
+            } else if (Sick()) {
+                await You(look_str("peaked"));
+            } else if (u.uhs >= WEAK) {
+                await You(look_str("undernourished"));
+            } else if (Upolyd()) {
+                const Ugender = (Upolyd() ? u.mfemale : g.flags.female) ? 1 : 0;
+                await You(`look like ${an(pmname_ap(mons[u.umonnum], Ugender))}.`);
+            } else {
+                await You(`look as ${uvisage} as ever.`);
+            }
+        }
+        return ECMD_TIME;
+    }
+    if (u.uswallow) {
+        if (useeit)
+            await You(`reflect ${s_suffix_cam(mon_nam_cam(u.ustuck))} ${
+                mbodypart_cam(u.ustuck, STOMACH_CAM)}.`);
+        return ECMD_TIME;
+    }
+    if (Underwater()) {
+        if (useeit)
+            await You(`${Hallucination()
+                ? "give the fish a chance to fix their makeup"
+                : "reflect the murky water"}.`);
+        return ECMD_TIME;
+    }
+    if (u.dz) {
+        if (useeit)
+            await You(`reflect the ${
+                (u.dz > 0) ? surface(u.ux, u.uy) : ceiling_wh(u.ux, u.uy)}.`);
+        return ECMD_TIME;
+    }
+    const pobj = { obj };
+    mtmp = await bhit(u.dx, u.dy, COLNO, INVIS_BEAM, null, null, pobj);
+    obj = pobj.obj;
+    if (!mtmp || !haseyes(mtmp.data) || g.notonhead)
+        return ECMD_TIME;
+
+    /* couldsee(mtmp->mx, mtmp->my) is implied by the fact that bhit()
+       targeted it, so we can ignore possibility of X-ray vision */
+    vis = canseemon(mtmp);
+    /* ways to directly see monster (excludes X-ray vision, telepathy,
+       extended detection, type-specific warning) */
+    const SEENMON = (MONSEEN_NORMAL | MONSEEN_SEEINVIS | MONSEEN_INFRAVIS);
+    how_seen = vis ? howmonseen(mtmp) : 0;
+    /* whether monster is able to use its vision-based capabilities */
+    monable = !mtmp.mcan && (!mtmp.minvis || perceives(mtmp.data));
+    mlet = mtmp.data.mlet;
+    if (mtmp.msleeping) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} is too tired to look at your ${mirror}.`);
+    } else if (!mtmp.mcansee) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} can't see anything right now.`);
+    } else if (invis_mirror && !perceives(mtmp.data)) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} fails to notice your ${mirror}.`);
+        /* infravision doesn't produce an image in the mirror */
+    } else if ((how_seen & SEENMON) === MONSEEN_INFRAVIS) {
+        if (vis) /* (redundant) */
+            await pline(`${monverbself(mtmp, Monnam(mtmp), "are",
+                                       "too far away to see")} in the dark.`);
+        /* some monsters do special things */
+    } else if (mlet === S_VAMPIRE || mlet === S_GHOST || is_vampshifter(mtmp)) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} doesn't have a reflection.`);
+    } else if (monable && mtmp.data === mons[PM_MEDUSA]) {
+        if (await mon_reflects(mtmp, "The gaze is reflected away by %s %s!"))
+            return ECMD_TIME;
+        if (vis)
+            await pline(`${Monnam(mtmp)} is turned to stone!`);
+        g.stoned = true;
+        await killed(mtmp);
+    } else if (monable && mtmp.data === mons[PM_FLOATING_EYE]) {
+        let tmp = d_lp(mtmp.m_lev, mtmp.data.mattk[0].damd);
+        if (!rn2(4))
+            tmp = 120;
+        if (vis)
+            await pline(`${Monnam(mtmp)} is frozen by its reflection.`);
+        else
+            await You_hear("something stop moving.");
+        paralyze_monst(mtmp, mtmp.mfrozen + tmp);
+    } else if (monable && mtmp.data === mons[PM_UMBER_HULK]) {
+        if (vis)
+            await pline(`${Monnam(mtmp)} confuses itself!`);
+        mtmp.mconf = 1;
+    } else if (monable && (mlet === S_NYMPH
+                           || mtmp.data === mons[PM_AMOROUS_DEMON])) {
+        if (vis) {
+            /* "She" or "He" */
+            await pline(`${monverbself(mtmp, Monnam(mtmp), "admire", null)
+                } in your ${mirror}.`); /* "<mon> admires self in your mirror " */
+            await pline(`${upstart(mhe(mtmp))} takes it!`);
+        } else
+            await pline(`It steals your ${mirror}!`);
+        setnotworn_ap(obj); /* in case mirror was wielded */
+        freeinv_bw(obj);
+        mpickobj(mtmp, obj);
+        if (!(await tele_restrict(mtmp)))
+            await rloc(mtmp, RLOC_MSG);
+    } else if (!is_unicorn(mtmp.data) && !humanoid(mtmp.data)
+               && !is_demon(mtmp.data)
+               && (!mtmp.minvis || perceives(mtmp.data)) && rn2(5)) {
+        let do_react = true;
+
+        if (mtmp.mfrozen) {
+            if (vis)
+                await You(`discern no obvious reaction from ${mon_nam_cam(mtmp)}.`);
+            else
+                await You_feel("a bit silly gesturing the mirror in that direction.");
+            do_react = false;
+        }
+        if (do_react) {
+            if (vis)
+                await pline(`${Monnam(mtmp)} is frightened by its reflection.`);
+            await monflee(mtmp, d_lp(2, 4), false, false);
+        }
+    } else if (!Blind()) {
+        if (mtmp.minvis && !See_invisible())
+            ;
+        else if ((mtmp.minvis && !perceives(mtmp.data))
+                 /* redundant: can't get here if these are true */
+                 || !haseyes(mtmp.data) || g.notonhead || !mtmp.mcansee)
+            await pline(`${Monnam(mtmp)} doesn't seem to notice ${mhis(mtmp)} reflection.`);
+        else
+            await pline(`${Monnam(mtmp)} ignores ${mhis(mtmp)} reflection.`);
+    }
+    return ECMD_TIME;
 }
 
 // C ref: apply.c touchstone_ok()
@@ -2214,6 +2537,25 @@ export function consume_obj_charge(obj,
     /* if (obj->known) update_inventory(): no perm_invent */
 }
 
+// C ref: apply.c do_blinding_ray()
+/* expensive camera and Eyes of the Overworld */
+export async function do_blinding_ray(obj) {
+    const u = game.u;
+    const pobj = { obj };
+    const mtmp = await bhit(u.dx, u.dy, COLNO, FLASHED_LIGHT, null, null, pobj);
+    obj = pobj.obj;
+
+    obj.ox = u.ux, obj.oy = u.uy; /* flash_hits_mon() wants this */
+    if (mtmp) {
+        await flash_hits_mon(mtmp, obj);
+        if (obj.otyp === O.EXPENSIVE_CAMERA)
+            await see_monster_closeup(mtmp, true); /* TRUE for photo */
+    }
+    /* normally bhit() would do this but for FLASHED_LIGHT we want it
+       to be deferred until after flash_hits_mon() */
+    await transient_light_cleanup();
+}
+
 // C ref: apply.c use_camera()
 async function use_camera(obj) {
     const u = game.u;
@@ -2243,7 +2585,7 @@ async function use_camera(obj) {
         /* TODO:  we ought to have a "selfie" joke here... */
         await zapyourself_cam(obj, true);
     } else {
-        throw new Error('use_camera(): do_blinding_ray() not ported yet');
+        await do_blinding_ray(obj);
     }
     return ECMD_TIME;
 }

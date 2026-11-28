@@ -741,7 +741,7 @@ function is_treefruit(otmp) {
 }
 
 // C ref: vision.c howmonseen() -- how the hero sees a monster (MONSEEN_*)
-function howmonseen(mon) {
+export function howmonseen(mon) {
     const u = game.u;
     const useemon = canseemon(mon);
     const xraydist = (u.xray_range < 0) ? -1 : ((u.xray_range || 0) * (u.xray_range || 0));
