@@ -1989,6 +1989,7 @@ export function mksobj(otyp, init, artif) {
         corpsenm: -1, /* NON_PM */
         spe: 0, blessed: 0, cursed: 0, oeroded: 0, oeroded2: 0,
         oerodeproof: 0, greased: 0, oartifact: 0, owt: 0, odiluted: 0,
+        owornmask: 0, /* newobj() zeroes the struct: not worn */
     };
     unknow_object(otmp); /* set up dknown and known: non-0 for some things */
 

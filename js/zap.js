@@ -3798,7 +3798,7 @@ export async function destroy_items(
            result in setting bypass bits on whole chain--we would skip
            the rest as already processed once control returns here */
         if (u_carry
-            && ((obj.owornmask !== 0
+            && ((obj.owornmask /* != 0L; unset (undefined) is 0 */
                  && (objects[obj.otyp].oc_oprop === LEVITATION_ZP
                      || objects[obj.otyp].oc_oprop === FLYING_ZP))
                 /* destroyed wands and potions of polymorph don't trigger
