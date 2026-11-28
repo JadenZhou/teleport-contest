@@ -10,7 +10,7 @@ import { adjattrib } from './attrib.js';
 import { A_CHA, CONFUSION } from './const.js';
 import { tamedog } from './dog.js';
 import { seffects } from './read.js';
-import { SPE_REMOVE_CURSE } from './objects.js';
+import { SPE_REMOVE_CURSE, LAND_MINE as LAND_MINE_OBJ, BEARTRAP as BEARTRAP_OBJ } from './objects.js';
 import { fracture_rock } from './zap.js';
 import { change_luck } from './attrib.js';
 import { helpless } from './monmove.js';
@@ -1433,7 +1433,7 @@ export function feeltrap(trap) {
 
 // C ref: trap.c trap_ice_effects()
 /* used for ice melting (and freezing) */
-export function trap_ice_effects(x, y, ice_is_melting) {
+export async function trap_ice_effects(x, y, ice_is_melting) {
     const ttmp = t_at(x, y);
 
     if (ttmp && ice_is_melting) {
@@ -1444,7 +1444,8 @@ export function trap_ice_effects(x, y, ice_is_melting) {
         if (ttmp.ttyp === LANDMINE || ttmp.ttyp === BEAR_TRAP) {
             /* landmine or bear trap set on top of the ice falls
                into the water */
-            throw new Error('trap_ice_effects(): cnv_trap_obj() not ported yet');
+            const otyp = (ttmp.ttyp === LANDMINE) ? LAND_MINE_OBJ : BEARTRAP_OBJ;
+            await cnv_trap_obj(otyp, 1, ttmp, true);
         } else {
             if (!undestroyable_trap(ttmp.ttyp))
                 deltrap(ttmp);
