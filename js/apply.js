@@ -243,18 +243,132 @@ import { FLASHED_LIGHT } from './const.js';
 import { flash_hits_mon } from './uhitm.js';
 import { see_monster_closeup } from './mon.js';
 import { transient_light_cleanup } from './light.js';
+/* its_dead() */
+import { nxtobj } from './invent.js';
+import { get_mtraits } from './mkobj.js';
+import { pronoun_gender, PRONOUN_NO_IT } from './do_name.js';
+import { obj_has_timer } from './timeout.js';
+import { obj_pmname, The } from './objnam.js';
+import { type_is_pname, is_female, is_male } from './mondata.js';
+import { Has_contents, REVIVE_MON, Role_if } from './const.js';
+import { map_object, obj_to_glyph } from './display.js';
+import { highc } from './hacklib.js';
+import { MZ_TINY } from './monsters.js';
+import { genders } from './role.js';
+import { rn2_fnptr } from './rng.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
 async function its_dead(rx, ry, resp) {
-    void resp;
-    const corpse = sobj_at(O.CORPSE, rx, ry),
-          statue = sobj_at(O.STATUE, rx, ry);
+    let buf;
+    let mptr;
+    let corpse = sobj_at(O.CORPSE, rx, ry),
+        statue = sobj_at(O.STATUE, rx, ry);
 
+    if (!can_reach_floor(true)) { /* levitation or unskilled riding */
+        corpse = null;            /* can't reach corpse on floor */
+        /* you can't reach tiny statues (even though you can fight
+           tiny monsters while levitating--consistency, what's that?) */
+        while (statue && mons[statue.corpsenm].msize === MZ_TINY)
+            statue = nxtobj(statue, O.STATUE, true);
+    }
+    /* when both corpse and statue are present, pick the uppermost one */
+    if (corpse && statue) {
+        if (nxtobj(statue, O.CORPSE, true) === corpse)
+            corpse = null; /* corpse follows statue; ignore it */
+        else
+            statue = null; /* corpse precedes statue; ignore statue */
+    }
+    const more_corpses = !!(corpse && nxtobj(corpse, O.CORPSE, true));
+
+    /* additional stethoscope messages from jyoung@apanix.apana.org.au */
     if (!corpse && !statue) {
         ; /* nothing to do */
-    } else {
-        throw new Error('its_dead(): a corpse or statue under the stethoscope not ported yet');
+
+    } else if (Hallucination()) {
+        if (!corpse) {
+            /* it's a statue */
+            buf = "You're both stoned";
+        } else if (corpse.quan === 1 && !more_corpses) {
+            let gndr = 2; /* neuter: "it" */
+            const mtmp = get_mtraits(corpse, false);
+
+            /* (most corpses don't retain the monster's sex, so
+               we're usually forced to use generic pronoun here) */
+            if (mtmp) {
+                mtmp.data = mons[mtmp.mnum];
+                gndr = pronoun_gender(mtmp, PRONOUN_NO_IT);
+            } else {
+                mptr = mons[corpse.corpsenm];
+                if (is_female(mptr))
+                    gndr = 1;
+                else if (is_male(mptr))
+                    gndr = 0;
+            }
+            buf = `${genders[gndr].he}'s dead`; /* "he"/"she"/"it" */
+            buf = highc(buf[0]) + buf.slice(1);
+        } else { /* plural */
+            buf = "They're dead";
+        }
+        /* variations on "He's dead, Jim." (Star Trek's Dr McCoy) */
+        await You_hear(`a voice say, "${buf}, Jim."`);
+        resp.v = ECMD_TIME;
+        return true;
+
+    } else if (corpse) {
+        const here = u_at(rx, ry),
+              one = (corpse.quan === 1 && !more_corpses);
+        let reviver = false;
+
+        const visglyph = glyph_at(rx, ry);
+        const corpseglyph = obj_to_glyph(corpse, rn2_fnptr);
+
+        /* visglyph != corpseglyph */
+        if (Blind() && !(visglyph.otyp === corpseglyph.otyp
+                         && visglyph.corpsenm === corpseglyph.corpsenm
+                         && !!visglyph.piletop === !!corpseglyph.piletop))
+            map_object(corpse, true);
+
+        if (Role_if(PM_HEALER)) {
+            /* ok to reset `corpse' here; we're done with it */
+            do {
+                if (obj_has_timer(corpse, REVIVE_MON))
+                    reviver = true;
+                else
+                    corpse = nxtobj(corpse, O.CORPSE, true);
+            } while (corpse && !reviver);
+        }
+        await You(`determine that ${
+            one ? (here ? "this" : "that") : (here ? "these" : "those")
+            } unfortunate being${one ? "" : "s"} ${one ? "is" : "are"}${
+            reviver ? " mostly" : ""} dead.`);
+        return true;
+
+    } else { /* statue */
+        let what, how;
+
+        mptr = mons[statue.corpsenm];
+        if (Blind()) { /* ignore statue->dknown; it'll always be set */
+            buf = `${u_at(rx, ry) ? "This" : "That"} ${
+                humanoid(mptr) ? "person" : "creature"}`;
+            what = buf;
+        } else {
+            what = obj_pmname(statue);
+            if (!type_is_pname(mptr))
+                what = The(what);
+        }
+        how = "fine";
+        if (Role_if(PM_HEALER)) {
+            const ttmp = t_at(rx, ry);
+
+            if (ttmp && ttmp.ttyp === STATUE_TRAP)
+                how = "extraordinary";
+            else if (Has_contents(statue))
+                how = "remarkable";
+        }
+
+        await pline(`${what} is in ${how} health for a statue.`);
+        return true;
     }
     return false; /* no corpse or statue */
 }
@@ -380,6 +494,7 @@ async function use_stethoscope(obj) {
 
     res = (game.hero_seq === game.context.stethoscope_seq) ? ECMD_TIME : ECMD_OK;
     game.context.stethoscope_seq = game.hero_seq;
+    const resp = { v: res }; /* &res for its_dead() */
 
     game.bhitpos = { x: u.ux, y: u.uy }; /* tentative, reset below */
     game.notonhead = !!u.uswallow;
@@ -395,14 +510,14 @@ async function use_stethoscope(obj) {
             await You_hear("faint splashing.");
         } else if (u.dz < 0 || !can_reach_floor(true)) {
             await cant_reach_floor(u.ux, u.uy, (u.dz < 0), true, false);
-        } else if (await its_dead(u.ux, u.uy, res)) {
+        } else if (await its_dead(u.ux, u.uy, resp)) {
             ; /* message already given */
         } else if (Is_stronghold(u.uz)) {
             await You_hear("the crackling of hellfire.");
         } else {
             await pline_The(`${surface(u.ux, u.uy)} seems healthy enough.`);
         }
-        return res;
+        return resp.v;
     } else if (obj.cursed && !rn2(2)) {
         await You_hear("your heart beat.");
         return res;
@@ -503,9 +618,9 @@ async function use_stethoscope(obj) {
         return res;
     }
 
-    if (!(await its_dead(rx, ry, res)))
+    if (!(await its_dead(rx, ry, resp)))
         await You("hear nothing special."); /* not You_hear()  */
-    return res;
+    return resp.v;
 }
 
 // C ref: apply.c flip_through_book()

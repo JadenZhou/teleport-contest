@@ -1023,7 +1023,7 @@ export async function bhitm(mtmp, otmp) {
     if (wake && !DEADMONSTER_BM(mtmp)) {
         /* seemimic() is done by wakeup() and might unblock vision */
         await wakeup(mtmp, helpful_gesture ? false : true);
-        m_respond_bm(mtmp);
+        await m_respond_bm(mtmp);
         if (mtmp.isshk && !(u.ushops && u.ushops[0]))
             hot_pursuit_bm(mtmp);
     }

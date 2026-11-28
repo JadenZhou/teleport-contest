@@ -85,7 +85,7 @@ import { the } from './iactions.js';
 import { strncmpi, dist2 } from './hacklib.js';
 import { splitobj, weight, costly_alteration, is_rottable,
          bcsign } from './mkobj.js';
-import { freeinv, addinv_nomerge, useup, useupf, will_feel_cockatrice,
+import { freeinv, addinv_nomerge, useup, useupf, will_feel_cockatrice, feel_cockatrice,
          hands_obj, carrying } from './invent.js';
 import { ECMD_CANCEL } from './const.js';
 import { inv_cnt, nomul } from './hack.js';
@@ -2477,8 +2477,12 @@ async function floorfood(verb, corpsecheck) {
                    offer) a cockatrice corpse is fatal before asking whether
                    or not to use it; otherwise, 'm<dir>' followed by 'e' could
                    be used to locate cockatrice corpses without touching them */
-                if (o.otyp === CORPSE && will_feel_cockatrice(o, false))
-                    throw new Error('floorfood(): feel_cockatrice() not ported yet');
+                if (o.otyp === CORPSE && will_feel_cockatrice(o, false)) {
+                    await feel_cockatrice(o, false);
+                    /* if life-saved (or poly'd into stone golem), terminate
+                       attempt to eat off floor */
+                    return null;
+                }
                 /* "There is <an object> here; <verb> it?" or
                    "There are <N objects> here; <verb> one?" */
                 const qbuf = safe_qbuf(`There ${otense(o, "are")} `,
