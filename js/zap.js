@@ -74,7 +74,9 @@ import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
 import { obj_resists } from './dogmove.js';
 import { cansee, does_block, block_point, unblock_point } from './vision.js';
 import { newsym, shieldeff } from './display.js';
-import { costly_spot } from './shk.js';
+import { costly_spot, shop_keeper, contained_cost, inhishop, make_angry_shk, hot_pursuit } from './shk.js';
+import { Shknam } from './shknam.js';
+import { Norep } from './display.js';
 import { add_damage as add_damage_zp, pay_for_damage as pay_for_damage_zp } from './shk.js';
 import { SHOP_DOOR_COST as SHOP_DOOR_COST_ZP, SHOP_BARS_COST as SHOP_BARS_COST_ZP } from './const.js';
 import { LARGEST_INT, MAX_SPELL_STUDY, Has_contents } from './const.js';
@@ -1703,8 +1705,27 @@ export async function poly_obj(obj, id) {
 
     /* note: if otmp is gone, billing for it was handled by useup() */
     if (((otmp && otmp.where !== 'OBJ_INVENT') || obj.unpaid)
-        && costly_spot(ox, oy))
-        throw new Error('poly_obj(): shopkeeper reaction not ported yet');
+        && costly_spot(ox, oy)) {
+        const shkp = shop_keeper(in_rooms(ox, oy, SHOPBASE).charCodeAt(0) || 0);
+
+        if ((!obj.no_charge
+             || (Has_contents(obj)
+                 && (contained_cost(obj, shkp, 0, false, false) !== 0)))
+            && inhishop(shkp)) {
+            if (shkp.mpeaceful) {
+                if (g.u.ushops && g.u.ushops.length
+                    && ((in_rooms(g.u.ux, g.u.uy, 0).charCodeAt(0) || 0)
+                        === (in_rooms(shkp.mx, shkp.my, 0).charCodeAt(0) || 0))
+                    && !costly_spot(g.u.ux, g.u.uy)) {
+                    await make_angry_shk(shkp, ox, oy);
+                } else {
+                    await pline(`${Shknam(shkp)} gets angry!`);
+                    hot_pursuit(shkp);
+                }
+            } else
+                await Norep(`${Shknam(shkp)} is furious!`);
+        }
+    }
     delobj(obj);
     return otmp;
 }
