@@ -24,7 +24,7 @@ import { flush_screen, obj_to_glyph, menu_glyphinfo, what_mon } from './display.
 import { self_lookat } from './pager.js';
 import { digests } from './mondata.js';
 import { CONTAINED_SYM } from './const.js';
-import { look_here } from './invent.js';
+import { look_here, feel_cockatrice } from './invent.js';
 import { M1_NOTAKE, M1_CONCEAL } from './monsters.js';
 import { get_adjacent_loc } from './cmd.js';
 import { isok, IS_GRAVE, CONFUSION, STUNNED, ECMD_OK, ECMD_TIME, ECMD_CANCEL, GETOBJ_DOWNPLAY,
@@ -2367,8 +2367,12 @@ async function doloot_core() {
                        whether to manipulate any containers */
                     for (const nobj of objects_at(cc.x, cc.y))
                         if (nobj.otyp === CORPSE
-                            && will_feel_cockatrice(nobj, false))
-                            throw new Error('doloot_core(): feel_cockatrice() not ported yet');
+                            && will_feel_cockatrice(nobj, false)) {
+                            await feel_cockatrice(nobj, false);
+                            /* if life-saved (or poly'd into stone golem),
+                               terminate attempt to loot */
+                            return ECMD_TIME;
+                        }
                 }
 
                 if (num_conts > 1) {
