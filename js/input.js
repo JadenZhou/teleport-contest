@@ -4,6 +4,7 @@
 import { game } from './gstate.js';
 import { KEY_BINDINGS } from './terminal.js';
 import { WIN_STOP } from './wintty.js';
+import { flush_deferred_plines } from './display.js';
 
 const _inputQueue = [];
 
@@ -26,6 +27,11 @@ function icrnl(c) {
 // In replay mode, reads from the input queue.
 // In browser mode, waits for a real keypress.
 export async function nhgetch() {
+    /* a message from synchronous code is shown before the key is read
+       (see display.js pline_deferred()) */
+    if (game.deferred_plines)
+        await flush_deferred_plines();
+
     // Fire the capture hook before reading the next key
     const hook = game._preNhgetchHook;
     if (hook) await hook();

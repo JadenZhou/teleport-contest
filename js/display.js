@@ -3645,11 +3645,30 @@ export function a11y_msg_prefix(line) {
     return line;
 }
 
+// A message from synchronous code whose C counterpart prints it there and
+// then (makemon()'s dochugw() -> stop_occupation(): "You stop <occtxt>.").
+// pline() is async in this port, so the line waits in game.deferred_plines
+// and is printed before the next message, prompt or key read: the same
+// place in the message sequence as in C.
+export function pline_deferred(msg) {
+    (game.deferred_plines ||= []).push(msg);
+}
+export async function flush_deferred_plines() {
+    const msgs = game.deferred_plines;
+    if (!msgs || !msgs.length)
+        return;
+    game.deferred_plines = null;
+    for (const msg of msgs)
+        await pline(msg);
+}
+
 // ── pline ──
 // C ref: pline.c vpline() -- the plain message path: bring the map up to
 // date (vision, flush_screen(1)) and put the line in the message window
 // (tty update_topl(), which handles concatenation and --More--)
 export async function pline(msg) {
+    if (game.deferred_plines) /* earlier messages from synchronous code */
+        await flush_deferred_plines();
     msg = a11y_msg_prefix(msg);
     if (msg === null)
         return;
@@ -3718,6 +3737,8 @@ export async function impossible_async(msg) {
 // (WC2_URGENT_MESG) gets the line with ATR_URGENT, which overrides a
 // pending ESC at --More-- (WIN_STOP)
 export async function urgent_pline(msg) {
+    if (game.deferred_plines) /* see pline_deferred() */
+        await flush_deferred_plines();
     msg = a11y_msg_prefix(msg);
     if (msg === null)
         return;

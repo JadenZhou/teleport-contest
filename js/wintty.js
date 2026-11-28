@@ -27,7 +27,7 @@ import { genl_player_setup } from './role.js';
 import { lowc, tabexpand, pmatchi } from './hacklib.js';
 import { help_files } from './help_files.js';
 import { row_refresh, bot, flush_screen, pline, docrt, dec_cell_char,
-         decode_mixed, a11y_msg_prefix } from './display.js';
+         decode_mixed, a11y_msg_prefix, flush_deferred_plines } from './display.js';
 import { vision_recalc } from './vision.js';
 import { extcmds_match, readchar as core_readchar, key2txt } from './cmd.js';
 import { extcmdlist, ECM_NOFLAGS, ECM_IGNOREAC, ECM_EXACTMATCH } from './func_tab.js';
@@ -1354,6 +1354,8 @@ async function hooked_tty_getlin(query, hook) {
 // the message window; putmesg() passes ATR_NOHISTORY for SUPPRESS_HISTORY
 // (the tty has WC2_SUPPRESS_HIST)
 export async function custompline(line, no_curs_on_u = false) {
+    if (game.deferred_plines) /* see display.js pline_deferred() */
+        await flush_deferred_plines();
     /* vpline(): the a11y.msg_loc prefix (and reset) */
     line = a11y_msg_prefix(line);
     if (line === null)

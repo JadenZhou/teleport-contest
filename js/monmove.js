@@ -132,7 +132,7 @@ import {
 import { STRANGE_OBJECT, WAN_STRIKING } from './objects.js';
 import { ART_EXCALIBUR, ART_SNICKERSNEE } from './artilist.js';
 import { In_hell } from './dungeon.js';
-import { stop_occupation } from './allmain.js';
+import { stop_occupation, stop_occupation_sync } from './allmain.js';
 import { shk_move, costly_spot, after_shk_move, inhishop, add_damage } from './shk.js';
 import { in_rooms, in_town } from './hack.js';
 import { pri_move, in_your_sanctuary, inhistemple } from './priest.js';
@@ -351,6 +351,36 @@ export async function dochugw(mtmp, chug) {
         /* monster isn't paralyzed or afraid (scare monster/Elbereth) */
         && mtmp.mcanmove && !onscary(g.u.ux, g.u.uy, mtmp))
         await stop_occupation();
+
+    return rd;
+}
+
+// C ref: monmove.c dochugw() -- dochugw(mtmp, FALSE) for a synchronous
+// caller (makemon()): with chug FALSE there is no dochug() and no roll, and
+// stop_occupation()'s message is printed by the next message or key read
+// (allmain.js stop_occupation_sync())
+export function dochugw_sync(mtmp) {
+    const g = game;
+    const x = mtmp.mx, y = mtmp.my; /* 'mtmp's location before dochug() */
+    /* chug is FALSE: canspotmon() is skipped and dochug() isn't called */
+    const already_saw_mon = false;
+    const rd = 0;
+    const halluc = !!(g.u.uprops?.[HALLUC]?.intrinsic || g.u.uprops?.[HALLUC]?.extrinsic);
+
+    /* check whether hero notices monster and stops current activity */
+    if (g.occupation && !rd
+        /* monster is hostile and can attack (or hallu distorts knowledge) */
+        && (halluc || (!mtmp.mpeaceful && !noattacks(mtmp.data)))
+        /* it's close enough to be a threat */
+        && mdistu(mtmp) <= (BOLT_LIM + 1) * (BOLT_LIM + 1)
+        /* and either couldn't see it before, or it was too far away */
+        && (!already_saw_mon || !couldsee(x, y)
+            || dist2(x, y, g.u.ux, g.u.uy) > (BOLT_LIM + 1) * (BOLT_LIM + 1))
+        /* can see it now, or sense it and would normally see it */
+        && canspotmon(mtmp) && couldsee(mtmp.mx, mtmp.my)
+        /* monster isn't paralyzed or afraid (scare monster/Elbereth) */
+        && mtmp.mcanmove && !onscary(g.u.ux, g.u.uy, mtmp))
+        stop_occupation_sync();
 
     return rd;
 }

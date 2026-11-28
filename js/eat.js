@@ -2853,6 +2853,18 @@ export async function maybe_finished_meal(stopping) {
     }
     return false;
 }
+/* maybe_finished_meal() for a synchronous caller (allmain.js
+   stop_occupation_sync()); finishing the meal (eatfood()) prints, so that
+   case stops */
+export function maybe_finished_meal_sync(stopping) {
+    const v = victual();
+    /* in case consume_oeaten() has decided that the food is all gone */
+    if (game.occupation === eatfood && v.usedtime >= v.reqtime) {
+        void stopping;
+        throw new Error('maybe_finished_meal(): finishing the meal from a synchronous caller not ported yet');
+    }
+    return false;
+}
 
 // C ref: eat.c cant_finish_meal()
 export async function cant_finish_meal(corpse) {

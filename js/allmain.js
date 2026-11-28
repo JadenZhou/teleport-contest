@@ -68,7 +68,8 @@ import { near_capacity, lookaround, end_running, nomul, monster_nearby,
          runmode_delay_output } from './hack.js';
 import { nh_timeout, do_storms } from './timeout.js';
 import { dosounds } from './sounds.js';
-import { gethungry, reset_eat, maybe_finished_meal } from './eat.js';
+import { gethungry, reset_eat, maybe_finished_meal, maybe_finished_meal_sync } from './eat.js';
+import { pline_deferred } from './display.js';
 import { age_spells } from './spell.js';
 import { u_wipe_engr } from './engrave.js';
 import { dosearch0, warnreveal } from './detect.js';
@@ -342,6 +343,25 @@ export async function stop_occupation() {
     if (g.occupation) {
         if (!await maybe_finished_meal(true))
             await pline(`You stop ${g.occtxt}.`); /* You() */
+        g.occupation = null;
+        g.disp_botl = true; /* in case u.uhs changed */
+        nomul(0);
+    } else if (g.multi >= 0) {
+        nomul(0);
+    }
+    g.cmdq = []; /* cmdq_clear(CQ_CANNED) */
+}
+
+// C ref: allmain.c stop_occupation() -- for a synchronous caller
+// (makemon()'s dochugw(mtmp, FALSE), see monmove.js dochugw_sync()): the
+// occupation stops at once, as in C; You("stop %s.") waits in
+// pline_deferred() for the next message or key read, which is where it
+// falls in C's message sequence
+export function stop_occupation_sync() {
+    const g = game;
+    if (g.occupation) {
+        if (!maybe_finished_meal_sync(true))
+            pline_deferred(`You stop ${g.occtxt}.`); /* You() */
         g.occupation = null;
         g.disp_botl = true; /* in case u.uhs changed */
         nomul(0);
