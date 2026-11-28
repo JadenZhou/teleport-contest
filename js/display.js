@@ -118,7 +118,7 @@ function dec_symset() {
 }
 
 // C ref: drawing.c def_r_oc_syms[] -- object class symbols of the rogue symset
-const def_r_oc_syms = [
+export const def_r_oc_syms = [
     '\0', ']' /* ILLOBJ_SYM */, ')', ']', /* armor */
     '=',
     ',', /* amulet */
