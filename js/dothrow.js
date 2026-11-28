@@ -34,12 +34,12 @@ import { You, You_cant } from './display.js';
 import { check_capacity } from './hack.js';
 import { getdir } from './cmd.js';
 import { doquiver_core } from './wield.js';
-import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP, Race_if } from './const.js';
+import { ECMD_OK, ECMD_TIME, ECMD_CANCEL, W_WEP, W_SWAPWEP, Race_if } from './const.js';
 import { BULLWHIP, BOOMERANG, AKLYS, WAN_PROBING, WAN_OPENING, WAN_LOCKING,
          WAN_STRIKING, is_pick, is_spear, is_blade, is_sword, greatest_erosion,
          is_axe, is_weptool, matching_launcher, is_missile, is_wet_towel,
          is_ammo, is_pole, ammo_and_launcher } from './objects.js';
-import { zap_map, bhitpile } from './zap.js';
+import { zap_map, bhitpile, boomhit } from './zap.js';
 import { M1_NOHANDS, M1_NOTAKE, S_COCKATRICE, PM_CHICKATRICE, PM_COCKATRICE,
          PM_MEDUSA, MZ_MEDIUM, mons } from './monsters.js';
 import { pline, newsym, flush_screen, canspotmon, canseemon } from './display.js';
@@ -78,7 +78,7 @@ import { welded, weldmsg } from './wield.js';
 import { getobj, freeinv, stackobj, prinv } from './invent.js';
 import { addinv_before } from './invent.js';
 import { dry_a_towel } from './weapon.js';
-import { setuwep, setuqwep, set_twoweap } from './wield.js';
+import { setuwep, setuqwep, set_twoweap, setuswapwep } from './wield.js';
 import { artifact_hit } from './artifact.js';
 import { killer_xname } from './mthrowu.js';
 import { BACKTRACK, W_QUIVER, ARM, FOOT } from './const.js';
@@ -630,7 +630,7 @@ function swallowit(obj) {
    mon may be NULL.
    returns TRUE if shopkeeper caught the object.
    may delete object, clearing gt.thrownobj */
-async function throwit_mon_hit(obj, mon) {
+export async function throwit_mon_hit(obj, mon) {
     const g = game;
     const u = g.u;
     if (mon) {
@@ -1021,7 +1021,16 @@ export async function throwit(obj,
         /* toss_up(), hitfloor(), potionhit() on the steed */
         throw new Error('throwit(): throwing up or down not ported yet');
     } else if (obj.otyp === BOOMERANG && !Underwater()) {
-        throw new Error('throwit(): boomhit() not ported yet');
+        if (Is_airlevel(u.uz) || Levitation())
+            await hurtle(-u.dx, -u.dy, 1, true);
+        mon = await boomhit(obj, u.dx, u.dy);
+        g.iflags.returning_missile = null; /* has returned or isn't going to */
+        if (mon === g.youmonst) { /* the thing was caught */
+            await exercise(A_DEX_DT, true);
+            obj = await return_throw_to_inv(obj, wep_mask, twoweap, oldslot);
+            throwit_return(true);
+            return;
+        }
     } else {
         /* crossbow range is independent of strength */
         crossbowing = (ammo_and_launcher(obj, g.uwep)
@@ -1251,6 +1260,64 @@ export async function throwit(obj,
     }
 
     throwit_return(false);
+}
+
+// C ref: dothrow.c return_throw_to_inv()
+/* hero catches a thrown object that returned (a boomerang) */
+async function return_throw_to_inv(
+    obj,      /* object to add to invent */
+    wep_mask, /* its owornmask before it was removed from invent */
+    twoweap,  /* True if hero was dual-wielding before removal */
+    oldslot) { /* following item in invent in case of '!fixinv' */
+    const g = game;
+    let otmp = null;
+    const os = g.context.objsplit || { parent_oid: 0, child_oid: 0 };
+
+    /* if 'obj' is from a stack split, we can put it back by undoing split
+       so there's no chance of merging with some other compatible stack */
+    if (obj.o_id === os.parent_oid || obj.o_id === os.child_oid) {
+        obj.nobj = g.invent;
+        g.invent = obj;
+        obj.where = 'OBJ_INVENT';
+        otmp = unsplitobj(obj);
+        if (!otmp) {
+            g.invent = obj.nobj;
+            obj.nobj = null;
+            obj.where = 'OBJ_FREE';
+        } else {
+            obj = otmp;
+        }
+    }
+
+    /* if 'obj' wasn't from a stack split or if it wouldn't merge back
+       (maybe new erosion damage?) then it needs to be added to invent;
+       don't merge with any other stack even if there is a compatible one
+       (others with similar erosion?); can't use addinv_nomerge() here */
+    if (!otmp) {
+        obj.nomerge = 1; /* redundant unless 'oldslot' somehow went away */
+        obj = await addinv_before(obj, oldslot);
+        obj.nomerge = 0;
+
+        /* in case addinv() autoquivered */
+        if ((obj.owornmask & W_QUIVER) !== 0
+            && ((obj.owornmask | wep_mask) & (W_WEP | W_SWAPWEP)) !== 0)
+            setuqwep(null);
+
+        if ((wep_mask & W_WEP) && !g.uwep)
+            setuwep(obj);
+        else if ((wep_mask & W_SWAPWEP) && !g.uswapwep)
+            setuswapwep(obj);
+        else if ((wep_mask & W_QUIVER) && !g.uquiver)
+            setuqwep(obj);
+
+        /* in case the throw ended dual-wielding, reinstate it after
+           successful catch (not needed for boomerang split/unsplit) */
+        if (twoweap && !g.u.twoweap)
+            set_twoweap(true); /* u.twoweap = TRUE */
+    }
+
+    await encumber_msg();
+    return obj;
 }
 
 // C ref: dothrow.c check_shop_obj()
