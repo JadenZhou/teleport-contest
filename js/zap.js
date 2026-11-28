@@ -69,6 +69,14 @@ import { PIT, SPIKED_PIT, STATUE_TRAP, HEADSTONE, DOOR, DBWALL,
 import { t_at, activate_statue_trap, trap_ice_effects } from './trap.js';
 import { sobj_at, is_pool, is_lava } from './makemon.js';
 import { delobj } from './invent.js';
+import { addtobill, stolen_value } from './shk.js';
+import { makemon } from './makemon.js';
+import { a_monnam } from './do_name.js';
+import { IRON, METAL, MITHRIL, COPPER, SILVER, PLATINUM, GEMSTONE,
+         FLESH, WOOD, LEATHER, CLOTH, BONE, GOLD, GLASS, PAPER } from './objects.js';
+import { MM_NOMSG, G_GENOD } from './const.js';
+import * as M from './monsters.js';
+import { mons } from './monsters.js';
 import { mkobj, splitobj, weight, rnd_class, erosion_matters, is_flammable,
          is_rottable, is_damageable, is_poisonable } from './mkobj.js';
 import { obj_resists } from './dogmove.js';
@@ -1730,6 +1738,147 @@ export async function poly_obj(obj, id) {
     return otmp;
 }
 
+// C ref: zap.c polyuse()
+/* Use up at least minwt number of things made of material mat.
+ * There's also a chance that other stuff will be used up.  Finally,
+ * there's a random factor here to keep from always using the stuff
+ * at the top of the pile.
+ */
+async function polyuse(objhdr, mat, minwt) {
+    const g = game;
+    if (!objhdr)
+        return;
+    const pile = level_objects_at(objhdr.ox, objhdr.oy);
+
+    for (let i = pile.indexOf(objhdr); minwt > 0 && i >= 0 && i < pile.length; i++) {
+        const otmp = pile[i]; /* otmp2 = otmp->nexthere */
+        if (g.context.bypasses && otmp.bypass)
+            continue;
+        if (otmp === g.uball || otmp === g.uchain)
+            continue;
+        if (obj_resists(otmp, 0, 0))
+            continue; /* preserve unique objects */
+
+        if ((objects[otmp.otyp].oc_material === mat)
+            === (rn2(minwt + 1) !== 0)) {
+            /* appropriately add damage to bill */
+            if (costly_spot(otmp.ox, otmp.oy)) {
+                if (g.u.ushops && g.u.ushops.length)
+                    await addtobill(otmp, false, false, false);
+                else
+                    await stolen_value(otmp, otmp.ox, otmp.oy, false, false);
+            }
+            if (otmp.quan < LARGEST_INT)
+                minwt -= otmp.quan;
+            else
+                minwt = 0;
+            delobj(otmp);
+        }
+    }
+}
+
+// C ref: zap.c create_polymon()
+/*
+ * Polymorph some of the stuff in this pile into a monster, preferably
+ * a golem of the kind okind.
+ */
+async function create_polymon(obj, okind) {
+    const g = game;
+    let mdat = null;
+    let mtmp;
+    let material;
+    let pm_index;
+
+    if (g.context.bypasses && obj) {
+        /* this is approximate because the "no golems" !obj->nexthere
+           check below doesn't understand bypassed objects; but it
+           should suffice since bypassed objects always end up as a
+           consecutive group at the top of their pile */
+        const pile = level_objects_at(obj.ox, obj.oy);
+        let i = pile.indexOf(obj);
+        while (obj && obj.bypass)
+            obj = pile[++i] || null; /* obj->nexthere */
+    }
+
+    /* no golems if you zap only one object -- not enough stuff */
+    if (!obj)
+        return;
+    {
+        const pile = level_objects_at(obj.ox, obj.oy);
+        const nexthere = pile[pile.indexOf(obj) + 1] || null;
+        if (!nexthere && obj.quan === 1)
+            return;
+    }
+
+    /* some of these choices are arbitrary */
+    switch (okind) {
+    case IRON:
+    case METAL:
+    case MITHRIL:
+        pm_index = M.PM_IRON_GOLEM;
+        material = "metal ";
+        break;
+    case COPPER:
+    case SILVER:
+    case PLATINUM:
+    case GEMSTONE:
+    case MINERAL:
+        pm_index = rn2(2) ? M.PM_STONE_GOLEM : M.PM_CLAY_GOLEM;
+        material = "lithic ";
+        break;
+    case 0:
+    case FLESH:
+        /* there is no flesh type, but all food is type 0, so we use it */
+        pm_index = M.PM_FLESH_GOLEM;
+        material = "organic ";
+        break;
+    case WOOD:
+        pm_index = M.PM_WOOD_GOLEM;
+        material = "wood ";
+        break;
+    case LEATHER:
+        pm_index = M.PM_LEATHER_GOLEM;
+        material = "leather ";
+        break;
+    case CLOTH:
+        pm_index = M.PM_ROPE_GOLEM;
+        material = "cloth ";
+        break;
+    case BONE:
+        pm_index = M.PM_SKELETON; /* nearest thing to "bone golem" */
+        material = "bony ";
+        break;
+    case GOLD:
+        pm_index = M.PM_GOLD_GOLEM;
+        material = "gold ";
+        break;
+    case GLASS:
+        pm_index = M.PM_GLASS_GOLEM;
+        material = "glassy ";
+        break;
+    case PAPER:
+        pm_index = M.PM_PAPER_GOLEM;
+        material = "paper ";
+        break;
+    default:
+        /* if all else fails... */
+        pm_index = M.PM_STRAW_GOLEM;
+        material = "";
+        break;
+    }
+
+    if (!(g.mvitals[pm_index].mvflags & G_GENOD))
+        mdat = mons[pm_index];
+
+    mtmp = makemon(mdat, obj.ox, obj.oy, MM_NOMSG);
+    await polyuse(obj, okind, mons[pm_index].cwt);
+
+    if (mtmp && cansee(mtmp.mx, mtmp.my)) {
+        await pline(`Some ${material}objects meld, and ${
+            a_monnam(mtmp)} arises from the pile!`);
+    }
+}
+
 // C ref: zap.c get_mon_location()
 /* returns [x, y], or null for a migrating or buried monster (C returns
    FALSE with *xp = *yp = 0) */
@@ -1810,7 +1959,7 @@ export async function bhitpile(
     }
 
     if (g.poly_zapped >= 0)
-        throw new Error('bhitpile(): create_polymon() not ported yet');
+        await create_polymon(pile_at()[0] || null, g.poly_zapped);
 
     /* when boulders are present they're expected to be on top; with
        multiple boulders it's possible for some to have been changed into
