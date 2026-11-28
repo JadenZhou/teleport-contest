@@ -464,8 +464,10 @@ async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
                 if (!mhm.damage)
                     return;
                 if (objects[otmp.otyp].oc_material === SILVER
-                    && Hate_silver())
-                    throw new Error('mhitm_ad_phys(): "The silver sears your flesh!" not ported yet');
+                    && Hate_silver()) {
+                    await pline_The("silver sears your flesh!");
+                    await exercise(A_CON, false);
+                }
                 /* this redundancy necessary because you have
                    to take the damage _before_ being cloned;
                    need to have at least 2 hp left to split */
