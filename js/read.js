@@ -141,6 +141,20 @@ import { buried_ball_to_freedom } from './dig.js';
 import { LEG } from './const.js';
 import { uslinging } from './dothrow.js';
 import { shieldeff } from './display.js';
+import { QBUFSZ, LL_GENOCIDE, G_GENOD, G_EXTINCT, Upolyd, KILLED_BY, POLYMORPH,
+         GENOCIDED } from './const.js';
+import { G_GENO, G_NOCORPSE } from './monsters.js';
+import { list_genocided, num_genocides, vampshifted } from './insight.js';
+import { polyself, rehumanize, udeadinside } from './polyself.js';
+import { is_human, is_demon, monsndx, type_is_pname } from './mondata.js';
+import { adjalign } from './attrib.js';
+import { verbalize } from './display.js';
+import { Unchanging } from './youprop.js';
+import { lowc } from './hacklib.js';
+import { uhis } from './mhitu.js';
+import { delayed_killer } from './potion.js';
+import { done } from './end.js';
+import { kill_genocided_monsters } from './mon.js';
 
 /* C ref: color.h NH_* color names */
 const NH_BLACK = "black", NH_AMBER = "amber", NH_GOLDEN = "golden",
@@ -1458,8 +1472,201 @@ async function seffect_genocide(sobjp) {
     if (sblessed)
         throw new Error('seffect_genocide(): do_class_genocide() not ported yet');
     else
-        throw new Error(`seffect_genocide(): do_genocide(${(!scursed ? 1 : 0)
-                                                             | (2 * (Confusion() ? 1 : 0))}) not ported yet`);
+        await do_genocide((!scursed ? 1 : 0) | (2 * (Confusion() ? 1 : 0)));
+}
+
+const REALLY = 1;
+const PLAYER = 2;
+const ONTHRONE = 4;
+// C ref: read.c do_genocide()
+export async function do_genocide(
+    how) /* 0 = no genocide; create monsters (cursed scroll)
+          * 1 = normal genocide
+          * 3 = forced genocide of player
+          * 5 (4 | 1) = normal genocide from throne */
+{
+    const g = game, u = g.u;
+    let buf, realbuf, promptbuf;
+    let i, killplayer = 0;
+    let mndx;
+    let ptr;
+    let which;
+
+    if (how & PLAYER) {
+        mndx = u.umonster; /* non-polymorphed mon num */
+        ptr = mons[mndx];
+        buf = pmname(ptr, g.flags.female ? FEMALE : MALE); /* Ugender */
+        killplayer++;
+    } else {
+        buf = ''; /* init for EDIT_GETLIN */
+        for (i = 0; ; i++) {
+            if (i >= 5) {
+                /* cursed effect => no free pass (unless rndmonst() fails) */
+                if (!(how & REALLY) && (ptr = rndmonst()) != null)
+                    break;
+
+                await pline(thats_enough_tries);
+                return;
+            }
+            promptbuf = "What type of monster do you want to genocide?";
+            if (i > 0)
+                promptbuf = `${promptbuf} [enter ${
+                    (g.iflags?.cmdassist !== false)
+                      ? "the name of a type of monster, or '?'"
+                      : "'?' to see previous genocides"}]`.slice(0, QBUFSZ_RD - 1);
+            buf = (await tty_getlin(promptbuf)) || '';
+            buf = mungspaces(buf);
+            /* avoid 'such creatures do not exist' for empty input */
+            if (!buf) {
+                await pline(`${(i + 1 < 5)
+                               ? "Type the name of a type of monster or 'none'"
+                               /* next iteration gives "that's enough tries"
+                                  so don't suggest typing anything this time */
+                               : "No type of monster specified"}.`);
+                continue; /* try again */
+            }
+            /* choosing "none" preserves genocideless conduct */
+            if (buf[0] === '\x1b' || buf.toLowerCase() === "none"
+                || buf.toLowerCase() === "'none'" || buf.toLowerCase() === "nothing") {
+                /* ... but no free pass if cursed */
+                if (!(how & REALLY) && (ptr = rndmonst()) != null)
+                    break; /* remaining checks don't apply */
+
+                livelog_printf(LL_GENOCIDE, "declined to perform genocide");
+                return;
+            }
+            /* "?" or "'?'" runs #genocided to show existing genocides */
+            if (buf === "?" || buf === "'?'") {
+                await list_genocided('g', false);
+                --i; /* don't count this iteration as one of the tries */
+                continue;
+            }
+
+            mndx = name_to_mon(buf, null);
+            if (mndx === NON_PM || (g.mvitals[mndx].mvflags & G_GENOD_RD)) {
+                await pline(`Such creatures ${
+                    (mndx === NON_PM) ? "do not" : "no longer"} exist in this world.`);
+                continue;
+            }
+            ptr = mons[mndx];
+            /* first revert if current shifted form or base vampire form */
+            if (Upolyd_rd() && vampshifted(g.youmonst)
+                && (mndx === u.umonnum || mndx === g.youmonst.cham))
+                await polyself(POLY_REVERT); /* vampshifter (bat, &c) to vampire */
+            /* Although "genus" is Latin for race, the hero benefits
+             * from both race and role; thus genocide affects either.
+             */
+            if (mndx === g.urole.mnum /* Your_Own_Role() */
+                || mndx === g.urace.mnum /* Your_Own_Race() */) {
+                killplayer++;
+                break;
+            }
+            if (is_human_rd(ptr))
+                adjalign(-sgn(u.ualign.type));
+            if (is_demon_rd(ptr))
+                adjalign(sgn(u.ualign.type));
+
+            if (!(ptr.geno & G_GENO_RD)) {
+                if (!Deaf()) {
+                    /* FIXME: unconditional "caverns" will be silly in some
+                     * circumstances.  Who's speaking?  Divine pronouncements
+                     * aren't supposed to be hampered by deafness....
+                     */
+                    if (g.flags.verbose)
+                        await pline("A thunderous voice booms"
+                                    + " through the caverns:");
+                    /* SetVoice((struct monst *) 0, 0, 80, voice_deity) */
+                    /* FIXME? shouldn't this override deafness? */
+                    await verbalize("No, mortal!  That will not be done.");
+                }
+                continue;
+            }
+            /* KMH -- Unchanging prevents rehumanization */
+            if (Unchanging() && ptr === g.youmonst.data)
+                killplayer++;
+            break;
+        }
+        mndx = monsndx_rd(ptr); /* needed for the 'no free pass' cases */
+    }
+
+    which = "all ";
+    realbuf = ptr.pmnames[NEUTRAL]; /* standard singular */
+    if (Hallucination()) {
+        /* hallucinate hero's type */
+        if (Upolyd_rd()) {
+            buf = pmname(g.youmonst.data, g.flags.female ? FEMALE : MALE);
+        } else {
+            buf = (g.flags.female && g.urole.name.f) ? g.urole.name.f
+                                                     : g.urole.name.m;
+            buf = lowc(buf[0]) + buf.slice(1);
+        }
+    } else {
+        /* use actual type */
+        buf = realbuf;
+        if ((ptr.geno & G_UNIQ) && ptr !== mons[PM_HIGH_CLERIC])
+            which = !type_is_pname(ptr) ? "the " : "";
+    }
+
+    if (how & REALLY) {
+        if (!num_genocides())
+            livelog_printf(LL_CONDUCT | LL_GENOCIDE,
+                           `performed ${uhis()} first genocide (${makeplural(realbuf)})`);
+        else
+            livelog_printf(LL_GENOCIDE, `genocided ${makeplural(realbuf)}`);
+
+        /* setting no-corpse affects wishing and random tin generation */
+        g.mvitals[mndx].mvflags |= (G_GENOD_RD | G_NOCORPSE_RD);
+        await pline(`Wiped out ${which}${
+            (which[0] !== 'a') ? buf : makeplural(buf)}.`);
+
+        if (killplayer) {
+            u.uhp = -1;
+            if (how & PLAYER) {
+                g.killer.format = KILLED_BY_RD;
+                g.killer.name = "genocidal confusion";
+            } else if (how & ONTHRONE) {
+                /* player selected while on a throne */
+                g.killer.format = KILLED_BY_AN;
+                g.killer.name = "imperious order";
+            } else { /* selected player deliberately, not confused */
+                g.killer.format = KILLED_BY_AN;
+                g.killer.name = "scroll of genocide";
+            }
+
+            /* Polymorphed characters will die as soon as they're rehumanized.
+               KMH -- Unchanging prevents rehumanization. */
+            if (Upolyd_rd() && ptr !== g.youmonst.data) {
+                delayed_killer(POLYMORPH_RD, g.killer.format, g.killer.name);
+                await You_feel(`${udeadinside()} inside.`);
+            } else {
+                await done(GENOCIDED_RD);
+            }
+        } else if (ptr === g.youmonst.data) {
+            await rehumanize();
+        }
+        await kill_genocided_monsters();
+        /* update_inventory(): no perm_invent */ /* in case identified eggs were affected */
+    } else {
+        let cnt = 0, census = monster_census(false);
+
+        if (!(mons[mndx].geno & G_UNIQ)
+            && !(g.mvitals[mndx].mvflags & (G_GENOD_RD | G_EXTINCT_RD)))
+            for (i = rn1(3, 4); i > 0; i--) {
+                if (!makemon(ptr, u.ux, u.uy, NO_MINVENT | MM_NOMSG))
+                    break; /* couldn't make one */
+                ++cnt;
+                if (g.mvitals[mndx].mvflags & G_EXTINCT_RD)
+                    break; /* just made last one */
+            }
+        if (cnt) {
+            /* accumulated 'cnt' doesn't take groups into account;
+               assume bringing in new mon(s) didn't remove any old ones */
+            cnt = monster_census(false) - census;
+            await pline(`Sent in ${(cnt > 1) ? "some " : ""}${
+                (cnt > 1) ? makeplural(buf) : an(buf)}.`);
+        } else
+            await pline(nothing_happens);
+    }
 }
 
 // C ref: read.c seffect_light()

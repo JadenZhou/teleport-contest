@@ -197,7 +197,7 @@ function URIGHTY() { return U().uhandedness === RIGHT_HANDED; }
    attributes_enlightenment() checks */
 
 /* C ref: mondata.h lays_eggs(); monst.h vampshifted() */
-function vampshifted(mon) {
+export function vampshifted(mon) {
     return (mon.cham === M.PM_VAMPIRE || mon.cham === M.PM_VAMPIRE_LEADER
             || mon.cham === M.PM_VLAD_THE_IMPALER) /* is_vampshifter() */
            && !(mon.data.mlet === M.S_VAMPIRE); /* !is_vampire() */

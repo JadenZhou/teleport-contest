@@ -3408,7 +3408,7 @@ function kill_eggs(obj_list) {
 
 // C ref: mon.c kill_genocided_monsters()
 /* kill all members of genocided species */
-export function kill_genocided_monsters() {
+export async function kill_genocided_monsters() {
     const g = game;
     let mtmp, mtmp2;
     let kill_cham;
@@ -3422,8 +3422,11 @@ export function kill_genocided_monsters() {
         kill_cham = (mtmp.cham !== undefined && mtmp.cham >= LOW_PM /* ismnum() */
                      && (g.mvitals[mtmp.cham].mvflags & G_GENOD));
         if ((g.mvitals[mndx].mvflags & G_GENOD) || kill_cham) {
-            /* newcham(mtmp, NULL, NC_SHOW_MSG) or mondead(mtmp) */
-            throw new Error('kill_genocided_monsters(): removing genocided monsters not ported yet');
+            if ((mtmp.cham !== undefined && mtmp.cham >= LOW_PM) /* ismnum() */
+                && !kill_cham)
+                await newcham(mtmp, null, NC_SHOW_MSG);
+            else
+                await mondead(mtmp);
         }
         if (mtmp.minvent)
             kill_eggs(mtmp.minvent);

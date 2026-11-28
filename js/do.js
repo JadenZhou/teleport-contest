@@ -965,7 +965,7 @@ export async function goto_level(newlevel, at_stairs, falling, portal) {
     if (g.migrating_objs)
         await obj_delivery(false);
     await losedogs();
-    kill_genocided_monsters(); /* for those wiped out while in limbo */
+    await kill_genocided_monsters(); /* for those wiped out while in limbo */
     /*
      * Expire all timers that have gone off while away.  Must be
      * after migrating monsters and objects are delivered
