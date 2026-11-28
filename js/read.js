@@ -21,7 +21,7 @@ import { DEADMONSTER } from './mon.js';
 import { is_art } from './artifact.js';
 import { rn2, rnd, rn1, d } from './rng.js';
 import { livelog_printf, You_hear } from './display.js';
-import { LL_CONDUCT, Luck } from './const.js';
+import { LL_CONDUCT, Luck, POLY_REVERT } from './const.js';
 import { CANDY_BAR, Is_dragon_scales, is_shield, greatest_erosion,
          is_weptool } from './objects.js';
 import { game } from './gstate.js';
