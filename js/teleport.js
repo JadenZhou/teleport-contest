@@ -40,7 +40,7 @@ import { resists_magm } from './mondata.js';
 import { settrack } from './track.js';
 import { set_ustuck } from './uhitm.js';
 import { Monnam, mon_nam, Amonnam } from './do_name.js';
-import { maybe_unhide_at } from './mon.js';
+import { maybe_unhide_at, m_into_limbo, deal_with_overcrowding } from './mon.js';
 import { set_apparxy, mon_track_clear, dochugw, onscary } from './monmove.js';
 import { mintrap, seetrap, t_at, HOLE, TRAPDOOR, TELEP_TRAP,
          LEVEL_TELEP, MAGIC_PORTAL, NO_TRAP, Trap_Effect_Finished,
@@ -293,7 +293,7 @@ export async function mnexto(mtmp, rlocflags) {
     }
 
     if (!enexto(mm, u.ux, u.uy, mtmp.data) || !isok(mm.x, mm.y)) {
-        /* deal_with_overcrowding(mtmp): not ported yet */
+        await deal_with_overcrowding(mtmp);
         return;
     }
     /* iflags.mon_telecontrol: wizard mode only, not ported */
@@ -1861,7 +1861,7 @@ export async function u_teleport_mon(mtmp, give_feedback) {
             await You(`are no longer inside ${mon_nam(mtmp)}!`);
         await unstuck_utm(mtmp);
         if (!(await rloc(mtmp, RLOC_MSG)))
-            throw new Error('u_teleport_mon(): m_into_limbo() not ported yet');
+            await m_into_limbo(mtmp);
     } else if ((is_rider(mtmp.data) || control_teleport(mtmp.data))
                && rn2(13) && enexto(cc, u.ux, u.uy, mtmp.data)) {
         await rloc_to(mtmp, cc.x, cc.y);

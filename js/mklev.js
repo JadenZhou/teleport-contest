@@ -95,6 +95,7 @@ import { makeplural } from './objnam.js';
 import { body_part } from './insight.js';
 import { oinit } from './o_init.js';
 import { Is_earthlevel as Is_earthlevel_mk, W_NONPASSWALL as W_NONPASSWALL_MK } from './const.js';
+import { m_into_limbo as m_into_limbo_mk } from './mon.js';
 
 // Object classes and object numbers: objects.js
 import {
@@ -334,7 +335,7 @@ async function put_lregion_here(x, y, nlx, nly, nhx, nhy, rtype, oneshot, lev) {
             /* move the monster if no choice, or just try again */
             if (oneshot) {
                 if (!(await rloc(mtmp, RLOC_NOMSG)))
-                    throw new Error('put_lregion_here(): m_into_limbo() not ported yet');
+                    await m_into_limbo_mk(mtmp);
             } else
                 return false;
         }

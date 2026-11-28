@@ -291,6 +291,15 @@ import { highc } from './hacklib.js';
 import { MZ_TINY } from './monsters.js';
 import { genders } from './role.js';
 import { rn2_fnptr } from './rng.js';
+import { mkobj as mkobj_hp, rnd_class as rnd_class_hp, fixup_oil as fixup_oil_hp,
+         weight as weight_hp, add_to_container as add_to_container_hp } from './mkobj.js';
+import { vtense as vtense_hp, aobjnam as aobjnam_hp } from './objnam.js';
+import { addtobill as addtobill_hp } from './shk.js';
+import { hitfloor as hitfloor_hp } from './dothrow.js';
+import { doaltarobj as doaltarobj_hp, dropy as dropy_hp } from './do.js';
+import { encumber_msg as encumber_msg_hp } from './pickup.js';
+import { carried as carried_hp, FOOD_CLASS as FOOD_CLASS_HP } from './objects.js';
+import { IRONBARS as IRONBARS_HP, IS_ALTAR as IS_ALTAR_HP } from './const.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
@@ -1295,7 +1304,8 @@ export async function doapply() {
         res = await do_play_instrument(obj);
         break;
     case O.HORN_OF_PLENTY: /* not a musical instrument */
-        throw new Error('doapply(): hornoplenty() not ported yet');
+        await hornoplenty(obj, false, null);
+        break;
     case O.LAND_MINE:
     case O.BEARTRAP:
         throw new Error('doapply(): use_trap() not ported yet');
@@ -3203,4 +3213,101 @@ async function flip_coin(obj) {
         await pline(`It comes up ${rn2(2) ? "heads" : "tails"}.`);
     }
     return ECMD_TIME;
+}
+
+// C ref: mkobj.c hornoplenty()
+/* create an object from a horn of plenty; mirrors bagotricks(makemon.c) */
+export async function hornoplenty(
+    horn,
+    tipping, /* caller emptying entire contents; affects shop mesgs */
+    targetbox) /* if non-Null, container to tip into */
+{
+    const g = game;
+    const u = g.u;
+    let objcount = 0;
+
+    if (!horn || horn.otyp !== O.HORN_OF_PLENTY) {
+        /* impossible("bad horn o' plenty") */
+        throw new Error('hornoplenty(): impossible() bad horn not ported yet');
+    } else if (horn.spe < 1) {
+        await pline(nothing_happens_ap); /* pline1(nothing_happens) */
+        if (!horn.cknown) {
+            horn.cknown = 1;
+            /* update_inventory(): no perm_invent */
+        }
+    } else {
+        let obj;
+        let what;
+
+        consume_obj_charge(horn, !tipping);
+        if (!rn2(13)) {
+            obj = mkobj_hp(POTION_CLASS, false);
+            if (O.objects[obj.otyp].oc_magic) {
+                do {
+                    obj.otyp = rnd_class_hp(O.POT_BOOZE, O.POT_WATER);
+                } while (obj.otyp === O.POT_SICKNESS);
+                /* oil uses obj->age field differently from other potions */
+                if (obj.otyp === POT_OIL)
+                    fixup_oil_hp(obj, null);
+            }
+            what = (obj.quan > 1) ? "Some potions" : "A potion";
+        } else {
+            obj = mkobj_hp(FOOD_CLASS_HP, false);
+            if (obj.otyp === O.FOOD_RATION && !rn2(7))
+                obj.otyp = O.LUMP_OF_ROYAL_JELLY;
+            what = "Some food";
+        }
+        ++objcount;
+        await pline(`${what} ${vtense_hp(what, "spill")} out.`);
+        obj.blessed = horn.blessed;
+        obj.cursed = horn.cursed;
+        obj.owt = weight_hp(obj);
+        /* using a shop's horn of plenty entails a usage fee and also
+           confers ownership of the created item to the shopkeeper */
+        if (horn.unpaid)
+            await addtobill_hp(obj, false, false, tipping);
+        /* if it ended up on bill, we don't want "(unpaid, N zorkmids)"
+           being included in its formatted name during next message */
+        g.iflags.suppress_price = (g.iflags.suppress_price || 0) + 1;
+        if (!tipping) {
+            const typ = g.level.at(u.ux, u.uy).typ;
+            obj = await hold_another_object(obj,
+                                            u.uswallow
+                                              ? "Oops!  %s out of your reach!"
+                                              : (Is_airlevel(u.uz)
+                                                 || Is_waterlevel(u.uz)
+                                                 || typ < IRONBARS_HP
+                                                 || typ >= ICE)
+                                                ? "Oops!  %s away from you!"
+                                                : "Oops!  %s to the floor!",
+                                            The(aobjnam_hp(obj, "slip")), null);
+            /* nhUse(obj) */
+        } else if (targetbox) {
+            add_to_container_hp(targetbox, obj);
+            /* add to container doesn't update the weight */
+            targetbox.owt = weight_hp(targetbox);
+            /* item still in magic horn was weightless; when it's now in
+               a carried container, hero's encumbrance could change */
+            if (carried_hp(targetbox)) {
+                await encumber_msg_hp();
+                /* update_inventory(): no perm_invent */
+            }
+        } else {
+            /* assumes this is taking place at hero's location */
+            if (!can_reach_floor(true)) {
+                await hitfloor_hp(obj, true); /* does altar check, message, drop */
+            } else {
+                if (IS_ALTAR_HP(g.level.at(u.ux, u.uy).typ))
+                    await doaltarobj_hp(obj); /* does its own drop message */
+                else
+                    await pline(`${upstart(doname(obj)) /* Doname2() */} ${
+                        otense(obj, "drop")} to the ${surface(u.ux, u.uy)}.`);
+                await dropy_hp(obj);
+            }
+        }
+        g.iflags.suppress_price--;
+        if (horn.dknown)
+            makeknown(O.HORN_OF_PLENTY);
+    }
+    return objcount;
 }
