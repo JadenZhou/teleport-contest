@@ -1412,6 +1412,7 @@ function replace_object(obj, otmp) {
         if (i >= 0)
             fobj.splice(i, 1);
         fobj.splice(fobj.indexOf(obj), 1, otmp);
+        obj.where = 'OBJ_FREE'; /* extract_nobj() leaves obj free */
         break;
     }
     case 'OBJ_MINVENT': {

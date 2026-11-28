@@ -14,7 +14,7 @@
 import { DEADMONSTER } from './mon.js';
 import { helpless } from './monmove.js';
 import { is_art, artifact_light } from './artifact.js';
-import { passes_rocks, unconscious } from './trap.js';
+import { passes_rocks, unconscious, is_waterwall } from './trap.js';
 import { resists_poison, slithy, is_animal, type_is_pname, hides_under,
          nohands, verysmall, bigmonst, amorphous, unsolid, noncorporeal,
          is_whirly, has_head, thick_skinned, flaming, touch_petrifies,
@@ -129,6 +129,7 @@ import { make_stoned } from './potion.js';
 import { poly_when_stoned } from './mondata.js';
 import { the } from './iactions.js';
 import { RLOC_MSG, M_ATTK_AGR_DONE, M_ATTK_AGR_DIED, KILLED_BY_AN, KILLED_BY,
+         POOL, DROWNING, Is_medusa_level,
          NEW_MOON, STONED, STONE_RES, DEAF } from './const.js';
 import { DRAIN_RES, M_SEEN_FIRE, M_SEEN_COLD, M_SEEN_ACID, M_SEEN_SLEEP,
          FIRE_RES, COLD_RES, ACID_RES, SLEEP_RES, TELEPORT_CONTROL, BLINDED,
@@ -1980,10 +1981,20 @@ async function mhitm_ad_wrap(magr, mattk, mdef, mhm) {
                 }
             } else if (u.ustuck === magr) {
                 if (is_pool(magr.mx, magr.my) && !Swimming()
-                    && !Amphibious() && !Breathless())
-                    throw new Error('mhitm_ad_wrap(): drowning the hero not ported yet');
-                else if (mattk.aatyp === AT_HUGS)
+                    && !Amphibious() && !Breathless()) {
+                    const moat = (game.level.at(magr.mx, magr.my).typ !== POOL)
+                                 && !is_waterwall(magr.mx, magr.my)
+                                 && !Is_medusa_level(u.uz)
+                                 && !Is_waterlevel(u.uz);
+
+                    await urgent_pline(`${Monnam(magr)} drowns you...`);
+                    killer().format = KILLED_BY_AN;
+                    killer().name = `${moat ? "moat" : "pool of water"} by ${
+                        an(pmname(magr.data, Mgender(magr)))}`;
+                    await done(DROWNING);
+                } else if (mattk.aatyp === AT_HUGS) {
                     await You("are being crushed.");
+                }
             } else {
                 mhm.damage = 0;
                 if (game.flags.verbose) {
