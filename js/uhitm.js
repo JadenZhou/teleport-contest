@@ -176,6 +176,7 @@ import { EXPENSIVE_CAMERA, EGG, CREAM_PIE, BLINDING_VENOM, ACID_VENOM, ROCK,
 import { corpse_xname, An, singular, cxname } from './objnam.js';
 import { observe_object } from './o_init.js';
 import { munstone, munslime } from './muse.js';
+import { monstone, mon_to_stone } from './mon.js';
 import { stale_egg, eat_brains } from './eat.js';
 import { explode } from './explode.js';
 import { is_vampshifter, haseyes, resists_acid,
@@ -1021,8 +1022,48 @@ async function mhitm_ad_ston(magr, mattk, mdef, mhm) {
             }
         }
     } else {
-        throw new Error('mhitm_ad_ston(): mhitm branch (do_stone_mon()) not ported yet');
+        /* mhitm */
+        if (magr.mcan)
+            return;
+        await do_stone_mon(magr, mattk, mdef, mhm);
+        if (mhm.done)
+            return;
     }
+}
+
+// C ref: uhitm.c do_stone_mon()
+export async function do_stone_mon(magr, mattk, mdef, mhm) {
+    const pd = mdef.data;
+    let post_stone = false;
+
+    /* may die from the acid if it eats a stone-curing corpse */
+    if (await munstone(mdef, false))
+        post_stone = true; /* goto post_stone */
+    if (!post_stone && poly_when_stoned(pd)) {
+        await mon_to_stone(mdef);
+        mhm.damage = 0;
+        return;
+    }
+    if (post_stone || !resists_ston(mdef)) {
+        if (!post_stone) {
+            if (game.mhitm_vis && canseemon(mdef))
+                await pline_mon(mdef, `${Monnam(mdef)} turns to stone!`);
+            await monstone(mdef);
+        }
+        /* post_stone: */
+        if (!DEADMONSTER(mdef)) {
+            mhm.hitflags = M_ATTK_MISS;
+            mhm.done = true;
+            return;
+        } else if (mdef.mtame && !game.mhitm_vis) {
+            await You(`have a ${"peculiarly sad"} feeling for a moment, then it passes.`); /* brief_feeling */
+        }
+        mhm.hitflags = (M_ATTK_DEF_DIED
+                        | ((await grow_up(magr, mdef)) ? 0 : M_ATTK_AGR_DIED));
+        mhm.done = true;
+        return;
+    }
+    mhm.damage = (mattk.adtyp === AD_STON ? 0 : 1);
 }
 
 

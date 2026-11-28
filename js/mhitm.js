@@ -118,7 +118,7 @@ import { mon_reflects } from './muse.js';
 import { golemeffects, healmon, shieldeff_mon as shieldeff_mon_mp } from './mon.js';
 import { split_mon } from './potion.js';
 import { haseyes, perceives } from './mondata.js';
-import { erode_armor } from './uhitm.js';
+import { erode_armor, do_stone_mon } from './uhitm.js';
 import { acid_damage } from './trap.js';
 import { drain_item } from './zap.js';
 import { hliquid } from './potion.js';
@@ -611,8 +611,11 @@ export async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
         let marmg;
 
         if (mwep.otyp === CORPSE
-            && touch_petrifies(mons[mwep.corpsenm]))
-            throw new Error('mhitm_ad_phys(): do_stone_mon() not ported yet');
+            && touch_petrifies(mons[mwep.corpsenm])) {
+            await do_stone_mon(magr, mattk, mdef, mhm);
+            if (mhm.done)
+                return;
+        }
 
         mhm.damage += dmgval(mwep, mdef);
         if ((marmg = which_armor(magr, W_ARMG)) != null
