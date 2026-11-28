@@ -140,8 +140,8 @@ import { canspotmon, canseemon } from './display.js';
 import { mindless, monsndx } from './mondata.js';
 import { AMAX, ATTRMIN, gainstr, setuhpmax } from './attrib.js';
 import { polymon, rehumanize } from './polyself.js';
-import { heal_legs } from './trap.js';
-import { POISONING } from './const.js';
+import { heal_legs, b_trapped } from './trap.js';
+import { POISONING, COST_DSTROY, NO_PART } from './const.js';
 import { hcolor } from './do_name.js';
 import { Fixed_abil } from './youprop.js';
 import { Lifesaved } from './youprop.js';
@@ -1569,9 +1569,9 @@ export async function eating_conducts(pd) {
     }
 }
 
-// C ref: eat.c consume_tin()
 const NH_GREEN = "green"; /* C ref: color.h */
 
+// C ref: eat.c consume_tin()
 async function consume_tin(mesg) {
     let what, which, mnum, r, nutamt;
     /* if you've eaten tin itself, chance to not eat contents gets bypassed */
@@ -1580,8 +1580,12 @@ async function consume_tin(mesg) {
     let tin = tc.tin;
 
     r = tin_variety(tin, false);
-    if (tin.otrapped || (tin.cursed && r !== HOMEMADE_TIN && !rn2(8)))
-        throw new Error('consume_tin(): b_trapped() not ported yet');
+    if (tin.otrapped || (tin.cursed && r !== HOMEMADE_TIN && !rn2(8))) {
+        await b_trapped("tin", NO_PART);
+        tin = costly_tin(COST_DSTROY);
+        await use_up_tin(tin);
+        return;
+    }
 
     await pline(mesg); /* "You succeed in opening the tin." */
 
