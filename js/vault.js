@@ -35,7 +35,7 @@ import { mons, PM_GUARD, PM_CROESUS } from './monsters.js';
 import { GOLD_PIECE, ROCK, BOULDER, TIN_WHISTLE, objects } from './objects.js';
 import { makemon, set_malign, place_monster, sobj_at, m_at, makemon_flush_msg } from './makemon.js';
 import { rloc, mnexto, enexto } from './teleport.js';
-import { mongone, setmangry } from './mon.js';
+import { mongone, setmangry, m_into_limbo } from './mon.js';
 import { yelp } from './sounds.js';
 import { deltrap, t_at } from './trap.js';
 import { del_engr_at } from './engrave.js';
@@ -89,10 +89,6 @@ function spot_stop_melt_timers(x, y) {
     const lev = game.level.at(x, y);
     if (lev.timer && lev.timer.action === 'MELT_ICE_AWAY')
         lev.timer = null;
-}
-/* C ref: mon.c m_into_limbo() */
-function m_into_limbo(/*mtmp*/) {
-    throw new Error('vault: m_into_limbo() not ported yet');
 }
 // C ref: mon.c mpickgold()
 function mpickgold(mtmp) {
@@ -151,7 +147,7 @@ async function clear_fcorr(grd, forceshow) {
                 if (mtmp.mtame)
                     await yelp(mtmp);
                 if (!(await rloc(mtmp, RLOC_MSG)))
-                    m_into_limbo(mtmp);
+                    await m_into_limbo(mtmp);
             }
         }
         lev = game.level.at(fcx, fcy);
@@ -723,7 +719,7 @@ async function wallify_vault(grd) {
                     if (mon.mtame)
                         await yelp(mon);
                     if (!(await rloc(mon, RLOC_MSG)))
-                        m_into_limbo(mon);
+                        await m_into_limbo(mon);
                 }
                 /* move gold at wall locations into the vault */
                 if ((gold = g_at(x, y)) !== null) {
@@ -794,7 +790,7 @@ async function gd_mv_monaway(grd, nx, ny) {
             await verbalize("Out of my way, scum!");
         }
         if (!(await rloc(mtmp, RLOC_ERR | RLOC_MSG)) || m_at(nx, ny))
-            m_into_limbo(mtmp);
+            await m_into_limbo(mtmp);
         recalc_block_point(nx, ny);
     }
 }

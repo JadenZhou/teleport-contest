@@ -591,7 +591,7 @@ export async function elemental_clog(mon) {
             const mx = mtmp.mx, my = mtmp.my;
 
             mtmp.mstate = (mtmp.mstate || 0) | MON_OBLITERATE_MN;
-            mongone(mtmp);
+            await mongone_async(mtmp);
             /* places in the code might still reference mtmp->mx, mtmp->my */
             /* mtmp->mx = mtmp->my = 0; */
             await rloc_to_mn(mon, mx, my);   /* note: mon, not mtmp */
