@@ -119,6 +119,15 @@ import { otense as otense_ps } from './objnam.js';
 import { observe_object as observe_object_ps, makeknown as makeknown_ps } from './o_init.js';
 import { Hallucination as Hallucination_ps } from './youprop.js';
 import { arti_light_radius } from './light.js';
+import { is_clinger as is_clinger_ps, digests as digests_ps } from './mondata.js';
+import { ECMD_OK as ECMD_OK_PS, IS_FOUNTAIN as IS_FOUNTAIN_PS,
+         Is_airlevel as Is_airlevel_ps,
+         Is_waterlevel as Is_waterlevel_ps } from './const.js';
+import { There as There_ps } from './display.js';
+import { level_objects_at as level_objects_at_ps } from './mkobj.js';
+import { Stone_resistance as Stone_resistance_ps } from './youprop.js';
+import { cxname as cxname_ps } from './objnam.js';
+import { has_ceiling as has_ceiling_ps, youhiding as youhiding_ps } from './insight.js';
 import { maybe_adjust_light } from './mkobj.js';
 import { were_beastie, counter_were } from './were.js';
 import { strsubst as strsubst_ps } from './hacklib.js';
@@ -1680,6 +1689,107 @@ export async function dospit() {
         otmp.spe = 1; /* to indicate it's yours */
         await throwit(otmp, 0, false, null);
     }
+    return ECMD_TIME;
+}
+
+// C ref: polyself.c dohide()
+export async function dohide() {
+    const u = game.u;
+    const ismimic = game.youmonst.data.mlet === M.S_MIMIC,
+          on_ceiling = is_clinger_ps(game.youmonst.data) || Flying();
+    const U_AP_TYPE = () => (game.youmonst.m_ap_type || M_AP_NOTHING);
+
+    /* can't hide while being held (or holding) or while trapped
+       (except for floor hiders [trapper or mimic] in pits) */
+    if (u.ustuck || (u.utrap && (u.utraptype !== TT_PIT || on_ceiling))) {
+        await You_cant(`hide while you're ${
+            !u.ustuck ? "trapped"
+              : u.uswallow ? (digests_ps(u.ustuck.data) ? "swallowed"
+                                                        : "engulfed")
+                : !sticks(game.youmonst.data) ? "being held"
+                  : (humanoid(u.ustuck.data) ? "holding someone"
+                                             : "holding that creature")}.`);
+        if (u.uundetected || (ismimic && U_AP_TYPE() !== M_AP_NOTHING)) {
+            u.uundetected = 0;
+            game.youmonst.m_ap_type = M_AP_NOTHING;
+            newsym(u.ux, u.uy);
+        }
+        return ECMD_OK_PS;
+    }
+    /* note: hero-as-eel handling is incomplete but unnecessary;
+       such critters aren't offered the option of hiding via #monster */
+    if (game.youmonst.data.mlet === M.S_EEL && !is_pool(u.ux, u.uy)) {
+        if (IS_FOUNTAIN_PS(game.level.at(u.ux, u.uy).typ))
+            await pline_The("fountain is not deep enough to hide in.");
+        else
+            await There_ps(`is no ${hliquid("water")} to hide in here.`);
+        u.uundetected = 0;
+        return ECMD_OK_PS;
+    }
+    if (hides_under(game.youmonst.data)) {
+        let ct = 0;
+        const pile = level_objects_at_ps(u.ux, u.uy);
+        const otop = pile[0] || null;
+        let otmp, k;
+
+        if (!otop) {
+            await There_ps("is nothing to hide under here.");
+            u.uundetected = 0;
+            return ECMD_OK_PS;
+        }
+        for (k = 0, otmp = otop;
+             otmp && otmp.otyp === O.CORPSE
+                  && touch_petrifies(mons[otmp.corpsenm]);
+             otmp = pile[++k] || null)
+            ct += otmp.quan;
+        /* otmp will be Null iff the entire pile consists of 'trice corpses */
+        if (!otmp && !Stone_resistance_ps()) {
+            let corpse_name = cxname_ps(otop);
+
+            /* for the plural case, we'll say "cockatrice corpses" or
+               "chickatrice corpses" depending on the top of the pile
+               even if both types are present */
+            if (ct === 1)
+                corpse_name = an(corpse_name);
+            /* no need to check poly_when_stoned(); no hide-underers can
+               turn into stone golems instead of becoming petrified */
+            await pline(`Hiding under ${corpse_name}${plur(ct)} is a fatal mistake...`);
+            const kbuf = `hiding under ${corpse_name}${plur(ct)}`;
+            await instapetrify(kbuf);
+            /* only reach here if life-saved */
+            u.uundetected = 0;
+            return ECMD_TIME;
+        }
+    }
+    /* Planes of Air and Water */
+    if (on_ceiling && !has_ceiling_ps(u.uz)) {
+        await There_ps("is nowhere to hide above you.");
+        u.uundetected = 0;
+        return ECMD_OK_PS;
+    }
+    if ((is_hider(game.youmonst.data) && !Flying()) /* floor hider */
+        && (Is_airlevel_ps(u.uz) || Is_waterlevel_ps(u.uz))) {
+        await There_ps("is nowhere to hide beneath you.");
+        u.uundetected = 0;
+        return ECMD_OK_PS;
+    }
+    /* TODO? inhibit floor hiding at furniture locations, or
+     * else make youhiding() give smarter messages at such spots.
+     */
+
+    if (u.uundetected || (ismimic && U_AP_TYPE() !== M_AP_NOTHING)) {
+        await youhiding_ps(false, 1); /* "you are already hiding" */
+        return ECMD_OK_PS;
+    }
+
+    if (ismimic) {
+        /* should bring up a dialog "what would you like to imitate?" */
+        game.youmonst.m_ap_type = M_AP_OBJECT;
+        game.youmonst.mappearance = O.STRANGE_OBJECT;
+    } else
+        u.uundetected = 1;
+    newsym(u.ux, u.uy);
+    await youhiding_ps(false, 0); /* "you are now hiding" */
     return ECMD_TIME;
 }
 

@@ -128,6 +128,17 @@ import { hliquid } from './potion.js';
 import { finish_meating as finish_meating_md } from './dogmove.js';
 import { pline_mon } from './display.js';
 import { shieldeff } from './display.js';
+import { engulf_target, enfolds } from './mhitu.js';
+import { engulfing_u, MM_IGNOREWATER, NO_NC_FLAGS, NC_SHOW_MSG, ismnum } from './const.js';
+import { digests, flaming, slimeproof } from './mondata.js';
+import { snuff_lit } from './apply.js';
+import { newcham, mondead, minliquid, mon_givit, minv } from './mon.js';
+import { goodpos, place_monster } from './makemon.js';
+import { remove_monster_at } from './worm.js';
+import { t_at, Trap_Killed_Mon } from './trap.js';
+import { mon_explodes } from './explode.js';
+import { Your as Your_mm } from './display.js';
+import { ARTICLE_A, SUPPRESS_NAME, SUPPRESS_IT, SUPPRESS_INVISIBLE } from './do_name.js';
 
 /* C ref: mondata.c sticks() is engrave.js sticks() */
 
@@ -475,6 +486,63 @@ export async function mattackm(magr, mdef) {
                 await missmm(magr, mdef, mattk);
             break;
 
+        case AT_HUGS: /* automatic if prev two attacks succeed */
+            strike = (i >= 2 && res[i - 1] === M_ATTK_HIT
+                      && res[i - 2] === M_ATTK_HIT) ? 1 : 0;
+            if (strike) {
+                /* note: monsters with hug attacks don't wear cloaks or gloves
+                   so this doesn't need a special case for hugging a shade
+                   while covered by blessed armor (which does damage but does
+                   not achieve a successful hold); likewise, rope golems can't
+                   wield weapons so ability to choke isn't affected by such */
+                if (await failed_grab(magr, mdef, mattk))
+                    strike = 0;
+                else
+                    res[i] = await hitmm(magr, mdef, mattk, null, 0);
+            }
+            break;
+
+        case AT_EXPL:
+            /* D: Prevent explosions from a distance */
+            if (distmin(magr.mx, magr.my, mdef.mx, mdef.my) > 1)
+                continue;
+
+            res[i] = await explmm(magr, mdef, mattk);
+            if (res[i] === M_ATTK_MISS) { /* cancelled--no attack */
+                strike = 0;
+                attk = 0;
+            } else
+                strike = 1; /* automatic hit */
+            break;
+
+        case AT_ENGL:
+            if (mdef.data === mons[M.PM_SHADE]) { /* no silver teeth... */
+                if (game.mhitm_vis)
+                    await pline(`${s_suffix(Monnam(magr))} attempt to engulf ${
+                        mon_nam(mdef)} is futile.`);
+                strike = 0;
+                break;
+            }
+            if (game.u.usteed && mdef === game.u.usteed) {
+                strike = 0;
+                break;
+            }
+            /* D: Prevent engulf from a distance */
+            if (distmin(magr.mx, magr.my, mdef.mx, mdef.my) > 1)
+                continue;
+            /* Engulfing attacks are directed at the hero if possible. -dlc */
+            if (engulfing_u(magr)) {
+                strike = 0;
+            } else if ((strike = (tmp > rnd(20 + i)) ? 1 : 0) !== 0) {
+                if (await failed_grab(magr, mdef, mattk))
+                    strike = 0; /* purple worm can't swallow unsolid mons */
+                else
+                    res[i] = await gulpmm(magr, mdef, mattk);
+            } else {
+                await missmm(magr, mdef, mattk);
+            }
+            break;
+
         case AT_BREA:
         case AT_SPIT:
             /*
@@ -607,6 +675,154 @@ async function hitmm(magr, mdef, mattk, mwep, dieroll) {
         await noises(magr, mattk);
 
     return await mdamagem(magr, mdef, mattk, mwep, dieroll);
+}
+
+// C ref: mhitm.c gulpmm()
+/* Returns the same values as mattackm(). */
+async function gulpmm(magr, mdef, mattk) {
+    let ax, ay, dx, dy;
+    let status;
+
+    if (!engulf_target(magr, mdef))
+        return M_ATTK_MISS;
+
+    if (game.mhitm_vis) {
+        await pline(`${Monnam(magr)} ${
+            digests(magr.data) ? "swallows"
+            : enfolds(magr.data) ? "encloses"
+              : "engulfs"} ${mon_nam(mdef)}.`);
+    }
+    if (!flaming(magr.data)) {
+        for (const obj of minv(mdef)) /* C's minvent order */
+            await snuff_lit(obj);
+    }
+
+    if (is_vampshifter(mdef)
+        && await newcham(mdef, mons[mdef.cham], NO_NC_FLAGS)) {
+        if (game.mhitm_vis) {
+            /* 'it' -- previous form is no longer available and
+               using that would be excessively verbose */
+            await pline(`${Monnam(magr)} expels ${
+                canspotmon(mdef) ? "it" : "something"}.`);
+            if (canspotmon(mdef)) {
+                await pline(`It turns into ${
+                    x_monnam(mdef, ARTICLE_A, null,
+                             (SUPPRESS_NAME | SUPPRESS_IT
+                              | SUPPRESS_INVISIBLE), false)}.`);
+            }
+        }
+        return M_ATTK_HIT; /* bypass mdamagem() */
+    }
+
+    /*
+     *  All of this manipulation is needed to keep the display correct.
+     *  There is a flush at the next pline().
+     */
+    ax = magr.mx;
+    ay = magr.my;
+    dx = mdef.mx;
+    dy = mdef.my;
+    /*
+     *  Leave the defender in the monster chain at its current position,
+     *  but don't leave it on the screen.  Move the aggressor to the
+     *  defender's position.
+     */
+    remove_monster_at(dx, dy);
+    remove_monster_at(ax, ay);
+    place_monster(magr, dx, dy);
+    newsym(ax, ay); /* erase old position */
+    newsym(dx, dy); /* update new position */
+
+    game.mswallower = magr; /* corpse_chance() wants this */
+    status = await mdamagem(magr, mdef, mattk, null, 0);
+    game.mswallower = null; /* reset */
+
+    if ((status & (M_ATTK_AGR_DIED | M_ATTK_DEF_DIED))
+        === (M_ATTK_AGR_DIED | M_ATTK_DEF_DIED)) {
+        ;                              /* both died -- do nothing  */
+    } else if (status & M_ATTK_DEF_DIED) { /* defender died */
+        /*
+         *  magr is still at mdef's former spot these days (see C's
+         *  comment); if the gulp targeted an inhospitable location,
+         *  magr will return to its previous spot instead of staying.
+         */
+        if (!goodpos(dx, dy, magr, MM_IGNOREWATER)) {
+            if (m_at(dx, dy) === magr) {
+                remove_monster_at(dx, dy);
+                newsym(dx, dy);
+            }
+            dx = ax, dy = ay; /* magr's spot at start of the attack */
+        }
+        if (m_at(dx, dy) !== magr) {
+            place_monster(magr, dx, dy);
+            newsym(dx, dy);
+        }
+        /* aggressor moves to <dx,dy> and might encounter trouble there */
+        if (await minliquid(magr)
+            || (t_at(dx, dy)
+                && await mintrap(magr, NO_TRAP_FLAGS) === Trap_Killed_Mon))
+            status |= M_ATTK_AGR_DIED;
+    } else if (status & M_ATTK_AGR_DIED) { /* aggressor died */
+        place_monster(mdef, dx, dy);
+        newsym(dx, dy);
+    } else {                           /* both alive, put them back */
+        if (cansee(dx, dy)) {
+            await pline(`${Monnam(mdef)} is ${
+                digests(magr.data) ? "regurgitated"
+                  : enfolds(magr.data) ? "released"
+                    : "expelled"}!`);
+        }
+
+        remove_monster_at(dx, dy);
+        place_monster(magr, ax, ay);
+        place_monster(mdef, dx, dy);
+        newsym(ax, ay);
+        newsym(dx, dy);
+    }
+
+    return status;
+}
+
+// C ref: mhitm.c explmm()
+async function explmm(magr, mdef, mattk) {
+    let result;
+
+    if (magr.mcan)
+        return M_ATTK_MISS;
+
+    if (cansee(magr.mx, magr.my))
+        await pline_mon(magr, `${Monnam(magr)} explodes!`);
+    else
+        await noises(magr, mattk);
+
+    /* monster explosion types which actually create an explosion */
+    if (mattk.adtyp === M.AD_FIRE || mattk.adtyp === M.AD_COLD
+        || mattk.adtyp === M.AD_ELEC) {
+        await mon_explodes(magr, mattk);
+        /* unconditionally set AGR_DIED here; lifesaving is accounted below */
+        result = M_ATTK_AGR_DIED | (DEADMONSTER(mdef) ? M_ATTK_DEF_DIED : 0);
+    } else {
+        result = await mdamagem(magr, mdef, mattk, null, 0);
+    }
+
+    /* Kill off aggressor if it didn't die. */
+    if (!(result & M_ATTK_AGR_DIED)) {
+        const was_leashed = !!magr.mleashed;
+
+        await mondead(magr);
+        if (!DEADMONSTER(magr))
+            return result; /* life saved */
+        result |= M_ATTK_AGR_DIED;
+
+        /* mondead() -> m_detach() -> m_unleash() always suppresses
+           the m_unleash() slack message, so deliver it here instead */
+        if (was_leashed)
+            await Your_mm("leash falls slack.");
+    }
+    if (magr.mtame) /* give this one even if it was visible */
+        await You_mp(`have a ${"melancholy"} feeling for a moment, then it passes.`); /* brief_feeling */
+
+    return result;
 }
 
 // C ref: uhitm.c mhitm_ad_phys(), monster-vs-monster part
@@ -838,8 +1054,12 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
 
     mdef.mhp -= mhm.damage;
     if (mdef.mhp < 1) {
-        if (m_at(mdef.mx, mdef.my) === magr) /* see gulpmm() */
-            throw new Error('mdamagem(): engulfed defender dying not ported yet');
+        if (m_at(mdef.mx, mdef.my) === magr) { /* see gulpmm() */
+            remove_monster_at(mdef.mx, mdef.my);
+            mdef.mhp = 1; /* otherwise place_monster will complain */
+            place_monster(mdef, mdef.mx, mdef.my);
+            mdef.mhp = 0;
+        }
         if (mattk.aatyp === AT_WEAP || mattk.aatyp === AT_CLAW) {
             /* troll_baned(mdef, mwep) */
             if (mdef.data.mlet === M.S_TROLL && mwep)
@@ -859,8 +1079,23 @@ async function mdamagem(magr, mdef, mattk, mwep, dieroll) {
         else if (mhm.hitflags === M_ATTK_AGR_DIED)
             return (M_ATTK_DEF_DIED | M_ATTK_AGR_DIED);
 
-        if (mattk.adtyp === AD_DGST)
-            throw new Error('mdamagem(): digestion after kill not ported yet');
+        if (mattk.adtyp === AD_DGST) {
+            /* various checks similar to dog_eat and meatobj.
+             * after monkilled() to provide better message ordering */
+            if (ismnum(mdef.cham)) {
+                await newcham(magr, null, NC_SHOW_MSG);
+            } else if (pd === mons[M.PM_GREEN_SLIME] && !slimeproof(magr.data)) {
+                await newcham(magr, mons[M.PM_GREEN_SLIME], NC_SHOW_MSG);
+            } else if (pd === mons[M.PM_WRAITH]) {
+                await grow_up(magr, null);
+                /* don't grow up twice */
+                return (M_ATTK_DEF_DIED
+                        | (!DEADMONSTER(magr) ? 0 : M_ATTK_AGR_DIED));
+            } else if (pd === mons[M.PM_NURSE]) {
+                healmon(magr, magr.mhpmax, 0);
+            }
+            await mon_givit(magr, pd);
+        }
         /* caveat: above digestion handling doesn't keep `pa' up to date */
 
         return (M_ATTK_DEF_DIED

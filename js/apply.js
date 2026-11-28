@@ -7,6 +7,17 @@
 // check_jump(), is_valid_jump_pos(), get_valid_jump_position().
 
 import { game } from './gstate.js';
+import { set_ustuck as set_ustuck_jp } from './uhitm.js';
+import { Conflict as Conflict_jp, Flying as Flying_jp } from './youprop.js';
+import { mon_nam as mon_nam_jp } from './do_name.js';
+import { set_wounded_legs as set_wounded_legs_jp, deltrap as deltrap_jp,
+         dotrap as dotrap_jp } from './trap.js';
+import { hliquid as hliquid_jp } from './potion.js';
+import { LEG as LEG_JP, FORCETRAP as FORCETRAP_JP, TOOKPLUNGE as TOOKPLUNGE_JP,
+         LEFT_SIDE as LEFT_SIDE_JP, RIGHT_SIDE as RIGHT_SIDE_JP,
+         KILLED_BY as KILLED_BY_JP, TT_BEARTRAP as TT_BEARTRAP_JP,
+         TT_WEB as TT_WEB_JP, TT_LAVA as TT_LAVA_JP,
+         TT_INFLOOR as TT_INFLOOR_JP } from './const.js';
 import { You, You_hear, pline_mon } from './display.js';
 import { getobj } from './invent.js';
 import { check_capacity } from './hack.js';
@@ -1472,7 +1483,19 @@ export async function jump(magic) {
         await pline("This calls for swimming, not jumping!");
         return ECMD_OK;
     } else if (u.ustuck) {
-        throw new Error('jump(): jumping while stuck not ported yet');
+        if (u.ustuck.mtame && !Conflict_jp() && !u.ustuck.mconf) {
+            const mtmp = u.ustuck;
+
+            set_ustuck_jp(null);
+            await You(`pull free from ${mon_nam_jp(mtmp)}.`);
+            return ECMD_TIME;
+        }
+        if (magic) {
+            await You(`writhe a little in the grasp of ${mon_nam_jp(u.ustuck)}!`);
+            return ECMD_TIME;
+        }
+        await You(`cannot escape from ${mon_nam_jp(u.ustuck)}!`);
+        return ECMD_OK;
     } else if (Levitation() || Is_airlevel(u.uz) || Is_waterlevel(u.uz)) {
         if (magic) {
             await You("flail around a little.");
@@ -1510,11 +1533,37 @@ export async function jump(magic) {
         if (u.utrap) {
             wastrapped = true;
             switch (u.utraptype) {
+            case TT_BEARTRAP_JP: {
+                const side = rn2(3) ? LEFT_SIDE_JP : RIGHT_SIDE_JP;
+                await You("rip yourself free of the bear trap!  Ouch!");
+                await losehp(Maybe_Half_Phys(rnd(10)), "jumping out of a bear trap",
+                             KILLED_BY_JP);
+                await set_wounded_legs_jp(side, rn1_ap(1000, 500));
+                break;
+            }
             case TT_PIT:
                 await You("leap from the pit!");
                 break;
+            case TT_WEB_JP:
+                await You("tear the web apart as you pull yourself free!");
+                deltrap_jp(t_at(u.ux, u.uy));
+                break;
+            case TT_LAVA_JP:
+                await You(`pull yourself above the ${hliquid_jp("lava")}!`);
+                cc.x = u.ux, cc.y = u.uy; /* take u_at() 'if' below */
+                break;
+            case TT_BURIEDBALL_bl:
+            case TT_INFLOOR_JP:
+                await You(`strain your ${makeplural_ap(body_part(LEG_JP))}, but you're still ${
+                    (u.utraptype === TT_INFLOOR_JP)
+                        ? "stuck in the floor"
+                        : "attached to the buried ball"}.`);
+                await set_wounded_legs_jp(LEFT_SIDE_JP, rn1_ap(10, 11));
+                await set_wounded_legs_jp(RIGHT_SIDE_JP, rn1_ap(10, 11));
+                return ECMD_TIME;
             default:
-                throw new Error(`jump(): jumping out of trap type ${u.utraptype} not ported yet`);
+                impossible(`Jumping out of strange trap (${u.utraptype})?`);
+                break;
             }
             /* if we reach here, hero is no longer trapped */
             await reset_utrap(true);
@@ -1528,8 +1577,12 @@ export async function jump(magic) {
                 return ECMD_TIME;
             }
             /* jumping in place on a trap will trigger it */
-            if (t_at(cc.x, cc.y))
-                throw new Error('jump(): jumping in place on a trap not ported yet');
+            let t;
+            if ((t = t_at(cc.x, cc.y)) != null) {
+                await You(`jump up and ${!Flying_jp() ? "come" : "fly"} back down.`);
+                await dotrap_jp(t, FORCETRAP_JP | TOOKPLUNGE_JP);
+                return ECMD_TIME;
+            }
             /* jumping in place takes no time and doesn't exercise anything */
             await You(`${Hallucination() ? "hop up and down a bit"
                                        : "decide not to jump after all"}.`);

@@ -10,7 +10,7 @@ import { There } from './display.js';
 import { impossible } from './hack.js';
 import { nhcb_counts, nhcb_name } from './nhlua.js';
 import { NHCB_CMD_BEFORE } from './const.js';
-import { dobreathe, dospit } from './polyself.js';
+import { dobreathe, dospit, dohide } from './polyself.js';
 import { game } from './gstate.js';
 import { nhgetch } from './input.js';
 import { newsym, flush_screen, pline, You_cant, You } from './display.js';
@@ -880,7 +880,7 @@ async function domonability() {
     else if (is_were(uptr))
         throw new Error('domonability(): dosummon() not ported yet');
     else if ((c !== '\0') ? c === 'h' : might_hide)
-        throw new Error('domonability(): dohide() not ported yet');
+        return await dohide();
     else if ((c !== '\0') ? c === 's' : webmaker(uptr))
         throw new Error('domonability(): dospinweb() not ported yet');
     else if (is_mind_flayer(uptr))
