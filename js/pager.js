@@ -65,7 +65,8 @@ import { STONE, SCORR, ROOM, CORR, SDOOR, HWALL, VWALL, TLCORNER, TRCORNER,
          isok, IS_WATERWALL, DB_UNDER, DB_ICE, DB_LAVA, DB_MOAT, DB_FLOOR,
          Is_medusa_level, Is_juiblex_level, Is_qstart, Is_waterlevel } from './const.js';
 import { hliquid } from './potion.js';
-import { PM_SAMURAI } from './monsters.js';
+import { PM_SAMURAI, M2_HUMAN, M2_ELF, M2_ORC, M2_DEMON } from './monsters.js';
+import { makeplural } from './objnam.js';
 import { glyph_at, glyph_ttychar, encglyph, canspotself, canseemon,
          mon_visible, see_with_infrared, tp_sensemon, MATCH_WARN_OF_MON,
          cmap_to_glyph, trap_to_glyph } from './display.js';
@@ -890,8 +891,19 @@ function look_at_monster(mtmp, x, y, want_monbuf) {
             if (how_seen & MONSEEN_WARNMON) {
                 if (Hallucination())
                     monbuf += "paranoid delusion";
-                else
-                    throw new Error('look_at_monster(): "warned of" monbuf not ported yet');
+                else {
+                    const wt = game.context.warntype || {};
+                    const mW = ((wt.obj || 0) | (wt.polyd || 0)),
+                          m2 = mtmp.data.mflags2;
+                    const whom = ((mW & M2_HUMAN & m2) ? "human"
+                                  : (mW & M2_ELF & m2) ? "elf"
+                                    : (mW & M2_ORC & m2) ? "orc"
+                                      : (mW & M2_DEMON & m2) ? "demon"
+                                        : pmname(mtmp.data,
+                                                 Mgender_pg(mtmp)));
+
+                    monbuf += `warned of ${makeplural(whom)}`;
+                }
                 how_seen &= ~MONSEEN_WARNMON;
                 if (how_seen)
                     monbuf += ", ";
