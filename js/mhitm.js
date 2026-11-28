@@ -142,6 +142,8 @@ import { ARTICLE_A, SUPPRESS_NAME, SUPPRESS_IT, SUPPRESS_INVISIBLE } from './do_
 import { Adjmonnam as Adjmonnam_gz } from './do_name.js';
 import { resists_blnd as resists_blnd_gz } from './mondata.js';
 import { mhitm_ad_blnd as mhitm_ad_blnd_gz } from './uhitm.js';
+import { mhitm_really_poison, set_ustuck as set_ustuck_fm } from './uhitm.js';
+import { itsstuck } from './monmove.js';
 import { M_AP_NOTHING as M_AP_NOTHING_GZ } from './const.js';
 
 /* C ref: mondata.c sticks() is engrave.js sticks() */
@@ -270,7 +272,8 @@ export async function fightm(mtmp) {
 
     if (u.ustuck === mtmp) {
         /* perhaps we're holding it... */
-        throw new Error('fightm(): itsstuck() not ported yet');
+        if (await itsstuck(mtmp))
+            return 0;
     }
     has_u_swallowed = !!(u.uswallow && u.ustuck === mtmp); /* engulfing_u() */
 
@@ -286,7 +289,11 @@ export async function fightm(mtmp) {
         if (mon !== mtmp && !(mon.mhp < 1)) { /* !DEADMONSTER(mon) */
             if (monnear(mtmp, mon.mx, mon.my)) {
                 if (!u.uswallow && (mtmp === u.ustuck)) {
-                    throw new Error('fightm(): releasing a held hero not ported yet');
+                    if (!rn2(4)) {
+                        set_ustuck_fm(null);
+                        await pline(`${Monnam(mtmp)} releases you!`);
+                    } else
+                        break;
                 }
 
                 /* mtmp can be killed */
@@ -580,14 +587,10 @@ export async function mattackm(magr, mdef) {
             }
             break;
 
-        case AT_NONE:
-        case M.AT_MAGC: /* C: default: no attack */
+        default: /* no attack */
             strike = 0;
             attk = 0;
             break;
-
-        default:
-            throw new Error(`mattackm(): attack type ${mattk.aatyp} not ported yet`);
         }
 
         if (attk && !(res[i] & M_ATTK_AGR_DIED)
@@ -960,7 +963,11 @@ export async function mhitm_ad_phys(magr, mattk, mdef, mhm) {
         if (mhm.damage)
             await rustm(mdef, mwep);
         if ((mwep.otrapped /* opoisoned */ || permapoisoned(mwep)) && !rn2(4))
-            throw new Error('mhitm_ad_phys(): mhitm_really_poison() not ported yet');
+            /* 1/4 chance of weapon poison applying is the same as in
+             * uhitm and mhitu cases. But since we don't need to call
+             * any special functions or go through tangled hmon_hitmon
+             * code, we can just jump straight to the poisoning. */
+            await mhitm_really_poison(magr, mattk, mdef, mhm);
     } else if (magr.data === mons[M.PM_PURPLE_WORM]
                && pd === mons[M.PM_SHRIEKER]) {
         /* hack to enhance mm_aggression(); we don't want purple

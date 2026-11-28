@@ -597,7 +597,7 @@ export async function mhitm_ad_stck(magr, mattk, mdef, mhm) {
 // C ref: uhitm.c mhitm_really_poison()
 /* Helper for mhitm_ad_drst(), containing some code that is also called from
    mhitm_ad_phys() */
-async function mhitm_really_poison(magr, mattk, mdef, mhm) {
+export async function mhitm_really_poison(magr, mattk, mdef, mhm) {
     const vis = game.mhitm_vis;
     if (vis && canspotmon(magr))
         await pline(`${s_suffix(Monnam(magr))} ${mpoisons_subj(magr, mattk)} was poisoned!`);
