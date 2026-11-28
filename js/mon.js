@@ -19,7 +19,7 @@ import { livelog_printf, verbalize, You_hear, You_feel } from './display.js';
 import { LL_CONDUCT } from './const.js';
 import { remove_worm, wormgone, worm_known, worm_cross, count_wsegs, get_wormno,
          initworm, place_worm_tail_randomly } from './worm.js';
-import { healup_nocure } from './potion.js';
+import { healup_nocure, hliquid } from './potion.js';
 import { mcureblindness, mon_has_special } from './muse.js';
 import { clear_bypasses, bypass_obj } from './worn.js';
 import { rn2, rn1 } from './rng.js';
@@ -2145,7 +2145,7 @@ async function minliquid_core(mtmp) {
             if (u.ustuck === mtmp && u.uswallow) { /* engulfing_u() */
                 /* This can happen after a purple worm plucks you off a
                    flying steed while you are over water. */
-                throw new Error('minliquid(): engulfer sinking not ported yet');
+                await pline(`${Monnam(mtmp)} sinks as ${hliquid("water")} rushes in and flushes you out.`);
             }
             if (game.context.mon_moving)
                 await mondied(mtmp); /* ok to leave corpse despite water */
