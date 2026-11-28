@@ -78,7 +78,7 @@ import { rnd } from './rng.js';
 import { TELEDS_NO_FLAGS } from './const.js';
 import { getpos, getpos_sethilite } from './getpos.js';
 import { walk_path, hurtle_jump } from './dothrow.js';
-import { known_spell, spe_Fresh } from './spell.js';
+import { known_spell, spe_Fresh, spelleffects } from './spell.js';
 import { dowrite } from './write.js';
 import { cansee } from './vision.js';
 import { closed_door, sobj_at } from './makemon.js';
@@ -291,6 +291,23 @@ import { highc } from './hacklib.js';
 import { MZ_TINY } from './monsters.js';
 import { genders } from './role.js';
 import { rn2_fnptr } from './rng.js';
+import { invocation_pos as invocation_pos_cd } from './mklev.js';
+import { On_stairs as On_stairs_cd } from './dogmove.js';
+import { safe_qbuf as safe_qbuf_cd } from './pickup.js';
+import { tty_yn_function as tty_yn_function_cd } from './wintty.js';
+import { the as the_cd } from './iactions.js';
+import { vtense as vtense_cd } from './objnam.js';
+import { obj_merge_light_sources as obj_merge_light_sources_cd } from './light.js';
+import { useupall as useupall_cd } from './invent.js';
+import { mkobj as mkobj_hp, rnd_class as rnd_class_hp, fixup_oil as fixup_oil_hp,
+         weight as weight_hp, add_to_container as add_to_container_hp } from './mkobj.js';
+import { vtense as vtense_hp, aobjnam as aobjnam_hp } from './objnam.js';
+import { addtobill as addtobill_hp } from './shk.js';
+import { hitfloor as hitfloor_hp } from './dothrow.js';
+import { doaltarobj as doaltarobj_hp, dropy as dropy_hp } from './do.js';
+import { encumber_msg as encumber_msg_hp } from './pickup.js';
+import { carried as carried_hp, FOOD_CLASS as FOOD_CLASS_HP } from './objects.js';
+import { IRONBARS as IRONBARS_HP, IS_ALTAR as IS_ALTAR_HP } from './const.js';
 
 // C ref: apply.c its_dead() -- the stethoscope applied to a corpse or
 // statue at <rx,ry>; returns TRUE if it gave a message
@@ -1247,7 +1264,8 @@ export async function doapply() {
         await use_bell(obj);
         break;
     case O.CANDELABRUM_OF_INVOCATION:
-        throw new Error('doapply(): use_candelabrum() not ported yet');
+        await use_candelabrum(obj);
+        break;
     case O.WAX_CANDLE:
     case O.TALLOW_CANDLE:
         obj = await use_candle(obj);
@@ -1295,7 +1313,8 @@ export async function doapply() {
         res = await do_play_instrument(obj);
         break;
     case O.HORN_OF_PLENTY: /* not a musical instrument */
-        throw new Error('doapply(): hornoplenty() not ported yet');
+        await hornoplenty(obj, false, null);
+        break;
     case O.LAND_MINE:
     case O.BEARTRAP:
         throw new Error('doapply(): use_trap() not ported yet');
@@ -1609,7 +1628,7 @@ export async function jump(magic) {
 
     /* attempt "jumping" spell if hero has no innate jumping ability */
     if (!magic && !Jumping() && known_spell(SPE_JUMPING) >= spe_Fresh)
-        throw new Error('jump(): spelleffects(SPE_JUMPING) not ported yet');
+        return await spelleffects(SPE_JUMPING, false, false);
 
     if (!magic && ((ydata.mflags1 & M1_NOLIMBS) === M1_NOLIMBS
                    || (ydata.mflags1 & M1_SLITHY))) {
@@ -1885,11 +1904,82 @@ async function use_lamp(obj) {
     }
 }
 
+// C ref: apply.c use_candelabrum()
+async function use_candelabrum(obj) {
+    const u = game.u;
+    const s = (obj.spe !== 1) ? "candles" : "candle";
+
+    if (obj.lamplit) {
+        await You(`snuff the ${s}.`);
+        end_burn(obj, true);
+        return;
+    }
+    if (obj.spe <= 0) {
+        let otmp;
+
+        await pline(`This ${xname(obj)} has no ${s}.`);
+        /* only output tip if candles are in inventory */
+        for (otmp = game.invent; otmp; otmp = otmp.nobj)
+            if (Is_candle(otmp))
+                break;
+        if (otmp)
+            await pline(`To attach candles, apply them instead of the ${
+                xname(obj)}.`);
+        return;
+    }
+    if (Underwater()) {
+        await You("cannot make fire under water.");
+        return;
+    }
+    if (u.uswallow || obj.cursed) {
+        if (!Blind())
+            await pline_The(`${s} ${vtense_cd(s, "flicker")} for a moment, then ${
+                vtense_cd(s, "die")}.`);
+        return;
+    }
+    if (obj.spe < 7) {
+        await There(`${vtense_cd(s, "are")} only ${obj.spe} ${s} in ${
+            the_cd(xname(obj))}.`);
+        if (!Blind())
+            await pline(`${obj.spe === 1 ? "It is" : "They are"} lit.  ${
+                Tobjnam_lp(obj, "shine")} dimly.`);
+    } else {
+        await pline(`${The(xname(obj))}'s ${s} burn${
+            (Blind() ? "." : " brightly!")}`);
+    }
+    if (!invocation_pos_cd(u.ux, u.uy) || On_stairs_cd(u.ux, u.uy)) {
+        await pline_The(`${s} ${vtense_cd(s, "are")} being rapidly consumed!`);
+        /* this used to be obj->age /= 2, rounding down; an age of
+           1 would yield 0, confusing begin_burn() and producing an
+           unlightable, unrefillable candelabrum; round up instead */
+        obj.age = Math.trunc((obj.age + 1) / 2);
+
+        /* to make absolutely sure the game doesn't become unwinnable as
+           a consequence of a broken candelabrum */
+        if (obj.age === 0) {
+            /* impossible("Candelabrum with candles but no fuel?") */
+            throw new Error('use_candelabrum(): impossible() no fuel not ported yet');
+        }
+    } else {
+        if (obj.spe === 7) {
+            if (Blind())
+                await pline(`${Tobjnam_lp(obj, "radiate")} a strange warmth!`);
+            else
+                await pline(`${Tobjnam_lp(obj, "glow")} with a strange light!`);
+        }
+        obj.known = 1;
+    }
+    begin_burn_lp(obj, false);
+}
+
 // C ref: apply.c use_candle()
 /* returns the candle object left for doapply() (C updates *optr) */
 async function use_candle(obj) {
     const u = game.u;
     let otmp;
+    let s = (obj.quan !== 1) ? "candles" : "candle";
+    let qbuf, q;
+    let was_lamplit;
 
     if (u.uswallow) {
         await You("don't have enough elbow-room to maneuver."); /* no_elbow_room */
@@ -1903,7 +1993,67 @@ async function use_candle(obj) {
         return obj;
     }
 
-    throw new Error('use_candle(): attaching candles to the Candelabrum not ported yet');
+    /* first, minimal candelabrum suffix for formatting candles */
+    const qsfx = ` to\x1b${thesimpleoname(otmp)}?`;
+    /* next, format the candles as a prefix for the candelabrum */
+    qbuf = safe_qbuf_cd("Attach ", qsfx, obj, yname_lp, s);
+    /* strip temporary candelabrum suffix */
+    if ((q = qbuf.indexOf(" to\x1b")) >= 0)
+        qbuf = qbuf.slice(0, q) + " to ";
+    /* last, format final "attach candles to candelabrum?" query */
+    if ((await tty_yn_function_cd(safe_qbuf_cd(qbuf, "?", otmp, yname_lp, "it"),
+                                  "yn", 'n')) === 'n') { /* y_n() */
+        await use_lamp(obj);
+        return obj;
+    } else {
+        let optr = obj;
+
+        if (otmp.spe + obj.quan > 7) {
+            obj = splitobj(obj, 7 - otmp.spe);
+            /* avoid a grammatical error if obj->quan gets
+               reduced to 1 candle from more than one */
+            s = (obj.quan !== 1) ? "candles" : "candle";
+        } else
+            optr = null;
+
+        /* The candle's age field doesn't correctly reflect the amount
+           of fuel in it while it's lit, because the fuel is measured
+           by the timer. So to get accurate age updating, we need to
+           end the burn temporarily while attaching the candle. */
+        was_lamplit = obj.lamplit;
+        if (was_lamplit)
+            end_burn(obj, true);
+
+        await You(`attach ${obj.quan}${!otmp.spe ? "" : " more"} ${s} to ${
+            the_cd(xname(otmp))}.`);
+        if (!otmp.spe || otmp.age > obj.age)
+            otmp.age = obj.age;
+        otmp.spe += obj.quan;
+        if (otmp.lamplit && !was_lamplit)
+            await pline_The(`new ${s} magically ${vtense_cd(s, "ignite")}!`);
+        else if (!otmp.lamplit && was_lamplit)
+            await pline(`${(obj.quan > 1) ? "They go" : "It goes"} out.`);
+        if (obj.unpaid) {
+            /* shkp VOICEONLY = shop_keeper(*in_rooms(u.ux, u.uy, SHOPBASE));
+               SetVoice(shkp, 0, 80, 0) */
+            await verbalize(`You ${otmp.lamplit ? "burn" : "use"} ${
+                (obj.quan > 1) ? "them" : "it"}, you bought ${
+                (obj.quan > 1) ? "them" : "it"}!`);
+        }
+        if (obj.quan < 7 && otmp.spe === 7)
+            await pline(`${The(xname(otmp))} now has seven${
+                otmp.lamplit ? " lit" : ""} candles attached.`);
+        /* candelabrum's light range might increase */
+        if (otmp.lamplit)
+            obj_merge_light_sources_cd(otmp, otmp);
+        /* candles are no longer a separate light source */
+        /* candles are now gone */
+        useupall_cd(obj);
+        /* candelabrum's weight is changing */
+        otmp.owt = weight_hp(otmp);
+        /* update_inventory(): no perm_invent */
+        return optr;
+    }
 }
 
 // C ref: apply.c light_cocktail()
@@ -3203,4 +3353,101 @@ async function flip_coin(obj) {
         await pline(`It comes up ${rn2(2) ? "heads" : "tails"}.`);
     }
     return ECMD_TIME;
+}
+
+// C ref: mkobj.c hornoplenty()
+/* create an object from a horn of plenty; mirrors bagotricks(makemon.c) */
+export async function hornoplenty(
+    horn,
+    tipping, /* caller emptying entire contents; affects shop mesgs */
+    targetbox) /* if non-Null, container to tip into */
+{
+    const g = game;
+    const u = g.u;
+    let objcount = 0;
+
+    if (!horn || horn.otyp !== O.HORN_OF_PLENTY) {
+        /* impossible("bad horn o' plenty") */
+        throw new Error('hornoplenty(): impossible() bad horn not ported yet');
+    } else if (horn.spe < 1) {
+        await pline(nothing_happens_ap); /* pline1(nothing_happens) */
+        if (!horn.cknown) {
+            horn.cknown = 1;
+            /* update_inventory(): no perm_invent */
+        }
+    } else {
+        let obj;
+        let what;
+
+        consume_obj_charge(horn, !tipping);
+        if (!rn2(13)) {
+            obj = mkobj_hp(POTION_CLASS, false);
+            if (O.objects[obj.otyp].oc_magic) {
+                do {
+                    obj.otyp = rnd_class_hp(O.POT_BOOZE, O.POT_WATER);
+                } while (obj.otyp === O.POT_SICKNESS);
+                /* oil uses obj->age field differently from other potions */
+                if (obj.otyp === POT_OIL)
+                    fixup_oil_hp(obj, null);
+            }
+            what = (obj.quan > 1) ? "Some potions" : "A potion";
+        } else {
+            obj = mkobj_hp(FOOD_CLASS_HP, false);
+            if (obj.otyp === O.FOOD_RATION && !rn2(7))
+                obj.otyp = O.LUMP_OF_ROYAL_JELLY;
+            what = "Some food";
+        }
+        ++objcount;
+        await pline(`${what} ${vtense_hp(what, "spill")} out.`);
+        obj.blessed = horn.blessed;
+        obj.cursed = horn.cursed;
+        obj.owt = weight_hp(obj);
+        /* using a shop's horn of plenty entails a usage fee and also
+           confers ownership of the created item to the shopkeeper */
+        if (horn.unpaid)
+            await addtobill_hp(obj, false, false, tipping);
+        /* if it ended up on bill, we don't want "(unpaid, N zorkmids)"
+           being included in its formatted name during next message */
+        g.iflags.suppress_price = (g.iflags.suppress_price || 0) + 1;
+        if (!tipping) {
+            const typ = g.level.at(u.ux, u.uy).typ;
+            obj = await hold_another_object(obj,
+                                            u.uswallow
+                                              ? "Oops!  %s out of your reach!"
+                                              : (Is_airlevel(u.uz)
+                                                 || Is_waterlevel(u.uz)
+                                                 || typ < IRONBARS_HP
+                                                 || typ >= ICE)
+                                                ? "Oops!  %s away from you!"
+                                                : "Oops!  %s to the floor!",
+                                            The(aobjnam_hp(obj, "slip")), null);
+            /* nhUse(obj) */
+        } else if (targetbox) {
+            add_to_container_hp(targetbox, obj);
+            /* add to container doesn't update the weight */
+            targetbox.owt = weight_hp(targetbox);
+            /* item still in magic horn was weightless; when it's now in
+               a carried container, hero's encumbrance could change */
+            if (carried_hp(targetbox)) {
+                await encumber_msg_hp();
+                /* update_inventory(): no perm_invent */
+            }
+        } else {
+            /* assumes this is taking place at hero's location */
+            if (!can_reach_floor(true)) {
+                await hitfloor_hp(obj, true); /* does altar check, message, drop */
+            } else {
+                if (IS_ALTAR_HP(g.level.at(u.ux, u.uy).typ))
+                    await doaltarobj_hp(obj); /* does its own drop message */
+                else
+                    await pline(`${upstart(doname(obj)) /* Doname2() */} ${
+                        otense(obj, "drop")} to the ${surface(u.ux, u.uy)}.`);
+                await dropy_hp(obj);
+            }
+        }
+        g.iflags.suppress_price--;
+        if (horn.dknown)
+            makeknown(O.HORN_OF_PLENTY);
+    }
+    return objcount;
 }
