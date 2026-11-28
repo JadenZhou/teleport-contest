@@ -154,7 +154,8 @@ import { lowc } from './hacklib.js';
 import { uhis } from './mhitu.js';
 import { delayed_killer } from './potion.js';
 import { done } from './end.js';
-import { kill_genocided_monsters } from './mon.js';
+import { kill_genocided_monsters, mongone_async } from './mon.js';
+import { plur } from './hacklib.js';
 import { LOW_PM, NUMMONS, MS_LEADER, MS_NEMESIS,
          MS_GUARDIAN, PM_NINJA, PM_SAMURAI } from './monsters.js';
 import { quest_info } from './questpgr.js';
@@ -1548,7 +1549,18 @@ async function do_class_genocide() {
             else if (immunecnt || cls === S_invisible_rd)
                 await You("aren't permitted to genocide such monsters.");
             else if (g.flags.debug /* wizard */ && buf[0] === '*') {
-                throw new Error('do_class_genocide(): wizard-mode "*" (mongone every monster) not ported yet');
+                let mtmp, mtmp2;
+
+                gonecnt = 0;
+                for (mtmp = g.fmon; mtmp; mtmp = mtmp2) {
+                    mtmp2 = mtmp.nmon;
+                    if (DEADMONSTER(mtmp))
+                        continue;
+                    await mongone_async(mtmp);
+                    gonecnt++;
+                }
+                await pline(`Eliminated ${gonecnt} monster${plur(gonecnt)}.`);
+                return;
             } else
                 await pline(`That ${buf.length === 1 ? "symbol" : "response"
                                    } does not represent any monster.`);
