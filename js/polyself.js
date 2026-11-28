@@ -58,7 +58,8 @@ import { pline, You, Your, You_cant, You_feel, pline_The, newsym,
          see_monsters, canspotmon } from './display.js';
 import { ACURR, exercise, ATTRMAX, ATTRMIN, adjabil, newhp,
          setuhpmax } from './attrib.js';
-import { rndexp, hliquid } from './potion.js';
+import { rndexp, hliquid, find_delayed_killer, dealloc_killer } from './potion.js';
+import { POLYMORPH, GENOCIDED } from './const.js';
 import { buried_ball_to_freedom } from './dig.js';
 import { newpw } from './exper.js';
 import { newuhs } from './eat.js';
@@ -408,8 +409,20 @@ async function polyman(fmt, arg) {
 
     await urgent_pline(fmt.replace("%s", arg));
     /* check whether player foolishly genocided self while poly'd */
-    if (game.mvitals && (game.mvitals[u.umonster]?.mvflags & G_GENOD))
-        throw new Error('polyman(): self-genocide while polymorphed not ported yet');
+    if (ugenocided()) {
+        /* intervening activity might have clobbered genocide info */
+        const kptr = find_delayed_killer(POLYMORPH);
+
+        if (kptr != null && kptr.name) {
+            game.killer.format = kptr.format;
+            game.killer.name = kptr.name;
+        } else {
+            game.killer.format = KILLED_BY_PS;
+            game.killer.name = "self-genocide";
+        }
+        dealloc_killer(kptr);
+        await done_ps(GENOCIDED);
+    }
 
     if (uprop_on(SEE_INVIS) !== had_see_invis)
         set_mimic_blocking(); /* See_invisible just toggled */

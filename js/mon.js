@@ -226,7 +226,9 @@ import { obj_resists } from './dogmove.js';
 import { end_burn } from './timeout.js';
 import { add_to_container, weight } from './mkobj.js';
 import { digests } from './mondata.js';
-import { You } from './display.js';
+import { You, swallowed } from './display.js';
+import { sticks } from './engrave.js';
+import { unsolid } from './mondata.js';
 import { u_locomotion } from './trap.js';
 import { STATUE, ROCK, GLOB_OF_BLACK_PUDDING } from './objects.js';
 import { obj_nexto } from './mkobj.js';
@@ -2731,12 +2733,10 @@ const newcham_g = ({ *newcham(mtmp, mdat, ncflags) {
         oldname = highc(oldname[0]) + oldname.slice(1);
     }
     /* we need this one whether msg is true or not (under hallucination
-       x_monnam() draws a random name from the display rng); l_oldname is
-       only used by the engulfing case, which isn't ported yet */
+       x_monnam() draws a random name from the display rng) */
     const l_oldname = x_monnam(mtmp, ARTICLE_THE, null,
                                has_mgivenname(mtmp) ? SUPPRESS_SADDLE : 0,
                                false);
-    void l_oldname;
 
     /* mdat = 0 -> caller wants a random monster shape */
     if (!mdat) {
@@ -2827,8 +2827,46 @@ const newcham_g = ({ *newcham(mtmp, mdat, ncflags) {
     mtmp.minvis = mtmp.invis_blkd ? 0 : mtmp.perminvis;
     if (mtmp.mundetected)
         hideunder(mtmp);
-    if (game.u.ustuck === mtmp)
-        throw new Error('newcham(): engulfing/sticky hero not ported yet');
+    if (game.u.ustuck === mtmp) {
+        if (game.u.uswallow) {
+            if (!attacktype(mdat, MM.AT_ENGL)) {
+                /* Does mdat care? */
+                if (!noncorporeal_vr(mdat) && !is_whirly(mdat)
+                    && !(amorphous(mdat) || mdat.mlet === MM.S_LIGHT)) {
+                    let msgtrail;
+
+                    if (is_vampshifter(mtmp)) {
+                        msgtrail = ` which was a shapeshifted ${
+                            noname_monnam(mtmp, ARTICLE_NONE)}`;
+                    } else if (digests(mdat)) {
+                        msgtrail = "'s stomach";
+                    } else {
+                        msgtrail = '';
+                    }
+                    /* Do this even if msg is FALSE */
+                    const umsg = `${(amorphous(olddata) || is_whirly(olddata))
+                                    ? "emerge from" : "break out of"} ${
+                                  l_oldname}${msgtrail}!`;
+                    yield { newcham_async: () => You(umsg), what: 'You()' };
+                    msg = false; /* message has been given */
+                    mtmp.mhp = 1; /* almost dead */
+                }
+                yield { newcham_async: () => expels_vr(mtmp, olddata, false),
+                        what: 'expels()' };
+            } else {
+                /* update swallow glyphs for new monster */
+                yield { newcham_async: () => swallowed(0), what: 'swallowed()' };
+            }
+        } else if ((!sticks(mdat) && !sticks(game.youmonst.data))
+                   /* sticky hero can't continue to hold mtmp if it has
+                      turned into a non-solid creature; we don't use
+                      uunstick() for that because its message would be
+                      shown out of sequence [before 'if (msg)' below];
+                      unstuck() doesn't issue any messages */
+                   || unsolid(mdat)) {
+            yield { newcham_async: () => unstuck(mtmp), what: 'unstuck()' };
+        }
+    }
 
     if (mdat === mons[MM.PM_LONG_WORM] && (mtmp.wormno = get_wormno()) !== 0) {
         initworm(mtmp, rn2(5));
@@ -3602,7 +3640,7 @@ function kill_eggs(obj_list) {
 
 // C ref: mon.c kill_genocided_monsters()
 /* kill all members of genocided species */
-export function kill_genocided_monsters() {
+export async function kill_genocided_monsters() {
     const g = game;
     let mtmp, mtmp2;
     let kill_cham;
@@ -3616,8 +3654,11 @@ export function kill_genocided_monsters() {
         kill_cham = (mtmp.cham !== undefined && mtmp.cham >= LOW_PM /* ismnum() */
                      && (g.mvitals[mtmp.cham].mvflags & G_GENOD));
         if ((g.mvitals[mndx].mvflags & G_GENOD) || kill_cham) {
-            /* newcham(mtmp, NULL, NC_SHOW_MSG) or mondead(mtmp) */
-            throw new Error('kill_genocided_monsters(): removing genocided monsters not ported yet');
+            if ((mtmp.cham !== undefined && mtmp.cham >= LOW_PM) /* ismnum() */
+                && !kill_cham)
+                await newcham(mtmp, null, NC_SHOW_MSG);
+            else
+                await mondead(mtmp);
         }
         if (mtmp.minvent)
             kill_eggs(mtmp.minvent);
