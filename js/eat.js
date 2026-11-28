@@ -138,7 +138,12 @@ import { s_suffix } from './hacklib.js';
 import { Monnam, mon_nam, pmname, Mgender } from './do_name.js';
 import { canspotmon, canseemon } from './display.js';
 import { mindless, monsndx } from './mondata.js';
-import { AMAX, ATTRMIN } from './attrib.js';
+import { AMAX, ATTRMIN, gainstr, setuhpmax } from './attrib.js';
+import { polymon, rehumanize } from './polyself.js';
+import { heal_legs } from './trap.js';
+import { POISONING } from './const.js';
+import { hcolor } from './do_name.js';
+import { Fixed_abil } from './youprop.js';
 import { Lifesaved } from './youprop.js';
 import { costly_spot } from './shk.js';
 
@@ -1481,7 +1486,7 @@ async function cpostfx(pm) {
 
         /* if something was chosen, give it now (givit() might fail) */
         if (tmp === -1)
-            throw new Error('cpostfx(): gainstr() not ported yet');
+            await gainstr(null, 0, true);
         else if (tmp > 0)
             await givit(tmp, ptr);
     } /* check_intrinsics */
@@ -1565,6 +1570,8 @@ export async function eating_conducts(pd) {
 }
 
 // C ref: eat.c consume_tin()
+const NH_GREEN = "green"; /* C ref: color.h */
+
 async function consume_tin(mesg) {
     let what, which, mnum, r, nutamt;
     /* if you've eaten tin itself, chance to not eat contents gets bypassed */
@@ -1676,7 +1683,51 @@ async function consume_tin(mesg) {
         }
 
     } else { /* spinach... */
-        throw new Error('consume_tin(): tin of spinach (gainstr()) not ported yet');
+        if (tin.cursed) {
+            await pline(`It contains some decaying${Blind() ? "" : " "}${
+                Blind() ? "" : hcolor(NH_GREEN)} substance.`);
+        } else {
+            await pline("It contains spinach.");
+            observe_object(tin, Hallucination());
+            tin.known = 1;
+        }
+
+        if (!always_eat
+            && (await tty_yn_function("Eat it?", "yn", 'n')) === 'n') { /* y_n() */
+            if (game.flags.verbose)
+                await You("discard the open tin.");
+            tin = costly_tin(COST_OPEN);
+            await use_up_tin(tin);
+            return;
+        }
+
+        /*
+         * Same order as with non-spinach above:
+         * conduct update, side-effects, shop handling, and nutrition.
+         */
+        /* don't need vegetarian checks for spinach */
+        if (!conduct_inc('food'))
+            livelog_printf(LL_CONDUCT, "ate for the first time (spinach)");
+        if (!tin.cursed)
+            await pline(`This makes you feel like ${
+                /* "Swee'pea" is a character from the Popeye cartoons */
+                Hallucination() ? "Swee'pea"
+                /* "feel like Popeye" unless sustain ability suppresses
+                   any attribute change */
+                : !Fixed_abil() ? "Popeye"
+                /* no gain, feel like another character from Popeye */
+                : (game.flags.female ? "Olive Oyl" : "Bluto")}!`);
+        await gainstr(tin, 0, false);
+
+        tin = tc.tin = costly_tin(COST_OPEN);
+        nutamt = (tin.blessed ? 600                   /* blessed */
+                  : !tin.cursed ? (400 + rnd(200))    /* uncursed */
+                    : (200 + rnd(400)));              /* cursed */
+        if (always_eat)
+            nutamt += 5; /* metallivorous hero also eats the tin itself */
+        /* use up tin first; lesshungry() could be fatal and produce bones */
+        await use_up_tin(tin), tin = null;
+        await lesshungry(nutamt);
     }
     if (tin)
         await use_up_tin(tin);
@@ -2252,7 +2303,36 @@ async function fpostfx(otmp) {
                     "became literate by reading the fortune inside a cookie");
         break;
     case LUMP_OF_ROYAL_JELLY:
-        throw new Error('fpostfx(): lump of royal jelly (gainstr()) not ported yet');
+        if (game.youmonst.data === mons[M.PM_KILLER_BEE] && !Unchanging()
+            && (await polymon(M.PM_QUEEN_BEE)))
+            break;
+
+        /* This stuff seems to be VERY healthy! */
+        await gainstr(otmp, 1, true);
+        if (Upolyd()) {
+            u.mh += otmp.cursed ? -rnd(20) : rnd(20), game.disp_botl = true;
+            if (u.mh > u.mhmax) {
+                if (!rn2(17))
+                    setuhpmax(u.mhmax + 1, false);
+                u.mh = u.mhmax;
+            } else if (u.mh <= 0) {
+                await rehumanize();
+            }
+        } else {
+            u.uhp += otmp.cursed ? -rnd(20) : rnd(20), game.disp_botl = true;
+            if (u.uhp > u.uhpmax) {
+                if (!rn2(17))
+                    setuhpmax(u.uhpmax + 1, false);
+                u.uhp = u.uhpmax;
+            } else if (u.uhp <= 0) {
+                game.killer.format = KILLED_BY_AN;
+                game.killer.name = "rotten lump of royal jelly";
+                await done(POISONING);
+            }
+        }
+        if (!otmp.cursed)
+            await heal_legs(0);
+        break;
     case EGG:
         if (otmp.corpsenm >= M.LOW_PM
             && flesh_petrifies(mons[otmp.corpsenm])) {
